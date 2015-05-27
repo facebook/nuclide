@@ -200,7 +200,7 @@ var TreeRootComponent = React.createClass({
 
   _onMouseDown(event: SyntheticMouseEvent, node: LazyTreeNode): void {
     // Select the node on right-click.
-    if (event.button === 2) {
+    if (event.button === 2 || (event.button === 0 && event.ctrlKey === true)) {
       if (!this._isNodeSelected(node)) {
         this.setState({selectedKeys: new Set([node.getKey()])});
       }

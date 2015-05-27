@@ -258,6 +258,30 @@ describe('TreeRootComponent', () => {
       });
     });
 
+    it('selects node if right clicking or ctrl clicking for context menu', () => {
+      waitsForPromise(async () => {
+        var component = renderComponent(props);
+        component.setRoots([nodes['G']]);
+        await fetchChildrenForNodes(component.getRootNodes());
+
+        expect(component.getSelectedNodes()).toEqual([]);
+
+        var treeNodes = TestUtils.scryRenderedComponentsWithType(
+            component,
+            TreeNodeComponent
+          );
+
+        TestUtils.Simulate.mouseDown(treeNodes[0].getDOMNode(), {button: 2});
+        expect(component.getSelectedNodes()).toEqual([treeNodes[0].props.node]);
+
+        TestUtils.Simulate.mouseDown(treeNodes[1].getDOMNode(), {button: 0, ctrlKey: true});
+        expect(component.getSelectedNodes()).toEqual([treeNodes[1].props.node]);
+
+        TestUtils.Simulate.mouseDown(treeNodes[2].getDOMNode(), {button: 0});
+        expect(component.getSelectedNodes()).toEqual([treeNodes[1].props.node]);
+      });
+    });
+
     it('does not toggle whether node is selected if click is on the arrow', () => {
       waitsForPromise(async () => {
         var component = renderComponent(props);
