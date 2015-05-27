@@ -58,7 +58,7 @@ class NuclideRemoteEventbus {
       'serviceFramework',
       'subscribeEvent',
       /*methodArgs*/ [this.socket.id, serviceName, methodName],
-      serviceOptions,
+      serviceOptions
    );
   }
 
@@ -67,7 +67,7 @@ class NuclideRemoteEventbus {
       'serviceFramework',
       'unsubscribeEvent',
       /*methodArgs*/ [this.socket.id, serviceName, methodName],
-      serviceOptions,
+      serviceOptions
    );
   }
 

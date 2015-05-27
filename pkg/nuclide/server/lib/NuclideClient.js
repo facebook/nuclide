@@ -255,7 +255,7 @@ class NuclideClient {
       serviceName,
       methodName,
       /* methodArgs */ args,
-      /* serviceOptions */ serviceOptions,
+      /* serviceOptions */ serviceOptions
    );
   }
 
