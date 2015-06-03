@@ -3,7 +3,7 @@
   "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main",
   "version": "0.0.0",
-  "description": "Provides type hint service for showhing code and type hints when hovering the mouse over code expressions",
+  "description": "Provides type hint service for showing code and type hints when hovering the mouse over code expressions",
   "nuclide": {
     "packageType": "Atom",
     "testRunner": "apm"
