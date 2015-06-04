@@ -17,6 +17,14 @@ var subscriptions: ?CompositeDisposable = null;
 
 module.exports = {
   activate(state: ?FileTreeControllerState): void {
+
+    // disable atom's default tree view
+    var coreDisabledPackages = atom.config.get('core.disabledPackages');
+    if (coreDisabledPackages.length === 0 ||
+        coreDisabledPackages.indexOf('tree-view') === -1) {
+      atom.config.pushAtKeyPath('core.disabledPackages', 'tree-view');
+    }
+
     // Show the file tree by default.
     state = state || {};
     state.panel = state.panel || {isVisible: true};
