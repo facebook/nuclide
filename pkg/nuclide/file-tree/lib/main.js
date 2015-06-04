@@ -19,9 +19,9 @@ module.exports = {
   activate(state: ?FileTreeControllerState): void {
 
     // disable atom's default tree view
-    if (atom.config.get('core.disabledPackages').length === 0) {
-      atom.config.pushAtKeyPath('core.disabledPackages', 'tree-view');
-    } else if (atom.config.get('core.disabledPackages').indexOf('tree-view') === -1) {
+    var coreDisabledPackages = atom.config.get('core.disabledPackages');
+    if (coreDisabledPackages.length === 0 ||
+        coreDisabledPackages.indexOf('tree-view') === -1) {
       atom.config.pushAtKeyPath('core.disabledPackages', 'tree-view');
     }
 
