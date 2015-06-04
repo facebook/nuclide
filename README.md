@@ -53,7 +53,7 @@ Nuclide packages are not publicly available in [npm](https://www.npmjs.com/) or
 Run the following command from the root of the repository:
 
 ```
-./scripts/dev/setup
+sudo ./scripts/dev/setup
 ```
 
 This will fetch the appropriate dependencies from [npm](https://www.npmjs.com/) and
