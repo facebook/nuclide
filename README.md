@@ -48,9 +48,8 @@ so that both local and remote files can be browsed from a familiar UI.
 with segmented search results.
 
 Note that some Nuclide packages, such as `nuclide-flow` and `nuclide-hack`, work better when the
-[linter-plus](https://atom.io/packages/linter-plus) package is installed. Note that `linter-plus` is
-separate from Nuclide and is ultimately supposed to merge with the
-[linter](https://atom.io/packages/linter) package. (There is also evidence that the linter package
+[linter](https://atom.io/packages/linter) package is installed. Note that `linter` is
+separate from Nuclide. (There is evidence that the linter package
 [will eventually be bundled as part of Atom core](https://github.com/atom/atom/issues/7353).)
 
 ## Repository Organization
