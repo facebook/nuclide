@@ -72,6 +72,20 @@ for the first time may be a little slow because of the large number of Babel fil
 need to be transpiled. (The results of transpilation are cached for future use.
 You can see how many files were transpiled from [Timecop](https://atom.io/packages/timecop).)
 
+## Updating Nuclide packages
+Run the following command from the root of the repository:
+
+1.
+```
+git clean -xfd
+```
+2.
+```
+git pull
+```
+3.
+Follow the instructions again from **Build and install Nuclide** section.
+
 ## Features
 
 Currently, Nuclide contains the following Atom packages:
