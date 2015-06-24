@@ -15,6 +15,7 @@ var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
 var temp = require('temp').track();
+var mv = require('mv');
 var cacheDir = createCacheDir();
 
 /**
@@ -92,7 +93,7 @@ function createOrFetchFromCache(sourceCode, filePath) {
         return;
       }
 
-      fs.rename(info.path, transpiledFile);
+      mv(info.path, transpiledFile, {mkdirp: true});
     });
   });
 

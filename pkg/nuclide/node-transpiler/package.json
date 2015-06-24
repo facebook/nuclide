@@ -11,6 +11,7 @@
   "dependencies": {
     "babel-core": "5.5.4",
     "babel-runtime": "5.5.4",
+    "mv": "^2.1.1",
     "temp": "0.8.1"
   }
 }
