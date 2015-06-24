@@ -16,7 +16,7 @@
     },
     "linter": {
       "versions": {
-        "0.3.0": "provideLinter"
+        "1.0.0": "provideLinter"
       }
     },
     "nuclide-click-to-symbol.provider": {
