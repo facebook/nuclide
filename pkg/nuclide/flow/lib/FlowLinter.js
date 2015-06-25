@@ -78,7 +78,7 @@ function processDiagnostics(diagnostics: Array<Object>, targetFile: string) {
 }
 
 module.exports = {
-  grammarScopes: ['source.js'],
+  grammarScopes: ['source.js', 'source.js.jsx'],
   scope: 'file',
   lintOnFly: true,
   async lint(textEditor: TextEditor): Promise<Array<Object>> {
