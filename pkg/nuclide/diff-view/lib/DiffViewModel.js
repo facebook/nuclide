@@ -38,7 +38,7 @@ class DiffViewModel {
     }
     var repository = await atom.project.repositoryForDirectory(rootDirectory);
     if (!repository || repository.getType() !== 'hg') {
-      throw new Error('Diff view only supports hg repositories right now: ' + repository && repository.getType());
+      throw new Error('Diff view only supports hg repositories right now: ' + (repository && repository.getType()));
     }
     var committedContents = await repository.fetchFileContentAtRevision(this._filePath);
 
