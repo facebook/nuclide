@@ -235,7 +235,7 @@ if __name__ == '__main__':
     options, args = parser.parse_args(sys.argv[1:])
 
     manager = NuclideServerManager(options)
-    manager.cleanup();
+    manager.cleanup()
     if options.command == 'start':
         ret = manager.start_nuclide()
         print('The log file can be found at %s.' % LOG_FILE, file=sys.stderr)

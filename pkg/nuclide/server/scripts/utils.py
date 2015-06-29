@@ -46,7 +46,7 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
             return ret
         else:
             return None
-    except:
+    except Exception:
         return None
     finally:
         if conn:
