@@ -8,19 +8,20 @@ from __future__ import print_function
 
 import getpass
 import json
-import optparse
 import os
 import re
 import shlex
 import subprocess
 import sys
 import time
-import utils
 
+import utils
 from nuclide_certificates_generator import NuclideCertificatesGenerator
 from process_info import ProcessInfo
 
+
 LOG_FILE = '~/nuclide.nohup.out'
+
 
 # This class represents a Nuclide server process on a port.
 class NuclideServer(object):
@@ -75,7 +76,8 @@ class NuclideServer(object):
         if self.is_https():
             server_cert, server_key, ca = self.get_server_certificate_files()
             client_cert, client_key = self.get_client_certificate_files(ca)
-            self._version = utils.http_get('localhost', self.port, method='POST', url='/server/version', key_file=client_key, cert_file=client_cert)
+            self._version = utils.http_get('localhost', self.port, method='POST', url='/server/version',
+                                           key_file=client_key, cert_file=client_cert)
         else:
             self._version = utils.http_get('localhost', self.port, method='POST', url='/server/version')
         return self._version

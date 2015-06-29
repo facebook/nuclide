@@ -14,18 +14,16 @@ import json
 import optparse
 import os
 import re
-import shlex
-import subprocess
 import socket
 import sys
-import tempfile
+from collections import defaultdict
 import time
 
-from collections import defaultdict
 from nuclide_server import LOG_FILE
 from nuclide_server import NuclideServer
 from nuclide_certificates_generator import NuclideCertificatesGenerator
 from process_info import ProcessInfo
+
 
 try:
     from fb.nuclide_config import EXTRA_NODE_PATHS, OPEN_PORTS
@@ -41,9 +39,9 @@ CERTS_DIR = os.path.join(os.path.expanduser('~'), '.certs')
 CERTS_EXPIRATION_DAYS = 7
 NODE_PATHS = EXTRA_NODE_PATHS + ['/opt/local/bin', '/usr/local/bin']
 
+
 # This class manages Nuclide servers.
 class NuclideServerManager(object):
-
     version_file = os.path.join(os.path.dirname(__file__), '../node_modules/nuclide-version/version.json')
 
     def __init__(self, options):
@@ -125,7 +123,8 @@ class NuclideServerManager(object):
         # This does not stop existing Nuclide server processes themselves.
         # It just removes the monitor so that we can kill them on upgrade.
         for proc in ProcessInfo.get_processes(getpass.getuser(),
-            '%s.*%s' % (re.escape('forever/bin/monitor'), re.escape('nuclide-main.js'))):
+                                              '%s.*%s' % (
+                                              re.escape('forever/bin/monitor'), re.escape('nuclide-main.js'))):
             print('Stopping %s' % proc, file=sys.stderr)
             proc.stop()
 
@@ -140,7 +139,8 @@ class NuclideServerManager(object):
             server_proc_map[port].append(proc)
         for port in server_proc_map:
             if len(server_proc_map[port]) > 1:
-                print('Multiple Nuclide processes on port %d. Something wrong. Clean them up...' % port, file=sys.stderr)
+                print('Multiple Nuclide processes on port %d. Something wrong. Clean them up...' % port,
+                      file=sys.stderr)
                 for proc in server_proc_map[port]:
                     proc.stop()
 
@@ -177,7 +177,7 @@ class NuclideServerManager(object):
         # If given port is being used by somebody else, you shall not pass.
         if not self._is_port_open(port) and not server.is_mine():
             print('You are not the owner of Nuclide server at port %d. Try a different port.' %
-                port, file=sys.stderr)
+                  port, file=sys.stderr)
             return 1
 
         # At this moment, the port is either open, or we have an existing server running.
@@ -186,7 +186,7 @@ class NuclideServerManager(object):
             running_version = server.get_version()
             # If the common names don't match, we restart.
             if (version and version != running_version) or \
-                (self.options.common_name and server.get_common_name() != self.options.common_name):
+                    (self.options.common_name and server.get_common_name() != self.options.common_name):
                 print('Restarting Nuclide server on port %d' % port, file=sys.stderr)
                 server.stop()
                 return self.start_server(server)
@@ -208,13 +208,15 @@ class NuclideServerManager(object):
             certs_dir = self.options.certs_dir or self._ensure_certs_dir()
             # Add prefix "user.nuclide" to avoid collision.
             common_name = self.options.common_name or \
-                '%s.nuclide.%s' % (getpass.getuser(), socket.gethostname())
+                          '%s.nuclide.%s' % (getpass.getuser(), socket.gethostname())
 
             # TODO: Client common name is 'nuclide'.
-            #       We may want to generate unique common name and verify it.
-            certs_generator = NuclideCertificatesGenerator(certs_dir, common_name, 'nuclide', expiration_days=CERTS_EXPIRATION_DAYS)
+            # We may want to generate unique common name and verify it.
+            certs_generator = NuclideCertificatesGenerator(certs_dir, common_name, 'nuclide',
+                                                           expiration_days=CERTS_EXPIRATION_DAYS)
             return server.start(self.options.timeout, cert=certs_generator.server_cert,
-                key=certs_generator.server_key, ca=certs_generator.ca_cert, quiet=self.options.quiet)
+                                key=certs_generator.server_key, ca=certs_generator.ca_cert, quiet=self.options.quiet)
+
 
 def get_option_parser():
     parser = optparse.OptionParser(description='Nuclide server manager')
@@ -225,9 +227,11 @@ def get_option_parser():
     parser.add_option('-n', '--common_name', type=str, help='the common name to use in certificate')
     parser.add_option('-t', '--timeout', type=int, help='timeout in seconds, default: %default', default=10)
     parser.add_option('-w', '--workspace', type=str, help='the workspace directory')
-    parser.add_option('-c', '--command', type=str, help='commands: list, start, stopall; default: %default', default='start')
+    parser.add_option('-c', '--command', type=str, help='commands: list, start, stopall; default: %default',
+                      default='start')
     parser.add_option('-q', '--quiet', help='suppress nohup logging', action="store_true", default=False)
     return parser
+
 
 if __name__ == '__main__':
     os.environ['PATH'] = os.pathsep.join(NODE_PATHS) + os.pathsep + os.environ.get('PATH', '')

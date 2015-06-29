@@ -7,13 +7,12 @@
 from __future__ import print_function
 
 import httplib
-import json
 import os
 import socket
 import subprocess
-import sys
 
 from pkg_resources import resource_string
+
 
 # Run the process silently without stdout and stderr.
 # On success, return stdout. Otherwise, raise CalledProcessError
@@ -31,11 +30,11 @@ def check_output_silent(args, cwd=None, env=None):
     else:
         return out
 
+
 # It supports https if key_file and cert_file are given.
 def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
-    conn = None
     if key_file is not None and cert_file is not None:
-        conn = httplib.HTTPSConnection(host, port, key_file=key_file,cert_file=cert_file, timeout=timeout)
+        conn = httplib.HTTPSConnection(host, port, key_file=key_file, cert_file=cert_file, timeout=timeout)
     else:
         conn = httplib.HTTPConnection(host, port, timeout=timeout)
     try:
@@ -52,6 +51,7 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
         if conn:
             conn.close()
 
+
 def is_ip_address(addr):
     try:
         # Check ipv4 address.
@@ -66,6 +66,7 @@ def is_ip_address(addr):
         return True
     except socket.error:
         return False
+
 
 # Read the resource and write it to a given dir using the resource name as file name.
 # Return the file path.

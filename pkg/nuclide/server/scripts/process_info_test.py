@@ -7,14 +7,13 @@
 # the root directory of this source tree.
 
 import getpass
-import os
 import re
 import unittest
 
 from process_info import ProcessInfo
 
-class ProcessInfoTest(unittest.TestCase):
 
+class ProcessInfoTest(unittest.TestCase):
     def test_get_processes(self):
         # Verify against the test process itself.
         testname = 'nuclide_server_py_tests'
@@ -29,6 +28,7 @@ class ProcessInfoTest(unittest.TestCase):
                 self.assertTrue(int(proc.get_column('pid')) > 0)
                 self.assertTrue(testname in proc.get_column('command'))
         self.assertTrue(found_it)
+
 
 if __name__ == '__main__':
     unittest.main()
