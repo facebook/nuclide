@@ -11,22 +11,20 @@ import json
 import os
 import socket
 import StringIO
-import subprocess
 import sys
 import tempfile
 import unittest
 
 import nuclide_server_manager
-import utils
-
 from nuclide_server_test_base import NuclideServerTestBase
 from nuclide_server_manager import NuclideServerManager
 
+
 WORK_DIR = os.path.dirname(os.path.realpath(__file__))
-TARGET_SCRIPT= os.path.join(WORK_DIR, 'nuclide_server_manager.py')
+TARGET_SCRIPT = os.path.join(WORK_DIR, 'nuclide_server_manager.py')
+
 
 class NuclideServerManagerTest(NuclideServerTestBase):
-
     def verify_key(self, text):
         self.assertTrue('BEGIN RSA PRIVATE KEY' in text)
         self.assertTrue('END RSA PRIVATE KEY' in text)
@@ -131,7 +129,7 @@ class NuclideServerManagerTest(NuclideServerTestBase):
         port0 = servers[0].port
         port1 = servers[1].port
         # A good enough test.
-        self.assertEquals(port0+port1, 9090+9091)
+        self.assertEquals(port0 + port1, 9090 + 9091)
 
     def test_upgrade_on_given_port(self):
         self.start_nuclide_server_twice_and_verify(port=9090, workspace='.', upgrade=True)
@@ -170,6 +168,7 @@ class NuclideServerManagerTest(NuclideServerTestBase):
         self.assertEquals(len(servers), 1)
         # Verify the new common name.
         self.assertEquals(servers[0].get_common_name(), 'localhost')
+
 
 if __name__ == '__main__':
     unittest.main()
