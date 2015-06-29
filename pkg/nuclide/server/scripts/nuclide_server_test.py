@@ -6,7 +6,6 @@
 # This source code is licensed under the license found in the LICENSE file in
 # the root directory of this source tree.
 
-import nuclide_server
 import os
 import tempfile
 import unittest
@@ -15,10 +14,11 @@ from nuclide_certificates_generator import NuclideCertificatesGenerator
 from nuclide_server_test_base import NuclideServerTestBase
 from nuclide_server import NuclideServer
 
+
 TIMEOUT = 10
 
-class NuclideServerTest(NuclideServerTestBase):
 
+class NuclideServerTest(NuclideServerTestBase):
     def test_multiple_servers(self):
         server_9090 = NuclideServer(9090)
         self.assertEquals(server_9090.start(timeout=TIMEOUT), 0)
@@ -62,7 +62,7 @@ class NuclideServerTest(NuclideServerTestBase):
 
     def test_script_name(self):
         self.assertEquals(NuclideServer.script_name, 'nuclide-main.js',
-            'Changing script_name breaks server upgrade.')
+                          'Changing script_name breaks server upgrade.')
 
     def test_workspace(self):
         # Verify workspace gets resolved to real path.
@@ -72,6 +72,7 @@ class NuclideServerTest(NuclideServerTestBase):
         # Verify non-existing workspace resolved to None.
         server = NuclideServer(9090, '/lsdkjf')
         self.assertEquals(server.workspace, None)
+
 
 if __name__ == '__main__':
     unittest.main()

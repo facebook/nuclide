@@ -5,7 +5,6 @@
 # the root directory of this source tree.
 
 import os
-import subprocess
 import tempfile
 import unittest
 
@@ -14,8 +13,8 @@ from nuclide_server import NuclideServer
 from nuclide_server_manager import NuclideServerManager
 from utils import write_resource_to_file
 
-class NuclideServerTestBase(unittest.TestCase):
 
+class NuclideServerTestBase(unittest.TestCase):
     def setUp(self):
         NuclideServerManager.stop_all()
 

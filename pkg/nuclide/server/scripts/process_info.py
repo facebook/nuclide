@@ -14,6 +14,7 @@ import utils
 
 COLUMNS = ['pid', 'command']
 
+
 # TODO: Ideally, we want to use psutil, but it is not part of standard library.
 class ProcessInfo(object):
     def __init__(self, columns, line):
