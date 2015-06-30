@@ -35,7 +35,7 @@ def check_output_silent(args, cwd=None, env=None):
 def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
     conn = None
     if key_file is not None and cert_file is not None:
-        conn = httplib.HTTPSConnection(host, port, key_file=key_file,cert_file=cert_file, timeout=timeout)
+        conn = httplib.HTTPSConnection(host, port, key_file=key_file,cert_file=cert_file, timeout=timeout, context=ssl._create_unverified_context())
     else:
         conn = httplib.HTTPConnection(host, port, timeout=timeout)
     try:
@@ -46,8 +46,12 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
             return ret
         else:
             return None
-    except:
-        return None
+    except socket.error as e:
+        # Connection refused, server is not ready yet
+        if e.errno == 111:
+            return None
+        t, v, tb = sys.exc_info()
+        raise t, v, tb
     finally:
         if conn:
             conn.close()
