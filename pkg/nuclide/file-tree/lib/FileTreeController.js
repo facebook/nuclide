@@ -185,6 +185,7 @@ class FileTreeController {
         eventHandlerSelector,
         {
           'core:backspace': () => this.deleteSelection(),
+          'core:delete': () => this.deleteSelection(),
         }));
 
     var props = {
