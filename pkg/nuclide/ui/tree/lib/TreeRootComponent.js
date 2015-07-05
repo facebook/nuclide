@@ -185,7 +185,7 @@ var TreeRootComponent = React.createClass({
   },
 
   _onClickNode(event: SyntheticMouseEvent, node: LazyTreeNode): void {
-    if (event.metaKey) {
+    if (event.metaKey || event.shiftKey) {
       this._toggleNodeSelected(node);
       return;
     }
