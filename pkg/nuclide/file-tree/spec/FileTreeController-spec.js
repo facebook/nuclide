@@ -109,7 +109,10 @@ describe('FileTreeController', () => {
 
   describe('openDuplicateDialog', () => {
     it('gets called when triggering nuclide-file-tree:duplicate-selection', () => {
-      var el = fileTreeController._panelController._hostEl.getElementsByClassName('nuclide-file-tree')[0];
+      var el = React.findDOMNode(TestUtils.findRenderedDOMComponentWithClass(
+        fileTreeController._panelController.getChildComponent(),
+        'nuclide-file-tree'
+      ));
 
       // Mock method
       spyOn(fileTreeController, 'openDuplicateDialog');
