@@ -219,6 +219,7 @@ class FileTreeController {
           'nuclide-file-tree:add-folder': () => this.openAddFolderDialog(),
           'nuclide-file-tree:delete-selection': () => this.deleteSelection(),
           'nuclide-file-tree:rename-selection': () => this.openRenameDialog(),
+          'nuclide-file-tree:duplicate-selection': () => this.openDuplicateDialog(),
           'nuclide-file-tree:remove-project-folder-selection': () => this.removeRootFolderSelection(),
           'nuclide-file-tree:copy-full-path': () => this.copyFullPath(),
           'nuclide-file-tree:show-in-file-manager': () => this.showInFileManager(),
@@ -302,6 +303,13 @@ class FileTreeController {
         command: 'nuclide-file-tree:rename-selection',
         shouldDisplayForSelectedNodes(nodes) {
           return nodes.length === 1 && !nodes.some(node => node.isRoot());
+        },
+      },
+      {
+        label: 'Duplicate',
+        command: 'nuclide-file-tree:duplicate-selection',
+        shouldDisplayForSelectedNodes(nodes) {
+          return nodes.length === 1 && !nodes.some(node => node.getItem().isDirectory());
         },
       },
       {
@@ -745,6 +753,43 @@ class FileTreeController {
     };
     this._openDialog(<FileDialogComponent {...props} />);
   }
+
+  openDuplicateDialog(): void {
+    var selection = this._getSelectedEntryAndDirectoryAndRoot();
+    if (!selection) {
+      return;
+    }
+
+    if(selection.entry.isDirectory()) {
+      return;
+    }
+    var message = (
+      <div>
+        <div>Enter the new name for the file in the root:</div>
+        <div>{path.normalize(selection.root.getPath() + '/')}</div>
+      </div>
+    );
+
+    var {entry, root} = selection;
+
+    var FileDialogComponent = require('./FileDialogComponent');
+    var props = {
+      rootDirectory: root,
+      initialEntry: entry,
+      message,
+      onConfirm: async (rootDirectory, relativeFilePath) => {
+        var file = rootDirectory.getFile(relativeFilePath);
+        await file.create();
+        await entry.read().then(text => file.write(text));
+        this._reloadDirectory(entry.getParent());
+        atom.workspace.open(file.getPath());
+      },
+      onClose: () => this._closeDialog(),
+      shouldSelectBasename: true,
+    };
+    this._openDialog(<FileDialogComponent {...props} />);
+  }
+
 
   _openDialog(component: ReactElement): void {
     this._closeDialog();
