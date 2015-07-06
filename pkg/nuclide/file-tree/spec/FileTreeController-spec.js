@@ -15,6 +15,8 @@ var path = require('path');
 var rmdir = require('rimraf');
 var temp = require('temp').track();
 var timers = require('timers');
+var React = require('react-for-atom');
+var {TestUtils} = React.addons;
 
 var rootBasenames = [
   'dir1',
@@ -66,19 +68,30 @@ describe('FileTreeController', () => {
     fileTreeController.destroy();
   });
 
-  it('checks if core:backspace and core:delete is registered on .nuclide-file-tree', () => {
-    var timesCalled = 0;
-    // Find div element
-    var el = fileTreeController._panelController._hostEl.getElementsByClassName('nuclide-file-tree')[0];
-    // mock deleteSelection
-    fileTreeController.deleteSelection = () => {
-      timesCalled++;
-    }
+  describe('deleteSelection', () => {
+    it('checks if deleteSelection is called when core:backspace is triggered', () => {
+      // Find div element
+      var el = React.findDOMNode(TestUtils.findRenderedDOMComponentWithClass(
+        fileTreeController._panelController.getChildComponent(),
+        'nuclide-file-tree'
+      ));
+      // mock deleteSelection
+      spyOn(fileTreeController, 'deleteSelection');
+      atom.commands.dispatch(el, 'core:backspace');
+      expect(fileTreeController.deleteSelection.calls.length).toBe(1);
+    });
 
-    atom.commands.dispatch(el, 'core:backspace');
-    atom.commands.dispatch(el, 'core:delete');
-
-    expect(timesCalled).toBe(2);
+    it('checks if deleteSelection is called when core:delete is triggered', () => {
+      // Find div element
+      var el = React.findDOMNode(TestUtils.findRenderedDOMComponentWithClass(
+        fileTreeController._panelController.getChildComponent(),
+        'nuclide-file-tree'
+      ));
+      // mock deleteSelection
+      spyOn(fileTreeController, 'deleteSelection');
+      atom.commands.dispatch(el, 'core:delete');
+      expect(fileTreeController.deleteSelection.calls.length).toBe(1);
+    });
   });
 
   describe('getNodeAndSetState', () => {
