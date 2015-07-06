@@ -66,6 +66,21 @@ describe('FileTreeController', () => {
     fileTreeController.destroy();
   });
 
+  it('checks if core:backspace and core:delete is registered on .nuclide-file-tree', () => {
+    var timesCalled = 0;
+    // Find div element
+    var el = fileTreeController._panelController._hostEl.getElementsByClassName('nuclide-file-tree')[0];
+    // mock deleteSelection
+    fileTreeController.deleteSelection = () => {
+      timesCalled++;
+    }
+
+    atom.commands.dispatch(el, 'core:backspace');
+    atom.commands.dispatch(el, 'core:delete');
+
+    expect(timesCalled).toBe(2);
+  });
+
   describe('getNodeAndSetState', () => {
     it('reuses an existing node if possible', () => {
       var rootDirectory = atom.project.getDirectories()[0];
