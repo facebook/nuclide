@@ -109,15 +109,12 @@ describe('FileTreeController', () => {
 
   describe('openDuplicateDialog', () => {
     it('gets called when triggering nuclide-file-tree:duplicate-selection', () => {
-      var timesCalled = 0;
-      var expectedTimesToBeCalled = 1;
       var el = fileTreeController._panelController._hostEl.getElementsByClassName('nuclide-file-tree')[0];
+
       // Mock method
-      fileTreeController.openDuplicateDialog = () => {
-        timesCalled++;
-      }
+      spyOn(fileTreeController, 'openDuplicateDialog');
       atom.commands.dispatch(el, 'nuclide-file-tree:duplicate-selection');
-      expect(timesCalled).toBe(expectedTimesToBeCalled);
+      expect(fileTreeController.openDuplicateDialog.calls.length).toBe(1);
     });
   });
   
