@@ -10,6 +10,8 @@ import httplib
 import os
 import socket
 import subprocess
+import sys
+import ssl
 
 from pkg_resources import resource_string
 
@@ -32,9 +34,15 @@ def check_output_silent(args, cwd=None, env=None):
 
 
 # It supports https if key_file and cert_file are given.
-def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
-    if key_file is not None and cert_file is not None:
-        conn = httplib.HTTPSConnection(host, port, key_file=key_file, cert_file=cert_file, timeout=timeout)
+def http_get(host, port, method, url, key_file=None, cert_file=None, ca_cert=None, timeout=1):
+    conn = None
+    if key_file is not None and cert_file is not None and ca_cert is not None:
+        if sys.version_info<(2,7,9):
+            conn = httplib.HTTPSConnection(host, port, key_file=key_file, cert_file=cert_file, timeout=timeout)
+        else:
+            ctx = ssl.create_default_context(cafile = ca_cert)
+            ctx.check_hostname = False
+            conn = httplib.HTTPSConnection(host, port, key_file=key_file, cert_file=cert_file, timeout=timeout, context=ctx)
     else:
         conn = httplib.HTTPConnection(host, port, timeout=timeout)
     try:
@@ -45,7 +53,16 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, timeout=1):
             return ret
         else:
             return None
-    except Exception:
+    except ssl.SSLError as e:
+        if sys.version_info<(2,7,9):
+            print("An SSL Error occurred", file=sys.stderr)
+        else:
+            print("An SSL Error occurred: %s" % e.reason, file=sys.stderr)
+        return None
+    except socket.error:
+        return None
+    except:
+        print("Unexpected error: %s" % sys.exc_info()[0], file=sys.stderr)
         return None
     finally:
         if conn:
