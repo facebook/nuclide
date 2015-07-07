@@ -19,6 +19,8 @@ you can install it using `apm`:
 apm install nuclide-installer
 ```
 
+It is also *strongly recommended* to install the [linter](https://atom.io/packages/linter) package if you haven't got it already. It allows Nuclide to display messages about linting your code (if you don't have it, you won't see messages from [Flow](/docs/flow/) for example).
+
 The first time you start Atom after installing the `nuclide-installer` package, you will have to wait
 a few seconds for the installer to determine which Nuclide packages it needs to install or update.
 To determine whether the installer worked, go to the **Settings** pane in Atom and navigate to the **Packages**
@@ -35,11 +37,11 @@ If you want to build Nuclide from source, you must have the following tools inst
 
 The [linter](https://atom.io/packages/linter) package is optional, but *strongly recommended*.
 
-Of course, [Flow](/docs/flow/), [Hack](/docs/hack/), and [Mercurial](/docs/hg/) are 
-also required if you wish to use their relevant Nuclide integrations - please read the guide for 
+Of course, [Flow](/docs/flow/), [Hack](/docs/hack/), and [Mercurial](/docs/hg/) are
+also required if you wish to use their relevant Nuclide integrations - please read the guide for
 each package to see any additional requirements.
 
-Building Nuclide is fairly straightforward, just run the following command from the root of the 
+Building Nuclide is fairly straightforward, just run the following command from the root of the
 repository:
 
 ```bash
@@ -52,14 +54,14 @@ or, if you're using Windows:
 python scripts\dev\setup
 ```
 
-This script will fetch the appropriate dependencies from npm and perform any necessary build steps. 
+This script will fetch the appropriate dependencies from npm and perform any necessary build steps.
 
 ## Starting Nuclide
 
-Once you've installed or built Nuclide, just run `Atom` - the initial load after the build process 
-may be a little slow because of the large number of Babel files that need to be transpiled. 
+Once you've installed or built Nuclide, just run `Atom` - the initial load after the build process
+may be a little slow because of the large number of Babel files that need to be transpiled.
 
 ## Installing Nuclide Server
 
-If you want to use Nuclide for remote development, you'll also need to setup the `nuclide-server` 
+If you want to use Nuclide for remote development, you'll also need to setup the `nuclide-server`
 package. Instructions can be found in the [Remote Development docs](docs/remote/).
