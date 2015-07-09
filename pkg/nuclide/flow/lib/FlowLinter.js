@@ -76,7 +76,7 @@ function processDiagnostics(diagnostics: Array<Object>, targetFile: string) {
   // Filter messages not addressing `targetFile` and merge messages spanning multiple files.
   return diagnostics
     .map( (diagnostic) => diagnostic['message'] )
-    .filter(hasMessageWithPath);
+    .filter(hasMessageWithPath)
     .map(flowMessageToLinterMessage);
 }
 
