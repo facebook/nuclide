@@ -119,6 +119,9 @@ describe('FileTreeController', () => {
       atom.commands.dispatch(el, 'nuclide-file-tree:duplicate-selection');
       expect(fileTreeController.openDuplicateDialog.calls.length).toBe(1);
     });
+    xit('fires an Notification if the file could not be created', () => {
+      
+    });
   });
   
   xdescribe('revealActiveFile', () => {
