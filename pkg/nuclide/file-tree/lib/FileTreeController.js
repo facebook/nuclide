@@ -771,24 +771,22 @@ class FileTreeController {
       rootDirectory: root,
       initialEntry: entry,
       message,
-      onConfirm: (rootDirectory, relativeFilePath) => {
+      onConfirm: async (rootDirectory, relativeFilePath) => {
         var file = rootDirectory.getFile(relativeFilePath);
-        file.create().then(async (createdSuccessfully) => {
-          if(!createdSuccessfully) {
-            var NotificationManager = atom.notifications;
-            NotificationManager.addWarning(
-              "Failed to duplicate file",
-              {
-                dismissable: true,
-                detail: `We couldn't duplicate file. Please check if the file "${file.getBaseName()}" already exists.`
-              }
-            );
-            return;
-          }
+        var createdSuccessfully = await file.create();
+        if(createdSuccessfully) {
           await entry.read().then(text => file.write(text));
           this._reloadDirectory(entry.getParent());
           atom.workspace.open(file.getPath());
-        });
+        } else {
+          atom.notifications.addWarning(
+            "Failed to duplicate file",
+            {
+              dismissable: true,
+              detail: `There was a problem duplicating the file. Please check if the file "${file.getBaseName()}" already exists.`
+            }
+          );
+        }
       },
       onClose: () => this._closeDialog(),
       shouldSelectBasename: true,
