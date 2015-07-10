@@ -35,49 +35,63 @@ function extractRange(message){
   // does, but this has the desired effect in the UI, in practice.
   return new Range(
     [message['line'] - 1, message['start'] - 1],
-    [message['endline'] - 1, message['end']]
+    [message['endline'] - 1, message['end']],
   );
 }
 
 // A trace object is very similar to an error object.
 function flowMessageToTrace(message){
-  return { 
+  return {
     type: 'Trace',
     text: message.descr,
     filePath: message.path,
-    range: extractRange(message)
-  }
+    range: extractRange(message),
+  };
 }
 
 function flowMessageToLinterMessage(arr) {
-  var message = arr[0]
+  var message = arr[0];
 
-  var obj = { 
-    type: message.level,
-    text: arr.map(obj => obj.descr).join(' '),
+  var obj = {
+    type: message.level || 'Error',
+    text: arr.map( (errObj) => errObj.descr).join(' '),
     filePath: message.path,
-    range: extractRange(message)
-  }
+    range: extractRange(message),
+  };
 
   // When the message is an array with multiple elements
   // The second element onwards make the trace for the error.
   if(arr.length > 1){
-    obj.trace = arr.slice(1).map(flowMessageToTrace)
+    obj.trace = arr.slice(1).map(flowMessageToTrace);
   }
 
-  return obj
+  return obj;
 }
 
-function processDiagnostics(diagnostics: Array<Object>, targetFile: string) {
+type FlowError = {
+  level: string,
+  descr: string,
+  path: string,
+  line: number,
+  start: number,
+  endline: number,
+  end: number,
+}
+
+type FlowDiagnosticItem = {
+  message: Array<FlowError>
+}
+
+function processDiagnostics(diagnostics: Array<FlowDiagnosticItem>, targetFile: string) {
   var hasMessageWithPath = function(message) {
-    return message['path'] === targetFile;
+    return message['filePath'] === targetFile;
   };
 
-  // Filter messages not addressing `targetFile` and merge messages spanning multiple files.
+  // convert array messages to Error Objects with Traces, and filter out errors not relevant to `targetFile`
   return diagnostics
     .map( (diagnostic) => diagnostic['message'] )
-    .filter(hasMessageWithPath)
-    .map(flowMessageToLinterMessage);
+    .map(flowMessageToLinterMessage)
+    .filter(hasMessageWithPath);
 }
 
 module.exports = {
