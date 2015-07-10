@@ -61,7 +61,7 @@ function flowMessageToLinterMessage(arr) {
 
   // When the message is an array with multiple elements
   // The second element onwards make the trace for the error.
-  if(arr.length > 1){
+  if (arr.length > 1){
     obj.trace = arr.slice(1).map(flowMessageToTrace);
   }
 
