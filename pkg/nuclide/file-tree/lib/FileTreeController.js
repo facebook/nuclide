@@ -767,10 +767,9 @@ class FileTreeController {
     );
 
     var {entry, root} = selection;
-    // var pathObject = path.parse(root.getFile(root.relativize(entry.getPath())).getPath());
     var pathObject = path.parse(root.relativize(entry.getPath()));
 
-    // entry.getPath() + _copy e.g FileTreeController_copy.js
+    // entry.getBaseName() + _copy e.g FileTreeController_copy.js
     var newEntryPath = path.format({...pathObject, base: `${pathObject.name}_copy${pathObject.ext}`})
     var props = {
       rootDirectory: root,
