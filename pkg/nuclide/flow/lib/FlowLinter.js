@@ -43,8 +43,8 @@ function extractRange(message){
 function flowMessageToTrace(message){
   return {
     type: 'Trace',
-    text: message.descr,
-    filePath: message.path,
+    text: message['descr'],
+    filePath: message['path'],
     range: extractRange(message),
   };
 }
@@ -53,9 +53,9 @@ function flowMessageToLinterMessage(arr) {
   var message = arr[0];
 
   var obj = {
-    type: message.level || 'Error',
-    text: arr.map( (errObj) => errObj.descr).join(' '),
-    filePath: message.path,
+    type: message['level'] || 'Error',
+    text: arr.map( (errObj) => errObj['descr']).join(' '),
+    filePath: message['path'],
     range: extractRange(message),
   };
 
