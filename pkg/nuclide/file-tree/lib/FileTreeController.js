@@ -754,7 +754,8 @@ class FileTreeController {
 
   openDuplicateDialog(): void {
     var selection = this._getSelectedEntryAndDirectoryAndRoot();
-    if (!selection || selection.entry.isDirectory()) {
+    var selectedItems = this._getSelectedItems();
+    if (!selection || selectedItems.length > 1 || selection.entry.isDirectory()) {
       return;
     }
 
@@ -766,18 +767,26 @@ class FileTreeController {
     );
 
     var {entry, root} = selection;
+    // var pathObject = path.parse(root.getFile(root.relativize(entry.getPath())).getPath());
+    var pathObject = path.parse(root.relativize(entry.getPath()));
 
+    // entry.getPath() + _copy e.g FileTreeController_copy.js
+    var newEntryPath = path.format({...pathObject, base: `${pathObject.name}_copy${pathObject.ext}`})
     var props = {
       rootDirectory: root,
-      initialEntry: entry,
+      initialEntry: root.getFile(newEntryPath),
       message,
       onConfirm: async (rootDirectory, relativeFilePath) => {
+        var treeComponent = this.getTreeComponent();
         var file = rootDirectory.getFile(relativeFilePath);
         var createdSuccessfully = await file.create();
         if(createdSuccessfully) {
           await entry.read().then(text => file.write(text));
           this._reloadDirectory(entry.getParent());
           atom.workspace.open(file.getPath());
+          if(treeComponent) {
+            treeComponent.selectNodeKey(new LazyFileTreeNode(file).getKey());
+          }
         } else {
           atom.notifications.addWarning(
             "Failed to duplicate file",
