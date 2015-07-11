@@ -7,6 +7,8 @@
   'ctrl-\\': 'nuclide-file-tree:toggle'
   'ctrl-|': 'nuclide-file-tree:reveal-active-file'
 
+'.nuclide-file-tree':
+  'd': 'nuclide-file-tree:duplicate-selection'
 
 # TODO(jjiaa): Remove this after we figure out how to disable the tree-view package.
 'atom-workspace':

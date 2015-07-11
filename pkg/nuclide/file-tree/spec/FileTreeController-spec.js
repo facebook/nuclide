@@ -107,6 +107,20 @@ describe('FileTreeController', () => {
     });
   });
 
+  describe('openDuplicateDialog', () => {
+    it('gets called when triggering nuclide-file-tree:duplicate-selection', () => {
+      var el = React.findDOMNode(TestUtils.findRenderedDOMComponentWithClass(
+        fileTreeController._panelController.getChildComponent(),
+        'nuclide-file-tree'
+      ));
+
+      // Mock method
+      spyOn(fileTreeController, 'openDuplicateDialog');
+      atom.commands.dispatch(el, 'nuclide-file-tree:duplicate-selection');
+      expect(fileTreeController.openDuplicateDialog.calls.length).toBe(1);
+    });
+  });
+  
   xdescribe('revealActiveFile', () => {
     it('succeeds for a deeply-nested file', () => {
       waitsForPromise(async () => {

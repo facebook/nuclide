@@ -219,6 +219,7 @@ class FileTreeController {
           'nuclide-file-tree:add-folder': () => this.openAddFolderDialog(),
           'nuclide-file-tree:delete-selection': () => this.deleteSelection(),
           'nuclide-file-tree:rename-selection': () => this.openRenameDialog(),
+          'nuclide-file-tree:duplicate-selection': () => this.openDuplicateDialog(),
           'nuclide-file-tree:remove-project-folder-selection': () => this.removeRootFolderSelection(),
           'nuclide-file-tree:copy-full-path': () => this.copyFullPath(),
           'nuclide-file-tree:show-in-file-manager': () => this.showInFileManager(),
@@ -301,7 +302,14 @@ class FileTreeController {
         label: 'Rename',
         command: 'nuclide-file-tree:rename-selection',
         shouldDisplayForSelectedNodes(nodes) {
-          return nodes.length === 1 && !nodes.some(node => node.isRoot());
+          return nodes.length === 1 && !nodes[0].isRoot();
+        },
+      },
+      {
+        label: 'Duplicate',
+        command: 'nuclide-file-tree:duplicate-selection',
+        shouldDisplayForSelectedNodes(nodes) {
+          return nodes.length === 1 && !nodes[0].getItem().isDirectory();
         },
       },
       {
@@ -688,7 +696,6 @@ class FileTreeController {
       </div>
     );
 
-    var FileDialogComponent = require('./FileDialogComponent');
     var props = {
       rootDirectory: selection.root,
       initialEntry: selection.directory,
@@ -697,7 +704,7 @@ class FileTreeController {
       onConfirm,
       onClose: this._closeDialog.bind(this),
     };
-    this._openDialog(<FileDialogComponent {...props} />);
+    this._openDialog(props);
   }
 
   openRenameDialog(): void {
@@ -716,7 +723,6 @@ class FileTreeController {
 
     var {entry, root} = selection;
 
-    var FileDialogComponent = require('./FileDialogComponent');
     var props = {
       rootDirectory: root,
       initialEntry: entry,
@@ -743,16 +749,68 @@ class FileTreeController {
       onClose: () => this._closeDialog(),
       shouldSelectBasename: true,
     };
-    this._openDialog(<FileDialogComponent {...props} />);
+    this._openDialog(props);
   }
 
-  _openDialog(component: ReactElement): void {
+  openDuplicateDialog(): void {
+    var selection = this._getSelectedEntryAndDirectoryAndRoot();
+    var selectedItems = this._getSelectedItems();
+    if (!selection || selectedItems.length > 1 || selection.entry.isDirectory()) {
+      return;
+    }
+
+    var message = (
+      <div>
+        <div>Enter the new name for the file in the root:</div>
+        <div>{path.normalize(selection.root.getPath() + '/')}</div>
+      </div>
+    );
+
+    var {entry, root} = selection;
+    var pathObject = path.parse(root.relativize(entry.getPath()));
+
+    // entry.getBaseName() + _copy e.g FileTreeController_copy.js
+    var newEntryPath = path.format({...pathObject, base: `${pathObject.name}_copy${pathObject.ext}`})
+    var props = {
+      rootDirectory: root,
+      initialEntry: root.getFile(newEntryPath),
+      message,
+      onConfirm: async (rootDirectory, relativeFilePath) => {
+        var treeComponent = this.getTreeComponent();
+        var file = rootDirectory.getFile(relativeFilePath);
+        var createdSuccessfully = await file.create();
+        if(createdSuccessfully) {
+          await entry.read().then(text => file.write(text));
+          this._reloadDirectory(entry.getParent());
+          atom.workspace.open(file.getPath());
+          if(treeComponent) {
+            treeComponent.selectNodeKey(new LazyFileTreeNode(file).getKey());
+          }
+        } else {
+          atom.notifications.addWarning(
+            "Failed to duplicate file",
+            {
+              dismissable: true,
+              detail: `There was a problem duplicating the file. Please check if the file "${file.getBaseName()}" already exists.`
+            }
+          );
+        }
+      },
+      onClose: () => this._closeDialog(),
+      shouldSelectBasename: true,
+    };
+    this._openDialog(props);
+  }
+
+
+  _openDialog(props: object): void {
+    var FileDialogComponent = require('./FileDialogComponent');
     this._closeDialog();
 
     this._hostElement = document.createElement('div');
     var workspaceEl = atom.views.getView(atom.workspace);
     workspaceEl.appendChild(this._hostElement);
-    this._dialogComponent = React.render(component, this._hostElement);
+    this._dialogComponent = React.render(<FileDialogComponent {...props} />, this._hostElement);
   }
 
   _closeDialog() {
