@@ -30,53 +30,68 @@ var {JS_GRAMMARS} = require('./constants.js');
  * with which the usage disagrees. Note that these could occur in different
  * files.
  */
-function flowMessageToLinterMessage(message) {
+function extractRange(message){
   // It's unclear why the 1-based to 0-based indexing works the way that it
   // does, but this has the desired effect in the UI, in practice.
-  var range = new Range(
+  return new Range(
     [message['line'] - 1, message['start'] - 1],
-    [message['endline'] - 1, message['end']]
+    [message['endline'] - 1, message['end']],
   );
+}
 
+// A trace object is very similar to an error object.
+function flowMessageToTrace(message){
   return {
-    type: 'Error',
+    type: 'Trace',
     text: message['descr'],
     filePath: message['path'],
-    range: range,
+    range: extractRange(message),
   };
 }
 
-/**
- * In some cases, flow diagnostics will span multiple files. It helps in the case
- * that there's a problem with, say, the the way a function defined in another
- * file is typed conflicts with how you're calling it.
- *
- * You get diagnostics like:
- * File A: <Type string is incompatable>
- * File B: <with type number>
- *
- * We don't have any way to deal with this, so merge the descriptions, so that
- * information doesn't get cut off.
- *
- */
-function mergeFlowMessages(messages: Array) {
-  var message = messages[0];
-  message['descr'] = messages.map((msg)=>msg['descr']).join(' ');
-  return message;
+function flowMessageToLinterMessage(arr) {
+  var message = arr[0];
+
+  var obj = {
+    type: message['level'] || 'Error',
+    text: arr.map( (errObj) => errObj['descr']).join(' '),
+    filePath: message['path'],
+    range: extractRange(message),
+  };
+
+  // When the message is an array with multiple elements
+  // The second element onwards make the trace for the error.
+  if (arr.length > 1){
+    obj.trace = arr.slice(1).map(flowMessageToTrace);
+  }
+
+  return obj;
 }
 
-function processDiagnostics(diagnostics: Array<Object>, targetFile: string) {
+type FlowError = {
+  level: string,
+  descr: string,
+  path: string,
+  line: number,
+  start: number,
+  endline: number,
+  end: number,
+}
+
+type FlowDiagnosticItem = {
+  message: Array<FlowError>
+}
+
+function processDiagnostics(diagnostics: Array<FlowDiagnosticItem>, targetFile: string) {
   var hasMessageWithPath = function(message) {
-    return message['path'] === targetFile;
+    return message['filePath'] === targetFile;
   };
 
-  // Filter messages not addressing `targetFile` and merge messages spanning multiple files.
-  var messages = diagnostics.map( (diagnostic) => {
-                  var diagnosticMessages = diagnostic['message'];
-                  return mergeFlowMessages(diagnosticMessages);
-                 }).filter(hasMessageWithPath);
-
-  return messages.map(flowMessageToLinterMessage);
+  // convert array messages to Error Objects with Traces, and filter out errors not relevant to `targetFile`
+  return diagnostics
+    .map( (diagnostic) => diagnostic['message'] )
+    .map(flowMessageToLinterMessage)
+    .filter(hasMessageWithPath);
 }
 
 module.exports = {
