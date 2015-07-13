@@ -16,7 +16,6 @@ var {PropTypes} = React;
 var {
   array
 } = require('nuclide-commons');
-var assign = Object.assign || require('object-assign');
 var cx = require('react-classset');
 
 var NuclideTabs = React.createClass({
