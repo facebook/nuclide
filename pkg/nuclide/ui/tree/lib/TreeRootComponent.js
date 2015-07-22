@@ -65,6 +65,18 @@ function toggleSetHas(
   return added;
 }
 
+function isPathIgnored(path: string): boolean {
+  var isIgnored = false;
+  atom.project.getRepositories().forEach(repo => {
+    if(!repo) {
+      return;
+    }
+    if(repo.isPathIgnored(path)) {
+      isIgnored = true;
+    }
+  });
+  return isIgnored;
+}
 var FIRST_SELECTED_DESCENDANT_REF: string = 'firstSelectedDescendant';
 
 /**
@@ -179,6 +191,35 @@ var TreeRootComponent = React.createClass({
     this.setState({expandedKeys});
   },
 
+  async _toggleChildNodesExpanded(parentNode: LazyTreeNode, forceExpanded: ?boolean): Promise {
+    if(isPathIgnored(parentNode.getItem().getPath())) {
+      return;
+    };
+    var childNodes = parentNode.getCachedChildren();
+
+    // fetch children if cache is empty
+    if(!childNodes) {
+      await parentNode.fetchChildren().then(nodes => childNodes = nodes);
+    }
+
+    // exit if cache is still empty
+    if(!childNodes) {
+      return;
+    }
+
+    // filter directories only and expand/collapse nodes
+    childNodes
+    .filter(childNode => childNode.getItem().isDirectory())
+    .forEach(childNode => {
+      if(isPathIgnored(childNode.getItem().getPath())) {
+        return;
+      };
+
+      this._toggleChildNodesExpanded(childNode)
+      .then(() => this._toggleNodeExpanded(childNode, forceExpanded));
+    });
+  },
+
   _toggleNodeSelected(node: LazyTreeNode, forceSelected?: ?boolean): void {
     var selectedKeys = this.state.selectedKeys;
     toggleSetHas(selectedKeys, node.getKey(), forceSelected);
@@ -206,7 +247,14 @@ var TreeRootComponent = React.createClass({
   },
 
   _onClickNodeArrow(event: SyntheticEvent, node: LazyTreeNode): void {
-    this._toggleNodeExpanded(node);
+    // if alt-clicked the arrow, expand child directories
+    if(event.altKey) {
+      // show/hide child nodes when clicked
+      this._toggleChildNodesExpanded(node, !this._isNodeExpanded(node))
+      .then(() => this._toggleNodeExpanded(node));
+    } else {
+      this._toggleNodeExpanded(node);
+    }
   },
 
   _onDoubleClickNode(event: SyntheticMouseEvent, node: LazyTreeNode): void {

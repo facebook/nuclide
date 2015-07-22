@@ -464,6 +464,40 @@ describe('TreeRootComponent', () => {
         });
       });
 
+      /*
+       * Little bit flaky since the nodes here doesn't
+       * actually represent nodes rendered in Atom.
+       * LazyTestTreeNode is used here while LazyFileTreeNode is used in Atom.
+       */
+      it('toggles child nodes if alt-clicked', () => {
+        waitsForPromise(async () => {
+          var component = renderComponent(props);
+          spyOn(component, '_toggleChildNodesExpanded').andCallFake(() => {
+            return {
+              then: (callback) => callback()
+            };
+          });
+          await component.setRoots([nodes['G']]);
+          expect(component.getExpandedNodes()).toEqual([nodes['G']]);
+
+          var nodeComponents = getNodeComponents(component);
+
+          // Collapse node
+          TestUtils.Simulate.click(React.findDOMNode(nodeComponents['G'].refs['arrow']));
+          expect(component.getExpandedNodes()).toEqual([]);
+
+          // Alt-click node
+          TestUtils.Simulate.click(React.findDOMNode(nodeComponents['G'].refs['arrow']), {altKey: true});
+
+          // expect _toggleChildNodesExpanded to only be called once
+          expect(component._toggleChildNodesExpanded.calls.length).toBe(1);
+        });
+      });
+
+      xit('ignores ignored files when alt-clicking', () => {
+
+      });
+
       it('does not toggle whether node is selected', () => {
         waitsForPromise(async () => {
           var component = renderComponent(props);
