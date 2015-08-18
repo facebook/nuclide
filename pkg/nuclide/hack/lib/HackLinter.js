@@ -18,11 +18,6 @@ module.exports = {
   scope: 'file',
   lintOnFly: true,
   async lint(textEditor: TextEditor): Promise<Array<Object>> {
-    var file = textEditor.getBuffer().file;
-    if (!file) {
-      return [];
-    }
-
     var diagnostics = await findDiagnostics(textEditor);
     return diagnostics.length ? diagnostics : [];
   },
