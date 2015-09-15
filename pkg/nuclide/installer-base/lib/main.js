@@ -123,8 +123,8 @@ async function installPackagesInConfig(config: InstallConfig): Promise<boolean> 
     // Write the error to the console to help the user debug the issue.
     console.error(failure); // eslint-disable-line no-console
 
-    atom.notifications.addSuccess(
-      `There was an error installing Nuclide packages:\n{failure.stack || failure}`);
+    atom.notifications.addError(
+      `There was an error installing Nuclide packages:\n${failure.stack || failure}`);
   } else {
     atom.notifications.addSuccess(
       `${numPackages} Nuclide package${numPackages === 1 ? '' : 's'} installed.`);
