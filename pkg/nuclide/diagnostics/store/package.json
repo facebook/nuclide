@@ -36,7 +36,8 @@
     "nuclide-commons": "0.0.0",
     "nuclide-diagnostics-base": "0.0.0",
     "nuclide-diagnostics-provider-base": "0.0.0",
-    "nuclide-logging": "0.0.0"
+    "nuclide-logging": "0.0.0",
+    "text-buffer": "*"
   },
   "devDependencies": {
     "nuclide-external-interfaces": "0.0.0",

@@ -50,6 +50,8 @@ export type LinterProvider = {
   lint: (textEditor: TextEditor) => Promise<Array<LinterMessage>>;
 };
 
+import {Range} from 'text-buffer';
+
 import {DiagnosticsProviderBase} from 'nuclide-diagnostics-provider-base';
 
 import {promises as commonsPromises} from 'nuclide-commons';
@@ -61,6 +63,11 @@ export function linterMessageToDiagnosticMessage(
   msg: LinterMessage,
   providerName: string,
 ): DiagnosticMessage {
+  // Atom specifies that any method that accepts a Range should also accept
+  // a Range-compatible Array.
+  if (Array.isArray(msg.range)) {
+    msg.range = new Range(msg.range);
+  }
   if (msg.filePath) {
     return {
       scope: 'file',
