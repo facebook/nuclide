@@ -6,6 +6,11 @@ Hyperclick is triggered by two events:
 - `<alt>` or `<alt-mousemove>` underlines clickable text under the mouse.
 - `<alt-mousedown>` performs the action associated with the clickable text.
 - `<cmd-alt-enter>` performs the action on the text under the cursor.
+- 
+
+## Known Providers
+
+* [js-hyperclick](https://atom.io/packages/js-hyperclick) - Jump to variable definitions, including when imported/required from another file
 
 ## Demo
 
