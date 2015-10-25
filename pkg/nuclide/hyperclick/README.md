@@ -6,10 +6,15 @@ Hyperclick is triggered by two events:
 - `<alt>` or `<alt-mousemove>` underlines clickable text under the mouse.
 - `<alt-mousedown>` performs the action associated with the clickable text.
 - `<cmd-alt-enter>` performs the action on the text under the cursor.
-- 
+-
 
 ## Known Providers
 
+* [nuclide-buck-files](https://atom.io/packages/nuclide-buck-files)
+* [nuclide-clang-atom](https://atom.io/packages/nuclide-clang-atom)
+* [nuclide-flow](https://atom.io/packages/nuclide-flow)
+* [nuclide-hack](https://atom.io/packages/nuclide-hack)
+* [nuclide-ocaml](https://atom.io/packages/nuclide-ocaml)
 * [js-hyperclick](https://atom.io/packages/js-hyperclick) - Jump to variable definitions, including when imported/required from another file
 
 ## Demo
