@@ -10,7 +10,7 @@
  */
 
 import type Hyperclick from './Hyperclick';
-import {trackTiming, startTracking} from 'nuclide-analytics';
+import {trackTiming, startTracking} from 'nuclide-analytics';a
 import type {TimingTracker} from 'nuclide-analytics';
 
 var getWordTextAndRange = require('./get-word-text-and-range');
@@ -276,7 +276,7 @@ class HyperclickForTextEditor {
    */
   _isHyperclickEvent(event: SyntheticKeyboardEvent | SyntheticMouseEvent): boolean {
     // If the user is pressing either the meta key or the alt key.
-    return process.platform === 'darwin' ? event.metaKey : event.ctrlKey;
+    return process.platform === 'darwin' ? event.altKey : event.ctrlKey;
   }
 
   _isLoading(): boolean {
