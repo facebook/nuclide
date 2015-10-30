@@ -10,7 +10,7 @@
  */
 
 import type Hyperclick from './Hyperclick';
-import {trackTiming, startTracking} from 'nuclide-analytics';a
+import {trackTiming, startTracking} from 'nuclide-analytics';
 import type {TimingTracker} from 'nuclide-analytics';
 
 var getWordTextAndRange = require('./get-word-text-and-range');
