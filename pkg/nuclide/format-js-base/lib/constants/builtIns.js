@@ -61,7 +61,6 @@ module.exports = new Set([
   'window',
   
   'Option',
-  'Image',
 
   // Module built ins.
   'exports',
