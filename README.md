@@ -17,7 +17,7 @@ If you're feeling intrepid and want to try it out - at your own risk - then:
 2. Install the new stuff.
 
   ```sh
-  $ git clone git@github.com:facebook/nuclide.git
+  $ git clone https://github.com/facebook/nuclide.git
   $ cd nuclide
   $ npm install
   $ apm link
