@@ -8,7 +8,7 @@ technologies.
 
 **Under heavy refactor... check back very soon.**
 
-We're in the process of "unifying" Nuclide under a single package. This greatly improves performance, and makes installing easier. Because we sync our internal code almost immediately with GitHub, you'll witness this transformation as it's happening :)
+We're in the process of "unifying" Nuclide under a single package. This greatly improves performance, and makes installing easier. Because we sync our internal code almost immediately with GitHub, you'll witness this transformation as it happens. :)
 
 If you're feeling intrepid and want to try it out - at your own risk - then:
 
@@ -23,4 +23,4 @@ If you're feeling intrepid and want to try it out - at your own risk - then:
   $ apm link
   ```
 
-3. Open Atom – now there's is only one Nuclide package.
+3. Open Atom – now there is only one Nuclide package.
