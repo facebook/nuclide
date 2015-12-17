@@ -62,6 +62,15 @@ python scripts\dev\setup
 
 This script will fetch the appropriate dependencies from npm and perform any necessary build steps.
 
+### Uninstalling Previous Versions
+
+Version 0.0.35 was the last version of Nuclide to be shipped as many Atom packages. In order to
+migrate from <=0.0.35 to a newer version and ensure the newer version behaves as expected, we highly
+recommend uninstalling all outdated packages.
+
+Run the following script to uninstall all outdated Nuclide packages:
+{% gist aff66a1c05d865fe4e83 %}
+
 ## Starting Nuclide
 
 Once you've installed or built Nuclide, just run `Atom` - the initial load after the build process
