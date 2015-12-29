@@ -76,13 +76,13 @@ async function doGetBlameForEditor(editor: atom$TextEditor): Promise<BlameForEdi
  * author portion will contain only the username.
  */
 function formatBlameInfo(
-  rawBlameData,
+  rawBlameData: { number: {author: string, rev: string} },
   useShortName: boolean
 ): BlameForEditor {
   const extractAuthor = useShortName ? shortenBlameName : identity;
   const blameForEditor = new Map();
 
-  for (const lineNumber in rawBlameData) {
+  Object.keys(rawBlameData).forEach((lineNumber: number) => {
     const blameLine = rawBlameData[lineNumber];
 
     const changeSetId = blameLine.rev.split(' ')[0];
@@ -94,7 +94,7 @@ function formatBlameInfo(
     };
 
     blameForEditor.set(lineNumber - 1, blameInfo);
-  }
+  });
 
   console.log(blameForEditor);
   return blameForEditor;

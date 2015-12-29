@@ -336,14 +336,14 @@ class FileTreeActions {
       const statusCodeForPath = repo.statuses;
 
       const statusesToReport = {};
-      for (const path of Object.keys(statusCodeForPath)) {
+      Object.keys(statusCodeForPath).forEach(path => {
         const fullPath = repoRoot + '/' + path;
         if (repo.isStatusModified(statusCodeForPath[path])) {
           statusesToReport[fullPath] = hgConstants.StatusCodeNumber.MODIFIED;
         } else if (repo.isStatusNew(statusCodeForPath[path])) {
           statusesToReport[fullPath] = hgConstants.StatusCodeNumber.ADDED;
         }
-      }
+      });
 
       for (const rootKeyForRepo of rootKeysForRepository.get(repo)) {
         this.setVcsStatuses(rootKeyForRepo, statusesToReport);
