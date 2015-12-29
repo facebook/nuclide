@@ -397,7 +397,6 @@ class FileTreeActions {
     repo: atom$Repository,
     rootKeysForRepository: Immutable.Map<atom$Repository, Immutable.Set<string>>,
   ) {
-    console.log('fired');
     for (const rootKey of rootKeysForRepository.get(repo)) {
       const statusForNodeKey = {};
       for (const fileTreeNode of this._store.getVisibleNodes(rootKey)) {
