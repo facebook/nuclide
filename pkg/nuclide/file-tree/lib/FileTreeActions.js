@@ -331,24 +331,6 @@ class FileTreeActions {
     else if (repo.getType() === 'git') {
       const {hgConstants} = require('../../hg-repository-base');
 
-      const repoRoot = repo.getWorkingDirectory();
-
-      const statusCodeForPath = repo.statuses;
-
-      const statusesToReport = {};
-      Object.keys(statusCodeForPath).forEach(path => {
-        const fullPath = repoRoot + '/' + path;
-        if (repo.isStatusModified(statusCodeForPath[path])) {
-          statusesToReport[fullPath] = hgConstants.StatusCodeNumber.MODIFIED;
-        } else if (repo.isStatusNew(statusCodeForPath[path])) {
-          statusesToReport[fullPath] = hgConstants.StatusCodeNumber.ADDED;
-        }
-      });
-
-      for (const rootKeyForRepo of rootKeysForRepository.get(repo)) {
-        this.setVcsStatuses(rootKeyForRepo, statusesToReport);
-      }
-
       // Now that the initial VCS statuses are set, subscribe to changes to the Repository so that the
       // VCS statuses are kept up to date.
       const subscriptions = new CompositeDisposable();
@@ -374,6 +356,8 @@ class FileTreeActions {
       ));
 
       this._subscriptionForRepository = this._subscriptionForRepository.set(repo, subscriptions);
+
+      repo.refreshStatus();
     }
   }
 
