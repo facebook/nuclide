@@ -329,35 +329,35 @@ class FileTreeActions {
     }
     // we are working with git repository
     else if (repo.getType() === 'git') {
-      const {hgConstants} = require('../../hg-repository-base');
+      const gitRepo = ((repo: any): atom$GitRepository);
 
       // Now that the initial VCS statuses are set, subscribe to changes to the Repository so that the
       // VCS statuses are kept up to date.
       const subscriptions = new CompositeDisposable();
 
-      subscriptions.add(repo.onDidChangeStatuses(
+      subscriptions.add(gitRepo.onDidChangeStatuses(
         // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
         // succession. We should probably explore debouncing this in HgRepositoryClient itself.
         debounce(
-          this._onDidChangeStatusesForGitRepository.bind(this, repo, rootKeysForRepository),
+          this._onDidChangeStatusesForGitRepository.bind(this, gitRepo, rootKeysForRepository),
           /* wait */ 1000,
           /* immediate */ false,
         )
       ));
 
-      subscriptions.add(repo.onDidChangeStatus(
+      subscriptions.add(gitRepo.onDidChangeStatus(
         // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
         // succession. We should probably explore debouncing this in HgRepositoryClient itself.
         debounce(
-          this._onDidChangeStatusesForGitRepository.bind(this, repo, rootKeysForRepository),
+          this._onDidChangeStatusesForGitRepository.bind(this, gitRepo, rootKeysForRepository),
           /* wait */ 1000,
           /* immediate */ false,
         )
       ));
 
-      this._subscriptionForRepository = this._subscriptionForRepository.set(repo, subscriptions);
+      this._subscriptionForRepository = this._subscriptionForRepository.set(gitRepo, subscriptions);
 
-      repo.refreshStatus();
+      gitRepo.refreshStatus();
     }
   }
 

@@ -82,6 +82,7 @@ function formatBlameInfo(
   const extractAuthor = useShortName ? shortenBlameName : identity;
   const blameForEditor = new Map();
 
+  // $FlowFixMe: no luck defining rawBlameData in flow properly :(
   Object.keys(rawBlameData).forEach((lineNumber: number) => {
     const blameLine = rawBlameData[lineNumber];
 
