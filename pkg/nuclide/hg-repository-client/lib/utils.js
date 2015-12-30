@@ -16,7 +16,7 @@ const ADD_ACTION = 'add';
 const REMOVE_ACTION = 'remove';
 type DirectoriesCacheOperation = 'add' | 'remove';
 
-const separatorRegex = new RegExp(path.sep, 'g');
+const separatorRegex = new RegExp('\\' + path.sep, 'g');
 
 /**
  * This function takes in a file path, and computes all directories that would
