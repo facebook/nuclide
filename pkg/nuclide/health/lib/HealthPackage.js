@@ -9,26 +9,7 @@
  * the root directory of this source tree.
  */
 
-type HealthStats = {
-  rss: number;
-  heapUsed: number;
-  heapTotal: number;
-  heapPercentage: number;
-  cpuPercentage: number;
-  lastKeyLatency: number;
-  activeHandles: number;
-  activeRequests: number;
-};
-
-// This type needs to match the propTypes on the view components that display health data.
-type StatsViewProps = {
-  cpuPercentage?: number;
-  memory?: number;
-  heapPercentage?: number;
-  lastKeyLatency?: number;
-  activeHandles?: number;
-  activeRequests?: number;
-};
+import type {HealthStats, StatsViewProps} from './types';
 
 const BASE_ITEM_URI = 'nuclide-health://';
 
