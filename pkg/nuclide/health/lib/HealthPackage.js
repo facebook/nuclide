@@ -43,7 +43,7 @@ import {atomEventDebounce} from '../../atom-helpers';
 import featureConfig from '../../feature-config';
 
 // Imports from within this Nuclide package.
-import HealthPaneItem from './HealthPaneItem';
+import HealthPaneItem from './createHealthGadget';
 import HealthPaneItemComponent from './ui/HealthPaneItemComponent';
 import HealthStatusBarComponent from './ui/HealthStatusBarComponent';
 
