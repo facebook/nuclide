@@ -36,6 +36,7 @@ const BASE_ITEM_URI = 'nuclide-health://';
 import {CompositeDisposable, Disposable} from 'atom';
 import os from 'os';
 import React from 'react-for-atom';
+import Rx from 'rx';
 
 // Imports from other Nuclide packages.
 import {track} from '../../analytics';
@@ -62,6 +63,8 @@ let keyDownTime = 0;
 let keyLatency = 0;
 let lastKeyLatency = 0;
 
+let paneItemState$: ?Rx.Subject = null;
+
 class Activation {
   disposables: CompositeDisposable;
 
@@ -70,6 +73,7 @@ class Activation {
   }
 
   activate() {
+    paneItemState$ = new Rx.Subject(null);
     this.disposables.add(
       featureConfig.onDidChange('nuclide-health', (event) => {
         currentConfig = event.newValue;
@@ -85,6 +89,7 @@ class Activation {
         'nuclide-health:open-pane',
         () => atom.workspace.open(BASE_ITEM_URI, {searchAllPanes: true}),
       ),
+      paneItemState$.forEach(renderPaneItem),
     );
     currentConfig = featureConfig.get('nuclide-health');
     timeActiveEditorKeys();
@@ -94,6 +99,7 @@ class Activation {
 
   dispose() {
     this.disposables.dispose();
+    paneItemState$ = null;
     if (viewTimeout !== null) {
       clearTimeout(viewTimeout);
       viewTimeout = null;
@@ -219,10 +225,14 @@ function timeActiveEditorKeys(): void {
 }
 
 function updateViews(): void {
+  if (!paneItemState$) {
+    return;
+  }
+
   const stats = getHealthStats();
   analyticsBuffer.push(stats);
   updateStatusBar(stats);
-  renderPaneItem({stats, activeHandleObjects: getActiveHandles()});
+  paneItemState$.onNext({stats, activeHandleObjects: getActiveHandles()});
   if (currentConfig.viewTimeout) {
     if (viewTimeout !== null) {
       clearTimeout(viewTimeout);
