@@ -141,6 +141,8 @@ declare module 'rx' {
       onCompleted?: () => mixed,
     ): Observer<T>;
 
+    asObserver(): Observer<T>;
+
     onNext(value: T): mixed;
 
     onError(error: any): mixed;
@@ -158,6 +160,7 @@ declare module 'rx' {
     dispose(): void;
 
     // Copied from Observer<T>
+    asObserver(): Observer<T>;
     onNext(value: T): mixed;
     onError(error: any): mixed;
     onCompleted(): mixed;
