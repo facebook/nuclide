@@ -222,7 +222,7 @@ function updateViews(): void {
   const stats = getHealthStats();
   analyticsBuffer.push(stats);
   updateStatusBar(stats);
-  updatePaneItem(stats);
+  renderPaneItem({stats, activeHandleObjects: getActiveHandles()});
   if (currentConfig.viewTimeout) {
     if (viewTimeout !== null) {
       clearTimeout(viewTimeout);
@@ -268,13 +268,12 @@ function openHealthPane() {
   atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-health:open-pane');
 }
 
-function updatePaneItem(stats: HealthStats): void {
-  if (!paneItem) {
+function renderPaneItem(state: {stats: HealthStats, activeHandleObjects: Array<Object>}): void {
+  if (paneItem == null || state == null) {
     return;
   }
 
-  // We need to send the actual handles down to the component to render.
-  const activeHandleObjects = getActiveHandles();
+  const {stats, activeHandleObjects} = state;
 
   React.render(
     <HealthPaneItemComponent
