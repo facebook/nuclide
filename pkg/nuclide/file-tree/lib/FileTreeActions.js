@@ -402,7 +402,7 @@ class FileTreeActions {
       for (const fileTreeNode of this._store.getVisibleNodes(rootKey)) {
         const {nodeKey} = fileTreeNode;
         statusForNodeKey[nodeKey] = fileTreeNode.isContainer
-          ? repo.getDirectoryStatus(nodeKey)
+          ? repo.getDirectoryStatus(nodeKey.substr(0, nodeKey.length - 1))
           : statusForNodeKey[nodeKey] = repo.getCachedPathStatus(nodeKey);
       }
       for (const path of Object.keys(statusForNodeKey)) {
