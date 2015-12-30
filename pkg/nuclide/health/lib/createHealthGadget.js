@@ -9,47 +9,73 @@
  * the root directory of this source tree.
  */
 
+import type {HealthStats} from './types';
+import type Rx from 'rx';
+
+import HealthPaneItemComponent from './ui/HealthPaneItemComponent';
 import React from 'react-for-atom';
 
-class HealthPaneItem extends HTMLElement {
+type State = {
+  stats: HealthStats,
+  activeHandleObjects: Array<Object>,
+};
 
-  uri: string;
+export default function createHealthGadget(state$: Rx.Observable<?State>): typeof React.Component {
 
-  initialize(uri: string): HealthPaneItem {
-    this.uri = uri;
-    this.className = 'pane-item padded nuclide-health-pane-item';
-    return this;
-  }
+  return class HealthPaneItem extends React.Component {
 
-  getTitle(): string {
-    return 'Health';
-  }
+    static gadgetId = 'nuclide-health';
 
-  getIconName(): string {
-    return 'dashboard';
-  }
+    _stateSubscription: rx$IDisposable;
 
-  getURI(): string {
-    return this.uri;
-  }
+    constructor(...args) {
+      super(...args);
+      this.state = {};
+    }
 
-  // Return false to prevent the tab getting split (since we only update a singleton health pane).
-  copy(): boolean {
-    return false;
-  }
+    componentDidMount() {
+      this._stateSubscription = state$.forEach(state => this.setState(state || {}));
+    }
 
-  destroy(): void {
-    React.unmountComponentAtNode(this);
-  }
+    componentWillUnmount() {
+      this._stateSubscription.dispose();
+    }
 
-  serialize(): Object {
-    return {
-      deserializer: 'HealthPaneItem',
-      uri: this.getURI(),
-    };
-  }
+    getTitle(): string {
+      return 'Health';
+    }
+
+    getIconName(): string {
+      return 'dashboard';
+    }
+
+    // Return false to prevent the tab getting split (since we only update a singleton health pane).
+    copy(): boolean {
+      return false;
+    }
+
+    render() {
+      const {stats, activeHandleObjects} = this.state;
+
+      if (stats == null || activeHandleObjects == null) {
+        return <div />;
+      }
+
+      return (
+        <div className="pane-item padded nuclide-health-pane-item">
+          <HealthPaneItemComponent
+            cpuPercentage={stats.cpuPercentage}
+            heapPercentage={stats.heapPercentage}
+            memory={stats.rss}
+            lastKeyLatency={stats.lastKeyLatency}
+            activeHandles={activeHandleObjects.length}
+            activeHandleObjects={activeHandleObjects}
+            activeRequests={stats.activeRequests}
+          />
+        </div>
+      );
+    }
+
+  };
+
 }
-
-export default (document.registerElement('nuclide-health-item', {
-  prototype: HealthPaneItem.prototype,
-}));

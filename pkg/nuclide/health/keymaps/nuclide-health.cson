@@ -1,2 +1,2 @@
 'atom-workspace':
-  'alt-ctrl-shift-h': 'nuclide-health:open-pane'
+  'alt-ctrl-shift-h': 'nuclide-health:toggle'

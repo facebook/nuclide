@@ -12,7 +12,7 @@
 const featureConfig = require('../../feature-config');
 const path = require('path');
 
-const BASE_ITEM_URI = 'nuclide-health://';
+const BASE_ITEM_URI = 'atom://nuclide/gadgets/nuclide-health';
 
 function findHealthPaneAndItem(): {pane: ?atom$Pane, item: ?Object} {
   const pane = atom.workspace.paneForURI(BASE_ITEM_URI);
@@ -38,7 +38,10 @@ describe('Health', () => {
       Object.keys(config).forEach(k =>
         featureConfig.setSchema(`nuclide-health.${k}`, config[k])
       );
-      await atom.packages.activatePackage(path.join(__dirname, '..'));
+      await Promise.all([
+        atom.packages.activatePackage(path.join(__dirname, '..', '..', 'gadgets')),
+        atom.packages.activatePackage(path.join(__dirname, '..')),
+      ]);
     });
   });
 
@@ -51,18 +54,19 @@ describe('Health', () => {
         expect(item.getTitle()).toEqual('Health');
         const interval = featureConfig.get('nuclide-health.viewTimeout');
         expect(typeof interval).toEqual('number');
+        const {element} = item;
 
         if (typeof interval === 'number') {
           // Flow considers atom config items to be mixed.
           await sleep((interval + 1) * 1000);
           // An extra second should be enough for this test not to be flakey.
-          expect(item.innerHTML).toContain('Stats');
-          expect(item.innerHTML).toContain('CPU');
-          expect(item.innerHTML).toContain('Heap');
-          expect(item.innerHTML).toContain('Memory');
-          expect(item.innerHTML).toContain('Key latency');
-          expect(item.innerHTML).toContain('Handles');
-          expect(item.innerHTML).toContain('Event loop');
+          expect(element.innerHTML).toContain('Stats');
+          expect(element.innerHTML).toContain('CPU');
+          expect(element.innerHTML).toContain('Heap');
+          expect(element.innerHTML).toContain('Memory');
+          expect(element.innerHTML).toContain('Key latency');
+          expect(element.innerHTML).toContain('Handles');
+          expect(element.innerHTML).toContain('Event loop');
         }
       }
     });

@@ -68,12 +68,14 @@
       }
     },
     "packageType": "Atom",
-    "testRunner": "apm",
-    "deserializers": {
-      "HealthPaneItem": "./lib/deserializePaneItem"
-    }
+    "testRunner": "apm"
   },
   "consumedServices": {
+    "nuclide-gadgets": {
+      "versions": {
+        "0.0.0": "consumeGadgetsService"
+      }
+    },
     "status-bar": {
       "versions": {
         "^1.0.0": "consumeStatusBar"

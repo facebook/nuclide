@@ -9,11 +9,11 @@
  * the root directory of this source tree.
  */
 
+import type {GadgetsService, Gadget} from '../../gadgets-interfaces';
 import type {HealthStats, StatsViewProps} from './types';
 
-const BASE_ITEM_URI = 'nuclide-health://';
-
 // Imports from non-Nuclide modules.
+import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
 import os from 'os';
 import React from 'react-for-atom';
@@ -25,8 +25,7 @@ import {atomEventDebounce} from '../../atom-helpers';
 import featureConfig from '../../feature-config';
 
 // Imports from within this Nuclide package.
-import HealthPaneItem from './createHealthGadget';
-import HealthPaneItemComponent from './ui/HealthPaneItemComponent';
+import createHealthGadget from './createHealthGadget';
 import HealthStatusBarComponent from './ui/HealthStatusBarComponent';
 
 // We may as well declare these outside of Activation because most of them really are nullable.
@@ -36,6 +35,7 @@ let paneItem: ?HTMLElement;
 let viewTimeout: ?number = null;
 let analyticsTimeout: ?number = null;
 let analyticsBuffer: Array<HealthStats> = [];
+let gadgets: ?GadgetsService = null;
 
 // Variables for tracking where and when a key was pressed, and the time before it had an effect.
 let activeEditorDisposables: ?CompositeDisposable = null;
@@ -44,7 +44,7 @@ let keyDownTime = 0;
 let keyLatency = 0;
 let lastKeyLatency = 0;
 
-let paneItemState$: ?Rx.Subject = null;
+let paneItemState$: ?Rx.BehaviorSubject = null;
 
 class Activation {
   disposables: CompositeDisposable;
@@ -54,7 +54,7 @@ class Activation {
   }
 
   activate() {
-    paneItemState$ = new Rx.Subject(null);
+    paneItemState$ = new Rx.BehaviorSubject(null);
     this.disposables.add(
       featureConfig.onDidChange('nuclide-health', (event) => {
         currentConfig = event.newValue;
@@ -64,13 +64,6 @@ class Activation {
       }),
       atom.workspace.onDidChangeActivePaneItem(disposeActiveEditorDisposables),
       atomEventDebounce.onWorkspaceDidStopChangingActivePaneItem(timeActiveEditorKeys),
-      atom.workspace.addOpener(getHealthPaneItem),
-      atom.commands.add(
-        'atom-workspace',
-        'nuclide-health:open-pane',
-        () => atom.workspace.open(BASE_ITEM_URI, {searchAllPanes: true}),
-      ),
-      paneItemState$.forEach(renderPaneItem),
     );
     currentConfig = featureConfig.get('nuclide-health');
     timeActiveEditorKeys();
@@ -140,12 +133,11 @@ export function consumeStatusBar(statusBar: any): void {
   }
 }
 
-function getHealthPaneItem(uri: string): ?HTMLElement {
-  if (!uri.startsWith(BASE_ITEM_URI)) {
-    return;
-  }
-  paneItem = new HealthPaneItem().initialize(uri);
-  return paneItem;
+export function consumeGadgetsService(gadgetsApi: GadgetsService): Disposable {
+  invariant(paneItemState$);
+  gadgets = gadgetsApi;
+  const gadget: Gadget = (createHealthGadget(paneItemState$): any);
+  return gadgetsApi.registerGadget(gadget);
 }
 
 function disposeActiveEditorDisposables(): void {
@@ -246,37 +238,14 @@ function updateStatusBar(stats: HealthStats): void {
     props.activeRequests = stats.activeRequests;
   }
 
+  const openHealthPane = () => gadgets && gadgets.showGadget('nuclide-health');
+
   React.render(
     <HealthStatusBarComponent
       {...props}
       onClickIcon={openHealthPane}
     />,
     statusBarItem
-  );
-}
-
-function openHealthPane() {
-  atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-health:open-pane');
-}
-
-function renderPaneItem(state: {stats: HealthStats, activeHandleObjects: Array<Object>}): void {
-  if (paneItem == null || state == null) {
-    return;
-  }
-
-  const {stats, activeHandleObjects} = state;
-
-  React.render(
-    <HealthPaneItemComponent
-      cpuPercentage={stats.cpuPercentage}
-      heapPercentage={stats.heapPercentage}
-      memory={stats.rss}
-      lastKeyLatency={stats.lastKeyLatency}
-      activeHandles={activeHandleObjects.length}
-      activeHandleObjects={activeHandleObjects}
-      activeRequests={stats.activeRequests}
-    />,
-    paneItem
   );
 }
 
@@ -370,7 +339,3 @@ function getActiveRequests(): Array<Object> {
   }
   return [];
 }
-
-// TODO: This shouldn't actually be exported. We do so just because it requires access to module
-//       state and we want to access it in the deserializer module.
-export const _getHealthPaneItem = getHealthPaneItem;
