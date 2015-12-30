@@ -26,6 +26,7 @@
     "async": "0.9.2",
     "babel-core": "5.8.34",
     "babel-runtime": "5.8.34",
+    "blamer": "^0.1.9",
     "chalk": "1.1.1",
     "classnames": "2.2.1",
     "connect": "3.4.0",
