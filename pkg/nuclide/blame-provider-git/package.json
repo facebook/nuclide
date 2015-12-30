@@ -1,0 +1,34 @@
+{
+  "name": "nuclide-blame-provider-git",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main",
+  "version": "0.0.0",
+  "description": "Makes Git blame information available to the nuclide-blame feature.",
+  "nuclide": {
+    "config": {
+      "showVerboseBlame": {
+        "title": "Show Complete Username",
+        "type": "boolean",
+        "default": false,
+        "description": "Show complete name returned from \"git blame\", instead of shortened name."
+      }
+    },
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "providedServices": {
+    "nuclide-blame-provider": {
+      "versions": {
+        "0.0.0": "provideGitBlameProvider"
+      }
+    }
+  },
+  "engines": {
+    "atom": ">=1.0.5"
+  },
+  "_atomModuleCache": {
+    "extensions": {
+      ".node": []
+    }
+  }
+}
