@@ -11,6 +11,8 @@
 
 import type {Dispatcher} from 'flux';
 
+import path from 'path';
+
 import {ActionType} from './FileTreeConstants';
 import {debounce} from '../../commons';
 import {Disposable, CompositeDisposable} from 'atom';
@@ -329,35 +331,13 @@ class FileTreeActions {
     }
     // we are working with git repository
     else if (repo.getType() === 'git') {
-      const gitRepo = ((repo: any): atom$GitRepository);
-
       // Now that the initial VCS statuses are set, subscribe to changes to the Repository so that the
       // VCS statuses are kept up to date.
-      const subscriptions = new CompositeDisposable();
+      const subscription = repo.onDidChangeStatuses(
+        this._onDidChangeStatusesForGitRepositoryOnce.bind(this, repo, rootKeysForRepository),
+      );
 
-      subscriptions.add(gitRepo.onDidChangeStatuses(
-        // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
-        // succession. We should probably explore debouncing this in HgRepositoryClient itself.
-        debounce(
-          this._onDidChangeStatusesForGitRepository.bind(this, gitRepo, rootKeysForRepository),
-          /* wait */ 1000,
-          /* immediate */ false,
-        )
-      ));
-
-      subscriptions.add(gitRepo.onDidChangeStatus(
-        // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
-        // succession. We should probably explore debouncing this in HgRepositoryClient itself.
-        debounce(
-          this._onDidChangeStatusesForGitRepository.bind(this, gitRepo, rootKeysForRepository),
-          /* wait */ 1000,
-          /* immediate */ false,
-        )
-      ));
-
-      this._subscriptionForRepository = this._subscriptionForRepository.set(gitRepo, subscriptions);
-
-      gitRepo.refreshStatus();
+      this._subscriptionForRepository = this._subscriptionForRepository.set(repo, subscription);
     }
   }
 
@@ -377,6 +357,68 @@ class FileTreeActions {
     }
   }
 
+  // We need this function because currently there's no way to wait for git
+  // statuses outside of emitter for did-change-statuses event :(
+  _onDidChangeStatusesForGitRepositoryOnce(
+    repo: atom$Repository,
+    rootKeysForRepository: Immutable.Map<atom$Repository, Immutable.Set<string>>,
+  ) {
+    const subscription = this._subscriptionForRepository.get(repo);
+    subscription.dispose();
+
+    const repoRoot = repo.getWorkingDirectory();
+
+    // $FlowFixMe$
+    const statusCodeForPath = repo.statuses;
+
+    const statusesToReport = {};
+    for (const filePath of Object.keys(statusCodeForPath)) {
+      const fullPath = repoRoot + path.sep + filePath;
+
+      if (repo.isStatusNew(statusCodeForPath[filePath])) {
+        statusesToReport[fullPath] = hgConstants.StatusCodeNumber.ADDED;
+      } else if (repo.isStatusModified(statusCodeForPath[filePath])) {
+        statusesToReport[fullPath] = hgConstants.StatusCodeNumber.MODIFIED;
+      }
+
+      const pathParts = path.dirname(filePath).split(path.sep);
+
+      for (; pathParts.length > 0; pathParts.length--) {
+        const dirPath = `${repoRoot}${path.sep}${pathParts.join(path.sep)}${path.sep}`;
+
+        statusesToReport[dirPath] = statusesToReport[fullPath];
+      }
+    }
+
+    for (const rootKeyForRepo of rootKeysForRepository.get(repo)) {
+      this.setVcsStatuses(rootKeyForRepo, statusesToReport);
+    }
+
+    const subscriptions = new CompositeDisposable();
+
+    subscriptions.add(repo.onDidChangeStatuses(
+      // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
+      // succession. We should probably explore debouncing this in HgRepositoryClient itself.
+      debounce(
+        this._onDidChangeStatusesForGitRepository.bind(this, repo, rootKeysForRepository),
+        /* wait */ 1000,
+        /* immediate */ false,
+      )
+    ));
+
+    subscriptions.add(repo.onDidChangeStatus(
+      // t8227570: If the user is a "nervous saver," many onDidChangeStatuses will get fired in
+      // succession. We should probably explore debouncing this in HgRepositoryClient itself.
+      debounce(
+        this._onDidChangeStatusesForGitRepository.bind(this, repo, rootKeysForRepository),
+        /* wait */ 1000,
+        /* immediate */ false,
+      )
+    ));
+
+    this._subscriptionForRepository = this._subscriptionForRepository.set(repo, subscriptions);
+  }
+
   _onDidChangeStatusesForGitRepository(
     repo: atom$Repository,
     rootKeysForRepository: Immutable.Map<atom$Repository, Immutable.Set<string>>,
@@ -390,10 +432,10 @@ class FileTreeActions {
           : statusForNodeKey[nodeKey] = repo.getCachedPathStatus(nodeKey);
       }
       for (const path of Object.keys(statusForNodeKey)) {
-        if (repo.isStatusModified(statusForNodeKey[path])) {
-          statusForNodeKey[path] = hgConstants.StatusCodeNumber.MODIFIED;
-        } else if (repo.isStatusNew(statusForNodeKey[path])) {
+        if (repo.isStatusNew(statusForNodeKey[path])) {
           statusForNodeKey[path] = hgConstants.StatusCodeNumber.ADDED;
+        } else if (repo.isStatusModified(statusForNodeKey[path])) {
+          statusForNodeKey[path] = hgConstants.StatusCodeNumber.MODIFIED;
         }
       }
       this.setVcsStatuses(rootKey, statusForNodeKey);

@@ -894,7 +894,6 @@ declare class atom$File {
 }
 
 declare class atom$GitRepository extends atom$Repository {
-  refreshStatus(): void;
 }
 
 declare class atom$Grammar {
