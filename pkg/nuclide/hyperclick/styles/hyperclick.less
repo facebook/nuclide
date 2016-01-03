@@ -29,3 +29,23 @@ hyperclick-suggestion-list {
 .hyperclick-result-item {
   cursor: pointer;
 }
+
+@font-size-small: .9em;
+@item-padding: .75em;
+@item-side-padding: .6em;
+
+hyperclick-suggestion-list {
+  .right-label {
+    float: right;
+    padding-left: @item-padding;
+    padding-right: @item-side-padding;
+
+    font-size: @font-size-small;
+    color: @text-color-subtle;
+
+    &:empty {
+      width: @item-side-padding;
+      padding: 0;
+    }
+  }
+}

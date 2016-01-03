@@ -95,6 +95,7 @@ The methods return a suggestion or a `Promise` that resolves to a suggestion:
   If there are multiple possibilities, this can be an array of objects with:
 
     - `title`: A string to present in the UI for the user to select.
+    - `rightLabel`(optional): An indicator denoting the "kind" of suggestion this represents
     - `callback`: The function to call when the user selects this object.
 
 Additional properties:

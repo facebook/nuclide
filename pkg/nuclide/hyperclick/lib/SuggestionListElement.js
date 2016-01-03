@@ -123,7 +123,8 @@ class SuggestionList extends React.Component {
             key={index}
             onMouseDown={this._boundConfirm}
             onMouseEnter={this._setSelectedIndex.bind(this, index)}>
-          {item.title}
+            {item.title}
+            <span className="right-label">{item.rightLabel}</span>
         </li>
       );
     });
