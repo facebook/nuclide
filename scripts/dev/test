@@ -28,6 +28,7 @@ parser = optparse.OptionParser(usage='usage: %prog [options] [package-names]',
 # If you are certain that all of the packages have their dependencies installed correctly,
 # skipping the installation step can save a considerable amount of time.
 parser.add_option('--no-install', action='store_true', default=False, help='Skip `./setup` step')
+parser.add_option('--no-module-cycle-check', action='store_true', default=False, help='Skip `./module_cycle_check` step')
 parser.add_option('--verbose', action='store_true', default=False, help='Verbose output')
 parser.add_option('--no-atom', action='store_true', default=False, help='Exclude packages that depend on Atom')
 parser.add_option('--run-in-band', action='store_true', default=False, help='Run tests in a single process')
@@ -68,13 +69,13 @@ if not options.no_install:
     subprocess.check_call(setup_args)
 
 # Run ./module_cycle_check
-import subprocess
-try:
-    subprocess.check_call([
-        os.path.join(os.path.dirname(__file__), 'module_cycle_check'),
-    ])
-except subprocess.CalledProcessError:
-    sys.exit(1)
+if not options.no_module_cycle_check:
+    try:
+        subprocess.check_call([
+            os.path.join(os.path.dirname(__file__), 'module_cycle_check'),
+        ])
+    except subprocess.CalledProcessError:
+        sys.exit(1)
 
 # Create the constructor args for JsTestRunner.
 from package_manager import PackageManager
