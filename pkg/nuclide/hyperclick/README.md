@@ -16,6 +16,7 @@ Hyperclick is triggered by two events:
 * 'nuclide-hack' Nuclide feature
 * 'nuclide-ocaml' Nuclide feature
 * 'js-hyperclick' Nuclide feature - Jump to variable definitions, including when imported/required from another file
+* 'php-hyperclick' Locate php classes with the help of composer, and open the file
 
 ## Demo
 
