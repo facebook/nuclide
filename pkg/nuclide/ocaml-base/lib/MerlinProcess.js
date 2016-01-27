@@ -239,7 +239,7 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
  */
 function getPathToMerlin(): string {
   // $UPFixMe: This should use nuclide-features-config
-  return global.atom && global.atom.config.get('nuclide-ocaml.pathToMerlin') || 'ocamlmerlin';
+  return global.atom && global.atom.config.get('nuclide.nuclide-ocaml.pathToMerlin') || 'ocamlmerlin';
 }
 
 let isInstalledCache: ?boolean = null;
