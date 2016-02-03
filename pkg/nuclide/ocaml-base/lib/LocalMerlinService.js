@@ -48,3 +48,15 @@ export async function complete(
   const instance = await getInstance(path);
   return instance ? instance.complete(path, line, col, prefix) : null;
 }
+
+/**
+ * Low-level API into merlin service useful for debugging and for prototyping
+ * on top of bleeding edge Merlin branches.
+ */
+export async function runSingleCommand(
+  path: NuclideUri,
+  command: mixed
+): Promise<any> {
+  const instance = await getInstance(path);
+  return instance ? instance.runSingleCommand(command) : null;
+}
