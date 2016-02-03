@@ -122,8 +122,8 @@ package. Instructions can be found in the [Remote Development docs](/docs/remote
 
 To benefit from all of Nuclide's features, we recommend you also install the following:
 
-* [Flow](/docs/flow/)
-* [Hack](/docs/hack/)
+* [Flow](/docs/languages/flow/)
+* [Hack](/docs/languages/hack/)
 * [Mercurial](/docs/hg/)
 * [Watchman](https://facebook.github.io/watchman/) - version 3.2 or above. It must be in
   `/usr/local/bin/` or in your `$PATH`. Without Watchman, Nuclide will lose some functionality: for
