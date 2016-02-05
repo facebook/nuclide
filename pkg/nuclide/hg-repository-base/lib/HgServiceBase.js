@@ -149,7 +149,8 @@ class HgServiceBase {
     // '--unified 0' gives us 0 lines of context around each change (we don't
     // care about the context).
     // '--noprefix' omits the a/ and b/ prefixes from filenames.
-    const args = ['diff', '--unified', '0', '--noprefix'].concat(filePaths);
+    // '--nodates' avoids appending dates to the file path line.
+    const args = ['diff', '--unified', '0', '--noprefix', '--nodates'].concat(filePaths);
     const options = {
       cwd: this.getWorkingDirectory(),
     };
