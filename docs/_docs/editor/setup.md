@@ -124,7 +124,7 @@ Recommended packages include:
 
 - [`tool-bar`](https://atom.io/packages/tool-bar) to enable the [Nuclide toolbar](/docs/features/toolbar/).
 - [`sort-lines`](https://atom.io/packages/sort-lines) to enable sorting lines of text.
-- [`language-ocaml`](https://atom.io/packages/language-ocaml) to enable [OCaml](/docs/languages/ocaml/) language syntax highlighting.
+- [`language-ocaml`](https://atom.io/packages/language-ocaml) to enable [OCaml](/docs/languages/other/#ocaml) language syntax highlighting.
 - [`language-babel`](https://atom.io/packages/language-babel) to enable language grammar for [JS, Flow and React JS](/docs/languages/flow/), etc.
 - ...and [others](https://github.com/facebook/nuclide/blob/master/package.json) under `package-deps`.
 
