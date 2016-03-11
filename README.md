@@ -8,7 +8,9 @@ IDE-like functionality for a variety of programming languages and technologies.
 ## Installation
 
 Nuclide has two parts: the client, which is an Atom package, and the optional server for remote
-development, which is an NPM package.
+development, which is an NPM package. 
+
+**Windows** version of Atom [is not fully supported](https://github.com/facebook/nuclide/issues/321) right now. 
 
 ### Atom Package Installation
 
