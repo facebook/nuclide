@@ -45,6 +45,32 @@
   }
 }
 
+.nuclide-file-tree-filter {
+  &.show {
+    opacity: 0.8;
+  }
+  &.not-found {
+    font-weight: bold;
+    color: #f26769;
+  }
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  background: rgb(40, 44, 52);
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  opacity: 0;
+  transition: opacity 0.5s;
+  display: none;
+}
+
+.nuclide-file-tree-entry-highlight {
+  background: #528bff;
+  border-radius: 2px;
+  color: rgb(40, 44, 52);
+}
+
 .nuclide-file-tree-toolbar {
   position: absolute;
   right: 30px;

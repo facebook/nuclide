@@ -102,6 +102,7 @@ class FileTree extends React.Component {
         <RootNodeComponent
           key={index.toString()}
           ref={rootKey}
+          filter={this.props.filter}
           rootNode={FileTreeStore.getInstance().getRootNode(rootKey)}
           rootKey={rootKey}
         />

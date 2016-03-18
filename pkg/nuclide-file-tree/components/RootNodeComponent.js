@@ -47,6 +47,7 @@ class RootNodeComponent extends React.Component {
   _renderNode(node: FileTreeNode, indentLevel: number): Array<ReactElement> {
     let elements = [node.isContainer ?
       <DirectoryEntryComponent
+        filter={this.props.filter}
         indentLevel={indentLevel}
         isCwd={node.isCwd()}
         isExpanded={node.isExpanded()}
@@ -65,6 +66,7 @@ class RootNodeComponent extends React.Component {
         soften={node.shouldBeSoftened()}
       /> :
       <FileEntryComponent
+        filter={this.props.filter}
         indentLevel={indentLevel}
         isSelected={node.isSelected()}
         usePreviewTabs={node.usePreviewTabs()}

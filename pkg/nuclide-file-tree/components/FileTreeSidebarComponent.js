@@ -16,6 +16,7 @@ import {
 import FileTree from './FileTree';
 import {FileTreeToolbarComponent} from './FileTreeToolbarComponent';
 import FileTreeStore from '../lib/FileTreeStore';
+import FileTreeSideBarFilterComponent from './FileTreeSideBarFilterComponent';
 import {CompositeDisposable} from 'atom';
 
 type State = {
@@ -60,9 +61,14 @@ class FileTreeSidebarComponent extends React.Component {
 
   render() {
     const workingSetsStore = this._store.getWorkingSetsStore();
+    const filter = this._store.getFilter();
+    const found = this._store.getFilterFound();
     let toolbar;
     if (this.state.shouldRenderToolbar && workingSetsStore != null) {
-      toolbar = <FileTreeToolbarComponent workingSetsStore={workingSetsStore} />;
+      toolbar = [
+        <FileTreeSideBarFilterComponent key="filter" found={found} filter={filter} />,
+        <FileTreeToolbarComponent key="toolbar" workingSetsStore={workingSetsStore} />
+      ];
     }
 
     // Include `tabIndex` so this component can be focused by calling its native `focus` method.
@@ -72,7 +78,9 @@ class FileTreeSidebarComponent extends React.Component {
         onFocus={this._handleFocus}
         tabIndex={0}>
         {toolbar}
-        <FileTree nodeToKeepInView={this._store.getTrackedNode()} ref="fileTree" />
+        <FileTree filter={filter}
+                  nodeToKeepInView={this._store.getTrackedNode()}
+                  ref="fileTree" />
       </div>
     );
   }

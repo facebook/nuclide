@@ -52,6 +52,8 @@ export type FileTreeNodeData = {
 
 type StoreData = {
   cwdKey: ?string;
+  filter: ?string;
+  filterFound: ?boolean;
   childKeyMap: { [key: string]: Array<string> };
   isDirtyMap: { [key: string]: boolean };
   expandedKeysByRoot: { [key: string]: Immutable.Set<string> };
@@ -624,6 +626,41 @@ class FileTreeStore {
 
   hasCwd(): boolean {
     return this._data.cwdKey != null;
+  }
+
+  getFilter(): ?string {
+    return this._data.filter;
+  }
+
+  addFitlerLetter(letter: ?string) {
+    const filter = (this._data.filter || '') + letter;
+    this._data.filter = filter;
+    this._emitter.emit('change');
+  }
+
+  clearFilter(): void {
+    if (this._data.filter && this._data.filter.length) {
+      this._data.filter = '';
+      this._emitter.emit('change');
+    }
+  }
+
+  removeFilterLetter(): void {
+    if (this._data.filter && this._data.filter.length) {
+      this._data.filter = this._data.filter.slice(0, -1);
+      this._emitter.emit('change');
+    }
+  }
+
+  setFilterFound(found: boolean): void {
+    if (this._data.filterFound !== found) {
+      this._data.filterFound = found;
+      this._emitter.emit('change');
+    }
+  }
+
+  getFilterFound(): boolean {
+    return this._data.filterFound || false;
   }
 
   _setCwdKey(rootKey: ?string): void {
