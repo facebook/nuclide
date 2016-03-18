@@ -42,7 +42,7 @@ export type FileTreeControllerState = {
 };
 
 const NOT_LETTERS = /[^a-zA-Z]/g;
-const PREFIX_RESET_DELAY = 500;
+const FILTER_DELAY = 250;
 
 class FileTreeController {
   _actions: FileTreeActions;
@@ -51,10 +51,9 @@ class FileTreeController {
   _cwdApiSubscription: ?IDisposable;
   _repositories: Immutable.Set<atom$Repository>;
   _store: FileTreeStore;
+  _filterTimeout: ?number;
   _subscriptions: CompositeDisposable;
   _subscriptionForRepository: Immutable.Map<atom$Repository, IDisposable>;
-  _prefix: string;
-  _prefixTimeout: ?number;
 
   constructor(state: ?FileTreeControllerState) {
     this._actions = FileTreeActions.getInstance();
@@ -82,12 +81,19 @@ class FileTreeController {
         'nuclide-file-tree:reveal-active-file': this.revealActiveFile.bind(this, undefined),
       })
     );
-    const letterKeyBindings = {};
+    this._filterTimeout = null;
+    const letterKeyBindings = {
+      'nuclide-file-tree:remove-letter':
+         this._handleRemoveLetterKeypress.bind(this),
+    };
     const zCharCode = 'z'.charCodeAt(0);
     for (let c = 'a'.charCodeAt(0); c <= zCharCode; c++) {
       const char = String.fromCharCode(c);
       letterKeyBindings[`nuclide-file-tree:go-to-letter-${char}`] =
         this._handlePrefixKeypress.bind(this, char);
+      const upperChar = char.toUpperCase();
+      letterKeyBindings[`nuclide-file-tree:go-to-letter-${upperChar}`] =
+        this._handlePrefixKeypress.bind(this, upperChar);
     }
     this._subscriptions.add(
       atom.commands.add(EVENT_HANDLER_SELECTOR, {
@@ -138,48 +144,69 @@ class FileTreeController {
       this._store.loadData(state.tree);
     }
     this._contextMenu = new FileTreeContextMenu();
-    this._prefixTimeout = null;
-    this._prefix = '';
   }
 
-  _handlePrefixKeypress(letter: string): void {
+  _handlePrefixChange(fn: Function): void {
     if (!this._store.usePrefixNav()) {
       return;
     }
-    if (this._prefixTimeout != null) {
-      clearTimeout(this._prefixTimeout);
-      this._prefixTimeout = null;
-    }
-    const prefix = this._prefix + letter;
-    if (this._didRevealNodeStartingWith(prefix)) {
-      // Only append the prefix string if a match exists to allow for typos.
-      this._prefix = prefix;
-    }
-    this._prefixTimeout = setTimeout(
-      () => {
-        this._prefix = '';
-        this._prefixTimeout = null;
-      },
-      PREFIX_RESET_DELAY
-    );
+    fn();
   }
 
+  _handlePrefixKeypress(letter: string): void {
+    this._handlePrefixChange(() => {
+      this._store.addFitlerLetter(letter);
+      const target = this._targetNodeWithFilter(this._store.getFilter());
+      const found = target != null;
+      if (found) {
+        if (this._filterTimeout != null) {q
+          clearTimeout(this._filterTimeout);
+          this._filterTimeout = null;
+        }
+        this._filterTimeout = setTimeout(() => {
+          this.revealNodeKey(target.nodeKey);
+        }, FILTER_DELAY);
+      }
+      this._store.setFilterFound(found);
+    });
+  }
+
+  _handleRemoveLetterKeypress(): void {
+    this._handlePrefixChange(() => {
+      this._store.removeFilterLetter();
+      const target = this._targetNodeWithFilter(this._store.getFilter());
+      const found = target != null;
+      this._store.setFilterFound(found);
+    });
+  }
   // Returns whether a node matching the prefix was successfully selected.
-  _didRevealNodeStartingWith(prefix: string): boolean {
-    const nodes = this._store.getSelectedNodes();
-    const firstSelectedNode = nodes.values().next().value;
-    if (firstSelectedNode == null || firstSelectedNode.isRoot) {
-      return false;
+  _targetNodeWithFilter(filter: string): boolean {
+    const selectedNodes = this._store.getSelectedNodes();
+    const firstSelectedNode = selectedNodes.values().next().value;
+    const rootKeys = this._store.getRootKeys();
+    // Get all of the current nodes visable
+    let nodes = [];
+    rootKeys.forEach((key) => {
+      nodes.push.apply(nodes, this._store.getVisibleNodes(key));
+    });
+
+    // Reorder the nodes by the currently selected node
+    let selectedIndex = 0;
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].nodeKey === firstSelectedNode.nodeKey) {
+        selectedIndex = i;
+      }
     }
-    const targetNode = array.find(
-      firstSelectedNode.getParentNode().getChildNodes(),
-      childNode => childNode.nodeName.toLowerCase().replace(NOT_LETTERS, '').startsWith(prefix)
-    );
-    if (targetNode == null) {
-      return false;
-    }
-    this.revealNodeKey(targetNode.nodeKey);
-    return true;
+    nodes = nodes.slice(selectedIndex).concat(nodes.slice(0, selectedIndex));
+    const ignoredNames = atom.config.get('core.ignoredNames');
+
+    // filter the nodes by only nodes that match the filter
+    nodes = nodes.filter((node) => {
+      return node.nodeName.match(new RegExp(filter, 'ig')) &&
+        ignoredNames.indexOf(node.nodeName) === -1;
+    });
+
+    return nodes[0];
   }
 
   _openAndRevealFilePath(filePath: ?string): void {
@@ -682,6 +709,7 @@ class FileTreeController {
   }
 
   _openSelectedEntry(): void {
+    this._store.clearFilter();
     const singleSelectedNode = this._store.getSingleSelectedNode();
     // Only perform the default action if a single node is selected.
     if (singleSelectedNode != null) {
@@ -784,7 +812,7 @@ class FileTreeController {
     }
     this._store.reset();
     this._contextMenu.dispose();
-    clearTimeout(this._prefixTimeout);
+    clearTimeout(this._filterTimeout);
   }
 
   serialize(): FileTreeControllerState {

@@ -19,6 +19,7 @@ const {StatusCodeNumber} = require('../../nuclide-hg-repository-base').hgConstan
 const classnames = require('classnames');
 const {fileTypeClass} = require('../../nuclide-atom-helpers');
 const {isContextClick} = require('../lib/FileTreeHelpers');
+const filterName = require('../lib/FileTreeFilterHelper');
 const NuclideCheckbox = require('../../nuclide-ui-checkbox');
 const semver = require('semver');
 
@@ -83,6 +84,9 @@ class FileEntryComponent extends React.Component {
       }
     }
 
+    const filter = this.props.filter;
+    const name = filterName(this.props.nodeName, filter);
+
     return (
       <li
         className={`${outerClassName} ${statusClass}`}
@@ -98,7 +102,7 @@ class FileEntryComponent extends React.Component {
           <span
             data-name={this.props.nodeName}
             data-path={this.props.nodePath}>
-            {this.props.nodeName}
+            {name}
           </span>
         </span>
       </li>

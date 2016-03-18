@@ -17,6 +17,7 @@ const {
 } = require('react-for-atom');
 const {StatusCodeNumber} = require('../../nuclide-hg-repository-base').hgConstants;
 const classnames = require('classnames');
+const filterName = require('../lib/FileTreeFilterHelper');
 const {getDisplayTitle} = require('../lib/FileTreeHelpers');
 const {isContextClick} = require('../lib/FileTreeHelpers');
 const NuclideCheckbox = require('../../nuclide-ui-checkbox');
@@ -97,6 +98,11 @@ class DirectoryEntryComponent extends React.Component {
 
     const iconName = this.props.isCwd ? 'briefcase' : 'file-directory';
 
+    let name = this.props.nodeName;
+    if (!this.props.isRoot) {
+      name = filterName(name, this.props.filter);
+    }
+
     return (
       <li
         className={`${outerClassName} ${statusClass}`}
@@ -110,7 +116,7 @@ class DirectoryEntryComponent extends React.Component {
             data-name={this.props.nodeName}
             data-path={this.props.nodePath}>
             {this._renderCheckbox()}
-            {this.props.nodeName}
+            {name}
           </span>
           {this._renderConnectionTitle()}
         </div>
