@@ -374,6 +374,7 @@ declare class atom$Range {
   constructor(pointA: RangeConstructorArg, pointB: RangeConstructorArg): void;
   start: atom$Point;
   end: atom$Point;
+  isEmpty(): boolean;
   isEqual(otherRange: atom$Range): boolean;
   containsPoint(point: atom$Point, exclusive?: boolean): boolean;
   serialize(): Array<Array<number>>;

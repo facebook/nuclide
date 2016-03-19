@@ -11,8 +11,9 @@
 
 export type CodeFormatProvider = {
   /**
-   * Providers should implement exactly one of formatCode / formatEntireFile.
-   * formatCode should be preferred whenever possible.
+   * Providers should implement at least one of formatCode / formatEntireFile.
+   * If formatCode exists, it'll be used if the editor selection isn't empty, or
+   * if it's empty but formatEntireFile doesn't exist.
    */
 
   /**

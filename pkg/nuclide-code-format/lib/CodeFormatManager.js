@@ -49,7 +49,8 @@ class CodeFormatManager {
     const selectionRange = editor.getSelectedBufferRange();
     const {start: selectionStart, end: selectionEnd} = selectionRange;
     let formatRange = null;
-    if (selectionStart.isEqual(selectionEnd)) {
+    const selectionRangeEmpty = selectionRange.isEmpty();
+    if (selectionRangeEmpty) {
       // If no selection is done, then, the whole file is wanted to be formatted.
       formatRange = buffer.getRange();
     } else {
@@ -62,7 +63,8 @@ class CodeFormatManager {
     }
 
     const provider = matchingProviders[0];
-    if (provider.formatCode != null) {
+    if (provider.formatCode != null &&
+      (!selectionRangeEmpty || provider.formatEntireFile == null)) {
       const codeReplacement = await provider.formatCode(editor, formatRange);
       // TODO(most): save cursor location.
       editor.setTextInBufferRange(formatRange, codeReplacement);
