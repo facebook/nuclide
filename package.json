@@ -89,7 +89,7 @@
   },
   "devDependencies": {
     "ast-types-flow": "0.0.7",
-    "atom-grammar-test": "0.3.0",
+    "atom-grammar-test": "0.6.0",
     "babel-eslint": "4.1.8",
     "eslint": "1.10.3",
     "eslint-plugin-babel": "3.1.0",
