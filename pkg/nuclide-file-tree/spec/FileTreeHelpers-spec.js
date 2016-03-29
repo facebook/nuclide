@@ -75,17 +75,16 @@ describe('FileTreeHelpers', () => {
   });
 
   describe('on Windows', () => {
-    let originalPathSep;
+    let originalPathModule;
 
     beforeEach(() => {
-      // `require('path').sep` denotes the path separator for the current platform. Set it to a
-      // backslash ('\\') to mimic running on Windows.
-      originalPathSep = pathModule.sep;
-      pathModule.sep = pathModule.win32.sep;
+      // Clone path module, then override all functions with the Windows version
+      originalPathModule = Object.assign({}, pathModule);
+      Object.assign(pathModule, pathModule.win32);
     });
 
     afterEach(() => {
-      pathModule.sep = originalPathSep;
+      Object.assign(pathModule, originalPathModule);
     });
 
     it('should convert key to path', () => {
@@ -110,9 +109,9 @@ describe('FileTreeHelpers', () => {
     });
 
     it('should determine if a key represents a directory', () => {
-      expect(FileTreeHelpers.isDirKey('\\a\\b\\foo')).toBe(false);
-      expect(FileTreeHelpers.isDirKey('\\a\\b\\')).toBe(true);
-      expect(FileTreeHelpers.isDirKey('\\a\\b\\\\')).toBe(true);
+      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\foo')).toBe(false);
+      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\')).toBe(true);
+      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\\\')).toBe(true);
       expect(FileTreeHelpers.isDirKey('nuclide://host:456\\a\\b')).toBe(false);
       expect(FileTreeHelpers.isDirKey('nuclide://host:456\\a\\b\\')).toBe(true);
     });
@@ -122,7 +121,7 @@ describe('FileTreeHelpers', () => {
     });
 
     it('should validate directories', () => {
-      const validDir = new Directory('\\a\\b\\c');
+      const validDir = new Directory('c:\\a\\b\\c');
       expect(FileTreeHelpers.isValidDirectory(validDir)).toBe(true);
       const badDir = new Directory('nuclide://host:123\\a\\b\\c');
       expect(FileTreeHelpers.isValidDirectory(badDir)).toBe(false);

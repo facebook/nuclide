@@ -13,7 +13,7 @@ import {CompositeDisposable} from 'atom';
 import {EVENT_HANDLER_SELECTOR} from './FileTreeConstants';
 import FileTreeStore from './FileTreeStore';
 
-import {isFullyQualifiedLocalPath} from './FileTreeHelpers';
+import path from 'path';
 
 type MenuItemSingle = {
   label: string;
@@ -196,7 +196,7 @@ class FileTreeContextMenu {
     const node = this._store.getSingleSelectedNode();
     return (
       node != null &&
-      isFullyQualifiedLocalPath(node.nodePath) &&
+      path.isAbsolute(node.nodePath) &&
       process.platform === platform
     );
   }

@@ -139,17 +139,13 @@ function getDisplayTitle(key: string): ?string {
 function isValidDirectory(directory: Directory): boolean {
   return (
     !isLocalEntry((directory: any)) ||
-    isFullyQualifiedLocalPath(directory.getPath())
+    pathModule.isAbsolute(directory.getPath())
   );
 }
 
 function isLocalEntry(entry: Entry): boolean {
   // TODO: implement `RemoteDirectory.isRemoteDirectory()`
   return !('getLocalPath' in entry);
-}
-
-function isFullyQualifiedLocalPath(path: string): boolean {
-  return path.charAt(0) === pathModule.sep;
 }
 
 function isContextClick(event: SyntheticMouseEvent): boolean {
@@ -176,7 +172,6 @@ module.exports = {
   getDisplayTitle,
   isValidDirectory,
   isLocalEntry,
-  isFullyQualifiedLocalPath,
   isContextClick,
   buildHashKey,
 };
