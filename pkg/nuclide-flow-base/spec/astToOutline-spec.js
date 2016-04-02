@@ -27,10 +27,25 @@ const expectedOutline = [
       column: 0,
     },
     endPosition: {
-      line: 19,
+      line: 23,
       column: 1,
     },
     children: [
+      {
+        tokenizedText: [
+          {value: 'field', kind: 'method'},
+          {value: '=', kind: 'plain'},
+        ],
+        startPosition: {
+          line: 16,
+          column: 2,
+        },
+        endPosition: {
+          line: 16,
+          column: 14,
+        },
+        children: [],
+      },
       {
         tokenizedText: [
           {value: 'bar', kind: 'method'},
@@ -39,12 +54,30 @@ const expectedOutline = [
           {value: ')', kind: 'plain'},
         ],
         startPosition: {
-          line: 16,
+          line: 18,
           column: 2,
         },
         endPosition: {
-          line: 18,
+          line: 20,
           column: 3,
+        },
+        children: [],
+      },
+      {
+        tokenizedText: [
+          {value: 'baz', kind: 'method'},
+          {value: '=', kind: 'plain'},
+          {value: '(', kind: 'plain'},
+          {value: 'arg', kind: 'param'},
+          {value: ')', kind: 'plain'},
+        ],
+        startPosition: {
+          line: 22,
+          column: 2,
+        },
+        endPosition: {
+          line: 22,
+          column: 35,
         },
         children: [],
       },
@@ -63,11 +96,11 @@ const expectedOutline = [
       {value: ')', kind: 'plain'},
     ],
     startPosition: {
-      line: 21,
+      line: 25,
       column: 0,
     },
     endPosition: {
-      line: 23,
+      line: 27,
       column: 1,
     },
     children: [],
@@ -79,11 +112,11 @@ const expectedOutline = [
       {value: 'foo', kind: 'string'},
     ],
     startPosition: {
-      line: 25,
+      line: 29,
       column: 0,
     },
     endPosition: {
-      line: 30,
+      line: 34,
       column: 3,
     },
     children: [
@@ -94,11 +127,11 @@ const expectedOutline = [
           {value: 'should work', kind: 'string'},
         ],
         startPosition: {
-          line: 27,
+          line: 31,
           column: 2,
         },
         endPosition: {
-          line: 29,
+          line: 33,
           column: 5,
         },
         children: [],
@@ -112,11 +145,11 @@ const expectedOutline = [
       {value: 'bar', kind: 'string'},
     ],
     startPosition: {
-      line: 32,
+      line: 36,
       column: 0,
     },
     endPosition: {
-      line: 35,
+      line: 39,
       column: 3,
     },
     children: [
@@ -127,11 +160,11 @@ const expectedOutline = [
           {value: 'should work with a normal function', kind: 'string'},
         ],
         startPosition: {
-          line: 33,
+          line: 37,
           column: 2,
         },
         endPosition: {
-          line: 34,
+          line: 38,
           column: 5,
         },
         children: [],

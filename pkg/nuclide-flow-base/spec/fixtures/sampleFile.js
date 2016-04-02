@@ -14,9 +14,13 @@ export type RetType = {};
 
 // Update `ast.json` with `flow ast < sampleFile.js > ast.json`
 export class Foo {
+  field: Type;
+  
   bar(arg: Type): RetType {
     return baz(arg);
   }
+
+  baz = (arg: Type): RetType => {};
 }
 
 function baz(arg: ?Type, a: any): RetType {
