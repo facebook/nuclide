@@ -33,7 +33,7 @@ If your React Native apps are primarily written in [Flow](/docs/languages/flow),
 
 ### Buck Integration
 
-> Buck Integration currently on works with React Native iOS apps. If you have an Android app, you
+> Buck Integration currently only works with React Native iOS apps. If you have an Android app, you
 > can still use the
 > [command-line](/docs/platforms/react-native/#running-applications__command-line) to run your
 > application.
