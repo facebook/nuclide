@@ -65,6 +65,24 @@ function itemToTree(item: any): ?FlowOutlineTree {
         children: itemsToTrees(item.body.body),
         ...extent,
       };
+    case 'ClassProperty':
+      let paramTokens = [];
+      if (item.value && item.value.type === 'ArrowFunctionExpression') {
+        paramTokens = [
+          plain('('),
+          ...paramsTokenizedText(item.value.params),
+          plain(')'),
+        ];
+      }
+      return {
+        tokenizedText: [
+          method(item.key.name),
+          plain('='),
+          ...paramTokens,
+        ],
+        children: [],
+        ...extent,
+      };
     case 'MethodDefinition':
       return {
         tokenizedText: [
