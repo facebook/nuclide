@@ -145,6 +145,7 @@ export class MerlinProcess {
     });
   }
 
+
   async enclosingType(
     file: NuclideUri,
     line: number,
@@ -229,6 +230,22 @@ export class MerlinProcess {
   }
 }
 
+/**
+ * @return A promise of an augmented environment variables with
+ *   PATH that contains opam binary directory
+ */
+async function getEnvWithOpamBin(): Promise<String> {
+  const ret = await checkOutput('opam', ['config', 'var', 'bin']);
+  if (ret.exitCode === 0) {
+    const env = {...process.env};
+    env.PATH = `${env.PATH}${path.delimiter}${ret.stdout.trim()}`;
+    return env;
+  } else {
+    logger.error('Cannot get opam bin');
+    return process.env;
+  }
+}
+
 let merlinProcessInstance: ?MerlinProcess;
 
 export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
@@ -244,9 +261,10 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   }
 
   const dotMerlinPath = await findNearestFile('.merlin', file);
-
+  const env = await getEnvWithOpamBin();
   const options = {
     cwd: (dotMerlinPath ? path.dirname(dotMerlinPath) : '.'),
+    env: env,
   };
 
   logger.info('Spawning new ocamlmerlin process');
@@ -287,11 +305,17 @@ function getMerlinFlags(): Array<string> {
 let isInstalledCache: ?boolean = null;
 async function isInstalled(merlinPath: string): Promise<boolean> {
   if (isInstalledCache == null) {
-    const result = await checkOutput('which', [merlinPath]);
+    const env = await getEnvWithOpamBin();
+    const options = {
+      shell: true,
+      env: env,
+    };
+    const result = await checkOutput('which', [merlinPath], options);
     isInstalledCache = result.exitCode === 0;
     if (!isInstalledCache) {
       logger.info('ocamlmerlin not installed');
     }
   }
+
   return isInstalledCache;
 }
