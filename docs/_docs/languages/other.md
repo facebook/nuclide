@@ -15,7 +15,7 @@ similar languages (e.g., Hack vs PHP); others are experimental.
 
 Nuclide's PHP support is similar to its support for [Hack](/docs/languages/hack), except you will
 not get as full-featured diagnostics, type hinting, etc. since there is no
-[typechecker](/hack/typechecker/introduction) to assist Nuclide with your project's metadata.
+[typechecker](https://docs.hhvm.com/hack/typechecker/introduction) to assist Nuclide with your project's metadata.
 
 ## JavaScript
 
