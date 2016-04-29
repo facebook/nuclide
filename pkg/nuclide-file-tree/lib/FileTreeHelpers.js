@@ -57,6 +57,15 @@ function getParentKey(key: string): string {
   const parsed = RemoteUri.parse(path);
   parsed.pathname = pathModule.join(parsed.pathname, '..');
   const parentPath = url.format((parsed: any));
+
+  // Temporary hack for remote editing on Windows. Currently the above path
+  // handling code conflates paths and URIs, which results in some weirdness in
+  // the resulting string on systems where URI separator differs from path
+  // separator.
+  if (process.platform === 'win32') {
+    parentPath = parentPath.replace('/\\', '\\');
+  }
+
   return dirPathToKey(parentPath);
 }
 
