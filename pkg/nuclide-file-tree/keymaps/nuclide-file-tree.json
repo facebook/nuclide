@@ -100,12 +100,14 @@
     "cmd-k right": "nuclide-file-tree:open-selected-entry-right",
     "cmd-k left": "nuclide-file-tree:open-selected-entry-left",
     "cmd-k up": "nuclide-file-tree:open-selected-entry-up",
-    "cmd-k down": "nuclide-file-tree:open-selected-entry-down"
+    "cmd-k down": "nuclide-file-tree:open-selected-entry-down",
+    "cmd-n": "nuclide-file-tree:add-file"
   },
   ".platform-win32 .nuclide-file-tree, .platform-linux .nuclide-file-tree": {
     "ctrl-k right": "nuclide-file-tree:open-selected-entry-right",
     "ctrl-k left": "nuclide-file-tree:open-selected-entry-left",
     "ctrl-k up": "nuclide-file-tree:open-selected-entry-up",
-    "ctrl-k down": "nuclide-file-tree:open-selected-entry-down"
+    "ctrl-k down": "nuclide-file-tree:open-selected-entry-down",
+    "ctrl-n": "nuclide-file-tree:add-file"
   }
 }
