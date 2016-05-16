@@ -51,6 +51,7 @@ h1, h2, h3, h4 {
   height: $header-height;
   opacity: 0.0;
   padding: $header-ptop 0 $header-pbot;
+  position: relative;
   -webkit-transition: opacity 0.2s ease-in-out;
   transition: opacity 0.2s ease-in-out;
   width: 100%;
