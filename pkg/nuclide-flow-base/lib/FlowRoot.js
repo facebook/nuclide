@@ -331,7 +331,7 @@ export class FlowRoot {
 
 function parseJSON(args: Array<any>, value: string): any {
   try {
-    return JSON.parse(value);
+    return value ? JSON.parse(value) : {};;
   } catch (e) {
     logger.error(`Invalid JSON result from flow ${args.join(' ')}. JSON:\n'${value}'.`);
     throw e;
