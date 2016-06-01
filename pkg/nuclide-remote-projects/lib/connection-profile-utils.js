@@ -147,6 +147,7 @@ export function getDefaultConfig(): any {
   }
   let defaultConfigGetter;
   try {
+    // $FlowFB
     defaultConfigGetter = require('./fb/config');
   } catch (e) {
     defaultConfigGetter = require('./config');

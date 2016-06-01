@@ -23,6 +23,7 @@ export default async function findClangServerArgs(): Promise<{
   if (fbFindClangServerArgs === undefined) {
     fbFindClangServerArgs = null;
     try {
+      // $FlowFB
       fbFindClangServerArgs = require('./fb/find-clang-server-args');
     } catch (e) {
       // Ignore.

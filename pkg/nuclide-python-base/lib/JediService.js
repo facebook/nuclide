@@ -61,6 +61,7 @@ async function getPythonPath() {
   pythonPath = 'python';
   try {
     // Override the python path if override script is present.
+    // $FlowFB
     const overrides = await require('./fb/find-jedi-server-args')();
     if (overrides.pythonExecutable) {
       pythonPath = overrides.pythonExecutable;

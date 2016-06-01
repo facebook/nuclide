@@ -31,6 +31,7 @@ export function activate(state: ?Object): void {
 
   try {
     // Listen for the gatekeeper to tell us if we can generate native notifications.
+    // $FlowFB
     const gatekeeper = require('../../fb-gatekeeper').gatekeeper;
     subscriptions.add(
       gatekeeper.onceInitialized(() => {

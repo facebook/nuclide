@@ -65,6 +65,7 @@ async function handleFailure(pathToRoot: NuclideUri): Promise<void> {
     text: 'Restart Flow Server',
   }];
   try {
+    // $FlowFB
     const reportButton = await require('./fb-report-crash').getButton();
     if (reportButton != null) {
       buttons.push(reportButton);

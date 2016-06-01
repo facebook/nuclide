@@ -21,6 +21,8 @@
 suppress_comment=.*\\$FlowFixMe.*
 suppress_comment=.*\\$FlowIssue.*
 suppress_comment=.*\\$FlowIgnore.*
+# uncommenting the next line will silence flow errors about missing 'fb' modules
+# suppress_comment=.*\\$FlowFB.*
 
 esproposal.class_static_fields=enable
 esproposal.decorators=ignore

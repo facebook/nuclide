@@ -22,6 +22,7 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
 
   async debug(): Promise<HhvmDebuggerInstance> {
     try {
+      // $FlowFB
       const services = require('./fb/services');
       await services.warnIfNotBuilt(this.getTargetUri());
     } catch (_) {}

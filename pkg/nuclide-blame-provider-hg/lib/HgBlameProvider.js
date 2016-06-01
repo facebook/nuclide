@@ -104,6 +104,7 @@ function identity<T>(anything: T): T {
 
 let getUrlForRevision;
 try {
+  // $FlowFB
   const {getPhabricatorUrlForRevision} = require('./fb/FbHgBlameProvider');
   getUrlForRevision = getPhabricatorUrlForRevision;
 } catch (e) {

@@ -32,6 +32,7 @@ async function augmentDefaultFlags(src: string, flags: Array<string>): Promise<A
   if (getDefaultFlags === undefined) {
     getDefaultFlags = null;
     try {
+      // $FlowFB
       getDefaultFlags = require('./fb/custom-flags').getDefaultFlags;
     } catch (e) {
       // Open-source version

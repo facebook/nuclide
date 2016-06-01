@@ -23,6 +23,7 @@ export function activate() {
   // with the Hyperclick "confirm-cursor" command.
   // TODO(hansonw): Remove when symbols-view has a proper API.
   try {
+    // $FlowFB
     const {overrideGoToDeclaration} = require('./fb/overrideGoToDeclaration');
     overrideGoToDeclaration();
   } catch (e) {

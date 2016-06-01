@@ -21,6 +21,7 @@ export function loadServicesConfig(): Array<ConfigEntry> {
   const publicServices = createServiceConfigObject(require('../services-3.json'));
   let privateServices = [];
   try {
+    // $FlowFB
     privateServices = createServiceConfigObject(require('../fb/fb-services-3.json'));
   } catch (e) {
     // This file may not exist.

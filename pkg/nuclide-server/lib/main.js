@@ -27,6 +27,7 @@ export type AgentOptions = {
 
 function setupServer(): void {
   try {
+    // $FlowFB
     require('./fb/setup').setupServer();
   } catch (e) {
     // Swallow the error while runing in open sourced version.

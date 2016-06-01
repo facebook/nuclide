@@ -161,6 +161,7 @@ async function getForkBaseName(directoryPath: string): Promise<string> {
 function getPrimaryWatchmanSubscriptionRefinements(): Array<mixed> {
   let refinements = [];
   try {
+    // $FlowFB
     refinements = require('./fb/config').primaryWatchSubscriptionRefinements;
   } catch (e) {
     // purposely blank

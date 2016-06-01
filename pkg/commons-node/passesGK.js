@@ -22,6 +22,7 @@ export default async function passesGK(
   // Only do the expensive require once.
   if (gatekeeper === undefined) {
     try {
+      // $FlowFB
       gatekeeper = require('../fb-gatekeeper').gatekeeper;
     } catch (e) {
       gatekeeper = null;

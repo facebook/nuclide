@@ -60,6 +60,7 @@ function overrideIncludePath(src: string): string {
   if (_overrideIncludePath === undefined) {
     _overrideIncludePath = null;
     try {
+      // $FlowFB
       _overrideIncludePath = require('./fb/custom-flags').overrideIncludePath;
     } catch (e) {
       // open-source version
