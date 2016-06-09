@@ -115,25 +115,6 @@ a supported language, you can also jump to symbols with `cmd-r` (`ctrl-r` on Lin
 
 ![](/static/images/docs/editor-basics-editing-area-symbols.png)
 
-### Panes
-
-Pane manipulation in Nuclide is different depending on whether you use menus or the keyboard.
-
-If you use the menu to manipulate panes, Nuclide is also similar to
-[Atom](https://atom.io/docs/v1.5.0/using-atom-panes) when it comes to splitting the editing area
-into multiple panes. (e.g., `File | Panes | ...`). When adding a pane, the currently active file is
-*copied* into the new pane. This is useful for editing different sections of the same file at
-the same time.
-
-> If you open the same file in multiple panes, any edits made in the file in one pane will be
-> immediately reflected in that file in the other panes.
-
-However, if you use the keyboard shortcuts to manipulate panes (e.g., `cmd-k <arrow>`), then there
-is slightly different behavior. If you are adding a pane, then the currently active file is *moved*
-to the new pane.
-
-![](/static/images/docs/editor-basics-editing-panes.png)
-
 ### Search
 
 Most of the searching actions are the same as
