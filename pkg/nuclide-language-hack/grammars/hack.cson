@@ -1181,6 +1181,10 @@
         'name': 'keyword.operator.error-control.php'
       }
       {
+        'match': '(!==|!=|===|==|<=|>=|<>|<|>)'
+        'name': 'keyword.operator.comparison.php'
+      }
+      {
         'match': '=|\\+=|\\-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>='
         'name': 'keyword.operator.assignment.php'
       }
@@ -1202,10 +1206,6 @@
       {
         'match': '<<|>>|~|\\^|&|\\|'
         'name': 'keyword.operator.bitwise.php'
-      }
-      {
-        'match': '(===|==|!==|!=|<=|>=|<>|<|>)'
-        'name': 'keyword.operator.comparison.php'
       }
       {
         'begin': '(?i)\\b(instanceof)\\b\\s+(?=[\\\\$a-z_])'
