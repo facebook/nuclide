@@ -54,7 +54,7 @@ Installing Nuclide is a one-line command at the command-line:
 $ apm install nuclide
 ```
 
-Or you can go through the Atom Packages UI to install Atom:
+or you can go through the Atom Packages UI:
 
 1. Open Atom.
 2. Choose `Atom | Preferences` to bring up the `Settings` pane. (on Linux this will be
