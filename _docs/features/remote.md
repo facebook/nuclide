@@ -135,3 +135,10 @@ development can take place as normal.
 
 > Changes made to a remote file in Nuclide is reflected on the remote machine; changes made in the
 > project on the remote server is reflected in your remote project file tree within Nuclide.
+
+## Troubleshooting Previously Working Configuration
+
+Sometimes you'll have a setup that used to work, but starts to fail. Here are some things to look at to make it work again:
+* If you have a version mismatch you'll want to run `npm update -g nuclide` on the server and on the client you'll want to make sure you have the same version as well
+* If you're running a tool that watches for file changes, then this could cause issues as well. Try stopping that process and stopping the file watcher as well via `watchman shutdown-server`. Then try to reconnect to the server again from Atom.
+* If you still have issues you may have issues with nuclide on the server not being able to start. You can fix this by running `killall node` and `killall python`
