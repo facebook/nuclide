@@ -67,6 +67,13 @@ where `userid` is your userid.  If you still get errors you may need to do this:
 npm clear cache
 ```
 
+### Files Not Syncing
+
+Sometimes you'll have a setup that used to work, but starts to fail. Here some things you can try to make it work again:
+- If you have a version mismatch you'll want to run `npm update -g nuclide` on the server and on the client you'll want to make sure you have the same version as well.
+- Other tools that watch files may cause problems as well. Try stopping that process and stopping the file watcher as well via `watchman shutdown-server`. Then try to reconnect to the server again from Atom.
+- Try `killall node` on the server side. Then try connecting again.
+
 ## Environment Issues
 
 ### Custom `$PATH`
