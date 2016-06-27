@@ -133,9 +133,16 @@ async function isFlowInstalled(): Promise<boolean> {
   return flowPathCache.get(flowPath);
 }
 
+
+
 async function canFindFlow(flowPath: string): Promise<boolean> {
+  // fix for locating flow on Windows
+  // https://github.com/facebook/nuclide/issues/561
+  const locatorTool = (process.platform === 'win32') ?
+    'where' :
+    'which';
   try {
-    await checkOutput('which', [flowPath]);
+    await checkOutput(locatorTool, [flowPath]);
     return true;
   } catch (e) {
     return false;
