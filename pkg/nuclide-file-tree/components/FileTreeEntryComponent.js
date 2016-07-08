@@ -284,7 +284,7 @@ export class FileTreeEntryComponent extends React.Component {
     const nativeEvent = (event.nativeEvent: any);
     nativeEvent.dataTransfer.effectAllowed = 'move';
     nativeEvent.dataTransfer.setDragImage(fileIcon, -8, -4);
-    nativeEvent.dataTransfer.setData("initialPath", this.props.node.uri);
+    nativeEvent.dataTransfer.setData('initialPath', this.props.node.uri);
     window.requestAnimationFrame(() => document.body.removeChild(fileIcon));
   }
 
