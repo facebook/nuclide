@@ -164,4 +164,18 @@ If the Flow features are not working in Nuclide:
 If installed `flow` in a place not on your `$PATH` (e.g., unzipped it in your home directory which
 is not on your `$PATH`), then you either have to update your `$PATH` or explicitly specify it.
 
-![](/static/images/help/troubleshooting-settings-nuclide-flow-executable.png)  
+![](/static/images/help/troubleshooting-settings-nuclide-flow-executable.png)
+
+### Module Not Found
+
+If you are [running Nuclide from source](/docs/advanced-topics/building-from-source/), you may
+occasionally run into a `Cannot find module` error.
+
+![](/static/images/help/troubleshooting-module-not-found.png)
+
+As Nuclide is continuously updated, new modules may be added as dependencies. When you rebase to
+the latest code and run Nuclide, the new module will not have been installed, so it will not be
+found.
+
+Running `npm update` will get you the latest modules so that you should be able to open Nuclide
+successfully again.
