@@ -332,6 +332,7 @@ function isDescribe(functionName: string): boolean {
     case 'ddescribe':
     case 'xdescribe':
     case 'describe.only':
+    case 'describe.skip':
       return true;
     default:
       return false;
@@ -346,6 +347,7 @@ function isIt(functionName: string): boolean {
     case 'pit':
     case 'xit':
     case 'it.only':
+    case 'it.skip':
       return true;
     default:
       return false;
