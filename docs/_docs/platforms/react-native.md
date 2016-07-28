@@ -42,7 +42,7 @@ If you have built your React Native *iOS* application with Buck, you may be able
 built-in Nuclide Buck integration to build and run your application.
 
 Bring up the [Buck build toolbar](/docs/features/toolbar/#buttons) from the Nuclide
-[toolbar](/docs/features/toolbar/) or go to the command palette and serach for
+[toolbar](/docs/features/toolbar/) or go to the command palette and search for
 `Nuclide Buck Toolbar: Toggle`.
 
 ![](/static/images/docs/platform-react-native-running-buck-toolbar.png)
