@@ -39,6 +39,11 @@
         "1.0.0": "provideLinter"
       }
     },
+    "nuclide-outline-view": {
+      "versions": {
+        "0.0.0": "provideOutlines"
+      }
+    },
     "nuclide-type-hint.provider": {
       "versions": {
         "0.0.0": "createTypeHintProvider"

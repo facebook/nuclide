@@ -33,6 +33,14 @@ export type MerlinError = {
   type: 'type' | 'parser' | 'env' | 'warning' | 'unknown',
 };
 
+export type MerlinOutline = {
+  start: MerlinPosition,
+  end: MerlinPosition,
+  kind: string,
+  name: string,
+  children: Array<MerlinOutline>,
+};
+
 export async function pushDotMerlinPath(path: NuclideUri): Promise<?any> {
   const instance = await getInstance(path);
   return instance ? instance.pushDotMerlinPath(path) : null;
@@ -87,6 +95,11 @@ export async function errors(
 ): Promise<?Array<MerlinError>> {
   const instance = await getInstance(path);
   return instance ? instance.errors() : null;
+}
+
+export async function outline(path: NuclideUri) {
+  const instance = await getInstance(path);
+  return instance ? instance.outline(path) : null;
 }
 
 /**

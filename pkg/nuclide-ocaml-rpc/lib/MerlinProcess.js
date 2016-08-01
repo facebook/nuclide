@@ -10,7 +10,7 @@
  */
 
 import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {MerlinError, MerlinType} from '..';
+import type {MerlinError, MerlinOutline, MerlinType} from '..';
 
 import nuclideUri from '../../commons-node/nuclideUri';
 import readline from 'readline';
@@ -81,6 +81,8 @@ export type MerlinProcess = {
   complete(file: NuclideUri, line: number, col: number, prefix: string): Promise<mixed>,
 
   errors(): Promise<Array<MerlinError>>,
+
+  outline(file: NuclideUri): Promise<Array<MerlinOutline>>,
 
   /**
    * Run a command; parse the json output, return an object. This assumes
@@ -230,6 +232,14 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
         .catch(reject);
     });
   }
+
+  async outline(): Promise<Array<MerlinOutline>> {
+    return await this._promiseQueue.submit((resolve, reject) => {
+      this.runSingleCommand(['outline'])
+        .then(resolve)
+        .catch(reject);
+    });
+  }
 }
 
 /**
@@ -344,6 +354,14 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
   async errors(): Promise<Array<MerlinError>> {
     return await this._promiseQueue.submit((resolve, reject) => {
       this.runSingleCommand(['errors'])
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+
+  async outline(path: NuclideUri): Promise<Array<MerlinOutline>> {
+    return await this._promiseQueue.submit((resolve, reject) => {
+      this.runSingleCommand(['outline'])
         .then(resolve)
         .catch(reject);
     });
