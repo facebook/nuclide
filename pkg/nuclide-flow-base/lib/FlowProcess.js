@@ -310,7 +310,7 @@ export class FlowProcess {
   }
 
   _getMaxWorkers(): number {
-    return Math.max(os.cpus().length - 2, 1);
+    return Math.ceil(os.cpus().length / 4);
   }
 
   /**
