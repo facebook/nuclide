@@ -18,6 +18,7 @@ import HyperclickProvider from './HyperclickProvider';
 import AutoComplete from './AutoComplete';
 import {GRAMMARS} from './constants';
 import MerlinLinterProvider from './LinterProvider';
+import {getOutline} from './OutlineProvider';
 import TypeHintProvider from './TypeHintProvider';
 
 export function getHyperclickProvider() {
@@ -43,7 +44,6 @@ export function provideLinter(): LinterProvider {
 }
 
 export function provideOutlines(): OutlineProvider {
-  const {getOutline} = require('./OutlineProvider');
   return {
     grammarScopes: Array.from(GRAMMARS),
     priority: 1,

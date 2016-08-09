@@ -97,7 +97,9 @@ export async function errors(
   return instance ? instance.errors() : null;
 }
 
-export async function outline(path: NuclideUri) {
+export async function outline(
+  path: NuclideUri,
+): Promise<?Array<MerlinOutline>> {
   const instance = await getInstance(path);
   return instance ? instance.outline(path) : null;
 }

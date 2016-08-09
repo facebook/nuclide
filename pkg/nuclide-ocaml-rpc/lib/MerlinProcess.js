@@ -233,7 +233,7 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
     });
   }
 
-  async outline(): Promise<Array<MerlinOutline>> {
+  async outline(path: NuclideUri): Promise<Array<MerlinOutline>> {
     return await this._promiseQueue.submit((resolve, reject) => {
       this.runSingleCommand(['outline'])
         .then(resolve)

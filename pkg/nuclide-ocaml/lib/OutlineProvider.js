@@ -10,7 +10,7 @@
  */
 
 import type {Outline} from '../../nuclide-outline-view';
-import type {MerlinProcess} from '../../nuclide-ocaml-base/lib/MerlinProcess';
+import type {MerlinProcess} from '../../nuclide-ocaml-rpc/lib/MerlinProcess';
 
 import {Point} from 'atom';
 
@@ -50,24 +50,30 @@ function makeTokens(data) {
       nameToken = type(data.name);
       break;
   }
-  kind = kind || data.kind.toLowerCase();
-  nameToken = nameToken || plain(data.name);
+  if (kind == null) {
+    kind = data.kind.toLowerCase();
+  }
+  if (nameToken == null) {
+    nameToken = plain(data.name);
+  }
 
   return [keyword(kind), whitespace(' '), nameToken];
 }
 
-function convertMerlinOutline(data) {
-  const tokenizedText = makeTokens(data);
-  const children = data.children.reverse().map(convertMerlinOutline);
-  const startPosition = new Point(data.start.line - 1, data.start.col);
-  const endPosition = new Point(data.end.line - 1, data.end.col);
+function convertMerlinOutlines(outlines) {
+  return outlines.reverse().map(data => {
+    const tokenizedText = makeTokens(data);
+    const children = convertMerlinOutlines(data.children);
+    const startPosition = new Point(data.start.line - 1, data.start.col);
+    const endPosition = new Point(data.end.line - 1, data.end.col);
 
-  return {
-    tokenizedText,
-    children,
-    startPosition,
-    endPosition,
-  };
+    return {
+      tokenizedText,
+      children,
+      startPosition,
+      endPosition,
+    };
+  });
 }
 
 export async function getOutline(editor: atom$TextEditor): Promise<?Outline> {
@@ -85,6 +91,6 @@ export async function getOutline(editor: atom$TextEditor): Promise<?Outline> {
     return null;
   }
   return {
-    outlineTrees: result.reverse().map(convertMerlinOutline),
+    outlineTrees: convertMerlinOutlines(result),
   };
 }
