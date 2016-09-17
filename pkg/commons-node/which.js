@@ -10,6 +10,7 @@
  */
 
 import {checkOutput} from './process';
+import {EOL} from 'os';
 
 /**
  * Provides a cross-platform way to check whether a binary is available.
@@ -21,7 +22,7 @@ export default async function which(command: string): Promise<?string> {
   const whichCommand = process.platform === 'win32' ? 'where' : 'which';
   try {
     const result = await checkOutput(whichCommand, [command]);
-    return result.stdout.trim();
+    return result.stdout.split(EOL)[0];
   } catch (e) {
     return null;
   }
