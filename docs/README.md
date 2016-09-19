@@ -4,7 +4,7 @@ This directory will contain the user and feature documentation for Nuclide.
 
 ### Run the Site Locally
 
-1. Make sure you have Ruby and [RubyGems](https://rubygems.org/) installed.
+1. Make sure you have [Homebrew](http://brew.sh), Ruby, and [RubyGems](https://rubygems.org/) installed.
 
    > Ruby >= 2.2 is required for the gems. On the latest versions of Mac OS X, Ruby 2.0 is the
    > default. Use `brew install ruby` (or your preferred upgrade mechanism) to install a newer
