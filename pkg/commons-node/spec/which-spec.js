@@ -4,6 +4,19 @@
 import which from '../which';
 
 describe('which', () => {
+  let checkOutput: JasmineSpy;
+  let checkOutputReturn = {stdout: ''};
+
+  beforeEach(() => {
+    checkOutput = spyOn(require('../process'), 'checkOutput').andCallFake(() =>
+      checkOutputReturn
+    );
+  });
+
+  afterEach(() => {
+    jasmine.unspy(require('../process'), 'checkOutput');
+  });
+
   describe('on windows', () => {
     const real_platform: string = process.platform;
     const eol = '\r\n';
@@ -19,7 +32,6 @@ describe('which', () => {
     });
 
     it('calls where on Windows', () => {
-      let checkOutput: JasmineSpy = spyOn(require('../process'), 'checkOutput').andReturn('hello');
       let param: string = '';
       which(param);
       expect(checkOutput).toHaveBeenCalledWith('where', [param]);
@@ -27,8 +39,7 @@ describe('which', () => {
 
     it('returns the first match', () => {
       waitsForPromise(async () => {
-        let returnValue = {stdout: 'hello' + os.EOL + 'hello.exe' + os.EOL};
-        let checkOutput: JasmineSpy = spyOn(require('../process'), 'checkOutput').andReturn(returnValue);
+        checkOutputReturn.stdout = 'hello' + os.EOL + 'hello.exe' + os.EOL;
         const ret = await which('bla');
         expect(ret).toEqual('hello');
       });
@@ -50,7 +61,6 @@ describe('which', () => {
     });
 
     it('calls which', () => {
-      let checkOutput: JasmineSpy = spyOn(require('../process'), 'checkOutput').andReturn('hello');
       let param: string = '';
       which(param);
       expect(checkOutput).toHaveBeenCalledWith('which', [param]);
@@ -58,8 +68,7 @@ describe('which', () => {
 
     it('returns the first match', () => {
       waitsForPromise(async () => {
-        let returnValue = {stdout: 'hello' + os.EOL + '/bin/hello' + os.EOL};
-        let checkOutput: JasmineSpy = spyOn(require('../process'), 'checkOutput').andReturn(returnValue);
+        checkOutputReturn.stdout = 'hello' + os.EOL + '/bin/hello' + os.EOL;
         const ret = await which('bla');
         expect(ret).toEqual('hello');
       });
