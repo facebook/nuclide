@@ -5,7 +5,7 @@ layout: docs
 permalink: /docs/editor/setup/
 ---
 
-There are two supported platforms for Nuclide, [Linux](#linux) and [Mac OS X](#mac).
+There are two supported platforms for Nuclide, [Linux](#linux) and [macOS](#mac).
 
 > Nuclide can be installed on [Windows](#windows), but it is
 > [not fully supported](https://github.com/facebook/nuclide/issues/401).
@@ -29,10 +29,10 @@ $ apm install nuclide
 or within Atom itself:
 
 1. Open Atom.
-2. Choose `Atom | Preferences` to bring up the `Settings` pane. (on Linux this will be
-  `Edit | Preferences`).
+2. Choose `Atom | Preferences` (on Linux this will be
+  `Edit | Preferences`) to bring up the `Settings` pane.
 3. In the `Settings` pane, click on `Install`.
-4. In the search box, type *Nuclide* and press the *enter* key.
+4. In the search box, type *Nuclide* and press the *Enter* key.
 5. The package you are looking for is called `nuclide` and should be version `0.111.0` or greater.
 6. Click the *Install* button for that package.
 
@@ -57,10 +57,9 @@ $ apm install nuclide
 or you can go through the Atom Packages UI:
 
 1. Open Atom.
-2. Choose `Atom | Preferences` to bring up the `Settings` pane. (on Linux this will be
-  `Edit | Preferences`).
+2. Choose `Atom | Preferences` to bring up the `Settings` pane.
 3. In the `Settings` pane, click on `Install`.
-4. In the search box, type *Nuclide* and press the *enter* key.
+4. In the search box, type *Nuclide* and press the *Enter* key.
 5. The package you are looking for is called `nuclide` and should be version `0.111.0` or greater.
 6. Click the *Install* button for that package.
 
@@ -69,12 +68,12 @@ or you can go through the Atom Packages UI:
 ### Prerequisites
 
 Nuclide requires Atom 1.7.4+ (which requires Git). There are [instructions on the Atom website](https://atom.io/download/deb#atom-on-linux)
-to install Atom, but it doesn't mention the Git requirement.
+for installing Atom on Linux, but it doesn't mention the Git requirement.
 
 Instead, follow the command line process below which shows you the installation of all the
 necessary prerequisites, including Git.
 
-This is an installation on Ubuntu. If you are using an RPM-based distro, you will have replace the
+This is an installation on Ubuntu. If you are using an RPM-based distro, you should replace the
 `apt-get` commands with the appropriate `rpm` or `yum` commands. Depending on your permissions, you
 may need to prefix these commands with `sudo`.
 
@@ -101,10 +100,9 @@ $ apm install nuclide
 Or you can go through the Atom Packages UI to install Atom:
 
 1. Open Atom.
-2. Choose `Edit | Preferences` to bring up the `Settings` pane. (on Linux this will be
-  `Edit | Preferences`).
+2. Choose `Edit | Preferences` to bring up the `Settings` pane.
 3. In the `Settings` pane, click on `Install`.
-4. In the search box, type *Nuclide* and press the *enter* key.
+4. In the search box, type *Nuclide* and press the *Enter* key.
 5. The package you are looking for is called `nuclide` and should be version `0.111.0` or greater.
 6. Click the *Install* button for that package.
 
@@ -121,7 +119,7 @@ Nuclide experience is [not yet supported](https://github.com/facebook/nuclide/is
 
 ## Post Installation
 
-After installation, running `Atom` will automatically load Nuclide.
+After installation, running Atom will automatically load Nuclide.
 
 ### Recommended Packages
 
@@ -147,7 +145,7 @@ You will find a checkbox allowing you enable the recommended settings.
 
 ### Installing Nuclide Server
 
-If you want to use Nuclide for remote development, you'll also need to setup the NPM `nuclide`
+If you want to use Nuclide for remote development, you'll also need to set up the npm `nuclide`
 package. Instructions can be found in the [Remote Development docs](/docs/features/remote/).
 
 ### Other Installations
@@ -158,6 +156,6 @@ To benefit from all of Nuclide's features, we recommend you also install the fol
 * [Hack](/docs/languages/hack/)
 * [Mercurial](/docs/features/hg/)
 * [Watchman](https://facebook.github.io/watchman/) - version 3.2 or above. It must be in
-  `/usr/local/bin/` or in your `$PATH`. Without Watchman, Nuclide will lose some functionality in
+  `/usr/local/bin/` or in your `$PATH` environment variable. Without Watchman, Nuclide will lose some functionality of
   its [Mercurial](/docs/features/hg), [Remote Development](/docs/features/remote), and
-  [`Quick Open`](/docs/quick-start/getting-started/#quick-open) features.
+  [*Quick Open*](/docs/quick-start/getting-started/#quick-open) features.
