@@ -55,7 +55,7 @@ export default async function findClangServerArgs(): Promise<ClangServerArgs> {
 
   const clangServerArgs = {
     libClangLibraryFile,
-    pythonExecutable: 'python',
+    pythonExecutable: 'python2.7',
     pythonPathEnv: nuclideUri.join(__dirname, '../VendorLib'),
   };
   if (typeof fbFindClangServerArgs === 'function') {
