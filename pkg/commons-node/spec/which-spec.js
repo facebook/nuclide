@@ -1,15 +1,24 @@
 'use babel';
 /* @flow */
 
+/*
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ */
+
 import which from '../which';
 
 describe('which', () => {
   let checkOutput: JasmineSpy;
-  let checkOutputReturn = {stdout: ''};
+  let checkOutputReturn: Object = null;
 
   beforeEach(() => {
+    checkOutputReturn = {stdout: ''};
     checkOutput = spyOn(require('../process'), 'checkOutput').andCallFake(() =>
-      checkOutputReturn
+      checkOutputReturn,
     );
   });
 
@@ -20,7 +29,7 @@ describe('which', () => {
   describe('on windows', () => {
     const real_platform: string = process.platform;
     const eol = '\r\n';
-    let os = require('os');
+    const os = require('os');
     const real_eol = os.EOL;
     beforeEach(() => {
       Object.defineProperty(process, 'platform', {value: 'win32'});
@@ -32,7 +41,7 @@ describe('which', () => {
     });
 
     it('calls where on Windows', () => {
-      let param: string = '';
+      const param: string = '';
       which(param);
       expect(checkOutput).toHaveBeenCalledWith('where', [param]);
     });
@@ -49,7 +58,7 @@ describe('which', () => {
   describe('on linux', () => {
     const real_platform: string = process.platform;
     const eol = '\n';
-    let os = require('os');
+    const os = require('os');
     const real_eol = os.EOL;
     beforeEach(() => {
       Object.defineProperty(process, 'platform', {value: 'linux'});
@@ -61,7 +70,7 @@ describe('which', () => {
     });
 
     it('calls which', () => {
-      let param: string = '';
+      const param: string = '';
       which(param);
       expect(checkOutput).toHaveBeenCalledWith('which', [param]);
     });
