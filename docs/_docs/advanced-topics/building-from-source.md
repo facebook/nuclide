@@ -109,6 +109,8 @@ $ npm install
 $ apm link
 ```
 
+> If you have another version of Nuclide installed (e.g., the official apm package), but you also want to run Nuclide from source, you can `apm link --dev` and then run Nuclide via `atom --dev`. This will allow something similar to a production and development installation of Nuclide. 
+
 Verify the installation by:
 
 1. Open Atom.
