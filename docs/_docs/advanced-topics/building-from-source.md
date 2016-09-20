@@ -16,12 +16,16 @@ those willing to live on the bleeding edge, you can install Nuclide from source.
 ### Prerequisites
 
 You must have the [general prerequisites](/docs/editor/setup#mac__prerequisites) installed. In
-addition, you must have Xcode and **Node 5.10.0** installed as well.
+addition, you must have
 
-Xcode can be installed from the App Store. Installation can take a *long, long* time. So be patient.
+- Xcode (for command line tools)
+- **Node 5.10.0** or greater
+- Atom Shell Commands (open Atom and choose the `Atom | Install Shell Commands` menu item) installed as well.
 
-To install Node, the easiest way is to [download the latest released Node
-package](https://nodejs.org) and go through the installer.
+> Xcode can be installed from the App Store. Installation can take a *long, long* time. So be patient.
+
+> To install Node, the easiest way is to
+> [download the latest released Node package](https://nodejs.org) and go through the installer.
 
 You can verify all the appropriate dependencies. All the following should be on your `$PATH`
 (usually `usr/bin` or `usr/local/bin`).
@@ -41,7 +45,7 @@ python 2.7.10
 git 2.5.4
 ```
 
-Don't worry about the `apm` versions of `npm`, etc. Those are internal to `atom`. Used on your
+> Don't worry about the `apm` versions of `npm`, etc. Those are internal to `atom`. Used on your
 system are the ones associated with `node --version`, etc.
 
 ### Building
