@@ -13,7 +13,7 @@ import which from '../which';
 
 describe('which', () => {
   let checkOutput: JasmineSpy;
-  let checkOutputReturn: Object = null;
+  let checkOutputReturn: {stdout: string} = (null: any);
 
   beforeEach(() => {
     checkOutputReturn = {stdout: ''};
