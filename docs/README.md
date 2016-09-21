@@ -4,7 +4,7 @@ This directory will contain the user and feature documentation for Nuclide.
 
 ### Run the Site Locally
 
-1. Navigate to the `./docs` directory.
+1. Ensure that you are in the `YOUR-PROJECT/docs` directory in your local repo clone (i.e., the same directory where this `README.md` exists). The below RubyGems commands, etc. must be run from there.
 
 2. Make sure you have [Homebrew](http://brew.sh), Ruby, and [RubyGems](https://rubygems.org/) installed.
 
