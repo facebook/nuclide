@@ -4,19 +4,21 @@ This directory will contain the user and feature documentation for Nuclide.
 
 ### Run the Site Locally
 
-1. Make sure you have [Homebrew](http://brew.sh), Ruby, and [RubyGems](https://rubygems.org/) installed.
+1. Navigate to the `./docs` directory.
+
+2. Make sure you have [Homebrew](http://brew.sh), Ruby, and [RubyGems](https://rubygems.org/) installed.
 
    > Ruby >= 2.2 is required for the gems. On the latest versions of Mac OS X, Ruby 2.0 is the
    > default. Use `brew install ruby` (or your preferred upgrade mechanism) to install a newer
    > version of Ruby for your Mac OS X system.
 
-2. Make sure you have [Bundler](http://bundler.io/) installed.
+3. Make sure you have [Bundler](http://bundler.io/) installed.
 
     ```
     # may require sudo
     gem install bundler
     ```
-3. Install the project's dependencies
+4. Install the project's dependencies
 
     ```
     bundle install
@@ -28,13 +30,13 @@ This directory will contain the user and feature documentation for Nuclide.
     > `xcode-select --install` (although this may not work if you have already installed command
     > line tools).
 
-4. Run Jekyll's server.
+5. Run Jekyll's server.
 
     ```
     bundle exec jekyll serve --incremental
     ```
 
-5. The site will be served from http://localhost:4000.
+6. The site will be served from http://localhost:4000.
 
 ### Updating the Bundle
 
