@@ -204,7 +204,7 @@ there click on `Packages` and scroll down until you see `nuclide` under either
 
 ![](/static/images/docs/editor-basics-nuclide-package.png)
 
-> If you linked the [Nuclide source code](https://github.com/facebook/nuclide) to Atom's development
+> If you linked the [Nuclide source code](/docs/advanced-topics/building-from-source/#development-mode) to Atom's development
 > packages and opened up Atom in development mode via the `--dev` flag, you will see the `nuclide`
 > package under `Development Packages`.
 

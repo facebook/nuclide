@@ -59,6 +59,7 @@ $ cd nuclide
 # Install dependencies
 $ npm install
 # Link the 'nuclide' package to Atom's package directory
+# You could also use apm link --dev ... see Development Mode below.
 $ apm link
 ```
 
@@ -110,6 +111,7 @@ $ cd nuclide
 # Install dependencies
 $ npm install
 # Link the 'nuclide' package to Atom's package directory
+# You could also use apm link --dev ... see Development Mode below.
 $ apm link
 ```
 
@@ -128,6 +130,8 @@ Building Nuclide from source is not currently supported on Windows.
 > success. The feature set will also be [limited](/docs/editor/setup/#windows).
 
 ## Development Mode
+
+If you have another version of Nuclide installed (e.g., the official apm package), but you also want to run Nuclide from source, you can `apm link --dev` and then run Nuclide via `atom --dev`. This will allow something similar to a production and development installation of Nuclide. 
 
 When you open Atom in development mode, either with the `atom --dev` from the command line or with
 the `View | Developer | Open in Dev Mode...` command from within the Atom menus, your linked version
