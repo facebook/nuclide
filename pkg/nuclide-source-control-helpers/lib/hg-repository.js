@@ -35,7 +35,7 @@ export default function findHgRepository(startDirectoryPath: string): ?HgReposit
       }
       return {repoPath, originURL, workingDirectoryPath};
     }
-    const parentDir = nuclideUri.join(workingDirectoryPath, '..');
+    const parentDir = nuclideUri.join(workingDirectoryPath);
     if (parentDir === workingDirectoryPath) {
       return null;
     } else {
