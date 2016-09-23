@@ -5,7 +5,7 @@ layout: docs
 permalink: /docs/features/outline-view/
 ---
 
-Nuclide provides an outline view to allow for quick navigation of a code file. This can be
+Nuclide provides an Outline View to allow for quick navigation of a code file. This can be
 particularly useful for lengthy files with many classes, functions, methods, etc.
 
 ![](/static/images/docs/feature-outline-view.png)
@@ -15,29 +15,29 @@ particularly useful for lengthy files with many classes, functions, methods, etc
 
 ## Toggling
 
-To toggle the `Outline View` panel, you can:
+To toggle the **Outline View** panel, you can:
 
-- Press `option-O` (`alt-O` on Linux)
-- Go to the `Nuclide | Outline View | Toggle` menu
-- Click on the `Outline View` [button](/docs/features/toolbar/#buttons) within the Nuclide [toolbar](http://nuclide.io/docs/features/toolbar/).
-- Use the `Try It` button on the `Outline View` [quick launch](/docs/quick-start/getting-started/#quick-launch-menu) menu in the Nuclide home tab.
+- Press `Option-O` (`Alt-O` on Linux).
+- Go to the `Nuclide | Outline View | Toggle` menu.
+- Click on the **Outline View** [button](/docs/features/toolbar/#buttons) within the Nuclide [toolbar](http://nuclide.io/docs/features/toolbar/).
+- Use the **Try It** button associated with the **Outline View** [Quick Launch](/docs/quick-start/getting-started/#quick-launch-menu) menu in the Nuclide Home tab.
 
 ## Navigation
 
-Clicking on any entity in the outline view will bring you to the line in Nuclide that represents the
+Clicking on any entity in the Outline View will bring you to the line in Nuclide that represents the
 beginning of the definition for that entity. For example, clicking on
 `function withDestinationPath` in the outline view will bring you to line 44 in the file that
 defines that function.
 
 ![](/static/images/docs/feature-outline-view-click.png)
 
-> Outline view currently supports Hack, PHP, Flow, JavaScript, Python, C++ and JSON files. If you
-> have outline view opened for a file that is not supported, you will see a message similar to
+> Outline View currently supports Hack, PHP, Flow, JavaScript, Python, C++ and JSON files. If you
+> have Outline View opened for a file that is not supported, you will see a message similar to
 > *"Outline view does not currently support..."*
 
 ## Requirements
 
-In order for the outline view to correctly, the following are required for specific languages:
+In order for the Outline View to work correctly, the following are required for specific languages:
 
 - **Hack**: The [Hack typechecker](/docs/languages/hack/#installing-hack), `hh_client`.
 - **Flow**: The [Flow typechecker](/docs/languages/flow/#installing-flow), `flow`.
