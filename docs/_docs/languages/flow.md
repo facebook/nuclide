@@ -7,13 +7,14 @@ permalink: /docs/languages/flow/
 
 Nuclide has deep, built in support for [Flow-enabled](http://flowtype.org) JavaScript.
 
-> Currently, Flow is [not supported on Windows](https://github.com/facebook/flow/issues/6), so this
-> integration is not yet available on that platform.
-
 <br/>
 
 * TOC
 {:toc}
+
+## Flow on Windows
+
+Flow recently became supported on Windows.  See the [Windows is Supported!](https://flowtype.org/blog/2016/08/01/Windows-Support.html) Flow blog post for more information.
 
 ## Installing Flow
 
