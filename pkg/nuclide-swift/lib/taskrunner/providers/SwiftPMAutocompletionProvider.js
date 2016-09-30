@@ -46,7 +46,7 @@ export default class SwiftPMAutocompletionProvider {
     const result = await asyncExecuteSourceKitten('complete', [
       '--text', request.editor.getText(),
       '--offset', String(offset),
-      '--compilerargs', '--',
+      '--',
       compilerArgs ? compilerArgs : '',
     ]);
 
