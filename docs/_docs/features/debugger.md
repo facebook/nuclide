@@ -107,7 +107,7 @@ Watch expressions.
 
 ***Call Stack***
 
-The **Call Stack** area shows you were you came from to get to your current point in the code. The
+The **Call Stack** area shows you where you came from to get to your current point in the code. The
 top function is where you currently are, the function below the top is the one that called the
 current function, and so on. Clicking on any function in the call stack will change the scope
 information so that it is relevant to that function.
