@@ -72,10 +72,11 @@ export function openFile(
   filePath: NuclideUri,
   line: number,
   column: number,
+  isWaiting: boolean,
 ): Observable<AtomFileEvent> {
   return Observable.fromPromise(getCommands())
     .flatMap(commands => {
-      return commands.openFile(filePath, line, column).refCount();
+      return commands.openFile(filePath, line, column, isWaiting).refCount();
     });
 }
 
@@ -85,10 +86,11 @@ export function openRemoteFile(
   filePath: NuclideUri,
   line: number,
   column: number,
+  isWaiting: boolean,
 ): Observable<AtomFileEvent> {
   return Observable.fromPromise(getCommands())
     .flatMap(commands => {
-      return commands.openRemoteFile(filePath, line, column).refCount();
+      return commands.openRemoteFile(filePath, line, column, isWaiting).refCount();
     });
 }
 
