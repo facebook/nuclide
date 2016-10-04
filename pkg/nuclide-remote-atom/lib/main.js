@@ -99,6 +99,7 @@ function openFile(
         ) {
           const notification = atom.notifications.addInfo(
             `The remote server has opened \`${nuclideUri.parse(uri).path}\` and is waiting for it to be closed.`, {
+              dismissable: true,
               buttons: [{
                 onDidClick: () => {
                   editor.destroy();
