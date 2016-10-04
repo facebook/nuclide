@@ -95,7 +95,7 @@ function openFile(
         if (
           nuclideUri.isRemote(uri) &&
           isWaiting &&
-          featureConfig.get('nuclide-remote-atom.shouldNotifyOnRemoteFileOpen')
+          featureConfig.get('nuclide-remote-atom.shouldNotifyWhenRemoteServerIsWaitingOnFile')
         ) {
           const notification = atom.notifications.addInfo(
             `The remote server has opened \`${nuclideUri.parse(uri).path}\` and is waiting for it to be closed.`, {
