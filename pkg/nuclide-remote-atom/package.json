@@ -8,11 +8,11 @@
     "packageType": "Atom",
     "testRunner": "apm",
     "config": {
-      "shouldNotifyWhenRemoteServerIsWaitingOnFile": {
-        "title": "Notify when the remote server is waiting on an open file.",
+      "shouldNotifyWhenCommandLineIsWaitingOnFile": {
+        "title": "Notify when the command line is waiting on an open file.",
         "type": "boolean",
-        "default": false,
-        "description": "Show a notification when a file is opened locally by the remote server and the remote server is waiting for the file to be closed."
+        "default": true,
+        "description": "Show a notification when a file is opened locally and the command line is waiting for the file to be closed."
       }
     }
   },

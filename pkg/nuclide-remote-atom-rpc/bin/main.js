@@ -99,7 +99,7 @@ async function main(argv): Promise<number> {
     const isDirectory = await getIsDirectory(realpath);
     try {
       if (nuclideUri.isRemote(realpath)) {
-        const result = openRemoteFile(realpath, line, column, !!argv.wait);
+        const result = openRemoteFile(realpath, line, column, Boolean(argv.wait));
         if (argv.wait) {
           // eslint-disable-next-line babel/no-await-in-loop
           await result.toPromise();
@@ -112,7 +112,7 @@ async function main(argv): Promise<number> {
         // eslint-disable-next-line babel/no-await-in-loop
         await addProject(realpath);
       } else {
-        const result = openFile(realpath, line, column, !!argv.wait);
+        const result = openFile(realpath, line, column, Boolean(argv.wait));
         if (argv.wait) {
           // eslint-disable-next-line babel/no-await-in-loop
           await result.toPromise();

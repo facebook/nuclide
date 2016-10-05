@@ -93,14 +93,22 @@ function openFile(
         atom.applicationDelegate.focusWindow();
 
         if (
-          nuclideUri.isRemote(uri) &&
           isWaiting &&
-          featureConfig.get('nuclide-remote-atom.shouldNotifyWhenRemoteServerIsWaitingOnFile')
+          featureConfig.get('nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile')
         ) {
           const notification = atom.notifications.addInfo(
-            `The remote server has opened \`${nuclideUri.parse(uri).path}\` and is waiting for it to be closed.`, {
+            `The command line has opened \`${nuclideUri.getPath(uri)}\` and is waiting for it to be closed.`, {
               dismissable: true,
               buttons: [{
+                onDidClick: () => {
+                  featureConfig.set(
+                    'nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile',
+                    false,
+                  );
+                  notification.dismiss();
+                },
+                text: 'Don\'t show again',
+              }, {
                 onDidClick: () => {
                   editor.destroy();
                 },
