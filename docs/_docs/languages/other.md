@@ -31,7 +31,7 @@ Nuclide is a great IDE for [developing React Native applications](/docs/platform
 ## OCaml
 
 This **experimental** feature provides rudimentary support for OCaml via
-[`ocamlmerlin`](https://github.com/the-lambda-church/merlin). Merlin can be installed from source
+[ocamlmerlin](https://github.com/the-lambda-church/merlin). Merlin can be installed from source
 or by installing the `merlin` OPAM package.
 
 OCaml's integration into Nuclide provides you with productivity features such as:
@@ -40,5 +40,10 @@ OCaml's integration into Nuclide provides you with productivity features such as
 * Jump to Definition
 
 It requires that `ocamlmerlin` be installed on your system and properly configured for your
-project. `ocamlmerlin` should be on your `PATH`. If it is not, you may specify the path to
+project. `ocamlmerlin` should be in your `$PATH` environment variable. If it is not, you may specify the path to
 `ocamlmerlin` in the settings for the 'nuclide' package.
+
+1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
+2. Select **Packages** from the list at the left, and search for `nuclide`.
+3. Click on the **Settings** button for the `nuclide` package.
+4. Scroll down until you find `nuclide-ocaml`, and enter the custom path in the **Path to Merlin Executable** text box.
