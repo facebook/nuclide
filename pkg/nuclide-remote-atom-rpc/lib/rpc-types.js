@@ -17,11 +17,13 @@ export interface AtomCommands {
     filePath: NuclideUri,
     line: number,
     column: number,
+    isWaiting: boolean,
   ): ConnectableObservable<AtomFileEvent>,
   openRemoteFile(
     uri: string,
     line: number,
     column: number,
+    isWaiting: boolean,
   ): ConnectableObservable<AtomFileEvent>,
   addProject(projectPath: NuclideUri): Promise<void>,
   dispose(): void,

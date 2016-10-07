@@ -21,9 +21,11 @@ import {
 } from '../../nuclide-remote-connection';
 import {goToLocation} from '../../commons-atom/go-to-location';
 import createPackage from '../../commons-atom/createPackage';
+import * as featureConfig from '../../commons-atom/featureConfig';
 import {observeEditorDestroy} from '../../commons-atom/text-editor';
 import {Observable} from 'rxjs';
 import {ServerConnection} from '../../nuclide-remote-connection';
+import nuclideUri from '../../commons-node/nuclideUri';
 
 // Use dummy 0 port for local connections.
 const DUMMY_LOCAL_PORT = 0;
@@ -36,44 +38,24 @@ class Activation {
   constructor() {
     this._commands = {
       openFile(
-        filePath: NuclideUri,
+        uri: NuclideUri,
         line: number,
         column: number,
+        isWaiting: boolean,
       ): ConnectableObservable<AtomFileEvent> {
-        return Observable.fromPromise(
-          goToLocation(filePath, line, column)
-            .then(editor => {
-              atom.applicationDelegate.focusWindow();
-              return editor;
-            }),
-        )
-        .switchMap(editor =>
-          Observable.merge(
-            Observable.of('open'),
-            observeEditorDestroy(editor).map(value => 'close')))
-        .publish();
+        return openFile(uri, line, column, isWaiting);
       },
       openRemoteFile(
-        uri: string,
+        uri: NuclideUri,
         line: number,
         column: number,
+        isWaiting: boolean,
       ): ConnectableObservable<AtomFileEvent> {
         if (ServerConnection.getForUri(uri) == null) {
           return Observable.throw(new Error(`Atom is not connected to host for ${uri}`))
             .publish();
         }
-        return Observable.fromPromise(
-          goToLocation(uri, line, column)
-            .then(editor => {
-              atom.applicationDelegate.focusWindow();
-              return editor;
-            }),
-        )
-        .switchMap(editor =>
-          Observable.merge(
-            Observable.of('open'),
-            observeEditorDestroy(editor).map(value => 'close')))
-        .publish();
+        return openFile(uri, line, column, isWaiting);
       },
       addProject(projectPath: NuclideUri): Promise<void> {
         atom.project.addPath(projectPath);
@@ -97,6 +79,56 @@ class Activation {
     this._disposables.dispose();
   }
 
+}
+
+function openFile(
+  uri: NuclideUri,
+  line: number,
+  column: number,
+  isWaiting: boolean,
+): ConnectableObservable<AtomFileEvent> {
+  return Observable.fromPromise(
+    goToLocation(uri, line, column)
+      .then(editor => {
+        atom.applicationDelegate.focusWindow();
+
+        if (
+          isWaiting &&
+          featureConfig.get('nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile')
+        ) {
+          const notification = atom.notifications.addInfo(
+            `The command line has opened \`${nuclideUri.getPath(uri)}\` and is waiting for it to be closed.`, {
+              dismissable: true,
+              buttons: [{
+                onDidClick: () => {
+                  featureConfig.set(
+                    'nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile',
+                    false,
+                  );
+                  notification.dismiss();
+                },
+                text: 'Don\'t show again',
+              }, {
+                onDidClick: () => {
+                  editor.destroy();
+                },
+                text: 'Close file',
+              }],
+            },
+          );
+          editor.onDidDestroy(() => {
+            notification.dismiss();
+          });
+        }
+
+        return editor;
+      }),
+  )
+  .switchMap(editor =>
+    Observable.merge(
+      Observable.of('open'),
+      observeEditorDestroy(editor).map(value => 'close')))
+  .publish();
 }
 
 export default createPackage(Activation);

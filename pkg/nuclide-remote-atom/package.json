@@ -6,7 +6,15 @@
   "description": "Client side of command-line interface for communicating with nuclide-server",
   "nuclide": {
     "packageType": "Atom",
-    "testRunner": "apm"
+    "testRunner": "apm",
+    "config": {
+      "shouldNotifyWhenCommandLineIsWaitingOnFile": {
+        "title": "Notify when the command line is waiting on an open file.",
+        "type": "boolean",
+        "default": true,
+        "description": "Show a notification when a file is opened locally and the command line is waiting for the file to be closed."
+      }
+    }
   },
   "atomTestRunner": "../../lib/test-runner.js"
 }
