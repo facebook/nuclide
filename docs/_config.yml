@@ -9,11 +9,6 @@ description: >
 
   It provides a first-class development environment for React Native, Hack and Flow projects.
 
-# baseurl determines the subpath of your site. For example if you're using an
-# organisation.github.io/reponame/ basic site URL, then baseurl would be set
-# as "/reponame/" but leave blank if you have a top-level domain URL.
-# Good description of url and baseurl here: https://byparker.com/blog/2014/clearing-up-confusion-around-baseurl/
-baseurl: ""
 url: "http://nuclide.io" # the base hostname & protocol for your site
 ghrepo: "facebook/nuclide"
 
