@@ -9,6 +9,7 @@ description: >
 
   It provides a first-class development environment for React Native, Hack and Flow projects.
 
+baseurl: ""
 url: "http://nuclide.io" # the base hostname & protocol for your site
 ghrepo: "facebook/nuclide"
 
