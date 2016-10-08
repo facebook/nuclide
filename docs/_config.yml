@@ -13,7 +13,7 @@ description: >
 # organisation.github.io/reponame/ basic site URL, then baseurl would be set
 # as "/reponame/" but leave blank if you have a top-level domain URL
 # https://byparker.com/blog/2014/clearing-up-confusion-around-baseurl/
-baseurl: ""
+baseurl: "/"
 url: "http://nuclide.io" # the base hostname & protocol for your site
 ghrepo: "facebook/nuclide"
 
