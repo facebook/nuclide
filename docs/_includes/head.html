@@ -10,18 +10,6 @@
   <meta property="og:description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}" />
 
   {% comment %}
-  facebook.github.io/nuclide does not have proper CSS formatting due to the way Github Pages does
-  its roots for CSS source templates. So while this is a proper URL for the site, it is ugly and
-  we should not show it. So redirect to our proper url.
-  {% endcomment %}
-  <script type="text/javascript">
-      if (location.hostname === "facebook.github.io" && location.pathname.startsWith("/nuclide")) {
-        // start at substring(8) to remove the "/nuclide" from the pathname. We don't want that.
-        window.location = "http://nuclide.io" + location.pathname.substring(8);
-      }
-  </script>
-
-  {% comment %}
   For Algolia search
   {% endcomment %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css" />
