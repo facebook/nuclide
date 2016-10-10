@@ -152,7 +152,7 @@ It is essential for any debugger to have a mechanism to step into, over, and out
 Nuclide Debugger provides stepping functionality with shortcuts within the Debugger itself and
 via the [keyboard](/docs/editor/keyboard-shortcuts/#debugger).
 
-<img src="/static/images/docs/feature-debuggin-basics-stepping-controls.png" align="middle" style="width: 400px" />
+<img src="/static/images/docs/feature-debugger-basics-stepping-controls.png" align="middle" style="width: 400px" />
 
 ***Example***
 
