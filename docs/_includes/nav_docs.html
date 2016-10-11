@@ -1,3 +1,4 @@
+{% include vars.html %}
 <nav class="toc" id="doc_nav"></nav>
 <script>
   var docnavData = [
@@ -12,9 +13,9 @@
           {% endif %}
         {% endfor %}
         {
-          key : "{{ site.baseurl }}{{ doc.url }}",
+          key : "{{ url_base }}{{ doc.url }}",
           title : "{{ doc.title }}",
-          url : "{{ site.baseurl }}{{ doc.url }}",
+          url : "{{ url_base }}{{ doc.url }}",
         }{% unless forloop.last %},{% endunless %}
         {% endfor %}
       ],

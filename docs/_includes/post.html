@@ -1,3 +1,4 @@
+{% include vars.html %}
 <div class="post">
   {% assign author = site.data.authors[include.post.author] %}
   <header class="post-header">
@@ -9,7 +10,7 @@
     {% if author.full_name %}
     <p class="post-authorName">{{ author.full_name }}</p>
     {% endif %}
-    <h1 class="post-title">{% if include.truncate %}<a href="{{ site.baseurl }}{{ include.post.url }}">{{ include.post.title }}</a>{% else %}{{ include.post.title }}{% endif %}</h1>
+    <h1 class="post-title">{% if include.truncate %}<a href="{{ url_base }}{{ include.post.url }}">{{ include.post.title }}</a>{% else %}{{ include.post.title }}{% endif %}</h1>
     <p class="post-meta">Posted {{ include.post.date | date: '%B %d, %Y' }}{% if include.post.meta %} • {{ include.post.meta }}{% endif %}</p>
   </header>
 
