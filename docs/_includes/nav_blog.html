@@ -1,13 +1,12 @@
-{% include vars.html %}
 <nav class='toc' id="blog_nav"></nav>
 <script>
   {% assign posts = site.posts limit 10 %}
   var blognavData = [
     {% for post in posts %}
     {
-      key : "{{ url_base }}{{ post.url }}",
+      key : "{{ site.baseurl }}{{ post.url }}",
       title : "{{ post.title }}",
-      url : "{{ url_base }}{{ post.url }}"
+      url : "{{ site.baseurl }}{{ post.url }}"
     },
     {% endfor %}
     {

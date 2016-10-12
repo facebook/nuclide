@@ -1,7 +1,6 @@
-{% include vars.html %}
 <div class="post">
   <header class="post-header">
-    <h1 class="post-title">{% if include.truncate %}<a href="{{ url_base }}{{ page.url }}">{{ page.title }}</a>{% else %}{{ page.title }}{% endif %}</h1>
+    <h1 class="post-title">{% if include.truncate %}<a href="{{ site.baseurl }}{{ page.url }}">{{ page.title }}</a>{% else %}{{ page.title }}{% endif %}</h1>
   </header>
 
   <article class="post-content">
@@ -9,7 +8,7 @@
       {% if page.content contains '<!--truncate-->' %}
         {{ page.content | split:'<!--truncate-->' | first }}
         <div class="read-more">
-          <a href="{{ url_base }}{{ page.url }}" >
+          <a href="{{ site.baseurl }}{{ page.url }}" >
             ...Read More
           </a>
         </div>
