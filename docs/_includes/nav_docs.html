@@ -12,9 +12,9 @@
           {% endif %}
         {% endfor %}
         {
-          key : "{{ site.baseurl }}{{ doc.url }}",
+          key : "{{ doc.url }}",
           title : "{{ doc.title }}",
-          url : "{{ site.baseurl }}{{ doc.url }}",
+          url : "{{ doc.url }}",
         }{% unless forloop.last %},{% endunless %}
         {% endfor %}
       ],

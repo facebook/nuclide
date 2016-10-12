@@ -4,9 +4,9 @@
   var blognavData = [
     {% for post in posts %}
     {
-      key : "{{ site.baseurl }}{{ post.url }}",
+      key : "{{ post.url }}",
       title : "{{ post.title }}",
-      url : "{{ site.baseurl }}{{ post.url }}"
+      url : "{{ post.url }}"
     },
     {% endfor %}
     {

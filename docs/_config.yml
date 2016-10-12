@@ -12,9 +12,9 @@ description: >
 # Sometimes you also have a `baseurl:` that determines the subpath of your site. For example if
 # you're using an `organisation.github.io/reponame/` basic site URL, then `baseurl` would be set
 # as "/reponame/". For no `baseurl`, specifiy an empty string (equivalent to null) a top-level
-# domain URL.
+# domain URL. (Normally you can have empty string, but been having troubles so removing it
+# all together - https://github.com/facebook/nuclide/issues/789)
 # https://byparker.com/blog/2014/clearing-up-confusion-around-baseurl/
-baseurl: ""
 url: "http://nuclide.io" # the base hostname & protocol for your site
 ghrepo: "facebook/nuclide"
 
