@@ -27,17 +27,17 @@ Here is a legend of symbols that are associated with the keys shown in the keybi
 
 | Key | Symbol |
 | ----|--------|
-| `alt` or `option` on Mac | `⌥` |
-| `cmd` on Mac | `⌘` |
-| `ctrl` | `^` |
-| `shift` | `⇧` |
-| `left` | `←` |
-| `up` | `↑` |
-| `right` | `→` |
-| `down` | `↓` |
-| `backspace` | `⌫` |
+| `Alt` or `Option` on macOS | `⌥` |
+| `Cmd` on macOS | `⌘` |
+| `Ctrl` | `^` |
+| `Shift` | `⇧` |
+| `Left` | `←` |
+| `Up` | `↑` |
+| `Right` | `→` |
+| `Down` | `↓` |
+| `Backspace` | `⌫` |
 
-If you see a `,` in a key sequence that means *then*, as in "press this sequence, then press that
+If you see a comma (`,`) in a key sequence that means *then*, as in "press this sequence, then press that
 sequence".
 
 ## Common Bindings
@@ -45,104 +45,114 @@ sequence".
 These are also described in their respective sections below, but this provides a quick access table
 for the most common shortcuts provided by Nuclide.
 
-| Key (Mac) | Key (Linux) | Description |
+| Key (macOS) | Key (Linux) | Description |
 |-----------|-------------|-------------|
-| `cmd-t` | `ctrl-t` | Use omnisearch to open files, etc. |
-| `cmd-\` | `ctrl-\` | Toggle the file tree. |
-| `ctrl-0` | `ctrl-0` | Toggle between the editor and the file tree. |
-| `cmd-k-<arrow>` | `ctrl-k-<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
-| `option-shift-cmd-D` | `alt-shift-ctrl-D` | Open the diff view. |
-| `option-shift-D` | `alt-shift-D` | Open the code diagnostics window. |
+| `Cmd-T` | `Ctrl-T` | Use [OmniSearch](/docs/features/quick-open/#omnisearch) to open files, etc. |
+| `Cmd-\` | `Ctrl-\` | Toggle the [Project Explorer](/docs/editor/basics/#project-explorer). |
+| `Ctrl-0` | `Ctrl-0` | Toggle between the [Editing Area](/docs/editor/basics/#editing-area) and the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. |
+| `Cmd-K-<arrow>` | `Ctrl-K-<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
+| `Option-Shift-Cmd-D` | `Alt-Shift-Ctrl-D` | Open the [Diff View](/docs/features/hg/#diff-view). |
+| `Option-Shift-D` | `Alt-Shift-D` | Open the [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) window. |
 
 ## Development
 
-These shortcuts provide quick access to development features such as diff view, diagnostics
-(e.g, linting), etc.
+These shortcuts provide quick access to development features such as [Diff View](/docs/features/hg/#diff-view), Diagnostics (e.g, linting), etc.
 
-| Key (Mac) | Key (Linux) | Command | Description |
+| Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `option-shift-cmd-D` | `alt-shift-ctrl-D` | `nuclide-diff-view:open` | This will open the diff view, which shows you the difference between the original version of a file and the current version of the file on which changes were made. |
-| `option-shift-cmd-F` | `alt-shift-ctrl-F` | `nuclide-find-references:activate` | In projects such as Hack or Flow, this will allow you to find all the references to a selected, highlighted entity in your project. |
-| `option-shift-D` | `alt-shift-D` | `nuclide-diagnostics-ui:toggle-table`  | Display the window showing you messages about your code. Possible messages include lint, compiler errors, etc. |
-| `option-shift-A` | `option-shift-A` | `nuclide-diagnostics-ui:fix-all-in-current-file` | Nuclide can fix certain types of problems for you automatically, including various lint problems. This will allow all those to be fixed in the current file. |
-| `option-cmd-y` | `alt-cmd-y` | `nuclide-hack-symbol-provider:toggle-provider` | Allows you to search for Hack function, classes and constants within you Hack project.
-| `cmd-shift-i` | `ctrl-shift-i` | `nuclide-format-js:format` | Automatically tries to insert missing `require` and `import` statements to your Flow or JavaScript project.
-| `option-O`| `alt-O` | `nuclide-outline-view:toggle` | Toggles the [outline view](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions.
+| `Option-Shift-Cmd-D` | `Alt-Shift-Ctrl-D` | `nuclide-diff-view:open` | This will open the [Diff View](/docs/features/hg/#diff-view), which shows you the difference between the original version of a file and the current version of the file on which changes were made. |
+| `Option-Shift-Cmd-F` | `Alt-Shift-Ctrl-F` | `nuclide-find-references:activate` | In projects such as Hack or Flow, this will allow you to find all the references to a selected, highlighted entity in your project. |
+| `Option-Shift-D` | `Alt-Shift-D` | `nuclide-diagnostics-ui:toggle-table`  | Display the window showing you messages about your code. Possible messages include lint, compiler errors, etc. |
+| `Option-Shift-A` | `Option-Shift-A` | `nuclide-diagnostics-ui:fix-all-in-current-file` | Nuclide can fix certain types of problems for you automatically, including various lint problems. This will allow all those to be fixed in the current file. |
+| `Option-Cmd-Y` | `Alt-Cmd-Y` | `nuclide-hack-symbol-provider:toggle-provider` | Allows you to search for Hack function, classes and constants within you Hack project.
+| `Cmd-Shift-I` | `Ctrl-Shift-I` | `nuclide-format-js:format` | Automatically tries to insert missing `require` statements to your [Flow](/docs/languages/flow/) or [JavaScript](/docs/languages/other/#javascript) project.
+| `Option-O`| `Alt-O` | `nuclide-outline-view:toggle` | Toggles the [Outline View](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions.
 
-## File Tree
+## Project Explorer's File Tree
 
-The file tree is the left-hand side pane where a tree of all of your project files are shown.
+The [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree tab in the left side pane is a tree of all of your project files.
 
-| Key (Mac) | Key (Linux) | Command | Description | Alternative |
+| Key (macOS) | Key (Linux) | Command | Description | Alternative |
 |-----------|-------------|---------|-------------|-------------|
-| `right` | `right` | `expand-directory` | Expand the current directory. | `ctrl-]` |
-| `left` | `left` | `collapse-directory` | Collapse the current directory. | `ctrl-[` |
-| `option-right` | `alt-right` | `recursive-expand-directory` | Expand all the directories from the current to the final directory child. | `ctrl-alt-]` |
-| `option-left` | `alt-left` | `recursive-collapse-directory` | Collapse all the directories to the top parent. | `ctrl-alt-[`
-| `ctrl-{` | `ctrl-{` | `recursive-collapse-all` | Collapse the entire file tree to the root. | |
-| `backspace` | `backspace` | `remove` | Remove a file or directory from the tree. You will be prompted first to avoid accidental mistakes. | `delete` |
-| `cmd-\` | `ctrl-\` | `toggle` | Toggles whether the file tree is shown. | `cmd-k`, `cmd-b` |
-| `home` | `home` | `move-to-top` | Move the selection to the very top of the file tree. | |
-| `end` | `end` | `move-to-bottom` | Move the selection to the very bottom of the file tree. | |
-| `Enter` | `Enter` | `open-selected-entry` | Opens the selected entry in the file tree. If a directory is selected, then the directory is expanded. If a file is selected, then the file is opened in the main editor window. | |
-| `cmd-k-down` | `ctrl-k-down` | `open-selected-entry-down` | If a file is selected, it opens the file in the bottom pane. | |
-| `cmd-k-right` | `ctrl-k-right` | `open-selected-entry-right` | If a file is selected, it opens the file in the right pane. | |
-| `cmd-k-up` | `ctrl-k-up` | `open-selected-entry-up` | If a file is selected, it opens the file in the top pane. | |
-| `cmd-k-left` | `ctrl-k-left` | `open-selected-entry-left` | If a file is selected, it opens the file in the left pane. | |
-| `cmd-|` | `ctrl-|` | `reveal-active-file` | Shows the file that is currently active in the main workspace in the file tree. | | `cmd-shift-\` (Mac) or  `ctrl-shift-\` (Linux)
-| `ctrl-O` | `ctrl-O` | `toggle-focus` | Toggles the focus of the current active file. | |
+| `Right` | `Right` | `expand-directory` | Expand the current directory. | `Ctrl-]` |
+| `Left` | `Left` | `collapse-directory` | Collapse the current directory. | `Ctrl-[` |
+| `Option-Right` | `Alt-Right` | `recursive-expand-directory` | Expand all the directories from the current to the final directory child. | `Ctrl-Alt-]` |
+| `Option-Left` | `Alt-Left` | `recursive-collapse-directory` | Collapse all the directories to the top parent. | `Ctrl-Alt-[`
+| `Ctrl-{` | `Ctrl-{` | `recursive-collapse-all` | Collapse the entire [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree to the root. | |
+| `Backspace` | `Backspace` | `remove` | Remove a file or directory from the tree. You will be prompted first to avoid accidental mistakes. | `Delete` |
+| `Cmd-\` | `Ctrl-\` | `toggle` | Toggles whether the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree is shown. | `Cmd-K`, `Cmd-B` |
+| `Home` | `Home` | `move-to-top` | Move the selection to the very top of the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. | |
+| `End` | `End` | `move-to-bottom` | Move the selection to the very bottom of the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. | |
+| `Enter` | `Enter` | `open-selected-entry` | Opens the selected entry in the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. If a directory is selected, then the directory is expanded. If a file is selected, then the file is opened in the main [Editing Area](/docs/editor/basics/#editing-area). | |
+| `Cmd-K-Down` | `Ctrl-K-Down` | `open-selected-entry-down` | If a file is selected, it opens the file in the bottom pane. | |
+| `Cmd-K-Right` | `Ctrl-K-Right` | `open-selected-entry-right` | If a file is selected, it opens the file in the right pane. | |
+| `Cmd-K-Up` | `Ctrl-K-Up` | `open-selected-entry-up` | If a file is selected, it opens the file in the top pane. | |
+| `Cmd-K-Left` | `Ctrl-K-Left` | `open-selected-entry-left` | If a file is selected, it opens the file in the left pane. | |
+| `Cmd-|` | `Ctrl-|` | `reveal-active-file` | Shows the file that is currently active in the main workspace in the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. | | `Cmd-Shift-\` (macOS) or  `Ctrl-Shift-\` (Linux)
+| `Ctrl-O` | `Ctrl-O` | `toggle-focus` | Toggles the focus of the current active file. | |
 
 ## Files
 
 Whether switching between or searching for or within files, there are some keyboard shortcuts to
 help accomplish file tasks a bit faster.
 
-| Key (Mac) | Key (Linux) | Command | Description | Alternative |
+| Key (macOS) | Key (Linux) | Command | Description | Alternative |
 |-----------|-------------|---------|-------------|-------------|
-| `cmd-t` | `ctrl-t` | `nuclide-quick-open:find-anything-via-omni-search` | Use this for a global search of anything within your project, including all files, currently open files, etc. | `cmd-p` (Mac) or `ctrl-p` (Linux) |
-| `option-cmd-o` | `alt-ctrl-o` | `nuclide-open-filenames-provider:toggle-provider` | This lets you switch between files that are currently open in the editor. Useful if you have a bunch of files open and you want quick access to them. |
-| `option-cmd-r` | `alt-ctrl-r` | `nuclide-recent-files-provider:toggle-provider` | This will show you files that you have recently opened and used in previous sessions of Nuclide.  |
-| `option-cmd-t`| `alt-ctrl-t` | `nuclide-fuzzy-filename-provider:toggle-provider` | This allows you to search for files based on patterns. |
-| `option-cmd-n`| `alt-ctrl-n` | `nuclide-related-files:jump-to-next-related-file` | Find files related to the current file. A file is related if they have the same basename, but a different extension, for example. |
+| `Cmd-T` | `Ctrl-T` | `nuclide-quick-open:find-anything-via-omni-search` | Use this for a global search of anything within your project, including all files, currently open files, etc. | `Cmd-P` (macOS) or `Ctrl-P` (Linux) |
+| `Option-Cmd-O` | `Alt-Ctrl-O` | `nuclide-open-filenames-provider:toggle-provider` | This lets you switch between files that are currently open in the editor. Useful for quickly accessing files if you have a bunch of files open. |
+| `Option-Cmd-R` | `Alt-Ctrl-r` | `nuclide-recent-files-provider:toggle-provider` | This will show you files that you have recently opened and used in previous sessions of Nuclide.  |
+| `Option-Cmd-T`| `Alt-Ctrl-T` | `nuclide-fuzzy-filename-provider:toggle-provider` | This allows you to search for files based on patterns. |
+| `Option-Cmd-N`| `Alt-Ctrl-N` | `nuclide-related-files:jump-to-next-related-file` | Find files related to the current file. A file is related if they have the same basename, but a different extension, for example. |
 
 
 ## Debugger
 
-The Nuclide debugger attaches to a running process. The UI is built upon the Chrome Developer Tools
-UI. Breakpoints are managed in the gutter to the left of your code and line numbers.
+The [Nuclide Debugger](/docs/features/debugger/) attaches to a running process. [Breakpoints](/docs/features/debugger/#basics__breakpoints) are managed in the [gutter](/docs/editor/basics/#gutter) to the left of your code and line numbers.
 
-| Key (Mac) | Key (Linux) | Command | Description |
+| Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `option-cmd-I` | `alt-ctrl-I` | `window:toggle-dev-tools` | Toggle the developer tools UI. |
-| `shift-cmd-Y` | `shift-ctrl-Y` | `nuclide-debugger:toggle` | Toggles the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
-| `f8` | `f8` | `nuclide-debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping throughout code, this will enable debugging to continue to the next breakpoint or end of the process. |
-| `f9` | `f9` | `nuclide-debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint; and vice-versa. |
-| `f10` | `f10` | `nuclide-debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
-| `f11` | `f11` | `nuclide-debugger:step-into` | Step into a piece of code. For example, if you are stopped at a method call, this will go into the first line of that method. |
-| `shift-f11` | `shift-f11` | `nuclide-debugger:step-out` | If you have stepped into a piece of code, this will step out to the point on which you entered that piece of code. For example, if you stepped into a method, this will step out back to the method call itself. |
-| `shift-f5` | `shift-f5` | `nuclide-debugger:stop-debugging` | Stop the actual debugging process. |
+| `Option-Cmd-I` | `Alt-Ctrl-I` | `window:toggle-dev-tools` | Toggle the developer tools UI. |
+| `Shift-Cmd-Y` | `Shift-Ctrl-Y` | `nuclide-debugger:toggle` | Toggles the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `F8` | `F8` | `nuclide-debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping through code, this will enable debugging to continue to the next breakpoint or end of the process. |
+| `F9` | `F9` | `nuclide-debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint and vice-versa. |
+| `F10` | `F10` | `nuclide-debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
+| `F11` | `F11` | `nuclide-debugger:step-into` | Step into a piece of code. For example, if you are stopped at a method call, this will go into the first line of that method. |
+| `Shift-F11` | `Shift-F11` | `nuclide-debugger:step-out` | If you have stepped into a piece of code, this will step out to the point on which you entered that piece of code. For example, if you stepped into a method, this will step out back to the method call itself. |
+| `Shift-F5` | `Shift-F5` | `nuclide-debugger:stop-debugging` | Stop the actual debugging process. |
 
 ## Editor Panes
 
 These are keyboard shortcuts with respect to moving currently active files in the editor around the
 main panes.
 
-| Key (Mac) | Key (Linux) | Command | Description |
+| Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `cmd-k-down` | `ctrl-k-down` | `nuclide-move-pane:move-tab-to-new-pane-down` | Moves the currently active file in the editor to a bottom pane. |
-| `cmd-k-right` | `ctrl-k-right` | `nuclide-move-pane:move-tab-to-new-pane-right` | Moves the currently active file in the editor to a right pane. | |
-| `cmd-k-up` | `ctrl-k-up` | `nuclide-move-pane:move-tab-to-new-pane-up` | Moves the currently active file in the editor to a top pane. | |
-| `cmd-k-left` | `ctrl-k-left` | `nuclide-move-pane:move-tab-to-new-pane-left` | Moves the currently active file in the editor to a left pane. |
+| `Cmd-K-Down` | `Ctrl-K-Down` | `nuclide-move-pane:move-tab-to-new-pane-down` | Moves the currently active file in the editor to a bottom pane. |
+| `Cmd-K-Right` | `Ctrl-K-Right` | `nuclide-move-pane:move-tab-to-new-pane-right` | Moves the currently active file in the editor to a right pane. | |
+| `Cmd-K-Up` | `Ctrl-K-Up` | `nuclide-move-pane:move-tab-to-new-pane-up` | Moves the currently active file in the editor to a top pane. | |
+| `Cmd-K-Left` | `Ctrl-K-Left` | `nuclide-move-pane:move-tab-to-new-pane-left` | Moves the currently active file in the editor to a left pane. |
 
 ## Miscellaneous
 
-These are other key-based shortcuts that are included with Nuclide, including hyperclick, clipboard
+These are other key-based shortcuts that are included with Nuclide, including [Hyperclick](#hyperclick), clipboard
 and Nuclide health actions.
 
-| Key (Mac) | Key (Linux) | Command | Description |
+| Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `option-cmd-enter` | `alt-ctrl-enter` | `hyperclick:confirm-cursor` | When using hyperclick, this will confirm the hyperclick action you want to take. |
-| `ctrl-option-shift-H` | `ctrl-alt-shift-H` | `nuclide-health:toggle` | Toggle the Nuclide health tab, which show details about the Nuclide process itself (how much CPU, memory is being used, etc.). |
-| `ctrl-option-shift-X` | `ctrl-alt-shift-X` | `nuclide-clipboard-path:copy-project-relative-path` | Copy the relative path of the current file to the clipboard. |
-| `ctrl-shift-X` | `ctrl-shift-X` | `nuclide-clipboard-path:copy-absolute-path` | Copy the absolute path of the current file to the clipboard. |
-| `ctrl-option-X` | `ctrl-alt-X` | `nuclide-clipboard-path:copy-repository-relative-path` | Copy the relative path of the current file starting at the root of the Mercurial repository. |
+| `Option-Cmd-Enter` | `Alt-Ctrl-Enter` | `hyperclick:confirm-cursor` | When using [Hyperclick](#hyperclick), this will confirm the Hyperclick action you want to take. |
+| `Ctrl-Option-Shift-H` | `Ctrl-Alt-Shift-H` | `nuclide-health:toggle` | Toggle the Nuclide Health tab, which show details about the Nuclide process itself (how much CPU, memory is being used, etc.). |
+| `Ctrl-Option-Shift-X` | `Ctrl-Alt-Shift-X` | `nuclide-clipboard-path:copy-project-relative-path` | Copy the relative path of the current file to the clipboard. |
+| `Ctrl-Shift-X` | `Ctrl-Shift-X` | `nuclide-clipboard-path:copy-absolute-path` | Copy the absolute path of the current file to the clipboard. |
+| `Ctrl-Option-X` | `Ctrl-Alt-X` | `nuclide-clipboard-path:copy-repository-relative-path` | Copy the relative path of the current file starting at the root of the Mercurial repository. |
+
+### Hyperclick
+
+Hyperclick Trigger keys are configurable.
+
+1. Open the [Nuclide Settings]() tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
+2. Select **Packages** from the list at the left, and search for `nuclide`.
+3. Click on the **Settings** button for the `nuclide` package.  
+
+The Hyperclick Trigger key settings are right at the top and set to the defaults.  You can change them by clicking on the selection bar and choosing from the provided list.
+
+![](/static/images/docs/editor-keyboard-shortcuts-hyperclick.png)
