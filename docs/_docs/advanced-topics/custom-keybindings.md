@@ -14,7 +14,7 @@ commands as well. This is fairly easily done with some CSON editing.
 
 ## Keymap CSON
 
-To create your own keybinding, you will need to edit your `~/.atom/keymap.cson`. If you aren't
+To create your own keybinding, you will need to edit your `~/.atom/keymap.cson` file. If you aren't
 familiar with CSON, it is the [CoffeeScript equivalent of JSON](https://github.com/bevry/cson).
 
 Here is an example `~/.atom/keymap.cson` file:
@@ -59,5 +59,4 @@ For example the Nuclide `diff-view` CSON looks like this:
   'alt-ctrl-shift-d': 'nuclide-diff-view:open'
 ```
 
-where `.platform-darwin` represents Mac OS X, `.platform-win32` represents Windows and
-`.platform-linux` represents Linux.
+where `.platform-darwin` represents macOS, `.platform-win32` represents Windows, and `.platform-linux` represents Linux.
