@@ -5,7 +5,7 @@ layout: docs
 permalink: /docs/editor/setup/
 ---
 
-There are two supported platforms for Nuclide, [Linux](#linux) and [macOS](#mac).
+There are two supported platforms for Nuclide, [Linux](#linux) and [macOS](#macos).
 
 > Nuclide can be installed on [Windows](#windows), but it is
 > [not fully supported](https://github.com/facebook/nuclide/issues/401).
@@ -36,7 +36,7 @@ or within Atom itself:
 Otherwise, see your installation platform below for detailed installation instructions, including
 prerequisites.
 
-## Mac
+## macOS
 
 ### Prerequisites
 
@@ -139,7 +139,7 @@ You will find a checkbox allowing you enable the recommended settings.
 
 ### Installing Nuclide Server
 
-If you want to use Nuclide for remote development, you'll also need to set up the npm `nuclide`
+If you want to use Nuclide for remote development, you'll also need to set up the `npm nuclide`
 package. Instructions can be found in the [Remote Development docs](/docs/features/remote/).
 
 ### Other Installations
@@ -152,4 +152,4 @@ To benefit from all of Nuclide's features, we recommend you also install the fol
 * [Watchman](https://facebook.github.io/watchman/) - version 3.2 or above. It must be in
   `/usr/local/bin/` or in your `$PATH` environment variable. Without Watchman, Nuclide will lose some functionality of
   its [Mercurial](/docs/features/hg), [Remote Development](/docs/features/remote), and
-  [*Quick Open*](/docs/quick-start/getting-started/#quick-open) features.
+  [Quick Open](/docs/quick-start/getting-started/#quick-open) features.

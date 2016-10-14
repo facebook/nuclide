@@ -29,7 +29,7 @@ $ atom
 > either the `Atom` menu or the Atom [Command Palette](/docs/editor/basics/#command-palette). In the
 > Command Palette, search for "Window: Install Shell Commands".
 
-To open a specific directory into the [Project Explorer](/docs/editor/basics/#project-and-file-explorer), you can add a path argument to the `atom` command.
+To open a specific directory into the [Project Explorer](/docs/editor/basics/#project-explorer), you can add a path argument to the `atom` command.
 
 ```bash
 $ atom /path/to/your/project/
@@ -44,9 +44,7 @@ information regarding how to provide feedback.
 
 ## Project Explorer
 
-The Project Explorer is on the left side of Nuclide and contains two tabs: **File Tree** and **Source Control**. This is where you can open
-projects, navigate through your project to open files in the [Editing Area](#editing-area),
-create new files and folders, view source control information, etc.
+The Project Explorer is on the left side of Nuclide and contains two tabs: **File Tree** and **Source Control**. This is where you can open projects, navigate through your project to open files in the [Editing Area](#editing-area), create new files and folders, view source control information, etc.
 
 ### Adding Projects
 
@@ -57,7 +55,7 @@ The first time you open Nuclide, there will be no projects or files open. Instea
 When you choose a project to open, you are choosing the root directory of that project. Upon
 opening, the project's file tree appears with the root folder at the top.
 
-![](/static/images/docs/editor-basics-file-tree.png)
+<img src="/static/images/docs/editor-basics-file-tree.png" align="middle" style="width:252px"/>
 
 To remove a project from the Project Explorer, *right-click* on the root folder, and choose **Remove Project Folder**.
 
@@ -73,19 +71,33 @@ However, features such as debugging and error checking will still occur by proje
 > For the `Find | Find In Project` task, you can add project-level granularity by specifying the
 > root of the desired project as a filter for the search.
 
+### Open Files
+
+The Project Explorer's **Open Files** list displays which files are currently open, allows for quick closure of open files (click on the `x` icon of a file), and indicates which files have unsaved changes (a blue dot in front of the file name).
+
+<img src="/static/images/docs/editor-basics-open-files.png" align="middle" style="width:252px"/>
+
 ### Changed Files
 
 If your project is under source control, the Project Explorer will highlight the files that have changed in your project since your last commit.
 
 ![](/static/images/docs/editor-basics-explorer-changed-files.png)
 
-The Project Explorer's Source Control tab will indicate if uncommitted changes exist or not. If you are working with a Mercurial repository, the branches are listed.
+#### Uncommitted Changes
+
+Files that have had changes made to them will also appear in the **Uncommitted Changes** list at the top of the Project Explorer.
+
+<img src="/static/images/docs/editor-basics-uncommitted.png" align="middle" style="width:252px"/>
+
+#### Source Control
+
+Under the Project Explorer's **Source Control** tab, you can see if uncommitted changes exist or not. If you are working with a Mercurial repository, the branches are listed as well.
 
 ### Context-Aware Menu
 
 A context-aware menu appears when you *right-click* in the explorer. This menu provides
 options such as adding new projects, searching within the project, opening the current file in
-Diff View (assuming you are working in a Mercurial repository), etc.
+[Diff View](/docs/features/hg/#diff-view) (assuming you are working in a [Mercurial](/docs/features/hg/) repository), etc.
 
 ![](/static/images/docs/editor-basics-explorer-context-aware.png)
 
