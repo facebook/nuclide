@@ -17,7 +17,7 @@ Most content is written in markdown. You name the file `something.md`, then have
 
 ```
 ---
-docid: getting-started
+pageid: getting-started
 title: Getting started with ProjectName
 layout: docs
 permalink: /docs/getting-started.html
@@ -26,7 +26,7 @@ permalink: /docs/getting-started.html
 
 Customize these values for each document, blog post, etc.
 
-> The filename of the `.md` file doesn't actually matter; what is important is the `docid` being unique and the `permalink` correct and unique too).
+> The filename of the `.md` file doesn't actually matter; what is important is the `pageid` being unique and the `permalink` correct and unique too).
 
 ## Landing page
 
@@ -85,7 +85,7 @@ To add docs to the site....
 
 1. Add your markdown file to the `./_docs/` folder. See `./doc-type-examples/docs-hello-world.md` for an example of the YAML header format. **If the `./_docs/` directory does not exist, create it**.
   - You can use folders in the `./_docs/` directory to organize your content if you want.
-1. Update `_data/nav_docs.yml` to add your new document to the navigation bar. Use the `docid` you put in your doc markdown in as the `id` in the `_data/nav_docs.yml` file.
+1. Update `_data/nav_docs.yml` to add your new document to the navigation bar. Use the `pageid` you put in your doc markdown in as the `id` in the `_data/nav_docs.yml` file.
 1. [Run the site locally](./README.md) to test your changes. It will be at `http://127.0.0.1/docs/your-new-doc-permalink.html`
 1. Push your changes to GitHub.
 

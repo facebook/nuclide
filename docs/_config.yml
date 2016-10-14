@@ -32,7 +32,7 @@ kramdown:
   input: GFM
   hard_wrap: false
 
-# Blog posts are builtin to Jekyll by default, with the `_posts` directory.
+# Blog posts are built into to Jekyll by default, with the `_posts` directory.
 # Here you can specify other types of documentation. The names here are `docs`
 # and `top-level`. This means their content will be in `_docs` and `_top-level`.
 # The permalink format is also given.
