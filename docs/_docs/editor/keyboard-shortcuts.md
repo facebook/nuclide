@@ -112,7 +112,8 @@ The [Nuclide Debugger](/docs/features/debugger/) attaches to a running process. 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
 | `Option-Cmd-I` | `Alt-Ctrl-I` | `window:toggle-dev-tools` | Toggle the developer tools UI. |
-| `Shift-Cmd-Y` | `Shift-Ctrl-Y` | `nuclide-debugger:toggle` | Toggles the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Shift-Cmd-A` | `Shift-Ctrl-A` | `nuclide-debugger:toggle` | Toggles the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Cmd-Alt-J` | `Ctrl-Shift-J` | `nuclide-output:toggle` | Toggle the [Console](/docs/features/debugger/#basics__evaluation) pane. |
 | `F8` | `F8` | `nuclide-debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping through code, this will enable debugging to continue to the next breakpoint or end of the process. |
 | `F9` | `F9` | `nuclide-debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint and vice-versa. |
 | `F10` | `F10` | `nuclide-debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
