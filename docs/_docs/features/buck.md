@@ -32,7 +32,7 @@ There are a few ways to trigger Buck commands from Nuclide:
 Buck tasks live in the [Task Runner toolbar](/docs/features/task-runner).
 
 Click the **Toggle Task Runner Toolbar** button (i.e., the play icon) from the [Nuclide toolbar](/docs/features/toolbar). Alternatively,
-   got to `Nuclide | Task Runner | Toggle Toolbar Visibility`.
+   go to `Nuclide | Task Runner | Toggle Toolbar Visibility`.
 
 Choose any of the Buck tasks from the Task Runner toolbar's drop-down menu.
 

@@ -19,7 +19,7 @@ You must have the [general prerequisites](/docs/editor/setup#mac__prerequisites)
 addition, you must have
 
 - Xcode (for Command Line Tools)
-- **Node 5.10.0** or greater
+- A version of Node that is equal to or greater than that specified in ["node" (under "engines") in the package information](https://github.com/facebook/nuclide/blob/master/package.json)
 - Atom Shell Commands (open Atom and go to `Atom | Install Shell Commands`) installed as well.
 
 > Xcode can be installed from the App Store. Installation can take a *long, long* time. So be patient.
@@ -74,7 +74,8 @@ Verify the installation:
 ### Prerequisites
 
 You must have the [general prerequisites](/docs/editor/setup#linux__prerequisites) installed. In
-addition, you must have **Node 5.10.0** installed as well.
+addition, you must have a version of Node that is equal to or greater than that specified
+in ["node" (under "engines") in the package information](https://github.com/facebook/nuclide/blob/master/package.json)
 
 To install Node, see [Node.js's download page](https://nodejs.org/en/download/) for steps that work best for your setup.
 

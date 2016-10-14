@@ -16,7 +16,7 @@ which allows you to build native [iOS](/docs/platforms/ios) applications directl
 
 By installing [Xcode](https://developer.apple.com/xcode/), you will have full access to Objective-C.
 
-> Linux does not have Xcode, however, there are ways to compile Objective-C programs on Linux using
+> Linux does not have Xcode. However, there are ways to compile Objective-C programs on Linux using
 > `gobjc`, [`gnustep`](http://www.gnustep.org/), etc.
 
 However, to get the full [feature list](#buck-enabled-features) for Objective-C support, you must

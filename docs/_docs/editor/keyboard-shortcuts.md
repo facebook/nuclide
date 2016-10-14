@@ -149,7 +149,7 @@ and Nuclide health actions.
 
 Hyperclick Trigger keys are configurable.
 
-1. Open the [Nuclide Settings]() tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
+1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
 2. Select **Packages** from the list at the left, and search for `nuclide`.
 3. Click on the **Settings** button for the `nuclide` package.  
 
