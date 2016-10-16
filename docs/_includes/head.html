@@ -30,4 +30,10 @@
 
   <link rel="canonical" href="{{ page.url | replace:'index.html','' | prepend: site.url }}">
   <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ "/feed.xml" | prepend: site.url }}" />
+
+  {% comment %}
+  For our RSS feed.xml
+  https://help.github.com/articles/atom-rss-feeds-for-github-pages/
+  {% endcomment %}
+  {% feed_meta %}
 </head>

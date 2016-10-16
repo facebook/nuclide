@@ -67,3 +67,7 @@ color:
   navtext: "#c79aff"
   # Color of link underlines in the main body, and hover background color for links
   link: "#6223b0"
+
+# RSS Feed
+gems:
+  - jekyll-feed
