@@ -24,10 +24,7 @@ apm install nuclide
 > Nuclide can be installed on [Windows](#windows), but it is
 > [not fully supported](https://github.com/facebook/nuclide/issues/401).
 
-While technically optional, in order for features such as [Quick Open](#quick-open) to work
-correctly, you also need to install [Watchman](https://facebook.github.io/watchman/) and
-ensure it is in your `$PATH` environment variable. There are other
-[recommended package installations](/docs/editor/setup/#post-installation) as well.
+If you want features such as [Quick Open](#quick-open), [Remote Development](/docs/features/remote), and [Mercurial support](/docs/features/hg) to work correctly, you also need to install [Watchman](https://facebook.github.io/watchman/) and ensure it is in your `$PATH` environment variable. There are other [recommended package installations](/docs/editor/setup/#post-installation) as well.
 
 ## Launch
 
