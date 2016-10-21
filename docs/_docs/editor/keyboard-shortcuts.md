@@ -67,6 +67,7 @@ These shortcuts provide quick access to development features such as [Diff View]
 | `Option-Cmd-Y` | `Alt-Cmd-Y` | `nuclide-hack-symbol-provider:toggle-provider` | Allows you to search for Hack function, classes and constants within you Hack project.
 | `Cmd-Shift-I` | `Ctrl-Shift-I` | `nuclide-format-js:format` | Automatically tries to insert missing `require` statements to your [Flow](/docs/languages/flow/) or [JavaScript](/docs/languages/other/#javascript) project.
 | `Option-O`| `Alt-O` | `nuclide-outline-view:toggle` | Toggles the [Outline View](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions.
+| `Cmd-I` | `Ctrl-I` | `nuclide-context-view:toggle` | Toggles the [Context View](/docs/features/context-view/). |
 
 ## Project Explorer's File Tree
 

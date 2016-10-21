@@ -17,6 +17,7 @@
   - id: feature-quick-open
   - id: feature-working-sets
   - id: feature-outline-view
+  - id: feature-context-view
   - id: feature-buck
   - id: feature-health
   - id: feature-format-js
