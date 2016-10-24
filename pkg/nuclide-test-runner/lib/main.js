@@ -10,7 +10,6 @@
  */
 
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
-import type {HomeFragments} from '../../nuclide-home/lib/types';
 import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
 import type {TestRunner} from './types';
 import type {TestRunnerControllerState} from './TestRunnerController';
@@ -292,18 +291,6 @@ export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu):
 export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
   invariant(activation);
   return activation.addToolBar(getToolBar);
-}
-
-export function getHomeFragments(): HomeFragments {
-  return {
-    feature: {
-      title: 'Test Runner',
-      icon: 'checklist',
-      description: 'Run tests directly from Nuclide by right-mouse-clicking on the file.',
-      command: 'nuclide-test-runner:toggle-panel',
-    },
-    priority: 2,
-  };
 }
 
 export function getDistractionFreeModeProvider(): DistractionFreeModeProvider {

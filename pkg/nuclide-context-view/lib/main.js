@@ -17,6 +17,7 @@ import type {ContextViewConfig} from './ContextViewManager';
 import type {DefinitionService} from '../../nuclide-definition-service';
 import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
 import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
+import type {HomeFragments} from '../../nuclide-home/lib/types';
 
 import {ContextViewManager} from './ContextViewManager';
 import {Disposable, CompositeDisposable} from 'atom';
@@ -159,4 +160,22 @@ export function getDistractionFreeModeProvider(): DistractionFreeModeProvider {
 
 export function provideNuclideContextView(): NuclideContextView {
   return Service;
+}
+
+export function getHomeFragments(): HomeFragments {
+  return {
+    feature: {
+      title: 'Context View',
+      icon: 'list-unordered',
+      description: 'Easily navigate between symbols and their definitions in your code',
+      command: () => {
+        atom.commands.dispatch(
+          atom.views.getView(atom.workspace),
+          'nuclide-context-view:toggle',
+          {visible: true},
+        );
+      },
+    },
+    priority: 2,
+  };
 }

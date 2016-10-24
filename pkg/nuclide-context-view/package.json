@@ -22,6 +22,11 @@
     }
   },
   "providedServices": {
+    "nuclide-home.homeFragments": {
+      "versions": {
+        "0.0.0": "getHomeFragments"
+      }
+    },
     "nuclide-context-view": {
       "versions": {
         "0.0.0": "provideNuclideContextView"
