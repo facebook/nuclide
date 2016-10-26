@@ -166,7 +166,7 @@ export function getHomeFragments(): HomeFragments {
   return {
     feature: {
       title: 'Context View',
-      icon: 'list-unordered',
+      icon: 'info',
       description: 'Easily navigate between symbols and their definitions in your code',
       command: () => {
         atom.commands.dispatch(
