@@ -5,10 +5,7 @@ layout: docs
 permalink: /docs/features/debugger/
 ---
 
-One of the key features of Nuclide is its multiple-language debugging support. The Nuclide Debugger
-is provided with the familiar [Chrome DevTools](https://developer.chrome.com/devtools) interface.
-
-The Nuclide Debugger provides many capabilities allowing you to have a productive debug loop,
+One of the key features of Nuclide is its multiple-language debugging support provided with a debugger interface inspired by the familiar [Chrome DevTools](https://developer.chrome.com/devtools). The Nuclide Debugger provides many capabilities allowing you to have a productive debug loop,
 including inspection, watches, setting breakpoints, step in/over/out, etc.
 
 * TOC
@@ -33,7 +30,7 @@ Specific details are provided for each [language](#language-specific-debugging) 
 need to either launch a debug process from within Nuclide (e.g., iOS from the Buck toolbar) or
 attach to a currently running process (e.g., `node`) for debugging.
 
-***Example***
+*Example*
 
 If you have a Node project running (e.g, via `npm start` or `node yourfile.js`), press
 `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) to toggle the Debugger; this opens the Debugger Selection window. Then, attach Nuclide to the
@@ -70,7 +67,7 @@ are able to perform debugging tasks such as [step](#basics__stepping) and
 > on one line of code. We are looking into ways to support functional, conditional, and other types
 > of breakpoints.
 
-***Example***
+*Example*
 
 Here we have breakpoints on lines 13 and 18 of `read.js`.
 
@@ -116,6 +113,13 @@ The **Locals** area shows you information about local variables based upon the c
 
 The **Watch Expressions** area is for you to keep track of the values of global and local variables. To add a new value to track, enter it in the `add new watch expression` text box. To remove a watched variable, click the `x` icon of the variable you wish to delete.
 
+*Example*
+
+Here we have breakpoints set on line 10 of `read.js` and line 3 of `math.js`. We set watches on two global variables (`num1` and `num2`) in the `read.js` file. The call stack shows that we are
+currently in the `processSum` method and started from the `onData` method.
+
+![](/static/images/docs/feature-debugger-basics-debugger-ex.png)
+
 ***Detaching***
 
 ![](/static/images/docs/feature-debugger-basics-detach.png)
@@ -130,13 +134,6 @@ This will stop the entire debugging session for that process.
 You can open the Web Inspector by clicking on the Web Inspector icon (i.e., gear symbol). This will bring up
 a [Chrome Developer Tools window](https://developers.google.com/web/tools/chrome-devtools/) for the
 current debugging frame.
-
-***Example***
-
-Here we have breakpoints set on line 10 of `read.js` and line 3 of `math.js`. We set watches on two global variables (`num1` and `num2`) in the `read.js` file. The call stack shows that we are
-currently in the `processSum` method and started from the `onData` method.
-
-![](/static/images/docs/feature-debugger-basics-debugger-ex.png)
 
 ***Debugger UI Toggle***
 
@@ -154,7 +151,7 @@ via the [keyboard](/docs/editor/keyboard-shortcuts/#debugger).
 
 <img src="/static/images/docs/feature-debugger-basics-stepping-controls.png" align="middle" style="width: 400px" />
 
-***Example***
+*Example*
 
 Assume we have a breakpoint set at line 22 of `read.js` (before the call to `processSum()`).
 
@@ -189,7 +186,7 @@ expressions, call functions, etc. using the current state of the program at the 
 > For LLDB-based debugging, REPL runs LLDB debugger commands as opposed to evaluating code in the
 > Debugger.
 
-***Example***
+*Example*
 
 Here we have a breakpoint before printing out the sum of the two global variables `num1` and `num2`.
 This shows printing out the values of the global and local variables, writing simple expressions,
