@@ -8,7 +8,7 @@ permalink: /docs/editor/setup/
 There are two supported platforms for Nuclide, [Linux](#linux) and [macOS](#macos).
 
 > Nuclide can be installed on [Windows](#windows), but it is
-> [not fully supported](https://github.com/facebook/nuclide/issues/401).
+> [not fully supported](https://github.com/facebook/nuclide/issues/321).
 
 These instructions are for installing the released package of Nuclide. For advanced users, you can
 [build from source](/docs/advanced-topics/building-from-source), but this is not officially
@@ -19,19 +19,20 @@ supported and stability is not guaranteed.
 
 ## Quick Install
 
-Assuming you have met all the prerequisites for your platform, culminating with a version of Atom that is equal to or greater than that specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json) being installed, the easiest way to install Nuclide is either at the command line:
-
-```bash
-$ apm install nuclide
-```
-
-or within Atom itself:
+Assuming you have met all the prerequisites for your platform, culminating with a version of Atom that is equal to or greater than that specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json) being installed, the easiest way to install Nuclide is within Atom itself:
 
 1. Open Atom.
 2. Choose `Atom | Preferences` (on Linux this will be `Edit | Preferences`) to bring up the **Settings** tab.
 3. In the **Settings** tab, select **Install** from the list at the left.
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
+
+> Installing Nuclide within the Atom Packages UI is the recommended method, however you can install Nuclide from the command-line, if you wish, using:
+>
+```bash
+$ apm install nuclide
+```
+>
 
 Otherwise, see your installation platform below for detailed installation instructions, including
 prerequisites.
@@ -41,17 +42,11 @@ prerequisites.
 ### Prerequisites
 
 Nuclide requires the version of Atom specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json). You can follow the [instructions on the Atom website](https://atom.io/docs/v0.191.0/getting-started-installing-atom#atom-on-mac). Essentially,
-if you go to Atom.io, there will be direct link to download Atom.
+if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
 
 ### Installation
 
-Installing Nuclide is a one-line command at the command-line:
-
-```bash
-$ apm install nuclide
-```
-
-or you can go through the Atom Packages UI:
+Install Nuclide through the Atom Packages UI:
 
 1. Open Atom.
 2. Choose `Atom | Preferences` to bring up the **Settings** tab.
@@ -59,13 +54,22 @@ or you can go through the Atom Packages UI:
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
 
+![](/static/images/docs/editor-setup-atom-install-nuclide.png)
+
+> Installing Nuclide within the Atom Packages UI is the recommended method, however you can install Nuclide from the command-line, if you wish, using:
+>
+```bash
+$ apm install nuclide
+```
+>
+
 ## Linux
 
 ### Prerequisites
 
 Nuclide requires the version of Atom specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json) (which requires Git). There are [instructions on the Atom website](https://atom.io/download/deb#atom-on-linux) for installing Atom on Linux, but it doesn't mention the Git requirement.
 
-Instead, follow the command line process below which shows you the installation of all the
+Instead, follow the command-line process below which shows you the installation of all the
 necessary prerequisites, including Git.
 
 This is an installation on Ubuntu. If you are using an RPM-based distro, you should replace the
@@ -80,19 +84,13 @@ $ sudo apt-get install git
 $ sudo add-apt-repository ppa:webupd8team/atom
 $ sudo apt-get update
 $ sudo apt-get install atom
-# Run atom from the command line if you want
+# Run atom from the command-line if you want
 $ atom
 ```
 
 ### Installation
 
-Installing Nuclide is a one-line command at the command-line:
-
-```bash
-$ apm install nuclide
-```
-
-Or you can go through the Atom Packages UI to install Atom:
+Install Nuclide through the Atom Packages UI:
 
 1. Open Atom.
 2. Choose `Edit | Preferences` to bring up the **Settings** tab.
@@ -100,16 +98,33 @@ Or you can go through the Atom Packages UI to install Atom:
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
 
+> Installing Nuclide within the Atom Packages UI is the recommended method, however you can install Nuclide from the command-line, if you wish, using:
+>
+```bash
+$ apm install nuclide
+```
+>
+
 ## Windows
 
-Atom can be installed on Windows. Some features of Nuclide may work on Windows, but the full
-Nuclide experience is [not yet supported](https://github.com/facebook/nuclide/issues/321).
+Atom can be installed on Windows. Nuclide requires the version of Atom specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json). You can follow the [instructions on the Atom website](https://atom.io/docs/v0.191.0/getting-started-installing-atom#atom-on-mac). Essentially,
+if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
 
-> There has been anecdotal success in getting basic [remote development](/docs/features/remote)
-> functionality to work on Windows (seeing the directory tree, editing remote files, etc.). If you
-> have [Hack](/docs/languages/hack) or [Flow](/docs/languages/flow) on a remote server, it is
-> possible that you could get some of those language integrations to work as well. However, local
-> projects seem to be very broken.
+>Some features of Nuclide may work on Windows, but the full Nuclide experience is [not yet supported](https://github.com/facebook/nuclide/issues/321).  
+>
+>[Remote development](/docs/features/remote) functionality (seeing the directory tree, editing remote files, etc.) is generally successful on Windows. If you have [Hack](/docs/languages/hack) or [Flow](/docs/languages/flow) on a remote server, it is possible that you could get some of those language integrations to work as well.
+>
+>However, local projects may run into issues.
+
+### Installation
+
+Install Nuclide through the Atom Packages UI:
+
+1. Open Atom.
+2. Choose `Edit | Preferences` to bring up the **Settings** tab.
+3. In the **Settings** tab, select **Install** from the list at the left.
+4. In the search box, type "Nuclide" and press the `Enter` key.
+5. Click the **Install** button for the `nuclide` package.
 
 ## Post Installation
 
@@ -129,11 +144,12 @@ Recommended packages include:
 - [`language-babel`](https://atom.io/packages/language-babel) to enable language grammar for [JS, Flow and React JS](/docs/languages/flow/), etc.
 - ...and [others](https://github.com/facebook/nuclide/blob/master/package.json) under `package-deps`.
 
-In order to install all of the recommended packages, go to
-`Packages | Settings View | Manage Packages`, search for the `nuclide` package and click on
-**Settings**.
+<br />
+In order to install all of the recommended packages:
 
-You will find a checkbox allowing you enable the recommended settings.
+1. Go to `Packages | Settings View | Manage Packages`.
+2. Search for the `nuclide` package, and click on the package's **Settings** button.
+3. Select the **Install Recommended Packages on Startup** checkbox.
 
 ![](/static/images/docs/editor-setup-recommended-packages.png)
 

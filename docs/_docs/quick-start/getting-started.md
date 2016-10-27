@@ -5,7 +5,7 @@ layout: docs
 permalink: /docs/quick-start/getting-started/
 ---
 
-This getting started guide walks you through the core features of Nuclide and aims to get you productive quickly.
+This getting started guide walks you through the core features of Nuclide and aims to get you productive quickly.  See [Basics](/docs/editor/basics) for more information on using Nuclide's editing features.
 
 * TOC
 {:toc}
@@ -15,14 +15,28 @@ This getting started guide walks you through the core features of Nuclide and ai
 The [installation guides](/docs/editor/setup/) provide detailed information to install
 Nuclide on your platform, but if you have already met the platform dependent prerequisites
 ([macOS](/docs/editor/setup/#macos__prerequisites) | [Linux](/docs/editor/setup/#linux__prerequisites)),
-you can install Nuclide with one command:
+you can install Nuclide easily from within Atom itself.
 
+> Nuclide can be installed on [Windows](#windows), but it is [not fully supported](https://github.com/facebook/nuclide/issues/321).
+
+<br />
+
+1. Open Atom.
+2. Choose `Atom | Preferences` (on Linux this will be `Edit | Preferences`) to bring up the **Settings** tab.
+3. In the **Settings** tab, select **Install** from the list at the left.
+4. In the search box, type "Nuclide" and press the `Enter` key.
+5. Click the **Install** button for the `nuclide` package.
+
+![](/static/images/docs/editor-setup-atom-install-nuclide.png)
+
+> Installing Nuclide within the Atom Packages UI is the recommended method, however you can install Nuclide from the command-line, if you wish, using:
+>
 ```bash
-apm install nuclide
+$ apm install nuclide
 ```
+>
 
-> Nuclide can be installed on [Windows](#windows), but it is
-> [not fully supported](https://github.com/facebook/nuclide/issues/401).
+<br />
 
 If you want features such as [Quick Open](#quick-open), [Remote Development](/docs/features/remote), and [Mercurial support](/docs/features/hg) to work correctly, you also need to install [Watchman](https://facebook.github.io/watchman/) and ensure it is in your `$PATH` environment variable. There are other [recommended package installations](/docs/editor/setup/#post-installation) as well.
 
@@ -31,7 +45,7 @@ If you want features such as [Quick Open](#quick-open), [Remote Development](/do
 After installation, launch Nuclide by [opening Atom](/docs/editor/basics/#opening). Once Atom
 is open, you should see the Nuclide Home page.
 
-![](/static/images/docs/quick-start-getting-started-home-page.png)
+![](/static/images/docs/quick-start-getting-started-home.png)
 
 - The left side-pane is the Nuclide [Project Explorer](/docs/editor/basics/#project-explorer).
 - The main pane contains introductory information about Nuclide and the Quick Launch Menu. This is also where you will edit your files (just like in normal Atom).
@@ -57,7 +71,7 @@ files and folders as a tree hierarchy underneath it.
 On the Nuclide Home page you will find the Quick Launch Menu that gives quick access to many of
 the popular features of Nuclide. Click the **Try It** button of any feature to use it.
 
-![](/static/images/docs/quick-start-getting-started-quick-launch.png)
+![](/static/images/docs/quick-start-getting-started-quick-launch-menu.png)
 
 ## Quick Open
 
