@@ -70,13 +70,12 @@ function flowMessageToTrace(message: MessageComponent): Trace {
 }
 
 function flowMessageToDiagnosticMessages(diagnostic: Diagnostic) {
-  const mainMessage = diagnostic.messageComponents[0];
   const messages = [];
   let trace = null;
 
   // The Flow type does not capture this, but the first message always has a path, and the
   // diagnostics package requires a FileDiagnosticMessage to have a path.
-  const path = extractPath(mainMessage);
+  const path = extractPath(diagnostic.messageComponents[0]);
   invariant(path != null, 'Expected path to not be null or undefined');
 
   const description = diagnostic.messageComponents[0].descr;
