@@ -22,7 +22,7 @@ you can install Nuclide easily from within Atom itself.
 <br />
 
 1. Open Atom.
-2. Choose `Atom | Preferences` (on Linux this will be `Edit | Preferences`) to bring up the **Settings** tab.
+2. Choose `Atom | Preferences` (`Edit | Preferences` on Linux and `File | Settings` on Windows) to bring up the **Settings** tab.
 3. In the **Settings** tab, select **Install** from the list at the left.
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
@@ -37,6 +37,8 @@ $ apm install nuclide
 >
 
 <br />
+
+### Packages
 
 If you want features such as [Quick Open](#quick-open), [Remote Development](/docs/features/remote), and [Mercurial support](/docs/features/hg) to work correctly, you also need to install [Watchman](https://facebook.github.io/watchman/) and ensure it is in your `$PATH` environment variable. There are other [recommended package installations](/docs/editor/setup/#post-installation) as well.
 

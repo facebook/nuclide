@@ -22,7 +22,7 @@ supported and stability is not guaranteed.
 Assuming you have met all the prerequisites for your platform, culminating with a version of Atom that is equal to or greater than that specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json) being installed, the easiest way to install Nuclide is within Atom itself:
 
 1. Open Atom.
-2. Choose `Atom | Preferences` (on Linux this will be `Edit | Preferences`) to bring up the **Settings** tab.
+2. Choose `Atom | Preferences` (`Edit | Preferences` on Linux and `File | Settings` on Windows) to bring up the **Settings** tab.
 3. In the **Settings** tab, select **Install** from the list at the left.
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
@@ -107,6 +107,8 @@ $ apm install nuclide
 
 ## Windows
 
+### Prerequisites
+
 Atom can be installed on Windows. Nuclide requires the version of Atom specified in [Atom's dependencies under "atom"](https://github.com/facebook/nuclide/blob/master/package.json). You can follow the [instructions on the Atom website](https://atom.io/docs/v0.191.0/getting-started-installing-atom#atom-on-mac). Essentially,
 if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
 
@@ -121,10 +123,12 @@ if you go to [Atom.io](https://atom.io/), there will be direct link to download 
 Install Nuclide through the Atom Packages UI:
 
 1. Open Atom.
-2. Choose `Edit | Preferences` to bring up the **Settings** tab.
+2. Choose `File | Settings` to bring up the **Settings** tab.
 3. In the **Settings** tab, select **Install** from the list at the left.
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
+
+![](/static/images/docs/editor-setup-atom-install-windows.png)
 
 ## Post Installation
 
