@@ -54,7 +54,6 @@ Install Nuclide through the Atom Packages UI:
 4. In the search box, type "Nuclide" and press the `Enter` key.
 5. Click the **Install** button for the `nuclide` package.
 
-![](/static/images/docs/editor-setup-atom-install-nuclide.png)
 
 > Installing Nuclide within the Atom Packages UI is the recommended method, however you can install Nuclide from the command-line, if you wish, using:
 >
