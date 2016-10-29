@@ -5,8 +5,7 @@ layout: docs
 permalink: /docs/features/debugger/
 ---
 
-One of the key features of Nuclide is its multiple-language debugging support provided with a debugger interface inspired by the familiar [Chrome DevTools](https://developer.chrome.com/devtools). The Nuclide Debugger provides many capabilities allowing you to have a productive debug loop,
-including inspection, watches, setting breakpoints, step in/over/out, etc.
+One of the key features of Nuclide is its multiple-language debugging support provided with a debugger interface inspired by the familiar [Chrome DevTools](https://developer.chrome.com/devtools). The Nuclide Debugger provides many capabilities allowing you to have a productive debug loop, including inspection, watches, setting breakpoints, step in/over/out, etc.
 
 * TOC
 {:toc}
@@ -53,7 +52,7 @@ Debugger listening on port 5858
 
 After attaching to the process by clicking **Attach**, you should see the Debugger Controls to the right of the [Editing Area](/docs/editor/basics/#editing-area).
 
-![](/static/images/docs/feature-debugger-basics-after-attaching.png)
+![](/static/images/docs/feature-debugger-target-attach.png)
 
 ### Breakpoints
 
@@ -118,7 +117,7 @@ The **Watch Expressions** area is for you to keep track of the values of global 
 Here we have breakpoints set on line 10 of `read.js` and line 3 of `math.js`. We set watches on two global variables (`num1` and `num2`) in the `read.js` file. The call stack shows that we are
 currently in the `processSum` method and started from the `onData` method.
 
-![](/static/images/docs/feature-debugger-basics-debugger-ex.png)
+![](/static/images/docs/feature-debugger-watches-ex.png)
 
 ***Detaching***
 
@@ -149,27 +148,27 @@ It is essential for any debugger to have a mechanism to step into, over, and out
 Nuclide Debugger provides stepping functionality with shortcuts within the Debugger itself and
 via the [keyboard](/docs/editor/keyboard-shortcuts/#debugger).
 
-<img src="/static/images/docs/feature-debugger-basics-stepping-controls.png" align="middle" style="width: 400px" />
+![](/static/images/docs/feature-debugger-stepping-controls.png)
 
 *Example*
 
 Assume we have a breakpoint set at line 22 of `read.js` (before the call to `processSum()`).
 
-![](/static/images/docs/feature-debugger-basics-stepping-line22.png)
+![](/static/images/docs/feature-debugger-stepping-line22-ex.png)
 
 The following shows what happens when you step into the function. The code execution steps into the actual
 `processSum()` function itself.
 
-![](/static/images/docs/feature-debugger-basics-stepping-stepin-ex.png)
+![](/static/images/docs/feature-debugger-stepping-stepin-ex.png)
 
 The following shows what happens when you step over the function. `processSum()` is fully executed,
 and we move on to closing the `readline` object.
 
-![](/static/images/docs/feature-debugger-basics-stepping-stepover-ex.png)
+![](/static/images/docs/feature-debugger-stepping-stepover-ex.png)
 
 You can even step into a function that exists in another module.
 
-![](/static/images/docs/feature-debugger-basics-stepping-other-module-ex.png)
+![](/static/images/docs/feature-debugger-stepping-other-module-ex.png)
 
 ### Evaluation
 
@@ -192,7 +191,7 @@ Here we have a breakpoint before printing out the sum of the two global variable
 This shows printing out the values of the global and local variables, writing simple expressions,
 calling a function in another module (`math.add()`), and inspecting objects.
 
-![](/static/images/docs/feature-debugger-basics-evaluation-ex.png)
+![](/static/images/docs/feature-debugger-evaluation-ex.png)
 
 ## Language Specific Debugging
 
