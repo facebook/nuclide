@@ -133,7 +133,7 @@ Click the **Debug** button to open the Debugger; it will stop at the first break
 
 You can then follow the [basic Debugger information](/docs/features/debugger/#basics) and use the additional features of the [Console](/docs/languages/hack/#debugging__console), [Evaluation](/docs/languages/hack/#debugging__evaluation), [Filtering](/docs/languages/hack/#debugging__filtering) and [other HHVM-specific debugging settings]( /docs/languages/hack/#debugging__other-settings) to debug your code.
 
-![](/static/images/docs/feature-task-runner-hack-debugging.png)
+![](/static/images/docs/feature-task-runner-hhvm-debug.png)
 
 In both the script and server launching/attaching scenarios, the line at which you've set a
 breakpoint will highlight in blue when the breakpoint is hit. When this happens, execution of your
