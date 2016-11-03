@@ -26,7 +26,7 @@ const DIFF_VIEW_NAVIGATION_BAR = 'nuclide-diff-view-navigation-bar';
  * Disposable objects.
  */
 type BreakpointDisplayControllerDelegate = {
-  +handleTextEditorDestroyed: (controller: BreakpointDisplayController) => void,
+  handleTextEditorDestroyed: (controller: BreakpointDisplayController) => void,
 };
 
 /**
