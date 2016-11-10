@@ -12,4 +12,7 @@
 
 - title: GitHub
   href: https://github.com/facebook/nuclide
-  category: github
+  category: external
+
+# Use external for external links not associated with the paths of the current site.
+# If a category is external, site urls, for example, are not prepended to the href, etc.

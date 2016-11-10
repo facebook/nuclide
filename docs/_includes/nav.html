@@ -1,15 +1,19 @@
 <div id="headerBar" class="headerBarContainer {% if include.alwayson %} visible{% endif %}">
   <header>
-    <a href="{{ site.url }}">
-      <img src="/static/logo_nav.png" height="30" width="25" alt="">
+    <a href="{{ '/' | absolute_url }}">
+      <img src="{{ '/static/logo_nav.png' | relative_url }}" height="30" width="25" alt="">
       <h2>{{ site.title }}</h2>
     </a>
     <div class="navigationWrapper navigationFull" id="flat_nav">
       <nav class="navigation">
         <ul>
           {% for item in site.data.nav %}
-            <li class="navItem {% if page.collection == item.category or page.category == item.category %}navItemActive{% endif %}">
-              <a href={{ item.href }}>{{ item.title }}</a>
+            <li class="navItem{% if page.collection == item.category or page.category == item.category %} navItemActive{% endif %}">
+              {% if item.category == "external" %}
+                <a href="{{ item.href }}">{{ item.title }}</a>
+              {% else %}
+                <a href="{{ item.href | relative_url }}">{{ item.title }}</a>
+              {% endif %}
             </li>
           {% endfor %}
           <li class="algolia-search-wrapper">
