@@ -273,26 +273,29 @@ async function execArcLint(
   const result = await niceCheckOutput('arc', args, getArcExecOptions(cwd));
 
   const output: Map<string, Array<Object>> = new Map();
-  // Arc lint outputs multiple JSON objects on mutliple lines. Split them, then merge the
-  // results.
-  for (const line of result.stdout.trim().split('\n')) {
-    let json;
-    try {
-      json = JSON.parse(line);
-    } catch (error) {
-      getLogger().warn('Error parsing `arc lint` JSON output', line);
-      continue;
-    }
-    for (const file of Object.keys(json)) {
-      const errorsToAdd = json[file];
-
-      let errors = output.get(file);
-      if (errors == null) {
-        errors = [];
-        output.set(file, errors);
+  // Arc lint prints nothing when there are no linters.
+  if (result.stdout !== '') {
+    // Arc lint outputs multiple JSON objects on multiple lines. Split them, then merge the
+    // results.
+    for (const line of result.stdout.trim().split('\n')) {
+      let json;
+      try {
+        json = JSON.parse(line);
+      } catch (error) {
+        getLogger().warn('Error parsing `arc lint` JSON output', line);
+        continue;
       }
-      for (const error of errorsToAdd) {
-        errors.push(error);
+      for (const file of Object.keys(json)) {
+        const errorsToAdd = json[file];
+
+        let errors = output.get(file);
+        if (errors == null) {
+          errors = [];
+          output.set(file, errors);
+        }
+        for (const error of errorsToAdd) {
+          errors.push(error);
+        }
       }
     }
   }
