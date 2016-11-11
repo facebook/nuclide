@@ -71,13 +71,15 @@ export function activate() {
 /** Provider for autocomplete service. */
 export function createAutocompleteProvider(): atom$AutocompleteProvider {
   const excludeLowerPriority = Boolean(featureConfig.get('nuclide-flow.excludeOtherAutocomplete'));
+  const flowResultsFirst = Boolean(featureConfig.get('nuclide-flow.flowAutocompleteResultsFirst'));
 
   return {
     selector: JS_GRAMMARS.map(grammar => '.' + grammar).join(', '),
     disableForSelector: '.source.js .comment',
     inclusionPriority: 1,
-    // We want to get ranked higher than the snippets provider.
-    suggestionPriority: 5,
+    // We want to get ranked higher than the snippets provider by default,
+    // but it's configurable
+    suggestionPriority: flowResultsFirst ? 5 : 1,
     onDidInsertSuggestion: () => {
       track('nuclide-flow.autocomplete-chosen');
     },

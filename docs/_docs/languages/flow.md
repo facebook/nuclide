@@ -59,6 +59,10 @@ built-in types provided by Flow, autocomplete just works.
 
 ![](/static/images/docs/language-flow-autocomplete.png)
 
+By default suggestions from Flow will be shown first in the list of autocomplete results.
+However if you don't want this behavior (e.g. you want snippets to be on top),
+you can configure priority in Nuclide's preferences.
+
 ### Jump To Definition
 
 Nuclide provides a jump to definition/symbol feature for Flow programs.

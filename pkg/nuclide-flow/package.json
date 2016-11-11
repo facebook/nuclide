@@ -31,6 +31,12 @@
         "default": true,
         "description": "If Nuclide was responsible for starting a Flow server (on the client-side), stop it when Nuclide closes or reloads."
       },
+      "flowAutocompleteResultsFirst": {
+        "title": "Show Flow autocomplete results first",
+        "type": "boolean",
+        "default": true,
+        "description": "If checked, Flow suggestions will be placed before the rest of autocomplete results (e.g. snippets etc.). Requires restart to take effect."
+      },
       "excludeOtherAutocomplete": {
         "title": "Exclude other autocomplete results",
         "type": "boolean",
