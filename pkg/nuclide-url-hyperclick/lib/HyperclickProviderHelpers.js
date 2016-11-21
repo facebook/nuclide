@@ -30,7 +30,14 @@ export default class HyperclickProviderHelpers {
 
     urlregexp.lastIndex = 0;
 
-    const url = match[0];
+    let url = match[0];
+
+    // Stripping off quotes
+    if (url.includes('"'))
+      url = url.split('"')[0];
+    if (url.includes("'"))
+      url = url.split("'")[0];
+
     const index = match.index;
     const matchLength = url.length;
 
