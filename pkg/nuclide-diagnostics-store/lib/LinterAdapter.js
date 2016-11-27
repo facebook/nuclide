@@ -149,7 +149,16 @@ export class LinterAdapter {
 
   async _runLint(editor: TextEditor): Promise<void> {
     if (this._enabled) {
-      const result = await this._requestSerializer.run(this._provider.lint(editor));
+      const maybe = this._provider.lint(editor);
+      if (!maybe) {
+        return;
+      }
+
+      const result = await this._requestSerializer.run(maybe);
+      if (!result) {
+        return;
+      }
+
       if (result.status === 'success') {
         const buffer = editor.getBuffer();
         if (buffer.isDestroyed()) {

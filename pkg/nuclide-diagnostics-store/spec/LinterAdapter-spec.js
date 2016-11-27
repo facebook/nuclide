@@ -138,6 +138,37 @@ describe('LinterAdapter', () => {
     }, 'The adapter should publish a message');
   });
 
+  it('should not fail when resolved to null', () => {
+    newLinterAdapter({
+      grammarScopes: [],
+      scope: 'file',
+      lintOnFly: true,
+      lint: () => Promise.resolve(null),
+    });
+    eventCallback(fakeEditor);
+    waitsFor(() => bufferDestroyCallback != null);
+    runs(() => {
+      bufferDestroyCallback();
+      expect(publishMessageInvalidationSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should not fail on null', () => {
+    newLinterAdapter({
+      grammarScopes: [],
+      scope: 'file',
+      lintOnFly: true,
+      lint: () => null,
+    });
+    eventCallback(fakeEditor);
+    waitsFor(() => bufferDestroyCallback != null);
+    runs(() => {
+      bufferDestroyCallback();
+      expect(publishMessageInvalidationSpy).not.toHaveBeenCalled();
+    });
+  });
+
+
   it('should not reorder results', () => {
     let numMessages = 0;
     let lastMessage = null;

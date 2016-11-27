@@ -132,7 +132,7 @@ export type LinterProvider = {
   invalidateOnClose?: boolean,
   scope: 'file' | 'project',
   lintOnFly: boolean,
-  lint: (textEditor: TextEditor) => Promise<Array<LinterMessage>>,
+  lint: (textEditor: TextEditor) => ?Promise<?Array<LinterMessage>>,
 };
 
 module.exports = {
