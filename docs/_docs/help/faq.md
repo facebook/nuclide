@@ -100,22 +100,10 @@ Unfortunately, this is not currently available as an option in Atom and doesn't 
 
 Assume you performed an action that caused the cursor to jump to a new position.  How do you go back?
 
-The [last-cursor-position package](https://atom.io/packages/last-cursor-position) allows you to do this.
+Use the Nuclide Navigation Stack commands:
 
-1. Open the **Settings** tab either by pressing `Cmd-,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
-2. Select **Install** from the list at the left, and search for `last-cursor-position`.
-3. Click on the **Install** button for the `last-cursor-position` package.
-
-If you dislike the default hotkey for navigating back (`Alt--`), you can remap it.
-
-1. Go to `Atom | Keymap...`; this will open the `keympa.cson` file.
-2. Add
-
-        'body':
-          'alt-cmd-left': 'last-cursor-position:previous'
-          'alt-cmd-right': 'last-cursor-position:next'
-
-3. Save the file.
+- Forward navigation: `Ctrl-,` (`Ctrl-<` on Linux and Windows)
+- Backward navigation: `Ctrl-.` (`Ctrl->` on Linux and Windows)
 
 ## Is there a way to search only files in the Working Set?
 
