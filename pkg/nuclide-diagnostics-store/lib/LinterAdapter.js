@@ -155,11 +155,10 @@ export class LinterAdapter {
       }
 
       const result = await this._requestSerializer.run(maybe);
-      if (!result) {
-        return;
-      }
 
       if (result.status === 'success') {
+
+
         const buffer = editor.getBuffer();
         if (buffer.isDestroyed()) {
           return;
@@ -175,6 +174,11 @@ export class LinterAdapter {
         }
 
         const linterMessages = result.result;
+
+        if (!linterMessages) {
+          return;
+        }
+
         const diagnosticUpdate = linterMessagesToDiagnosticUpdate(
           editor.getPath(),
           linterMessages, this._provider.providerName || this._provider.name,
