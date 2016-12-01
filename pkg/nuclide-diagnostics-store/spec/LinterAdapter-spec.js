@@ -73,6 +73,17 @@ describe('LinterAdapter', () => {
     return new LinterAdapter(linter, (FakeDiagnosticsProviderBase: any));
   }
 
+  function shouldNotInvalidate() {
+    waitsForPromise(() => {
+      return eventCallback(fakeEditor).then(result => {
+        expect(bufferDestroyCallback).toBeUndefined();
+        expect(result).toBeUndefined();
+        expect(publishMessageUpdateSpy).not.toHaveBeenCalled();
+        expect(publishMessageInvalidationSpy).not.toHaveBeenCalled();
+      });
+    });
+  }
+
   beforeEach(() => {
     const fakeBuffer = {
       onDidDestroy(callback) {
@@ -138,36 +149,49 @@ describe('LinterAdapter', () => {
     }, 'The adapter should publish a message');
   });
 
-  it('should not fail when resolved to null', () => {
+  it('should not invalidate previous result when linter resolves to null', () => {
     newLinterAdapter({
       grammarScopes: [],
       scope: 'file',
       lintOnFly: true,
       lint: () => Promise.resolve(null),
     });
-    eventCallback(fakeEditor);
-    waitsFor(() => bufferDestroyCallback != null);
-    runs(() => {
-      bufferDestroyCallback();
-      expect(publishMessageInvalidationSpy).not.toHaveBeenCalled();
-    });
+
+    shouldNotInvalidate();
   });
 
-  it('should not fail on null', () => {
+  it('should not invalidate previous result when linter resolves to undefined', () => {
+    newLinterAdapter({
+      grammarScopes: [],
+      scope: 'file',
+      lintOnFly: true,
+      lint: () => Promise.resolve(undefined),
+    });
+
+    shouldNotInvalidate();
+  });
+
+  it('should not invalidate previous result when linter returns null', () => {
     newLinterAdapter({
       grammarScopes: [],
       scope: 'file',
       lintOnFly: true,
       lint: () => null,
     });
-    eventCallback(fakeEditor);
-    waitsFor(() => bufferDestroyCallback != null);
-    runs(() => {
-      bufferDestroyCallback();
-      expect(publishMessageInvalidationSpy).not.toHaveBeenCalled();
-    });
+
+    shouldNotInvalidate();
   });
 
+  it('should not invalidate previous result when linter returns undefined', () => {
+    newLinterAdapter({
+      grammarScopes: [],
+      scope: 'file',
+      lintOnFly: true,
+      lint: () => undefined,
+    });
+
+    shouldNotInvalidate();
+  });
 
   it('should not reorder results', () => {
     let numMessages = 0;
