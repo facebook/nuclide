@@ -53,7 +53,7 @@ describe('PathSetUpdater', () => {
 
 
   beforeEach(() => {
-    pathSet = new PathSet(INITIAL_PATHS, []);
+    pathSet = new PathSet(INITIAL_PATHS, [], '');
     pathSetUpdater = new PathSetUpdater();
   });
 
@@ -99,8 +99,8 @@ describe('PathSetUpdater', () => {
           },
         ];
         emitMockWatchmanUpdate(mockChanges);
-        let newValues = pathSet.match('').map(x => x.value);
-        expect(newValues.sort()).toEqual(['b', 'c']);
+        let newValues = pathSet.query('').map(x => x.path);
+        expect(newValues.sort()).toEqual(['/b', '/c']);
 
         // This is a no-op.
         emitMockWatchmanUpdate([
@@ -111,8 +111,8 @@ describe('PathSetUpdater', () => {
             mode: 1234,
           },
         ]);
-        newValues = pathSet.match('').map(x => x.value);
-        expect(newValues.sort()).toEqual(['b', 'c']);
+        newValues = pathSet.query('').map(x => x.path);
+        expect(newValues.sort()).toEqual(['/b', '/c']);
 
         // Verify that disposing the Disposable stops updates to the pathSet.
         disposable.dispose();
@@ -132,7 +132,7 @@ describe('PathSetUpdater', () => {
           },
         ];
         emitMockWatchmanUpdate(unnoticedChanges);
-        const unchangedValues = pathSet.match('').map(x => x.value);
+        const unchangedValues = pathSet.query('').map(x => x.path);
         expect(unchangedValues.sort()).toEqual(newValues);
       });
     });

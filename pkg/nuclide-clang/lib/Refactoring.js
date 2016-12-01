@@ -33,8 +33,17 @@ async function checkDiagnostics(editor: atom$TextEditor): Promise<boolean> {
 
 export default class RefactoringHelpers {
 
-  @trackTiming('nuclide-clang:refactoringsAtPoint')
-  static async refactoringsAtPoint(
+  static refactoringsAtPoint(
+    editor: atom$TextEditor,
+    point: atom$Point,
+  ): Promise<Array<AvailableRefactoring>> {
+    return trackTiming(
+      'nuclide-clang:refactoringsAtPoint',
+      () => RefactoringHelpers._refactoringsAtPoint(editor, point),
+    );
+  }
+
+  static async _refactoringsAtPoint(
     editor: atom$TextEditor,
     point: atom$Point,
   ): Promise<Array<AvailableRefactoring>> {
@@ -58,9 +67,15 @@ export default class RefactoringHelpers {
     }];
   }
 
+  static refactor(request: RefactorRequest): Promise<?RefactorResponse> {
+    return trackTiming(
+      'nuclide-clang:refactor',
+      () => RefactoringHelpers._refactor(request),
+    );
+  }
+
   // TODO(hansonw): Move this to the clang-rpc service.
-  @trackTiming('nuclide-clang:refactor')
-  static async refactor(request: RefactorRequest): Promise<?RefactorResponse> {
+  static async _refactor(request: RefactorRequest): Promise<?RefactorResponse> {
     invariant(request.kind === 'rename');
     const {editor, originalPoint, newName} = request;
     const path = editor.getPath();

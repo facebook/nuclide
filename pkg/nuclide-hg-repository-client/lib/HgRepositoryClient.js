@@ -34,7 +34,7 @@ import {
 import {Observable} from 'rxjs';
 import LRU from 'lru-cache';
 import featureConfig from '../../commons-atom/featureConfig';
-import {observeBufferOpen, observeBufferCloseOrRename} from '../../commons-atom/buffer';
+import {observeBufferOpen, observeBufferCloseOrRename} from '../../commons-atom/text-buffer';
 import {getLogger} from '../../nuclide-logging';
 
 const STATUS_DEBOUNCE_DELAY_MS = 300;

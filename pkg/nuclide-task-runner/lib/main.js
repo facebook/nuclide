@@ -48,6 +48,8 @@ import {Observable} from 'rxjs';
 // Perhaps Atom should provide packages with some way of doing this.
 const SERIALIZED_VERSION = 2;
 
+const SHOW_PLACEHOLDER_INITIALLY_KEY = 'nuclide:nuclide-task-runner:showPlaceholderInitially';
+
 class Activation {
   _disposables: UniversalDisposable;
   _actionCreators: BoundActionCreators;
@@ -60,9 +62,15 @@ class Activation {
       serializedState = {};
     }
 
+    const {previousSessionVisible} = serializedState;
     const initialState = {
       ...createEmptyAppState(),
       ...serializedState,
+      // If the task runner toolbar was shown previously, we'll display a placholder until the view
+      // initializes so there's not a jump in the UI.
+      showPlaceholderInitially: typeof previousSessionVisible === 'boolean'
+        ? previousSessionVisible
+        : window.localStorage.getItem(SHOW_PLACEHOLDER_INITIALLY_KEY) === 'true',
     };
 
     const epics = Object.keys(Epics)
@@ -91,6 +99,15 @@ class Activation {
       Observable.interval(0).take(1)
         .map(() => Actions.didLoadInitialPackages())
         .subscribe(this._store.dispatch),
+
+      // Whenever the visiblity changes, store the value in localStorage so that we can use it
+      // to decide whether we should show the placeholder at the beginning of the next session.
+      states
+        .filter(state => state.viewIsInitialized)
+        .map(state => state.visible)
+        .subscribe(visible => {
+          window.localStorage.setItem(SHOW_PLACEHOLDER_INITIALLY_KEY, String(visible));
+        }),
 
       this._panelRenderer,
       atom.commands.add('atom-workspace', {
@@ -196,7 +213,7 @@ class Activation {
       ),
 
       states
-        .map(state => state.visible)
+        .map(state => state.visible || (!state.viewIsInitialized && state.showPlaceholderInitially))
         .distinctUntilChanged()
         .subscribe(visible => { this._panelRenderer.render({visible}); }),
     );

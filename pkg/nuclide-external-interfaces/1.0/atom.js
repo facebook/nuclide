@@ -717,7 +717,7 @@ declare class atom$TextEditor extends atom$Model {
       undo?: string,
     },
   ): atom$Range,
-  insertText(text: string): atom$Range | boolean,
+  insertText(text: string): Array<atom$Range> | false,
   delete: () => void,
   backspace: () => void,
   duplicateLines: () => void,

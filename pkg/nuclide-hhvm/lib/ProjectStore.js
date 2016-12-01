@@ -20,14 +20,12 @@ import {trackTiming} from '../../nuclide-analytics';
 import nuclideUri from '../../commons-node/nuclideUri';
 import UniversalDisposable from '../../commons-node/UniversalDisposable';
 
-import type {ProjectType} from './types';
-
 class ProjectStore {
   _disposables: UniversalDisposable;
   _emitter: Emitter;
   _currentFilePath: string;
   _projectRoot: BehaviorSubject<?string>;
-  _projectType: ProjectType;
+  _isHHVMProject: ?boolean;
   _debugMode: DebugMode;
   _filePathsToScriptCommand: Map<string, string>;
 
@@ -35,16 +33,21 @@ class ProjectStore {
     this._emitter = new Emitter();
     this._currentFilePath = '';
     this._projectRoot = new BehaviorSubject();
-    this._projectType = 'Other';
+    this._isHHVMProject = null;
     this._debugMode = 'webserver';
     this._filePathsToScriptCommand = new Map();
 
     const onDidChange = this._onDidChangeActivePaneItem.bind(this);
     this._disposables = new UniversalDisposable(
       this._projectRoot
+        .do(() => {
+          // Set the project type to a "loading" state.
+          this._isHHVMProject = null;
+          this._emitter.emit('change');
+        })
         .switchMap(root => this._isFileHHVMProject(root))
         .subscribe(isHHVM => {
-          this._projectType = isHHVM ? 'Hhvm' : 'Other';
+          this._isHHVMProject = isHHVM;
           this._emitter.emit('change');
         }),
       atom.workspace.onDidStopChangingActivePaneItem(onDidChange),
@@ -66,13 +69,14 @@ class ProjectStore {
     this._emitter.emit('change');
   }
 
-  @trackTiming('toolbar.isFileHHVMProject')
-  async _isFileHHVMProject(fileUri: ?string): Promise<boolean> {
-    return (
-      fileUri != null &&
-      nuclideUri.isRemote(fileUri) &&
-      await isFileInHackProject(fileUri)
-    );
+  _isFileHHVMProject(fileUri: ?string): Promise<boolean> {
+    return trackTiming('toolbar.isFileHHVMProject', async () => {
+      return (
+        fileUri != null &&
+        nuclideUri.isRemote(fileUri) &&
+        await isFileInHackProject(fileUri)
+      );
+    });
   }
 
   getLastScriptCommand(filePath: string): string {
@@ -103,8 +107,8 @@ class ProjectStore {
     return this._projectRoot.getValue();
   }
 
-  getProjectType(): ProjectType {
-    return this._projectType;
+  isHHVMProject(): ?boolean {
+    return this._isHHVMProject;
   }
 
   getDebugMode(): DebugMode {

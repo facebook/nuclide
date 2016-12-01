@@ -29,4 +29,13 @@ describe('main', () => {
       expect(atom.packages.isPackageDisabled('tree-view')).toBe(false);
     });
   });
+
+  it('yells if atom breaks the fixContextMenuHighlight hack', () => {
+    // If you see this error fail, this means that something inside of Atom
+    // changed and the context menu highlight hack may not be working anymore,
+    // See https://github.com/atom/atom/pull/13266 for context.
+    const showForEvent = (atom.contextMenu: any).showForEvent;
+    expect(typeof showForEvent).toBe('function');
+    expect(showForEvent).not.toMatch(/requestAnimationFrame/);
+  });
 });

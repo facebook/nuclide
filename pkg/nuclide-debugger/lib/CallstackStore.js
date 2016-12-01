@@ -24,6 +24,7 @@ export default class CallstackStore {
   _disposables: IDisposable;
   _emitter: Emitter;
   _callstack: ?Callstack;
+  _selectedCallFrameIndex: number;
   _selectedCallFrameMarker: ?atom$Marker;
 
   constructor(dispatcher: DebuggerDispatcher) {
@@ -34,6 +35,7 @@ export default class CallstackStore {
       }),
     );
     this._callstack = null;
+    this._selectedCallFrameIndex = 0;
     this._selectedCallFrameMarker = null;
     this._emitter = new Emitter();
   }
@@ -44,6 +46,7 @@ export default class CallstackStore {
         this._handleClearInterface();
         break;
       case ActionTypes.SET_SELECTED_CALLFRAME_LINE:
+        // TODO: update _selectedCallFrameIndex.
         this._setSelectedCallFrameLine(payload.data.options);
         break;
       case ActionTypes.OPEN_SOURCE_LOCATION:
@@ -52,13 +55,22 @@ export default class CallstackStore {
       case ActionTypes.UPDATE_CALLSTACK:
         this._updateCallstack(payload.data.callstack);
         break;
+      case ActionTypes.SET_SELECTED_CALLFRAME_INDEX:
+        this._updateSelectedCallFrameIndex(payload.data.index);
+        break;
       default:
         return;
     }
   }
 
   _updateCallstack(callstack: Callstack): void {
+    this._selectedCallFrameIndex = 0;
     this._callstack = callstack;
+    this._emitter.emit('change');
+  }
+
+  _updateSelectedCallFrameIndex(index: number): void {
+    this._selectedCallFrameIndex = index;
     this._emitter.emit('change');
   }
 
@@ -77,6 +89,7 @@ export default class CallstackStore {
   }
 
   _handleClearInterface(): void {
+    this._selectedCallFrameIndex = 0;
     this._setSelectedCallFrameLine(null);
     this._updateCallstack([]);
   }
@@ -121,6 +134,10 @@ export default class CallstackStore {
 
   getCallstack(): ?Callstack {
     return this._callstack;
+  }
+
+  getSelectedCallFrameIndex(): number {
+    return this._selectedCallFrameIndex;
   }
 
   dispose(): void {

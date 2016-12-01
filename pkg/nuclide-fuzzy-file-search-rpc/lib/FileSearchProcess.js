@@ -16,8 +16,6 @@ import {arrayEqual} from '../../commons-node/collection';
 import fsPromise from '../../commons-node/fsPromise';
 import Task from '../../nuclide-task';
 
-type DirectoryUri = string;
-
 const logger = getLogger();
 
 /**
@@ -26,16 +24,17 @@ const logger = getLogger();
  */
 class FileSearchProcess {
   _task: ?Task;
-  _directoryUri: DirectoryUri;
+  _directory: string;
   _ignoredNames: Array<string>;
 
-  constructor(task: Task, directoryUri: DirectoryUri, ignoredNames: Array<string>) {
+  constructor(task: Task, directory: string, ignoredNames: Array<string>) {
     this._task = task;
-    this._task.onError(buffer => {
+    task.onError(buffer => {
       logger.error('File search process crashed with message:', buffer.toString());
       this.dispose();
     });
-    this._directoryUri = directoryUri;
+    task.onExit(() => this.dispose());
+    this._directory = directory;
     this._ignoredNames = ignoredNames;
   }
 
@@ -47,7 +46,7 @@ class FileSearchProcess {
     return task.invokeRemoteMethod({
       file: require.resolve('./FileSearch'),
       method: 'doSearch',
-      args: [this._directoryUri, query],
+      args: [this._directory, query],
     });
   }
 
@@ -57,43 +56,43 @@ class FileSearchProcess {
 
   dispose(): void {
     if (this._task != null) {
-      delete fileSearchForDirectoryUri[this._directoryUri];
+      delete processForDirectory[this._directory];
       this._task.dispose();
       this._task = null;
     }
   }
 }
 
-const fileSearchForDirectoryUri: {[key: DirectoryUri]: Promise<FileSearchProcess>} = {};
+const processForDirectory: {[key: string]: Promise<FileSearchProcess>} = {};
 
 async function newFileSearch(
-  directoryUri: string,
+  directory: string,
   ignoredNames: Array<string>,
 ): Promise<FileSearchProcess> {
-  const exists = await fsPromise.exists(directoryUri);
+  const exists = await fsPromise.exists(directory);
   if (!exists) {
-    throw new Error('Could not find directory to search : ' + directoryUri);
+    throw new Error('Could not find directory to search : ' + directory);
   }
 
-  const stat = await fsPromise.stat(directoryUri);
+  const stat = await fsPromise.stat(directory);
   if (!stat.isDirectory()) {
-    throw new Error('Provided path is not a directory : ' + directoryUri);
+    throw new Error('Provided path is not a directory : ' + directory);
   }
 
   const task = new Task();
   await task.invokeRemoteMethod({
     file: require.resolve('./FileSearch'),
     method: 'initFileSearchForDirectory',
-    args: [directoryUri, ignoredNames],
+    args: [directory, ignoredNames],
   });
-  return new FileSearchProcess(task, directoryUri, ignoredNames);
+  return new FileSearchProcess(task, directory, ignoredNames);
 }
 
 export async function fileSearchForDirectory(
-  directoryUri: string,
+  directory: string,
   ignoredNames: Array<string>,
 ): Promise<FileSearchProcess> {
-  const cached = fileSearchForDirectoryUri[directoryUri];
+  const cached = processForDirectory[directory];
   if (cached != null) {
     const fileSearch = await cached;
     if (arrayEqual(fileSearch.getIgnoredNames(), ignoredNames)) {
@@ -103,22 +102,22 @@ export async function fileSearchForDirectory(
     fileSearch.dispose();
   }
 
-  const promise = newFileSearch(directoryUri, ignoredNames)
+  const promise = newFileSearch(directory, ignoredNames)
     .catch(error => {
       // Remove errored processes from the cache so we can try again.
-      delete fileSearchForDirectoryUri[directoryUri];
+      delete processForDirectory[directory];
       throw error;
     });
-  fileSearchForDirectoryUri[directoryUri] = promise;
+  processForDirectory[directory] = promise;
   return promise;
 }
 
 export function getExistingSearchDirectories(): Array<string> {
-  return Object.keys(fileSearchForDirectoryUri);
+  return Object.keys(processForDirectory);
 }
 
-export async function disposeSearchForDirectory(directoryUri: string): Promise<void> {
-  const cached = fileSearchForDirectoryUri[directoryUri];
+export async function disposeSearchForDirectory(directory: string): Promise<void> {
+  const cached = processForDirectory[directory];
   if (cached != null) {
     const search = await cached;
     search.dispose();

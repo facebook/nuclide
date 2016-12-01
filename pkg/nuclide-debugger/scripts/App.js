@@ -61,4 +61,11 @@ window.InspectorFrontendHost = {
   },
 };
 
+// This `require` loading indirection is so that paths are resolved relative to
+// where the file is on disk.
+window._initializeNuclideBridge = function() {
+  require('./nuclide_bridge/NuclideBridge');
+  window.WebInspector.NuclideAppProvider = require('./nuclide_bridge/NuclideAppProvider');
+};
+
 window.Runtime.startApplication('nuclide_inspector');

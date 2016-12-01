@@ -11,6 +11,7 @@
 
 import type {FileTreeNode} from './FileTreeNode';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
+import type {NuclideUri} from '../../commons-node/nuclideUri';
 import type {RemoteFile} from '../../nuclide-remote-connection';
 
 import FileDialogComponent from '../components/FileDialogComponent';
@@ -24,8 +25,8 @@ import {
 import nuclideUri from '../../commons-node/nuclideUri';
 import {File} from 'atom';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {keyToPath} from './FileTreeHelpers';
 import {repositoryForPath} from '../../nuclide-hg-git-bridge';
-
 
 let atomPanel: ?Object;
 let dialogComponent: ?React.Component<any, any, any>;
@@ -70,27 +71,66 @@ class FileSystemActions {
     if (!node) {
       return;
     }
-    const hgRepository = FileTreeHgHelpers.getHgRepositoryForNode(node);
+
+    return this._openAddFileDialogImpl(
+      node,
+      node.localPath,
+      node.uri,
+      onDidConfirm,
+    );
+  }
+
+  openAddFileDialogRelative(onDidConfirm: (filePath: ?string) => mixed): void {
+    const editor = atom.workspace.getActiveTextEditor();
+    const filePath = editor != null ? editor.getPath() : null;
+    if (!filePath) {
+      return;
+    }
+
+    const dirPath = FileTreeHelpers.getParentKey(filePath);
+    const rootNode = FileTreeStore.getInstance().getRootForPath(dirPath);
+
+    if (rootNode) {
+      const localPath = nuclideUri.isRemote(dirPath)
+        ? nuclideUri.parse(dirPath).pathname
+        : dirPath;
+
+      return this._openAddFileDialogImpl(
+        rootNode,
+        keyToPath(localPath),
+        dirPath,
+        onDidConfirm,
+      );
+    }
+  }
+
+  _openAddFileDialogImpl(
+    rootNode: FileTreeNode,
+    localPath: NuclideUri,
+    filePath: NuclideUri,
+    onDidConfirm: (filePath: ?string) => mixed,
+  ): void {
+    const hgRepository = FileTreeHgHelpers.getHgRepositoryForNode(rootNode);
     const additionalOptions = {};
     if (hgRepository != null) {
       additionalOptions.addToVCS = 'Add the new file to version control.';
     }
     this._openAddDialog(
       'file',
-      nuclideUri.ensureTrailingSeparator(node.localPath),
-      async (filePath: string, options: {addToVCS?: boolean}) => {
+      nuclideUri.ensureTrailingSeparator(localPath),
+      async (pathToCreate: string, options: {addToVCS?: boolean}) => {
         // Prevent submission of a blank field from creating a file.
-        if (filePath === '') {
+        if (pathToCreate === '') {
           return;
         }
 
-        // TODO: check if filePath is in rootKey and if not, find the rootKey it belongs to.
-        const directory = FileTreeHelpers.getDirectoryByKey(node.uri);
+        // TODO: check if pathToCreate is in rootKey and if not, find the rootKey it belongs to.
+        const directory = FileTreeHelpers.getDirectoryByKey(filePath);
         if (directory == null) {
           return;
         }
 
-        const newFile = directory.getFile(filePath);
+        const newFile = directory.getFile(pathToCreate);
         const created = await newFile.create();
         if (created) {
           const newFilePath = newFile.getPath();
@@ -106,7 +146,7 @@ class FileSystemActions {
             }
           }
         } else {
-          atom.notifications.addError(`'${filePath}' already exists.`);
+          atom.notifications.addError(`'${pathToCreate}' already exists.`);
           onDidConfirm(null);
         }
       },
@@ -257,7 +297,11 @@ class FileSystemActions {
      * order.
      */
     const node = store.getSelectedNodes().first();
-    return node.isContainer ? node : node.parent;
+    if (node) {
+      return node.isContainer ? node : node.parent;
+    }
+
+    return null;
   }
 
   _openAddDialog(

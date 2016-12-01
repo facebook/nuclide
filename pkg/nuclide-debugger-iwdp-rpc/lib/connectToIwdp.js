@@ -50,7 +50,6 @@ export function connectToIwdp(): Observable<IosDeviceInfo> {
     }
   })
     .mergeMap(deviceInfos => deviceInfos)
-    // $FlowFixMe -- PR for adding types for distinct.
     .distinct(deviceInfo => deviceInfo.webSocketDebuggerUrl);
 }
 

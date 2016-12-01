@@ -9,7 +9,7 @@
   "flow": {
     "clientOnly": false,
     "version-cmd": ["flow", "version"],
-    "version-output": "Flow, a static type checker for JavaScript, version 0.35.0",
+    "version-output": "Flow, a static type checker for JavaScript, version 0.36.0",
     "url": null,
     "shasum": null
   },
@@ -17,8 +17,8 @@
     "clientOnly": false,
     "version-cmd": ["node", "--version"],
     "version-output": "v6.3.0",
-    "url": "https://nodejs.org/dist/v6.3.0/node-v6.3.0-darwin-x64.tar.xz",
-    "shasum": "4f9a19b5688092d5652e8748093cb9c90fa503ea13b976e51dbd53c2fa07c116"
+    "url": "https://nodejs.org/dist/v6.3.0/node-v6.3.0-darwin-x64.tar.gz",
+    "shasum": "5c711a62e464f1d455c31afe2a62e9866eeaf1c23d977b57a60285d0bd040ba5"
   },
   "npm": {
     "clientOnly": false,

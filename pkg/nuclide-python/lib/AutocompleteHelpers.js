@@ -54,8 +54,16 @@ function getText(
 
 export default class AutocompleteHelpers {
 
-  @trackTiming('nuclide-python:getAutocompleteSuggestions')
-  static async getAutocompleteSuggestions(
+  static getAutocompleteSuggestions(
+    request: atom$AutocompleteRequest,
+  ): Promise<Array<atom$AutocompleteSuggestion>> {
+    return trackTiming(
+      'nuclide-python:getAutocompleteSuggestions',
+      () => AutocompleteHelpers._getAutocompleteSuggestions(request),
+    );
+  }
+
+  static async _getAutocompleteSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<Array<atom$AutocompleteSuggestion>> {
     const {editor, activatedManually, prefix} = request;

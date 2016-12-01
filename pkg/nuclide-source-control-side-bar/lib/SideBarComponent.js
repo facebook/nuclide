@@ -11,6 +11,8 @@
 
 import type {BookmarkInfo} from '../../nuclide-hg-rpc/lib/HgService';
 import type {Directory} from 'atom';
+import type {FileChangeStatusValue} from '../../nuclide-hg-git-bridge/lib/constants';
+import type {NuclideUri} from '../../commons-node/NuclideUri';
 
 import invariant from 'assert';
 import {CompositeDisposable} from 'atom';
@@ -33,6 +35,7 @@ type Props = {
   projectRepositories: Map<string, atom$Repository>,
   renameBookmark: (bookmarkInfo: BookmarkInfo, nextName: string, repo: atom$Repository) => mixed,
   repositoryBookmarksIsLoading: WeakMap<atom$Repository, Array<BookmarkInfo>>,
+  uncommittedChanges: Map<NuclideUri, Map<NuclideUri, FileChangeStatusValue>>,
   updateToBookmark: (bookmarkInfo: BookmarkInfo, repo: atom$Repository) => mixed,
 };
 
@@ -74,7 +77,6 @@ export default class SideBarComponent extends React.Component {
     (this: any)._handleBookmarkClick = this._handleBookmarkClick.bind(this);
     (this: any)._handleBookmarkContextMenu = this._handleBookmarkContextMenu.bind(this);
     (this: any)._handleRepoGearClick = this._handleRepoGearClick.bind(this);
-    (this: any)._handleUncommittedChangesClick = this._handleUncommittedChangesClick.bind(this);
   }
 
   componentDidMount(): void {
@@ -239,16 +241,6 @@ export default class SideBarComponent extends React.Component {
     });
   }
 
-  _handleUncommittedChangesClick(repository: atom$Repository): void {
-    this.setState({
-      selectedItem: {
-        repository,
-        type: 'uncommitted',
-      },
-    });
-    atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-diff-view:open');
-  }
-
   render() {
     return (
       <div
@@ -258,10 +250,12 @@ export default class SideBarComponent extends React.Component {
         <ul className="list-unstyled">
           {this.props.projectDirectories.map((directory, index) => {
             const repository = this.props.projectRepositories.get(directory.getPath());
+            const {uncommittedChanges} = this.props;
             const repositoryBookmarksIsLoading = (repository == null)
               ? null
               : this.props.repositoryBookmarksIsLoading.get(repository);
 
+            const uncommittedChangesForDirectory = new Map();
             let bookmarks;
             let selectedItem;
             if (repository != null) {
@@ -272,6 +266,11 @@ export default class SideBarComponent extends React.Component {
               ) {
                 selectedItem = this.state.selectedItem;
               }
+
+              uncommittedChangesForDirectory.set(
+                repository.getPath(),
+                uncommittedChanges.get(directory.getPath()) || new Map(),
+              );
             }
 
             return (
@@ -283,10 +282,10 @@ export default class SideBarComponent extends React.Component {
                 onBookmarkClick={this._handleBookmarkClick}
                 onBookmarkContextMenu={this._handleBookmarkContextMenu}
                 onRepoGearClick={this._handleRepoGearClick}
-                onUncommittedChangesClick={this._handleUncommittedChangesClick}
                 repository={repository}
                 selectedItem={selectedItem}
                 title={directory.getBaseName()}
+                uncommittedChanges={uncommittedChangesForDirectory}
               />
             );
           })}

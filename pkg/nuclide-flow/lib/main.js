@@ -73,6 +73,8 @@ export function createAutocompleteProvider(): atom$AutocompleteProvider {
   const excludeLowerPriority = Boolean(featureConfig.get('nuclide-flow.excludeOtherAutocomplete'));
   const flowResultsFirst = Boolean(featureConfig.get('nuclide-flow.flowAutocompleteResultsFirst'));
 
+  const autocompleteProvider = new AutocompleteProvider();
+
   return {
     selector: JS_GRAMMARS.map(grammar => '.' + grammar).join(', '),
     disableForSelector: '.source.js .comment',
@@ -85,7 +87,7 @@ export function createAutocompleteProvider(): atom$AutocompleteProvider {
     },
     excludeLowerPriority,
     getSuggestions(request) {
-      return AutocompleteProvider.getSuggestions(request);
+      return autocompleteProvider.getSuggestions(request);
     },
   };
 }

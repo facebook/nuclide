@@ -21,8 +21,10 @@ export default function consumeFirstProvider(
   return new Promise((resolve, reject) => {
     const subscription =
       atom.packages.serviceHub.consume(keyPath, version, provider => {
-        resolve(provider);
-        subscription.dispose();
+        process.nextTick(() => {
+          resolve(provider);
+          subscription.dispose();
+        });
       });
   });
 }

@@ -30,20 +30,15 @@ type DebuggerCallstackComponentProps = {
   actions: DebuggerActions,
   callstack: ?Callstack,
   bridge: Bridge,
+  selectedCallFrameIndex: number,
 };
 
 export class DebuggerCallstackComponent extends React.Component {
   props: DebuggerCallstackComponentProps;
-  state: {
-    selectedCallFrameIndex: number,
-  };
 
   constructor(props: DebuggerCallstackComponentProps) {
     super(props);
     (this: any)._handleCallframeClick = this._handleCallframeClick.bind(this);
-    this.state = {
-      selectedCallFrameIndex: 0,
-    };
   }
 
   _handleCallframeClick(
@@ -51,7 +46,7 @@ export class DebuggerCallstackComponent extends React.Component {
     clickedCallframe: ?CallstackItem,
   ): void {
     this.props.bridge.setSelectedCallFrameIndex(callFrameIndex);
-    this.setState({selectedCallFrameIndex: callFrameIndex});
+    this.props.actions.setSelectedCallFrameIndex(callFrameIndex);
   }
 
   render(): ?React.Element<any> {
@@ -77,7 +72,7 @@ export class DebuggerCallstackComponent extends React.Component {
         const itemClassNames = classnames(
           {
             'nuclide-debugger-callstack-item-selected':
-              this.state.selectedCallFrameIndex === i,
+              this.props.selectedCallFrameIndex === i,
           },
         );
         return <ListViewItem

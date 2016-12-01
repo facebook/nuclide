@@ -20,7 +20,9 @@ import {observeProcess, safeSpawn, exitEventToMessage} from '../../../commons-no
 import {parseMessages} from './parseMessages';
 import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
+import electron from 'electron';
 import {Observable} from 'rxjs';
+import {quote} from 'shell-quote';
 
 /**
  * Runs the server in the appropriate place. This class encapsulates all the state of the packager
@@ -152,7 +154,17 @@ function getPackagerObservable(projectRootPath: ?string): Observable<PackagerEve
     ))
     .switchMap(commandInfo => {
       const {command, cwd, args} = commandInfo;
-      return observeProcess(() => safeSpawn(command, args, {cwd}));
+      const remote = electron.remote;
+      invariant(remote != null);
+      const app = remote.require('app');
+      // Tell the packager to use this Atom to edit the files.
+      const editor = [app.getPath('exe')];
+      if (atom.devMode) {
+        editor.push('--dev');
+      }
+      return observeProcess(() => (
+        safeSpawn(command, args, {cwd, env: {...process.env, REACT_EDITOR: quote(editor)}})
+      ));
     })
     // Accumulate the stderr so that we can show it to the user if something goes wrong.
     .scan(

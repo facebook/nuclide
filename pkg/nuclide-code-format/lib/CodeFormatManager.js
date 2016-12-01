@@ -161,8 +161,8 @@ export default class CodeFormatManager {
       const providerGrammars = provider.selector.split(/, ?/);
       return provider.inclusionPriority > 0 && providerGrammars.indexOf(scopeName) !== -1;
     });
-    // $FlowIssue sort doesn't take custom comparator.
     return matchingProviders.sort((providerA, providerB) => {
+      // $FlowFixMe a comparator function should return a number
       return providerA.inclusionPriority < providerB.inclusionPriority;
     });
   }

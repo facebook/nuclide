@@ -138,8 +138,14 @@ export default class ClangFlagsManager {
     return cached;
   }
 
-  @trackTiming('nuclide-clang.get-flags')
-  async _getFlagsForSrcImpl(src: string): Promise<?ClangFlags> {
+  _getFlagsForSrcImpl(src: string): Promise<?ClangFlags> {
+    return trackTiming(
+      'nuclide-clang.get-flags',
+      () => this.__getFlagsForSrcImpl(src),
+    );
+  }
+
+  async __getFlagsForSrcImpl(src: string): Promise<?ClangFlags> {
     // Look for a manually provided compilation database.
     const dbDir = await fsPromise.findNearestFile(
       COMPILATION_DATABASE_FILE,

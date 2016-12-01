@@ -28,6 +28,8 @@ const builtinJsExt = Module._extensions['.js'];
 const NodeTranspiler = require('./NodeTranspiler');
 const nodeTranspiler = new NodeTranspiler();
 
+let transpiling = null;
+
 function transpiler_require_hook(_module, filename) {
   let moduleExports;
   // TODO(asuarez): Once "use babel" is removed, `shouldCompile` can be made
@@ -37,7 +39,16 @@ function transpiler_require_hook(_module, filename) {
     const src = fs.readFileSync(filename);
     let output;
     if (NodeTranspiler.shouldCompile(src)) {
+      if (transpiling == null) {
+        transpiling = filename;
+      } else {
+        const a = transpiling.replace(basedir, '');
+        const b = filename.replace(basedir, '');
+        transpiling = null;
+        throw new Error(`Circular transpile from "${a}" to "${b}"`);
+      }
       output = nodeTranspiler.transformWithCache(src, filename);
+      transpiling = null;
     } else {
       output = src.toString();
     }

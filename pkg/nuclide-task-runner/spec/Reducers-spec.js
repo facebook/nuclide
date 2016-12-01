@@ -58,6 +58,7 @@ describe('Reducers', () => {
               taskRunners: new Map([['build-system', new dummy.TaskRunner('build-system')]]),
               taskLists: new Map(),
               previousSessionActiveTaskId: {taskRunnerId: 'build-system', type: 'test'},
+              projectWasOpened: true,
             };
             const action = Actions.setTaskLists(
               new Map([['build-system', [createTask('build-system', 'test', false)]]]),
@@ -103,6 +104,7 @@ describe('Reducers', () => {
           const initialState = {
             ...createEmptyAppState(),
             previousSessionVisible: true,
+            projectWasOpened: true,
           };
           const action = Actions.setTaskLists(new Map());
           const finalState = [action].reduce(Reducers.app, initialState);

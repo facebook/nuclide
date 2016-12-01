@@ -10,20 +10,18 @@
  */
 
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
-import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
 import type {TestRunner} from './types';
-import type {TestRunnerControllerState} from './TestRunnerController';
 import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
+import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
 
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
-import TestRunnerController from './TestRunnerController';
+import {TestRunnerController, WORKSPACE_VIEW_URI} from './TestRunnerController';
 import {getLogger} from '../../nuclide-logging';
 
 const logger = getLogger();
 
 const FILE_TREE_CONTEXT_MENU_PRIORITY = 200;
-
 
 /**
  * Returns a string of length `length` + 1 by replacing extra characters in the middle of `str` with
@@ -43,11 +41,9 @@ class Activation {
 
   _controller: ?TestRunnerController;
   _disposables: CompositeDisposable;
-  _initialState: ?TestRunnerControllerState;
   _testRunners: Set<TestRunner>;
 
-  constructor(state: ?TestRunnerControllerState) {
-    this._initialState = state;
+  constructor() {
     this._testRunners = new Set();
     this._disposables = new CompositeDisposable();
     this._disposables.add(
@@ -55,7 +51,7 @@ class Activation {
         'atom-workspace',
         'nuclide-test-runner:toggle-panel',
         () => {
-          this._getController().togglePanel();
+          this.getController().togglePanel();
         },
       ),
     );
@@ -64,7 +60,7 @@ class Activation {
         'atom-workspace',
         'nuclide-test-runner:run-tests',
         () => {
-          this._getController().runTests();
+          this.getController().runTests();
         },
       ),
     );
@@ -75,7 +71,7 @@ class Activation {
         'nuclide-test-runner:run-tests',
         event => {
           const target = ((event.currentTarget: any): HTMLElement).querySelector('.name');
-          this._getController().runTests(target.dataset.path);
+          this.getController().runTests(target.dataset.path);
           // Ensure ancestors of this element don't attempt to run tests as well.
           event.stopPropagation();
         },
@@ -88,17 +84,12 @@ class Activation {
         'nuclide-test-runner:run-tests',
         event => {
           const target = ((event.currentTarget: any): HTMLElement).querySelector('.name');
-          this._getController().runTests(target.dataset.path);
+          this.getController().runTests(target.dataset.path);
           // Ensure ancestors of this element don't attempt to run tests as well.
           event.stopPropagation();
         },
       ),
     );
-
-    // The panel should be visible because of the last serialized state, initialize it immediately.
-    if (state != null && state.panelVisible) {
-      this._getController();
-    }
   }
 
   addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
@@ -142,7 +133,7 @@ class Activation {
     // TODO(rossallen): The control should be inverted here. The controller should listen for
     // changes rather than be told about them.
     if (this._controller != null) {
-      this._getController().didUpdateTestRunners();
+      this.getController().didUpdateTestRunners();
     }
 
     return new Disposable(() => {
@@ -150,7 +141,7 @@ class Activation {
       // Tell the controller to re-render only if it exists so test runner services won't force
       // construction if the panel is still invisible.
       if (this._controller != null) {
-        this._getController().didUpdateTestRunners();
+        this.getController().didUpdateTestRunners();
       }
     });
   }
@@ -168,24 +159,8 @@ class Activation {
     return disposable;
   }
 
-  getDistractionFreeModeProvider(): DistractionFreeModeProvider {
-    return {
-      name: 'nuclide-test-runner',
-      isVisible: () => {
-        return this._controller != null && this._controller.isVisible();
-      },
-      toggle: () => {
-        this._getController().togglePanel();
-      },
-    };
-  }
-
   dispose(): void {
     this._disposables.dispose();
-  }
-
-  serialize(): Object {
-    return this._getController().serialize();
   }
 
   _createRunTestsContextMenuItem(
@@ -247,22 +222,40 @@ class Activation {
     };
   }
 
-  _getController() {
+  getController() {
     let controller = this._controller;
     if (controller == null) {
-      controller = new TestRunnerController(this._initialState, this._testRunners);
+      controller = new TestRunnerController(this._testRunners);
       this._controller = controller;
     }
     return controller;
+  }
+
+  consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
+    this._disposables.add(
+      api.addOpener(uri => {
+        if (uri === WORKSPACE_VIEW_URI) {
+          return this.getController();
+        }
+      }),
+      new Disposable(
+        () => api.destroyWhere(item => item instanceof TestRunnerController),
+      ),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-test-runner:toggle-panel',
+        event => { api.toggle(WORKSPACE_VIEW_URI, (event: any).detail); },
+      ),
+    );
   }
 
 }
 
 let activation: ?Activation;
 
-export function activate(state: ?Object): void {
+export function activate(): void {
   if (!activation) {
-    activation = new Activation(state);
+    activation = new Activation();
   }
 }
 
@@ -271,10 +264,6 @@ export function deactivate(): void {
     activation.dispose();
     activation = null;
   }
-}
-
-export function serialize(): Object {
-  return activation ? activation.serialize() : {};
 }
 
 export function consumeTestRunner(testRunner: TestRunner): ?Disposable {
@@ -293,7 +282,15 @@ export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
   return activation.addToolBar(getToolBar);
 }
 
-export function getDistractionFreeModeProvider(): DistractionFreeModeProvider {
-  invariant(activation != null);
-  return activation.getDistractionFreeModeProvider();
+export function deserializeTestRunnerPanelState(): TestRunnerController {
+  // Workaround until the bug where deserialize is ran before activation
+  activate();
+
+  invariant(activation);
+  return activation.getController();
+}
+
+export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
+  invariant(activation);
+  return activation.consumeWorkspaceViewsService(api);
 }

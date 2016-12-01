@@ -42,6 +42,7 @@ export class DebuggerDatatipComponent extends React.Component {
             expression={expression}
             fetchChildren={fetchChildren}
             simpleValueComponent={SimpleValueComponent}
+            expansionStateId={this}
           />
         </span>
       </div>

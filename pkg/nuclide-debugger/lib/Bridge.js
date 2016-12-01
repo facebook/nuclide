@@ -128,6 +128,17 @@ class Bridge {
     }
   }
 
+  runToLocation(filePath: string, line: number) {
+    if (this._webview) {
+      this._webview.send(
+        'command',
+        'RunToLocation',
+        filePath,
+        line,
+      );
+    }
+  }
+
   triggerAction(actionId: string): void {
     if (this._webview) {
       this._webview.send(

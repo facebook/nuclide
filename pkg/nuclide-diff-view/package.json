@@ -9,6 +9,20 @@
     "nuclide.DiffViewNavigator": "deserializeDiffViewNavigator"
   },
   "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "Source Control",
+        "Diff View"
+      ]
+    },
+    "config": {
+      "shouldDockPublishView": {
+        "title": "Should Dock Publish View",
+        "type": "boolean",
+        "default": true,
+        "description": "Whether to render publish view docked in the navigator or in a modal dialog"
+      }
+    },
     "packageType": "Atom",
     "testRunner": "apm"
   },

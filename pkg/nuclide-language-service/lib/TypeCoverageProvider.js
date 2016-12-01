@@ -14,7 +14,7 @@ import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 
 export type TypeCoverageConfig = {
   version: '0.0.0',
@@ -63,7 +63,7 @@ export class TypeCoverageProvider<T: LanguageService> {
   }
 
   async getCoverage(path: NuclideUri): Promise<?CoverageResult> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       const languageService = this._connectionToLanguageService.getForUri(path);
       if (languageService == null) {
         return null;

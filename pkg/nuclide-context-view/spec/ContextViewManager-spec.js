@@ -46,8 +46,9 @@ describe('ContextViewManager', () => {
   beforeEach(() => {
     disposables = new CompositeDisposable();
 
-    managerShowing = new ContextViewManager(300, true);
-    managerHidden = new ContextViewManager(300, false);
+    managerShowing = new ContextViewManager();
+    managerShowing.show();
+    managerHidden = new ContextViewManager();
     provider1 = {
       getElementFactory: elementFactory,
       id: PROVIDER1_ID,

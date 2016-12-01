@@ -54,6 +54,7 @@ class Activation {
     const allowPendingPaneItems = 'core.allowPendingPaneItems';
 
     this._subscriptions.add(
+      this._fixContextMenuHighlight(),
       featureConfig.observe(prefixKeyNavSetting, (x: any) => this._setPrefixKeyNavSetting(x)),
       featureConfig.observe(
         REVEAL_FILE_ON_SWITCH_SETTING,
@@ -67,6 +68,26 @@ class Activation {
       ),
       atom.config.observe(allowPendingPaneItems, this._setUsePreviewTabs.bind(this)),
     );
+  }
+
+  _fixContextMenuHighlight(): IDisposable {
+    // Giant hack to fix the context menu highlight
+    // For explanation, see https://github.com/atom/atom/pull/13266
+
+    const showForEvent = (atom.contextMenu: any).showForEvent;
+    (atom.contextMenu: any).showForEvent = function(event) {
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() =>
+          window.requestAnimationFrame(() =>
+            showForEvent.call(atom.contextMenu, event),
+          ),
+        ),
+      );
+    };
+
+    return new Disposable(() => {
+      (atom.contextMenu: any).showForEvent = showForEvent;
+    });
   }
 
   consumeCwdApi(cwdApi: CwdApi): IDisposable {

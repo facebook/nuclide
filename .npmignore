@@ -8,6 +8,7 @@
 /flow-typed
 /pkg/sample-*
 /resources/benchmarker
+/resources/nuclicons
 /scripts
 spec
 

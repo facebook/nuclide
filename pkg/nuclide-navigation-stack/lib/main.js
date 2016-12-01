@@ -12,7 +12,7 @@
 import {onDidRemoveProjectPath} from '../../commons-atom/projects';
 import {getViewOfEditor} from '../../commons-atom/text-editor';
 import {NavigationStackController} from './NavigationStackController';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import UniversalDisposable from '../../commons-node/UniversalDisposable';
 import {observeNavigatingEditors} from '../../commons-atom/go-to-location';
 import createPackage from '../../commons-atom/createPackage';
@@ -79,12 +79,12 @@ class Activation {
       }),
       atom.commands.add('atom-workspace',
       'nuclide-navigation-stack:navigate-forwards', () => {
-        trackOperationTiming(
+        trackTiming(
           'nuclide-navigation-stack:forwards', () => controller.navigateForwards());
       }),
       atom.commands.add('atom-workspace',
       'nuclide-navigation-stack:navigate-backwards', () => {
-        trackOperationTiming(
+        trackTiming(
           'nuclide-navigation-stack:backwards', () => controller.navigateBackwards());
       }),
     );

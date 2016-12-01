@@ -100,12 +100,13 @@ export class ListView extends React.Component {
           },
         ));
     const className = classnames({
+      'native-key-bindings': true,
       'nuclide-ui-listview': true,
       'nuclide-ui-listview-highlight-odd': alternateBackground,
       'nuclide-ui-listview-selectable': selectable,
     });
     return (
-      <div className={className}>
+      <div className={className} tabIndex={-1}>
         {renderedItems}
       </div>
     );

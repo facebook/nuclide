@@ -153,17 +153,19 @@ class FileTreeSidebarComponent extends React.Component {
     const workingSetsStore = this._store.getWorkingSetsStore();
     let toolbar;
     if (this.state.shouldRenderToolbar && workingSetsStore != null) {
-      toolbar = [
-        <FileTreeSideBarFilterComponent
-          key="filter"
-          filter={this._store.getFilter()}
-          found={this._store.getFilterFound()}
-        />,
-        <FileTreeToolbarComponent
-          key="toolbar"
-          workingSetsStore={workingSetsStore}
-        />,
-      ];
+      toolbar = (
+        <div className="nuclide-file-tree-fixed">
+          <FileTreeSideBarFilterComponent
+            key="filter"
+            filter={this._store.getFilter()}
+            found={this._store.getFilterFound()}
+          />
+          <FileTreeToolbarComponent
+            key="toolbar"
+            workingSetsStore={workingSetsStore}
+          />
+        </div>
+      );
     }
 
     let uncommittedChangesSection;
@@ -231,10 +233,10 @@ class FileTreeSidebarComponent extends React.Component {
         {uncommittedChangesSection}
         {openFilesSection}
         {foldersCaption}
+        {toolbar}
         <PanelComponentScroller
           ref="scroller"
           onScroll={this._onScroll}>
-          {toolbar}
           <FileTree
             ref="fileTree"
             containerHeight={this.state.scrollerHeight}

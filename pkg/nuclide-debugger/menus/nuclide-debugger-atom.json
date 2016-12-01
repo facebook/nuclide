@@ -31,6 +31,10 @@
               "command": "nuclide-debugger:continue-debugging"
             },
             {
+              "label": "Continue to Location",
+              "command": "nuclide-debugger:run-to-location"
+            },
+            {
               "label": "Toggle Breakpoint",
               "command": "nuclide-debugger:toggle-breakpoint"
             },

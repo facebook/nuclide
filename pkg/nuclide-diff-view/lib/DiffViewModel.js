@@ -26,6 +26,8 @@ export type DiffEntityOptions = {
   directory?: NuclideUri,
   viewMode?: DiffModeType,
   commitMode?: CommitModeType,
+  // Only open the split diff view, not the source control navigator.
+  onlyDiff?: boolean,
 };
 
 import {Emitter} from 'atom';
@@ -33,7 +35,7 @@ import invariant from 'assert';
 import {track, trackTiming} from '../../nuclide-analytics';
 import {Subject} from 'rxjs';
 import {notifyInternalError} from './notifications';
-import {bufferForUri} from '../../commons-atom/text-editor';
+import {bufferForUri} from '../../commons-atom/text-buffer';
 import {createEmptyAppState} from './redux/createEmptyAppState';
 
 const ACTIVE_BUFFER_CHANGE_MODIFIED_EVENT = 'active-buffer-change-modified';
@@ -43,7 +45,6 @@ export default class DiffViewModel {
 
   _emitter: Emitter;
   _state: AppState;
-  _publishUpdates: Subject<any>;
   _progressUpdates: Subject<Message>;
   _actionCreators: BoundActionCreators;
 
@@ -51,7 +52,6 @@ export default class DiffViewModel {
     this._actionCreators = actionCreators;
     this._progressUpdates = progressUpdates;
     this._emitter = new Emitter();
-    this._publishUpdates = new Subject();
     this._state = createEmptyAppState();
   }
 
@@ -93,22 +93,19 @@ export default class DiffViewModel {
     this._actionCreators.setCompareId(this._state.activeRepository, revision.id);
   }
 
-  getPublishUpdates(): Subject<any> {
-    return this._publishUpdates;
-  }
-
-  @trackTiming('diff-view.save-file')
   saveActiveFile(): Promise<void> {
-    const {filePath} = this._state.fileDiff;
-    track('diff-view-save-file');
-    return this._saveFile(filePath).catch(notifyInternalError);
+    return trackTiming('diff-view.save-file', () => {
+      const {filePath} = this._state.fileDiff;
+      track('diff-view-save-file');
+      return this._saveFile(filePath).catch(notifyInternalError);
+    });
   }
 
-  async publishDiff(
+  publishDiff(
     publishMessage: string,
     isPrepareMode: boolean,
     lintExcuse: ?string,
-  ): Promise<void> {
+  ): void {
     const activeRepository = this._state.activeRepository;
     invariant(activeRepository != null, 'Cannot publish without an active stack!');
 
@@ -117,8 +114,16 @@ export default class DiffViewModel {
       publishMessage,
       isPrepareMode,
       lintExcuse,
-      this._publishUpdates,
+      this._progressUpdates,
     );
+  }
+
+  updatePublishMessage(message: ?string): void {
+    const {publish} = this._state;
+    this._actionCreators.updatePublishState({
+      ...publish,
+      message,
+    });
   }
 
   async _saveFile(filePath: NuclideUri): Promise<void> {

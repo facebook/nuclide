@@ -35,7 +35,7 @@ function findHealthPaneAndItem(): {pane: ?atom$Pane, item: ?Object} {
 describe('Health', () => {
 
   beforeEach(() => {
-    waitsForPromise(async () => {
+    waitsForPromise({label: 'workspace views to load', timeout: 10000}, async () => {
       jasmine.unspy(window, 'setTimeout');
       const WORKSPACE_VIEW_DIRS = [
         nuclideUri.dirname(require.resolve('../../nuclide-workspace-views/package.json')),

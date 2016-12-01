@@ -15,21 +15,33 @@ import invariant from 'assert';
 import {filter} from 'fuzzaldrin';
 
 import {trackTiming} from '../../nuclide-analytics';
+import AutocompleteCacher from '../../commons-atom/AutocompleteCacher';
+import passesGK from '../../commons-node/passesGK';
 
 import {getFlowServiceByNuclideUri} from './FlowServiceFactory';
 
 export default class FlowAutocompleteProvider {
-  @trackTiming('flow.autocomplete')
-  static async getSuggestions(
+  _cacher: AutocompleteCacher<?Array<atom$AutocompleteSuggestion>>;
+  constructor() {
+    this._cacher = new AutocompleteCacher({
+      getSuggestions: getSuggestionsFromFlow,
+      updateResults,
+    });
+  }
+
+  getSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<?Array<atom$AutocompleteSuggestion>> {
-    const {bufferPosition, editor, prefix, activatedManually} = request;
-    const filePath = editor.getPath();
-    const contents = editor.getText();
-    if (filePath == null) {
-      return null;
-    }
+    return trackTiming(
+      'flow.autocomplete',
+      () => this._getSuggestions(request),
+    );
+  }
 
+  async _getSuggestions(
+    request: atom$AutocompleteRequest,
+  ): Promise<?Array<atom$AutocompleteSuggestion>> {
+    const {prefix, activatedManually} = request;
     // We may want to make this configurable, but if it is ever higher than one we need to make sure
     // it works properly when the user manually activates it (e.g. with ctrl+space). See
     // https://github.com/atom/autocomplete-plus/issues/597
@@ -43,31 +55,71 @@ export default class FlowAutocompleteProvider {
     // single alphanumeric character, autocomplete-plus no longer includes the dot in the prefix.
     const prefixHasDot = prefix.indexOf('.') !== -1;
 
-    // If it is just whitespace and punctuation, ignore it (this keeps us
-    // from eating leading dots).
-    const replacementPrefix = /^[\s.]*$/.test(prefix) ? '' : prefix;
+    const replacementPrefix = getReplacementPrefix(prefix);
 
     if (!activatedManually && !prefixHasDot && replacementPrefix.length < minimumPrefixLength) {
-      return [];
-    }
-
-    const flowService = getFlowServiceByNuclideUri(filePath);
-    invariant(flowService);
-    const flowSuggestions = await flowService.flowGetAutocompleteSuggestions(
-      filePath,
-      contents,
-      bufferPosition,
-      prefix,
-    );
-
-    if (flowSuggestions == null) {
       return null;
     }
 
-    const candidates =
-      flowSuggestions.map(item => processAutocompleteItem(replacementPrefix, item));
-    return filter(candidates, replacementPrefix, {key: 'displayText'});
+    if (await passesGK('nuclide_fast_autocomplete')) {
+      return this._cacher.getSuggestions(request);
+    } else {
+      return getSuggestionsFromFlow(request);
+    }
   }
+}
+
+async function getSuggestionsFromFlow(
+  request: atom$AutocompleteRequest,
+): Promise<?Array<atom$AutocompleteSuggestion>> {
+  const {bufferPosition, editor, prefix} = request;
+  const filePath = editor.getPath();
+  const contents = editor.getText();
+  const replacementPrefix = getReplacementPrefix(request.prefix);
+  if (filePath == null) {
+    return null;
+  }
+
+  const flowService = getFlowServiceByNuclideUri(filePath);
+  invariant(flowService);
+  const flowSuggestions = await flowService.flowGetAutocompleteSuggestions(
+    filePath,
+    contents,
+    bufferPosition,
+    prefix,
+  );
+
+  if (flowSuggestions == null) {
+    return null;
+  }
+
+  const atomSuggestions =
+    await flowSuggestions.map(item => processAutocompleteItem(replacementPrefix, item));
+  return updateResults(request, atomSuggestions);
+
+}
+
+function updateResults(
+  request: atom$AutocompleteRequest,
+  results: ?Array<atom$AutocompleteSuggestion>,
+): ?Array<atom$AutocompleteSuggestion> {
+  if (results == null) {
+    return null;
+  }
+  const replacementPrefix = getReplacementPrefix(request.prefix);
+  const resultsWithCurrentPrefix = results.map(result => {
+    return {
+      ...result,
+      replacementPrefix,
+    };
+  });
+  return filter(resultsWithCurrentPrefix, replacementPrefix, {key: 'displayText'});
+}
+
+function getReplacementPrefix(originalPrefix: string): string {
+  // If it is just whitespace and punctuation, ignore it (this keeps us
+  // from eating leading dots).
+  return /^[\s.]*$/.test(originalPrefix) ? '' : originalPrefix;
 }
 
 /**

@@ -14,6 +14,7 @@ import type {Message} from '../../../nuclide-console/lib/types';
 const TIMESTAMP_FORMATS = [
   '\\d{1,2}:\\d{2}:\\d{2} (?:A|P)M',
   '\\d{1,2}/\\d{1,2}/\\d{4}, \\d{1,2}:\\d{2}:\\d{2} (?:A|P)M',
+  '\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}:\\d{2}',
   '\\d{4}-\\d{2}-\\d{2} \\d{1,2}:\\d{2}:\\d{2}\\.\\d+',
 ];
 const TIMESTAMP = TIMESTAMP_FORMATS.map(str => `(?:\\[?${str}\\]?)`).join('|');

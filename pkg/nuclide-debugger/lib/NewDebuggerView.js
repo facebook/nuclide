@@ -47,6 +47,7 @@ export class NewDebuggerView extends React.Component {
     togglePauseOnCaughtException: boolean,
     enableSingleThreadStepping: boolean,
     debuggerMode: DebuggerModeType,
+    selectedCallFrameIndex: number,
     callstack: ?Callstack,
     breakpoints: ?FileLineBreakpoints,
     showThreadsWindow: boolean,
@@ -82,6 +83,7 @@ export class NewDebuggerView extends React.Component {
       togglePauseOnCaughtException: debuggerStore.getTogglePauseOnCaughtException(),
       enableSingleThreadStepping: debuggerStore.getEnableSingleThreadStepping(),
       showThreadsWindow: Boolean(debuggerStore.getSettings().get('SupportThreadsWindow')),
+      selectedCallFrameIndex: props.model.getCallstackStore().getSelectedCallFrameIndex(),
       callstack: props.model.getCallstackStore().getCallstack(),
       breakpoints: props.model.getBreakpointStore().getAllBreakpoints(),
       threadList: threadStore.getThreadList(),
@@ -113,6 +115,7 @@ export class NewDebuggerView extends React.Component {
     this._disposables.add(
       callstackStore.onChange(() => {
         this.setState({
+          selectedCallFrameIndex: callstackStore.getSelectedCallFrameIndex(),
           callstack: callstackStore.getCallstack(),
         });
       }),
@@ -160,10 +163,7 @@ export class NewDebuggerView extends React.Component {
         </Section>
       : null;
     return (
-      <div
-        // Need native-key-bindings and tabIndex={-1} to be able to copy
-        className="nuclide-debugger-container-new native-key-bindings"
-        tabIndex={-1}>
+      <div className="nuclide-debugger-container-new">
         <Section collapsable={true} headline="Debugger Controls"
                  className="nuclide-debugger-section-header">
           <div className="nuclide-debugger-section-content">
@@ -186,6 +186,7 @@ export class NewDebuggerView extends React.Component {
               actions={actions}
               callstack={this.state.callstack}
               bridge={this.props.model.getBridge()}
+              selectedCallFrameIndex={this.state.selectedCallFrameIndex}
             />
           </div>
         </Section>

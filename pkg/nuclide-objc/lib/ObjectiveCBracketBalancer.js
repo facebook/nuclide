@@ -11,7 +11,7 @@
 
 import {Point} from 'atom';
 
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import observeLanguageTextEditors from
   '../../commons-atom/observe-language-text-editors';
 
@@ -55,7 +55,7 @@ class ObjectiveCBracketBalancer {
 
   _enableInTextEditor(textEditor: TextEditor): void {
     const insertTextSubscription = textEditor.onDidInsertText(event => {
-      trackOperationTiming('objc:balance-bracket', () => {
+      trackTiming('objc:balance-bracket', () => {
         const {range, text} = event;
         if (text === ']') {
           const buffer = textEditor.getBuffer();

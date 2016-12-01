@@ -83,7 +83,7 @@ class HhvmToolbar extends React.Component {
     const store = this.props.projectStore;
     const isDebugScript = store.getDebugMode() === 'script';
     return (
-      <div className="hhvm-toolbar block">
+      <div className="hhvm-toolbar">
         <Dropdown
           className="inline-block"
           options={this._getMenuItems()}

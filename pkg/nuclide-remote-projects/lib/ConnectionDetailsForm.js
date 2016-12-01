@@ -186,8 +186,8 @@ export default class ConnectionDetailsForm extends React.Component {
             unstyled={true}
           />
         </div>
-        <div className="form-group row">
-          <div className="col-xs-9">
+        <div className="form-group nuclide-auth-server-group">
+          <div className="nuclide-auth-server">
             <label>Server:</label>
             <AtomInput
               initialValue={this.state.server}

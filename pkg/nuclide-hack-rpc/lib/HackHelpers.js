@@ -16,7 +16,7 @@ import {asyncExecute} from '../../commons-node/process';
 import {PromiseQueue} from '../../commons-node/promise-executors';
 import {getHackExecOptions} from './hack-config';
 import {Point, Range} from 'simple-text-buffer';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 
 const HH_SERVER_INIT_MESSAGE = 'hh_server still initializing';
 const HH_SERVER_BUSY_MESSAGE = 'hh_server is busy';
@@ -43,7 +43,7 @@ export async function callHHClient(
   }
   const {hackRoot, hackCommand} = hackExecOptions;
 
-  return trackOperationTiming(
+  return trackTiming(
     trackingIdOfHackArgs(args) + ':plus-queue',
     () => {
       invariant(hhPromiseQueue);
@@ -58,7 +58,7 @@ export async function callHHClient(
         let execResult = null;
 
         logger.logTrace(`Calling Hack: ${hackCommand} with ${allArgs.toString()}`);
-        execResult = await trackOperationTiming(
+        execResult = await trackTiming(
           trackingIdOfHackArgs(args),
           () => asyncExecute(hackCommand, allArgs, {stdin: processInput}),
         );

@@ -48,11 +48,6 @@
         "0.0.0": "getHomeFragments"
       }
     },
-    "nuclide-distraction-free-mode": {
-      "versions": {
-        "0.0.0": "getDistractionFreeModeProvider"
-      }
-    },
     "nuclide-outline-view-results-stream": {
       "versions": {
         "0.0.0": "getOutlineViewResultsStream"

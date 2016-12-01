@@ -17,7 +17,7 @@ import type {
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type DefinitionConfig = {
@@ -71,7 +71,7 @@ export class DefinitionProvider<T: LanguageService> {
   }
 
   async getDefinition(editor: TextEditor, position: atom$Point): Promise<?DefinitionQueryResult> {
-    return trackOperationTiming(this._definitionEventName, async () => {
+    return trackTiming(this._definitionEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
       const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
       if (languageService == null || fileVersion == null) {
@@ -82,7 +82,7 @@ export class DefinitionProvider<T: LanguageService> {
   }
 
   getDefinitionById(filePath: NuclideUri, id: string): Promise<?Definition> {
-    return trackOperationTiming(this._definitionByIdEventName, async () => {
+    return trackTiming(this._definitionByIdEventName, async () => {
       const languageService = this._connectionToLanguageService.getForUri(filePath);
       if (languageService == null) {
         return null;

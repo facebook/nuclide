@@ -13,7 +13,7 @@ import type {FindReferencesReturn} from '../../nuclide-find-references/lib/rpc-t
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import loadingNotification from '../../commons-atom/loading-notification';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
@@ -63,7 +63,7 @@ export class FindReferencesProvider<T: LanguageService> {
   }
 
   findReferences(editor: atom$TextEditor, position: atom$Point): Promise<?FindReferencesReturn> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
       const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
       if (languageService == null || fileVersion == null) {

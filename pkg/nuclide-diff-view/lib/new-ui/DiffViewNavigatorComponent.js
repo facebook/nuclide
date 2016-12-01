@@ -16,11 +16,15 @@ import type {
 import type DiffViewModel from '../DiffViewModel';
 import typeof * as BoundActionCreators from '../redux/Actions';
 
-import {React} from 'react-for-atom';
+import createPaneContainer from '../../../commons-atom/create-pane-container';
 import {
   DiffMode,
   DIFF_EDITOR_MARKER_CLASS,
 } from '../constants';
+import {
+  React,
+  ReactDOM,
+} from 'react-for-atom';
 import {
   centerScrollToBufferLine,
   navigationSectionStatusToEditorElement,
@@ -29,6 +33,7 @@ import {
   renderPublishView,
   renderTimelineView,
 } from '../DiffViewComponent';
+import {Modal} from '../../../nuclide-ui/Modal';
 import SectionDirectionNavigator from './SectionDirectionNavigator';
 import {notifyInternalError} from '../notifications';
 
@@ -40,13 +45,65 @@ type Props = AppState & {
 
 export default class DiffViewNavigatorComponent extends React.Component {
   props: Props;
+  _paneContainer: Object;
+  _navigatorPane: atom$Pane;
+  _fileChangesPane: atom$Pane;
 
   constructor(props: Props) {
     super(props);
     (this: any)._handleNavigateToSection = this._handleNavigateToSection.bind(this);
   }
 
+  componentDidMount(): void {
+    this._paneContainer = createPaneContainer();
+    ReactDOM.findDOMNode(this.refs.paneContainer).appendChild(
+      atom.views.getView(this._paneContainer),
+    );
+    this._navigatorPane = this._paneContainer.getActivePane();
+    this._fileChangesPane = this._navigatorPane.splitRight({
+      flexScale: 0.5,
+    });
+    this._renderPaneElements();
+  }
+
+  componentDidUpdate(): void {
+    this._renderPaneElements();
+  }
+
   render(): React.Element<any> {
+    return (
+      <div className="nuclide-diff-view-navigator-root" ref="paneContainer" />
+    );
+  }
+
+  _renderPaneElements(): void {
+    ReactDOM.render(
+      this._renderNavigator(),
+      this._getPaneElement(this._navigatorPane),
+    );
+    ReactDOM.render(
+      this._renderFileChanges(),
+      this._getPaneElement(this._fileChangesPane),
+    );
+  }
+
+  componentWillUnmount(): void {
+    const panes = [this._navigatorPane, this._fileChangesPane];
+    panes.forEach(pane => {
+      ReactDOM.unmountComponentAtNode(ReactDOM.findDOMNode(this._getPaneElement(pane)));
+      pane.destroy();
+    });
+  }
+
+  _renderNavigator(): React.Element<any> {
+    return (
+      <div className="nuclide-diff-view-navigator-timeline-container">
+        {this._renderNavigationState()}
+      </div>
+    );
+  }
+
+  _renderFileChanges(): React.Element<any> {
     const {
       fileDiff: {activeSectionIndex, filePath, navigationSections},
       isLoadingFileDiff,
@@ -81,19 +138,16 @@ export default class DiffViewNavigatorComponent extends React.Component {
     }
 
     return (
-      <div className="nuclide-diff-view-navigator-root">
-        <div className="nuclide-diff-view-navigator-timeline-container">
-          {this._renderNavigationState()}
-        </div>
-        <div className="nuclide-diff-view-navigator-vertical-selector" />
-        <div className="nuclide-diff-view-navigator-file-changes-container">
-          {sectionNavigator}
-          <div className="nuclide-diff-view-navigator-horizontal-selector" />
-          {renderFileChanges(this.props.diffModel)}
-        </div>
-
+      <div className="nuclide-diff-view-navigator-file-changes-container">
+        {sectionNavigator}
+        <div className="nuclide-diff-view-navigator-horizontal-selector" />
+        {renderFileChanges(this.props.diffModel)}
       </div>
     );
+  }
+
+  _getPaneElement(pane: atom$Pane): HTMLElement {
+    return atom.views.getView(pane).querySelector('.item-views');
   }
 
   _handleNavigateToSection(
@@ -122,9 +176,35 @@ export default class DiffViewNavigatorComponent extends React.Component {
       case DiffMode.COMMIT_MODE:
         return renderCommitView(diffModel);
       case DiffMode.PUBLISH_MODE:
-        return renderPublishView(diffModel);
+        return this._renderPublishView();
       default:
         throw new Error(`Invalid Diff Mode: ${viewMode}`);
+    }
+  }
+
+  _renderPublishView(): React.Element<any> {
+    const {actionCreators, diffModel, shouldDockPublishView} = this.props;
+
+    const publishViewElement = renderPublishView(diffModel);
+    if (shouldDockPublishView) {
+      return publishViewElement;
+    } else {
+      const dismissHandler = () => {
+        actionCreators.setViewMode(DiffMode.BROWSE_MODE);
+      };
+      const modalMaxHeight = document.body.clientHeight - 100;
+      return (
+        <div>
+          {renderTimelineView(diffModel)}
+          <Modal onDismiss={dismissHandler}>
+            <div
+              style={{maxHeight: modalMaxHeight}}
+              className="nuclide-diff-view-modal-diff-mode">
+              {publishViewElement}
+            </div>
+          </Modal>
+        </div>
+      );
     }
   }
 }

@@ -226,6 +226,9 @@ class NuclideBridge {
       case 'StepOut':
         this._stepOut();
         break;
+      case 'RunToLocation':
+        this._runToLocation(args[0], args[1]);
+        break;
       case 'evaluateOnSelectedCallFrame':
         this._evaluateOnSelectedCallFrame(args[0], args[1], args[2]);
         break;
@@ -461,8 +464,8 @@ class NuclideBridge {
   _handleDebuggerPaused(event: WebInspector$Event) {
     endTimerTracking();
     ++this._debuggerPausedCount;
+
     if (this._debuggerPausedCount === 1) {
-      ipcRenderer.sendToHost('notification', 'LoaderBreakpointHit', {});
       this._handleLoaderBreakpoint();
     } else {
       ipcRenderer.sendToHost('notification', 'NonLoaderDebuggerPaused', {
@@ -470,8 +473,9 @@ class NuclideBridge {
         threadSwitchNotification: this._generateThreadSwitchNotification(
           event.data.threadSwitchMessage, event.data.location),
       });
+      // Only send callstack for non-loader breakpoint pause.
+      this._sendCallstack();
     }
-    this._sendCallstack();
   }
 
   _generateThreadSwitchNotification(message?: string, location?: Object): ?Object {
@@ -692,6 +696,16 @@ class NuclideBridge {
     }
   }
 
+  _runToLocation(path: string, line: number): void {
+    const target = WebInspector.targetManager.mainTarget();
+    if (target) {
+      beginTimerTracking('nuclide-debugger-atom:runToLocation');
+      const url = nuclideUri.nuclideUriToUri(path);
+      const location = target.debuggerModel.createRawLocationByURL(url, line, 0);
+      location.continueToLocation();
+    }
+  }
+
   _handleUISourceCodeAdded(event: Object) {
     const source = event.data;
     this._unresolvedBreakpoints.get(source.uri()).forEach(line => {
@@ -724,6 +738,12 @@ class NuclideBridge {
   }
 
   _handleThreadsUpdated(event: WebInspector.Event): void {
+    // Debugger.ThreadsUpdate happens before Debugger.paused
+    // so the first Debugger.ThreadsUpdate has this._debuggerPausedCount
+    // of zero.
+    if (this._debuggerPausedCount < 1) {
+      return;
+    }
     ipcRenderer.sendToHost('notification', 'ThreadsUpdate', event.data);
   }
 

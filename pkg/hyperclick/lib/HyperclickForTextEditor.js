@@ -315,14 +315,15 @@ export default class HyperclickForTextEditor {
     this._updateNavigationMarkers(null);
   }
 
-  @trackTiming('hyperclick:confirm-cursor')
-  async _confirmSuggestionAtCursor(): Promise<void> {
-    const suggestion = await this._hyperclick.getSuggestion(
-        this._textEditor,
-        this._textEditor.getCursorBufferPosition());
-    if (suggestion) {
-      this._confirmSuggestion(suggestion);
-    }
+  _confirmSuggestionAtCursor(): Promise<void> {
+    return trackTiming('hyperclick:confirm-cursor', async () => {
+      const suggestion = await this._hyperclick.getSuggestion(
+          this._textEditor,
+          this._textEditor.getCursorBufferPosition());
+      if (suggestion) {
+        this._confirmSuggestion(suggestion);
+      }
+    });
   }
 
   /**

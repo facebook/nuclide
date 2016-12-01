@@ -178,9 +178,15 @@ export default class BlameGutter {
     }
   }
 
-  // The BlameForEditor completely replaces any previous blame information.
-  @trackTiming('blame-ui.blame-gutter.updateBlame')
   _updateBlame(blameForEditor: BlameForEditor): void {
+    return trackTiming(
+      'blame-ui.blame-gutter.updateBlame',
+      () => this.__updateBlame(blameForEditor),
+    );
+  }
+
+  // The BlameForEditor completely replaces any previous blame information.
+  __updateBlame(blameForEditor: BlameForEditor): void {
     if (blameForEditor.size === 0) {
       atom.notifications.addInfo(
           `Found no blame to display. Is this file empty or untracked?

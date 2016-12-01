@@ -14,7 +14,7 @@ import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 
 export type TypeHintConfig = {
   version: '0.0.0',
@@ -62,7 +62,7 @@ export class TypeHintProvider<T: LanguageService> {
   }
 
   async typeHint(editor: atom$TextEditor, position: atom$Point): Promise<?TypeHint> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
       const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
       if (languageService == null || fileVersion == null) {

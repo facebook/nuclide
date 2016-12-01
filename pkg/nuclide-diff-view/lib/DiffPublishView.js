@@ -18,10 +18,9 @@ import type {
 
 import {getPhabricatorRevisionFromCommitMessage} from '../../nuclide-arcanist-rpc/lib/utils';
 import {AtomTextEditor} from '../../nuclide-ui/AtomTextEditor';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
 import {Checkbox} from '../../nuclide-ui/Checkbox';
 import classnames from 'classnames';
-import {DiffMode, PublishMode, PublishModeState, LintErrorMessages} from './constants';
+import {DiffMode, PublishMode, PublishModeState} from './constants';
 import {React} from 'react-for-atom';
 import {
   Button,
@@ -35,8 +34,10 @@ import {
 import {Toolbar} from '../../nuclide-ui/Toolbar';
 import {ToolbarLeft} from '../../nuclide-ui/ToolbarLeft';
 import {ToolbarRight} from '../../nuclide-ui/ToolbarRight';
-import {TextBuffer} from 'atom';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {
+  SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY,
+} from './constants';
+import featureConfig from '../../commons-atom/featureConfig';
 
 type DiffRevisionViewProps = {
   commitMessage: string,
@@ -66,52 +67,31 @@ type Props = {
   publishModeState: PublishModeStateType,
   headCommitMessage: ?string,
   diffModel: DiffViewModel,
+  shouldDockPublishView: boolean,
   suggestedReviewers: SuggestedReviewersState,
 };
 
 type State = {
-  hasLintError: boolean,
   isPrepareMode: boolean,
 };
 
 export default class DiffPublishView extends React.Component {
   props: Props;
   state: State;
-  _textBuffer: TextBuffer;
-  _subscriptions: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
     (this: any)._onClickBack = this._onClickBack.bind(this);
     (this: any).__onClickPublish = this.__onClickPublish.bind(this);
     (this: any)._onTogglePrepare = this._onTogglePrepare.bind(this);
+    (this: any)._toggleDockPublishConfig = this._toggleDockPublishConfig.bind(this);
     this.state = {
-      hasLintError: false,
       isPrepareMode: false,
     };
   }
 
   componentDidMount(): void {
-    this._textBuffer = new TextBuffer();
-    this._subscriptions = new UniversalDisposable(
-      this.props.diffModel
-        .getPublishUpdates()
-        .subscribe(this._onPublishUpdate.bind(this)),
-    );
     this.__populatePublishText();
-  }
-
-  _onPublishUpdate(message: Object): void {
-    const {text} = message;
-    // If the messages contain a lint error or warning show lint input
-    if (LintErrorMessages.some(error => text.includes(error))) {
-      this.setState({hasLintError: true});
-    }
-    this._textBuffer.append(text);
-    const updatesEditor = this.refs.publishUpdates;
-    if (updatesEditor != null) {
-      updatesEditor.getElement().scrollToBottom();
-    }
   }
 
   componentDidUpdate(prevProps: Props): void {
@@ -123,10 +103,6 @@ export default class DiffPublishView extends React.Component {
     }
   }
 
-  componentWillUnmount(): void {
-    this._subscriptions.dispose();
-  }
-
   __populatePublishText(): void {
     const messageEditor = this.refs.message;
     if (messageEditor != null) {
@@ -135,102 +111,44 @@ export default class DiffPublishView extends React.Component {
   }
 
   __onClickPublish(): void {
-    this._textBuffer.setText('');
-    this.setState({hasLintError: false});
-
     const isPrepareChecked = this.state.isPrepareMode;
 
-    let lintExcuse;
-    if (this.refs.excuse != null) {
-      lintExcuse = this.refs.excuse.getText();
-    }
     this.props.diffModel.publishDiff(
       this.__getPublishMessage() || '',
       isPrepareChecked,
-      lintExcuse,
+      null,
     );
   }
 
   __getPublishMessage(): ?string {
     const messageEditor = this.refs.message;
-    if (messageEditor != null) {
-      return messageEditor.getTextBuffer().getText();
-    } else {
-      return this.props.message;
-    }
+    return messageEditor == null
+      ? this.props.message
+      : messageEditor.getTextBuffer().getText();
   }
 
   __getStatusEditor(): React.Element<any> {
     const {publishModeState} = this.props;
-    let isBusy;
-    let statusEditor;
-
-    const getStreamStatusEditor = () => {
-      return (
-        <AtomTextEditor
-          ref="publishUpdates"
-          softWrapped={true}
-          textBuffer={this._textBuffer}
-          readOnly={true}
-          syncTextContents={false}
-          gutterHidden={true}
-        />
-      );
-    };
-
-    const getPublishMessageEditor = () => {
-      return (
-        <AtomTextEditor
-          ref="message"
-          softWrapped={true}
-          readOnly={isBusy}
-          syncTextContents={false}
-          gutterHidden={true}
-        />
-      );
-    };
-
-    switch (publishModeState) {
-      case PublishModeState.READY:
-        isBusy = false;
-        statusEditor = getPublishMessageEditor();
-        break;
-      case PublishModeState.LOADING_PUBLISH_MESSAGE:
-        isBusy = true;
-        statusEditor = getPublishMessageEditor();
-        break;
-      case PublishModeState.AWAITING_PUBLISH:
-        isBusy = true;
-        statusEditor = getStreamStatusEditor();
-        break;
-      case PublishModeState.PUBLISH_ERROR:
-        isBusy = false;
-        statusEditor = getStreamStatusEditor();
-        break;
-      default:
-        throw new Error('Invalid publish mode!');
-    }
-
-    return statusEditor;
-  }
-
-  __getExcuseInput(): ?React.Element<any> {
-    if (this.state.hasLintError === true) {
-      return (
-        <AtomInput
-          className="nuclide-diff-view-lint-excuse"
-          placeholderText="Lint excuse"
-          ref="excuse"
-          size="lg"
-        />
-      );
-    }
-
-    return null;
+    const isBusy = publishModeState === PublishModeState.LOADING_PUBLISH_MESSAGE
+      || publishModeState === PublishModeState.AWAITING_PUBLISH;
+    return (
+      <AtomTextEditor
+        ref="message"
+        softWrapped={true}
+        readOnly={isBusy}
+        syncTextContents={false}
+        gutterHidden={true}
+      />
+    );
   }
 
   _getToolbar(): React.Element<any> {
-    const {publishModeState, publishMode, headCommitMessage} = this.props;
+    const {
+      headCommitMessage,
+      publishMode,
+      publishModeState,
+      shouldDockPublishView,
+    } = this.props;
     let revisionView;
     if (headCommitMessage != null) {
       revisionView = <DiffRevisionView commitMessage={headCommitMessage} />;
@@ -273,6 +191,22 @@ export default class DiffPublishView extends React.Component {
       </Button>
     );
 
+    const toggleDockButton = (
+      <Button
+        icon={shouldDockPublishView ? 'move-up' : 'move-down'}
+        onClick={this._toggleDockPublishConfig}
+        title="Dock or Popup view"
+      />
+    );
+
+    const backButton = shouldDockPublishView ?
+      <Button
+        size={ButtonSizes.SMALL}
+        onClick={this._onClickBack}>
+        Back
+      </Button>
+      : null;
+
     let prepareOptionElement;
     if (publishMode === PublishMode.CREATE) {
       prepareOptionElement = (
@@ -292,16 +226,12 @@ export default class DiffPublishView extends React.Component {
           <ToolbarLeft className="nuclide-diff-view-publish-toolbar-left">
             {revisionView}
             {prepareOptionElement}
-            {this.__getExcuseInput()}
           </ToolbarLeft>
           <ToolbarRight>
             <ButtonGroup size={ButtonGroupSizes.SMALL}>
-              <Button
-                size={ButtonSizes.SMALL}
-                onClick={this._onClickBack}>
-                Back
-              </Button>
+              {backButton}
               {publishButton}
+              {toggleDockButton}
             </ButtonGroup>
           </ToolbarRight>
         </Toolbar>
@@ -318,6 +248,13 @@ export default class DiffPublishView extends React.Component {
         {this._getToolbar()}
       </div>
     );
+  }
+
+  _toggleDockPublishConfig(): void {
+    // Persist publish message between docked and modal views.
+    this.props.diffModel.updatePublishMessage(this.__getPublishMessage());
+    const shouldDockPublishView = featureConfig.get(SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY);
+    featureConfig.set(SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY, !shouldDockPublishView);
   }
 
   _onTogglePrepare(isChecked: boolean): void {

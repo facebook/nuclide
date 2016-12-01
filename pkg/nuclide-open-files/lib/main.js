@@ -15,7 +15,7 @@ import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 
 import invariant from 'assert';
 import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {observeBufferOpen, observeBufferCloseOrRename} from '../../commons-atom/buffer';
+import {observeBufferOpen, observeBufferCloseOrRename} from '../../commons-atom/text-buffer';
 import {NotifiersByConnection} from './NotifiersByConnection';
 import {BufferSubscription} from './BufferSubscription';
 

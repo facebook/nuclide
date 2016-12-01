@@ -17,12 +17,17 @@ import type {
 import {Observable} from 'rxjs';
 
 import {safeSpawn} from '../../commons-node/process';
+import {compact} from '../../commons-node/observable';
 import fsPromise from '../../commons-node/fsPromise';
 import nuclideUri from '../../commons-node/nuclideUri';
+import {Minimatch} from 'minimatch';
 import split from 'split';
 
 // This pattern is used for parsing the output of grep.
 const GREP_PARSE_PATTERN = /(.*?):(\d*):(.*)/;
+
+// Limit the total result size to avoid overloading the Nuclide server + Atom.
+const MATCH_BYTE_LIMIT = 2 * 1024 * 1024;
 
 /**
  * Searches for all instances of a pattern in a directory.
@@ -43,16 +48,21 @@ export default function search(
   if (!subdirs || subdirs.length === 0) {
     // Since no subdirs were specified, run search on the root directory.
     return searchInSubdir(matchesByFile, directory, '.', regex);
-  } else if (subdirs.length === 1 && subdirs[0].includes('*')) {
-    // Filters results by glob specified in subdirs[0]
-    const unfilteredResults: Observable<search$FileResult>
-      = searchInSubdir(matchesByFile, directory, '.', regex);
-
-    return unfilteredResults.filter(result => {
-      const glob: string = subdirs[0];
-      const matches = result.filePath.match(globToRegex(glob));
-      return (matches != null) && (matches.length > 0);
+  } else if (subdirs.find(subdir => subdir.includes('*'))) {
+    // Mimic Atom and use minimatch for glob matching.
+    const matchers = subdirs.map(subdir => {
+      let pattern = subdir;
+      if (!pattern.includes('*')) {
+        // Automatically glob-ify the non-globs.
+        pattern = nuclideUri.ensureTrailingSeparator(pattern) + '**';
+      }
+      return new Minimatch(pattern, {matchBase: true, dot: true});
     });
+    // TODO: This should walk the subdirectories and filter by glob before searching.
+    return searchInSubdir(matchesByFile, directory, '.', regex)
+      .filter(
+        result => Boolean(matchers.find(matcher => matcher.match(result.filePath))),
+      );
   } else {
     // Run the search on each subdirectory that exists.
     return Observable.from(subdirs).concatMap(async subdir => {
@@ -90,11 +100,11 @@ function searchInSubdir(
     .catch(() => Observable.throw(new Error('Failed to execute a grep search.')));
 
   // Transform lines into file matches.
-  return linesSource.flatMap(line => {
+  const results = compact(linesSource.map((line: string) => {
     // Try to parse the output of grep.
     const grepMatchResult = line.match(GREP_PARSE_PATTERN);
     if (!grepMatchResult) {
-      return [];
+      return null;
     }
 
     // Extract the filename, line number, and line text from grep output.
@@ -105,7 +115,7 @@ function searchInSubdir(
     // Try to extract the actual "matched" text.
     const matchTextResult = regex.exec(lineText);
     if (!matchTextResult) {
-      return [];
+      return null;
     }
 
     // IMPORTANT: reset the regex for the next search
@@ -114,22 +124,40 @@ function searchInSubdir(
     const matchText = matchTextResult[0];
     const matchIndex = matchTextResult.index;
 
-    // Put this match into lists grouped by files.
-    let matches = matchesByFile.get(filePath);
-    if (matches == null) {
-      matches = [];
-      matchesByFile.set(filePath, matches);
-    }
-    matches.push({
-      lineText,
-      lineTextOffset: 0,
-      matchText,
-      range: [[lineNo, matchIndex], [lineNo, matchIndex + matchText.length]],
-    });
+    return {
+      filePath,
+      match: {
+        lineText,
+        lineTextOffset: 0,
+        matchText,
+        range: [[lineNo, matchIndex], [lineNo, matchIndex + matchText.length]],
+      },
+    };
+  })).share();
 
-    // If a callback was provided, invoke it with the newest update.
-    return [{matches, filePath}];
-  });
+  return results
+    // Limit the total result size.
+    .merge(
+      results
+        .scan((size, {match}) => size + match.lineText.length + match.matchText.length, 0)
+        .filter(size => size > MATCH_BYTE_LIMIT)
+        .switchMapTo(
+          Observable.throw(Error(`Too many results, truncating to ${MATCH_BYTE_LIMIT} bytes`)),
+        )
+        .ignoreElements(),
+    )
+    // Buffer results by file. Flush when the file changes, or on completion.
+    .buffer(
+      Observable.concat(
+        results.distinct(result => result.filePath),
+        Observable.of(null),
+      ),
+    )
+    .filter(buffer => buffer.length > 0)
+    .map(buffer => ({
+      filePath: buffer[0].filePath,
+      matches: buffer.map(x => x.match),
+    }));
 }
 
 
@@ -177,14 +205,4 @@ function getLinesFromCommand(
       }
     };
   });
-}
-
-// Converts a wildcard string to JS RegExp.
-function globToRegex(str): RegExp {
-  return new RegExp(preg_quote(str).replace(/\\\*/g, '.*').replace(/\\\?/g, '.'), 'g');
-}
-
-function preg_quote(str, delimiter) {
-  return String(str).replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\'
-    + (delimiter || '') + '-]', 'g'), '\\$&');
 }

@@ -191,6 +191,27 @@ describe('FileTreeStore', () => {
     });
   });
 
+  describe('getRootForPath', () => {
+    beforeEach(() => {
+      waitsForPromise(async () => {
+        actions.setRootKeys([dir1, dir2]);
+        actions.expandNode(dir1, fooTxt);
+        await loadChildKeys(dir1, dir1);
+      });
+    });
+
+    it('returns null if path does not belong to any root', () => {
+      expect(store.getRootForPath('random/path/file.txt')).toBeNull();
+    });
+
+    it('returns a root node if path exists in a root', () => {
+      const node = store.getRootForPath(fooTxt);
+      expect(node).not.toBeNull();
+      invariant(node);
+      expect(node.uri).toEqual(dir1);
+    });
+  });
+
   describe('trackedNode', () => {
     it('resets when there is a new selection', () => {
       actions.setRootKeys([dir1]);

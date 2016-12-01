@@ -19,24 +19,25 @@ import {getEnableLinting} from './config';
 
 export default class LintHelpers {
 
-  @trackTiming('nuclide-python.lint')
-  static async lint(editor: TextEditor): Promise<Array<LinterMessage>> {
-    const src = editor.getPath();
-    if (src == null || !getEnableLinting()) {
-      return [];
-    }
+  static lint(editor: TextEditor): Promise<Array<LinterMessage>> {
+    return trackTiming('nuclide-python.lint', async () => {
+      const src = editor.getPath();
+      if (src == null || !getEnableLinting()) {
+        return [];
+      }
 
-    const service = getServiceByNuclideUri('PythonService', src);
-    invariant(service);
+      const service = getServiceByNuclideUri('PythonService', src);
+      invariant(service);
 
-    const diagnostics = await service.getDiagnostics(src, editor.getText());
-    return diagnostics.map(diagnostic => ({
-      name: 'flake8: ' + diagnostic.code,
-      type: diagnostic.type,
-      text: diagnostic.message,
-      filePath: diagnostic.file,
-      range: getDiagnosticRange(diagnostic, editor),
-    }));
+      const diagnostics = await service.getDiagnostics(src, editor.getText());
+      return diagnostics.map(diagnostic => ({
+        name: 'flake8: ' + diagnostic.code,
+        type: diagnostic.type,
+        text: diagnostic.message,
+        filePath: diagnostic.file,
+        range: getDiagnosticRange(diagnostic, editor),
+      }));
+    });
   }
 
 }

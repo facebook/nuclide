@@ -12,6 +12,8 @@
 /* eslint-disable max-len */
 
 module.exports = {
+  root: true,
+
   parser: 'babel-eslint',
 
   parserOptions: {

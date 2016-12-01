@@ -25,36 +25,37 @@ const MAX_LENGTH = 100;
 
 export default class TypeHintProvider {
 
-  @trackTiming('nuclide-ocaml.typeHint')
-  async typeHint(editor: atom$TextEditor, position: atom$Point): Promise<?TypeHint> {
-    const path = editor.getPath();
-    if (path == null) {
-      return null;
-    }
-    const instance = getServiceByNuclideUri('MerlinService', path);
-    if (instance == null) {
-      return null;
-    }
-    await instance.pushNewBuffer(path, editor.getText());
-    const types = await instance.enclosingType(path, position.row, position.column);
-    if (types == null || types.length === 0) {
-      return null;
-    }
-    const type: MerlinType = types[0];
-    if (type.end.line - type.start.line > MAX_LINES) {
-      return null;
-    }
-    let hint = type.type;
-    if (hint.length > MAX_LENGTH) {
-      hint = hint.substr(0, MAX_LENGTH) + '...';
-    }
-    return {
-      hint,
-      range: new Range(
-        new Point(type.start.line - 1, type.start.col),
-        new Point(type.end.line - 1, type.end.col),
-      ),
-    };
+  typeHint(editor: atom$TextEditor, position: atom$Point): Promise<?TypeHint> {
+    return trackTiming('nuclide-ocaml.typeHint', async () => {
+      const path = editor.getPath();
+      if (path == null) {
+        return null;
+      }
+      const instance = getServiceByNuclideUri('MerlinService', path);
+      if (instance == null) {
+        return null;
+      }
+      await instance.pushNewBuffer(path, editor.getText());
+      const types = await instance.enclosingType(path, position.row, position.column);
+      if (types == null || types.length === 0) {
+        return null;
+      }
+      const type: MerlinType = types[0];
+      if (type.end.line - type.start.line > MAX_LINES) {
+        return null;
+      }
+      let hint = type.type;
+      if (hint.length > MAX_LENGTH) {
+        hint = hint.substr(0, MAX_LENGTH) + '...';
+      }
+      return {
+        hint,
+        range: new Range(
+          new Point(type.start.line - 1, type.start.col),
+          new Point(type.end.line - 1, type.end.col),
+        ),
+      };
+    });
   }
 
 }

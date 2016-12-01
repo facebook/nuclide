@@ -15,6 +15,10 @@ import {Range} from 'atom';
 import {shell} from 'electron';
 import urlregexp from 'urlregexp';
 
+// urlregexp will match trailing: ' | " | '. | ', | ". | ",
+// These are most likely not part of the url, but just junk that got caught.
+const trailingJunkRe = /['"][.,]?$/;
+
 export default class HyperclickProviderHelpers {
   static async getSuggestionForWord(
     textEditor: atom$TextEditor,
@@ -30,7 +34,7 @@ export default class HyperclickProviderHelpers {
 
     urlregexp.lastIndex = 0;
 
-    const url = match[0];
+    const url = match[0].replace(trailingJunkRe, '');
     const index = match.index;
     const matchLength = url.length;
 

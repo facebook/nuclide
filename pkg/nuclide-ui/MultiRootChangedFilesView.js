@@ -24,7 +24,7 @@ import {React} from 'react-for-atom';
 import {repositoryForPath} from '../nuclide-hg-git-bridge';
 import UniversalDisposable from '../commons-node/UniversalDisposable';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {addPath, revertPath} from '../nuclide-hg-repository/lib/actions';
+import {addPath, confirmAndRevertPath} from '../nuclide-hg-repository/lib/actions';
 import ChangedFilesList from './ChangedFilesList';
 
 type Props = {
@@ -154,7 +154,7 @@ export class MultiRootChangedFilesView extends React.Component {
           if (getRevertTargetRevision != null) {
             targetRevision = getRevertTargetRevision();
           }
-          revertPath(filePath, targetRevision);
+          confirmAndRevertPath(filePath, targetRevision);
         }
       },
     ));

@@ -34,11 +34,13 @@ function runParent() {
 
   const assert = require('assert');
   const child_process = require('child_process');
+  const fs = require('fs');
   const glob = require('glob');
   const os = require('os');
   const path = require('path');
 
   const basedir = path.join(__dirname, '../..');
+  const developmentFilePath = path.join(basedir, 'DEVELOPMENT');
   const numWorkers = Math.max(os.cpus().length - 1, 1);
 
   const count = {
@@ -85,6 +87,9 @@ function runParent() {
 
   process.once('exit', code => {
     if (code !== 0) { return; }
+    if (argv.overwrite && fs.existsSync(developmentFilePath)) {
+      fs.unlinkSync(developmentFilePath);
+    }
     console.log(
       'transpiled: %s | skipped: %s | %ds',
       count.transpiled,

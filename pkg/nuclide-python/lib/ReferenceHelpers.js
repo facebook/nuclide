@@ -21,8 +21,17 @@ import {Range, Point} from 'simple-text-buffer';
 
 export default class ReferenceHelpers {
 
-  @trackTiming('python.get-references')
-  static async getReferences(
+  static getReferences(
+    editor: TextEditor,
+    position: atom$Point,
+  ): Promise<?FindReferencesReturn> {
+    return trackTiming(
+      'python.get-references',
+      () => ReferenceHelpers._getReferences(editor, position),
+    );
+  }
+
+  static async _getReferences(
     editor: TextEditor,
     position: atom$Point,
   ): Promise<?FindReferencesReturn> {

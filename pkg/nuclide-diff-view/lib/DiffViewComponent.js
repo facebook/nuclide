@@ -32,7 +32,7 @@ import {DiffNavigationBar} from './DiffNavigationBar';
 import DiffCommitView from './DiffCommitView';
 import DiffPublishView from './DiffPublishView';
 import createPaneContainer from '../../commons-atom/create-pane-container';
-import {bufferForUri} from '../../commons-atom/text-editor';
+import {bufferForUri} from '../../commons-atom/text-buffer';
 import {
   DiffMode,
   NavigationSectionStatus,
@@ -88,6 +88,7 @@ export function renderPublishView(diffModel: DiffViewModel): React.Element<any> 
   const {
     publish: {message, mode, state},
     activeRepositoryState: {headRevision},
+    shouldDockPublishView,
     suggestedReviewers,
   } = diffModel.getState();
   const PublishComponent = getPublishComponent();
@@ -99,6 +100,7 @@ export function renderPublishView(diffModel: DiffViewModel): React.Element<any> 
       publishMode={mode}
       headCommitMessage={headRevision == null ? '' : headRevision.description}
       diffModel={diffModel}
+      shouldDockPublishView={shouldDockPublishView}
     />
   );
 }
@@ -206,6 +208,13 @@ export function centerScrollToBufferLine(
     + textEditor.getLineHeightInPixels() / 2
     - textEditorElement.clientHeight / 2;
   textEditorElement.setScrollTop(Math.max(scrollTop, 1));
+
+  textEditorElement.focus();
+
+  textEditor.setCursorBufferPosition(
+    [bufferLineNumber, 0],
+    {autoscroll: false},
+  );
 }
 
 export function pixelRangeForNavigationSection(

@@ -1,0 +1,46 @@
+{{!
+This file is a handlebars template used to generate the `nuclicons.css` file in
+`nuclide-ui/styles/`.
+}}
+/*
+@gen{{! spoiler comment so as to avoid the tag in the template }}erated
+This file was programatically generated using
+`scripts/dev/generate_icon_font.js`. DON'T EDIT IT DIRECTLY! Instead, add SVGs
+to `resources/nuclicons` and rerun the script.
+*/
+
+@font-face {
+  font-family: 'nuclicons';
+  src: url('atom://nuclide/pkg/nuclide-ui/styles/nuclicons.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="nuclicon-"]::before,
+[class*=" nuclicon-"]::before {
+  /*
+    use !important to prevent issues with browser extensions that change fonts
+  */
+  font-family: 'nuclicons' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+
+  display: inline-block;
+  text-decoration: none;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+{{# each codepoints }}
+.{{ ../classPrefix }}{{ @key }}::before {
+  content: "\\{{ this }}";
+}
+{{/ each }}

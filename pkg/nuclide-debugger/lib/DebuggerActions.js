@@ -360,6 +360,15 @@ class DebuggerActions {
     });
   }
 
+  setSelectedCallFrameIndex(index: number): void {
+    this._dispatcher.dispatch({
+      actionType: ActionTypes.SET_SELECTED_CALLFRAME_INDEX,
+      data: {
+        index,
+      },
+    });
+  }
+
   setSelectedCallFrameLine(options: ?{sourceURL: string, lineNumber: number}): void {
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_SELECTED_CALLFRAME_LINE,

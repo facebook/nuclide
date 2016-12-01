@@ -27,16 +27,8 @@ export const OS_TYPE = {
   OSX: 'darwin',
 };
 
-// "Development" is defined as working from source - not packaged code.
-// apm/npm and internal releases don't package the base `.flowconfig`, so
-// we use this to figure if we're packaged or not.
 export const isDevelopment = once((): boolean => {
-  try {
-    fs.statSync(nuclideUri.join(NUCLIDE_BASEDIR, '.flowconfig'));
-    return true;
-  } catch (err) {
-    return false;
-  }
+  return fs.existsSync(nuclideUri.join(NUCLIDE_BASEDIR, 'DEVELOPMENT'));
 });
 
 // Prior to Atom v1.7.0, `atom.inSpecMode` had a chance of performing an IPC call that could be

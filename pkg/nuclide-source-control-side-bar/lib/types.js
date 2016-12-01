@@ -10,6 +10,8 @@
 
 import type {BookmarkInfo} from '../../nuclide-hg-rpc/lib/HgService';
 
+import {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient';
+
 type CreateBookmark = {
   payload: {
     name: string,
@@ -84,6 +86,14 @@ type UpdateToBookmarkAction = {
     repository: atom$Repository,
   },
   type: 'update-to-bookmark',
+};
+
+export type UpdateUncommittedChanges = {
+  payload: {
+    directory: atom$Directory,
+    repository: HgRepositoryClient,
+  },
+  type: 'update-uncommitted-changes',
 };
 
 export type Action =

@@ -12,7 +12,6 @@
 /* NON-TRANSPILED FILE */
 /* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
 
-// Relative to nuclide-debugger/scripts, where html page is loaded.
-require('./nuclide_bridge/NuclideBridge');
+// This files is eval'ed by the Chrome DevTools, so it's not transpiled.
 
-window.WebInspector.NuclideAppProvider = require('./nuclide_bridge/NuclideAppProvider');
+window._initializeNuclideBridge();

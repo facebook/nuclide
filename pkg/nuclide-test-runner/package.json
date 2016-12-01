@@ -9,10 +9,18 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
+  "deserializers": {
+    "nuclide.TestRunnerPanelState": "deserializeTestRunnerPanelState"
+  },
   "consumedServices": {
     "nuclide-file-tree.context-menu": {
       "versions": {
         "0.1.0": "addItemsToFileTreeContextMenu"
+      }
+    },
+    "nuclide.workspace-views": {
+      "versions": {
+        "0.0.0": "consumeWorkspaceViewsService"
       }
     },
     "nuclide-test-runner.provider": {
@@ -23,13 +31,6 @@
     "tool-bar": {
       "versions": {
         "^1.0.0": "consumeToolBar"
-      }
-    }
-  },
-  "providedServices": {
-    "nuclide-distraction-free-mode": {
-      "versions": {
-        "0.0.0": "getDistractionFreeModeProvider"
       }
     }
   }

@@ -12,11 +12,9 @@
 import type {ButtonSize} from '../../../nuclide-ui/Button';
 
 import {Button} from '../../../nuclide-ui/Button';
-import {Icon} from '../../../nuclide-ui/Icon';
 import {React} from 'react-for-atom';
 
 type Props = {
-  icon?: atom$Octicon,
   selected?: boolean,
   size?: ButtonSize,
   children?: mixed,
@@ -26,12 +24,8 @@ type Props = {
 export function TaskRunnerButton(props: Props): React.Element<any> {
   const IconComponent = props.iconComponent;
   const buttonProps = {...props};
-  delete buttonProps.icon;
   delete buttonProps.label;
   delete buttonProps.iconComponent;
-  const icon = props.icon == null
-    ? null
-    : <Icon icon={props.icon} className="nuclide-task-runner-system-task-icon" />;
   return (
     <Button
       {...buttonProps}
@@ -40,7 +34,6 @@ export function TaskRunnerButton(props: Props): React.Element<any> {
         <IconComponent />
       </div>
       <div className="nuclide-task-runner-system-task-button-divider" />
-      {icon}
       {props.children}
     </Button>
   );

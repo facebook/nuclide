@@ -15,6 +15,7 @@ import {
   reconcileSetDiffs,
   splitStream,
   takeWhileInclusive,
+  throttle,
   toggle,
   concatLatest,
 } from '../observable';
@@ -375,4 +376,51 @@ describe('concatLatest', () => {
       ]);
     });
   });
+});
+
+describe('throttle', () => {
+
+  it('emits the leading item immeditately by default', () => {
+    const source = Observable.of(1, 2).merge(Observable.never());
+    const spy = jasmine.createSpy();
+    throttle(source, Observable.never()).subscribe(spy);
+    expect(spy).toHaveBeenCalledWith(1);
+  });
+
+  it("doesn't emit the leading item twice", () => {
+    const source = Observable.of(1).merge(Observable.never());
+    const notifier = Observable.of(null); // emits immediately on subscription.
+    const spy = jasmine.createSpy();
+    throttle(source, notifier).subscribe(spy);
+    expect(spy.callCount).toBe(1);
+  });
+
+  it('throttles', () => {
+    const source = new Subject();
+    const notifier = new Subject();
+    const spy = jasmine.createSpy();
+    throttle(source, notifier).subscribe(spy);
+    source.next(1);
+    spy.reset();
+    source.next(2);
+    expect(spy).not.toHaveBeenCalled();
+    notifier.next();
+    expect(spy).toHaveBeenCalledWith(2);
+    spy.reset();
+    source.next(3);
+    expect(spy).not.toHaveBeenCalled();
+    source.next(4);
+    expect(spy).not.toHaveBeenCalled();
+    notifier.next();
+    expect(spy).toHaveBeenCalledWith(4);
+    expect(spy.callCount).toBe(1);
+  });
+
+  it('subscribes to the source once per subscription', () => {
+    const spy = jasmine.createSpy();
+    const source = Observable.create(spy);
+    throttle(source, Observable.of(null)).subscribe();
+    expect(spy.callCount).toBe(1);
+  });
+
 });

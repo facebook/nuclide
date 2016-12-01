@@ -29,7 +29,8 @@ export function getHomeFragments(): HomeFragments {
   return {
     feature: {
       title: 'PHP Debugger',
-      icon: 'plug',
+      iconset: 'nuclicon',
+      icon: 'debugger',
       description: 'Connect to a PHP server process and debug Hack code from within Nuclide.',
       command: 'nuclide-debugger:toggle',
     },

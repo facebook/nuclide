@@ -47,7 +47,7 @@ import {
   promptToCleanDirtyChanges,
 } from '../utils';
 import {repositoryForPath} from '../../../nuclide-hg-git-bridge';
-import {bufferForUri, loadBufferForUri} from '../../../commons-atom/text-editor';
+import {bufferForUri, loadBufferForUri} from '../../../commons-atom/text-buffer';
 import {
   getEmptyCommitState,
   getEmptyPublishState,
@@ -671,6 +671,7 @@ export function publishDiff(
           .filter(headRevision => headRevision != null)
           .first().switchMap(headRevision => {
             invariant(headRevision != null);
+            dispatchConsoleToggle(true);
 
             switch (mode) {
               case PublishMode.CREATE:

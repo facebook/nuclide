@@ -18,6 +18,7 @@ import {
 type Props = {
   title: string,
   icon: string,
+  iconset?: ?string,
   description: string | React.Element<any>,
   command: ?(string | () => void),
 };
@@ -47,9 +48,10 @@ class HomeFeatureComponent extends React.Component {
 
   render(): React.Element<any> {
     const {title, command} = this.props;
+    const iconset = this.props.iconset || 'icon';
     return (
       <details className="nuclide-home-card">
-        <summary className={`nuclide-home-summary icon icon-${this.props.icon}`}>
+        <summary className={`nuclide-home-summary icon ${iconset}-${this.props.icon}`}>
           {title}
           {command ? <Button
             className="pull-right nuclide-home-tryit"

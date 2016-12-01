@@ -13,8 +13,9 @@ import classnames from 'classnames';
 import {React} from 'react-for-atom';
 
 type Props = {
-  /** Valid octicon icon name, without the `icon-` prefix. E.g. `'arrow-up'` */
-  icon: atom$Octicon,
+  /** Icon name, without the `icon-` prefix. E.g. `'arrow-up'` */
+  icon: string,
+  iconset?: ?string,
   className?: string,
   /** Optional text content to render next to the icon. */
   children?: string,
@@ -26,6 +27,7 @@ type Props = {
 export const Icon = (props: Props) => {
   const {
     icon,
+    iconset,
     children,
     className,
     ...remainingProps
@@ -33,7 +35,7 @@ export const Icon = (props: Props) => {
   const newClassName = classnames(
     className,
     {
-      [`icon icon-${icon}`]: icon != null,
+      [`icon ${iconset || 'icon'}-${icon}`]: icon != null,
     },
   );
   return (

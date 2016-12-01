@@ -16,7 +16,7 @@ import invariant from 'assert';
 import registerGrammar from '../../commons-atom/register-grammar';
 import {CompositeDisposable, Disposable} from 'atom';
 import {repositoryForPath} from '../../nuclide-hg-git-bridge';
-import {revertPath, addPath} from './actions';
+import {addPath, confirmAndRevertPath, revertPath} from './actions';
 import HgRepositoryProvider from './HgRepositoryProvider';
 
 const HG_ADD_TREE_CONTEXT_MENU_PRIORITY = 400;
@@ -97,6 +97,15 @@ export function activate(state: any): void {
 
   subscriptions.add(atom.commands.add(
     'atom-text-editor',
+    'nuclide-hg-repository:confirm-and-revert',
+    event => {
+      const editorElement: atom$TextEditorElement = (event.target: any);
+      confirmAndRevertPath(editorElement.getModel().getPath());
+    },
+  ));
+
+  subscriptions.add(atom.commands.add(
+    'atom-text-editor',
     'nuclide-hg-repository:add',
     event => {
       const editorElement: atom$TextEditorElement = (event.target: any);
@@ -113,14 +122,14 @@ export function activate(state: any): void {
         submenu: [
           {
             label: 'Revert',
-            command: 'nuclide-hg-repository:revert',
+            command: 'nuclide-hg-repository:confirm-and-revert',
             shouldDisplay() {
               return isActivePathRevertable();
             },
           },
           {
             label: 'Add to Mercurial',
-            command: 'nuclide-hg-repository:revert',
+            command: 'nuclide-hg-repository:add',
             shouldDisplay() {
               return isActivePathAddable();
             },
@@ -146,7 +155,7 @@ export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu):
       callback() {
         // TODO(most): support reverting multiple nodes at once.
         const revertNode = contextMenu.getSingleSelectedNode();
-        revertPath(revertNode == null ? null : revertNode.uri);
+        confirmAndRevertPath(revertNode == null ? null : revertNode.uri);
       },
       shouldDisplay() {
         return shouldDisplayActionTreeItem(contextMenu, 'Revert');

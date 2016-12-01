@@ -145,9 +145,18 @@ main panes.
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
 | `Cmd-K-Down` | `Ctrl-K-Down` | `nuclide-move-pane:move-tab-to-new-pane-down` | Moves the currently active file in the editor to a bottom pane. |
-| `Cmd-K-Right` | `Ctrl-K-Right` | `nuclide-move-pane:move-tab-to-new-pane-right` | Moves the currently active file in the editor to a right pane. | |
-| `Cmd-K-Up` | `Ctrl-K-Up` | `nuclide-move-pane:move-tab-to-new-pane-up` | Moves the currently active file in the editor to a top pane. | |
+| `Cmd-K-Right` | `Ctrl-K-Right` | `nuclide-move-pane:move-tab-to-new-pane-right` | Moves the currently active file in the editor to a right pane. |
+| `Cmd-K-Up` | `Ctrl-K-Up` | `nuclide-move-pane:move-tab-to-new-pane-up` | Moves the currently active file in the editor to a top pane. |
 | `Cmd-K-Left` | `Ctrl-K-Left` | `nuclide-move-pane:move-tab-to-new-pane-left` | Moves the currently active file in the editor to a left pane. |
+
+## Navigation
+
+These are keyboard shortcuts with respect to navigation within files, etc.
+
+| Key (macOS) | Key (Linux) | Command | Description |
+|-----------|-------------|---------|-------------|
+| `Ctrl-,` | `Ctrl-<` | `nuclide-navigation-stack:navigate-forwards` | Moves the cursor to the next position from the current, but former, position. |
+| `Ctrl-.` | `Ctrl->` | `nuclide-navigation-stack:navigate-backwards` | Moves the cursor to a previous position from the current position. |
 
 ## Miscellaneous
 

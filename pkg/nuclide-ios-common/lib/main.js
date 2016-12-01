@@ -65,7 +65,7 @@ function validateState(rawState: ?string): ?DeviceState {
   }
 }
 
-export const getDevices = memoize(() => (
+export const getDevices: () => Observable<Array<Device>> = memoize(() => (
   observeProcess(() => safeSpawn('xcrun', ['simctl', 'list', 'devices']))
     .map(event => {
       // Throw errors.

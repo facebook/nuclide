@@ -55,8 +55,18 @@ function getRangeFromPoint(
 
 export default class ClangLinter {
 
-  @trackTiming('nuclide-clang-atom.fetch-diagnostics')
-  static async lint(textEditor: atom$TextEditor): Promise<Array<LinterMessage>> {
+  static lint(
+    textEditor: atom$TextEditor,
+  ): Promise<Array<LinterMessage>> {
+    return trackTiming(
+      'nuclide-clang-atom.fetch-diagnostics',
+      () => ClangLinter._lint(textEditor),
+    );
+  }
+
+  static async _lint(
+    textEditor: atom$TextEditor,
+  ): Promise<Array<LinterMessage>> {
     const filePath = textEditor.getPath();
     if (filePath == null) {
       return [];

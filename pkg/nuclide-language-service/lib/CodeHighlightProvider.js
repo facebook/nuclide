@@ -11,7 +11,7 @@
 
 import type {LanguageService} from './LanguageService';
 
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import {Range} from 'atom';
@@ -44,7 +44,7 @@ export class CodeHighlightProvider<T: LanguageService> {
   }
 
   highlight(editor: atom$TextEditor, position: atom$Point): Promise<Array<atom$Range>> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
       const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
       if (languageService == null || fileVersion == null) {

@@ -14,6 +14,8 @@ import type {ConnectableObservable} from 'rxjs';
 
 import * as ADB from './ADB';
 
+export type DeviceDescription = {name: string, architecture: string};
+
 export function startServer(
   adbPath: NuclideUri,
 ): ConnectableObservable<string> {
@@ -22,6 +24,13 @@ export function startServer(
 
 export function getDeviceList(
   adbPath: NuclideUri,
-): ConnectableObservable<Array<string>> {
+): Promise<Array<DeviceDescription>> {
   return ADB.getDeviceList(adbPath);
+}
+
+export function getDeviceArchitecture(
+  adbPath: NuclideUri,
+  device: string,
+): Promise<string> {
+  return ADB.getDeviceArchitecture(adbPath, device);
 }

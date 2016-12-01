@@ -123,16 +123,17 @@ export function outlineFromClangOutline(outline: Array<ClangOutlineTree>): Array
 }
 
 export default class OutlineViewHelpers {
-  @trackTiming('nuclide-clang-atom:outline-view')
-  static async getOutline(editor: atom$TextEditor): Promise<?Outline> {
-    // HACK: Since outline view and diagnostics both trigger on save, favor diagnostics.
-    await sleep(0);
-    const clangOutline = await getOutline(editor);
-    if (clangOutline == null) {
-      return null;
-    }
-    return {
-      outlineTrees: outlineFromClangOutline(clangOutline),
-    };
+  static getOutline(editor: atom$TextEditor): Promise<?Outline> {
+    return trackTiming('nuclide-clang-atom:outline-view', async () => {
+      // HACK: Since outline view and diagnostics both trigger on save, favor diagnostics.
+      await sleep(0);
+      const clangOutline = await getOutline(editor);
+      if (clangOutline == null) {
+        return null;
+      }
+      return {
+        outlineTrees: outlineFromClangOutline(clangOutline),
+      };
+    });
   }
 }

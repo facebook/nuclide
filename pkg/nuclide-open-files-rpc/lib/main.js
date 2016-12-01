@@ -13,7 +13,7 @@ import type {FileVersion} from './rpc-types';
 
 import {FileCache} from './FileCache';
 import {FileVersionNotifier} from './FileVersionNotifier';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 
 export {FileCache, FileVersionNotifier};
 export {FileEventKind} from './constants';
@@ -26,7 +26,7 @@ export const OPEN_FILES_SERVICE = 'OpenFilesService';
 export function getBufferAtVersion(
   fileVersion: FileVersion,
 ): Promise<?simpleTextBuffer$TextBuffer> {
-  return trackOperationTiming(
+  return trackTiming(
     'getBufferAtVersion',
     () => {
       invariant(

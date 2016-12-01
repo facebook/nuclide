@@ -65,6 +65,7 @@ export default class RecordView extends React.Component {
         fetchChildren={getProperties}
         simpleValueComponent={simpleValueComponent}
         shouldCacheChildren={true}
+        expansionStateId={this}
       />
     );
   }

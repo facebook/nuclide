@@ -13,10 +13,13 @@ import type {
   Action,
   SetBookmarkIsLoading,
   UnsetBookmarkIsLoading,
+  UpdateUncommittedChanges,
 } from './types';
 import type {BookmarkInfo} from '../../nuclide-hg-rpc/lib/HgService';
 import type {NuclideSideBarService} from '../../nuclide-side-bar';
 import type {Observable} from 'rxjs';
+import type {FileChangeStatusValue} from '../../nuclide-hg-git-bridge/lib/constants';
+import type {NuclideUri} from '../../commons-node/NuclideUri';
 
 import * as ActionType from './ActionType';
 import {applyActionMiddleware} from './applyActionMiddleware';
@@ -29,8 +32,10 @@ import {observableFromSubscribeFunction} from '../../commons-node/event';
 import {BehaviorSubject, Subject} from 'rxjs';
 import SideBarComponent from './SideBarComponent';
 import {track} from '../../nuclide-analytics';
+import {getDirtyFileChanges} from '../../commons-node/vcs';
 
 export type AppState = {
+  uncommittedChanges: Map<NuclideUri, Map<NuclideUri, FileChangeStatusValue>>,
   projectBookmarks: Map<string, Array<BookmarkInfo>>,
   projectDirectories: Array<atom$Directory>,
   projectRepositories: Map<string, atom$Repository>,
@@ -48,6 +53,7 @@ function createStateStream(
 
 function getInitialState() {
   return {
+    uncommittedChanges: new Map(),
     projectBookmarks: new Map(),
     projectDirectories: [],
     projectRepositories: new Map(),
@@ -95,6 +101,7 @@ export function consumeNuclideSideBar(sideBar: NuclideSideBarService): IDisposab
         renameBookmark: commands.renameBookmark,
         repositoryBookmarksIsLoading: state.repositoryBookmarksIsLoading,
         updateToBookmark: commands.updateToBookmark,
+        uncommittedChanges: state.uncommittedChanges,
       }));
 
       track('scsidebar-show');
@@ -144,6 +151,39 @@ function accumulateSetBookmarkIsLoading(state: AppState, action: SetBookmarkIsLo
   };
 }
 
+function accumulateRepositoriesUncommittedChanges(
+  state: AppState,
+  action: UpdateUncommittedChanges,
+): AppState {
+  const {
+    directory,
+    repository,
+  } = action.payload;
+
+  if (repository.getType() === 'hg') {
+    const uncommittedChanges = getDirtyFileChanges(repository);
+    const filteredUncommitedChangesMap = new Map();
+    // The get dirty file changes gets changes for the whole repository and
+    // for most part only a directory in the repository is imported. This filter
+    // will show only the related files under each directory.
+    for (const [filePath, fileStatus] of uncommittedChanges.entries()) {
+      if (filePath.startsWith(directory.getPath())) {
+        filteredUncommitedChangesMap.set(filePath, fileStatus);
+      }
+    }
+    return {
+      ...state,
+      uncommittedChanges:
+        new Map(state.uncommittedChanges).set(
+          directory.getPath(),
+          filteredUncommitedChangesMap,
+        ),
+    };
+  }
+
+  return state;
+}
+
 function accumulateUnsetBookmarkIsLoading(
   state: AppState,
   action: UnsetBookmarkIsLoading,
@@ -169,6 +209,8 @@ function accumulateUnsetBookmarkIsLoading(
 
 function accumulateState(state: AppState, action: Action): AppState {
   switch (action.type) {
+    case ActionType.UPDATE_UNCOMMITTED_CHANGES:
+      return accumulateRepositoriesUncommittedChanges(state, action);
     case ActionType.SET_BOOKMARK_IS_LOADING:
       return accumulateSetBookmarkIsLoading(state, action);
     case ActionType.UNSET_BOOKMARK_IS_LOADING:

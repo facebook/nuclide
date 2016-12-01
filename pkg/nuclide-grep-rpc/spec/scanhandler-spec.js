@@ -96,9 +96,10 @@ describe('Scan Handler Tests', () => {
       const folder = await generateFixture('grep-rpc', new Map([
         ['foo.js', 'console.log("a wildcard appears!");'],
         ['foo.py', 'console.log("a wildcard appears!");'],
+        ['test/foo.js', 'console.log("a wildcard appears!");'],
       ]));
       const results = await search(
-        folder, /a wildcard appears/i, ['*.js'],
+        folder, /a wildcard appears/i, ['*.js', 'test'],
       ).toArray().toPromise();
       const expected = JSON.parse(
         fs.readFileSync(nuclideUri.join(__dirname, 'fixtures', 'wildcard.json'), 'utf8'),

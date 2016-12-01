@@ -9,76 +9,53 @@
  * the root directory of this source tree.
  */
 
-import type {TaskType, TaskSettings} from './types';
-import type BuckToolbarActions from './BuckToolbarActions';
-import type BuckToolbarStore from './BuckToolbarStore';
+import type {AppState, TaskType, TaskSettings} from './types';
 
-import {CompositeDisposable, Disposable} from 'atom';
 import nullthrows from 'nullthrows';
 import {React} from 'react-for-atom';
 
 import BuckToolbarSettings from './ui/BuckToolbarSettings';
 import BuckToolbarTargetSelector from './ui/BuckToolbarTargetSelector';
 import {Button, ButtonSizes} from '../../nuclide-ui/Button';
-import {Checkbox} from '../../nuclide-ui/Checkbox';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
 import {LoadingSpinner} from '../../nuclide-ui/LoadingSpinner';
 import addTooltip from '../../nuclide-ui/add-tooltip';
 
 type Props = {
   activeTaskType: ?TaskType,
-  store: BuckToolbarStore,
-  actions: BuckToolbarActions,
+  appState: AppState,
+  setBuildTarget(buildTarget: string): void,
+  setSimulator(simulator: string): void,
+  setTaskSettings(taskType: TaskType, settings: TaskSettings): void,
 };
 
 type State = {
   settingsVisible: boolean,
 };
 
-class BuckToolbar extends React.Component {
+export default class BuckToolbar extends React.Component {
   props: Props;
   state: State;
-
-  _disposables: CompositeDisposable;
-  _buckToolbarStore: BuckToolbarStore;
-  _buckToolbarActions: BuckToolbarActions;
-  _fetchDevicesTimeoutId: ?number;
 
   constructor(props: Props) {
     super(props);
     (this: any)._handleSimulatorChange = this._handleSimulatorChange.bind(this);
-    (this: any)._handleReactNativeServerModeChanged =
-      this._handleReactNativeServerModeChanged.bind(this);
-
-    this._buckToolbarActions = this.props.actions;
-    this._buckToolbarStore = this.props.store;
-
-    this._disposables = new CompositeDisposable();
-
-    // Re-render whenever the data in the store changes.
-    this._disposables.add(this._buckToolbarStore.subscribe(() => { this.forceUpdate(); }));
-
     this.state = {settingsVisible: false};
   }
 
-  componentWillMount(): void {
-    // Schedule the update to avoid the Flux "dispatching during a dispatch" error.
-    this._fetchDevicesTimeoutId = setTimeout(
-      () => { this._buckToolbarActions.fetchDevices(); },
-      0,
-    );
-    this._disposables.add(new Disposable(() => { clearTimeout(this._fetchDevicesTimeoutId); }));
-  }
-
-  componentWillUnmount() {
-    this._disposables.dispose();
-  }
-
   render(): React.Element<any> {
-    const buckToolbarStore = this._buckToolbarStore;
-    const isAppleBundle = buckToolbarStore.getRuleType() === 'apple_bundle';
-    const devices = buckToolbarStore.getDevices();
-    const isLoading = buckToolbarStore.isLoadingRule() || (isAppleBundle && devices.length < 1);
+    const {
+      buildRuleType,
+      buildTarget,
+      buckRoot,
+      devices,
+      isLoadingRule,
+      projectRoot,
+      simulator,
+      taskSettings,
+    } = this.props.appState;
+    const isAppleBundle = buildRuleType === 'apple_bundle';
+    const isLoading = isLoadingRule || (isAppleBundle && devices == null);
     let status;
     if (isLoading) {
       status =
@@ -88,11 +65,8 @@ class BuckToolbar extends React.Component {
             size="EXTRA_SMALL"
           />
         </div>;
-    } else if (buckToolbarStore.getBuildTarget() &&
-               buckToolbarStore.getRuleType() == null) {
+    } else if (buildTarget && buildRuleType == null) {
       let title;
-      const buckRoot = buckToolbarStore.getCurrentBuckRoot();
-      const projectRoot = buckToolbarStore.getCurrentProjectRoot();
       if (buckRoot == null) {
         if (projectRoot != null) {
           title = `No Buck project found in the Current Working Root:<br />${projectRoot}`;
@@ -101,7 +75,7 @@ class BuckToolbar extends React.Component {
         }
       } else {
         title =
-          `Rule "${buckToolbarStore.getBuildTarget()}" could not be found in ${buckRoot}.<br />` +
+          `Rule "${buildTarget}" could not be found in ${buckRoot}.<br />` +
           `Check your Current Working Root: ${nullthrows(projectRoot)}`;
       }
 
@@ -120,8 +94,8 @@ class BuckToolbar extends React.Component {
         </div>,
       );
     } else {
-      const deviceId = buckToolbarStore.getSimulator();
-      if (isAppleBundle && !isLoading && deviceId != null && devices.length > 0) {
+      if (isAppleBundle && !isLoading && simulator != null &&
+          devices != null && devices.length > 0) {
         const options = devices.map(device => ({
           label: `${device.name} (${device.os})`,
           value: device.udid,
@@ -131,24 +105,12 @@ class BuckToolbar extends React.Component {
           <Dropdown
             key="simulator-dropdown"
             className="inline-block"
-            value={deviceId}
+            value={simulator}
             options={options}
             onChange={this._handleSimulatorChange}
             size="sm"
             title="Choose a device"
           />,
-        );
-      }
-      if (buckToolbarStore.canBeReactNativeApp()) {
-        widgets.push(
-          <div key="react-native-checkbox" className="inline-block">
-            <Checkbox
-              className="nuclide-buck-react-native-packager-checkbox"
-              checked={buckToolbarStore.isReactNativeServerMode()}
-              onChange={this._handleReactNativeServerModeChanged}
-              label="Start React Native Packager"
-            />
-          </div>,
         );
       }
     }
@@ -157,20 +119,20 @@ class BuckToolbar extends React.Component {
     return (
       <div className="nuclide-buck-toolbar">
         <BuckToolbarTargetSelector
-          store={this.props.store}
-          actions={this.props.actions}
+          appState={this.props.appState}
+          setBuildTarget={this.props.setBuildTarget}
         />
         <Button
           className="nuclide-buck-settings icon icon-gear"
           size={ButtonSizes.SMALL}
-          disabled={activeTaskType == null || this.props.store.getCurrentBuckRoot() == null}
+          disabled={activeTaskType == null || buckRoot == null}
           onClick={() => this._showSettings()}
         />
         {widgets}
         {this.state.settingsVisible && activeTaskType != null ?
           <BuckToolbarSettings
-            currentBuckRoot ={this.props.store.getCurrentBuckRoot()}
-            settings={this.props.store.getTaskSettings()[activeTaskType] || {}}
+            currentBuckRoot={buckRoot}
+            settings={taskSettings[activeTaskType] || {}}
             buildType={activeTaskType}
             onDismiss={() => this._hideSettings()}
             onSave={settings => this._saveSettings(activeTaskType, settings)}
@@ -181,11 +143,7 @@ class BuckToolbar extends React.Component {
   }
 
   _handleSimulatorChange(deviceId: string) {
-    this._buckToolbarActions.updateSimulator(deviceId);
-  }
-
-  _handleReactNativeServerModeChanged(checked: boolean) {
-    this._buckToolbarActions.updateReactNativeServerMode(checked);
+    this.props.setSimulator(deviceId);
   }
 
   _showSettings() {
@@ -197,10 +155,8 @@ class BuckToolbar extends React.Component {
   }
 
   _saveSettings(taskType: TaskType, settings: TaskSettings) {
-    this._buckToolbarActions.updateTaskSettings(taskType, settings);
+    this.props.setTaskSettings(taskType, settings);
     this._hideSettings();
   }
 
 }
-
-module.exports = BuckToolbar;

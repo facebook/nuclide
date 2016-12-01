@@ -10,7 +10,7 @@
  */
 
 import {CompositeDisposable, Range} from 'atom';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import observeLanguageTextEditors from
   '../../commons-atom/observe-language-text-editors';
 
@@ -58,7 +58,7 @@ class ObjectiveCColonIndenter {
 
   _enableInTextEditor(textEditor: TextEditor): void {
     this._insertTextSubscriptionsMap.set(textEditor, textEditor.onDidInsertText(event => {
-      trackOperationTiming(
+      trackTiming(
         'objc:indent-colon',
         () => {
           const {range, text} = event;

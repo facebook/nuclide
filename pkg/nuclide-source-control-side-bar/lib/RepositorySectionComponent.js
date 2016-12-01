@@ -10,13 +10,18 @@
  */
 
 import type {BookmarkInfo} from '../../nuclide-hg-rpc/lib/HgService';
+import type {FileChangeStatusValue} from '../../nuclide-hg-git-bridge/lib/constants';
+import type {NuclideUri} from '../../commons-node/NuclideUri';
 import type {SelectableItem} from './SideBarComponent';
 
 import bookmarkIsEqual from './bookmarkIsEqual';
 import classnames from 'classnames';
 import {HR} from '../../nuclide-ui/HR';
 import invariant from 'assert';
+import {MultiRootChangedFilesView} from '../../nuclide-ui/MultiRootChangedFilesView';
 import {React} from 'react-for-atom';
+import {Section} from '../../nuclide-ui/Section';
+import url from 'url';
 
 type Props = {
   bookmarks: ?Array<BookmarkInfo>,
@@ -35,10 +40,14 @@ type Props = {
     repository: atom$Repository,
     event: SyntheticMouseEvent,
   ) => mixed,
-  onUncommittedChangesClick: (repository: atom$Repository) => mixed,
   repository: ?atom$Repository,
   selectedItem: ?SelectableItem,
   title: string,
+  uncommittedChanges: Map<NuclideUri, Map<NuclideUri, FileChangeStatusValue>>,
+};
+
+type State = {
+  uncommittedChangesExpanded: boolean,
 };
 
 const ACTIVE_BOOKMARK_TITLE = 'Active bookmark';
@@ -46,12 +55,18 @@ const LOADING_BOOKMARK_TITLE = 'Loading...';
 
 export default class RepositorySectionComponent extends React.Component {
   props: Props;
+  state: State;
 
   constructor(props: Props) {
     super(props);
     (this: any)._handleBookmarkContextMenu = this._handleBookmarkContextMenu.bind(this);
     (this: any)._handleRepoGearClick = this._handleRepoGearClick.bind(this);
-    (this: any)._handleUncommittedChangesClick = this._handleUncommittedChangesClick.bind(this);
+    (this: any)._handleUncommittedFilesExpandedChange =
+      this._handleUncommittedFilesExpandedChange.bind(this);
+
+    this.state = {
+      uncommittedChangesExpanded: true,
+    };
   }
 
   _handleBookmarkClick(bookmark: BookmarkInfo) {
@@ -69,9 +84,21 @@ export default class RepositorySectionComponent extends React.Component {
     this.props.onRepoGearClick(this.props.repository, event);
   }
 
-  _handleUncommittedChangesClick() {
-    invariant(this.props.repository != null);
-    this.props.onUncommittedChangesClick(this.props.repository);
+  _onFileChosen(filePath: NuclideUri): void {
+    const diffEntityOptions = {file: filePath};
+    const formattedUrl = url.format({
+      protocol: 'atom',
+      host: 'nuclide',
+      pathname: 'diff-view',
+      slashes: true,
+      query: diffEntityOptions,
+    });
+
+    atom.workspace.open(formattedUrl);
+  }
+
+  _handleUncommittedFilesExpandedChange(isCollapsed: boolean): void {
+    this.setState({uncommittedChangesExpanded: !isCollapsed});
   }
 
   render(): React.Element<any> {
@@ -185,21 +212,30 @@ export default class RepositorySectionComponent extends React.Component {
           </ul>
         );
 
-        const uncommittedChangesClassName = classnames(
-          'list-item nuclide-source-control-side-bar--list-item',
-          {
-            selected: selectedItem != null && selectedItem.type === 'uncommitted',
-          },
-        );
-        uncommittedChangesSection = (
-          <li
-            className={uncommittedChangesClassName}
-            onClick={this._handleUncommittedChangesClick}>
-            <span>
-              Uncommitted Changes
-            </span>
-          </li>
-        );
+        const uncommittedChanges = this.props.uncommittedChanges.get(repository.getPath());
+        if (repository != null && uncommittedChanges != null && uncommittedChanges.size > 0) {
+          uncommittedChangesSection = (
+            <Section
+              className="nuclide-file-tree-section-caption"
+              collapsable={true}
+              collapsed={!this.state.uncommittedChangesExpanded}
+              headline="UNCOMMITTED CHANGES"
+              onChange={this._handleUncommittedFilesExpandedChange}
+              size="small">
+              <div className="nuclide-source-control-side-bar-uncommitted-changes">
+                <MultiRootChangedFilesView
+                  fileChanges={this.props.uncommittedChanges}
+                  rootPath={repository.getPath()}
+                  commandPrefix="sc-sidebar"
+                  selectedFile={null}
+                  hideEmptyFolders={true}
+                  shouldShowFolderName={false}
+                  onFileChosen={this._onFileChosen}
+                />
+              </div>
+            </Section>
+          );
+        }
       } else {
         bookmarksBranchesList = (
           <div className="nuclide-source-control-side-bar--header text-info">
@@ -220,9 +256,9 @@ export default class RepositorySectionComponent extends React.Component {
         <h6 className="text-highlight nuclide-source-control-side-bar--repo-header">
           {this.props.title}
         </h6>
-        <ul className="list-group">
+        <div className="nuclide-source-control-side-bar--header">
           {uncommittedChangesSection}
-        </ul>
+        </div>
         {createButton}
         <h6 className="nuclide-source-control-side-bar--header">
           {bookmarksBranchesHeader}

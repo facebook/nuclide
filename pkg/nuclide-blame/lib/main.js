@@ -141,20 +141,22 @@ class Activation {
    * Section: Managing Context Menus
    */
 
-   @trackTiming('blame.showBlame')
   _showBlame(event): void {
-    const editor = atom.workspace.getActiveTextEditor();
-    if (editor != null) {
-      this._showBlameGutterForEditor(editor);
-    }
+    return trackTiming('blame.showBlame', () => {
+      const editor = atom.workspace.getActiveTextEditor();
+      if (editor != null) {
+        this._showBlameGutterForEditor(editor);
+      }
+    });
   }
 
-  @trackTiming('blame.hideBlame')
   _hideBlame(event): void {
-    const editor = atom.workspace.getActiveTextEditor();
-    if (editor != null) {
-      this._removeBlameGutterForEditor(editor);
-    }
+    return trackTiming('blame.hideBlame', () => {
+      const editor = atom.workspace.getActiveTextEditor();
+      if (editor != null) {
+        this._removeBlameGutterForEditor(editor);
+      }
+    });
   }
 
   _canShowBlame(): boolean {

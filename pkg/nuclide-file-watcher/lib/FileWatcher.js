@@ -42,8 +42,14 @@ class FileWatcher {
     return this._editor.getBuffer().isInConflict();
   }
 
-  @trackTiming('file-watcher:promptReload')
-  async _promptReload(): Promise<any> {
+  _promptReload(): Promise<any> {
+    return trackTiming(
+      'file-watcher:promptReload',
+      () => this.__promptReload(),
+    );
+  }
+
+  async __promptReload(): Promise<any> {
     const filePath = this._editor.getPath();
     if (filePath == null) {
       return;

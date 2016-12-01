@@ -13,42 +13,69 @@ import type {Store, TaskRunner} from '../types';
 
 import {bindObservableAsProps} from '../../../nuclide-ui/bindObservableAsProps';
 import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactElement';
+import {throttle} from '../../../commons-node/observable';
 import * as Actions from '../redux/Actions';
 import {getActiveTaskId, getActiveTaskRunner} from '../redux/Selectors';
 import {Toolbar} from './Toolbar';
 import memoize from 'lodash.memoize';
 import {React} from 'react-for-atom';
 import {Observable} from 'rxjs';
+import shallowEqual from 'shallowequal';
 
 export function createPanelItem(store: Store): Object {
   const staticProps = {
     runTask: taskId => { store.dispatch(Actions.runTask(taskId)); },
     selectTask: taskId => { store.dispatch(Actions.selectTask(taskId)); },
     stopTask: () => { store.dispatch(Actions.stopTask()); },
-    getActiveTaskRunnerIcon: () => {
-      const activeTaskRunner = getActiveTaskRunner(store.getState());
-      return activeTaskRunner && activeTaskRunner.getIcon();
-    },
   };
 
-  // Delay the inital render. This way we (probably) won't wind up rendering the wrong task
-  // runner before the correct one is registered.
-  const props = Observable.interval(300).first()
-    // $FlowFixMe: We need to teach Flow about Symbol.observable
-    .switchMap(() => Observable.from(store))
-    .distinctUntilChanged()
-    .map(state => {
-      const activeTaskRunner = getActiveTaskRunner(state);
+  const raf = Observable.create(observer => {
+    window.requestAnimationFrame(() => { observer.complete(); });
+  });
+
+  // $FlowFixMe: We need to teach Flow about Symbol.observable
+  const states = Observable.from(store).distinctUntilChanged();
+
+  // We don't want to refresh the UI with a "pending" state while we wait for the initial tasks to
+  // become ready; that would cause too many updates in quick succession. So we make the parts of
+  // the state related to the selected task "sticky." Other parts of the state, however, we always
+  // need to update immediately (e.g. progress).
+  const stickyProps = states
+    .filter(state => state.tasksAreReady)
+    // Map to a subset of state so we can ignore changes of the other parts.
+    .map(state => ({
+      taskRunners: state.taskRunners,
+      activeTaskRunner: getActiveTaskRunner(state),
+      activeTaskId: getActiveTaskId(state),
+      taskLists: state.taskLists,
+    }))
+    .distinctUntilChanged(shallowEqual)
+    .map(({taskRunners, activeTaskRunner, activeTaskId, taskLists}) => {
       return {
-        ...staticProps,
-        taskRunnerInfo: Array.from(state.taskRunners.values()),
+        taskRunnerInfo: Array.from(taskRunners.values()),
         getExtraUi: getExtraUiFactory(activeTaskRunner),
-        progress: state.runningTaskInfo && state.runningTaskInfo.progress,
-        activeTaskId: getActiveTaskId(state),
-        taskIsRunning: state.runningTaskInfo != null,
-        taskLists: state.taskLists,
+        activeTaskId,
+        taskLists,
+        getActiveTaskRunnerIcon: () => activeTaskRunner && activeTaskRunner.getIcon(),
       };
     });
+  const otherProps = states
+    .map(state => {
+      return {
+        ...staticProps,
+        // Don't let people click on things if we're using "stale" sticky props.
+        disabled: !state.tasksAreReady,
+        progress: state.runningTaskInfo && state.runningTaskInfo.progress,
+        taskIsRunning: state.runningTaskInfo != null,
+        showPlaceholder: !state.viewIsInitialized && state.showPlaceholderInitially,
+      };
+    })
+    .distinctUntilChanged(shallowEqual);
+  // Throttle to animation frames.
+  const props = throttle(
+    Observable.combineLatest(stickyProps, otherProps, (a, b) => ({...a, ...b})),
+    () => raf,
+  );
   const StatefulToolbar = bindObservableAsProps(props, Toolbar);
   return viewableFromReactElement(<StatefulToolbar />);
 }

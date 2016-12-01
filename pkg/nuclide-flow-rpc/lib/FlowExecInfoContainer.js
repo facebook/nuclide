@@ -78,7 +78,7 @@ export class FlowExecInfoContainer {
     if (flowPath == null) {
       return null;
     }
-    const versionInfo = await getFlowVersionInformation(flowPath);
+    const versionInfo = await getFlowVersionInformation(flowPath, root);
     if (versionInfo == null) {
       return null;
     }
@@ -144,9 +144,14 @@ export class FlowExecInfoContainer {
 
 async function getFlowVersionInformation(
   flowPath: string,
+  root: string | null,
 ): Promise<?{flowVersion: string, pathToFlow: string}> {
   try {
-    const result = await checkOutput(flowPath, ['version', '--json']);
+    const result = await checkOutput(
+      flowPath,
+      ['version', '--json'],
+      root != null ? {cwd: root} : undefined,
+    );
     const json = JSON.parse(result.stdout);
     return {
       flowVersion: json.semver,

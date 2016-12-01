@@ -27,35 +27,30 @@ import {getLogger} from '../../nuclide-logging';
 
 const logger = getLogger();
 
-export type TestRunnerControllerState = {
-  panelVisible?: boolean,
+export const WORKSPACE_VIEW_URI = 'atom://nuclide/test-runner';
+
+type SerializedTestRunnerPanelState = {
+  deserializer: 'nuclide.TestRunnerPanelState',
 };
 
-export default class TestRunnerController {
-
+export class TestRunnerController {
   _activeTestRunner: ?Object;
   _attachDebuggerBeforeRunning: boolean;
   _buffer: TextBuffer;
   _executionState: number;
-  _panel: ?atom$Panel;
   _path: ?string;
-  _root: ?Element;
+  _root: HTMLElement;
   _run: ?TestRunModel;
   _runningTest: boolean;
-  _state: Object;
+  _panelVisible: boolean;
   _testRunners: Set<TestRunner>;
   _testRunnerPanel: ?TestRunnerPanel;
   _testSuiteModel: ?TestSuiteModel;
 
-  constructor(state_: ?TestRunnerControllerState, testRunners: Set<TestRunner>) {
-    let state = state_;
-    if (state == null) {
-      state = {};
-    }
+  constructor(testRunners: Set<TestRunner>) {
+    this._root = document.createElement('div');
 
-    this._state = {
-      panelVisible: state.panelVisible,
-    };
+    this._panelVisible = false;
 
     // Bind Functions for use as callbacks;
     // TODO: Replace with property initializers when supported by Flow;
@@ -88,14 +83,7 @@ export default class TestRunnerController {
 
   destroy() {
     this._stopListening();
-    if (this._root) {
-      ReactDOM.unmountComponentAtNode(this._root);
-      this._root = null;
-    }
-    if (this._panel) {
-      this._panel.destroy();
-      this._panel = null;
-    }
+    ReactDOM.unmountComponentAtNode(this._root);
   }
 
   didUpdateTestRunners() {
@@ -103,11 +91,9 @@ export default class TestRunnerController {
   }
 
   hidePanel() {
+    track('testrunner-hide-panel');
     this.stopTests();
-    this._state.panelVisible = false;
-    if (this._panel) {
-      this._panel.hide();
-    }
+    this._panelVisible = false;
   }
 
   /**
@@ -117,7 +103,7 @@ export default class TestRunnerController {
     this._runningTest = true;
 
     // If the test runner panel is not rendered yet, ensure it is rendered before continuing.
-    if (this._testRunnerPanel == null || !this._state.panelVisible) {
+    if (this._testRunnerPanel == null || !this._panelVisible) {
       await new Promise((resolve, reject) => {
         this.showPanel(resolve);
       });
@@ -211,22 +197,14 @@ export default class TestRunnerController {
     this._setExecutionState(TestRunnerPanel.ExecutionState.STOPPED);
   }
 
-  serialize(): TestRunnerControllerState {
-    return this._state;
-  }
-
   showPanel(didRender?: () => mixed): void {
     track('testrunner-show-panel');
-    this._state.panelVisible = true;
+    this._panelVisible = true;
     this._renderPanel(didRender);
-    if (this._panel) {
-      this._panel.show();
-    }
   }
 
   togglePanel(): void {
-    track('testrunner-hide-panel');
-    if (this._state.panelVisible) {
+    if (this._panelVisible) {
       this.hidePanel();
     } else {
       this.showPanel();
@@ -234,7 +212,7 @@ export default class TestRunnerController {
   }
 
   isVisible(): boolean {
-    return this._state.panelVisible;
+    return this._panelVisible;
   }
 
   /**
@@ -336,15 +314,8 @@ export default class TestRunnerController {
   _renderPanel(didRender?: () => mixed) {
     // Initialize and render the contents of the panel only if the hosting container is visible by
     // the user's choice.
-    if (!this._state.panelVisible) {
+    if (!this._panelVisible) {
       return;
-    }
-
-    let root = this._root;
-
-    if (!root) {
-      root = document.createElement('div');
-      this._root = root;
     }
 
     let progressValue;
@@ -375,15 +346,11 @@ export default class TestRunnerController {
         testRunners={Array.from(this._testRunners)}
         testSuiteModel={this._testSuiteModel}
       />,
-      root,
+      this._root,
       didRender,
     );
     invariant(component instanceof TestRunnerPanel);
     this._testRunnerPanel = component;
-
-    if (!this._panel) {
-      this._panel = atom.workspace.addBottomPanel({item: root, visible: this._state.panelVisible});
-    }
   }
 
   _stopListening(): void {
@@ -407,4 +374,37 @@ export default class TestRunnerController {
     }
   }
 
+  getTitle() {
+    return 'Test Runner';
+  }
+
+  getIconName() {
+    return 'checklist';
+  }
+
+  getURI(): string {
+    return WORKSPACE_VIEW_URI;
+  }
+
+  getDefaultLocation(): string {
+    return 'bottom-panel';
+  }
+
+  didChangeVisibility(visible: boolean): void {
+    if (visible) {
+      this.showPanel();
+    } else {
+      this.hidePanel();
+    }
+  }
+
+  getElement(): HTMLElement {
+    return this._root;
+  }
+
+  serialize(): SerializedTestRunnerPanelState {
+    return {
+      deserializer: 'nuclide.TestRunnerPanelState',
+    };
+  }
 }

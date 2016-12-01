@@ -79,6 +79,11 @@ class FileTreeController {
         // Pass undefined so the default parameter gets used.
         'nuclide-file-tree:reveal-active-file': this.revealActiveFile.bind(this, undefined),
         'nuclide-file-tree:recursive-collapse-all': this._collapseAll.bind(this),
+        'nuclide-file-tree:add-file-relative': () => {
+          FileSystemActions.openAddFileDialogRelative(
+            this._openAndRevealFilePath.bind(this),
+          );
+        },
       }),
     );
     const letterKeyBindings = {

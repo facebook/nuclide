@@ -16,10 +16,12 @@ import type {TaskMetadata} from '../../nuclide-task-runner/lib/types';
 import type {Level, Message} from '../../nuclide-console/lib/types';
 import typeof * as BuckService from '../../nuclide-buck-rpc';
 import type {
+  AppState,
   BuckBuilderBuildOptions,
   BuckSubcommand,
   BuildArtifactTask,
   SerializedState,
+  Store,
   TaskSettings,
   TaskType,
 } from './types';
@@ -33,23 +35,24 @@ import type {
 } from '../../nuclide-diagnostics-common/lib/rpc-types';
 
 import invariant from 'assert';
+import {applyMiddleware, createStore} from 'redux';
 import {Observable, Subject} from 'rxjs';
 import {quote} from 'shell-quote';
 
 import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {observableFromSubscribeFunction} from '../../commons-node/event';
 import nuclideUri from '../../commons-node/nuclideUri';
+import {combineEpics, createEpicMiddleware} from '../../commons-node/redux-observable';
 import {compact} from '../../commons-node/observable';
 import {taskFromObservable} from '../../commons-node/tasks';
 import {getBuckService} from '../../nuclide-buck-base';
 import featureConfig from '../../commons-atom/featureConfig';
 import {getLogger} from '../../nuclide-logging';
-import {startPackager} from '../../nuclide-react-native-base';
+import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
 import {BuckIcon} from './ui/BuckIcon';
-import BuckToolbarStore from './BuckToolbarStore';
-import BuckToolbarActions from './BuckToolbarActions';
-import BuckToolbarDispatcher from './BuckToolbarDispatcher';
-import {createExtraUiComponent} from './ui/createExtraUiComponent';
+import * as Actions from './redux/Actions';
+import * as Epics from './redux/Epics';
+import Reducers from './redux/Reducers';
+import BuckToolbar from './BuckToolbar';
 import {
   combineEventStreams,
   getDiagnosticEvents,
@@ -61,44 +64,59 @@ import {
   getLLDBInstallEvents,
 } from './LLDBEventStream';
 
-type Flux = {
-  actions: BuckToolbarActions,
-  store: BuckToolbarStore,
-};
-
 const SOCKET_TIMEOUT = 30000;
 
-function shouldEnableTask(taskType: TaskType, store: BuckToolbarStore): boolean {
+const INSTALLABLE_RULES = new Set([
+  'apple_bundle',
+  'apk_genrule',
+]);
+
+const DEBUGGABLE_RULES = new Set([
+  // $FlowFixMe: spreadable sets
+  ...INSTALLABLE_RULES,
+  'cxx_binary',
+  'cxx_test',
+]);
+
+function isInstallableRule(ruleType: string) {
+  return INSTALLABLE_RULES.has(ruleType);
+}
+
+function isDebuggableRule(ruleType: string) {
+  return DEBUGGABLE_RULES.has(ruleType);
+}
+
+function shouldEnableTask(taskType: TaskType, ruleType: ?string): boolean {
   switch (taskType) {
     case 'run':
-      return store.isInstallableRule();
+      return ruleType != null && isInstallableRule(ruleType);
     case 'debug':
-      return store.isDebuggableRule();
+      return ruleType != null && isDebuggableRule(ruleType);
     default:
       return true;
   }
 }
 
-function getSubcommand(taskType: TaskType, isInstallableRule: boolean): BuckSubcommand {
+function getSubcommand(taskType: TaskType, isInstallable: boolean): BuckSubcommand {
   switch (taskType) {
     case 'run':
       return 'install';
     case 'debug':
       // For mobile builds, install the build on the device.
       // Otherwise, run a regular build and invoke the debugger on the output.
-      return isInstallableRule ? 'install' : 'build';
+      return isInstallable ? 'install' : 'build';
     default:
       return taskType;
   }
 }
 
 export class BuckBuildSystem {
-  _flux: ?Flux;
+  _store: Store;
   _disposables: UniversalDisposable;
   _extraUi: ?ReactClass<any>;
   id: string;
   name: string;
-  _initialState: ?SerializedState;
+  _serializedState: ?SerializedState;
   _tasks: Observable<Array<TaskMetadata>>;
   _outputMessages: Subject<Message>;
   _diagnosticUpdates: Subject<DiagnosticProviderUpdate>;
@@ -107,7 +125,7 @@ export class BuckBuildSystem {
   constructor(initialState: ?SerializedState) {
     this.id = 'buck';
     this.name = 'Buck';
-    this._initialState = initialState;
+    this._serializedState = initialState;
     this._disposables = new UniversalDisposable();
     this._outputMessages = new Subject();
     this._diagnosticUpdates = new Subject();
@@ -116,24 +134,22 @@ export class BuckBuildSystem {
   }
 
   getTaskList() {
-    const {store} = this._getFlux();
-    const buckRoot = store.getCurrentBuckRoot();
-    const hasBuildTarget = buckRoot != null && Boolean(store.getBuildTarget());
+    const {buckRoot, buildTarget, buildRuleType} = this._getStore().getState();
     return TASKS
       .map(task => ({
         ...task,
         disabled: buckRoot == null,
-        runnable: hasBuildTarget && shouldEnableTask(task.type, store),
+        runnable: buckRoot != null && Boolean(buildTarget) &&
+          shouldEnableTask(task.type, buildRuleType),
       }));
   }
 
   observeTaskList(cb: (taskList: Array<TaskMetadata>) => mixed): IDisposable {
     if (this._tasks == null) {
-      const {store} = this._getFlux();
-      this._tasks = observableFromSubscribeFunction(store.subscribe.bind(store))
-        .startWith(null)
+      // $FlowFixMe: type symbol-observable
+      this._tasks = Observable.from(this._getStore())
         // Wait until we're done loading the buck project.
-        .filter(() => !store.isLoadingBuckProject())
+        .filter((state: AppState) => !state.isLoadingBuckProject)
         .map(() => this.getTaskList());
     }
     return new UniversalDisposable(
@@ -143,8 +159,21 @@ export class BuckBuildSystem {
 
   getExtraUi(): ReactClass<any> {
     if (this._extraUi == null) {
-      const {store, actions} = this._getFlux();
-      this._extraUi = createExtraUiComponent(store, actions);
+      const store = this._getStore();
+      const boundActions = {
+        setBuildTarget: buildTarget =>
+          store.dispatch(Actions.setBuildTarget(buildTarget)),
+        setSimulator: simulator =>
+          store.dispatch(Actions.setSimulator(simulator)),
+        setTaskSettings: (taskType, settings) =>
+          store.dispatch(Actions.setTaskSettings(taskType, settings)),
+      };
+      this._extraUi = bindObservableAsProps(
+        // $FlowFixMe: type symbol-observable
+        Observable.from(store)
+          .map(appState => ({appState, ...boundActions})),
+        BuckToolbar,
+      );
     }
     return this._extraUi;
   }
@@ -166,26 +195,45 @@ export class BuckBuildSystem {
 
   setProjectRoot(projectRoot: ?Directory): void {
     const path = projectRoot == null ? null : projectRoot.getPath();
-    this._getFlux().actions.updateProjectRoot(path);
+    this._getStore().dispatch(Actions.setProjectRoot(path));
   }
 
   _logOutput(text: string, level: Level) {
     this._outputMessages.next({text, level});
   }
 
-  /**
-   * Lazily create the flux stuff.
-   */
-  _getFlux(): Flux {
-    if (this._flux == null) {
-      // Set up flux stuff.
-      const dispatcher = new BuckToolbarDispatcher();
-      const store = new BuckToolbarStore(dispatcher, this._initialState);
-      const actions = new BuckToolbarActions(dispatcher, store);
-      this._disposables.add(store);
-      this._flux = {store, actions};
+  _getStore(): Store {
+    if (this._store == null) {
+      invariant(this._serializedState != null);
+      const initialState: AppState = {
+        devices: null,
+        projectRoot: null,
+        buckRoot: null,
+        isLoadingBuckProject: false,
+        isLoadingRule: false,
+        buildTarget: this._serializedState.buildTarget || '',
+        buildRuleType: null,
+        simulator: this._serializedState.simulator,
+        taskSettings: this._serializedState.taskSettings || {},
+      };
+      const epics = Object.keys(Epics)
+        .map(k => Epics[k])
+        .filter(epic => typeof epic === 'function');
+      const rootEpic = (actions, store) => (
+        combineEpics(...epics)(actions, store)
+          // Log errors and continue.
+          .catch((err, stream) => {
+            getLogger().error(err);
+            return stream;
+          })
+      );
+      this._store = createStore(
+        Reducers,
+        initialState,
+        applyMiddleware(createEpicMiddleware(rootEpic)),
+      );
     }
-    return this._flux;
+    return this._store;
   }
 
   runTask(taskType: string): Task {
@@ -195,15 +243,14 @@ export class BuckBuildSystem {
       'Invalid task type',
     );
 
-    const {store} = this._getFlux();
+    const state = this._getStore().getState();
     const resultStream = this._runTaskType(
       taskType,
-      store.getCurrentBuckRoot(),
-      store.getBuildTarget(),
-      store.getTaskSettings()[taskType] || {},
-      store.isInstallableRule(),
-      store.isReactNativeServerMode(),
-      store.getSimulator(),
+      state.buckRoot,
+      state.buildTarget,
+      state.taskSettings[taskType] || {},
+      isInstallableRule(taskType, state.buildRuleType),
+      state.simulator,
     );
     const task = taskFromObservable(resultStream);
     return {
@@ -213,11 +260,8 @@ export class BuckBuildSystem {
         task.cancel();
       },
       getTrackingData: () => {
-        return {
-          buckRoot: store.getCurrentBuckRoot(),
-          buildTarget: store.getBuildTarget(),
-          taskSettings: store.getTaskSettings(),
-        };
+        const {buckRoot, buildTarget, taskSettings} = this._getStore().getState();
+        return {buckRoot, buildTarget, taskSettings};
       },
     };
   }
@@ -239,7 +283,6 @@ export class BuckBuildSystem {
           root,
           target,
           {},
-          false,
           false,
           null,
         ),
@@ -285,16 +328,11 @@ export class BuckBuildSystem {
 
   serialize(): ?SerializedState {
     // If we haven't had to load and create the Flux stuff yet, don't do it now.
-    if (this._flux == null) {
+    if (this._store == null) {
       return;
     }
-    const {store} = this._flux;
-    return {
-      buildTarget: store.getBuildTarget(),
-      isReactNativeServerMode: store.isReactNativeServerMode(),
-      taskSettings: store.getTaskSettings(),
-      simulator: store.getSimulator(),
-    };
+    const {buildTarget, taskSettings, simulator} = this._store.getState();
+    return {buildTarget, taskSettings, simulator};
   }
 
   _runTaskType(
@@ -302,8 +340,7 @@ export class BuckBuildSystem {
     buckRoot: ?string,
     buildTarget: string,
     settings: TaskSettings,
-    isInstallableRule: boolean,
-    isReactNativeServerMode: boolean,
+    isInstallable: boolean,
     simulator: ?string,
   ): Observable<TaskEvent> {
     // Clear Buck diagnostics every time we run build.
@@ -320,7 +357,7 @@ export class BuckBuildSystem {
       {visible: true},
     );
 
-    const subcommand = getSubcommand(taskType, isInstallableRule);
+    const subcommand = getSubcommand(taskType, isInstallable);
     let argString = '';
     if (settings.arguments != null && settings.arguments.length > 0) {
       argString = ' ' + quote(settings.arguments);
@@ -353,7 +390,6 @@ export class BuckBuildSystem {
           subcommand,
           settings.arguments || [],
           isDebug,
-          isReactNativeServerMode,
           simulator,
         ).share();
         const processEvents = getEventsFromProcess(processMessages).share();
@@ -486,7 +522,8 @@ const TASKS = [
     label: 'Debug',
     description: 'Debug the specfied Buck target',
     runnable: true,
-    icon: 'plug',
+    icon: 'debugger',
+    iconset: 'nuclicon',
   },
 ];
 
@@ -497,7 +534,6 @@ function runBuckCommand(
   subcommand: BuckSubcommand,
   args: Array<string>,
   debug: boolean,
-  isReactNativeServerMode: boolean,
   simulator: ?string,
 ): Observable<ProcessMessage> {
 
@@ -510,34 +546,10 @@ function runBuckCommand(
   }
 
   if (subcommand === 'install') {
-    let rnObservable = Observable.empty();
-    if (isReactNativeServerMode) {
-      rnObservable = Observable.concat(
-        Observable.fromPromise(startPackager()),
-        Observable.defer(() => {
-          atom.commands.dispatch(
-            atom.views.getView(atom.workspace),
-            'nuclide-react-native:start-debugging',
-          );
-          return Observable.empty();
-        }),
-      )
-        .ignoreElements();
-    }
-    return rnObservable.concat(
-      buckService.installWithOutput(
-        buckRoot,
-        [buildTarget],
-        args.concat(
-          isReactNativeServerMode ? ['--', '-executor-override', 'RCTWebSocketExecutor'] : [],
-        ),
-        simulator,
-        {
-          run: true,
-          debug,
-        },
-      ).refCount(),
-    );
+    return buckService.installWithOutput(buckRoot, [buildTarget], args, simulator, {
+      run: true,
+      debug,
+    }).refCount();
   } else if (subcommand === 'build') {
     return buckService.buildWithOutput(buckRoot, [buildTarget], args).refCount();
   } else if (subcommand === 'test') {

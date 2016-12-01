@@ -83,8 +83,14 @@ export class ArcanistDiagnosticsProvider {
   }
 
   /** Do not call this directly -- call _runLintWithBusyMessage */
-  @trackTiming('nuclide-arcanist:lint')
-  async _runLint(textEditor: TextEditor): Promise<void> {
+  _runLint(textEditor: TextEditor): Promise<void> {
+    return trackTiming(
+      'nuclide-arcanist:lint',
+      () => this.__runLint(textEditor),
+    );
+  }
+
+  async __runLint(textEditor: TextEditor): Promise<void> {
     const filePath = textEditor.getPath();
     invariant(filePath);
     try {

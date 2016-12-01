@@ -241,3 +241,45 @@ export function concatLatest<T>(
     )
     .map(accumulator => [].concat(...accumulator));
 }
+
+type ThrottleOptions = {
+  // Should the first element be emitted immeditately? Defaults to true.
+  leading?: boolean,
+};
+
+/**
+ * A more sensible alternative to RxJS's throttle/audit/sample operators.
+ */
+export function throttle<T>(
+  source: Observable<T>,
+  duration: number | Observable<any> | (value: T) => Observable<any> | Promise<any>,
+  options_: ?ThrottleOptions,
+): Observable<T> {
+  const options = options_ || {};
+  const leading = options.leading !== false;
+  let audit;
+  switch (typeof duration) {
+    case 'number':
+      // $FlowFixMe: Add `auditTime()` to Flow defs
+      audit = obs => obs.auditTime(duration);
+      break;
+    case 'function':
+      audit = obs => obs.audit(duration);
+      break;
+    default:
+      audit = obs => obs.audit(() => duration);
+  }
+
+  if (!leading) {
+    return audit(source);
+  }
+
+  return Observable.create(observer => {
+    const connectableSource = source.publish();
+    const throttled = Observable.merge(connectableSource.take(1), audit(connectableSource.skip(1)));
+    return new UniversalDisposable(
+      throttled.subscribe(observer),
+      connectableSource.connect(),
+    );
+  });
+}

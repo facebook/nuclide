@@ -12,7 +12,7 @@
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type AutocompleteConfig = {
@@ -73,7 +73,7 @@ export class AutocompleteProvider<T: LanguageService> {
   getSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<?Array<atom$AutocompleteSuggestion>> {
-    return trackOperationTiming(
+    return trackTiming(
       this._analyticsEventName,
       async () => {
         const {editor, activatedManually} = request;

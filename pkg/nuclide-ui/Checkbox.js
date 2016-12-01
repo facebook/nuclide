@@ -83,6 +83,9 @@ export class Checkbox extends React.PureComponent {
       label,
       onClick,
     } = this.props;
+    const text = label === ''
+      ? null
+      : <span className="nuclide-ui-checkbox-label-text">{' '}{label}</span>;
     return (
       <label
         className={classnames(className, 'nuclide-ui-checkbox-label', {
@@ -97,9 +100,7 @@ export class Checkbox extends React.PureComponent {
           ref="input"
           type="checkbox"
         />
-        <span className="nuclide-ui-checkbox-label-text">
-          {' '}{label}
-        </span>
+        {text}
       </label>
     );
   }

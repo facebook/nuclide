@@ -21,7 +21,7 @@ import {
   getWordTextAndRange,
 } from './hyperclick-utils';
 
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 
 /**
  * Calls the given functions and returns the first non-null return value.
@@ -126,7 +126,7 @@ export default class Hyperclick {
     return findTruthyReturnValue(this._consumedProviders.map((provider: HyperclickProvider) => {
       if (provider.getSuggestion) {
         const getSuggestion = provider.getSuggestion.bind(provider);
-        return () => trackOperationTiming(
+        return () => trackTiming(
             getProviderName(provider) + '.getSuggestion',
             () => getSuggestion(textEditor, position));
       } else if (provider.getSuggestionForWord) {
@@ -134,7 +134,7 @@ export default class Hyperclick {
         return () => {
           const wordRegExp = provider.wordRegExp || defaultWordRegExp;
           const {text, range} = getWordTextAndRange(textEditor, position, wordRegExp);
-          return trackOperationTiming(
+          return trackTiming(
             getProviderName(provider) + '.getSuggestionForWord',
             () => getSuggestionForWord(textEditor, text, range));
         };

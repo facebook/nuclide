@@ -24,8 +24,17 @@ import {GRAMMAR_SET, IDENTIFIER_REGEXP} from './constants';
 
 export default class DefinitionHelpers {
 
-  @trackTiming('clang.get-definition')
-  static async getDefinition(
+  static getDefinition(
+    editor: TextEditor,
+    position: atom$Point,
+  ): Promise<?DefinitionQueryResult> {
+    return trackTiming(
+      'clang.get-definition',
+      () => DefinitionHelpers._getDefinition(editor, position),
+    );
+  }
+
+  static async _getDefinition(
     editor: TextEditor,
     position: atom$Point,
   ): Promise<?DefinitionQueryResult> {
@@ -71,12 +80,13 @@ export default class DefinitionHelpers {
     };
   }
 
-  @trackTiming('clang.get-definition-by-id')
-  static async getDefinitionById(
+  static getDefinitionById(
     filePath: NuclideUri,
     id: string,
   ): Promise<?Definition> {
-    // TODO:
-    return null;
+    return trackTiming('clang.get-definition-by-id', async () => {
+      // TODO:
+      return null;
+    });
   }
 }

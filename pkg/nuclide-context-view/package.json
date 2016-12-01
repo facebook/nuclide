@@ -9,10 +9,18 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
+  "deserializers": {
+    "nuclide.ContextViewPanelState": "deserializeContextViewPanelState"
+  },
   "consumedServices": {
     "nuclide-definition-service": {
       "versions": {
         "0.0.0": "consumeDefinitionService"
+      }
+    },
+    "nuclide.workspace-views": {
+      "versions": {
+        "0.0.0": "consumeWorkspaceViewsService"
       }
     },
     "tool-bar": {
@@ -30,11 +38,6 @@
     "nuclide-context-view": {
       "versions": {
         "0.0.0": "provideNuclideContextView"
-      }
-    },
-    "nuclide-distraction-free-mode": {
-      "versions": {
-        "0.0.0": "getDistractionFreeModeProvider"
       }
     }
   }

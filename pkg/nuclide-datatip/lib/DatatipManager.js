@@ -21,7 +21,7 @@ import {
 
 import debounce from '../../commons-node/debounce';
 import {arrayCompact, arrayRemove} from '../../commons-node/collection';
-import {track, trackOperationTiming} from '../../nuclide-analytics';
+import {track, trackTiming} from '../../nuclide-analytics';
 import {getLogger} from '../../nuclide-logging';
 import UniversalDisposable from '../../commons-node/UniversalDisposable';
 import {Observable} from 'rxjs';
@@ -30,8 +30,13 @@ import {DatatipComponent, DATATIP_ACTIONS} from './DatatipComponent';
 import {PinnedDatatip} from './PinnedDatatip';
 
 import featureConfig from '../../commons-atom/featureConfig';
+import performanceNow from '../../commons-node/performanceNow';
 
 const logger = getLogger();
+
+const CUMULATIVE_WHEELX_THRESHOLD = 20;
+const DEFAULT_DATATIP_DEBOUNCE_DELAY = 1000;
+const DEFAULT_DATATIP_INTERACTED_DEBOUNCE_DELAY = 1000;
 
 function getProviderName(provider: DatatipProvider): string {
   if (provider.providerName == null) {
@@ -100,7 +105,7 @@ async function fetchDatatip(editor, position, allProviders, onPinClick) {
   const renderedProviders = arrayCompact(await Promise.all(
     providers.map(async (provider: DatatipProvider): Promise<?Object> => {
       const name = getProviderName(provider);
-      const datatip = await trackOperationTiming(
+      const datatip = await trackTiming(
         name + '.datatip',
         () => provider.datatip(editor, position),
       );
@@ -195,6 +200,13 @@ const DatatipState = Object.freeze({
 });
 type State = $Keys<typeof DatatipState>;
 
+function ensurePositiveNumber(value: any, defaultValue: number): number {
+  if (typeof value !== 'number' || value < 0) {
+    return defaultValue;
+  }
+  return value;
+}
+
 class DatatipManagerForEditor {
   _blacklistedPosition: ?atom$Point;
   _datatipElement: HTMLElement;
@@ -208,8 +220,12 @@ class DatatipManagerForEditor {
   _marker: ?atom$Marker;
   _pinnedDatatips: Set<PinnedDatatip>;
   _range: ?atom$Range;
+  _shouldDropNextMouseMoveAfterFocus: boolean;
   _startFetchingDebounce: () => void;
+  _hideIfOutsideDebounce: () => void;
   _subscriptions: UniversalDisposable;
+  _interactedWith: boolean;
+  _cumulativeWheelX: number;
 
   constructor(
     editor: atom$TextEditor,
@@ -223,15 +239,27 @@ class DatatipManagerForEditor {
     this._datatipElement = document.createElement('div');
     this._datatipElement.className = 'nuclide-datatip-overlay';
     this._datatipState = DatatipState.HIDDEN;
+    this._interactedWith = false;
+    this._cumulativeWheelX = 0;
     this._lastHiddenTime = 0;
+    this._shouldDropNextMouseMoveAfterFocus = false;
 
     this._subscriptions.add(
       featureConfig.observe(
         'nuclide-datatip.datatipDebounceDelay',
         () => this._setStartFetchingDebounce(),
       ),
+      featureConfig.observe(
+        'nuclide-datatip.datatipInteractedWithDebounceDelay',
+        () => this._setHideIfOutsideDebounce(),
+      ),
 
       Observable.fromEvent(this._editorView, 'mousemove').subscribe(e => {
+        if (this._shouldDropNextMouseMoveAfterFocus) {
+          this._shouldDropNextMouseMoveAfterFocus = false;
+          return;
+        }
+
         this._lastMoveEvent = e;
         if (this._datatipState === DatatipState.HIDDEN) {
           this._startFetchingDebounce();
@@ -257,6 +285,20 @@ class DatatipManagerForEditor {
           return;
         }
         this._hideOrCancel();
+      }),
+
+      Observable.fromEvent(this._datatipElement, 'wheel').subscribe(e => {
+        this._cumulativeWheelX += Math.abs(e.deltaX);
+        if (this._cumulativeWheelX > CUMULATIVE_WHEELX_THRESHOLD) {
+          this._interactedWith = true;
+        }
+        if (this._interactedWith) {
+          e.stopPropagation();
+        }
+      }),
+
+      Observable.fromEvent(this._datatipElement, 'mousedown').subscribe(() => {
+        this._interactedWith = true;
       }),
 
       Observable.fromEvent(this._datatipElement, 'mouseenter').subscribe(() => {
@@ -293,7 +335,23 @@ class DatatipManagerForEditor {
           this._lastMoveEvent,
         ));
       },
-      (featureConfig.get('nuclide-datatip.datatipDebounceDelay'): any),
+      ensurePositiveNumber(
+        (featureConfig.get('nuclide-datatip.datatipDebounceDelay'): any),
+        DEFAULT_DATATIP_DEBOUNCE_DELAY,
+      ),
+      /* immediate */ false,
+    );
+  }
+
+  _setHideIfOutsideDebounce(): void {
+    this._hideIfOutsideDebounce = debounce(
+      () => {
+        this._hideIfOutsideImmediate();
+      },
+      ensurePositiveNumber(
+        (featureConfig.get('nuclide-datatip.datatipInteractedWithDebounceDelay'): any),
+        DEFAULT_DATATIP_INTERACTED_DEBOUNCE_DELAY,
+      ),
       /* immediate */ false,
     );
   }
@@ -358,6 +416,8 @@ class DatatipManagerForEditor {
     }
 
     this._setState(DatatipState.VISIBLE);
+    this._interactedWith = false;
+    this._cumulativeWheelX = 0;
     this._range = data.range;
     this._marker = renderDatatip(this._editor, this._datatipElement, data);
   }
@@ -388,6 +448,18 @@ class DatatipManagerForEditor {
   }
 
   _hideIfOutside(): void {
+    if (this._datatipState !== DatatipState.VISIBLE) {
+      return;
+    }
+
+    if (this._interactedWith) {
+      this._hideIfOutsideDebounce();
+    } else {
+      this._hideIfOutsideImmediate();
+    }
+  }
+
+  _hideIfOutsideImmediate(): void {
     if (this._datatipState !== DatatipState.VISIBLE) {
       return;
     }
@@ -425,10 +497,13 @@ class DatatipManagerForEditor {
   }
 
   _handlePinClicked(editor: TextEditor, datatip: Datatip): void {
+    track('datatip-pinned-open');
+    const startTime = performanceNow();
     this._setState(DatatipState.HIDDEN);
     this._pinnedDatatips.add(
       new PinnedDatatip(datatip, editor, /* onDispose */ pinnedDatatip => {
         this._pinnedDatatips.delete(pinnedDatatip);
+        track('datatip-pinned-close', {duration: performanceNow() - startTime});
       }),
     );
   }

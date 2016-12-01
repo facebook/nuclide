@@ -13,7 +13,7 @@ import type {BlameForEditor} from '../../nuclide-blame/lib/types';
 
 import featureConfig from '../../commons-atom/featureConfig';
 import {hgRepositoryForEditor} from './common';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {shortNameForAuthor} from '../../nuclide-vcs-log';
 import {getLogger} from '../../nuclide-logging';
@@ -37,7 +37,7 @@ function canProvideBlameForEditor(editor: atom$TextEditor): boolean {
 }
 
 function getBlameForEditor(editor: atom$TextEditor): Promise<BlameForEditor> {
-  return trackOperationTiming(
+  return trackTiming(
     'blame-provider-hg:getBlameForEditor',
     () => doGetBlameForEditor(editor),
   );

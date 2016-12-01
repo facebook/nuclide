@@ -13,7 +13,7 @@ import type {MerlinError} from '../../nuclide-ocaml-rpc';
 import type {LinterMessage} from '../../nuclide-diagnostics-common';
 
 import {GRAMMARS} from './constants';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {Range} from 'atom';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 
@@ -25,7 +25,7 @@ module.exports = {
   invalidateOnClose: true,
 
   lint(textEditor: atom$TextEditor): Promise<Array<LinterMessage>> {
-    return trackOperationTiming('nuclide-ocaml.lint', async () => {
+    return trackTiming('nuclide-ocaml.lint', async () => {
       const filePath = textEditor.getPath();
       if (filePath == null) {
         return [];

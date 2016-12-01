@@ -44,7 +44,7 @@ import {
   decodeError,
 } from './messages';
 import {builtinLocation, voidType} from './builtin-types';
-import {startTracking, trackOperationTiming} from '../../nuclide-analytics';
+import {startTracking, trackTiming} from '../../nuclide-analytics';
 import {SERVICE_FRAMEWORK3_PROTOCOL} from './config';
 import {getLogger} from '../../nuclide-logging';
 
@@ -409,7 +409,7 @@ export class RpcConnection<TransportType: Transport> {
           throw new Error(`Unkown return type: ${returnType}.`);
       }
     };
-    return trackOperationTiming(
+    return trackTiming(
       trackingIdOfMessageAndNetwork(this._objectRegistry, message),
       operation);
   }

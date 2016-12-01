@@ -18,7 +18,7 @@ import type {BuckSubcommand} from './types';
 import {Observable} from 'rxjs';
 import stripAnsi from 'strip-ansi';
 import {getLogger} from '../../nuclide-logging';
-import getDiagnostics from './getDiagnostics';
+import DiagnosticsParser from './DiagnosticsParser';
 import {exitEventToMessage} from '../../commons-node/process';
 
 const PROGRESS_OUTPUT_INTERVAL = 5 * 1000;
@@ -231,11 +231,13 @@ export function getDiagnosticEvents(
   events: Observable<BuckEvent>,
   buckRoot: string,
 ): Observable<BuckEvent> {
+  const diagnosticsParser = new DiagnosticsParser();
   return events
     .flatMap(event => {
       // For log messages, try to detect compile errors and emit diagnostics.
       if (event.type === 'log') {
-        return Observable.fromPromise(getDiagnostics(event.message, event.level, buckRoot))
+        return Observable.fromPromise(
+          diagnosticsParser.getDiagnostics(event.message, event.level, buckRoot))
           .map(diagnostics => ({type: 'diagnostics', diagnostics}));
       }
       return Observable.empty();

@@ -285,7 +285,6 @@ atom-text-editor, atom-text-editor::shadow {
     background-color: inherit;
     margin-left: 5px;
     margin-right: 5px;
-    overflow-y: auto;
 
     /*
      * overriding styles for atom-text-editor to make mini and multiline
@@ -311,6 +310,10 @@ atom-text-editor, atom-text-editor::shadow {
             border-width: thin;
           }
         }
+      }
+
+      &.px-upload-dragover {
+        box-shadow: 0 0 2px @background-color-info;
       }
     }
 
@@ -386,7 +389,6 @@ atom-text-editor, atom-text-editor::shadow {
 }
 
 .nuclide-diff-view-navigator-timeline-container {
-  width: 70%;
   overflow: scroll;
   display: flex;
 }
@@ -412,5 +414,12 @@ atom-text-editor, atom-text-editor::shadow {
 .nuclide-diff-view-file-change-spinner {
   position: absolute;
   margin-left: 5px;
-  margin-top: -2px;  
+  margin-top: -2px;
+}
+
+.nuclide-diff-view-modal-diff-mode {
+  display: flex;
+  height: initial;
+  min-height: 200px;
+  overflow: scroll;
 }

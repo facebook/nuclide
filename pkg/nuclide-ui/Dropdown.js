@@ -32,7 +32,8 @@ export type Option = Separator | {
   value: any,
   label: string,
   selectedLabel?: string,
-  icon?: atom$Octicon,
+  icon?: string,
+  iconset?: string,
   disabled?: boolean,
 };
 
@@ -45,6 +46,9 @@ type Props = {
 
   title: string,
   value: any,
+  // If provided, this will be rendered as the label if the value is null.
+  // Otherwise, we'll display the first option as selected by default.
+  placeholder?: string,
   buttonComponent?: ReactClass<any>,
   options: Array<Option>,
   onChange?: (value: any) => mixed,
@@ -72,7 +76,18 @@ export class Dropdown extends React.Component {
   render(): React.Element<any> {
     const selectedOption = this.props.options.find(option => (
       option.type !== 'separator' && option.value === this.props.value),
-    ) || this.props.options[0];
+    );
+
+    let selectedLabel;
+    if (selectedOption == null) {
+      if (this.props.placeholder != null) {
+        selectedLabel = this.props.placeholder;
+      } else {
+        selectedLabel = this._renderSelectedLabel(this.props.options[0]);
+      }
+    } else {
+      selectedLabel = this._renderSelectedLabel(selectedOption);
+    }
 
     return (
       <DropdownButton
@@ -84,13 +99,13 @@ export class Dropdown extends React.Component {
         onExpand={this._handleDropdownClick}
         size={this.props.size}
         tooltip={this.props.tooltip}>
-        {this._renderSelectedLabel(selectedOption)}
+        {selectedLabel}
       </DropdownButton>
     );
 
   }
 
-  _renderSelectedLabel(option: Option): ?string {
+  _renderSelectedLabel(option: ?Option): ?string {
     let text = null;
     if (option == null) {
       text = '';

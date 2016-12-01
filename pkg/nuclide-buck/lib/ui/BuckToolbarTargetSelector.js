@@ -9,10 +9,10 @@
  * the root directory of this source tree.
  */
 
+import type {AppState} from '../types';
+
 import {React} from 'react-for-atom';
 import {Observable} from 'rxjs';
-import type BuckToolbarActions from '../BuckToolbarActions';
-import type BuckToolbarStore from '../BuckToolbarStore';
 
 import {Combobox} from '../../../nuclide-ui/Combobox';
 
@@ -24,8 +24,8 @@ import {getLogger} from '../../../nuclide-logging';
 const NO_ACTIVE_PROJECT_ERROR = 'No active Buck project. Check your Current Working Root.';
 
 type Props = {
-  store: BuckToolbarStore,
-  actions: BuckToolbarActions,
+  appState: AppState,
+  setBuildTarget(buildTarget: string): void,
 };
 
 export default class BuckToolbarTargetSelector extends React.Component {
@@ -46,7 +46,7 @@ export default class BuckToolbarTargetSelector extends React.Component {
   }
 
   _requestOptions(inputText: string): Observable<Array<string>> {
-    const buckRoot = this.props.store.getCurrentBuckRoot();
+    const {buckRoot} = this.props.appState;
     if (buckRoot == null) {
       return Observable.throw(Error(NO_ACTIVE_PROJECT_ERROR));
     }
@@ -98,10 +98,10 @@ export default class BuckToolbarTargetSelector extends React.Component {
 
   _handleBuildTargetChange(value: string) {
     const trimmed = value.trim();
-    if (this.props.store.getBuildTarget() === trimmed) {
+    if (this.props.appState.buildTarget === trimmed) {
       return;
     }
-    this.props.actions.updateBuildTarget(trimmed);
+    this.props.setBuildTarget(trimmed);
   }
 
   render(): React.Element<any> {
@@ -112,7 +112,7 @@ export default class BuckToolbarTargetSelector extends React.Component {
         requestOptions={this._requestOptions}
         size="sm"
         loadingMessage="Updating target names..."
-        initialTextInput={this.props.store.getBuildTarget()}
+        initialTextInput={this.props.appState.buildTarget}
         onSelect={this._handleBuildTargetChange}
         onBlur={this._handleBuildTargetChange}
         placeholderText="Buck build target"

@@ -138,6 +138,8 @@ describe('Task', () => {
     const spy = jasmine.createSpy('exit');
     const task = new Task();
     task.onError(spy);
+    task._initialize();
+    invariant(task._child != null);
     task._child.disconnect();
     spyOn(console, 'log');
     task.invokeRemoteMethod({

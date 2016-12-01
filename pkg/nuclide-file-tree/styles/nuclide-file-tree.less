@@ -79,6 +79,10 @@
   border-radius: @component-border-radius;
 }
 
+.nuclide-file-tree-fixed {
+  position: relative;
+}
+
 .nuclide-file-tree-toolbar {
   margin-top: 10px;
   position: absolute;
@@ -167,4 +171,8 @@
 .nuclide-file-tree-sidebar-uncommitted-changes {
   display: flex;
   max-height: 20vh;
+}
+
+.nuclide-file-tree .list-item::before {
+  vertical-align: middle;
 }

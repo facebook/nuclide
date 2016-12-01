@@ -28,6 +28,7 @@ import {
 } from './Tree';
 import {LoadingSpinner} from './LoadingSpinner';
 import ignoreTextSelectionEvents from './ignoreTextSelectionEvents';
+import classnames from 'classnames';
 
 const SPINNER_DELAY = 100; /* ms */
 const NOT_AVAILABLE_MESSAGE = '<not available>';
@@ -322,6 +323,10 @@ type TopLevelValueComponentProps = {
   simpleValueComponent: ReactClass<any>,
   // $FlowIssue -- Flow's object spread operator inference is buggy.
   shouldCacheChildren: ?boolean,
+  // An (arbitrary) reference object used to track expansion state of the component's
+  // children across multiple re-renders. To ensure persistent re-use of the  expansion state,
+  // simply continue passing the same instance.
+  expansionStateId: Object,
 };
 
 type NodeData = {
@@ -329,6 +334,7 @@ type NodeData = {
   cachedChildren: ?ExpansionResult,
 };
 
+const expansionStates: WeakMap<Object, Map<string, NodeData>> = new WeakMap();
 /**
  * TopLevelValueComponent wraps all expandable value components. It is in charge of keeping track
  * of the set of recursively expanded values. The set is keyed by a "path", which is a string
@@ -339,12 +345,10 @@ type NodeData = {
 class TopLevelLazyNestedValueComponent extends React.Component {
   // $FlowIssue `evaluationResult` gets injected via HOC.
   props: TopLevelValueComponentProps;
-  expandedValuePaths: Map<string, NodeData>;
   shouldCacheChildren: boolean;
 
   constructor(props: TopLevelValueComponentProps) {
     super(props);
-    this.expandedValuePaths = new Map();
     (this: any).handleExpansionChange = this.handleExpansionChange.bind(this);
     (this: any).getCachedChildren = this.getCachedChildren.bind(this);
     (this: any).setCachedChildren = this.setCachedChildren.bind(this);
@@ -354,17 +358,28 @@ class TopLevelLazyNestedValueComponent extends React.Component {
   }
 
   handleExpansionChange(expandedValuePath: string, isExpanded: boolean): void {
+    const expandedValuePaths = this.getExpandedValuePaths();
     const nodeData =
-      this.expandedValuePaths.get(expandedValuePath) || {isExpanded, cachedChildren: null};
+      expandedValuePaths.get(expandedValuePath) || {isExpanded, cachedChildren: null};
     if (isExpanded) {
-      this.expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: true});
+      expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: true});
     } else {
-      this.expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: false});
+      expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: false});
     }
   }
 
+  getExpandedValuePaths(): Map<string, NodeData> {
+    const reference = this.props.expansionStateId;
+    let expandedValuePaths = expansionStates.get(reference);
+    if (expandedValuePaths == null) {
+      expandedValuePaths = new Map();
+      expansionStates.set(reference, expandedValuePaths);
+    }
+    return expandedValuePaths;
+  }
+
   getCachedChildren(path: string): ?ExpansionResult {
-    const nodeData = this.expandedValuePaths.get(path);
+    const nodeData = this.getExpandedValuePaths().get(path);
     if (nodeData == null) {
       return null;
     } else {
@@ -373,22 +388,24 @@ class TopLevelLazyNestedValueComponent extends React.Component {
   }
 
   setCachedChildren(path: string, children: ExpansionResult): void {
-    const nodeData = this.expandedValuePaths.get(path);
+    const nodeData = this.getExpandedValuePaths().get(path);
     if (nodeData != null) {
-      this.expandedValuePaths.set(path, {...nodeData, cachedChildren: children});
+      this.getExpandedValuePaths().set(path, {...nodeData, cachedChildren: children});
     }
   }
 
   render(): React.Element<any> {
-    const className = this.props.className != null
-      ? this.props.className
-      : 'nuclide-ui-lazy-nested-value';
+    const className = classnames(this.props.className, {
+      'native-key-bindings': true,
+      // Note(vjeux): the following line should probably be `: true`
+      'nuclide-ui-lazy-nested-value': this.props.className == null,
+    });
     return (
-      <span className={className}>
+      <span className={className} tabIndex={-1}>
         <ValueComponent
           {...this.props}
           isRoot={true}
-          expandedValuePaths={this.expandedValuePaths}
+          expandedValuePaths={this.getExpandedValuePaths()}
           onExpandedStateChange={this.handleExpansionChange}
           path="root"
           shouldCacheChildren={this.shouldCacheChildren}

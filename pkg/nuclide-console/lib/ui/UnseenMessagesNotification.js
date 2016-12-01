@@ -33,7 +33,7 @@ export default class NewMessagesNotification extends React.Component {
       <div
         className={className}
         onClick={this.props.onClick}>
-        <span className="nuclide-console-new-messages-notification-icon icon icon-arrow-down" />
+        <span className="nuclide-console-new-messages-notification-icon icon nuclicon-arrow-down" />
         New Messages
       </div>
     );

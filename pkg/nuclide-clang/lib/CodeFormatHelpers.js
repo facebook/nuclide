@@ -15,16 +15,17 @@ import {getLogger} from '../../nuclide-logging';
 import libclang from './libclang';
 
 export default class CodeFormatHelpers {
-  @trackTiming('nuclide-clang-format.formatCode')
-  static async formatEntireFile(editor: atom$TextEditor, range: atom$Range): Promise<{
+  static formatEntireFile(editor: atom$TextEditor, range: atom$Range): Promise<{
     newCursor?: number,
     formatted: string,
   }> {
-    try {
-      return await libclang.formatCode(editor, range);
-    } catch (e) {
-      getLogger().error('Could not run clang-format:', e);
-      throw new Error('Could not run clang-format.<br>Ensure it is installed and in your $PATH.');
-    }
+    return trackTiming('nuclide-clang-format.formatCode', async () => {
+      try {
+        return await libclang.formatCode(editor, range);
+      } catch (e) {
+        getLogger().error('Could not run clang-format:', e);
+        throw new Error('Could not run clang-format.<br>Ensure it is installed and in your $PATH.');
+      }
+    });
   }
 }

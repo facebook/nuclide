@@ -28,17 +28,24 @@ const getActions = FileTreeActions.getInstance;
 type Props = {
   node: FileTreeNode,
 };
+type State = {
+  isLoading: boolean,
+};
 
 type SelectionMode = 'single-select' | 'multi-select' | 'range-select' | 'invalid-select';
 
+const SUBSEQUENT_FETCH_SPINNER_DELAY = 500;
+const INITIAL_FETCH_SPINNER_DELAY = 25;
 const INDENT_LEVEL = 17;
 
 export class FileTreeEntryComponent extends React.Component {
+  state: State;
   props: Props;
   // Keep track of the # of dragenter/dragleave events in order to properly decide
   // when an entry is truly hovered/unhovered, since these fire many times over
   // the duration of one user interaction.
   dragEventCount: number;
+  _loadingTimeout: ?number;
 
   constructor(props: Props) {
     super(props);
@@ -55,10 +62,44 @@ export class FileTreeEntryComponent extends React.Component {
 
     (this: any)._checkboxOnChange = this._checkboxOnChange.bind(this);
     (this: any)._checkboxOnClick = this._checkboxOnClick.bind(this);
+
+    this.state = {
+      isLoading: false,
+    };
   }
 
-  shouldComponentUpdate(nextProps: Object, nextState: void): boolean {
-    return nextProps.node !== this.props.node;
+  shouldComponentUpdate(nextProps: Props, nextState: State): boolean {
+    return (
+      nextProps.node !== this.props.node ||
+      nextState.isLoading !== this.state.isLoading
+    );
+  }
+
+  componentWillReceiveProps(nextProps: Props): void {
+    if (nextProps.node.isLoading) {
+      const spinnerDelay = nextProps.node.wasFetched ?
+        SUBSEQUENT_FETCH_SPINNER_DELAY :
+        INITIAL_FETCH_SPINNER_DELAY;
+
+      this._loadingTimeout = setTimeout(() => {
+        this._loadingTimeout = null;
+        this.setState({
+          isLoading: Boolean(this.props.node.isLoading),
+        });
+      }, spinnerDelay);
+    } else {
+      clearTimeout(this._loadingTimeout);
+      this._loadingTimeout = null;
+      this.setState({
+        isLoading: false,
+      });
+    }
+  }
+
+  componentWillUnmount(): void {
+    if (this._loadingTimeout != null) {
+      clearTimeout(this._loadingTimeout);
+    }
   }
 
   render(): React.Element<any> {
@@ -76,7 +117,7 @@ export class FileTreeEntryComponent extends React.Component {
     });
     const listItemClassName = classnames({
       'header list-item': node.isContainer,
-      'loading': node.isLoading,
+      'loading': this.state.isLoading,
     });
 
     let statusClass;
@@ -107,7 +148,7 @@ export class FileTreeEntryComponent extends React.Component {
 
     let iconName;
     if (node.isContainer) {
-      iconName = node.isCwd ? 'icon-briefcase' : 'icon-file-directory';
+      iconName = node.isCwd ? 'nuclicon-file-directory-starred' : 'nuclicon-file-directory';
     } else {
       iconName = fileTypeClass(node.name);
     }

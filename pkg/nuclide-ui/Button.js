@@ -19,8 +19,9 @@ export type ButtonSize = 'EXTRA_SMALL' | 'SMALL' | 'LARGE';
 type ButtonNodeName = 'button' | 'a';
 
 type Props = {
-  /** Octicon icon name, without the `icon-` prefix. E.g. `'arrow-up'` */
-  icon?: atom$Octicon,
+  /** Icon name, without the `icon-` prefix. E.g. `'arrow-up'` */
+  icon?: string,
+  iconset?: ?string,
   /** Optional specifier for special buttons, e.g. primary, info, success or error buttons. */
   buttonType?: ButtonType,
   selected?: boolean,
@@ -68,6 +69,7 @@ const ButtonTypeClassnames = Object.freeze({
 export const Button = (props: Props) => {
   const {
     icon,
+    iconset,
     buttonType,
     selected,
     size,
@@ -84,7 +86,7 @@ export const Button = (props: Props) => {
     className,
     'btn',
     {
-      [`icon icon-${maybeToString(icon)}`]: icon != null,
+      [`icon ${iconset || 'icon'}-${maybeToString(icon)}`]: icon != null,
       [sizeClassname]: size != null,
       selected,
       [buttonTypeClassname]: buttonType != null,

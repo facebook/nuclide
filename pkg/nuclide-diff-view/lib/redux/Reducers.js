@@ -160,6 +160,12 @@ export function rootReducer(
         diffNavigatorVisible: action.payload.visible,
       };
 
+    case ActionTypes.UPDATE_DOCK_CONFIG:
+      return {
+        ...state,
+        shouldDockPublishView: action.payload.shouldDockPublishView,
+      };
+
     default:
       return state;
   }

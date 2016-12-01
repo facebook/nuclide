@@ -12,7 +12,7 @@
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type CodeFormatConfig = {
@@ -60,7 +60,7 @@ export class CodeFormatProvider<T: LanguageService> {
   }
 
   formatCode(editor: atom$TextEditor, range: atom$Range): Promise<string> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
       const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
       if (languageService != null && fileVersion != null) {

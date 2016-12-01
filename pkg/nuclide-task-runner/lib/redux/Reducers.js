@@ -80,6 +80,7 @@ export function app(state: AppState, action: Action): AppState {
       return {
         ...state,
         projectRoot,
+        projectWasOpened: state.projectWasOpened || (projectRoot != null),
         tasksAreReady: false,
       };
     }
@@ -108,7 +109,11 @@ export function app(state: AppState, action: Action): AppState {
           previousSessionActiveTaskId: null,
         };
 
-        if (!state.viewIsInitialized) {
+        // Initialize the view (select a default task and set the visibility). If a project hasn't
+        // been opened yet, we defer this until one has been. When that happens, a directory will be
+        // added -> the current working root will be set -> we'll request taks lists -> this action
+        // will be called again and we'll initialize.
+        if (!state.viewIsInitialized && state.projectWasOpened) {
           // Initialize the view if we've yet to do so.
           newState = {
             ...newState,
@@ -231,7 +236,7 @@ function getInitialTaskMeta(
     // Prefer task runner names that come first alphabetically.
     const nameDiff = taskMeta.taskRunnerName.localeCompare(candidate.taskRunnerName);
     if (nameDiff !== 0) {
-      if (nameDiff > 0) {
+      if (nameDiff < 0) {
         candidate = taskMeta;
       }
       continue;
@@ -240,7 +245,7 @@ function getInitialTaskMeta(
     // Prefer task types that come first alphabetically.
     const typeDiff = taskMeta.type.localeCompare(candidate.type);
     if (typeDiff !== 0) {
-      if (typeDiff > 0) {
+      if (typeDiff < 0) {
         candidate = taskMeta;
       }
       continue;

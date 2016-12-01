@@ -72,6 +72,7 @@ type JasmineSpy = {
   identity: string,
   mostRecentCall: JasmineSpyCall,
   wasCalled: boolean,
+  reset(): void,
 };
 
 declare function spyOn(object: Object, method: string): JasmineSpy;

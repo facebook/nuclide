@@ -11,6 +11,7 @@
 
 import child_process from 'child_process';
 import EventEmitter from 'events';
+import invariant from 'assert';
 
 export type InvokeRemoteMethodParams = {
   file: string,
@@ -32,11 +33,16 @@ const TRANSPILER_PATH = require.resolve('../../nuclide-node-transpiler');
 export default class Task {
   _id: number;
   _emitter: EventEmitter;
-  _child: child_process$ChildProcess;
+  _child: ?child_process$ChildProcess;
 
   constructor() {
     this._id = 0;
     this._emitter = new EventEmitter();
+    this._child = null;
+  }
+
+  _initialize() {
+    invariant(this._child == null);
     const child = this._child = child_process.fork(
       '--require', [TRANSPILER_PATH, BOOTSTRAP_PATH],
       {silent: true}, // Needed so stdout/stderr are available.
@@ -53,11 +59,13 @@ export default class Task {
       log(buffer);
       child.kill();
       this._emitter.emit('error', buffer.toString());
+      this._emitter.emit('child-process-error', buffer);
     });
 
     const onExitCallback = () => { child.kill(); };
     process.on('exit', onExitCallback);
     child.on('exit', () => {
+      this._emitter.emit('exit');
       process.removeListener('exit', onExitCallback);
     });
   }
@@ -86,6 +94,10 @@ export default class Task {
    *     instead.
    */
   invokeRemoteMethod(params: InvokeRemoteMethodParams): Promise<any> {
+    if (this._child == null) {
+      this._initialize();
+    }
+
     const requestId = (++this._id).toString(16);
     const request = {
       id: requestId,
@@ -110,16 +122,21 @@ export default class Task {
         }
       });
       this._emitter.once('error', reject);
+      invariant(this._child != null);
       this._child.send(request);
     });
   }
 
   onError(callback: (buffer: Buffer) => any): void {
-    this._child.on('error', callback);
+    this._emitter.on('child-process-error', callback);
+  }
+
+  onExit(callback: () => mixed): void {
+    this._emitter.on('exit', callback);
   }
 
   dispose() {
-    if (this._child.connected) {
+    if (this._child != null && this._child.connected) {
       this._child.kill();
     }
     this._emitter.removeAllListeners();

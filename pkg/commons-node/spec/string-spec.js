@@ -14,6 +14,7 @@ import {
   relativeDate,
   countOccurrences,
   shellParse,
+  shorten,
   removeCommonPrefix,
   removeCommonSuffix,
 } from '../string';
@@ -161,5 +162,14 @@ describe('removeCommonSuffix', () => {
 
   it('returns empty strings for identical strings', () => {
     expect(removeCommonSuffix('foo', 'foo')).toEqual(['', '']);
+  });
+});
+
+describe('shorten', () => {
+  it('works', () => {
+    expect(shorten('', 1)).toEqual('');
+    expect(shorten('test', 3)).toEqual('tes');
+    expect(shorten('test', 100)).toEqual('test');
+    expect(shorten('test', 1, '...')).toEqual('t...');
   });
 });

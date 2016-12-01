@@ -12,7 +12,7 @@
 import {CompositeDisposable} from 'atom';
 import nuclideUri from '../../commons-node/nuclideUri';
 import {getAtomProjectRelativePath} from '../../commons-atom/projects';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import {getArcanistServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 import type {NuclideUri} from '../../commons-node/nuclideUri';
@@ -114,7 +114,7 @@ function getCurrentNuclideUri(): ?NuclideUri {
 }
 
 function trackOperation(eventName: string, operation: () => mixed): void {
-  trackOperationTiming('nuclide-clipboard-path:' + eventName, operation);
+  trackTiming('nuclide-clipboard-path:' + eventName, operation);
 }
 
 function notify(message: string): void {

@@ -16,7 +16,7 @@ import type {
 import type {NuclideUri} from '../../commons-node/nuclideUri';
 import typeof * as GrepService from '../../nuclide-grep-rpc';
 
-import {loadBufferForUri, bufferForUri} from '../../commons-atom/text-editor';
+import {loadBufferForUri, bufferForUri} from '../../commons-atom/text-buffer';
 import {getLogger} from '../../nuclide-logging';
 import {getOpenFileEditorForRemoteProject} from './utils';
 import featureConfig from '../../commons-atom/featureConfig';

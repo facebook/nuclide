@@ -14,7 +14,7 @@ import type {Datatip} from '../../nuclide-datatip/lib/types';
 
 import invariant from 'assert';
 import {arrayRemove} from '../../commons-node/collection';
-import {track, trackOperationTiming} from '../../nuclide-analytics';
+import {track, trackTiming} from '../../nuclide-analytics';
 import {makeTypeHintComponent} from './TypeHintComponent';
 import {getLogger} from '../../nuclide-logging';
 
@@ -47,7 +47,7 @@ class TypeHintManager {
       name = 'unknown';
       logger.error('Type hint provider has no name', provider);
     }
-    const typeHint = await trackOperationTiming(
+    const typeHint = await trackTiming(
       name + '.typeHint',
       () => provider.typeHint(editor, position),
     );

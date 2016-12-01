@@ -13,6 +13,7 @@ import typeof * as GrepService from '../../nuclide-grep-rpc';
 import type {search$FileResult} from '../../nuclide-grep-rpc';
 
 import {Observable, ReplaySubject} from 'rxjs';
+import nuclideUri from '../../commons-node/nuclideUri';
 import {RemoteDirectory} from '../../nuclide-remote-connection';
 
 type RemoteDirectorySearch = {
@@ -20,7 +21,7 @@ type RemoteDirectorySearch = {
   cancel: () => void,
 };
 
-class RemoteDirectorySearcher {
+export default class RemoteDirectorySearcher {
   _serviceProvider: (dir: RemoteDirectory) => GrepService;
 
   // When constructed, RemoteDirectorySearcher must be passed a function that
@@ -45,7 +46,11 @@ class RemoteDirectorySearcher {
     const services = directories.map(dir => this._serviceProvider(dir));
 
     const searchStreams: Array<Observable<search$FileResult>> = directories.map((dir, index) =>
-      services[index].grepSearch(dir.getPath(), regex, options.inclusions).refCount());
+      services[index].grepSearch(
+        dir.getPath(),
+        regex,
+        RemoteDirectorySearcher.processPaths(dir.getPath(), options.inclusions),
+      ).refCount());
 
     // Start the search in each directory, and merge the resulting streams.
     const searchStream = Observable.merge(...searchStreams);
@@ -79,6 +84,32 @@ class RemoteDirectorySearcher {
       },
     };
   }
-}
 
-module.exports = RemoteDirectorySearcher;
+  /**
+   * If a query's prefix matches the rootPath's basename, treat the query as a relative search.
+   * Based on https://github.com/atom/atom/blob/master/src/scan-handler.coffee.
+   * Marked as static for testing.
+   */
+  static processPaths(rootPath: string, paths: ?Array<string>): Array<string> {
+    if (paths == null) {
+      return [];
+    }
+    const rootPathBase = nuclideUri.basename(rootPath);
+    const results = [];
+    for (const path of paths) {
+      const segments = nuclideUri.split(path);
+      const firstSegment = segments.shift();
+      results.push(path);
+      if (firstSegment === rootPathBase) {
+        if (segments.length === 0) {
+          // Search everything.
+          return [];
+        } else {
+          // Try interpreting this as a subdirectory of the base as well.
+          results.push(nuclideUri.join(...segments));
+        }
+      }
+    }
+    return results;
+  }
+}

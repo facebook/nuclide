@@ -147,3 +147,7 @@ export function removeCommonSuffix(a: string, b: string): [string, string] {
   }
   return [a.substring(0, a.length - i), b.substring(0, b.length - i)];
 }
+
+export function shorten(str: string, maxLength: number, suffix?: string): string {
+  return str.length < maxLength ? str : str.slice(0, maxLength) + (suffix || '');
+}

@@ -17,58 +17,52 @@ However, they can also be HTMLElements themselves, have a reference to one,
 
 The Workspace Views package is primarily a registry for two things:
 
-* Factories that can create viewables
+* Factories, called "openers", that can create viewables
 * "location" objects, which are capable of displaying viewables
 
-### Viewable Factories
+### Openers
 
 The most common way of interacting with nuclide-workspace-views is by
-registering a viewable factory via the exposed Atom service. Viewable factories
-define how to create a viewable instance, as well as provide some metadata.
-Here's an example:
+registering an opener via the exposed Atom service. Openers define how to create
+a viewable instance, given a URI. The API is based on
+[`atom.workspace.open`][open]'s with the hope that we'll eventually be able to
+merge the functionality into Atom by extending that API. Here's an example:
 
 ```js
 const disposables = new CompositeDisposable();
 export function consumeWorkspaceViewsService(api) {
   disposables.add(
-    api.registerFactory({
-      // A unique id that identifies this type.
-      id: 'example-gadget',
-
-      // The name to use for this type in user interfaces (for example, in a
-      // menu for creating views).
-      name: 'Example Gadget',
-
-      // Optional. An octicon that be used by UIs to represent this type.
-      iconName: 'telescope',
-
-      // Optional. If provided, nuclide-workspace-views will register an Atom
-      // command palette command that toggles this view.
-      toggleCommand: 'toggle-example-gadget',
-
-      // Optional. The ID of the location where this view should appear, by
-      // default.
-      defaultLocation: 'right-panel',
-
-      // Optional. A list of IDs of locations where this view is allowed to
-      // appear.
-      // allowedLocations?: [],
-
-      // Optional. A list of IDs of locations where this view isn't allowed to
-      // appear.
-      // disallowedLocations: [],
-
-      // Used to create an instance of the viewable. This function can return
-      // anything that can be associated with an HTMLElement via Atom's view
-      // registry. See below for more information about ways to easily use React
-      // components.
-      create: () => new ExampleGadget(),
-
-      // A function that tells nuclide-workspace-views how it can recognize an
-      // instance of this viewable.
-      isInstance: item => item instanceof ExampleGadget,
-    }),
+    api.addOpener(uri => {
+      if (uri === 'atom://mypackage/gadget') {
+        return new ExampleGadget();
+      }
+    },
   );
+}
+```
+
+There's also a `toggle()` method which can be used to easily create a toggle
+command:
+
+```js
+atom.commands.add(
+  'atom-workspace',
+  'mypackage:toggle-gadget',
+  () => { api.toggle('atom://mypackage/gadget'); },
+);
+```
+
+**IMPORTANT**: In order for the toggle command to work as expected, your
+viewable must implement a `getURI()` method that returns the same URI used to
+open it. For example:
+
+```js
+class ExampleGadget {
+  // [Some methods omitted]
+
+  getURI() {
+    return 'atom://mypackage/gadget';
+  }
 }
 ```
 
@@ -207,22 +201,21 @@ class ExampleGadgetComponent extends React.Component {
 }
 ```
 
-Then use `viewableFromReactElement()` in your factory:
+Then use `viewableFromReactElement()` in your opener:
 
 ```js
-api.registerFactory({
-  //...
-
-  create: () => viewableFromReactElement(<ExampleGadgetComponent />),
-  isInstance: item => item instanceof ExampleGadgetComponent,
-});
+api.addOpener(uri => {
+  if (uri === 'atom://mypackage/gadget') {
+    return viewableFromReactElement(<ExampleGadgetComponent />);
+  }
+};
 ```
 
 The object returned by `viewableFromReactElement()` is a mounted React
 component. That means that it will have all the methods that you define on your
 component class. This can be used for Atom interop—you can add any methods to
 your component that Atom normally looks for in pane items, like `getTitle()`,
-`getIconName()`, etc.
+`getIconName()`, `getURI()`, etc.
 
 ### Option 3: Go Your Own Way
 
@@ -236,18 +229,32 @@ registering a custom view provider or anything [else][createView] Atom supports.
 There's nothing really special about serialization. If you want to make sure
 your view comes back after Atom is restarted, give it a `serialize()` method and
 register a deserializer. (The preferred method is by adding it to your
-package.json.) **Do not** use the URI and `atom.workspace.open` to deserialize.
-This has side-effects and is pane specific.
+package.json.) **Do not** use the URI and `atom.workspace.open` or
+`workspaceViewsService.open` to deserialize. These has side-effects.
+
+## Cleanup
+
+Views opened by your package won't automatically be destroyed when the package
+deactivates, but the service does expose an API to do this for you:
+`destroyWhere()`. Just pass it a predicate function which will be used to
+determine which views to destroy:
+
+```js
+disposables.add(
+  new Disposable(
+    () => api.destroyWhere(item => item instanceof ExampleGadgetView),
+  ),
+);
+```
 
 ## Goals:
 
 1. Reduce the UI clutter that comes from a growing number of "panels."
-2. Create a registry of available views that can be leveraged to increase
-   discoverability.
-3. Give users more control over where the views appear.
-4. Where possible, simplify the definition of these UI elements and increase
+2. Give users more control over where the views appear.
+3. Where possible, simplify the definition of these UI elements and increase
    consistency of UIs.
 
 [ViewRegistry]: https://atom.io/docs/api/latest/ViewRegistry
 [createView]: https://github.com/atom/atom/blob/e5da1011d4de9ff9251797f1f5a0093c5b57bd3d/src/view-registry.coffee#L173-L207
 [Pane]: https://atom.io/docs/api/latest/Pane
+[open]: https://atom.io/docs/api/latest/Workspace#instance-open

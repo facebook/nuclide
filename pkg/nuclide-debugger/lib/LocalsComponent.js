@@ -29,10 +29,21 @@ type LocalsComponentProps = {
 
 export class LocalsComponent extends React.Component {
   props: LocalsComponentProps;
+  _expansionStates: Map<string /* expression */, /* unique reference for expression */ Object>;
 
   constructor(props: LocalsComponentProps) {
     super(props);
     (this: any)._renderExpression = this._renderExpression.bind(this);
+    this._expansionStates = new Map();
+  }
+
+  _getExpansionStateIdForExpression(expression: string): Object {
+    let expansionStateId = this._expansionStates.get(expression);
+    if (expansionStateId == null) {
+      expansionStateId = {};
+      this._expansionStates.set(expression, expansionStateId);
+    }
+    return expansionStateId;
   }
 
   _renderExpression(
@@ -62,6 +73,7 @@ export class LocalsComponent extends React.Component {
             evaluationResult={value}
             fetchChildren={fetchChildren}
             simpleValueComponent={SimpleValueComponent}
+            expansionStateId={this._getExpansionStateIdForExpression(name)}
           />
         </div>
       </div>

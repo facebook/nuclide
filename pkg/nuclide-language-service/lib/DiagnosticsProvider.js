@@ -23,7 +23,7 @@ import type {LanguageService} from './LanguageService';
 import {Cache} from '../../commons-node/cache';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import nuclideUri from '../../commons-node/nuclideUri';
-import {track, trackOperationTiming} from '../../nuclide-analytics';
+import {track, trackTiming} from '../../nuclide-analytics';
 import {RequestSerializer} from '../../commons-node/promise';
 import {DiagnosticsProviderBase} from '../../nuclide-diagnostics-provider-base';
 import {onDidRemoveProjectPath} from '../../commons-atom/projects';
@@ -145,7 +145,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
   }
 
   _runDiagnosticsImpl(textEditor: atom$TextEditor): Promise<void> {
-    return trackOperationTiming(this._analyticsEventName, async () => {
+    return trackTiming(this._analyticsEventName, async () => {
       let filePath = textEditor.getPath();
       if (filePath == null) {
         return;

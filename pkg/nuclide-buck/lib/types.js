@@ -10,6 +10,8 @@
 
 import type {NuclideUri} from '../../commons-node/nuclideUri';
 import type {Task} from '../../commons-node/tasks';
+import type {Device} from '../../nuclide-ios-common';
+import type {Action} from './redux/Actions';
 
 export type TaskType = 'build' | 'test' | 'run' | 'debug';
 
@@ -20,9 +22,25 @@ export type TaskSettings = {
   runArguments?: Array<string>,
 };
 
+export type AppState = {
+  devices: ?Array<Device>,
+  projectRoot: ?string,
+  buckRoot: ?string,
+  isLoadingBuckProject: boolean,
+  isLoadingRule: boolean,
+  buildTarget: string,
+  buildRuleType: ?string,
+  simulator: ?string,
+  taskSettings: {[key: TaskType]: TaskSettings},
+};
+
+export type Store = {
+  dispatch(action: Action): void,
+  getState(): AppState,
+};
+
 export type SerializedState = {
   buildTarget: ?string,
-  isReactNativeServerMode: boolean,
   taskSettings?: {[key: TaskType]: TaskSettings},
   simulator: ?string,
 };

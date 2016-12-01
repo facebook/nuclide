@@ -12,7 +12,7 @@
 import type {TestRunner} from '../lib/types';
 import {Observable} from 'rxjs';
 
-import TestRunnerController from '../lib/TestRunnerController';
+import {TestRunnerController} from '../lib/TestRunnerController';
 
 describe('TestRunnerController', () => {
 
@@ -26,22 +26,17 @@ describe('TestRunnerController', () => {
 
   describe('on initialization', () => {
 
-    it('does not create a panel if `panelVisible` is false', () => {
-      const testRunnerController = new TestRunnerController({panelVisible: false}, testRunners);
-      expect(atom.workspace.getBottomPanels().length).toEqual(0);
-      testRunnerController.destroy();
+    it('does not create a panel by default', () => {
+      const controller = new TestRunnerController(testRunners);
+      expect(controller.getElement().innerHTML).toEqual('');
+      controller.destroy();
     });
 
-    it('does not create a panel if no state is provided', () => {
-      const testRunnerController = new TestRunnerController(undefined, testRunners);
-      expect(atom.workspace.getBottomPanels().length).toEqual(0);
-      testRunnerController.destroy();
-    });
-
-    it('creates a panel if `panelVisible` is true', () => {
-      const testRunnerController = new TestRunnerController({panelVisible: true}, testRunners);
-      expect(atom.workspace.getBottomPanels().length).toEqual(1);
-      testRunnerController.destroy();
+    it('creates a panel if showPanel() is called', () => {
+      const controller = new TestRunnerController(testRunners);
+      controller.showPanel();
+      expect(controller.getElement().innerHTML).not.toEqual('');
+      controller.destroy();
     });
 
   });
@@ -52,25 +47,24 @@ describe('TestRunnerController', () => {
       // The controller needs at least one test runner to run tests.
       testRunners.add(TEST_RUNNER);
       // Start with `panelVisible: false` to ensure the panel is initially hidden.
-      const controller = new TestRunnerController({panelVisible: false}, testRunners);
-      expect(atom.workspace.getBottomPanels().length).toEqual(0);
+      const controller = new TestRunnerController(testRunners);
+      expect(controller.getElement().innerHTML).toEqual('');
       waitsForPromise(async () => {
         await controller.runTests();
-        expect(atom.workspace.getBottomPanels().length).toEqual(1);
+        expect(controller.getElement().innerHTML).not.toEqual('');
       });
     });
 
   });
 
   describe('on addition of new test runners', () => {
-
     // When new test runners are added, the dropdown in the UI needs to update. However, it should
     // not force a render if the panel is still supposed to be hidden.
     it('does not create a panel if `panelVisible` is false', () => {
-      const controller = new TestRunnerController({panelVisible: false}, testRunners);
+      const controller = new TestRunnerController(testRunners);
       testRunners.add(TEST_RUNNER);
       controller.didUpdateTestRunners();
-      expect(atom.workspace.getBottomPanels().length).toEqual(0);
+      expect(controller.getElement().innerHTML).toEqual('');
     });
 
   });

@@ -10,7 +10,6 @@
  */
 
 import singleton from '../../commons-node/singleton';
-import {maybeToString} from '../../commons-node/string';
 
 type PrepareStackTraceFunction = (error: Error, frames: Array<CallSite>) => any;
 
@@ -111,7 +110,10 @@ function structuredStackTraceHook(error: Error, frames: Array<CallSite>): void {
 function defaultPrepareStackTrace(error: Error, frames: Array<CallSite>): string {
   let formattedStackTrace = error.message ? `${error.name}: ${error.message}` : `${error.name}`;
   frames.forEach(frame => {
-    formattedStackTrace += `\n    at ${maybeToString(frame.toString())}`;
+    // Do not use `maybeToString` here since lazily loading it (inline-imports) may
+    // result in a circular load of `babel-core` via `nuclide-node-transpiler`.
+    // https://github.com/babel/babel/blob/c2b3ea7/packages/babel-template/src/index.js#L21
+    formattedStackTrace += `\n    at ${String(frame.toString())}`;
   });
   return formattedStackTrace;
 }

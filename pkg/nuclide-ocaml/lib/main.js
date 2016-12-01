@@ -14,7 +14,7 @@ import type {LinterProvider} from '../../nuclide-diagnostics-common';
 import type {OutlineProvider} from '../../nuclide-outline-view/lib/main';
 import type {TypeHintProvider as TypeHintProviderType} from '../../nuclide-type-hint/lib/types';
 
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import HyperclickProvider from './HyperclickProvider';
 import AutoComplete from './AutoComplete';
 import {GRAMMARS} from './constants';
@@ -31,7 +31,7 @@ export function getHyperclickProvider() {
 
 export function createAutocompleteProvider(): mixed {
   const getSuggestions = request => {
-    return trackOperationTiming(
+    return trackTiming(
       'nuclide-ocaml:getAutocompleteSuggestions',
       () => AutoComplete.getAutocompleteSuggestions(request));
   };

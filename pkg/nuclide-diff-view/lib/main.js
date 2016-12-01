@@ -31,6 +31,7 @@ import {
   CommitMode,
   DiffMode,
   DIFF_VIEW_NAVIGATOR_TOGGLE_COMMAND,
+  SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY,
 } from './constants';
 import DiffViewElement from './DiffViewElement';
 import DiffViewComponent from './DiffViewComponent';
@@ -52,6 +53,7 @@ import typeof * as BoundActionCreators from './redux/Actions';
 import {createEmptyAppState} from './redux/createEmptyAppState';
 import * as Actions from './redux/Actions';
 import * as Epics from './redux/Epics';
+import featureConfig from '../../commons-atom/featureConfig';
 import {rootReducer} from './redux/Reducers';
 import {applyMiddleware, bindActionCreators, createStore} from 'redux';
 import {combineEpics, createEpicMiddleware} from '../../commons-node/redux-observable';
@@ -213,6 +215,9 @@ class Activation {
     this._appState = new BehaviorSubject(initialState);
     this._actionCreators = bindActionCreators(Actions, this._store.dispatch);
 
+    const configUpdates: Observable<boolean> =
+      (featureConfig.observeAsStream(SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY): any);
+
     this._subscriptions.add(
       // TODO(most): Remove Diff View model and use stream of props for the views instead.
       states.subscribe(_state => {
@@ -222,6 +227,10 @@ class Activation {
       }),
       getHgRepositoryStream().subscribe(repository => {
         this._actionCreators.addRepository(repository);
+      }),
+
+      configUpdates.subscribe(shouldDockPublishView => {
+        this._actionCreators.updateDockConfig(shouldDockPublishView);
       }),
 
       // Listen for menu item workspace diff view open command.
@@ -362,8 +371,10 @@ class Activation {
     }
 
     this._actionCreators.updateDiffEditorsVisibility(true);
-    // Show the Diff Navigator section.
-    dispatchDiffNavigatorToggle(true);
+    if (!diffEntityOptions.onlyDiff) {
+      // Show the Diff Navigator section.
+      dispatchDiffNavigatorToggle(true);
+    }
 
     this._activateDiffPath(diffEntityOptions);
 

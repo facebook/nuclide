@@ -124,7 +124,7 @@ describe('Buck building via toolbar', () => {
 
       // The Build task should be selected.
       const button = buildToolbar.querySelector(
-        '.nuclide-task-runner-toolbar-contents .nuclide-ui-split-button-dropdown button',
+        '.nuclide-task-runner-toolbar-contents .nuclide-task-runner-system-task-button',
       );
       expect(button.textContent).toBe('Build');
     });

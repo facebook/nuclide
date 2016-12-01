@@ -34,8 +34,19 @@ class DebuggerDomain(HandlerDomain):
 
     @handler()
     def continueToLocation(self, params):
-        # TODO(williamsc) - This is probably setting a one off breakpoint and continuing.
-        raise UndefinedHandlerError('continueToLocation not implemented')
+        filelike = self.debugger_store.file_manager.get_by_client_url(params['location']['scriptId'])
+        if not filelike or not isinstance(filelike, file_manager.File):
+            # Only support setting breakpoints in real files.
+            return {}
+
+        lldb = get_lldb()
+        path = str(params['location']['scriptId'])
+        thread = self.debugger_store.debugger.GetSelectedTarget().GetProcess().GetSelectedThread()
+        frame = thread.GetSelectedFrame()
+        # atom line numbers a 0-based, while lldb is 1-based
+        line = int(params['location']['lineNumber']) + 1
+        thread.StepOverUntil(frame, filelike.server_obj, line)
+        return {}
 
     @handler()
     def disable(self, params):

@@ -40,6 +40,7 @@ export class WatchExpressionComponent extends React.Component {
     rowBeingEdited: ?number,
   };
   coreCancelDisposable: ?IDisposable;
+  _expansionStates: Map<string /* expression */, /* unique reference for expression */ Object>;
 
   constructor(props: WatchExpressionComponentProps) {
     super(props);
@@ -48,9 +49,19 @@ export class WatchExpressionComponent extends React.Component {
     (this: any)._resetExpressionEditState = this._resetExpressionEditState.bind(this);
     (this: any)._onEditorCancel = this._onEditorCancel.bind(this);
     (this: any)._onEditorBlur = this._onEditorBlur.bind(this);
+    this._expansionStates = new Map();
     this.state = {
       rowBeingEdited: null,
     };
+  }
+
+  _getExpansionStateIdForExpression(expression: string): Object {
+    let expansionStateId = this._expansionStates.get(expression);
+    if (expansionStateId == null) {
+      expansionStateId = {};
+      this._expansionStates.set(expression, expansionStateId);
+    }
+    return expansionStateId;
   }
 
   removeExpression(index: number, event: MouseEvent): void {
@@ -151,6 +162,7 @@ export class WatchExpressionComponent extends React.Component {
             expression={expression}
             fetchChildren={fetchChildren}
             simpleValueComponent={SimpleValueComponent}
+            expansionStateId={this._getExpansionStateIdForExpression(expression)}
           />
         </div>
         <i

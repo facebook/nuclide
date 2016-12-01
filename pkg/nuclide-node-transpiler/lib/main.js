@@ -9,15 +9,12 @@
  * the root directory of this source tree.
  */
 
-// If babel-core is not available, then this is a production build, so don't
-// bother loading the require hook.
+/* NON-TRANSPILED FILE */
+/* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
 
-let hasBabel = false;
-try {
-  hasBabel = Boolean(require.resolve('babel-core'));
-} catch (err) {
-}
+const fs = require('fs');
+const path = require('path');
 
-if (hasBabel) {
+if (fs.existsSync(path.join(__dirname, '../../../DEVELOPMENT'))) {
   require('./require-hook');
 }

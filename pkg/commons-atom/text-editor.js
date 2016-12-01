@@ -12,11 +12,8 @@
 import type {NuclideUri} from '../commons-node/nuclideUri';
 
 import invariant from 'assert';
-import {TextBuffer} from 'atom';
 import {Observable} from 'rxjs';
 
-import nuclideUri from '../commons-node/nuclideUri';
-import {ServerConnection, NuclideTextBuffer} from '../nuclide-remote-connection';
 import {observableFromSubscribeFunction} from '../commons-node/event';
 
 /**
@@ -49,57 +46,6 @@ export function existingEditorForBuffer(buffer: atom$TextBuffer): ?atom$TextEdit
   }
 
   return null;
-}
-
-export async function loadBufferForUri(uri: NuclideUri): Promise<atom$TextBuffer> {
-  let buffer = existingBufferForUri(uri);
-  if (buffer == null) {
-    buffer = createBufferForUri(uri);
-  }
-  if (buffer.loaded) {
-    return buffer;
-  }
-  try {
-    await buffer.load();
-    return buffer;
-  } catch (error) {
-    atom.project.removeBuffer(buffer);
-    throw error;
-  }
-}
-
-/**
- * Returns an existing buffer for that uri, or create one if not existing.
- */
-export function bufferForUri(uri: NuclideUri): atom$TextBuffer {
-  const buffer = existingBufferForUri(uri);
-  if (buffer != null) {
-    return buffer;
-  }
-  return createBufferForUri(uri);
-}
-
-function createBufferForUri(uri: NuclideUri): atom$TextBuffer {
-  let buffer;
-  if (nuclideUri.isLocal(uri)) {
-    buffer = new TextBuffer({filePath: uri});
-  } else {
-    const connection = ServerConnection.getForUri(uri);
-    if (connection == null) {
-      throw new Error(`ServerConnection cannot be found for uri: ${uri}`);
-    }
-    buffer = new NuclideTextBuffer(connection, {filePath: uri});
-  }
-  atom.project.addBuffer(buffer);
-  invariant(buffer);
-  return buffer;
-}
-
-/**
- * Returns an exsting buffer for that uri, or null if not existing.
- */
-export function existingBufferForUri(uri: NuclideUri): ?atom$TextBuffer {
-  return atom.project.findBufferForPath(uri);
 }
 
 export function getViewOfEditor(editor: atom$TextEditor): atom$TextEditorElement {

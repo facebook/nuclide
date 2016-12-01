@@ -110,7 +110,7 @@ export function aggregateTaskListsEpic(
                 Observable.merge(
                   taskLists,
                   Observable.of({taskRunnerId, taskList: []})
-                    .delay(2000)
+                    .delay(1000)
                     .takeUntil(taskLists.take(1)),
                 )
                   .subscribe(observer),
@@ -121,8 +121,8 @@ export function aggregateTaskListsEpic(
         ))
         .scan(
           // Combine the lists from each task runner into a single map.
-          // Watch out! We're mutating the map.
-          (acc, {taskRunnerId, taskList}) => {
+          (acc_, {taskRunnerId, taskList}) => {
+            const acc = new Map(acc_);
             if (taskList == null) {
               acc.delete(taskRunnerId);
             } else {

@@ -102,6 +102,7 @@ export function createEmptyAppState(): AppState {
     isLoadingFileDiff: false,
     publish: getEmptyPublishState(),
     repositories: new Map(),
+    shouldDockPublishView: true,
     shouldRebaseOnAmend: true,
     uiProviders: [],
     viewMode: DiffMode.BROWSE_MODE,

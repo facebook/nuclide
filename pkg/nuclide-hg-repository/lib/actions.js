@@ -43,6 +43,17 @@ export function revertPath(nodePath: ?NuclideUri, toRevision?: ?string): Promise
   );
 }
 
+export function confirmAndRevertPath(path: ?NuclideUri, toRevision?: ?string): void {
+  const result = atom.confirm({
+    message: 'Are you sure you want to revert?',
+    buttons: ['Revert', 'Cancel'],
+  });
+  invariant(result === 0 || result === 1);
+  if (result === 0) {
+    revertPath(path, toRevision);
+  }
+}
+
 async function hgActionToPath(
   nodePath: ?NuclideUri,
   actionName: string,

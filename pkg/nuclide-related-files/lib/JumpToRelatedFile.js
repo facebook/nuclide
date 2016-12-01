@@ -10,7 +10,7 @@
  */
 
 import RelatedFileFinder from './RelatedFileFinder';
-import {trackOperationTiming} from '../../nuclide-analytics';
+import {trackTiming} from '../../nuclide-analytics';
 import featureConfig from '../../commons-atom/featureConfig';
 
 /**
@@ -32,7 +32,7 @@ export default class JumpToRelatedFile {
           }
           const path = editor.getPath();
           if (path) {
-            trackOperationTiming(
+            trackTiming(
               'nuclide-related-files:jump-to-next-related-file',
               async () => this._open(await this.getNextRelatedFile(path)),
             );
@@ -45,7 +45,7 @@ export default class JumpToRelatedFile {
           }
           const path = editor.getPath();
           if (path) {
-            trackOperationTiming(
+            trackTiming(
               'nuclide-related-files:jump-to-previous-related-file',
               async () => this._open(await this.getPreviousRelatedFile(path)),
             );

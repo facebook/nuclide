@@ -18,7 +18,7 @@ import featureConfig from '../../commons-atom/featureConfig';
 
 function isInterfaceF(filePath: string) {
   const ext = nuclideUri.extname(filePath);
-  return ext === 'rei' || ext === 'mli';
+  return ext === '.rei' || ext === '.mli';
 }
 
 function getRefmtFlags(): Array<string> {

@@ -224,6 +224,9 @@ class Activation {
       atom.commands.add('atom-workspace', {
         'nuclide-debugger:add-to-watch': this._addToWatch.bind(this),
       }),
+      atom.commands.add('atom-workspace', {
+        'nuclide-debugger:run-to-location': this._runToLocation.bind(this),
+      }),
       atom.commands.add('.nuclide-debugger-root', {
         'nuclide-debugger:copy-debugger-expression-value':
             this._copyDebuggerExpressionValue.bind(this),
@@ -255,6 +258,10 @@ class Activation {
               {
                 label: 'Add to Watch',
                 command: 'nuclide-debugger:add-to-watch',
+              },
+              {
+                label: 'Run to Location',
+                command: 'nuclide-debugger:run-to-location',
               },
             ],
           },
@@ -330,18 +337,30 @@ class Activation {
     this._model.getBridge().stepOut();
   }
 
-  @trackTiming('nuclide-debugger-atom:toggleBreakpoint')
   _toggleBreakpoint() {
+    return trackTiming('nuclide-debugger-atom:toggleBreakpoint', () => {
+      this._executeWithEditorPath((filePath, line) => {
+        this._model.getActions().toggleBreakpoint(filePath, line);
+      });
+    });
+  }
+
+  _runToLocation() {
+    this._executeWithEditorPath((path, line) => {
+      this._model.getBridge().runToLocation(path, line);
+    });
+  }
+
+  _executeWithEditorPath(fn) {
     const editor = atom.workspace.getActiveTextEditor();
     if (editor && editor.getPath()) {
       const filePath = editor.getPath();
       if (filePath) {
         const line = editor.getLastCursor().getBufferRow();
-        this._model.getActions().toggleBreakpoint(filePath, line);
+        fn(filePath, line);
       }
     }
   }
-
 
   _deleteAllBreakpoints(): void {
     const actions = this._model.getActions();
@@ -578,13 +597,13 @@ export function consumeEvaluationExpressionProvider(
 
 export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
   const toolBar = getToolBar('nuclide-debugger');
-  const button = toolBar.addButton({
-    icon: 'bug',
+  toolBar.addButton({
+    iconset: 'nuclicon',
+    icon: 'debugger',
     callback: 'nuclide-debugger:toggle',
     tooltip: 'Toggle Debugger',
     priority: 500,
   }).element;
-  button.classList.add('nuclide-debugger-toolbar-button-circle-slash');
   const disposable = new Disposable(() => { toolBar.removeItems(); });
   invariant(activation);
   activation._disposables.add(disposable);

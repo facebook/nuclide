@@ -20,3 +20,4 @@ export const SET_PROJECT_DIRECTORIES = 'set-project-directories';
 export const SET_REPOSITORY_BOOKMARKS = 'set-repository-bookmarks';
 export const UNSET_BOOKMARK_IS_LOADING = 'unset-bookmark-is-loading';
 export const UPDATE_TO_BOOKMARK = 'update-to-bookmark';
+export const UPDATE_UNCOMMITTED_CHANGES = 'update-uncommitted-changes';

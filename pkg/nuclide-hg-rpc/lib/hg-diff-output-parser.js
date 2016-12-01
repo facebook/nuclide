@@ -33,21 +33,23 @@ function parseHgDiffUnifiedOutput(output: string): DiffInfo {
   if (!output) {
     return diffInfo;
   }
-  // $FlowFixMe match may return null
   const diffHunks = output.match(HUNK_DIFF_REGEX);
+  // $FlowFixMe diffHunks may be null
   diffHunks.forEach(hunk => {
     // `hunk` will look like: "@@ -a(,b) +c(,d) @@"
     const hunkParts = hunk.split(' ');
-    // $FlowFixMe match may return null
     const oldInfo = hunkParts[1].match(HUNK_OLD_INFO_REGEX);
-    // $FlowFixMe match may return null
     const newInfo = hunkParts[2].match(HUNK_NEW_INFO_REGEX);
 
     // `oldInfo`/`newInfo` will look like: ["a,b", "a", ",b"], or ["a", "a", ""].
+    // $FlowFixMe may be null
     const oldStart = parseInt(oldInfo[1], 10);
+    // $FlowFixMe may be null
     const newStart = parseInt(newInfo[1], 10);
     // According to the spec, if the line length is 1, it may be omitted.
+    // $FlowFixMe may be null
     const oldLines = oldInfo[2] ? parseInt(oldInfo[2].substring(1), 10) : 1;
+    // $FlowFixMe may be null
     const newLines = newInfo[2] ? parseInt(newInfo[2].substring(1), 10) : 1;
 
     diffInfo.added += newLines;

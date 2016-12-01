@@ -21,6 +21,12 @@ import FlowAutocompleteProvider, {
 const FIXTURE_PATH = nuclideUri.join(__dirname, 'fixtures/fixture.js');
 
 describe('FlowAutocompleteProvider', () => {
+  let flowAutocompleteProvider: FlowAutocompleteProvider = (null: any);
+
+  beforeEach(() => {
+    flowAutocompleteProvider = new FlowAutocompleteProvider();
+  });
+
   describe('groupParamNames', () => {
     it('should return a group for each argument', () => {
       const args = ['arg1', 'arg2'];
@@ -88,7 +94,7 @@ describe('FlowAutocompleteProvider', () => {
       jasmine.unspy(require('../lib/FlowServiceFactory'), 'getFlowServiceByNuclideUri');
     });
     function run(_: void) {
-      return FlowAutocompleteProvider.getSuggestions({
+      return flowAutocompleteProvider.getSuggestions({
         editor,
         bufferPosition: new Point(0, 0),
         prefix,

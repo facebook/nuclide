@@ -128,11 +128,7 @@ describe('RpcProcess', () => {
       invariant(process != null);
       const exitPromise = observeProcessExit(() => process).toPromise();
       server.dispose();
-      expect(await exitPromise).toEqual({
-        kind: 'exit',
-        exitCode: null,
-        signal: 'SIGTERM',
-      });
+      expect((await exitPromise).kind).toBe('exit');
     });
   });
 });

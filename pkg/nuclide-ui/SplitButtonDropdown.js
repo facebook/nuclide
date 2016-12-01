@@ -56,6 +56,7 @@ export class SplitButtonDropdown extends React.Component {
         <ButtonComponent
           size={this.props.size == null ? undefined : this.props.size}
           disabled={this.props.confirmDisabled === true}
+          iconset={selectedOption.iconset || undefined}
           icon={selectedOption.icon || undefined}
           onClick={this.props.onConfirm}>
           {selectedOption.selectedLabel || selectedOption.label || ''}

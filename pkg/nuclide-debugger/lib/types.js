@@ -145,6 +145,8 @@ declare class WebInspector$DebuggerModel$Location {
   lineNumber: number,
   columnNumber?: number,
   scriptId: string,
+
+  continueToLocation(): void,
 }
 
 declare class WebInspector$CallFrame {
@@ -208,6 +210,12 @@ declare class WebInspector$DebuggerModel {
   stepOver(): void,
   stepInto(): void,
   stepOut(): void,
+  runToLocation(): void,
+  createRawLocationByURL(
+    sourceURL: string,
+    lineNumber: number,
+    columnNumber: number
+  ): WebInspector$DebuggerModel$Location,
 
   selectedCallFrame(): ?WebInspector$CallFrame,
   setSelectedCallFrame(callFrame: WebInspector$CallFrame): void,

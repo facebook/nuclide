@@ -24,9 +24,10 @@ export type ContextProvider = {
   /**
    * Context View uses element factories to render providers' React
    * components. This gives Context View the ability to set the props (which
-   * contains the currentDefinition) of each provider.
+   * contains the currentDefinition) of each provider. The factory should return
+   * null if there is no element to be rendered.
    */
-  getElementFactory: () => ((props: ContextElementProps) => React.Element<any>),
+  getElementFactory: () => ((props: ContextElementProps) => ?React.Element<any>),
   id: string, // Unique ID of the provider (suggested: use the package name of the provider)
   title: string, // Display name
 };

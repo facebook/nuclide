@@ -146,7 +146,6 @@ function getPropsStream(
     onFilterByActiveTextEditorChange(filterByActiveTextEditor);
   };
 
-  // $FlowFixMe: We haven't typed this function with this many args.
   return Observable.combineLatest(
     activeTextEditorPaths,
     sortedDiagnostics,
@@ -157,9 +156,12 @@ function getPropsStream(
     .map(([pathToActiveTextEditor, diagnostics, warnAboutLinter, filter, traces]) => ({
       pathToActiveTextEditor,
       diagnostics,
+      // $FlowFixMe I think the typedefs are imprecise
       warnAboutLinter,
+      // $FlowFixMe I think the typedefs are imprecise
       showTraces: traces,
       disableLinter,
+      // $FlowFixMe I think the typedefs are imprecise
       filterByActiveTextEditor: filter,
       onFilterByActiveTextEditorChange: handleFilterByActiveTextEditorChange,
     }));

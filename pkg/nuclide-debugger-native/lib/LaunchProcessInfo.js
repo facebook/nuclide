@@ -74,7 +74,7 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
     return true;
   }
 
-  _getDebuggerConfig(): DebuggerConfig {
+  getDebuggerConfig(): DebuggerConfig {
     return {
       logLevel: getConfig().serverLogLevel,
       pythonBinaryPath: getConfig().pythonBinaryPath,
@@ -85,7 +85,7 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
   }
 
   _getRpcService(): NativeDebuggerServiceType {
-    const debuggerConfig = this._getDebuggerConfig();
+    const debuggerConfig = this.getDebuggerConfig();
     const service: ?NativeDebuggerService
       = getServiceByNuclideUri('NativeDebuggerService', this.getTargetUri());
     invariant(service);

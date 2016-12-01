@@ -67,6 +67,7 @@
   },
   "activationHooks": [
     "language-babel:grammar-used",
+    "language-javascript-jsx:grammar-used",
     "language-javascript:grammar-used"
   ],
   "providedServices": {

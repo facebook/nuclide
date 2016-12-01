@@ -16,7 +16,7 @@ import {Button, ButtonSizes} from '../../nuclide-ui/Button';
 import {Block} from '../../nuclide-ui/Block';
 import {React} from 'react-for-atom';
 import {goToLocation} from '../../commons-atom/go-to-location';
-import {bufferForUri} from '../../commons-atom/text-editor';
+import {bufferForUri} from '../../commons-atom/text-buffer';
 import {AtomTextEditor} from '../../nuclide-ui/AtomTextEditor';
 import {existingEditorForBuffer} from '../../commons-atom/text-editor';
 import {track} from '../../nuclide-analytics';

@@ -81,45 +81,67 @@ export function applyActionMiddleware(
             return Observable.empty();
           }
 
-          let observable = Observable.of({
+          const setDirectoryAction = {
             payload: {
               directory,
               repository,
             },
             type: ActionType.SET_DIRECTORY_REPOSITORY,
-          });
+          };
 
-          if (repository.getType() === 'hg') {
-            // Type was checked with `getType`. Downcast to safely access members with Flow.
-            invariant(repository instanceof HgRepositoryClient);
-            observable = observable.concat(
-              Observable.merge(
-                observableFromSubscribeFunction(
-                  // Re-fetch when the list of bookmarks changes.
-                  repository.onDidChangeBookmarks.bind(repository),
-                ),
-                observableFromSubscribeFunction(
-                  // Re-fetch when the active bookmark changes (called "short head" to match
-                  // Atom's Git API).
-                  repository.onDidChangeShortHead.bind(repository),
-                ),
-              )
-              .startWith(null) // Kick it off the first time
-              .switchMap(() => {
-                return Observable.fromPromise(repository.getBookmarks());
-              })
-              .map(bookmarks => ({
-                type: ActionType.SET_REPOSITORY_BOOKMARKS,
-                payload: {
-                  bookmarks,
-                  // TODO(most): figure out flow type incompatability.
-                  repository: (repository: any),
-                },
-              })),
-            );
+          if (repository.getType() !== 'hg') {
+            return Observable.of(setDirectoryAction);
           }
 
-          return observable;
+          // Type was checked with `getType`. Downcast to safely access members with Flow.
+          invariant(repository instanceof HgRepositoryClient);
+
+          const bookmarkUpdates = Observable.merge(
+            observableFromSubscribeFunction(
+              // Re-fetch when the list of bookmarks changes.
+              repository.onDidChangeBookmarks.bind(repository),
+            ),
+            observableFromSubscribeFunction(
+              // Re-fetch when the active bookmark changes (called "short head" to match
+              // Atom's Git API).
+              repository.onDidChangeShortHead.bind(repository),
+            ),
+          )
+          .startWith(null) // Kick it off the first time
+          .switchMap(() => {
+            return Observable.fromPromise(repository.getBookmarks());
+          })
+          .map(bookmarks => ({
+            type: ActionType.SET_REPOSITORY_BOOKMARKS,
+            payload: {
+              bookmarks,
+              // TODO(most): figure out flow type incompatability.
+              repository: (repository: any),
+            },
+          }));
+
+          const statusUpdates = Observable.merge(
+            observableFromSubscribeFunction(
+              repository.onDidChangeStatuses.bind(repository),
+            ),
+            observableFromSubscribeFunction(
+              repository.onDidChangeStatus.bind(repository),
+            ),
+          )
+          .startWith(null)
+          .switchMap(() => {
+            return Observable.of({
+              payload: {
+                directory,
+                repository,
+              },
+              type: ActionType.UPDATE_UNCOMMITTED_CHANGES,
+            });
+          });
+
+          return Observable.of(setDirectoryAction).concat(
+            Observable.merge(bookmarkUpdates, statusUpdates),
+          );
         });
       }),
 

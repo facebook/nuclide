@@ -30,7 +30,7 @@
     },
     "Reason: Switch Pattern Match": {
       "prefix": "sw",
-      "body": "switch ${1:expression} {\n| ${2:firstCase} => ${3:result}\n}"
+      "body": "switch ${1:expression} {\n| ${2:firstCase} => ${3:result}\n};"
     },
     "Reason: Try-catch": {
       "prefix": "try",

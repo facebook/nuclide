@@ -92,3 +92,4 @@ export const LintErrorMessages = [
 
 export const DIFF_VIEW_NAVIGATOR_TOGGLE_COMMAND = 'diff-view-navigator:toggle';
 export const DIFF_EDITOR_MARKER_CLASS = 'nuclide-diff-editor-marker';
+export const SHOULD_DOCK_PUBLISH_VIEW_CONFIG_KEY = 'nuclide-diff-view.shouldDockPublishView';
