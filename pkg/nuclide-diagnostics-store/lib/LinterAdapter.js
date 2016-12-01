@@ -153,12 +153,17 @@ export class LinterAdapter {
     }
 
     const maybe = this._provider.lint(editor);
-    if (!maybe) {
+    if (maybe == null) {
       return;
     }
 
     const result = await this._requestSerializer.run(maybe);
     if (result.status !== 'success') {
+      return;
+    }
+
+    const linterMessages = result.result;
+    if (linterMessages == null) {
       return;
     }
 
@@ -175,12 +180,6 @@ export class LinterAdapter {
       });
       this._onDestroyDisposables.set(buffer, disposable);
     }
-
-    const linterMessages = result.result;
-    if (!linterMessages) {
-      return;
-    }
-
 
     const diagnosticUpdate = linterMessagesToDiagnosticUpdate(
       editor.getPath(),
