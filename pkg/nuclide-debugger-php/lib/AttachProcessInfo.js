@@ -81,7 +81,6 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
       ),
     }];
     try {
-      // $FlowFB
       return customControlButtons.concat(require('./fb/services').customControlButtons);
     } catch (_) {
       return customControlButtons;

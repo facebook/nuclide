@@ -38,7 +38,7 @@ export class LLDBLaunchAttachProvider extends DebuggerLaunchAttachProvider {
     this._loadAction(AttachActionUIProvider);
     this._loadAction(LaunchActionUIProvider);
     try {
-      // $FBFlow
+      // $FlowFB
       this._loadAction(require('./actions/fb-omActionUIProvider'));
     } catch (_) {}
   }

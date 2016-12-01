@@ -118,3 +118,7 @@ Note that for packages whose test runner is `apm`, this is not necessary.
 ## Sample packages
 
 `sample-*` packages aren't loaded as part of Nuclide. They exist to illustrate archetypal architecture and structure for a given feature.
+
+## Flow errors
+
+In case flow complaints about missing modules, i.e `Required module not found`, try uncommenting the `$FlowFB` option in Nuclide's  [.flowconfig](https://github.com/facebook/nuclide/blob/master/.flowconfig) file. See https://github.com/facebook/nuclide/pull/906#issuecomment-263567813 for more information.

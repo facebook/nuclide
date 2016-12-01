@@ -433,6 +433,7 @@ export function observeProcess(
 
 let FB_INCLUDE_PATHS;
 try {
+  // $FlowFB
   FB_INCLUDE_PATHS = require('./fb-config').FB_INCLUDE_PATHS;
 } catch (error) {
   FB_INCLUDE_PATHS = [];
