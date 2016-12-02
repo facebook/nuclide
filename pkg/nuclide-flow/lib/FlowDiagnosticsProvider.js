@@ -69,35 +69,55 @@ function flowMessageToTrace(message: MessageComponent): Trace {
   };
 }
 
-function flowMessageToDiagnosticMessage(diagnostic: Diagnostic) {
-  const flowMessage = diagnostic.messageComponents[0];
+function flowMessageToDiagnosticMessages(diagnostic: Diagnostic) {
+  const messages = [];
+  let trace = null;
 
   // The Flow type does not capture this, but the first message always has a path, and the
   // diagnostics package requires a FileDiagnosticMessage to have a path.
-  const path = extractPath(flowMessage);
+  const path = extractPath(diagnostic.messageComponents[0]);
   invariant(path != null, 'Expected path to not be null or undefined');
 
-  const diagnosticMessage: FileDiagnosticMessage = {
-    scope: 'file',
-    providerName: 'Flow',
-    type: diagnostic.level === 'error' ? 'Error' : 'Warning',
-    text: flowMessage.descr,
-    filePath: path,
-    range: extractRange(flowMessage),
-  };
-
-  const fix = flowMessageToFix(diagnostic);
-  if (fix != null) {
-    diagnosticMessage.fix = fix;
-  }
+  const description = diagnostic.messageComponents[0].descr;
 
   // When the message is an array with multiple elements, the second element
   // onwards comprise the trace for the error.
   if (diagnostic.messageComponents.length > 1) {
-    diagnosticMessage.trace = diagnostic.messageComponents.slice(1).map(flowMessageToTrace);
+    trace = diagnostic.messageComponents.slice(1).map(flowMessageToTrace);
   }
 
-  return diagnosticMessage;
+  // A single error can map to multiple locations in code.
+  // Iterate through each message component to cover all error ranges.
+  for (const message of diagnostic.messageComponents) {
+    const filePath = extractPath(message);
+
+    if (!filePath) {
+      continue;
+    }
+
+    const diagnosticMessage: FileDiagnosticMessage = {
+      scope: 'file',
+      providerName: 'Flow',
+      type: diagnostic.level === 'error' ? 'Error' : 'Warning',
+      text: description,
+      range: extractRange(message),
+      filePath,
+    };
+
+    const fix = flowMessageToFix(diagnostic);
+    if (fix != null) {
+      diagnosticMessage.fix = fix;
+    }
+
+    if (trace != null) {
+      diagnosticMessage.trace = trace;
+    }
+
+    messages.push(diagnosticMessage);
+  }
+
+
+  return messages;
 }
 
 class FlowDiagnosticsProvider {
@@ -226,9 +246,9 @@ class FlowDiagnosticsProvider {
     currentFile: string,
   ): DiagnosticProviderUpdate {
 
-    // convert array messages to Error Objects with Traces
-    const fileDiagnostics = diagnostics.map(flowMessageToDiagnosticMessage);
-
+    // convert array messages to array of Error Objects with Traces, and then flatten
+    const fileDiagnostics = diagnostics.map(flowMessageToDiagnosticMessages)
+                                       .reduce((a, b) => a.concat(b), []);
     const filePathToMessages = new Map();
 
     // This invalidates the errors in the current file. If Flow, when running in this root, has
