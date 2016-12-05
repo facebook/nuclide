@@ -58,7 +58,7 @@ After attaching to the process by clicking **Attach**, you should see the Debugg
 
 To set a breakpoint in Nuclide, you use the [gutter](/docs/editor/basics#gutter). Click to the left
 of each line number in the file(s) in which you want Nuclide to break the running program. Then
-as the program in running, if a line on which a breakpoint is set is hit, the program halts, and you
+as the program is running, if a line on which a breakpoint is set is hit, the program halts, and you
 are able to perform debugging tasks such as [step](#basics__stepping) and
 [evaluation](#basics__evaluation) from that point.
 
