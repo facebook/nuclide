@@ -166,8 +166,8 @@ These are keyboard shortcuts with respect to navigation within files, etc.
 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `Ctrl-,` | `Ctrl-<` | `nuclide-navigation-stack:navigate-forwards` | Moves the cursor to the next position from the current, but former, position. |
-| `Ctrl-.` | `Ctrl->` | `nuclide-navigation-stack:navigate-backwards` | Moves the cursor to a previous position from the current position. |
+| `Ctrl-,` | `Ctrl-<` | `nuclide-navigation-stack:navigate-backwards` | Moves the cursor to a previous position from the current position. |
+| `Ctrl-.` | `Ctrl->` | `nuclide-navigation-stack:navigate-forwards` | Moves the cursor to the next position from the current, but former, position. |
 
 ## Miscellaneous
 
