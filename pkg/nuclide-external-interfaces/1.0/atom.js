@@ -368,6 +368,7 @@ declare class atom$Pane {
   moveItemToPane(item: Object, pane: atom$Pane, index: number): void,
   destroyItem(item: Object): boolean,
   itemForURI(uri: string): Object,
+  getActiveEditor(): ?atom$TextEditor,
 
   // Event subscriptions.
   onDidAddItem(cb: (event: {item: Object, index: number}) => void): IDisposable,
@@ -664,6 +665,7 @@ declare class atom$TextEditor extends atom$Model {
   id: number,
   firstVisibleScreenRow: number,
   rowsPerPage: number,
+  element: atom$TextEditorElement,
 
   // Event Subscription
   onDidChange(callback: () => void): IDisposable,
@@ -740,6 +742,7 @@ declare class atom$TextEditor extends atom$Model {
       screenLine?: boolean,
     },
   ): atom$Point,
+  bufferRowForScreenRow(number): number,
   getVisibleRowRange(): ?[number, number],
 
   // Decorations
@@ -884,6 +887,7 @@ declare class atom$TextEditor extends atom$Model {
   tokenForBufferPosition(position: atom$Point | [?number, ?number]): atom$Token,
   onDidConflict(callback: () => void): IDisposable,
   serialize: () => mixed,
+  getElement(): atom$TextEditorElement,
 }
 
 /**
@@ -905,6 +909,7 @@ declare class atom$TextEditorComponent {
     linesClientRect?: {top: number, left: number, bottom: number, right: number},
   ): {top: number, left: number, bottom: number, right: number},
   invalidateBlockDecorationDimensions(decoration: atom$Decoration): void,
+  getVisibleRowRange: [?number, ?number],
 }
 
 /**
@@ -914,6 +919,7 @@ declare class atom$TextEditorComponent {
 declare class atom$TextEditorPresenter {
   startBlinkingCursors: () => void,
   stopBlinkingCursors(visible: boolean): void,
+  getVisibleRowRange: [?number, ?number],
 }
 
 /**
@@ -940,6 +946,8 @@ declare class atom$TextEditorElement extends HTMLElement {
     left: number,
     top: number,
   },
+
+  getVisibleRowRange(): [?number, ?number],
 
   setScrollTop(scrollTop: number): void,
   getScrollTop(): number,
