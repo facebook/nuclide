@@ -61,7 +61,7 @@ export function isCorrectConnection(isAttachConnection: boolean, message: Object
   }
 
   const init = message.init;
-  if (!init.engine || !init.engine || !init.engine[0] || init.engine[0]._ !== 'xdebug') {
+  if (!init.engine || !init.engine || !init.engine[0] || init.engine[0]._.toLowerCase() !== 'xdebug') {
     logger.logError('Incorrect engine');
     return false;
   }
