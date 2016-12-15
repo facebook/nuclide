@@ -55,7 +55,7 @@ However, you can toggle which Working Sets are active.
 
 ![](/static/images/docs/feature-working-set-select-active.png)
 
-> You can also press `Ctrl-S` or go to `Packages | Working Sets | Select Active` to choose your
+> You can also press `Ctrl-S` or go to `Nuclide | Working Sets | Select Active` to choose your
 > active Working Sets.
 
 To deactivate a Working Set, click on its name. You will see the check mark
@@ -63,7 +63,7 @@ disappear, and the folders and files of that Working Set will be removed from th
 
 ![](/static/images/docs/feature-working-set-deactivate.png)
 
-> Pressing `Ctrl-Shift-S` or going to `Packages | Working Sets | Toggle Last Selected` will allow
+> Pressing `Ctrl-Shift-S` or going to `Nuclide | Working Sets | Toggle Last Selected` will allow
 > you to toggle between the full project tree and the currently active Working Set(s).
 
 ## Editing Working Sets

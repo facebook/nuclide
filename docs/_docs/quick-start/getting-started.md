@@ -100,7 +100,8 @@ Once the prerequisites are met, you can
 [install the server](/docs/features/remote/#nuclide-server__setup) on the remote machine.
 
 In order to connect to your remote project, click on the **Try It** button next to
-**Remote Connection** in the Quick Launch Menu. You can also select `Packages | Connect`, use the `Ctrl-Shift-Cmd-C` keyboard shortcut, or click **Add Remote Project Folder**
+**Remote Connection** in the Quick Launch Menu. You can also select `Nuclide | Remote Projects | Connect to Remote Project...`,
+use the `Ctrl-Shift-Cmd-C` keyboard shortcut, or click **Add Remote Project Folder**
 in the [Project Explorer](/docs/editor/basics/#project-explorer) (however, please note that if you have other projects open that button will not be there).
 
 ![](/static/images/docs/quick-start-getting-started-remote-connection-dialog.png)
@@ -120,7 +121,7 @@ project is using Mercurial, one of the features that may help your workflow is t
 files you have modified. It shows what has changed from the current committed revision which you
 are tracking.
 
-To access the Diff View, click the **Try It** button, use the `Alt-Cmd-Shift-D` keyboard shortcut, or select `Packages | Diff View` after making a change to one of the files in your Mercurial project.
+To access the Diff View, click the **Try It** button, use the `Alt-Cmd-Shift-D` keyboard shortcut, or select `Nuclide | Source Control | Toggle Diff View` after making a change to one of the files in your Mercurial project.
 
 ![](/static/images/docs/quick-start-getting-started-diff-view.png)
 

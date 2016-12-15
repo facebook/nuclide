@@ -26,7 +26,7 @@ For server debugging, add the following to HHVM's config.hdl:
     }
 
 - Add the remote directory containing the PHP source code on your project using either:
- - `Packages - Connect...` menu.
+ - `Nuclide - Remote Projects - Connect to Remote Project...` menu.
  - Right click on the tree and click `Add Remote Project Folder`
 
 ## Attaching to your Debuggee
