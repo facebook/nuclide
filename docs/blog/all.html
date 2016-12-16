@@ -11,7 +11,7 @@ layout: blog
   <ul class="list-unstyled">
     {% for post in site.posts %}
     <li>
-      <a href="{{ post.url }}"><strong>{{ post.title }}</strong></a>
+      <a href="{{ post.url | relative_url }}"><strong>{{ post.title }}</strong></a>
       on <date>{{ post.date | date: '%d %B %Y' }}</date>
     </li>
     {% endfor %}
