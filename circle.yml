@@ -4,6 +4,7 @@ machine:
 
 test:
   override:
+    - env
     # eslint
     - ./node_modules/.bin/eslint --max-warnings=0 .
     # flow
