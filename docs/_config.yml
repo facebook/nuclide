@@ -14,7 +14,6 @@ description: >
 # as "/reponame". If you have a top-level domain URL, you can set it to "" or
 # leave blank as it is now set to "" by default as discussed in:
 # http://jekyllrb.com/news/2016/10/06/jekyll-3-3-is-here/
-baseurl: ""
 
 # the base hostname & protocol for your site
 # If baseurl is set, then the absolute url for your site would be url/baseurl
