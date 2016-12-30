@@ -8,6 +8,7 @@ description: >
   Nuclide is built as a single package on top of Atom to provide hackability and the support of an active community.
 
   It provides a first-class development environment for React Native, Hack and Flow projects.
+logo: /static/og_image.png
 
 # baseurl determines the subpath of your site. For example if you're using an
 # organisation.github.io/reponame/ basic site URL, then baseurl would be set
@@ -86,3 +87,13 @@ color:
 # RSS Feed
 gems:
   - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Set default open graph image for all pages
+defaults:
+  -
+    scope:
+      path: ""
+    values:
+      image: /static/og_image.png
