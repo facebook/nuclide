@@ -19,6 +19,8 @@ import passesGK from '../../commons-node/passesGK';
 
 import {getFlowServiceByNuclideUri} from './FlowServiceFactory';
 
+const ID_REGEX = /^[a-zA-Z_$][0-9a-zA-Z_$]*$/;
+
 export default class FlowAutocompleteProvider {
   _cacher: AutocompleteCacher<?Array<atom$AutocompleteSuggestion>>;
   constructor() {
@@ -74,7 +76,7 @@ export function shouldFilter(
   lastRequest: atom$AutocompleteRequest,
   currentRequest: atom$AutocompleteRequest,
 ): boolean {
-  const prefixIsIdentifier = /^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(currentRequest.prefix);
+  const prefixIsIdentifier = ID_REGEX.test(currentRequest.prefix);
   const previousPrefixIsDot = /^\s*\.\s*$/.test(lastRequest.prefix);
   const currentPrefixIsSingleChar = currentRequest.prefix.length === 1;
   const startsWithPrevious = currentRequest.prefix.length - 1 === lastRequest.prefix.length &&
@@ -134,9 +136,9 @@ function updateResults(
 }
 
 function getReplacementPrefix(originalPrefix: string): string {
-  // If it is just whitespace and punctuation, ignore it (this keeps us
-  // from eating leading dots).
-  return /^[\s.]*$/.test(originalPrefix) ? '' : originalPrefix;
+  // Ignore prefix unless it's an identifier (this keeps us from eating leading
+  // dots, colons, etc).
+  return ID_REGEX.test(originalPrefix) ? originalPrefix : '';
 }
 
 /**

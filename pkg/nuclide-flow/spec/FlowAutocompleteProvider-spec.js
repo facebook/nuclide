@@ -205,6 +205,18 @@ describe('FlowAutocompleteProvider', () => {
       });
     });
 
+    it('should not filter suggestions if the prefix is not a valid id', () => {
+      waitsForPromise(async () => {
+        activatedManually = true;
+        prefix = '{';
+        expect(
+          hasEqualElements(
+            await getNameSet(options),
+            new Set(optionNames)),
+        ).toBe(true);
+      });
+    });
+
     it('should rank better matches higher', () => {
       waitsForPromise(async () => {
         prefix = 'one';
