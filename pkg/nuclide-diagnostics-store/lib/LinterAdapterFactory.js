@@ -83,14 +83,6 @@ export function validateLinter(provider: LinterProvider): Array<string> {
       errors,
     );
 
-    if (provider.scope === 'project') {
-      validate(
-        !provider.lintOnFly,
-        "lintOnFly must be false for a linter with 'project' scope",
-        errors,
-      );
-    }
-
     validate(provider.lint, 'lint function must be specified', errors);
     validate(typeof provider.lint === 'function', 'lint must be a function', errors);
 
