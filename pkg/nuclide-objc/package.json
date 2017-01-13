@@ -16,7 +16,7 @@
       "enableAutomaticSquareBracketInsertion": {
         "title": "Enable Automatic Square Bracket Insertion",
         "type": "boolean",
-        "default": false
+        "default": true
       }
     },
     "packageType": "Atom",
