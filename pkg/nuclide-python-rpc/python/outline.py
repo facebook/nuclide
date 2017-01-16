@@ -8,7 +8,7 @@ import jedi
 
 
 def serialize_names(names):
-    return filter(None, [serialize_name(n) for n in names])
+    return list(filter(None, [serialize_name(n) for n in names]))
 
 
 def serialize_name(name):
