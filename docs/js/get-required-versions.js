@@ -10,7 +10,7 @@
 'use strict';
 
 /* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
-/* eslint prefer-arrow-callback: ["warning", { "allowNamedFunctions": true }] */
+/* eslint prefer-arrow-callback: ["warn", { "allowNamedFunctions": true }] */
 /* eslint-disable no-var */
 /* eslint-disable no-undef */
 
