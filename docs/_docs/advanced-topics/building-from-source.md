@@ -20,7 +20,7 @@ addition, you must have
 
 <ul>
   <li>Xcode (for Command Line Tools)</li>
-  <li id="node"></li>
+  <li class="node"></li>
   <li>Atom Shell Commands (open Atom and go to `Atom | Install Shell Commands`) installed as well.</li>
 </ul>
 
