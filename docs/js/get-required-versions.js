@@ -10,7 +10,7 @@
 'use strict';
 
 /* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
-/* eslint prefer-arrow-callback: ["warn", { "allowNamedFunctions": true }] */
+/* eslint-disable  prefer-arrow-callback */
 /* eslint-disable no-var */
 /* eslint-disable no-undef */
 
@@ -33,7 +33,7 @@
 
   fetch(
     'https://raw.githubusercontent.com/facebook/nuclide/master/package.json',
-    {mode : 'cors'}
+    { mode : 'cors' }
   ).then(function(response) {
     return response.json();
   }).then(function(data) {
@@ -43,24 +43,18 @@
     var nodeVersion = data.engines.node.match(versionLikeRe)[0];
     var atomVersion = data.engines.atom.match(versionLikeRe)[0];
     var nuclideVersion = data.version;
-    console.log(nodeEls);
-    if (nodeEls) {
-      for (var i = 0; i < nodeEls.length; i++) {
-        nodeEls.item(i).innerHTML =
-          'A Node version that is greater or equal to ' + nodeVersion + ' is required.';
-      }
+
+    for (var i = 0; i < nodeEls.length; i++) {
+      nodeEls.item(i).innerHTML =
+        'A Node version that is greater or equal to ' + nodeVersion + ' is required.';
     }
-    if (atomEls) {
-      for (var j = 0; j < atomEls.length; j++) {
-        atomEls.item(j).innerHTML =
-          'Nuclide requires an Atom version that is greater or equal to ' + atomVersion + '.';
-      }
+    for (var j = 0; j < atomEls.length; j++) {
+      atomEls.item(j).innerHTML =
+        'Nuclide requires an Atom version that is greater or equal to ' + atomVersion + '.';
     }
-    if (nuclideEls) {
-      for (var k = 0; k < nuclideEls.length; k++) {
-        nuclideEls.item(k).innerHTML =
-          'The current version of Nuclide is ' + nuclideVersion + '.';
-      }
+    for (var k = 0; k < nuclideEls.length; k++) {
+      nuclideEls.item(k).innerHTML =
+        'The current version of Nuclide is ' + nuclideVersion + '.';
     }
   });
 })();
