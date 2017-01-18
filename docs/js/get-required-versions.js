@@ -33,7 +33,7 @@
 
   fetch(
     'https://raw.githubusercontent.com/facebook/nuclide/master/package.json',
-    { mode : 'cors' }
+    {mode: 'cors'}
   ).then(function(response) {
     return response.json();
   }).then(function(data) {
