@@ -26,7 +26,7 @@
   var atomEls = document.getElementsByClassName('atom');
   var nuclideEls = document.getElementsByClassName('nuclide');
 
-  if (!(nodeEls || atomEls || nuclideEls)) {
+  if (!(nodeEls.length > 0 || atomEls.length > 0 || nuclideEls.length > 0)) {
     // Nothing to do in this page...
     return;
   }
