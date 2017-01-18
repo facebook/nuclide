@@ -24,34 +24,6 @@
   {% comment %}
   jQuery and ajax to automatically insert Atom and Node version dependencies into the documentation.
   {% endcomment %}
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-
-  <script>
-    $.ajax({
-      url: "https://raw.githubusercontent.com/facebook/nuclide/master/package.json",
-      type: "GET",
-      dataType: "json",
-      success: function(data) {
-        var nodeVersion = data.engines.node.split("=");
-        var atomVersion = data.engines.atom.split("=");
-        var nuclideVersion = data.version;
-
-        var nodeText = "A Node version that is greater or equal to " + nodeVersion[1] + " is required.";
-        var atomText = "Nuclide requires an Atom version that is greater or equal to " + atomVersion[1] + ".";
-        var nuclideText = "The current version of Nuclide is " + nuclideVersion + ".";
-
-        if(document.getElementById("node")) {
-          document.getElementById("node").innerHTML = nodeText;
-        }
-        if(document.getElementById("atom")) {
-          document.getElementById("atom").innerHTML = atomText;
-        }
-        if(document.getElementById("nuclide")) {
-          document.getElementById("nuclide").innerHTML = nuclideText;
-        }
-      }
-    });
-  </script>
 
   {% comment %}
   For our RSS feed.xml

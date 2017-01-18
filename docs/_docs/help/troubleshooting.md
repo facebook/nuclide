@@ -41,7 +41,7 @@ check out the following tips:
 
 *Node Version*
 
-<p id="node"></p>
+<p class="node"></p>
 
 Use the command-line to verify your Node version by running:
 

@@ -19,7 +19,7 @@ supported and stability is not guaranteed.
 
 ## Quick Install
 
-<p id="atom"></p>
+<p class="atom"></p>
 
 Assuming you have met all the prerequisites for your platform, the easiest way to install Nuclide is within Atom itself:
 
@@ -43,7 +43,7 @@ prerequisites.
 
 ### Prerequisites
 
-<p id="atom"></p>
+<p class="atom"></p>
 
 You can follow the [instructions on the Atom website](http://flight-manual.atom.io/getting-started/sections/installing-atom/#platform-mac). Essentially,
 if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
@@ -71,7 +71,7 @@ $ apm install nuclide
 
 ### Prerequisites
 
-<p id="atom"></p>
+<p class="atom"></p>
 
 >Git is required to install Atom on Linux.  
 
@@ -119,7 +119,7 @@ $ apm install nuclide
 
 Atom can be installed on Windows.
 
-<p id="atom"></p>
+<p class="atom"></p>
 
 You can follow the [instructions on the Atom website](http://flight-manual.atom.io/getting-started/sections/installing-atom/#platform-windows). Essentially,
 if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
