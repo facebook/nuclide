@@ -644,7 +644,7 @@
       },
       "patterns": [
         {
-          "begin": "\\b(type)\\b|(?<=[:])[[:space:]]*+(?!\\b(type)\\b)(?=(?:[[:space:]]*[[:lower:]][[:word:]]*)*[\\.])",
+          "begin": "\\b(type)\\b",
           "end": "([\\.])",
           "beginCaptures": {
             "1": { "name": "entity.other.attribute-name.css constant.language constant.numeric" }
