@@ -107,10 +107,15 @@ function processCompletions(
       replacementPrefix: resultPrefix === '' ? defaultPrefix : resultPrefix,
       description: matchTypeOfType(type),
     };
+    // The typechecker only gives us suggestions that are valid in the
+    // current scope - so, if what the user typed didn't start with the
+    // namespace (which would lead to us having a resultPrefix), we don't
+    // want to put the namespace in the replacement.
+    const scopedName = resultPrefix === '' ? name.split("\\").pop() : name;
     if (func_details != null) {
       return {
         ...commonResult,
-        snippet: matchSnippet(name, func_details.params),
+        snippet: matchSnippet(scopedName, func_details.params),
         leftLabel: func_details.return_type,
         rightLabel: paramSignature(func_details.params),
         type: 'function',
@@ -118,7 +123,7 @@ function processCompletions(
     } else {
       return {
         ...commonResult,
-        snippet: matchSnippet(name),
+        snippet: matchSnippet(scopedName),
         rightLabel: matchTypeOfType(type),
       };
     }
