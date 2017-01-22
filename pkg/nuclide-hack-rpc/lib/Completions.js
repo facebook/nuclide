@@ -111,7 +111,7 @@ function processCompletions(
     // current scope - so, if what the user typed didn't start with the
     // namespace (which would lead to us having a resultPrefix), we don't
     // want to put the namespace in the replacement.
-    const scopedName = resultPrefix === '' ? name.split("\\").pop() : name;
+    const scopedName = resultPrefix === '' ? name.split('\\').pop() : name;
     if (func_details != null) {
       return {
         ...commonResult,
