@@ -1060,6 +1060,7 @@ export class FileTreeStore {
 
   addExtraProjectSelectionContent(content: React.Element<any>) {
     this._extraProjectSelectionContent = this._extraProjectSelectionContent.push(content);
+    this._emitChange();
   }
 
   getFilterFound(): boolean {

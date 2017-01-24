@@ -16,6 +16,7 @@ import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 
 import type {ServerStatusType, FlowAutocompleteItem} from '..';
 import type {FlowExecInfoContainer} from './FlowExecInfoContainer';
+import type {FlowAutocompleteOutput} from './flowOutputTypes';
 
 import type {
   Diagnostics,
@@ -186,16 +187,8 @@ export class FlowRoot {
       if (!result) {
         return [];
       }
-      const json = parseJSON(args, result.stdout);
-      let resultsArray;
-      if (Array.isArray(json)) {
-        // Flow < v0.20.0
-        resultsArray = json;
-      } else {
-        // Flow >= v0.20.0. The output format was changed to support more detailed failure
-        // information.
-        resultsArray = json.result;
-      }
+      const json: FlowAutocompleteOutput = parseJSON(args, result.stdout);
+      const resultsArray: Array<FlowAutocompleteItem> = json.result;
       return resultsArray;
     } catch (e) {
       return [];

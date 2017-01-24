@@ -10,6 +10,7 @@
 
 import type {
   NuclideNewConnectionProfileInitialFields,
+  NuclideRemoteConnectionParams,
   NuclideRemoteConnectionParamsWithPassword,
   NuclideRemoteConnectionProfile,
 } from './connection-types';
@@ -40,7 +41,7 @@ type Props = {
   // checks that the fields are non-empty before calling this function.
   onSave: (profile: NuclideRemoteConnectionProfile) => mixed,
   // The inputs to pre-fill the form with.
-  initialFormFields: NuclideNewConnectionProfileInitialFields,
+  initialFormFields: NuclideNewConnectionProfileInitialFields | NuclideRemoteConnectionParams,
   profileHosts: ?Array<string>,
 };
 
@@ -101,7 +102,10 @@ export default class CreateConnectionProfileForm extends React.Component<void, P
           initialUsername={initialFields.username}
           initialServer={initialFields.server}
           initialCwd={initialFields.cwd}
-          initialRemoteServerCommand={DEFAULT_SERVER_COMMAND_PLACEHOLDER}
+          initialRemoteServerCommand={
+            initialFields.remoteServerCommand
+            || DEFAULT_SERVER_COMMAND_PLACEHOLDER
+          }
           initialSshPort={initialFields.sshPort}
           initialPathToPrivateKey={initialFields.pathToPrivateKey}
           initialAuthMethod={initialFields.authMethod}

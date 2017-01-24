@@ -33,8 +33,8 @@ export function activate(state: ?Object): void {
   subscriptions = new UniversalDisposable();
   subscriptions.add(
     // eslint-disable-next-line nuclide-internal/atom-apis
-    atom.commands.add('atom-workspace', 'nuclide-docs:open', e => {
-      const url = createUtmUrl('http://nuclide.io/docs', 'help');
+    atom.commands.add('atom-workspace', 'nuclide-home:open-docs', e => {
+      const url = createUtmUrl('https://nuclide.io/docs', 'help');
       shell.openExternal(url);
     }),
   );

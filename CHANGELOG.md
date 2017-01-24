@@ -1,5 +1,27 @@
 # Nuclide Changelog
 
+## v0.201.0
+
+### Highlights
+
+* URLs in console messages are now clickable. Thanks @nmn!
+* Sections in the debugger panel are now resizable.
+
+### General
+
+* Hyperclick now creates a navigation stack entry before performing an action. Thanks Sandor!
+* Fixed a bug that prevented “opening all“ bugs from the diagnostics table when there were more than 20. Thanks Sandor!
+* We now only show the most relevant datatip for a given location, rather than all applicable ones. Thanks Sandor!
+* A warning will show up if several of the remote profiles connect to same server by different names. Thanks Kody!
+* Removed confusing “split” context menu items from file tree.
+
+### Debugger
+
+* Make JavaScript debugger names more clear. (iOS Webkit Debug Proxy → Mobile JS, JavaScript -> NodeJS)
+* Detaching the Node debugger no longer crashes the Node process.
+* Node and Native debugger process selection lists refresh as soon as the dialog is opened.
+* Bugfixes for attaching the Node debugger to a Node process.
+
 ## v0.200.0
 
 Hotfix for internal changes.

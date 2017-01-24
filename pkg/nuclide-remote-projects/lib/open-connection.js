@@ -37,6 +37,7 @@ let dialogPromiseQueue: ?PromiseQueue = null;
 export function openConnectionDialog(options?: {
   initialServer: string,
   initialCwd: string,
+  initialRemoteServerCommand?: string,
 }): Promise<?RemoteConnection> {
   if (!dialogPromiseQueue) {
     dialogPromiseQueue = new PromiseQueue();

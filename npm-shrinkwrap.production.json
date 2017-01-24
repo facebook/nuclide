@@ -1,6 +1,6 @@
 {
   "name": "nuclide",
-  "version": "0.200.0",
+  "version": "0.201.0",
   "dependencies": {
     "ansi-regex": {
       "version": "2.1.1",

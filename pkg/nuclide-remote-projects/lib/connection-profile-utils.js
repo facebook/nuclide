@@ -36,6 +36,7 @@ import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-
 export function getDefaultConnectionProfile(options?: {
   initialServer: string,
   initialCwd: string,
+  initialRemoteServerCommand?: string,
 }): NuclideRemoteConnectionProfile {
   const defaultConnectionSettings = getDefaultConfig();
   const currentOfficialRSC = defaultConnectionSettings.remoteServerCommand;
@@ -74,6 +75,9 @@ export function getDefaultConnectionProfile(options?: {
   if (options != null) {
     dialogSettings.cwd = options.initialCwd;
     dialogSettings.server = options.initialServer;
+    if (options.initialRemoteServerCommand) {
+      dialogSettings.remoteServerCommand = options.initialRemoteServerCommand;
+    }
   }
   // Due to a previous bug in the sshPort type, we may need to do this cast to
   // correct bad state that was persisted in users' configs.

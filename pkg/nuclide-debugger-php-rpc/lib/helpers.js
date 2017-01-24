@@ -11,6 +11,7 @@
 import type {Breakpoint} from './BreakpointStore';
 import type {DebuggerMode} from './types';
 
+import dedent from 'dedent';
 import child_process from 'child_process';
 import url from 'url';
 import logger from './utils';
@@ -120,8 +121,12 @@ export function launchPhpScriptWithXDebugEnabled(
   const {phpRuntimePath, phpRuntimeArgs} = getConfig();
   const runtimeArgs = shellParse(phpRuntimeArgs);
   const scriptArgs = shellParse(scriptPath);
-  const proc = child_process.spawn(phpRuntimePath, [...runtimeArgs, ...scriptArgs]);
-  logger.log(`child_process(${proc.pid}) spawned with xdebug enabled for: ${scriptPath}`);
+  const args = [...runtimeArgs, ...scriptArgs];
+  const proc = child_process.spawn(phpRuntimePath, args);
+  logger.log(dedent`
+    child_process(${proc.pid}) spawned with xdebug enabled.
+    $ ${phpRuntimePath} ${args.join(' ')}
+  `);
 
   proc.stdout.on('data', chunk => {
     // stdout should hopefully be set to line-buffering, in which case the
