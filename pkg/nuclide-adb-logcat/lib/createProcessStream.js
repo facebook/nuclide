@@ -58,7 +58,7 @@ export function createProcessStream(): Observable<string> {
   )
     // Only get the text from stdout.
     .filter(event => event.kind === 'stdout')
-    .map(event => event.data && event.data.replace(/\r?\n$/, ''));
+    .map(event => event.data && event.data.replace(/\r*\n$/, ''));
 }
 
 function spawnAdbLogcat(): child_process$ChildProcess {
