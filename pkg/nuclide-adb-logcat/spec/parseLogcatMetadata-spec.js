@@ -52,4 +52,12 @@ describe('parseLogcatMetadata', () => {
     invariant(parsed != null);
     expect(parsed.tag).toBe('fb4a(:<default>):PeriodicForegroundScheduler');
   });
+
+  it('parses the 5-digit tid', () => {
+    const parsed = parseLogcatMetadata(
+      '[ 01-28 14:59:27.633  3211:15223 I/ReactNativeJS ]',
+    );
+    invariant(parsed != null);
+    expect(parsed.tid).toBe(15223);
+  });
 });
