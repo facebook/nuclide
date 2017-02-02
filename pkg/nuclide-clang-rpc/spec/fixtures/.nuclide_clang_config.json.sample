@@ -1,0 +1,10 @@
+{
+  "extra_compiler_flags": [
+    "-D_THIS_IS_MY_CRAZY_DEFINE",
+    "-O2",
+    "-isystem", "/usr/local/include"
+  ],
+  "ignored_compiler_flags": [
+    "-O3"
+  ]
+}

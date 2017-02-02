@@ -26,7 +26,7 @@ const logger = getLogger();
 const BUCK_TIMEOUT = 10 * 60 * 1000;
 
 const COMPILATION_DATABASE_FILE = 'compile_commands.json';
-const PROJECT_CLANG_FLAGS_FILE = 'nuclide_clang_flags.json';
+const PROJECT_CLANG_FLAGS_FILE = '.nuclide_clang_config.json';
 
 /**
  * Facebook puts all headers in a <target>:__default_headers__ build target by default.
@@ -314,15 +314,12 @@ export default class ClangFlagsManager {
       const contents = await fsPromise.readFile(flagsFile, 'utf8');
       const data = JSON.parse(contents);
       invariant(data instanceof Object);
-      const {copts, nocopts, includes} = data;
+      const {extra_compiler_flags, ignored_compiler_flags} = data;
       const extraCompilerFlags = {flags: [], rawData: null, flagsFile};
       const ignoredCompilerFlags = {flags: [], rawData: null, flagsFile};
-      copts.forEach(flag => extraCompilerFlags.flags.push(flag));
-      nocopts.forEach(flag => ignoredCompilerFlags.flags.push(flag));
-      includes.forEach(includePath => {
-        extraCompilerFlags.flags.push('-isystem', includePath);
-      });
 
+      extra_compiler_flags.forEach(flag => extraCompilerFlags.flags.push(flag));
+      ignored_compiler_flags.forEach(flag => ignoredCompilerFlags.flags.push(flag));
       result = {extraCompilerFlags, ignoredCompilerFlags};
       this._clangProjectFlags = result;
     } catch (e) {

@@ -45,7 +45,7 @@ describe('ClangFlagsManager', () => {
   afterEach(() => {
     waitsForPromise(async () => {
       // clean up any temporary files used in tests
-      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', 'nuclide_clang_flags.json');
+      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', '.nuclide_clang_config.json');
       if (await fsPromise.exists(tmpJsonFile)) {
         await fsPromise.unlink(tmpJsonFile);
       }
@@ -246,8 +246,8 @@ describe('ClangFlagsManager', () => {
   it('gets project flags in addition to compilation database flags', () => {
     waitsForPromise(async () => {
       const sampleJsonFile = nuclideUri.join(__dirname, 'fixtures',
-        'nuclide_clang_flags.json.sample');
-      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', 'nuclide_clang_flags.json');
+        '.nuclide_clang_config.json.sample');
+      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', '.nuclide_clang_config.json');
       await fsPromise.copy(sampleJsonFile, tmpJsonFile);
 
       const expectedFlags = [
