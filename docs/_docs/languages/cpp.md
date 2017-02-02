@@ -61,6 +61,12 @@ in the root of your project and provides the necessary information for the
 > If you use [Buck](#supported-compilers__installing-buck), you will not need to build with this
 > flag.
 
+You may also provide additional project-wide compilation flags and include paths (such as system
+includes) in a `nuclide_clang_flags.json` file at the root of your project.  These flags will
+specifically be used for the [Nuclide C++ features](#features) that require libclang,
+rather than in the build process itself.  This file should look as follows:
+> `{ 'copts': [<compiler flags>], 'includes': [<include paths>] }`
+
 ### Installing Buck
 
 Buck is [available](https://buckbuild.com/setup/install.html) via Homebrew on macOS, or you can
