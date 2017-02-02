@@ -13,7 +13,7 @@ import nullthrows from 'nullthrows';
 import nuclideUri from '../../commons-node/nuclideUri';
 import * as BuckService from '../../nuclide-buck-rpc';
 import ClangFlagsManager from '../lib/ClangFlagsManager';
-import fsPromise from '../../commons-node/fsPromise';
+import {copyFixture} from '../../../pkg/nuclide-test-helpers';
 
 describe('ClangFlagsManager', () => {
   let flagsManager: ClangFlagsManager;
@@ -41,15 +41,6 @@ describe('ClangFlagsManager', () => {
         },
       },
     );
-  });
-  afterEach(() => {
-    waitsForPromise(async () => {
-      // clean up any temporary files used in tests
-      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', '.nuclide_clang_config.json');
-      if (await fsPromise.exists(tmpJsonFile)) {
-        await fsPromise.unlink(tmpJsonFile);
-      }
-    });
   });
 
   it('sanitizeCommand()', () => {
@@ -245,10 +236,7 @@ describe('ClangFlagsManager', () => {
 
   it('gets project flags in addition to compilation database flags', () => {
     waitsForPromise(async () => {
-      const sampleJsonFile = nuclideUri.join(__dirname, 'fixtures',
-        '.nuclide_clang_config.json.sample');
-      const tmpJsonFile = nuclideUri.join(__dirname, 'fixtures', '.nuclide_clang_config.json');
-      await fsPromise.copy(sampleJsonFile, tmpJsonFile);
+      const testDir = await copyFixture('cpp_cmake_project', __dirname);
 
       const expectedFlags = [
         '-fPIC',
@@ -257,17 +245,17 @@ describe('ClangFlagsManager', () => {
         '-isystem', '/usr/local/include',
       ];
 
-      let testFile = nuclideUri.join(__dirname, 'fixtures', 'test.cpp');
+      let testFile = nuclideUri.join(testDir, 'test.cpp');
       let result = await flagsManager.getFlagsForSrc(testFile);
       expect(nullthrows(result).flags).toEqual(expectedFlags);
       expect(BuckService.build).not.toHaveBeenCalled();
 
-      testFile = nuclideUri.join(__dirname, 'fixtures', 'test.h');
+      testFile = nuclideUri.join(testDir, 'test.h');
       result = await flagsManager.getFlagsForSrc(testFile);
       expect(nullthrows(result).flags).toEqual(expectedFlags);
 
       // Fall back to Buck if it's not in the compilation DB.
-      testFile = nuclideUri.join(__dirname, 'fixtures', 'test2.cpp');
+      testFile = nuclideUri.join(testDir, 'test2.cpp');
       result = await flagsManager.getFlagsForSrc(testFile);
       expect(BuckService.build).toHaveBeenCalled();
       expect(nullthrows(result).flags).toEqual(null);

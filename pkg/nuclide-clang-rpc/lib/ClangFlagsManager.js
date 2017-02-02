@@ -71,8 +71,8 @@ export type ClangFlags = {
 };
 
 type ClangProjectFlags = {
-  extraCompilerFlags: ClangFlags,
-  ignoredCompilerFlags: ClangFlags,
+  extraCompilerFlags: Array<string>,
+  ignoredCompilerFlags: Array<string>,
 };
 
 let _overrideIncludePath = undefined;
@@ -97,14 +97,14 @@ export default class ClangFlagsManager {
   _compilationDatabases: Map<string, Map<string, ClangFlags>>;
   _realpathCache: Object;
   _pathToFlags: Map<string, Promise<?ClangFlags>>;
-  _clangProjectFlags: ?ClangProjectFlags;
+  _clangProjectFlags: Map<string, Promise<?ClangProjectFlags>>;
 
   constructor() {
     this._pathToFlags = new Map();
     this._cachedBuckFlags = new Map();
     this._compilationDatabases = new Map();
     this._realpathCache = {};
-    this._clangProjectFlags = null;
+    this._clangProjectFlags = new Map();
   }
 
   reset() {
@@ -112,7 +112,7 @@ export default class ClangFlagsManager {
     this._cachedBuckFlags.clear();
     this._compilationDatabases.clear();
     this._realpathCache = {};
-    this._clangProjectFlags = null;
+    this._clangProjectFlags.clear();
   }
 
   /**
@@ -217,25 +217,18 @@ export default class ClangFlagsManager {
       PROJECT_CLANG_FLAGS_FILE,
       nuclideUri.dirname(src),
     );
-    let projectFlags = null;
-    if (projectFlagsDir != null) {
-      const projectFlagsFile = nuclideUri.join(projectFlagsDir, PROJECT_CLANG_FLAGS_FILE);
-      projectFlags = await this._loadProjectCompilerFlags(projectFlagsFile);
+    if (projectFlagsDir == null) {
+      return originalFlags;
     }
-
+    const projectFlagsFile = nuclideUri.join(projectFlagsDir, PROJECT_CLANG_FLAGS_FILE);
+    const projectFlags = await this._loadProjectCompilerFlags(projectFlagsFile);
     if (projectFlags == null) {
       return originalFlags;
     }
 
-    const extraCompilerFlags = projectFlags.extraCompilerFlags.flags || [];
-    const ignoredCompilerFlags = projectFlags.ignoredCompilerFlags.flags || [];
-
-    let finalFlags = originalFlags.slice(0);
-
-    finalFlags = finalFlags.filter(flag => ignoredCompilerFlags.indexOf(flag) === -1);
-    finalFlags = finalFlags.concat(extraCompilerFlags);
-
-    return finalFlags;
+    return originalFlags
+      .filter(flag => projectFlags.ignoredCompilerFlags.indexOf(flag) === -1)
+      .concat(projectFlags.extraCompilerFlags);
   }
 
   async __getFlagsForSrcImpl(src: string, compilationDBFile: ?NuclideUri): Promise<?ClangFlags> {
@@ -305,23 +298,31 @@ export default class ClangFlagsManager {
   }
 
   async _loadProjectCompilerFlags(flagsFile: string): Promise<?ClangProjectFlags> {
-    if (this._clangProjectFlags != null) {
-      return this._clangProjectFlags;
+    let cached = this._clangProjectFlags.get(flagsFile);
+    if (cached == null) {
+      cached = this._loadProjectCompilerFlagsImpl(flagsFile);
+      this._clangProjectFlags.set(flagsFile, cached);
     }
+    return cached;
+  }
 
+  async _loadProjectCompilerFlagsImpl(flagsFile: string): Promise<?ClangProjectFlags> {
     let result = null;
     try {
       const contents = await fsPromise.readFile(flagsFile, 'utf8');
       const data = JSON.parse(contents);
       invariant(data instanceof Object);
       const {extra_compiler_flags, ignored_compiler_flags} = data;
-      const extraCompilerFlags = {flags: [], rawData: null, flagsFile};
-      const ignoredCompilerFlags = {flags: [], rawData: null, flagsFile};
+      const extraCompilerFlags = [];
+      const ignoredCompilerFlags = [];
 
-      extra_compiler_flags.forEach(flag => extraCompilerFlags.flags.push(flag));
-      ignored_compiler_flags.forEach(flag => ignoredCompilerFlags.flags.push(flag));
+      if (extra_compiler_flags != null) {
+        extra_compiler_flags.forEach(flag => extraCompilerFlags.push(flag));
+      }
+      if (ignored_compiler_flags != null) {
+        ignored_compiler_flags.forEach(flag => ignoredCompilerFlags.push(flag));
+      }
       result = {extraCompilerFlags, ignoredCompilerFlags};
-      this._clangProjectFlags = result;
     } catch (e) {
       logger.error(`Error reading compilation flags from ${flagsFile}`, e);
     }

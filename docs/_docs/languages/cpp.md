@@ -62,9 +62,10 @@ in the root of your project and provides the necessary information for the
 > flag.
 
 You may also provide additional project-wide compilation flags and include paths (such as `-isystem`
-includes) in a `.nuclide_clang_config.json` file at the root of your project.  These flags will
-specifically be used for the [Nuclide C++ features](#features) that require libclang,
-rather than in the build process itself.  This file should look as follows:
+includes), as well as compilation flags to ignore, in a `.nuclide_clang_config.json`
+file at the root of your project.  These flags will specifically be used for the
+[Nuclide C++ features](#features) that require libclang, rather than in the build process itself,
+and they will be appended to the end of the compilation line.  This file should look as follows:
 > `{ 'extra_compiler_flags': [..], 'ignored_compiler_flags': [..] }`
 
 ### Installing Buck
