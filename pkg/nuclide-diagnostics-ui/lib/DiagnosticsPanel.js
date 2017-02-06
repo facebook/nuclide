@@ -32,6 +32,7 @@ type Props = {
   warnAboutLinter: boolean,
   disableLinter: () => mixed,
   showTraces: boolean,
+  onShowTracesChange: (isChecked: boolean) => mixed,
 };
 
 /**
@@ -42,6 +43,8 @@ export default class DiagnosticsPanel extends React.Component {
 
   constructor(props: mixed) {
     super(props);
+    (this: any)._onShowTracesChange =
+      this._onShowTracesChange.bind(this);
     (this: any)._onFilterByActiveTextEditorChange =
       this._onFilterByActiveTextEditorChange.bind(this);
     (this: any)._openAllFilesWithErrors =
@@ -106,6 +109,13 @@ export default class DiagnosticsPanel extends React.Component {
           <ToolbarRight>
             <span className="inline-block">
               <Checkbox
+                checked={this.props.showTraces}
+                label="Show full diagnostic traces"
+                onChange={this._onShowTracesChange}
+              />
+            </span>
+            <span className="inline-block">
+              <Checkbox
                 checked={this.props.filterByActiveTextEditor}
                 label="Show only diagnostics for current file"
                 onChange={this._onFilterByActiveTextEditorChange}
@@ -128,6 +138,11 @@ export default class DiagnosticsPanel extends React.Component {
         />
       </div>
     );
+  }
+
+  _onShowTracesChange(isChecked: boolean) {
+    track('diagnostics-panel-toggle-show-traces', {isChecked: isChecked.toString()});
+    this.props.onShowTracesChange.call(null, isChecked);
   }
 
   _onFilterByActiveTextEditorChange(isChecked: boolean) {

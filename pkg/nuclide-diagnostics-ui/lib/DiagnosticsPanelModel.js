@@ -30,6 +30,7 @@ type PanelProps = {
   +warnAboutLinter: boolean,
   +showTraces: boolean,
   +disableLinter: () => void,
+  +onShowTracesChange: (isChecked: boolean) => void,
 };
 
 type SerializedDiagnosticsPanelModel = {
@@ -46,11 +47,12 @@ export class DiagnosticsPanelModel {
 
   constructor(
     diagnostics: Observable<Array<DiagnosticMessage>>,
-    initialfilterByActiveTextEditor: boolean,
-    showTraces: Observable<boolean>,
+    showTraces: boolean,
+    onShowTracesChange: (isChecked: boolean) => void,
     disableLinter: () => void,
-    onFilterByActiveTextEditorChange: (filterByActiveTextEditor: boolean) => void,
     warnAboutLinterStream: Observable<boolean>,
+    initialfilterByActiveTextEditor: boolean,
+    onFilterByActiveTextEditorChange: (filterByActiveTextEditor: boolean) => void,
   ) {
     this._visibility = new BehaviorSubject(true);
 
@@ -66,8 +68,9 @@ export class DiagnosticsPanelModel {
         diagnostics,
         warnAboutLinterStream,
         showTraces,
-        initialfilterByActiveTextEditor,
+        onShowTracesChange,
         disableLinter,
+        initialfilterByActiveTextEditor,
         onFilterByActiveTextEditorChange,
       )
         .publishReplay(1)
@@ -120,9 +123,10 @@ export class DiagnosticsPanelModel {
 function getPropsStream(
   diagnosticsStream: Observable<Array<DiagnosticMessage>>,
   warnAboutLinterStream: Observable<boolean>,
-  showTraces: Observable<boolean>,
-  initialfilterByActiveTextEditor: boolean,
+  initalShowTraces: boolean,
+  onShowTracesChange: (isChecked: boolean) => void,
   disableLinter: () => void,
+  initialfilterByActiveTextEditor: boolean,
   onFilterByActiveTextEditorChange: (filterByActiveTextEditor: boolean) => void,
 ): Observable<PanelProps> {
   const activeTextEditorPaths = observableFromSubscribeFunction(
@@ -141,6 +145,12 @@ function getPropsStream(
     diagnosticsStream.map(diagnostics => diagnostics.slice().sort(compareMessagesByFile)),
   );
 
+  const showTracesStream = new BehaviorSubject(initalShowTraces);
+  const handleShowTracesStream = (showTraces: boolean) => {
+    showTracesStream.next(showTraces);
+    onShowTracesChange(showTraces);
+  };
+
   const filterByActiveTextEditorStream = new BehaviorSubject(initialfilterByActiveTextEditor);
   const handleFilterByActiveTextEditorChange = (filterByActiveTextEditor: boolean) => {
     filterByActiveTextEditorStream.next(filterByActiveTextEditor);
@@ -152,13 +162,14 @@ function getPropsStream(
     sortedDiagnostics,
     warnAboutLinterStream,
     filterByActiveTextEditorStream,
-    showTraces,
+    showTracesStream,
   )
     .map(([pathToActiveTextEditor, diagnostics, warnAboutLinter, filter, traces]) => ({
       pathToActiveTextEditor,
       diagnostics,
       warnAboutLinter,
       showTraces: traces,
+      onShowTracesChange: handleShowTracesStream,
       disableLinter,
       filterByActiveTextEditor: filter,
       onFilterByActiveTextEditorChange: handleFilterByActiveTextEditorChange,

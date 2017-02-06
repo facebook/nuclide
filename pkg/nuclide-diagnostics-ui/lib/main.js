@@ -42,6 +42,7 @@ const LINTER_PACKAGE = 'linter';
 const MAX_OPEN_ALL_FILES = 20;
 
 type ActivationState = {
+  showTraces: boolean,
   filterByActiveTextEditor: boolean,
 };
 
@@ -61,6 +62,7 @@ class Activation {
     this._subscriptions = new UniversalDisposable();
     const state = state_ || {};
     this._state = {
+      showTraces: state.showTraces || this._getShowDiagnosticTraces(),
       filterByActiveTextEditor: state.filterByActiveTextEditor === true,
     };
   }
@@ -129,24 +131,34 @@ class Activation {
     };
   }
 
+  _getShowDiagnosticTraces(): boolean {
+    return ((featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'): any): boolean);
+  }
+
   _createDiagnosticsPanelModel(): DiagnosticsPanelModel {
     return new DiagnosticsPanelModel(
       this._diagnosticUpdaters
         .switchMap(updater => (
           updater == null ? Observable.of([]) : updater.allMessageUpdates
         )),
+      this._state.showTraces,
+      // https://github.com/gajus/eslint-plugin-flowtype/pull/131
+      // eslint-disable-next-line flowtype/space-after-type-colon
+      showTraces => {
+        if (this._state != null) {
+          this._state.showTraces = showTraces;
+        }
+      },
+      disableLinter,
+      observeLinterPackageEnabled(),
       this._state.filterByActiveTextEditor,
       // https://github.com/gajus/eslint-plugin-flowtype/pull/131
       // eslint-disable-next-line flowtype/space-after-type-colon
-      (featureConfig.observeAsStream('nuclide-diagnostics-ui.showDiagnosticTraces'):
-          Observable<any>),
-      disableLinter,
       filterByActiveTextEditor => {
         if (this._state != null) {
           this._state.filterByActiveTextEditor = filterByActiveTextEditor;
         }
       },
-      observeLinterPackageEnabled(),
     );
   }
 
