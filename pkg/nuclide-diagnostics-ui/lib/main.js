@@ -140,8 +140,6 @@ class Activation {
           updater == null ? Observable.of([]) : updater.allMessageUpdates
         )),
       this._state.showTraces,
-      // https://github.com/gajus/eslint-plugin-flowtype/pull/131
-      // eslint-disable-next-line flowtype/space-after-type-colon
       showTraces => {
         if (this._state != null) {
           this._state.showTraces = showTraces;
@@ -150,8 +148,6 @@ class Activation {
       disableLinter,
       observeLinterPackageEnabled(),
       this._state.filterByActiveTextEditor,
-      // https://github.com/gajus/eslint-plugin-flowtype/pull/131
-      // eslint-disable-next-line flowtype/space-after-type-colon
       filterByActiveTextEditor => {
         if (this._state != null) {
           this._state.filterByActiveTextEditor = filterByActiveTextEditor;
