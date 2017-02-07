@@ -15,8 +15,5 @@
         "0.0.0": "consumeWorkspaceViewsService"
       }
     }
-  },
-  "dependencies": {
-    "react-devtools": "^1.0.4"
   }
 }
