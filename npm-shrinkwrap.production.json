@@ -83,9 +83,9 @@
       "resolved": "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.6.0.tgz"
     },
     "aws4": {
-      "version": "1.5.0",
+      "version": "1.6.0",
       "from": "aws4@>=1.2.1 <2.0.0",
-      "resolved": "https://registry.npmjs.org/aws4/-/aws4-1.5.0.tgz"
+      "resolved": "https://registry.npmjs.org/aws4/-/aws4-1.6.0.tgz"
     },
     "babylon": {
       "version": "6.15.0",
@@ -103,9 +103,9 @@
       "resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.1.2.tgz"
     },
     "bcrypt-pbkdf": {
-      "version": "1.0.0",
+      "version": "1.0.1",
       "from": "bcrypt-pbkdf@>=1.0.0 <2.0.0",
-      "resolved": "https://registry.npmjs.org/bcrypt-pbkdf/-/bcrypt-pbkdf-1.0.0.tgz",
+      "resolved": "https://registry.npmjs.org/bcrypt-pbkdf/-/bcrypt-pbkdf-1.0.1.tgz",
       "optional": true
     },
     "boolbase": {
@@ -949,6 +949,11 @@
       "version": "15.3.1",
       "from": "react-addons-update@15.3.1",
       "resolved": "https://registry.npmjs.org/react-addons-update/-/react-addons-update-15.3.1.tgz"
+    },
+    "react-devtools-core": {
+      "version": "1.0.6",
+      "from": "react-devtools-core@>=1.0.6 <2.0.0",
+      "resolved": "https://registry.npmjs.org/react-devtools-core/-/react-devtools-core-1.0.6.tgz"
     },
     "react-dom": {
       "version": "15.3.1",
