@@ -60,9 +60,11 @@ class Activation {
   constructor(state_: ?Object): void {
     this._diagnosticUpdaters = new BehaviorSubject(null);
     this._subscriptions = new UniversalDisposable();
+    const _showDiagnosticTraces: boolean =
+      (featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'): any);
     const state = state_ || {};
     this._state = {
-      showTraces: state.showTraces || featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'),
+      showTraces: state.showTraces || _showDiagnosticTraces,
       filterByActiveTextEditor: state.filterByActiveTextEditor === true,
     };
   }
