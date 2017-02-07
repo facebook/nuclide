@@ -135,9 +135,10 @@ class Activation {
         .switchMap(updater => (
           updater == null ? Observable.of([]) : updater.allMessageUpdates
         )),
-      featureConfig.observeAsStream('nuclide-diagnostics-ui.showDiagnosticTraces'),
+      // eslint-disable-next-line max-len
+      ((featureConfig.observeAsStream('nuclide-diagnostics-ui.showDiagnosticTraces'): any): Observable<boolean>),
       showTraces => {
-        featureConfig.set('nuclide-diagnostics-ui.showDiagnosticTraces', showTraces)
+        featureConfig.set('nuclide-diagnostics-ui.showDiagnosticTraces', showTraces);
       },
       disableLinter,
       observeLinterPackageEnabled(),
