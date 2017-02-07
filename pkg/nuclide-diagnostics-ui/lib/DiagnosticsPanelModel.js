@@ -47,8 +47,8 @@ export class DiagnosticsPanelModel {
 
   constructor(
     diagnostics: Observable<Array<DiagnosticMessage>>,
-    showTraces: boolean,
-    onShowTracesChange: (isChecked: boolean) => void,
+    showTracesStream: Observable<boolean>,
+    onShowTracesChange: (showTraces: boolean) => void,
     disableLinter: () => void,
     warnAboutLinterStream: Observable<boolean>,
     initialfilterByActiveTextEditor: boolean,
@@ -67,7 +67,7 @@ export class DiagnosticsPanelModel {
       getPropsStream(
         diagnostics,
         warnAboutLinterStream,
-        showTraces,
+        showTracesStream,
         onShowTracesChange,
         disableLinter,
         initialfilterByActiveTextEditor,
@@ -123,8 +123,8 @@ export class DiagnosticsPanelModel {
 function getPropsStream(
   diagnosticsStream: Observable<Array<DiagnosticMessage>>,
   warnAboutLinterStream: Observable<boolean>,
-  initalShowTraces: boolean,
-  onShowTracesChange: (isChecked: boolean) => void,
+  showTracesStream: Observable<boolean>,
+  onShowTracesChange: (showTraces: boolean) => void,
   disableLinter: () => void,
   initialfilterByActiveTextEditor: boolean,
   onFilterByActiveTextEditorChange: (filterByActiveTextEditor: boolean) => void,
@@ -145,12 +145,6 @@ function getPropsStream(
     diagnosticsStream.map(diagnostics => diagnostics.slice().sort(compareMessagesByFile)),
   );
 
-  const showTracesStream = new BehaviorSubject(initalShowTraces);
-  const handleShowTracesStream = (showTraces: boolean) => {
-    showTracesStream.next(showTraces);
-    onShowTracesChange(showTraces);
-  };
-
   const filterByActiveTextEditorStream = new BehaviorSubject(initialfilterByActiveTextEditor);
   const handleFilterByActiveTextEditorChange = (filterByActiveTextEditor: boolean) => {
     filterByActiveTextEditorStream.next(filterByActiveTextEditor);
@@ -169,7 +163,7 @@ function getPropsStream(
       diagnostics,
       warnAboutLinter,
       showTraces: traces,
-      onShowTracesChange: handleShowTracesStream,
+      onShowTracesChange,
       disableLinter,
       filterByActiveTextEditor: filter,
       onFilterByActiveTextEditorChange: handleFilterByActiveTextEditorChange,

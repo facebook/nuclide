@@ -42,7 +42,6 @@ const LINTER_PACKAGE = 'linter';
 const MAX_OPEN_ALL_FILES = 20;
 
 type ActivationState = {
-  showTraces: boolean,
   filterByActiveTextEditor: boolean,
 };
 
@@ -60,11 +59,8 @@ class Activation {
   constructor(state_: ?Object): void {
     this._diagnosticUpdaters = new BehaviorSubject(null);
     this._subscriptions = new UniversalDisposable();
-    const _showDiagnosticTraces: boolean =
-      (featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'): any);
     const state = state_ || {};
     this._state = {
-      showTraces: state.showTraces || _showDiagnosticTraces,
       filterByActiveTextEditor: state.filterByActiveTextEditor === true,
     };
   }
@@ -139,11 +135,9 @@ class Activation {
         .switchMap(updater => (
           updater == null ? Observable.of([]) : updater.allMessageUpdates
         )),
-      this._state.showTraces,
+      featureConfig.observeAsStream('nuclide-diagnostics-ui.showDiagnosticTraces'),
       showTraces => {
-        if (this._state != null) {
-          this._state.showTraces = showTraces;
-        }
+        featureConfig.set('nuclide-diagnostics-ui.showDiagnosticTraces', showTraces)
       },
       disableLinter,
       observeLinterPackageEnabled(),
