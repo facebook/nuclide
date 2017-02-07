@@ -85,7 +85,7 @@ To reset Atom and Nuclide to factory settings, removing all your packages and se
 
 ## How can I make Nuclide like my favorite editor?
 
-Becaue Nuclide is a package on top of Atom, it is infinitely configurable with a massive collection of open source packages.  If you want Atom to behave more like your favorite editor, try one of these:
+Because Nuclide is a package on top of Atom, it is infinitely configurable with a massive collection of open source packages.  If you want Atom to behave more like your favorite editor, try one of these:
 
 * Vim
   * [vim-mode-plus](https://atom.io/packages/vim-mode-plus)
@@ -136,7 +136,7 @@ Unfortunately, no.  The external search tools Nuclide uses are not aware of the 
 
 ## How do I disable Most Recently Used tab switching?
 
-Atom 1.7.0 introducted Most Recently Used (MRU) tab switching.  To revert to the old behavior:
+Atom 1.7.0 introduced Most Recently Used (MRU) tab switching.  To revert to the old behavior:
 
 1. Go to `Atom | Keymap...`. This will open the `keympa.cson` file.
 2. Add
