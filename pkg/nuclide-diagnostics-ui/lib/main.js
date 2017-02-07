@@ -62,7 +62,7 @@ class Activation {
     this._subscriptions = new UniversalDisposable();
     const state = state_ || {};
     this._state = {
-      showTraces: state.showTraces || this._getShowDiagnosticTraces(),
+      showTraces: state.showTraces || featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'),
       filterByActiveTextEditor: state.filterByActiveTextEditor === true,
     };
   }
@@ -129,10 +129,6 @@ class Activation {
       },
       priority: 4,
     };
-  }
-
-  _getShowDiagnosticTraces(): boolean {
-    return ((featureConfig.get('nuclide-diagnostics-ui.showDiagnosticTraces'): any): boolean);
   }
 
   _createDiagnosticsPanelModel(): DiagnosticsPanelModel {
