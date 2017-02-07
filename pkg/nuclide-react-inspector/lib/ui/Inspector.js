@@ -9,7 +9,6 @@
  */
 
 import {React} from 'react-for-atom';
-import nuclideUri from '../../../commons-node/nuclideUri';
 import {Webview} from '../../../nuclide-ui/Webview';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/react-inspector';
@@ -47,8 +46,7 @@ export default class Inspector extends React.Component {
   _handleDidFinishLoad(event: Event) {
     const element = ((event.target: any): WebviewElement);
     const requirePaths = require.cache[__filename].paths;
-    const inspectorDevTools =
-      nuclideUri.join(__dirname, '../../VendorLib/dev-tools/build/standalone.js');
+    const inspectorDevTools = require.resolve('react-devtools-core/standalone');
     element.executeJavaScript(
       `initializeElementInspector(
         ${JSON.stringify(inspectorDevTools)},
