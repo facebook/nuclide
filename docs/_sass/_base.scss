@@ -300,6 +300,12 @@ a.blockButton {
     padding-top: 4vh;
     text-align: left;
 
+    .blogWrapper .blogPostWrapper {
+      .post {
+        margin-bottom: 50px;
+      }
+    }
+
     .blockButton {
       margin: 4vh 0;
 
@@ -832,6 +838,12 @@ a.blockButton {
 @media only screen and (min-width: 1024px) {
   .mainContainer {
     .mainWrapper {
+      .blogWrapper {
+        display: flex;
+        nav.toc {
+          width: 400px;
+        }
+      }
       nav.toc {
         box-sizing: border-box;
         display: inline-block;
