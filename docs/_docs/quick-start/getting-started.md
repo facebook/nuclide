@@ -5,7 +5,10 @@ layout: docs
 permalink: /docs/quick-start/getting-started/
 ---
 
-This getting started guide walks you through the core features of Nuclide and aims to get you productive quickly.  See [Basics](/docs/editor/basics) for more information on using Nuclide's editing features.
+This getting started guide walks you through the core features of Nuclide and aims to get you productive quickly.  
+
+If you're new to Atom, you can find more information about its features in the [Atom Flight Manual](http://flight-manual.atom.io/).  Then, to find out more about using Nuclide see [Basics](/docs/editor/basics) or any of the other guides available in the Nuclide documentation.
+<br />
 
 * TOC
 {:toc}
