@@ -523,6 +523,7 @@ function notifyRevisionStatus(
       text: 'Open in Phabricator',
     }],
     nativeFriendly: true,
+    dismissable: true,
   });
 }
 
