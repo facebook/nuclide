@@ -23,4 +23,5 @@ export type ThreadColumn = {
   // Optional React component for rendering cell contents.
   // The component receives the cell value via `props.data`.
   component?: any,
+  textAlignRight?: boolean,
 };
