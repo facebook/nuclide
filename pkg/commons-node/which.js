@@ -10,6 +10,7 @@
 
 import {checkOutput} from './process';
 import os from 'os';
+import nuclideUri from './nuclideUri';
 
 /**
  * Provides a cross-platform way to check whether a binary is available.
@@ -17,10 +18,12 @@ import os from 'os';
  * We ran into problems with the npm `which` package (the nature of which I unfortunately don't
  * remember) so we can use this for now.
  */
-export default async function which(command: string): Promise<?string> {
-  const whichCommand = process.platform === 'win32' ? 'where' : 'which';
+export default async function which(path: string): Promise<?string> {
+  const isWindows = process.platform === 'win32';
+  const whichCommand = isWindows ? 'where' : 'which';
+  const searchPath = isWindows ? `${nuclideUri.dirname(path)}:${nuclideUri.basename(path)}` : path;
   try {
-    const result = await checkOutput(whichCommand, [command]);
+    const result = await checkOutput(whichCommand, [searchPath]);
     return result.stdout.split(os.EOL)[0];
   } catch (e) {
     return null;
