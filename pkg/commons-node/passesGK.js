@@ -18,7 +18,6 @@ import {Disposable} from 'event-kit';
 const getGatekeeper = once(() => {
   let Gatekeeper;
   try {
-    // $FlowFB
     Gatekeeper = require('./fb-gatekeeper').Gatekeeper;
   } catch (e) {
     Gatekeeper = class {
