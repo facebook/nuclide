@@ -31,6 +31,7 @@ import type {Outline} from './rpc-types';
 
 export type OutlineTreeForUi = {
   icon?: string, // from atom$Octicon, but we use string for convenience of remoting
+  kind?: string, // a kind you can pass to the UI for theming
   plainText?: string,
   tokenizedText?: TokenizedText,
 
