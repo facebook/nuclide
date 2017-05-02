@@ -287,11 +287,21 @@ export function unlink(path: string): Promise<void> {
  */
 export async function readFile(
   path: string,
-  options?: {flag?: string},
+  options?: {encoding?: string, flag?: string},
 ): Promise<Buffer> {
   const stats = await fsPromise.stat(path);
   if (stats.size > READFILE_SIZE_LIMIT) {
     throw new Error(`File is too large (${stats.size} bytes)`);
+  }
+  if (options && options.encoding) {
+    const encoding = options.encoding;
+    delete options.encoding;
+    if (encoding !== 'utf8') {
+      const iconv = require('iconv-lite');
+      return fsPromise.readFile(path, options)
+        .then(buffer => iconv.decode(buffer, encoding))
+        .then(text => new Buffer(text));
+    }
   }
   return fsPromise.readFile(path, options);
 }
@@ -359,7 +369,14 @@ export async function writeFile(
   let complete = false;
   const tempFilePath = await fsPromise.tempfile('nuclide');
   try {
-    await fsPromise.writeFile(tempFilePath, data, options);
+    if (options && options.encoding && options.encoding !== 'utf8') {
+      const iconv = require('iconv-lite');
+      const encodedData = iconv.encode(data, options.encoding);
+      delete options.encoding;
+      await fsPromise.writeFile(tempFilePath, encodedData, options);
+    } else {
+      await fsPromise.writeFile(tempFilePath, data, options);
+    }
 
     // Expand the target path in case it contains symlinks.
     let realPath = path;

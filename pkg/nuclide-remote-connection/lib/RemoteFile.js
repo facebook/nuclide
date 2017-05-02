@@ -267,10 +267,11 @@ export class RemoteFile {
   }
 
   async read(flushCache?: boolean): Promise<string> {
-    const data = await this._getFileSystemService().readFile(this._localPath);
+    const encoding = this.getEncoding();
+    const options = encoding ? {encoding} : {};
+    const data = await this._getFileSystemService().readFile(this._localPath, options);
     const contents = data.toString();
     this._setDigest(contents);
-    // TODO: respect encoding
     return contents;
   }
 
@@ -280,7 +281,9 @@ export class RemoteFile {
 
   async write(text: string): Promise<void> {
     const previouslyExisted = await this.exists();
-    await this._getFileSystemService().writeFile(this._localPath, text);
+    const encoding = this.getEncoding();
+    const options = encoding ? {encoding} : {};
+    await this._getFileSystemService().writeFile(this._localPath, text, options);
     if (!previouslyExisted && this._subscriptionCount > 0) {
       this._subscribeToNativeChangeEvents();
     }
