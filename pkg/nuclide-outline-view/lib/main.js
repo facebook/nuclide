@@ -31,7 +31,7 @@ import type {Outline} from './rpc-types';
 
 export type OutlineTreeForUi = {
   icon?: string, // from atom$Octicon, but we use string for convenience of remoting
-  kind?: string, // a kind you can pass to the UI for theming
+  kind?: string, // kind you can pass to the UI for theming, from OutlineTreeKind
   plainText?: string,
   tokenizedText?: TokenizedText,
 
@@ -40,6 +40,12 @@ export type OutlineTreeForUi = {
   children: Array<OutlineTreeForUi>,
   highlighted: boolean,
 };
+
+// Kind of outline tree - matches the names from the Language Server Protocol v2.
+export type OutlineTreeKind =
+  'file' | 'module' | 'namespace' | 'package' | 'class' | 'method' | 'property' | 'field' |
+  'constructor' | 'enum' | 'interface' | 'function' | 'variable' | 'constant' | 'string' |
+  'number' | 'boolean' | 'array';
 
 /**
  * Includes additional information that is useful to the UI, but redundant or nonsensical for

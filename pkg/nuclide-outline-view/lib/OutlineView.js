@@ -173,7 +173,7 @@ class OutlineTree extends React.PureComponent {
       }
     };
 
-    const classNames = [ 'list-nested-item' ];
+    const classNames = ['list-nested-item'];
     if (outline.kind) {
       classNames.push(`kind-${outline.kind}`);
     }

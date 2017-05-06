@@ -93,7 +93,7 @@ function treeToUiTree(
   const shortName = nameOnly && outlineTree.representativeName != null;
   return {
     icon: nameOnly ? undefined : outlineTree.icon,
-    kind: outlineTree.kind,
+    kind: nameOnly ? undefined : outlineTree.kind,
     plainText: shortName
       ? outlineTree.representativeName
       : outlineTree.plainText,
