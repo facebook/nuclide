@@ -43,9 +43,24 @@ export type OutlineTreeForUi = {
 
 // Kind of outline tree - matches the names from the Language Server Protocol v2.
 export type OutlineTreeKind =
-  'file' | 'module' | 'namespace' | 'package' | 'class' | 'method' | 'property' | 'field' |
-  'constructor' | 'enum' | 'interface' | 'function' | 'variable' | 'constant' | 'string' |
-  'number' | 'boolean' | 'array';
+  | 'file'
+  | 'module'
+  | 'namespace'
+  | 'package'
+  | 'class'
+  | 'method'
+  | 'property'
+  | 'field'
+  | 'constructor'
+  | 'enum'
+  | 'interface'
+  | 'function'
+  | 'variable'
+  | 'constant'
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'array';
 
 /**
  * Includes additional information that is useful to the UI, but redundant or nonsensical for
