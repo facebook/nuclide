@@ -27,6 +27,7 @@ export type Column = {
   // Optional React component for rendering cell contents.
   // The component receives the cell value via `props.data`.
   component?: ReactClass<any>,
+  textAlignRight?: boolean,
 };
 export type Row = {
   +className?: string,
@@ -282,6 +283,7 @@ export class Table extends React.Component {
       const {
         title,
         key,
+        textAlignRight,
       } = column;
       const resizeHandle = i === columns.length - 1
         ? null
@@ -317,6 +319,7 @@ export class Table extends React.Component {
           className={classnames({
             'nuclide-ui-table-header-cell': true,
             'nuclide-ui-table-header-cell-sortable': sortable,
+            'cell-text-align-right': textAlignRight,
           })}
           title={titleOverlay}
           key={key}
@@ -336,6 +339,7 @@ export class Table extends React.Component {
         const {
           key,
           component: Component,
+          textAlignRight,
         } = column;
         let datum = data[key];
         if (Component != null) {
@@ -350,7 +354,10 @@ export class Table extends React.Component {
         }
         return (
           <div
-            className="nuclide-ui-table-body-cell"
+            className={classnames({
+              'nuclide-ui-table-body-cell': true,
+              'cell-text-align-right': textAlignRight,
+            })}
             key={j}
             style={cellStyle}
             title={datum != null ? String(datum) : null}>

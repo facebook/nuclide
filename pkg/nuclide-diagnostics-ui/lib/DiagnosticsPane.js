@@ -193,6 +193,7 @@ export default class DiagnosticsPane extends React.Component {
         key: 'range',
         title: 'Line',
         width: 0.05,
+        textAlignRight: true,
       },
       {
         component: DescriptionComponent,
