@@ -29,7 +29,7 @@ import {showMenuForEvent} from '../../commons-atom/context-menu';
  * Disposable objects.
  */
 type BreakpointDisplayControllerDelegate = {
-  +handleTextEditorDestroyed: (controller: BreakpointDisplayController) => void,
+  handleTextEditorDestroyed: (controller: BreakpointDisplayController) => void,
 };
 
 type BreakpointMarkerProperties = {
