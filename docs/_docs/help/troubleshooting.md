@@ -83,7 +83,7 @@ sudo chown -R userid:userid .npm
 where `userid` is your userid.  If you still get errors you may need to clear your NPM cache with:
 
 ```bash
-npm clear cache
+npm cache clear
 ```
 
 ### Files Not Syncing
