@@ -954,6 +954,7 @@ declare class atom$TextEditorComponent {
   domNode: HTMLElement,
   scrollViewNode: HTMLElement,
   presenter: atom$TextEditorPresenter,
+  refs: atom$TextEditorComponentRefs,
   linesComponent: atom$LinesComponent,
   pixelPositionForScreenPosition(
     screenPosition: atom$Point,
@@ -984,6 +985,14 @@ declare class atom$TextEditorPresenter {
 declare class atom$LinesComponent {
   domNode: HTMLElement,
   getDomNode(): HTMLElement,
+}
+
+/**
+ * This is not part of the official Atom 1.0 API. Nevertheless, we need it to access
+ * the deepest dom element receiving DOM events.
+ */
+declare class atom$TextEditorComponentRefs {
+  lineTiles: HTMLElement,
 }
 
 /**
