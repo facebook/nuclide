@@ -105,18 +105,32 @@ export default class HyperclickForTextEditor {
     const getLinesDomNode = (): HTMLElement => {
       const {component} = this._textEditorView;
       invariant(component);
-      return component.linesComponent.getDomNode();
+      if (component.refs) {
+        return component.refs.lineTiles;
+      } else {
+        return component.linesComponent.getDomNode();
+      }
     };
     const removeMouseListeners = () => {
       if (this._textEditorView.component == null) {
         return;
       }
-      getLinesDomNode().removeEventListener('mousedown', this._onMouseDown);
-      getLinesDomNode().removeEventListener('mousemove', this._onMouseMove);
+      const linesDomNode = getLinesDomNode();
+      if (!linesDomNode) {
+        return;
+      }
+      linesDomNode.removeEventListener('mousedown', this._onMouseDown);
+      linesDomNode.removeEventListener('mousemove', this._onMouseMove);
     };
     const addMouseListeners = () => {
-      getLinesDomNode().addEventListener('mousedown', this._onMouseDown);
-      getLinesDomNode().addEventListener('mousemove', this._onMouseMove);
+      const {component} = this._textEditorView;
+      invariant(component);
+      const linesDomNode = getLinesDomNode();
+      if (!linesDomNode) {
+        return;
+      }
+      linesDomNode.addEventListener('mousedown', this._onMouseDown);
+      linesDomNode.addEventListener('mousemove', this._onMouseMove);
     };
     this._subscriptions.add(new Disposable(removeMouseListeners));
     this._subscriptions.add(

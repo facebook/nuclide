@@ -1,10 +1,10 @@
 @import "syntax-variables";
 
-atom-text-editor .editor-contents--private .highlight.hyperclick > .region {
+atom-text-editor .lines .highlight.hyperclick > .region {
   border-bottom: 1px solid @syntax-text-color;
 }
 
-atom-text-editor:not([mini]).hyperclick .editor-contents--private {
+atom-text-editor:not([mini]).hyperclick .lines {
   /**
    * Unfortunately, this cannot be a property of `.hyperclick .region`:
    * https://discuss.atom.io/t/some-css-styles-not-honored-by-decorations/11662
@@ -12,7 +12,7 @@ atom-text-editor:not([mini]).hyperclick .editor-contents--private {
   cursor: pointer;
 }
 
-atom-text-editor:not([mini]).hyperclick-loading .editor-contents--private {
+atom-text-editor:not([mini]).hyperclick-loading .lines {
   cursor: wait;
 }
 

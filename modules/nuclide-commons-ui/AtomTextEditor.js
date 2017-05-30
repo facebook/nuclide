@@ -211,12 +211,20 @@ export class AtomTextEditor extends React.Component {
     }
     // TODO(most): t9929679 Remove this hack when Atom has a blinking cursor configuration API.
     const {component} = this.getElement();
-    if (component == null) {
+    if (!component) {
       return;
     }
-    const {presenter} = component;
-    presenter.startBlinkingCursors = doNothing;
-    presenter.stopBlinkingCursors(false);
+    if (component.startCursorBlinking) {
+      component.startCursorBlinking = doNothing;
+      component.stopCursorBlinking();
+    } else {
+      const {presenter} = component;
+      if (!presenter) {
+        return;
+      }
+      presenter.startBlinkingCursors = doNothing;
+      presenter.stopBlinkingCursors(false);
+    }
   }
 
   _updateDisabledState(isDisabled: boolean): void {
