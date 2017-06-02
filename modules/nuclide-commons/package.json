@@ -1,6 +1,6 @@
 {
   "name": "nuclide-commons",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Common Nuclide node modules.",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://nuclide.io/",
@@ -21,6 +21,5 @@
     "rxjs": "5.3.1",
     "shell-quote": "1.6.1",
     "temp": "0.8.3"
-  },
-  "devDependencies": {}
+  }
 }
