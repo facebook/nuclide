@@ -158,6 +158,7 @@ Recommended packages include:
 - [`sort-lines`](https://atom.io/packages/sort-lines) to enable sorting lines of text.
 - [`language-ocaml`](https://atom.io/packages/language-ocaml) to enable [OCaml](/docs/languages/other/#ocaml) language syntax highlighting.
 - [`language-babel`](https://atom.io/packages/language-babel) to enable language grammar for [JS, Flow and React JS](/docs/languages/flow/), etc.
+- [Watchman](https://facebook.github.io/watchman/) - version 3.2 or above. It must be in `/usr/local/bin/` or in your `$PATH` environment variable. Without Watchman, Nuclide will lose some functionality of its [Mercurial](/docs/features/hg), [Remote Development](/docs/features/remote), and [Quick Open](/docs/quick-start/getting-started/#quick-open) features.
 - ...and [others](https://github.com/facebook/nuclide/blob/master/package.json) under `package-deps`.
 
 <br />
