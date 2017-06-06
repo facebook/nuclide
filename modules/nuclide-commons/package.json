@@ -1,12 +1,12 @@
 {
   "name": "nuclide-commons",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Common Nuclide node modules.",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide",
   "scripts": {
-    "prepublishOnly": "../../scripts/modules-prepublish.sh",
+    "prepublish": "../../scripts/modules-prepublish.sh",
     "test": "node ../../pkg/nuclide-jasmine/bin/jasmine-node-transpiled spec"
   },
   "dependencies": {
