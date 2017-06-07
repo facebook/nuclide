@@ -9,33 +9,18 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "s",
       type: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 5
-        },
         kind: "string-literal",
         value: "v"
       }
     }, {
       name: "n",
       type: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 5
-        },
         kind: "number-literal",
         value: 42
       }
     }, {
       name: "b",
       type: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 5
-        },
         kind: "boolean-literal",
         value: true
       }
@@ -98,11 +83,6 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "StringLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 1
-        },
         kind: "string-literal",
         value: "value"
       }
@@ -116,11 +96,6 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "NumberLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 2
-        },
         kind: "number-literal",
         value: 42
       }
@@ -134,11 +109,6 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "BooleanLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "LiteralTypes.def",
-          line: 3
-        },
         kind: "boolean-literal",
         value: true
       }
@@ -161,43 +131,23 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "s",
           type: {
-            location: {
-              type: "source",
-              fileName: "LiteralTypes.def",
-              line: 5
-            },
             kind: "string-literal",
             value: "v"
           }
         }, {
           name: "n",
           type: {
-            location: {
-              type: "source",
-              fileName: "LiteralTypes.def",
-              line: 5
-            },
             kind: "number-literal",
             value: 42
           }
         }, {
           name: "b",
           type: {
-            location: {
-              type: "source",
-              fileName: "LiteralTypes.def",
-              line: 5
-            },
             kind: "boolean-literal",
             value: true
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "LiteralTypes.def",
-            line: 5
-          },
           kind: "void"
         }
       }

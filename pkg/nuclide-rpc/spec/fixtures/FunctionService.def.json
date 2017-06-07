@@ -53,46 +53,21 @@
                 {
                     "name": "arg1",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "FunctionService.def",
-                            "line": 1
-                        },
                         "kind": "string"
                     }
                 },
                 {
                     "name": "arg2",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "FunctionService.def",
-                            "line": 1
-                        },
                         "kind": "boolean"
                     }
                 }
             ],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 1
-                },
                 "kind": "promise",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "FunctionService.def",
-                        "line": 1
-                    },
                     "kind": "array",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "FunctionService.def",
-                            "line": 1
-                        },
                         "kind": "string"
                     }
                 }
@@ -116,18 +91,8 @@
             "kind": "function",
             "argumentTypes": [],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 3
-                },
                 "kind": "observable",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "FunctionService.def",
-                        "line": 3
-                    },
                     "kind": "number"
                 }
             }
@@ -150,11 +115,6 @@
             "kind": "function",
             "argumentTypes": [],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 5
-                },
                 "kind": "void"
             }
         }
@@ -178,18 +138,8 @@
                 {
                     "name": "p1",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "FunctionService.def",
-                            "line": 7
-                        },
                         "kind": "nullable",
                         "type": {
-                            "location": {
-                                "type": "source",
-                                "fileName": "FunctionService.def",
-                                "line": 7
-                            },
                             "kind": "named",
                             "name": "Object"
                         }
@@ -198,18 +148,8 @@
                 {
                     "name": "p2",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "FunctionService.def",
-                            "line": 7
-                        },
                         "kind": "nullable",
                         "type": {
-                            "location": {
-                                "type": "source",
-                                "fileName": "FunctionService.def",
-                                "line": 7
-                            },
                             "kind": "named",
                             "name": "Object"
                         }
@@ -217,11 +157,6 @@
                 }
             ],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 7
-                },
                 "kind": "void"
             }
         }
@@ -235,18 +170,8 @@
         },
         "name": "PN",
         "definition": {
-            "location": {
-                "type": "source",
-                "fileName": "FunctionService.def",
-                "line": 9
-            },
             "kind": "promise",
             "type": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 9
-                },
                 "kind": "number"
             }
         }
@@ -268,18 +193,8 @@
             "kind": "function",
             "argumentTypes": [],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "FunctionService.def",
-                    "line": 9
-                },
                 "kind": "promise",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "FunctionService.def",
-                        "line": 9
-                    },
                     "kind": "number"
                 }
             }

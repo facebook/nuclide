@@ -15,6 +15,7 @@
     "log4js": "1.1.1",
     "nuclide-commons": "0.1.1",
     "rxjs": "5.3.1",
+    "shallowequal": "0.2.2",
     "semver": "5.3.0"
   }
 }

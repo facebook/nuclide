@@ -9,22 +9,12 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "s",
       type: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 6
-        },
         kind: "named",
         name: "SSU"
       }
     }, {
       name: "m",
       type: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 6
-        },
         kind: "named",
         name: "MixedUnion"
       }
@@ -37,11 +27,6 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "loc",
       type: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 20
-        },
         kind: "named",
         name: "Location"
       }
@@ -54,11 +39,6 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "type",
       type: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 111
-        },
         kind: "named",
         name: "Type"
       }
@@ -71,11 +51,6 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "mdu",
       type: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 116
-        },
         kind: "named",
         name: "MultipleDiscriminantUnion"
       }
@@ -138,26 +113,11 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "SU",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 1
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 1
-          },
           kind: "string-literal",
           value: "bork"
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 1
-          },
           kind: "string-literal",
           value: "bork bork"
         }]
@@ -172,34 +132,14 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "SSU",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 2
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 1
-          },
           kind: "string-literal",
           value: "bork"
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 1
-          },
           kind: "string-literal",
           value: "bork bork"
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 2
-          },
           kind: "string-literal",
           value: "bork!"
         }]
@@ -214,26 +154,11 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "MixedUnion",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 4
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 4
-          },
           kind: "string-literal",
           value: "bork"
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 4
-          },
           kind: "number-literal",
           value: 42
         }]
@@ -257,32 +182,17 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "s",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 6
-            },
             kind: "named",
             name: "SSU"
           }
         }, {
           name: "m",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 6
-            },
             kind: "named",
             name: "MixedUnion"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 6
-          },
           kind: "void"
         }
       }
@@ -296,89 +206,34 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Location",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 8
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 10
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 11
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 11
-              },
               kind: "string-literal",
               value: "source"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 12
-            },
             name: "fileName",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 12
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 13
-            },
             name: "line",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 13
-              },
               kind: "number"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 16
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 17
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 17
-              },
               kind: "string-literal",
               value: "builtin"
             },
@@ -397,58 +252,23 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "SourceLocation",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 10
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 11
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 11
-            },
             kind: "string-literal",
             value: "source"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 12
-          },
           name: "fileName",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 12
-            },
             kind: "string"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 13
-          },
           name: "line",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 13
-            },
             kind: "number"
           },
           optional: false
@@ -464,25 +284,10 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "BuiltinLocation",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 16
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 17
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 17
-            },
             kind: "string-literal",
             value: "builtin"
           },
@@ -508,21 +313,11 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "loc",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 20
-            },
             kind: "named",
             name: "Location"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 20
-          },
           kind: "void"
         }
       }
@@ -536,26 +331,11 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Definitions",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 22
-        },
         kind: "map",
         keyType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 22
-          },
           kind: "string"
         },
         valueType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 22
-          },
           kind: "named",
           name: "Definition"
         }
@@ -570,230 +350,90 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Definition",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 24
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 27
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 28
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 28
-              },
               kind: "string-literal",
               value: "function"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 29
-            },
             name: "name",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 29
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 30
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 30
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 31
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 31
-              },
               kind: "named",
               name: "FunctionType"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 35
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 36
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 36
-              },
               kind: "string-literal",
               value: "interface"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 37
-            },
             name: "name",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 37
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 38
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 38
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 39
-            },
             name: "constructorArgs",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 39
-              },
               kind: "array",
               type: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 39
-                },
                 kind: "named",
                 name: "Type"
               }
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 40
-            },
             name: "instanceMethods",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 40
-              },
               kind: "map",
               keyType: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 40
-                },
                 kind: "string"
               },
               valueType: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 40
-                },
                 kind: "named",
                 name: "FunctionType"
               }
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 41
-            },
             name: "staticMethods",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 41
-              },
               kind: "map",
               keyType: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 41
-                },
                 kind: "string"
               },
               valueType: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 41
-                },
                 kind: "named",
                 name: "FunctionType"
               }
@@ -801,75 +441,30 @@ Object.defineProperty(module.exports, "defs", {
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 45
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 46
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 46
-              },
               kind: "string-literal",
               value: "alias"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 47
-            },
             name: "name",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 47
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 48
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 48
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 49
-            },
             name: "definition",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 49
-              },
               kind: "named",
               name: "Type"
             },
@@ -888,75 +483,30 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "FunctionDefinition",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 27
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 28
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 28
-            },
             kind: "string-literal",
             value: "function"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 29
-          },
           name: "name",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 29
-            },
             kind: "string"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 30
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 30
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 31
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 31
-            },
             kind: "named",
             name: "FunctionType"
           },
@@ -973,148 +523,58 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "InterfaceDefinition",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 35
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 36
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 36
-            },
             kind: "string-literal",
             value: "interface"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 37
-          },
           name: "name",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 37
-            },
             kind: "string"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 38
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 38
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 39
-          },
           name: "constructorArgs",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 39
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 39
-              },
               kind: "named",
               name: "Type"
             }
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 40
-          },
           name: "instanceMethods",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 40
-            },
             kind: "map",
             keyType: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 40
-              },
               kind: "string"
             },
             valueType: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 40
-              },
               kind: "named",
               name: "FunctionType"
             }
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 41
-          },
           name: "staticMethods",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 41
-            },
             kind: "map",
             keyType: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 41
-              },
               kind: "string"
             },
             valueType: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 41
-              },
               kind: "named",
               name: "FunctionType"
             }
@@ -1132,75 +592,30 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "AliasDefinition",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 45
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 46
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 46
-            },
             kind: "string-literal",
             value: "alias"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 47
-          },
           name: "name",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 47
-            },
             kind: "string"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 48
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 48
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 49
-          },
           name: "definition",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 49
-            },
             kind: "named",
             name: "Type"
           },
@@ -1217,342 +632,137 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Type",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 53
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 57
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 57
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 57
-              },
               kind: "string-literal",
               value: "nullable"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 57
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 70
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 70
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 70
-              },
               kind: "string-literal",
               value: "mixed"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 69
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 69
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 69
-              },
               kind: "string-literal",
               value: "any"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 71
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 71
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 71
-              },
               kind: "string-literal",
               value: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 72
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 72
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 72
-              },
               kind: "string-literal",
               value: "boolean"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 73
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 73
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 73
-              },
               kind: "string-literal",
               value: "number"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 92
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 92
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 92
-              },
               kind: "string-literal",
               value: "object"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             name: "fields",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 92
-              },
               kind: "array",
               type: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 92
-                },
                 kind: "named",
                 name: "ObjectField"
               }
@@ -1560,260 +770,105 @@ Object.defineProperty(module.exports, "defs", {
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 89
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "string-literal",
               value: "array"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "string-literal",
               value: "map"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "keyType",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "valueType",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 90
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "string-literal",
               value: "set"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 99
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "string-literal",
               value: "tuple"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "types",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "array",
               type: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 99
-                },
                 kind: "named",
                 name: "Type"
               }
@@ -1821,632 +876,252 @@ Object.defineProperty(module.exports, "defs", {
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 83
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 83
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 83
-              },
               kind: "string-literal",
               value: "void"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 84
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "string-literal",
               value: "promise"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 85
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "string-literal",
               value: "observable"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 77
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "string-literal",
               value: "string-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 78
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "string-literal",
               value: "number-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "number"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 79
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "string-literal",
               value: "boolean-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "boolean"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 109
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 109
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 109
-              },
               kind: "string-literal",
               value: "named"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             name: "name",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 109
-              },
               kind: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 60
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 61
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 61
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 62
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 62
-              },
               kind: "string-literal",
               value: "function"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 63
-            },
             name: "argumentTypes",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 63
-              },
               kind: "array",
               type: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 63
-                },
                 kind: "named",
                 name: "Type"
               }
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 64
-            },
             name: "returnType",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 64
-              },
               kind: "union",
               types: [{
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 83
-                },
                 kind: "object",
                 fields: [{
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 83
-                  },
                   name: "location",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 83
-                    },
                     kind: "named",
                     name: "Location"
                   },
                   optional: false
                 }, {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 83
-                  },
                   name: "kind",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 83
-                    },
                     kind: "string-literal",
                     value: "void"
                   },
                   optional: false
                 }]
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 84
-                },
                 kind: "object",
                 fields: [{
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   name: "location",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 84
-                    },
                     kind: "named",
                     name: "Location"
                   },
                   optional: false
                 }, {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   name: "kind",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 84
-                    },
                     kind: "string-literal",
                     value: "promise"
                   },
                   optional: false
                 }, {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   name: "type",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 84
-                    },
                     kind: "named",
                     name: "Type"
                   },
                   optional: false
                 }]
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 85
-                },
                 kind: "object",
                 fields: [{
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   name: "location",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 85
-                    },
                     kind: "named",
                     name: "Location"
                   },
                   optional: false
                 }, {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   name: "kind",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 85
-                    },
                     kind: "string-literal",
                     value: "observable"
                   },
                   optional: false
                 }, {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   name: "type",
                   type: {
-                    location: {
-                      type: "source",
-                      fileName: "UnionTypes.def",
-                      line: 85
-                    },
                     kind: "named",
                     name: "Type"
                   },
@@ -2470,59 +1145,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "NullableType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 57
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 57
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 57
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             kind: "string-literal",
             value: "nullable"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 57
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 57
-            },
             kind: "named",
             name: "Type"
           },
@@ -2539,240 +1179,95 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "FunctionType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 60
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 61
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 61
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 62
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 62
-            },
             kind: "string-literal",
             value: "function"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 63
-          },
           name: "argumentTypes",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 63
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 63
-              },
               kind: "named",
               name: "Type"
             }
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 64
-          },
           name: "returnType",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 64
-            },
             kind: "union",
             types: [{
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 83
-              },
               kind: "object",
               fields: [{
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 83
-                },
                 name: "location",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 83
-                  },
                   kind: "named",
                   name: "Location"
                 },
                 optional: false
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 83
-                },
                 name: "kind",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 83
-                  },
                   kind: "string-literal",
                   value: "void"
                 },
                 optional: false
               }]
             }, {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "object",
               fields: [{
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 84
-                },
                 name: "location",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   kind: "named",
                   name: "Location"
                 },
                 optional: false
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 84
-                },
                 name: "kind",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   kind: "string-literal",
                   value: "promise"
                 },
                 optional: false
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 84
-                },
                 name: "type",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 84
-                  },
                   kind: "named",
                   name: "Type"
                 },
                 optional: false
               }]
             }, {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "object",
               fields: [{
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 85
-                },
                 name: "location",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   kind: "named",
                   name: "Location"
                 },
                 optional: false
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 85
-                },
                 name: "kind",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   kind: "string-literal",
                   value: "observable"
                 },
                 optional: false
               }, {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 85
-                },
                 name: "type",
                 type: {
-                  location: {
-                    type: "source",
-                    fileName: "UnionTypes.def",
-                    line: 85
-                  },
                   kind: "named",
                   name: "Type"
                 },
@@ -2794,217 +1289,87 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "PrimitiveType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 68
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 70
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 70
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 70
-              },
               kind: "string-literal",
               value: "mixed"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 69
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 69
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 69
-              },
               kind: "string-literal",
               value: "any"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 71
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 71
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 71
-              },
               kind: "string-literal",
               value: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 72
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 72
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 72
-              },
               kind: "string-literal",
               value: "boolean"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 73
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 73
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 73
-              },
               kind: "string-literal",
               value: "number"
             },
@@ -3023,42 +1388,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "AnyType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 69
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 69
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 69
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 69
-            },
             kind: "string-literal",
             value: "any"
           },
@@ -3075,42 +1415,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "MixedType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 70
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 70
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 70
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 70
-            },
             kind: "string-literal",
             value: "mixed"
           },
@@ -3127,42 +1442,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "StringType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 71
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 71
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 71
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 71
-            },
             kind: "string-literal",
             value: "string"
           },
@@ -3179,42 +1469,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "BooleanType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 72
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 72
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 72
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 72
-            },
             kind: "string-literal",
             value: "boolean"
           },
@@ -3231,42 +1496,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "NumberType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 73
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 73
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 73
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 73
-            },
             kind: "string-literal",
             value: "number"
           },
@@ -3283,182 +1523,72 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "LiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 76
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 77
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "string-literal",
               value: "string-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 77
-              },
               kind: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 78
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "string-literal",
               value: "number-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 78
-              },
               kind: "number"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 79
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "string-literal",
               value: "boolean-literal"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             name: "value",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 79
-              },
               kind: "boolean"
             },
             optional: false
@@ -3476,59 +1606,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "StringLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 77
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 77
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 77
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             kind: "string-literal",
             value: "string-literal"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 77
-          },
           name: "value",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 77
-            },
             kind: "string"
           },
           optional: false
@@ -3544,59 +1639,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "NumberLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 78
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 78
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 78
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             kind: "string-literal",
             value: "number-literal"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 78
-          },
           name: "value",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 78
-            },
             kind: "number"
           },
           optional: false
@@ -3612,59 +1672,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "BooleanLiteralType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 79
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 79
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 79
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             kind: "string-literal",
             value: "boolean-literal"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 79
-          },
           name: "value",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 79
-            },
             kind: "boolean"
           },
           optional: false
@@ -3680,167 +1705,67 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ReturnType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 82
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 83
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 83
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 83
-              },
               kind: "string-literal",
               value: "void"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 84
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "string-literal",
               value: "promise"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 84
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 85
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "string-literal",
               value: "observable"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 85
-              },
               kind: "named",
               name: "Type"
             },
@@ -3859,42 +1784,17 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "VoidType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 83
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 83
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 83
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 83
-            },
             kind: "string-literal",
             value: "void"
           },
@@ -3911,59 +1811,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "PromiseType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 84
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 84
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 84
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             kind: "string-literal",
             value: "promise"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 84
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 84
-            },
             kind: "named",
             name: "Type"
           },
@@ -3980,59 +1845,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ObservableType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 85
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 85
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 85
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             kind: "string-literal",
             value: "observable"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 85
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 85
-            },
             kind: "named",
             name: "Type"
           },
@@ -4049,267 +1879,107 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ContainerType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 88
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 89
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "string-literal",
               value: "array"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 89
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "string-literal",
               value: "map"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "keyType",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             name: "valueType",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 91
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 90
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "string-literal",
               value: "set"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 90
-              },
               kind: "named",
               name: "Type"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 99
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "location",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "named",
               name: "Location"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "string-literal",
               value: "tuple"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             name: "types",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "array",
               type: {
-                location: {
-                  type: "source",
-                  fileName: "UnionTypes.def",
-                  line: 99
-                },
                 kind: "named",
                 name: "Type"
               }
@@ -4329,59 +1999,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ArrayType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 89
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 89
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 89
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             kind: "string-literal",
             value: "array"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 89
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 89
-            },
             kind: "named",
             name: "Type"
           },
@@ -4398,59 +2033,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "SetType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 90
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 90
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 90
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             kind: "string-literal",
             value: "set"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 90
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 90
-            },
             kind: "named",
             name: "Type"
           },
@@ -4467,76 +2067,31 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "MapType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 91
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             kind: "string-literal",
             value: "map"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           name: "keyType",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             kind: "named",
             name: "Type"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 91
-          },
           name: "valueType",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 91
-            },
             kind: "named",
             name: "Type"
           },
@@ -4553,66 +2108,26 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ObjectType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 92
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 92
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 92
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             kind: "string-literal",
             value: "object"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 92
-          },
           name: "fields",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 92
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 92
-              },
               kind: "named",
               name: "ObjectField"
             }
@@ -4630,75 +2145,30 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "ObjectField",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 93
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 94
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 94
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 95
-          },
           name: "name",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 95
-            },
             kind: "string"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 96
-          },
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 96
-            },
             kind: "named",
             name: "Type"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 97
-          },
           name: "optional",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 97
-            },
             kind: "boolean"
           },
           optional: false
@@ -4714,66 +2184,26 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "TupleType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 99
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 99
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 99
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             kind: "string-literal",
             value: "tuple"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 99
-          },
           name: "types",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 99
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 99
-              },
               kind: "named",
               name: "Type"
             }
@@ -4791,84 +2221,34 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "UnionType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 101
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 102
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 102
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 103
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 103
-            },
             kind: "string-literal",
             value: "union"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 104
-          },
           name: "types",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 104
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 104
-              },
               kind: "named",
               name: "Type"
             }
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 105
-          },
           name: "discriminantField",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 105
-            },
             kind: "string"
           },
           optional: true
@@ -4884,59 +2264,24 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "NamedType",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 109
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 109
-          },
           name: "location",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             kind: "named",
             name: "Location"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 109
-          },
           name: "kind",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             kind: "string-literal",
             value: "named"
           },
           optional: false
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 109
-          },
           name: "name",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 109
-            },
             kind: "string"
           },
           optional: false
@@ -4961,21 +2306,11 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "type",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 111
-            },
             kind: "named",
             name: "Type"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 111
-          },
           kind: "void"
         }
       }
@@ -4989,124 +2324,49 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "MultipleDiscriminantUnion",
       definition: {
-        location: {
-          type: "source",
-          fileName: "UnionTypes.def",
-          line: 113
-        },
         kind: "union",
         types: [{
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 113
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 113
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 113
-              },
               kind: "string-literal",
               value: "k1"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 113
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 113
-              },
               kind: "string-literal",
               value: "t1"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 113
-            },
             name: "value1",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 113
-              },
               kind: "string"
             },
             optional: false
           }]
         }, {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 114
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 114
-            },
             name: "kind",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 114
-              },
               kind: "string-literal",
               value: "k2"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 114
-            },
             name: "type",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 114
-              },
               kind: "string-literal",
               value: "t2"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 114
-            },
             name: "value2",
             type: {
-              location: {
-                type: "source",
-                fileName: "UnionTypes.def",
-                line: 114
-              },
               kind: "number"
             },
             optional: false
@@ -5133,21 +2393,11 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "mdu",
           type: {
-            location: {
-              type: "source",
-              fileName: "UnionTypes.def",
-              line: 116
-            },
             kind: "named",
             name: "MultipleDiscriminantUnion"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "UnionTypes.def",
-            line: 116
-          },
           kind: "void"
         }
       }

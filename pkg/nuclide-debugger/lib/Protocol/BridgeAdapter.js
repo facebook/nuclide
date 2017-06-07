@@ -115,9 +115,11 @@ export default class BridgeAdapter {
 
   _updateCurrentScopes(): void {
     const currentFrame = this._stackTraceManager.getCurrentFrame();
-    this._expressionEvaluationManager.updateCurrentFrameScope(
-      currentFrame.scopeChain,
-    );
+    if (currentFrame != null) {
+      this._expressionEvaluationManager.updateCurrentFrameScope(
+        currentFrame.scopeChain,
+      );
+    }
   }
 
   setInitialBreakpoints(breakpoints: Array<IPCBreakpoint>): void {
@@ -142,13 +144,16 @@ export default class BridgeAdapter {
     objectGroup: ObjectGroup,
   ): void {
     if (this._pausedMode) {
-      const callFrameId = this._stackTraceManager.getCurrentFrame().callFrameId;
-      this._expressionEvaluationManager.evaluateOnCallFrame(
-        transactionId,
-        callFrameId,
-        expression,
-        objectGroup,
-      );
+      const currentFrame = this._stackTraceManager.getCurrentFrame();
+      if (currentFrame != null) {
+        const callFrameId = currentFrame.callFrameId;
+        this._expressionEvaluationManager.evaluateOnCallFrame(
+          transactionId,
+          callFrameId,
+          expression,
+          objectGroup,
+        );
+      }
     } else {
       this._expressionEvaluationManager.runtimeEvaluate(
         transactionId,

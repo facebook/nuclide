@@ -77,22 +77,23 @@ export type Type =
   | IntersectionType; // Type aliases.
 
 // Nullable type.
-export type NullableType = {location: Location, kind: 'nullable', type: Type};
+export type NullableType = {kind: 'nullable', type: Type};
 
 // Functions.
 export type FunctionType = {
-  location: Location,
   kind: 'function',
+  // Preserve locations for function types, since methods don't have definitions.
+  location: Location,
   argumentTypes: Array<Parameter>,
   returnType: Type,
 };
 
 // Primitive types.
-export type AnyType = {location: Location, kind: 'any'};
-export type MixedType = {location: Location, kind: 'mixed'};
-export type StringType = {location: Location, kind: 'string'};
-export type BooleanType = {location: Location, kind: 'boolean'};
-export type NumberType = {location: Location, kind: 'number'};
+export type AnyType = {kind: 'any'};
+export type MixedType = {kind: 'mixed'};
+export type StringType = {kind: 'string'};
+export type BooleanType = {kind: 'boolean'};
+export type NumberType = {kind: 'number'};
 
 // Literal types.
 export type LiteralType =
@@ -100,61 +101,52 @@ export type LiteralType =
   | NumberLiteralType
   | BooleanLiteralType;
 export type StringLiteralType = {
-  location: Location,
   kind: 'string-literal',
   value: string,
 };
 export type NumberLiteralType = {
-  location: Location,
   kind: 'number-literal',
   value: number,
 };
 export type BooleanLiteralType = {
-  location: Location,
   kind: 'boolean-literal',
   value: boolean,
 };
 
 // Possible Return formats.
-export type VoidType = {location: Location, kind: 'void'};
-export type PromiseType = {location: Location, kind: 'promise', type: Type};
+export type VoidType = {kind: 'void'};
+export type PromiseType = {kind: 'promise', type: Type};
 export type ObservableType = {
-  location: Location,
   kind: 'observable',
   type: Type,
 };
 
 // Container Types.
-export type ArrayType = {location: Location, kind: 'array', type: Type};
-export type SetType = {location: Location, kind: 'set', type: Type};
+export type ArrayType = {kind: 'array', type: Type};
+export type SetType = {kind: 'set', type: Type};
 export type MapType = {
-  location: Location,
   kind: 'map',
   keyType: Type,
   valueType: Type,
 };
 export type ObjectType = {
-  location: Location,
   kind: 'object',
   fields: Array<ObjectField>,
 };
 export type ObjectField = {
-  location: Location,
   name: string,
   type: Type,
   optional: boolean,
 };
-export type TupleType = {location: Location, kind: 'tuple', types: Array<Type>};
+export type TupleType = {kind: 'tuple', types: Array<Type>};
 
 export type UnionType = {
-  location: Location,
   kind: 'union',
   types: Array<Type>,
   discriminantField?: string, // This is filled in for unions of object types during validation.
 };
 
 export type IntersectionType = {
-  location: Location,
   kind: 'intersection',
   types: Array<Type>,
   // Filled in during validation -- this is the flattened object type containing all of the relevant
@@ -163,7 +155,7 @@ export type IntersectionType = {
 };
 
 // Represents a named, custom type.
-export type NamedType = {location: Location, kind: 'named', name: string};
+export type NamedType = {kind: 'named', name: string};
 
 export type Location = SourceLocation | BuiltinLocation;
 

@@ -9,22 +9,12 @@ module.exports = _client => {
       return _client.marshalArguments(Array.from(arguments), [{
         name: "a",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 3
-          },
           kind: "named",
           name: "Vector2"
         }
       }, {
         name: "b",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 3
-          },
           kind: "named",
           name: "Vector2"
         }
@@ -32,11 +22,6 @@ module.exports = _client => {
         return _client.callRemoteFunction("Vector2/distance", "promise", args);
       }).then(value => {
         return _client.unmarshal(value, {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 3
-          },
           kind: "number"
         });
       });
@@ -46,28 +31,13 @@ module.exports = _client => {
       _client.createRemoteObject("Vector2", this, [arg0, arg1], [{
         name: "x",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 2
-          },
           kind: "number"
         }
       }, {
         name: "y",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 2
-          },
           kind: "nullable",
           type: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 2
-            },
             kind: "number"
           }
         }
@@ -89,11 +59,6 @@ module.exports = _client => {
         });
       }).then(value => {
         return _client.unmarshal(value, {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 4
-          },
           kind: "number"
         });
       });
@@ -114,11 +79,6 @@ module.exports = _client => {
         });
       })).concatMap(id => id).concatMap(value => {
         return _client.unmarshal(value, {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 6
-          },
           kind: "number"
         });
       }).publish();
@@ -135,11 +95,6 @@ module.exports = _client => {
       return _client.callRemoteFunction("InterfaceService/getCurrentDirection", "promise", args);
     }).then(value => {
       return _client.unmarshal(value, {
-        location: {
-          type: "source",
-          fileName: "InterfaceService.def",
-          line: 14
-        },
         kind: "named",
         name: "Vector2"
       });
@@ -151,11 +106,6 @@ module.exports = _client => {
       return _client.marshalArguments(Array.from(arguments), [{
         name: "a",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 31
-          },
           kind: "number"
         }
       }]).then(args => {
@@ -172,11 +122,6 @@ module.exports = _client => {
         });
       }).then(value => {
         return _client.unmarshal(value, {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 31
-          },
           kind: "number"
         });
       });
@@ -213,11 +158,6 @@ module.exports = _client => {
         });
       })).concatMap(id => id).concatMap(value => {
         return _client.unmarshal(value, {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 33
-          },
           kind: "string"
         });
       }).publish();
@@ -284,28 +224,13 @@ Object.defineProperty(module.exports, "defs", {
       constructorArgs: [{
         name: "x",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 2
-          },
           kind: "number"
         }
       }, {
         name: "y",
         type: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 2
-          },
           kind: "nullable",
           type: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 2
-            },
             kind: "number"
           }
         }
@@ -321,39 +246,19 @@ Object.defineProperty(module.exports, "defs", {
           argumentTypes: [{
             name: "a",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 3
-              },
               kind: "named",
               name: "Vector2"
             }
           }, {
             name: "b",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 3
-              },
               kind: "named",
               name: "Vector2"
             }
           }],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 3
-            },
             kind: "promise",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 3
-              },
               kind: "number"
             }
           }
@@ -369,18 +274,8 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 4
-            },
             kind: "promise",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 4
-              },
               kind: "number"
             }
           }
@@ -394,18 +289,8 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 6
-            },
             kind: "observable",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 6
-              },
               kind: "number"
             }
           }
@@ -419,11 +304,6 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 11
-            },
             kind: "void"
           }
         }
@@ -446,18 +326,8 @@ Object.defineProperty(module.exports, "defs", {
         kind: "function",
         argumentTypes: [],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 14
-          },
           kind: "promise",
           type: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 14
-            },
             kind: "named",
             name: "Vector2"
           }
@@ -485,27 +355,12 @@ Object.defineProperty(module.exports, "defs", {
           argumentTypes: [{
             name: "a",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 31
-              },
               kind: "number"
             }
           }],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 31
-            },
             kind: "promise",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 31
-              },
               kind: "number"
             }
           }
@@ -519,11 +374,6 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 32
-            },
             kind: "void"
           }
         },
@@ -536,18 +386,8 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 33
-            },
             kind: "observable",
             type: {
-              location: {
-                type: "source",
-                fileName: "InterfaceService.def",
-                line: 33
-              },
               kind: "string"
             }
           }
@@ -561,11 +401,6 @@ Object.defineProperty(module.exports, "defs", {
           kind: "function",
           argumentTypes: [],
           returnType: {
-            location: {
-              type: "source",
-              fileName: "InterfaceService.def",
-              line: 35
-            },
             kind: "void"
           }
         }

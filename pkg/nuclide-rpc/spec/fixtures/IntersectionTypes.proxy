@@ -9,11 +9,6 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "baz",
       type: {
-        location: {
-          type: "source",
-          fileName: "IntersectionTypes.def",
-          line: 13
-        },
         kind: "named",
         name: "Baz"
       }
@@ -76,25 +71,10 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Foo",
       definition: {
-        location: {
-          type: "source",
-          fileName: "IntersectionTypes.def",
-          line: 1
-        },
         kind: "object",
         fields: [{
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 2
-          },
           name: "x",
           type: {
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 2
-            },
             kind: "string"
           },
           optional: false
@@ -110,40 +90,15 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Bar",
       definition: {
-        location: {
-          type: "source",
-          fileName: "IntersectionTypes.def",
-          line: 5
-        },
         kind: "intersection",
         types: [{
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 5
-          },
           kind: "named",
           name: "Foo"
         }, {
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 5
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 6
-            },
             name: "y",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 6
-              },
               kind: "number"
             },
             optional: false
@@ -151,40 +106,15 @@ Object.defineProperty(module.exports, "defs", {
         }],
         flattened: {
           kind: "object",
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 5
-          },
           fields: [{
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 2
-            },
             name: "x",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 2
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 6
-            },
             name: "y",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 6
-              },
               kind: "number"
             },
             optional: false
@@ -201,40 +131,15 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "Baz",
       definition: {
-        location: {
-          type: "source",
-          fileName: "IntersectionTypes.def",
-          line: 9
-        },
         kind: "intersection",
         types: [{
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 9
-          },
           kind: "named",
           name: "Bar"
         }, {
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 9
-          },
           kind: "object",
           fields: [{
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 10
-            },
             name: "z",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 10
-              },
               kind: "boolean"
             },
             optional: false
@@ -242,56 +147,21 @@ Object.defineProperty(module.exports, "defs", {
         }],
         flattened: {
           kind: "object",
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 9
-          },
           fields: [{
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 2
-            },
             name: "x",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 2
-              },
               kind: "string"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 6
-            },
             name: "y",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 6
-              },
               kind: "number"
             },
             optional: false
           }, {
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 10
-            },
             name: "z",
             type: {
-              location: {
-                type: "source",
-                fileName: "IntersectionTypes.def",
-                line: 10
-              },
               kind: "boolean"
             },
             optional: false
@@ -317,21 +187,11 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "baz",
           type: {
-            location: {
-              type: "source",
-              fileName: "IntersectionTypes.def",
-              line: 13
-            },
             kind: "named",
             name: "Baz"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "IntersectionTypes.def",
-            line: 13
-          },
           kind: "void"
         }
       }

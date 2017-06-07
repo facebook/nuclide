@@ -15,5 +15,8 @@
         "0.0.0": "consumeCwdApi"
       }
     }
-  }
+  },
+  "activationHooks": [
+    "nuclide_patch_editor:gk:nuclide"
+  ]
 }

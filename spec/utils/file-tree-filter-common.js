@@ -31,30 +31,40 @@ export function runTest(context: TestContext) {
     });
 
     const close = () => {
-      atom.commands.dispatch(workspaceEl, 'nuclide-file-tree:toggle', {
-        visible: true,
+      runs(() => {
+        atom.commands.dispatch(workspaceEl, 'nuclide-file-tree:toggle', {
+          visible: false,
+        });
       });
+      waits(1000); // Account for the closing notification delay.
     };
     const open = () => {
-      atom.commands.dispatch(workspaceEl, 'nuclide-file-tree:toggle', {
-        visible: false,
+      runs(() => {
+        atom.commands.dispatch(workspaceEl, 'nuclide-file-tree:toggle', {
+          visible: true,
+        });
       });
+      waits(100); // Open notifications are delayed by an animation frame.
     };
+
+    // Open file tree
+    open();
 
     runs(() => {
       invariant(elem != null);
-      // Open file tree
-      open();
       store.clearFilter();
 
       atom.commands.dispatch(elem, 'nuclide-file-tree:go-to-letter-a');
       expect(store.getFilter()).toEqual('a');
+    });
 
-      // Close and open file tree
-      close();
-      open();
+    // Close and open file tree
+    close();
+    open();
+
+    runs(() => {
       expect(store.getFilter()).toEqual('');
-
+      invariant(elem != null);
       atom.commands.dispatch(elem, 'nuclide-file-tree:go-to-letter-a');
       expect(store.getFilter()).toEqual('a');
     });

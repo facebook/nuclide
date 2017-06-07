@@ -549,7 +549,6 @@ class FileParser {
         return {
           name,
           type: {
-            location: this._locationOfNode(param),
             kind: 'nullable',
             type,
           },
@@ -588,7 +587,6 @@ class FileParser {
         return {
           name,
           type: {
-            location: this._locationOfNode(param),
             kind: 'nullable',
             type,
           },
@@ -607,38 +605,34 @@ class FileParser {
    * @returns {Type} A representation of the type.
    */
   _parseTypeAnnotation(typeAnnotation: Object): Type {
-    const location = this._locationOfNode(typeAnnotation);
     switch (typeAnnotation.type) {
       case 'AnyTypeAnnotation':
-        return {location, kind: 'any'};
+        return {kind: 'any'};
       case 'MixedTypeAnnotation':
-        return {location, kind: 'mixed'};
+        return {kind: 'mixed'};
       case 'StringTypeAnnotation':
-        return {location, kind: 'string'};
+        return {kind: 'string'};
       case 'NumberTypeAnnotation':
-        return {location, kind: 'number'};
+        return {kind: 'number'};
       case 'BooleanTypeAnnotation':
-        return {location, kind: 'boolean'};
+        return {kind: 'boolean'};
       case 'StringLiteralTypeAnnotation':
-        return {location, kind: 'string-literal', value: typeAnnotation.value};
+        return {kind: 'string-literal', value: typeAnnotation.value};
       case 'NumericLiteralTypeAnnotation':
-        return {location, kind: 'number-literal', value: typeAnnotation.value};
+        return {kind: 'number-literal', value: typeAnnotation.value};
       case 'BooleanLiteralTypeAnnotation':
-        return {location, kind: 'boolean-literal', value: typeAnnotation.value};
+        return {kind: 'boolean-literal', value: typeAnnotation.value};
       case 'NullableTypeAnnotation':
         return {
-          location,
           kind: 'nullable',
           type: this._parseTypeAnnotation(typeAnnotation.typeAnnotation),
         };
       case 'ObjectTypeAnnotation':
         return {
-          location,
           kind: 'object',
           fields: typeAnnotation.properties.map(prop => {
             invariant(prop.type === 'ObjectTypeProperty');
             return {
-              location: this._locationOfNode(prop),
               name: prop.key.name,
               type: this._parseTypeAnnotation(prop.value),
               optional: prop.optional,
@@ -646,22 +640,19 @@ class FileParser {
           }),
         };
       case 'VoidTypeAnnotation':
-        return {location, kind: 'void'};
+        return {kind: 'void'};
       case 'TupleTypeAnnotation':
         return {
-          location,
           kind: 'tuple',
           types: typeAnnotation.types.map(this._parseTypeAnnotation.bind(this)),
         };
       case 'UnionTypeAnnotation':
         return {
-          location,
           kind: 'union',
           types: typeAnnotation.types.map(this._parseTypeAnnotation.bind(this)),
         };
       case 'IntersectionTypeAnnotation':
         return {
-          location,
           kind: 'intersection',
           types: typeAnnotation.types.map(this._parseTypeAnnotation.bind(this)),
         };
@@ -687,29 +678,24 @@ class FileParser {
   _parseGenericTypeAnnotation(typeAnnotation): Type {
     invariant(typeAnnotation.type === 'GenericTypeAnnotation');
     const id = this._parseTypeName(typeAnnotation.id);
-    const location: Location = this._locationOfNode(typeAnnotation);
     switch (id) {
       case 'Array':
         return {
-          location,
           kind: 'array',
           type: this._parseGenericTypeParameterOfKnownType(id, typeAnnotation),
         };
       case 'Set':
         return {
-          location,
           kind: 'set',
           type: this._parseGenericTypeParameterOfKnownType(id, typeAnnotation),
         };
       case 'Promise':
         return {
-          location,
           kind: 'promise',
           type: this._parseGenericTypeParameterOfKnownType(id, typeAnnotation),
         };
       case 'ConnectableObservable':
         return {
-          location,
           kind: 'observable',
           type: this._parseGenericTypeParameterOfKnownType(id, typeAnnotation),
         };
@@ -721,7 +707,6 @@ class FileParser {
           `${id} takes exactly two type parameters.`,
         );
         return {
-          location,
           kind: 'map',
           keyType: this._parseTypeAnnotation(
             typeAnnotation.typeParameters.params[0],
@@ -749,10 +734,10 @@ class FileParser {
           imp.added = true;
           this._importsUsed.add(imp.file);
           if (id !== imp.imported) {
-            return {location, kind: 'named', name: imp.imported};
+            return {kind: 'named', name: imp.imported};
           }
         }
-        return {location, kind: 'named', name: id};
+        return {kind: 'named', name: id};
     }
   }
 

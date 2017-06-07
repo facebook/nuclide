@@ -130,3 +130,14 @@ export async function dumpsysPackage(
 ): Promise<?string> {
   return (await getAdb()).dumpsysPackage(device, identifier);
 }
+
+export async function touchFile(device: string, path: string): Promise<string> {
+  return (await getAdb()).touchFile(device, path);
+}
+
+export async function removeFile(
+  device: string,
+  path: string,
+): Promise<string> {
+  return (await getAdb()).removeFile(device, path);
+}

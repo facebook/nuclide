@@ -41,6 +41,10 @@ export function validateDefinitions(definitions: Definitions): void {
     AliasDefinition | InterfaceDefinition,
   > = new Map();
   gatherKnownTypes();
+
+  // Location of the currently visited definition.
+  // It's too painfulto thread this through everywhere.
+  let contextLocation: ?Location;
   validate();
 
   function validate(): void {
@@ -118,7 +122,7 @@ export function validateDefinitions(definitions: Definitions): void {
       case 'named':
         const name = type.name;
         if (!namedTypes.has(name)) {
-          throw error(type, `No definition for type ${name}.`);
+          throw error(`No definition for type ${name}.`);
         }
         break;
       default:
@@ -232,24 +236,31 @@ export function validateDefinitions(definitions: Definitions): void {
       const definition = definitions[defName];
       switch (definition.kind) {
         case 'function':
+          contextLocation = definition.location;
           validateType(definition.type);
           break;
         case 'alias':
           if (definition.definition != null) {
+            contextLocation = definition.location;
             validateAliasType(definition.definition);
           }
           break;
         case 'interface':
           if (definition.constructorArgs != null) {
-            definition.constructorArgs.forEach(parameter =>
-              validateType(parameter.type),
-            );
+            contextLocation = definition.location;
+            definition.constructorArgs.forEach(parameter => {
+              validateType(parameter.type);
+            });
           }
           Object.keys(definition.instanceMethods).forEach(methodName => {
-            validateType(definition.instanceMethods[methodName]);
+            const method = definition.instanceMethods[methodName];
+            contextLocation = method.location;
+            validateType(method);
           });
           Object.keys(definition.staticMethods).forEach(methodName => {
-            validateType(definition.staticMethods[methodName]);
+            const method = definition.staticMethods[methodName];
+            contextLocation = method.location;
+            validateType(method);
           });
           break;
       }
@@ -259,13 +270,6 @@ export function validateDefinitions(definitions: Definitions): void {
   // Validates a type which must be a return type.
   // Caller must resolve named types.
   function validateReturnType(funcType: FunctionType, type: Type): void {
-    function invalidReturnTypeError(): Error {
-      return error(
-        funcType,
-        'The return type of a remote function must be of type Void, Promise, or Observable',
-      );
-    }
-
     switch (type.kind) {
       case 'void':
         break;
@@ -276,7 +280,10 @@ export function validateDefinitions(definitions: Definitions): void {
         }
         break;
       default:
-        throw invalidReturnTypeError();
+        throw error(
+          'The return type of a remote function must be of type Void, Promise, or Observable' +
+            `(got ${type.kind})`,
+        );
     }
   }
 
@@ -313,18 +320,15 @@ export function validateDefinitions(definitions: Definitions): void {
 
   function validateIntersectionType(intersectionType: IntersectionType): void {
     const fields = flattenIntersection(intersectionType);
-    const fieldNameToLocation = new Map();
+    const fieldNames = new Set();
     for (const field of fields) {
-      if (fieldNameToLocation.has(field.name)) {
+      if (fieldNames.has(field.name)) {
         // TODO allow duplicate field names if they have the same type.
-        const otherLocation = fieldNameToLocation.get(field.name);
-        invariant(otherLocation != null);
-        throw errorLocations(
-          [intersectionType.location, field.location, otherLocation],
+        throw error(
           `Duplicate field name '${field.name}' in intersection types are not supported.`,
         );
       }
-      fieldNameToLocation.set(field.name, field.location);
+      fieldNames.add(field.name);
     }
   }
 
@@ -336,9 +340,9 @@ export function validateDefinitions(definitions: Definitions): void {
     } else if (alternates[0].kind === 'object') {
       validateObjectUnionType(type, alternates);
     } else {
-      throw errorLocations(
-        [type.location, alternates[0].location],
-        'Union alternates must be either be typed object or literal types.',
+      throw error(
+        'Union alternates must be either be typed object or literal types. ' +
+          `(got ${alternates[0].kind})`,
       );
     }
   }
@@ -352,9 +356,9 @@ export function validateDefinitions(definitions: Definitions): void {
 
       // Ensure a valid alternate
       if (!isLiteralType(alternate)) {
-        throw errorLocations(
-          [type.location, alternate.location],
-          'Union alternates may only be literal types.',
+        throw error(
+          'Union alternates may only be literal types. ' +
+            `(got ${alternate.kind})`,
         );
       }
 
@@ -371,9 +375,8 @@ export function validateDefinitions(definitions: Definitions): void {
             alternate.kind === 'boolean-literal',
         );
         if (previous.value === alternate.value) {
-          throw errorLocations(
-            [type.location, previous.location, alternate.location],
-            'Union alternates may not have the same value.',
+          throw error(
+            `Union alternates may not have the same value (${previous.kind}).`,
           );
         }
       });
@@ -392,9 +395,8 @@ export function validateDefinitions(definitions: Definitions): void {
 
       // Ensure alternates match
       if (alternate.kind !== 'object') {
-        throw errorLocations(
-          [type.location, alternates[0].location, alternate.location],
-          'Union alternates must be of the same type.',
+        throw error(
+          `Union alternates must be of the same type. (mismatch: ${alternate.kind})`,
         );
       }
     });
@@ -420,8 +422,7 @@ export function validateDefinitions(definitions: Definitions): void {
           alternate,
         );
         if (alternatePossibilities.size === 0) {
-          throw errorLocations(
-            [type.location, alternate.location],
+          throw error(
             'Object union alternative has no possible discriminant fields.',
           );
         }
@@ -443,7 +444,7 @@ export function validateDefinitions(definitions: Definitions): void {
       return validFields[0];
     } else {
       // TODO: Better error message why each possibleFields is invalid.
-      throw error(type, 'No valid discriminant field for union type.');
+      throw error('No valid discriminant field for union type.');
     }
   }
 
@@ -506,7 +507,6 @@ export function validateDefinitions(definitions: Definitions): void {
       case 'promise':
       case 'observable':
         throw error(
-          type,
           'Promise, void and Observable types may only be used as return types',
         );
       case 'array':
@@ -549,7 +549,6 @@ export function validateDefinitions(definitions: Definitions): void {
           case 'promise':
           case 'observable':
             throw error(
-              type,
               'Promise, void and Observable types may only be used as return types',
             );
         }
@@ -636,7 +635,6 @@ export function validateDefinitions(definitions: Definitions): void {
     const fields = flattenIntersection(intersectionType);
     intersectionType.flattened = {
       kind: 'object',
-      location: intersectionType.location,
       fields,
     };
   }
@@ -652,9 +650,9 @@ export function validateDefinitions(definitions: Definitions): void {
       } else if (resolvedType.kind === 'intersection') {
         fields.push(...flattenIntersection(resolvedType));
       } else {
-        throw errorLocations(
-          [intersectionType.location, type.location],
-          'Types in intersections must be object or intersection types',
+        throw error(
+          'Types in intersections must be object or intersection types ' +
+            `(got ${resolvedType.kind})`,
         );
       }
     }
@@ -709,32 +707,40 @@ export function validateDefinitions(definitions: Definitions): void {
       const definition = definitions[name];
       switch (definition.kind) {
         case 'function':
+          contextLocation = definition.location;
           operation(definition.type);
           break;
         case 'alias':
           if (definition.definition != null) {
+            contextLocation = definition.location;
             operation(definition.definition);
           }
           break;
         case 'interface':
           if (definition.constructorArgs != null) {
-            definition.constructorArgs.forEach(parameter =>
-              operation(parameter.type),
-            );
+            contextLocation = definition.location;
+            definition.constructorArgs.forEach(parameter => {
+              operation(parameter.type);
+            });
           }
           Object.keys(definition.instanceMethods).forEach(methodName => {
-            operation(definition.instanceMethods[methodName]);
+            const method = definition.instanceMethods[methodName];
+            contextLocation = method.location;
+            operation(method);
           });
           Object.keys(definition.staticMethods).forEach(methodName => {
-            operation(definition.staticMethods[methodName]);
+            const method = definition.staticMethods[methodName];
+            contextLocation = method.location;
+            operation(method);
           });
           break;
       }
     });
   }
 
-  function error(type: Type, message: string) {
-    return errorLocations([type.location], message);
+  function error(message: string) {
+    invariant(contextLocation != null, 'Missing context');
+    return errorLocations([contextLocation], message);
   }
 
   function errorLocations(locations: Array<Location>, message: string): Error {

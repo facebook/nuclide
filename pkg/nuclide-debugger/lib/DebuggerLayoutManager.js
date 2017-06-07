@@ -20,6 +20,7 @@ import invariant from 'assert';
 import type {
   WorkspaceViewsService,
 } from '../../nuclide-workspace-views/lib/types';
+import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
 
 // Debugger views
 import {DebuggerControlsView} from './DebuggerControlsView';
@@ -190,7 +191,13 @@ export class DebuggerLayoutManager {
           // override the layout to shrink the pane and remove extra vertical whitespace.
           const debuggerMode = this._model.getStore().getDebuggerMode();
           if (debuggerMode !== DebuggerMode.STOPPED) {
-            this._overridePaneInitialHeight(dockPane, newFlexScale, 130);
+            // If __DEV__, leave some extra space for the chrome devtools gear
+            // TODO: Remove this when chrome is gone
+            this._overridePaneInitialHeight(
+              dockPane,
+              newFlexScale,
+              __DEV__ ? 155 : 130,
+            );
           }
 
           // If newFlexScale !== 1, that means the user must have resized this pane.

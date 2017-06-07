@@ -16,6 +16,7 @@ import TruncatedButton from 'nuclide-commons-ui/TruncatedButton';
 import {DebuggerSteppingComponent} from './DebuggerSteppingComponent';
 import type {DebuggerModeType} from './types';
 import {DebuggerMode} from './DebuggerStore';
+import DebuggerControllerView from './DebuggerControllerView';
 
 type Props = {
   model: DebuggerModel,
@@ -30,6 +31,10 @@ export class DebuggerControlsView extends React.PureComponent {
 
   constructor(props: Props) {
     super(props);
+
+    (this: any)._openDevTools = this._openDevTools.bind(this);
+    (this: any)._stopDebugging = this._stopDebugging.bind(this);
+
     this._disposables = new CompositeDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
@@ -98,6 +103,15 @@ export class DebuggerControlsView extends React.PureComponent {
 
     return (
       <div className="nuclide-debugger-container-new">
+        <div className="nuclide-debugger-section-header">
+          <DebuggerControllerView
+            store={model.getStore()}
+            bridge={model.getBridge()}
+            breakpointStore={model.getBreakpointStore()}
+            openDevTools={this._openDevTools}
+            stopDebugging={this._stopDebugging}
+          />
+        </div>
         <div className="nuclide-debugger-section-header nuclide-debugger-controls-section">
           <DebuggerSteppingComponent
             actions={actions}
@@ -108,5 +122,15 @@ export class DebuggerControlsView extends React.PureComponent {
         {debuggerStoppedNotice}
       </div>
     );
+  }
+
+  _openDevTools(): void {
+    const {model} = this.props;
+    model.getActions().openDevTools();
+  }
+
+  _stopDebugging(): void {
+    const {model} = this.props;
+    model.getActions().stopDebugging();
   }
 }

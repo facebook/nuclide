@@ -39,9 +39,13 @@ export default class StackTraceManager {
   }
 
   setSelectedCallFrameIndex(index: number): void {
-    invariant(index < this._currentThreadFrames.length);
+    if (this.isEmpty()) {
+      return;
+    }
+    invariant(index >= 0 && index < this._currentThreadFrames.length);
     this._currentCallFrameIndex = index;
     const currentFrame = this.getCurrentFrame();
+    invariant(currentFrame != null);
     this._raiseIPCEvent('CallFrameSelected', {
       sourceURL: this._debuggerDispatcher.getFileUriFromScriptId(
         currentFrame.location.scriptId,
@@ -50,7 +54,14 @@ export default class StackTraceManager {
     });
   }
 
-  getCurrentFrame(): CallFrame {
+  isEmpty(): boolean {
+    return this._currentThreadFrames.length === 0;
+  }
+
+  getCurrentFrame(): ?CallFrame {
+    if (this.isEmpty()) {
+      return null;
+    }
     invariant(this._currentCallFrameIndex < this._currentThreadFrames.length);
     return this._currentThreadFrames[this._currentCallFrameIndex];
   }
@@ -71,7 +82,9 @@ export default class StackTraceManager {
       frame => frame.hasSource !== false, // undefined or true.
     );
     // Default to first frame if can't find any frame with source.
-    this.setSelectedCallFrameIndex(frameWithSourceIndex || 0);
+    this.setSelectedCallFrameIndex(
+      frameWithSourceIndex !== -1 ? frameWithSourceIndex : 0,
+    );
   }
 
   _parseCallstack(): Callstack {

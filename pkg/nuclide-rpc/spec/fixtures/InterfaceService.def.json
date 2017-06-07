@@ -46,29 +46,14 @@
             {
                 "name": "x",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 2
-                    },
                     "kind": "number"
                 }
             },
             {
                 "name": "y",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 2
-                    },
                     "kind": "nullable",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 2
-                        },
                         "kind": "number"
                     }
                 }
@@ -86,11 +71,6 @@
                     {
                         "name": "a",
                         "type": {
-                            "location": {
-                                "type": "source",
-                                "fileName": "InterfaceService.def",
-                                "line": 3
-                            },
                             "kind": "named",
                             "name": "Vector2"
                         }
@@ -98,29 +78,14 @@
                     {
                         "name": "b",
                         "type": {
-                            "location": {
-                                "type": "source",
-                                "fileName": "InterfaceService.def",
-                                "line": 3
-                            },
                             "kind": "named",
                             "name": "Vector2"
                         }
                     }
                 ],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 3
-                    },
                     "kind": "promise",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 3
-                        },
                         "kind": "number"
                     }
                 }
@@ -136,18 +101,8 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 4
-                    },
                     "kind": "promise",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 4
-                        },
                         "kind": "number"
                     }
                 }
@@ -161,18 +116,8 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 6
-                    },
                     "kind": "observable",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 6
-                        },
                         "kind": "number"
                     }
                 }
@@ -186,11 +131,6 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 11
-                    },
                     "kind": "void"
                 }
             }
@@ -213,18 +153,8 @@
             "kind": "function",
             "argumentTypes": [],
             "returnType": {
-                "location": {
-                    "type": "source",
-                    "fileName": "InterfaceService.def",
-                    "line": 14
-                },
                 "kind": "promise",
                 "type": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 14
-                    },
                     "kind": "named",
                     "name": "Vector2"
                 }
@@ -253,28 +183,13 @@
                     {
                         "name": "a",
                         "type": {
-                            "location": {
-                                "type": "source",
-                                "fileName": "InterfaceService.def",
-                                "line": 31
-                            },
                             "kind": "number"
                         }
                     }
                 ],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 31
-                    },
                     "kind": "promise",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 31
-                        },
                         "kind": "number"
                     }
                 }
@@ -288,11 +203,6 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 32
-                    },
                     "kind": "void"
                 }
             },
@@ -305,18 +215,8 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 33
-                    },
                     "kind": "observable",
                     "type": {
-                        "location": {
-                            "type": "source",
-                            "fileName": "InterfaceService.def",
-                            "line": 33
-                        },
                         "kind": "string"
                     }
                 }
@@ -330,11 +230,6 @@
                 "kind": "function",
                 "argumentTypes": [],
                 "returnType": {
-                    "location": {
-                        "type": "source",
-                        "fileName": "InterfaceService.def",
-                        "line": 35
-                    },
                     "kind": "void"
                 }
             }

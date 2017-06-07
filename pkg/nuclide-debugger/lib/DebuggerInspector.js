@@ -33,7 +33,7 @@ export default class DebuggerInspector extends React.PureComponent {
 
   render(): React.Element<any> {
     return (
-      <div className="inspector">
+      <div className="inspector" style={{'text-align': 'right'}}>
         <div className="control-bar">
           <Button
             title="(Debug) Open Web Inspector for the debugger frame."

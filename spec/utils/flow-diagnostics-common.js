@@ -35,9 +35,8 @@ export function runTest(context: TestContext) {
     waitsForStatusBarItem();
     runs(() => {
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeTruthy();
     });
-
+    waitsFor(() => isDiagnosticsPanelShowing());
     waitsForPromise(async () => {
       textEditor = await textEditorPromise;
       // Change `bar` to `baz`
@@ -78,11 +77,13 @@ export function runTest(context: TestContext) {
       // We've had an issue where the diagnostics panel stops getting updated after it's been
       // toggled off and on again. Guard against that.
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeFalsy();
-
+    });
+    waitsFor(() => !isDiagnosticsPanelShowing());
+    runs(() => {
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeTruthy();
-
+    });
+    waitsFor(() => isDiagnosticsPanelShowing());
+    runs(() => {
       // Change `baz` back to `bar`
       textEditor.setTextInBufferRange(new Range([3, 12], [3, 13]), 'r');
       dispatchKeyboardEvent('s', document.activeElement, {cmd: true});

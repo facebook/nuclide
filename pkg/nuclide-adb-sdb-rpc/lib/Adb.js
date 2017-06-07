@@ -171,6 +171,18 @@ export class Adb extends AdbSdbBase {
       .toPromise();
   }
 
+  touchFile(device: string, path: string): Promise<string> {
+    const deviceArg = device !== '' ? ['-s', device] : [];
+    const command = deviceArg.concat(['shell', 'touch', path]);
+    return runCommand(this._dbPath, command).toPromise();
+  }
+
+  removeFile(device: string, path: string): Promise<string> {
+    const deviceArg = device !== '' ? ['-s', device] : [];
+    const command = deviceArg.concat(['shell', 'rm', path]);
+    return runCommand(this._dbPath, command).toPromise();
+  }
+
   async getJavaProcesses(device: string): Promise<Array<AndroidJavaProcess>> {
     const allProcesses = await this.runShortCommand(device, ['shell', 'ps'])
       .map(stdout => {
