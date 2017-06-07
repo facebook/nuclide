@@ -12,8 +12,7 @@
 import type {TokenizedText} from 'nuclide-commons/tokenized-text-rpc-types';
 
 export type OutlineTree = {
-  icon?: string, // from atom$Octicon (that type's not allowed over rpc so we use string)
-  kind?: OutlineTreeKind, // kind you can pass to the UI for theming
+  icon?: string, // from atom$Octicon | atom$OcticonsPrivate (types not allowed over rpc so we use string)
 
   // Must be one or the other. If both are present, tokenizedText is preferred.
   plainText?: string,
@@ -28,24 +27,3 @@ export type OutlineTree = {
 export type Outline = {
   outlineTrees: Array<OutlineTree>,
 };
-
-// Kind of outline tree - matches the names from the Language Server Protocol v2.
-export type OutlineTreeKind =
-  | 'file'
-  | 'module'
-  | 'namespace'
-  | 'package'
-  | 'class'
-  | 'method'
-  | 'property'
-  | 'field'
-  | 'constructor'
-  | 'enum'
-  | 'interface'
-  | 'function'
-  | 'variable'
-  | 'constant'
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'array';

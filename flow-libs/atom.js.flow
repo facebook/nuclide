@@ -49,6 +49,11 @@ type atom$Octicon = 'alert' | 'alignment-align' | 'alignment-aligned-to' | 'alig
   'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'unfold' |
   'unmute' | 'unverified' | 'verified' | 'versions' | 'watch' | 'x' | 'zap';
 
+type atom$OcticonsPrivate =
+  'type-array' | 'type-boolean' | 'type-class' | 'type-constant' | 'type-constructor' | 'type-enum' |
+  'type-field' | 'type-file' | 'type-function' | 'type-interface' | 'type-method' | 'type-module' |
+  'type-namespace' | 'type-number' | 'type-package' | 'type-property' | 'type-string' | 'type-variable';
+
 declare class atom$Model {
   destroy(): void,
   isDestroyed(): boolean,
