@@ -29,11 +29,10 @@ import {createOutlines} from './createOutlines';
 import {Observable} from 'rxjs';
 
 import type {TokenizedText} from 'nuclide-commons/tokenized-text-rpc-types';
-import type {Outline, OutlineTreeKind} from './rpc-types';
+import type {Outline} from './rpc-types';
 
 export type OutlineTreeForUi = {
-  icon?: string, // from atom$Octicon, but we use string for convenience of remoting
-  kind?: OutlineTreeKind, // kind you can pass to the UI for theming
+  icon?: string, // from atom$Octicon | atom$OcticonPrivate - we use string for remoting
   plainText?: string,
   tokenizedText?: TokenizedText,
 
