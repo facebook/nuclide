@@ -1,19 +1,19 @@
 {
   "name": "nuclide-commons-atom",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Common Nuclide node modules (for use with Atom only).",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide",
   "scripts": {
-    "prepublishOnly": "../../scripts/release-transpile.js --overwrite .",
+    "prepublish": "../../scripts/modules-prepublish.sh",
     "test": "atom --dev --test spec"
   },
   "atomTestRunner": "../../lib/test-runner-entry.js",
   "dependencies": {
     "async-to-generator": "1.0.0",
     "log4js": "1.1.1",
-    "nuclide-commons": "0.1.1",
+    "nuclide-commons": "0.1.4",
     "rxjs": "5.3.1",
     "shallowequal": "0.2.2",
     "semver": "5.3.0"
