@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -18,7 +19,7 @@ import {
 } from './utils/integration-test-helpers';
 import pollFor from './utils/pollFor';
 import {generateHgRepo1Fixture} from '../pkg/nuclide-test-helpers';
-import nuclideUri from '../pkg/commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import fs from 'fs';
 
 import invariant from 'assert';
@@ -37,7 +38,9 @@ describe('Edit remote file Integration Test', () => {
       invariant(connection, 'Failed to make connection to a remote server');
 
       const remotePath = nuclideUri.join(repoPath, 'test.txt');
-      const textEditor = await atom.workspace.open(connection.getUriOfRemotePath(remotePath));
+      const textEditor = await atom.workspace.open(
+        connection.getUriOfRemotePath(remotePath),
+      );
       invariant(textEditor);
       const textEditorView = atom.views.getView(textEditor);
 

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -17,8 +18,7 @@ function runTest(regions, expectedPercentage, ...expected) {
   invariant(result != null);
   // Use floor since that's what will happen when it's displayed
   expect(Math.floor(result.percentage)).toEqual(expectedPercentage);
-  expect(result.uncoveredRegions)
-    .toEqual(expected);
+  expect(result.uncoveredRegions).toEqual(expected);
 }
 
 function toError(expected) {
@@ -49,10 +49,15 @@ describe('convertTypedRegionsToCoverageRegions', () => {
   });
 
   it('empty string', () => {
-    runTest([{
-      color: 'unchecked',
-      text: '',
-    }], 100);
+    runTest(
+      [
+        {
+          color: 'unchecked',
+          text: '',
+        },
+      ],
+      100,
+    );
   });
 
   it('simple error', () => {
@@ -68,7 +73,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 1,
         start: 1,
         end: 4,
-      });
+      },
+    );
   });
 
   it('simple warning', () => {
@@ -84,7 +90,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 1,
         start: 1,
         end: 4,
-      });
+      },
+    );
   });
 
   it('simple message w/ offset', () => {
@@ -104,7 +111,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 1,
         start: 6,
         end: 9,
-      });
+      },
+    );
   });
 
   it('simple message w/ multi-line offset', () => {
@@ -124,7 +132,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 4,
         start: 13,
         end: 16,
-      });
+      },
+    );
   });
 
   it('simple message w/ multi-line offset endling in newline', () => {
@@ -144,7 +153,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 3,
         start: 1,
         end: 4,
-      });
+      },
+    );
   });
 
   it('multi-line error', () => {
@@ -165,7 +175,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 2,
         start: 1,
         end: 10,
-      });
+      },
+    );
   });
 
   it('blank-lines error', () => {
@@ -186,7 +197,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 3,
         start: 1,
         end: 10,
-      });
+      },
+    );
   });
 
   it('contiguous errors are merged', () => {
@@ -206,7 +218,8 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 1,
         start: 1,
         end: 9,
-      });
+      },
+    );
   });
 
   it('should not count default regions in the percentage', () => {
@@ -230,6 +243,7 @@ describe('convertTypedRegionsToCoverageRegions', () => {
         line: 1,
         start: 1,
         end: 3,
-      });
+      },
+    );
   });
 });

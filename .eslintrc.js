@@ -88,7 +88,7 @@ module.exports = {
     'dot-notation': 1,
     'eqeqeq': [1, 'allow-null'],
     'guard-for-in': 0,
-    'no-alert': 1,
+    'no-alert': 0,
     'no-caller': 1,
     'no-case-declarations': 0,
     'no-div-regex': 1,
@@ -196,7 +196,7 @@ module.exports = {
     'id-blacklist': 0,
     'id-length': 0,
     'id-match': 0,
-    'indent': [1, 2, {SwitchCase: 1}],
+    // 'indent': [1, 2, {SwitchCase: 1}],
     'jsx-quotes': [1, 'prefer-double'],
     'key-spacing': [1, {beforeColon: false, afterColon: true}],
     'keyword-spacing': 1,
@@ -205,7 +205,7 @@ module.exports = {
     'lines-around-comment': 0,
     'lines-around-directive': 0,
     'max-depth': 0,
-    'max-len': [1, 100, {tabWidth: 2, ignoreUrls: true}],
+    // 'max-len': [1, 100, {tabWidth: 2, ignoreUrls: true}],
     'max-lines': 0,
     'max-nested-callbacks': 0,
     'max-params': 0,
@@ -238,17 +238,17 @@ module.exports = {
     'no-unneeded-ternary': 0,
     'no-whitespace-before-property': 1,
     'object-curly-newline': 0,
-    'object-curly-spacing': 1,
+    // 'object-curly-spacing': 1,
     'object-property-newline': 0,
     'one-var-declaration-per-line': 0,
     'one-var': [1, 'never'],
     'operator-assignment': 1,
     'operator-linebreak': 0,
     'padded-blocks': [1, {blocks: 'never', classes: 'never', switches: 'never'}],
-    'quote-props': [1, 'consistent-as-needed'],
+    // 'quote-props': [1, 'as-needed'],
     'quotes': [1, 'single', 'avoid-escape'],
     'require-jsdoc': 0,
-    'semi-spacing': 1,
+    // 'semi-spacing': 1,
     'semi': 1,
     'sort-keys': 0,
     'sort-vars': 0,
@@ -267,9 +267,9 @@ module.exports = {
     'arrow-parens': [1, 'as-needed'],
     'arrow-spacing': 1,
     'constructor-super': 1,
-    'generator-star-spacing': 1,
+    // 'generator-star-spacing': 1,
     'no-class-assign': 1,
-    'no-confusing-arrow': [1, {allowParens: true}],
+    'no-confusing-arrow': 0,
     'no-const-assign': 1,
     'no-dupe-class-members': 1,
     'no-duplicate-imports': 0,
@@ -305,7 +305,7 @@ module.exports = {
     'flowtype/boolean-style': 1,
     'flowtype/define-flow-type': 1,
     'flowtype/delimiter-dangle': [1, 'always-multiline'],
-    'flowtype/generic-spacing': 1,
+    // 'flowtype/generic-spacing': 1,
     'flowtype/no-dupe-keys': 0,
     'flowtype/no-primitive-constructor-types': 1,
     'flowtype/no-weak-types': 0,
@@ -343,6 +343,7 @@ module.exports = {
     'nuclide-internal/consistent-import-name': 1,
     'nuclide-internal/import-type-style': 1,
     'nuclide-internal/license-header': 1,
+    'nuclide-internal/modules-dependencies': 1,
     'nuclide-internal/no-cross-atom-imports': [1, {whitelist: ['nuclide-ui']}],
     'nuclide-internal/no-unnecessary-disposable-wrapping': 1,
     'nuclide-internal/prefer-nuclide-uri': 1,
@@ -350,6 +351,9 @@ module.exports = {
 
     // prefer-object-spread (https://github.com/bryanrsmith/eslint-plugin-prefer-object-spread)
     'prefer-object-spread/prefer-object-spread': 1,
+
+    // prettier (https://github.com/prettier/eslint-plugin-prettier)
+    'prettier/prettier': [1, 'fb', '@format'],
 
     // React (https://github.com/yannickcr/eslint-plugin-react)
     'react/display-name': 0,
@@ -386,7 +390,7 @@ module.exports = {
     'react/style-prop-object': 0,
     'react/jsx-boolean-value': 0,
     'react/jsx-closing-bracket-location': [1, {selfClosing: 'tag-aligned', nonEmpty: 'after-props'}],
-    'react/jsx-curly-spacing': [1, 'never'],
+    // 'react/jsx-curly-spacing': [1, 'never'],
     'react/jsx-equals-spacing': 0,
     'react/jsx-filename-extension': 0,
     'react/jsx-first-prop-new-line': 0,
@@ -417,6 +421,12 @@ module.exports = {
     'jasmine',
     'nuclide-internal',
     'prefer-object-spread',
+    'prettier',
     'react',
   ],
 };
+
+// Register our custom rules as a plugin to avoid needing `--rulesdir` or
+// `node_modules` trickery.
+const Plugins = require('eslint/lib/config/plugins');
+Plugins.define('nuclide-internal', require('./resources/eslint-plugin-nuclide-internal'));

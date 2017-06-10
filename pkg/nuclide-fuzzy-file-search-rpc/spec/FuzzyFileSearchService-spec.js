@@ -6,13 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import * as pathSearch from '../lib/FileSearchProcess';
-import {
-  queryFuzzyFile,
-  isFuzzySearchAvailableFor,
-} from '..';
+import {queryFuzzyFile, isFuzzySearchAvailableFor} from '..';
 
 // $FlowIgnore #yolo
 pathSearch.fileSearchForDirectory = () => {

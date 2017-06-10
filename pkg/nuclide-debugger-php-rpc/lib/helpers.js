@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Breakpoint} from './BreakpointStore';
@@ -13,23 +14,20 @@ import type {DebuggerMode} from './types';
 
 import dedent from 'dedent';
 import child_process from 'child_process';
-import url from 'url';
 import logger from './utils';
 import {getConfig} from './config';
-import {shellParse} from '../../commons-node/string';
-import {checkOutput} from '../../commons-node/process';
+import {shellParse} from 'nuclide-commons/string';
+import {runCommand} from 'nuclide-commons/process';
+
+import {pathToUri, uriToPath} from '../../nuclide-debugger-common/lib/helpers';
+export {pathToUri, uriToPath};
 
 export const DUMMY_FRAME_ID = 'Frame.0';
 
 export function isContinuationCommand(command: string): boolean {
-  return [
-    'run',
-    'step_into',
-    'step_over',
-    'step_out',
-    'stop',
-    'detach',
-  ].some(continuationCommand => continuationCommand === command);
+  return ['run', 'step_into', 'step_over', 'step_out', 'stop', 'detach'].some(
+    continuationCommand => continuationCommand === command,
+  );
 }
 
 export function isEvaluationCommand(command: string): boolean {
@@ -46,10 +44,11 @@ export function base64Encode(value: string): string {
 
 // Returns true if hphpd might be attached according to some heuristics applied to the process list.
 export async function hphpdMightBeAttached(): Promise<boolean> {
-  const processes = await checkOutput('ps', ['aux'], {});
-  return processes.stdout.toString().split('\n').slice(1).some(line => {
-    return line.indexOf('m debug') >= 0 // hhvm -m debug
-      || line.indexOf('mode debug') >= 0; // hhvm --mode debug
+  const processes = await runCommand('ps', ['aux'], {}).toPromise();
+  return processes.toString().split('\n').slice(1).some(line => {
+    return (
+      line.indexOf('m debug') >= 0 || line.indexOf('mode debug') >= 0 // hhvm -m debug
+    ); // hhvm --mode debug
   });
 }
 
@@ -60,26 +59,14 @@ export function makeDbgpMessage(message: string): string {
 export function makeMessage(obj: Object, body_: ?string): string {
   let body = body_;
   body = body || '';
-  let result = '<?xml version="1.0" encoding="iso-8859-1"?>' +
+  let result =
+    '<?xml version="1.0" encoding="iso-8859-1"?>' +
     '<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug"';
   for (const key in obj) {
     result += ' ' + key + '="' + obj[key] + '"';
   }
   result += '>' + body + '</response>';
   return makeDbgpMessage(result);
-}
-
-export function pathToUri(path: string): string {
-  return 'file://' + path;
-}
-
-export function uriToPath(uri: string): string {
-  const components = url.parse(uri);
-  // Some filename returned from hhvm does not have protocol.
-  if (components.protocol !== 'file:' && components.protocol != null) {
-    logger.logErrorAndThrow(`unexpected file protocol. Got: ${components.protocol}`);
-  }
-  return components.pathname || '';
 }
 
 export function getBreakpointLocation(breakpoint: Breakpoint): Object {
@@ -95,7 +82,9 @@ export function getBreakpointLocation(breakpoint: Breakpoint): Object {
  * Used to start the HHVM instance that the dummy connection connects to so we can evaluate
  * expressions in the REPL.
  */
-export function launchScriptForDummyConnection(scriptPath: string): child_process$ChildProcess {
+export function launchScriptForDummyConnection(
+  scriptPath: string,
+): child_process$ChildProcess {
   return launchPhpScriptWithXDebugEnabled(scriptPath);
 }
 
@@ -104,11 +93,11 @@ export function launchScriptForDummyConnection(scriptPath: string): child_proces
  */
 export function launchScriptToDebug(
   scriptPath: string,
-  sendToOutputWindow: (text: string) => void,
+  sendToOutputWindow: (text: string, level: string) => void,
 ): Promise<void> {
   return new Promise(resolve => {
-    launchPhpScriptWithXDebugEnabled(scriptPath, text => {
-      sendToOutputWindow(text);
+    launchPhpScriptWithXDebugEnabled(scriptPath, (text, level) => {
+      sendToOutputWindow(text, level);
       resolve();
     });
   });
@@ -116,37 +105,54 @@ export function launchScriptToDebug(
 
 export function launchPhpScriptWithXDebugEnabled(
   scriptPath: string,
-  sendToOutputWindowAndResolve?: (text: string) => void,
+  sendToOutputWindowAndResolve?: (text: string, level: string) => void,
 ): child_process$ChildProcess {
   const {phpRuntimePath, phpRuntimeArgs} = getConfig();
   const runtimeArgs = shellParse(phpRuntimeArgs);
   const scriptArgs = shellParse(scriptPath);
   const args = [...runtimeArgs, ...scriptArgs];
   const proc = child_process.spawn(phpRuntimePath, args);
-  logger.log(dedent`
+  logger.debug(
+    dedent`
     child_process(${proc.pid}) spawned with xdebug enabled.
     $ ${phpRuntimePath} ${args.join(' ')}
-  `);
+  `,
+  );
 
   proc.stdout.on('data', chunk => {
     // stdout should hopefully be set to line-buffering, in which case the
     // string would come on one line.
     const block: string = chunk.toString();
     const output = `child_process(${proc.pid}) stdout: ${block}`;
-    logger.log(output);
+    logger.debug(output);
+    if (sendToOutputWindowAndResolve != null) {
+      sendToOutputWindowAndResolve(block, 'text');
+    }
+  });
+  proc.stderr.on('data', chunk => {
+    const block: string = chunk.toString().trim();
+    const output = `child_process(${proc.pid}) stderr: ${block}`;
+    logger.debug(output);
+    if (sendToOutputWindowAndResolve != null) {
+      sendToOutputWindowAndResolve(block, 'error');
+    }
   });
   proc.on('error', err => {
-    logger.log(`child_process(${proc.pid}) error: ${err}`);
+    logger.debug(`child_process(${proc.pid}) error: ${err}`);
     if (sendToOutputWindowAndResolve != null) {
       sendToOutputWindowAndResolve(
         `The process running script: ${scriptPath} encountered an error: ${err}`,
+        'error',
       );
     }
   });
   proc.on('exit', code => {
-    logger.log(`child_process(${proc.pid}) exit: ${code}`);
+    logger.debug(`child_process(${proc.pid}) exit: ${code}`);
     if (code != null && sendToOutputWindowAndResolve != null) {
-      sendToOutputWindowAndResolve(`Script: ${scriptPath} exited with code: ${code}`);
+      sendToOutputWindowAndResolve(
+        `Script: ${scriptPath} exited with code: ${code}`,
+        code === 0 ? 'info' : 'error',
+      );
     }
   });
   return proc;

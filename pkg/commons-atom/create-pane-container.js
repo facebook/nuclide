@@ -6,10 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export default function createPaneContainer(): Object {
-  const PaneContainer = atom.workspace.paneContainer.constructor;
+  const instance = typeof atom.workspace.getCenter === 'function'
+    ? atom.workspace.getCenter().paneContainer
+    : (atom.workspace: any).paneContainer;
+  const PaneContainer = instance.constructor;
   return new PaneContainer({
     viewRegistry: atom.views,
     config: atom.config,

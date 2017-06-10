@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -18,12 +19,15 @@ export default function consumeFirstProvider(
   version: string = '0.0.0',
 ): Promise<any> {
   return new Promise((resolve, reject) => {
-    const subscription =
-      atom.packages.serviceHub.consume(keyPath, version, provider => {
+    const subscription = atom.packages.serviceHub.consume(
+      keyPath,
+      version,
+      provider => {
         process.nextTick(() => {
           resolve(provider);
           subscription.dispose();
         });
-      });
+      },
+    );
   });
 }

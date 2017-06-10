@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import net from 'net';
 import {makeDbgpMessage} from '../lib/helpers';
@@ -20,8 +20,7 @@ declare class ServerType extends events$EventEmitter {
   listen(): void,
 }
 
-const payload1 =
-`<init
+const payload1 = `<init
   xmlns="urn:debugger_protocol_v1"
   xmlns:xdebug="http://xdebug.org/dbgp/xdebug"
   fileuri="file:///test1.php"
@@ -58,7 +57,9 @@ describe('debugger-php-rpc DbgpConnector', () => {
   beforeEach(() => {
     const serverEE: any = new EventEmitter();
     spyOn(serverEE, 'on').andCallThrough();
-    serverEE.close = jasmine.createSpy('close').andCallFake(() => server.emit('close'));
+    serverEE.close = jasmine
+      .createSpy('close')
+      .andCallFake(() => server.emit('close'));
     serverEE.listen = jasmine.createSpy('listen');
 
     server = (serverEE: ServerType);
@@ -83,16 +84,15 @@ describe('debugger-php-rpc DbgpConnector', () => {
     };
     spyOn(require('../lib/config'), 'getConfig').andReturn(config);
 
-    const onAttach = jasmine.createSpy('onAttach').andCallFake(
-      params => {
-        const attachedSocket = params.socket;
-        expect(socket.once).toHaveBeenCalledWith('data', jasmine.any(Function));
-        expect(attachedSocket).toBe(socket);
+    const onAttach = jasmine.createSpy('onAttach').andCallFake(params => {
+      const attachedSocket = params.socket;
+      expect(socket.once).toHaveBeenCalledWith('data', jasmine.any(Function));
+      expect(attachedSocket).toBe(socket);
 
-        connector.dispose();
-        expect(server.close).toHaveBeenCalledWith();
-        expect(onClose).toHaveBeenCalledWith(undefined);
-      });
+      connector.dispose();
+      expect(server.close).toHaveBeenCalledWith();
+      expect(onClose).toHaveBeenCalledWith(undefined);
+    });
     const onClose = jasmine.createSpy('onClose');
 
     const connector = new DbgpConnector(port);
@@ -101,7 +101,12 @@ describe('debugger-php-rpc DbgpConnector', () => {
     connector.onAttach(onAttach);
 
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
-    expect(server.listen).toHaveBeenCalledWith(port, undefined, undefined, jasmine.any(Function));
+    expect(server.listen).toHaveBeenCalledWith(
+      port,
+      undefined,
+      undefined,
+      jasmine.any(Function),
+    );
     expect(server.on).toHaveBeenCalledWith('error', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('connection', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
@@ -134,7 +139,12 @@ describe('debugger-php-rpc DbgpConnector', () => {
     connector.onClose(onClose);
 
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
-    expect(server.listen).toHaveBeenCalledWith(port, undefined, undefined, jasmine.any(Function));
+    expect(server.listen).toHaveBeenCalledWith(
+      port,
+      undefined,
+      undefined,
+      jasmine.any(Function),
+    );
     expect(server.on).toHaveBeenCalledWith('error', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('connection', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
@@ -164,7 +174,12 @@ describe('debugger-php-rpc DbgpConnector', () => {
     connector.onError(onError);
 
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
-    expect(server.listen).toHaveBeenCalledWith(port, undefined, undefined, jasmine.any(Function));
+    expect(server.listen).toHaveBeenCalledWith(
+      port,
+      undefined,
+      undefined,
+      jasmine.any(Function),
+    );
     expect(server.on).toHaveBeenCalledWith('error', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('connection', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
@@ -180,7 +195,7 @@ describe('debugger-php-rpc DbgpConnector', () => {
     expect(emitted).toBe(true);
     expect(onError).toHaveBeenCalledWith(
       `Can't start debugging because port ${port} is being used by another process. ` +
-      "Try running 'killall node' on your devserver and then restarting Nuclide.",
+        "Try running 'killall node' on your devserver and then restarting Nuclide.",
     );
     expect(server.close).toHaveBeenCalledWith();
     expect(onClose).toHaveBeenCalledWith(undefined);
@@ -204,7 +219,12 @@ describe('debugger-php-rpc DbgpConnector', () => {
     connector.onError(onError);
 
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));
-    expect(server.listen).toHaveBeenCalledWith(port, undefined, undefined, jasmine.any(Function));
+    expect(server.listen).toHaveBeenCalledWith(
+      port,
+      undefined,
+      undefined,
+      jasmine.any(Function),
+    );
     expect(server.on).toHaveBeenCalledWith('error', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('connection', jasmine.any(Function));
     expect(server.on).toHaveBeenCalledWith('close', jasmine.any(Function));

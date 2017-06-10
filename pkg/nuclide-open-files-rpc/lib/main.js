@@ -6,13 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileVersion} from './rpc-types';
 
 import {FileCache} from './FileCache';
 import {FileVersionNotifier} from './FileVersionNotifier';
-import {trackTiming} from '../../nuclide-analytics';
 
 export {FileCache, FileVersionNotifier};
 export {FileEventKind} from './constants';
@@ -25,12 +25,9 @@ export const OPEN_FILES_SERVICE = 'OpenFilesService';
 export function getBufferAtVersion(
   fileVersion: FileVersion,
 ): Promise<?simpleTextBuffer$TextBuffer> {
-  return trackTiming(
-    'getBufferAtVersion',
-    () => {
-      invariant(
-        fileVersion.notifier instanceof FileCache,
-        'Don\'t call this from the Atom process');
-      return (fileVersion.notifier: FileCache).getBufferAtVersion(fileVersion);
-    });
+  invariant(
+    fileVersion.notifier instanceof FileCache,
+    "Don't call this from the Atom process",
+  );
+  return (fileVersion.notifier: FileCache).getBufferAtVersion(fileVersion);
 }

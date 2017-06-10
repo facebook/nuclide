@@ -115,17 +115,3 @@ server's address, and the actual root directory of the remote project you want t
 
 Any changes you make in the local Nuclide editor will be communicated back to the remote server and
 properly synchronized.
-
-## Diff View
-
-Nuclide has built-in support for [Mercurial-based repositories](/docs/features/hg). If your
-project is using Mercurial, one of the features that may help your workflow is the
-[Diff View](/docs/features/hg/#diff-view). This allows you to quickly see what has changed in the
-files you have modified. It shows what has changed from the current committed revision which you
-are tracking.
-
-To access the Diff View, click the **Try It** button, use the `Alt-Cmd-Shift-D` keyboard shortcut, or select `Nuclide | Source Control | Toggle Diff View` after making a change to one of the files in your Mercurial project.
-
-![](/static/images/docs/quick-start-getting-started-diff-view.png)
-
-When the **Diff View** tab appears, click on a changed file in the right pane to have the Diff View window highlight any changes.

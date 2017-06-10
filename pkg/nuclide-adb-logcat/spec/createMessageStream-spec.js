@@ -6,18 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import createMessageStream from '../lib/createMessageStream';
 import {Observable} from 'rxjs';
 
 describe('createMessageStream', () => {
   it('splits the output by message', () => {
     const original = featureConfig.observeAsStream.bind(featureConfig);
-    spyOn(featureConfig, 'observeAsStream').andCallFake(name => (
-      name === 'nuclide-adb-logcat.whitelistedTags' ? Observable.of('.*') : original(name)
-    ));
+    spyOn(featureConfig, 'observeAsStream').andCallFake(
+      name =>
+        name === 'nuclide-adb-logcat.whitelistedTags'
+          ? Observable.of('.*')
+          : original(name),
+    );
 
     waitsForPromise(async () => {
       const output = Observable.from([
@@ -43,9 +47,12 @@ describe('createMessageStream', () => {
 
   it('only includes messages with whitelisted tags', () => {
     const original = featureConfig.observeAsStream.bind(featureConfig);
-    spyOn(featureConfig, 'observeAsStream').andCallFake(name => (
-      name === 'nuclide-adb-logcat.whitelistedTags' ? Observable.of('ExampleTag') : original(name)
-    ));
+    spyOn(featureConfig, 'observeAsStream').andCallFake(
+      name =>
+        name === 'nuclide-adb-logcat.whitelistedTags'
+          ? Observable.of('ExampleTag')
+          : original(name),
+    );
 
     waitsForPromise(async () => {
       const output = Observable.from([
@@ -69,9 +76,12 @@ describe('createMessageStream', () => {
   it('shows an error (once) if the regular expression is invalid', () => {
     spyOn(atom.notifications, 'addError');
     const original = featureConfig.observeAsStream.bind(featureConfig);
-    spyOn(featureConfig, 'observeAsStream').andCallFake(name => (
-      name === 'nuclide-adb-logcat.whitelistedTags' ? Observable.of('(') : original(name)
-    ));
+    spyOn(featureConfig, 'observeAsStream').andCallFake(
+      name =>
+        name === 'nuclide-adb-logcat.whitelistedTags'
+          ? Observable.of('(')
+          : original(name),
+    );
 
     waitsForPromise(async () => {
       const output = Observable.from([

@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TextBuffer} from 'atom';
 
-import {AtomTextEditor} from '../../../nuclide-ui/AtomTextEditor';
+import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 import React from 'react';
 
 type Props = {

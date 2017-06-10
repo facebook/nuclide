@@ -9,25 +9,8 @@
     "configMetadata": {
       "pathComponents": [
         "Language",
-        "Arc"
+        "Arcanist"
       ]
-    },
-    "config": {
-      "blacklistedLinters": {
-        "title": "Blacklisted Linters",
-        "type": "array",
-        "description": "Comma-separated list of linter names that should not be displayed",
-        "default": [],
-        "items": {
-          "type": "string"
-        }
-      },
-      "lintTimeout": {
-        "title": "Lint Timeout",
-        "type": "integer",
-        "description": "Arc lint timeout in milliseconds.",
-        "default": 60000
-      }
     },
     "packageType": "Atom",
     "testRunner": "apm"
@@ -44,11 +27,6 @@
         "0.0.0": "consumeTaskRunnerServiceApi"
       }
     },
-    "nuclide-output": {
-      "versions": {
-        "0.0.0": "consumeOutputService"
-      }
-    },
     "nuclide-deep-link.provider": {
       "versions": {
         "0.0.0": "consumeDeepLinkService"
@@ -57,18 +35,6 @@
     "nuclide-remote-projects": {
       "versions": {
         "0.0.0": "consumeRemoteProjectsService"
-      }
-    }
-  },
-  "providedServices": {
-    "nuclide-diagnostics-provider": {
-      "versions": {
-        "0.1.0": "provideDiagnostics"
-      }
-    },
-    "nuclide-busy-signal": {
-      "versions": {
-        "0.1.0": "provideBusySignal"
       }
     }
   }

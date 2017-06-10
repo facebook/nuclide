@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import logger from './utils';
@@ -16,10 +17,7 @@ export default class Handler {
   _domain: string;
   _clientCallback: ClientCallback;
 
-  constructor(
-    domain: string,
-    clientCallback: ClientCallback,
-  ) {
+  constructor(domain: string, clientCallback: ClientCallback) {
     this._domain = domain;
     this._clientCallback = clientCallback;
   }
@@ -33,8 +31,9 @@ export default class Handler {
   }
 
   unknownMethod(id: number, method: string, params: ?Object): void {
-    const message = 'Unknown chrome dev tools method: ' + this.getDomain() + '.' + method;
-    logger.log(message);
+    const message =
+      'Unknown chrome dev tools method: ' + this.getDomain() + '.' + method;
+    logger.debug(message);
     this.replyWithError(id, message);
   }
 

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import Tabs from '../Tabs';
@@ -25,17 +26,15 @@ describe('Checkbox', () => {
     const onChange = jasmine.createSpy('onChange');
 
     const props = {
-      tabs: [{name: 'first', tabContent: <i>123</i>}, {name: 'second', tabContent: <i>456</i>}],
+      tabs: [
+        {name: 'first', tabContent: <i>123</i>},
+        {name: 'second', tabContent: <i>456</i>},
+      ],
       activeTabName: 'first',
       onActiveTabChange: onChange,
     };
-    const component = renderIntoDocument(
-      <Tabs {...props} />,
-    );
-    const node = scryRenderedDOMComponentsWithClass(
-      component,
-      'title',
-    )[1];
+    const component = renderIntoDocument(<Tabs {...props} />);
+    const node = scryRenderedDOMComponentsWithClass(component, 'title')[1];
 
     Simulate.click(node);
 
@@ -46,18 +45,16 @@ describe('Checkbox', () => {
     const onChange = jasmine.createSpy('onChange');
 
     const props = {
-      tabs: [{name: 'first', tabContent: <i>123</i>}, {name: 'second', tabContent: <i>456</i>}],
+      tabs: [
+        {name: 'first', tabContent: <i>123</i>},
+        {name: 'second', tabContent: <i>456</i>},
+      ],
       activeTabName: 'first',
       triggeringEvent: 'onMouseEnter',
       onActiveTabChange: onChange,
     };
-    const component = renderIntoDocument(
-      <Tabs {...props} />,
-    );
-    const node = scryRenderedDOMComponentsWithClass(
-      component,
-      'title',
-    )[1];
+    const component = renderIntoDocument(<Tabs {...props} />);
+    const node = scryRenderedDOMComponentsWithClass(component, 'title')[1];
 
     // `Simulate` does not currently support mouseEnter: https://github.com/facebook/react/issues/1297.
     SimulateNative.mouseOver(ReactDOM.findDOMNode(node));

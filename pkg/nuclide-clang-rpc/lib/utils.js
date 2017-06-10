@@ -6,19 +6,25 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import escapeStringRegExp from 'escape-string-regexp';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Observable} from 'rxjs';
 
-import {
-  safeSpawn,
-  observeProcess,
-} from '../../commons-node/process';
+import {observeProcess} from 'nuclide-commons/process';
 
 const HEADER_EXTENSIONS = new Set(['.h', '.hh', '.hpp', '.hxx', '.h++']);
-const SOURCE_EXTENSIONS = new Set(['.c', '.cc', '.cpp', '.cxx', '.c++', '.m', '.mm']);
+const SOURCE_EXTENSIONS = new Set([
+  '.c',
+  '.cc',
+  '.cpp',
+  '.cxx',
+  '.c++',
+  '.m',
+  '.mm',
+]);
 
 export function isHeaderFile(filename: string): boolean {
   return HEADER_EXTENSIONS.has(nuclideUri.extname(filename));
@@ -82,20 +88,24 @@ export function findIncludingSourceFile(
   projectRoot: string,
 ): Observable<?string> {
   const basename = escapeStringRegExp(nuclideUri.basename(headerFile));
-  const relativePath = escapeStringRegExp(nuclideUri.relative(projectRoot, headerFile));
+  const relativePath = escapeStringRegExp(
+    nuclideUri.relative(projectRoot, headerFile),
+  );
   const pattern = `^\\s*#include\\s+["<](${relativePath}|(../)*${basename})[">]\\s*$`;
   const regex = new RegExp(pattern);
-  const spawnGrepProcess = () => {
-    // We need both the file and the match to verify relative includes.
-    // Relative includes may not always be correct, so we may have to go through all the results.
-    return safeSpawn('grep', [
-      '-RE',    // recursive, extended
+  // We need both the file and the match to verify relative includes.
+  // Relative includes may not always be correct, so we may have to go through all the results.
+  return observeProcess(
+    'grep',
+    [
+      '-RE', // recursive, extended
       '--null', // separate file/match with \0
       pattern,
       nuclideUri.dirname(headerFile),
-    ]);
-  };
-  return observeProcess(spawnGrepProcess)
+    ],
+    {/* TODO(T17353599) */ isExitError: () => false},
+  )
+    .catch(error => Observable.of({kind: 'error', error})) // TODO(T17463635)
     .flatMap(message => {
       switch (message.kind) {
         case 'stdout':

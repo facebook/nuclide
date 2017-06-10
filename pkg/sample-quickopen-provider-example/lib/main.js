@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Provider} from '../../nuclide-quick-open/lib/types';
@@ -16,10 +17,6 @@ export function registerProvider(): Provider {
   return ExampleProvider;
 }
 
-export function activate(state: ?Object) {
+export function activate(state: ?Object) {}
 
-}
-
-export function deactivate() {
-
-}
+export function deactivate() {}

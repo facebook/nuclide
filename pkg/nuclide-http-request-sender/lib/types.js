@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 type Verb = 'GET' | 'POST';
@@ -45,6 +46,4 @@ export type SendRequestAction = {
   type: 'SEND_REQUEST',
 };
 
-export type Action =
-  UpdateStateAction
-  | SendRequestAction;
+export type Action = UpdateStateAction | SendRequestAction;

@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ServiceTester} from './ServiceTester';
 
 describe('ErrorServer', () => {
@@ -19,11 +20,16 @@ describe('ErrorServer', () => {
     testHelper = new ServiceTester();
     waitsForPromise(() => {
       invariant(testHelper);
-      return testHelper.start([{
-        name: 'ErrorService',
-        definition: nuclideUri.join(__dirname, 'ErrorService.def'),
-        implementation: nuclideUri.join(__dirname, 'ErrorService.js'),
-      }], 'error_protocol');
+      return testHelper.start(
+        [
+          {
+            name: 'ErrorService',
+            definition: nuclideUri.join(__dirname, 'ErrorService.def'),
+            implementation: nuclideUri.join(__dirname, 'ErrorService.js'),
+          },
+        ],
+        'error_protocol',
+      );
     });
 
     runs(() => {
@@ -40,10 +46,12 @@ describe('ErrorServer', () => {
         expect(false).toBe(true);
       } catch (e) {
         expect(e instanceof Error).toBe(true);
-        expect(e.message.startsWith(
-          'Remote Error: msg processing message {"protocol":"error_protocol","type":' +
-          '"call","method":"ErrorService/promiseError","id":1,"args":{"message":"msg"}}'))
-          .toBe(true);
+        expect(
+          e.message.startsWith(
+            'Remote Error: msg processing message {"protocol":"error_protocol","type":' +
+              '"call","method":"ErrorService/promiseError","id":1,"args":{"message":"msg"}}',
+          ),
+        ).toBe(true);
       }
     });
   });
@@ -91,15 +99,22 @@ describe('ErrorServer', () => {
     let completed = false;
 
     o.subscribe(
-      () => { expect(true).toBe(false); },
+      () => {
+        expect(true).toBe(false);
+      },
       e => {
-        expect(e.message.startsWith(
-          'Remote Error: msg processing message {"protocol":"error_protocol","type":' +
-          '"call","method":"ErrorService/observableError","id":1,"args":{"message":"msg"}}'))
-          .toBe(true);
+        expect(
+          e.message.startsWith(
+            'Remote Error: msg processing message {"protocol":"error_protocol","type":' +
+              '"call","method":"ErrorService/observableError","id":1,"args":{"message":"msg"}}',
+          ),
+        ).toBe(true);
         completed = true;
       },
-      () => { expect(true).toBe(false); });
+      () => {
+        expect(true).toBe(false);
+      },
+    );
 
     waitsFor(() => completed);
   });
@@ -110,12 +125,17 @@ describe('ErrorServer', () => {
     let completed = false;
 
     o.subscribe(
-      () => { expect(true).toBe(false); },
+      () => {
+        expect(true).toBe(false);
+      },
       e => {
         expect(e).toBe('msg');
         completed = true;
       },
-      () => { expect(true).toBe(false); });
+      () => {
+        expect(true).toBe(false);
+      },
+    );
 
     waitsFor(() => completed);
   });
@@ -126,12 +146,17 @@ describe('ErrorServer', () => {
     let completed = false;
 
     o.subscribe(
-      () => { expect(true).toBe(false); },
+      () => {
+        expect(true).toBe(false);
+      },
       e => {
         expect(e).toBe(undefined);
         completed = true;
       },
-      () => { expect(true).toBe(false); });
+      () => {
+        expect(true).toBe(false);
+      },
+    );
 
     waitsFor(() => completed);
   });
@@ -142,12 +167,17 @@ describe('ErrorServer', () => {
     let completed = false;
 
     o.subscribe(
-      () => { expect(true).toBe(false); },
+      () => {
+        expect(true).toBe(false);
+      },
       e => {
         expect(e.code).toBe(42);
         completed = true;
       },
-      () => { expect(true).toBe(false); });
+      () => {
+        expect(true).toBe(false);
+      },
+    );
 
     waitsFor(() => completed);
   });

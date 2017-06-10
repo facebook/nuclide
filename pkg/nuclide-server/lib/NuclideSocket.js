@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AgentOptions} from './main';
@@ -19,11 +20,11 @@ import {WebSocketTransport} from './WebSocketTransport';
 import {QueuedTransport} from './QueuedTransport';
 import {XhrConnectionHeartbeat} from './XhrConnectionHeartbeat';
 import invariant from 'assert';
-import {attachEvent} from '../../commons-node/event';
-import {maybeToString} from '../../commons-node/string';
-import {getLogger} from '../../nuclide-logging';
+import {attachEvent} from 'nuclide-commons/event';
+import {maybeToString} from 'nuclide-commons/string';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-server');
 
 const PING_SEND_INTERVAL = 5000;
 const PING_WAIT_INTERVAL = 5000;
@@ -101,7 +102,9 @@ export class NuclideSocket {
   }
 
   isDisconnected(): boolean {
-    return this._transport != null && this._transport.getState() === 'disconnected';
+    return (
+      this._transport != null && this._transport.getState() === 'disconnected'
+    );
   }
 
   waitForConnect(): Promise<void> {
@@ -145,7 +148,10 @@ export class NuclideSocket {
           break;
         case 'error':
           websocket.close();
-          logger.error('WebSocket Error before sending id handshake', sendIdResult.message);
+          logger.error(
+            'WebSocket Error before sending id handshake',
+            sendIdResult.message,
+          );
           if (this.isDisconnected()) {
             logger.info('WebSocket reconnecting after error.');
             this._scheduleReconnect();
@@ -155,8 +161,12 @@ export class NuclideSocket {
           if (this.isDisconnected()) {
             const ws = new WebSocketTransport(this.id, websocket);
             const pingId = uuid.v4();
-            ws.onClose(() => { this._clearPingTimer(); });
-            ws.onError(error => { ws.close(); });
+            ws.onClose(() => {
+              this._clearPingTimer();
+            });
+            ws.onError(error => {
+              ws.close();
+            });
             ws.onPong(data => {
               if (pingId === data) {
                 this._schedulePing(pingId, ws);
@@ -273,7 +283,11 @@ export class NuclideSocket {
   }
 
   onHeartbeatError(
-    callback: (arg: {code: string, originalCode: string, message: string}) => mixed,
+    callback: (arg: {
+      code: string,
+      originalCode: string,
+      message: string,
+    }) => mixed,
   ): IDisposable {
     return this._heartbeat.onHeartbeatError(callback);
   }
@@ -301,9 +315,9 @@ export class NuclideSocket {
 }
 
 type SendResult =
-  { kind: 'error', message: string}
-  | { kind: 'close' }
-  | { kind: 'success' };
+  | {kind: 'error', message: string}
+  | {kind: 'close'}
+  | {kind: 'success'};
 
 function sendOneMessage(socket: WS, message: string): Promise<SendResult> {
   return new Promise((resolve, reject) => {
@@ -312,8 +326,9 @@ function sendOneMessage(socket: WS, message: string): Promise<SendResult> {
       onClose.dispose();
       resolve(result);
     }
-    const onError = attachEvent(socket, 'event',
-      err => finish({kind: 'error', message: err}));
+    const onError = attachEvent(socket, 'event', err =>
+      finish({kind: 'error', message: err}),
+    );
     const onClose = attachEvent(socket, 'close', () => finish({kind: 'close'}));
     socket.send(message, error => {
       if (error == null) {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import SettingsCheckbox from './SettingsCheckbox';
@@ -82,7 +83,9 @@ export default function SettingsControl(props: Props): ?React.Element<any> {
 }
 
 function isBoolean(obj) {
-  return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
+  return (
+    obj === true || obj === false || toString.call(obj) === '[object Boolean]'
+  );
 }
 
 function isNumber(obj) {
@@ -91,7 +94,7 @@ function isNumber(obj) {
 
 function isObject(obj) {
   const type = typeof obj;
-  return type === 'function' || type === 'object' && Boolean(obj);
+  return type === 'function' || (type === 'object' && Boolean(obj));
 }
 
 function isEditableArray(array): boolean {

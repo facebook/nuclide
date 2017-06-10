@@ -6,10 +6,9 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {HgRepositoryClient} from './HgRepositoryClient';
 
-export {
-  HgRepositoryClient,
-};
+export {HgRepositoryClient};

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -21,11 +22,9 @@ export class ProgressBar extends React.Component {
   props: Props;
 
   render(): ?React.Element<any> {
-    const className = classnames(
-      'nuclide-task-runner-progress-bar', {
-        indeterminate: this._isIndeterminate(),
-      },
-    );
+    const className = classnames('nuclide-task-runner-progress-bar', {
+      indeterminate: this._isIndeterminate(),
+    });
     return (
       <div className={className} hidden={!this.props.visible}>
         {this._renderBar()}
@@ -55,9 +54,7 @@ class Bar extends React.Component {
   props: BarProps;
 
   render(): React.Element<any> {
-    const pct = Math.max(0,
-      Math.min(100, this.props.progress * 100),
-    );
+    const pct = Math.max(0, Math.min(100, this.props.progress * 100));
     return (
       <div
         className="nuclide-task-runner-progress-bar-bar"

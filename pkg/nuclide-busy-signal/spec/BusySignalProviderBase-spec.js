@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BusySignalMessage} from '../lib/types';
@@ -26,12 +27,16 @@ describe('BusySignalProviderBase', () => {
     expect(messages.length).toBe(0);
     providerBase.reportBusy('foo', () => Promise.resolve(5));
     expect(messages.length).toBe(1);
-    waitsFor(() => messages.length === 2, 'It should publish a second message', 100);
+    waitsFor(
+      () => messages.length === 2,
+      'It should publish a second message',
+      100,
+    );
   });
 
   it('should throw if the function does not return a promise', () => {
     // We have to cast here because the test case purposely subverts the type system.
-    const f = () => providerBase.reportBusy('foo', ((() => 5): any));
+    const f = () => providerBase.reportBusy('foo', (() => 5: any));
     expect(f).toThrow();
     expect(messages.length).toBe(2);
   });
@@ -39,7 +44,11 @@ describe('BusySignalProviderBase', () => {
   it("should send the 'done' message even if the promise rejects", () => {
     providerBase.reportBusy('foo', () => Promise.reject(new Error()));
     expect(messages.length).toBe(1);
-    waitsFor(() => messages.length === 2, 'It should publish a second message', 100);
+    waitsFor(
+      () => messages.length === 2,
+      'It should publish a second message',
+      100,
+    );
   });
 
   describe('when onlyForFile is provided', () => {
@@ -62,7 +71,9 @@ describe('BusySignalProviderBase', () => {
     it('should only display for the proper text editor', () => {
       atom.workspace.getActivePane().activateItem(editor1);
 
-      const disposable = providerBase.displayMessage('foo', {onlyForFile: '/file2.txt'});
+      const disposable = providerBase.displayMessage('foo', {
+        onlyForFile: '/file2.txt',
+      });
       expect(messages).toEqual([]);
 
       atom.workspace.getActivePane().activateItem(editor2);

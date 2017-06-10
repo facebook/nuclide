@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable, Emitter} from 'atom';
-import {observeTextEditors} from './text-editor';
+import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 
 const GRAMMAR_CHANGE_EVENT = 'grammar-change';
 

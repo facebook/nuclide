@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 
 /* eslint-disable */
@@ -18,8 +19,7 @@ describe('foo', () => {
 });
 
 describe('bar', () => {
-  it('should work with a normal function', () => {
-  });
+  it('should work with a normal function', () => {});
 });
 
 it('should not display this', () => {});

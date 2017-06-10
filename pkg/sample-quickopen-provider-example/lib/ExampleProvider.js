@@ -6,20 +6,65 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  FileResult,
-  Provider,
-} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 const FIXTURE = [
-  'ac', 'accumsan', 'adipiscing', 'amet', 'auctor', 'consectetur', 'dictum', 'dolor', 'efficitur',
-  'eget', 'elit', 'enim', 'eros', 'eu', 'Fusce', 'imperdiet', 'in', 'ipsum', 'lacus', 'leo',
-  'libero', 'lorem', 'Lorem', 'luctus', 'mattis', 'maximus', 'mi', 'Morbi', 'Nam', 'nec', 'non',
-  'Nulla', 'Nullam', 'odio', 'placerat', 'quis', 'sagittis', 'sapien', 'scelerisque', 'Sed',
-  'semper', 'sit', 'tellus', 'tempus', 'tincidunt', 'turpis', 'ultricies', 'Ut', 'vel', 'venenatis',
-  'vestibulum', 'Vestibulum', 'vitae',
+  'ac',
+  'accumsan',
+  'adipiscing',
+  'amet',
+  'auctor',
+  'consectetur',
+  'dictum',
+  'dolor',
+  'efficitur',
+  'eget',
+  'elit',
+  'enim',
+  'eros',
+  'eu',
+  'Fusce',
+  'imperdiet',
+  'in',
+  'ipsum',
+  'lacus',
+  'leo',
+  'libero',
+  'lorem',
+  'Lorem',
+  'luctus',
+  'mattis',
+  'maximus',
+  'mi',
+  'Morbi',
+  'Nam',
+  'nec',
+  'non',
+  'Nulla',
+  'Nullam',
+  'odio',
+  'placerat',
+  'quis',
+  'sagittis',
+  'sapien',
+  'scelerisque',
+  'Sed',
+  'semper',
+  'sit',
+  'tellus',
+  'tempus',
+  'tincidunt',
+  'turpis',
+  'ultricies',
+  'Ut',
+  'vel',
+  'venenatis',
+  'vestibulum',
+  'Vestibulum',
+  'vitae',
 ];
 
 const ExampleProvider: Provider = {
@@ -85,7 +130,9 @@ const ExampleProvider: Provider = {
   /**
    * Only required if providerType === 'GLOBAL'.
    */
-  isEligibleForDirectories(directories: Array<atom$Directory>): Promise<boolean> {
+  isEligibleForDirectories(
+    directories: Array<atom$Directory>,
+  ): Promise<boolean> {
     return Promise.resolve(true);
   },
 
@@ -94,17 +141,20 @@ const ExampleProvider: Provider = {
    * For providerType === 'DIRECTORY' the second parameter is `directory`.
    * For providerType === 'GLOBAL' it is `directories: Array<atom$Directory>`
    */
-  executeQuery(query: string, directory: atom$Directory): Promise<Array<FileResult>> {
+  executeQuery(
+    query: string,
+    directory: atom$Directory,
+  ): Promise<Array<FileResult>> {
     if (!query.length) {
       return Promise.resolve([]);
     }
-    const results = (
-      FIXTURE
-        .filter(f => f.indexOf(query) !== -1)
-        .map(str => ({path: '/foo/bar/' + str + '.js'}))
-    );
+    const results = FIXTURE.filter(f => f.indexOf(query) !== -1).map(str => ({
+      path: '/foo/bar/' + str + '.js',
+    }));
     return new Promise((resolve, reject) => {
-      setTimeout(() => { resolve(results); }, 1000);
+      setTimeout(() => {
+        resolve(results);
+      }, 1000);
     });
   },
 

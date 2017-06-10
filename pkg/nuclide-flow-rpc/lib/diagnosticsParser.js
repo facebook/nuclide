@@ -6,14 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  FileDiagnosticMessage,
-  Trace,
-  Fix,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {FileDiagnosticMessage, Trace, Fix} from 'atom-ide-ui';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import type {
   FlowStatusOutput,
@@ -23,6 +20,11 @@ import type {
 
 import invariant from 'assert';
 import {Range} from 'simple-text-buffer';
+
+// Flow sometimes reports this as the file path for an error. When this happens, we should simply
+// leave out the location, since it isn't very useful and it's not a well-formed path, which can
+// cause issues down the line.
+const BUILTIN_LOCATION = '(builtins)';
 
 export function flowStatusOutputToDiagnostics(
   statusOutput: FlowStatusOutput,
@@ -42,17 +44,18 @@ export function diagnosticToFix(diagnostic: FileDiagnosticMessage): ?Fix {
   return null;
 }
 
-const fixExtractionFunctions: Array<(diagnostic: FileDiagnosticMessage) => ?Fix> = [
-  unusedSuppressionFix,
-  namedImportTypo,
-];
+const fixExtractionFunctions: Array<
+  (diagnostic: FileDiagnosticMessage) => ?Fix,
+> = [unusedSuppressionFix, namedImportTypo];
 
 function unusedSuppressionFix(diagnostic: FileDiagnosticMessage): ?Fix {
   // Automatically remove unused suppressions:
-  if (diagnostic.trace != null &&
-      diagnostic.trace.length === 1 &&
-      diagnostic.text === 'Error suppressing comment' &&
-      diagnostic.trace[0].text === 'Unused suppression') {
+  if (
+    diagnostic.trace != null &&
+    diagnostic.trace.length === 1 &&
+    diagnostic.text === 'Error suppressing comment' &&
+    diagnostic.trace[0].text === 'Unused suppression'
+  ) {
     const oldRange = diagnostic.range;
     invariant(oldRange != null);
     return {
@@ -116,8 +119,13 @@ function namedImportTypo(diagnostic: FileDiagnosticMessage): ?Fix {
  * files.
  */
 
-function extractPath(message: FlowStatusErrorMessageComponent): NuclideUri | void {
-  return message.loc == null ? undefined : message.loc.source;
+function extractPath(
+  message: FlowStatusErrorMessageComponent,
+): NuclideUri | void {
+  if (message.loc == null || message.loc.source === BUILTIN_LOCATION) {
+    return undefined;
+  }
+  return message.loc.source;
 }
 
 // A trace object is very similar to an error object.
@@ -131,7 +139,8 @@ function flowMessageToTrace(message: FlowStatusErrorMessageComponent): Trace {
 }
 
 function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
-  const flowMessageComponents: Array<FlowStatusErrorMessageComponent> = flowStatusError.message;
+  const flowMessageComponents: Array<FlowStatusErrorMessageComponent> =
+    flowStatusError.message;
 
   const mainMessage = flowMessageComponents[0];
 
@@ -159,7 +168,8 @@ function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
 }
 
 function extractTraces(flowStatusError: FlowStatusError): Array<Trace> | void {
-  const flowMessageComponents: Array<FlowStatusErrorMessageComponent> = flowStatusError.message;
+  const flowMessageComponents: Array<FlowStatusErrorMessageComponent> =
+    flowStatusError.message;
 
   const trace: Array<Trace> = [];
   // When the message is an array with multiple elements, the second element
@@ -188,20 +198,20 @@ function extractTraces(flowStatusError: FlowStatusError): Array<Trace> | void {
   }
 }
 
-
 // Use `atom$Range | void` rather than `?atom$Range` to exclude `null`, so that the type is
 // compatible with the `range` property, which is an optional property rather than a nullable
 // property.
-export function extractRange(message: FlowStatusErrorMessageComponent): atom$Range | void {
-  // It's unclear why the 1-based to 0-based indexing works the way that it
-  // does, but this has the desired effect in the UI, in practice.
-  const flowRange = message.loc;
-  if (flowRange == null) {
+export function extractRange(
+  message: FlowStatusErrorMessageComponent,
+): atom$Range | void {
+  if (message.loc == null || message.loc.source === BUILTIN_LOCATION) {
     return undefined;
   } else {
+    // It's unclear why the 1-based to 0-based indexing works the way that it
+    // does, but this has the desired effect in the UI, in practice.
     return new Range(
-      [flowRange.start.line - 1, flowRange.start.column - 1],
-      [flowRange.end.line - 1, flowRange.end.column],
+      [message.loc.start.line - 1, message.loc.start.column - 1],
+      [message.loc.end.line - 1, message.loc.end.column],
     );
   }
 }

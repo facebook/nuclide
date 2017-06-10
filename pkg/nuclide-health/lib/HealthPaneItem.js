@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PaneItemState} from './types';
@@ -36,7 +37,9 @@ export default class HealthPaneItem extends React.Component {
 
   componentDidMount() {
     // Note: We assume the `stateStram` prop never changes.
-    this._stateSubscription = this.props.stateStream.subscribe(state => this.setState(state || {}));
+    this._stateSubscription = this.props.stateStream.subscribe(state =>
+      this.setState(state || {}),
+    );
   }
 
   componentWillUnmount() {
@@ -65,7 +68,12 @@ export default class HealthPaneItem extends React.Component {
   }
 
   render() {
-    const {toolbarJewel, updateToolbarJewel, childProcessesTree, stats} = this.state;
+    const {
+      toolbarJewel,
+      updateToolbarJewel,
+      childProcessesTree,
+      stats,
+    } = this.state;
 
     if (stats == null) {
       return <div />;

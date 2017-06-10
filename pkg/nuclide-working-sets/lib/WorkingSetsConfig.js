@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 import type {WorkingSetDefinition} from './types';
 
@@ -31,10 +32,7 @@ export class WorkingSetsConfig {
       callback(copiedDefinitions);
     };
 
-    return featureConfig.observe(
-      CONFIG_KEY,
-      wrapped,
-    );
+    return featureConfig.observe(CONFIG_KEY, wrapped);
   }
 
   getDefinitions(): Array<WorkingSetDefinition> {

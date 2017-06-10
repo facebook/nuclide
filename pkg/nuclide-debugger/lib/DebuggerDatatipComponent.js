@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {WatchExpressionStore} from './WatchExpressionStore';
-import type {
-  EvaluationResult,
-} from './types';
+import type {EvaluationResult} from './types';
 
 import React from 'react';
-import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
+import {
+  LazyNestedValueComponent,
+} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 
 type DebuggerDatatipComponentProps = {
@@ -27,12 +28,10 @@ export class DebuggerDatatipComponent extends React.Component {
   props: DebuggerDatatipComponentProps;
 
   render(): ?React.Element<any> {
-    const {
-      expression,
-      evaluationResult,
+    const {expression, evaluationResult, watchExpressionStore} = this.props;
+    const fetchChildren = watchExpressionStore.getProperties.bind(
       watchExpressionStore,
-    } = this.props;
-    const fetchChildren = watchExpressionStore.getProperties.bind(watchExpressionStore);
+    );
     return (
       <div className="nuclide-debugger-datatip">
         <span className="nuclide-debugger-datatip-value">

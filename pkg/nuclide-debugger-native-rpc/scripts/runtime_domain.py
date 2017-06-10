@@ -44,10 +44,16 @@ class RuntimeDomain(HandlerDomain):
         if params['objectGroup'] == 'console':
             result = get_lldb().SBCommandReturnObject()
             self.debugger_store.debugger.GetCommandInterpreter().HandleCommand(expression, result)
-
+            # Swig sometimes creates a malformed inner object of SBCommandReturnObject that, when
+            # trying to resolve .GetError(), crashes.
+            # TODO(wallace): Check when this bug is fixed on lldb upstream.
+            try:
+                value = result.GetOutput() + result.GetError()
+            except:
+                value = result.GetOutput()
             return {
                 'result': {
-                    'value': result.GetOutput() + result.GetError(),
+                    'value': value,
                     'type': 'text',
                 },
                 'wasThrown': False,

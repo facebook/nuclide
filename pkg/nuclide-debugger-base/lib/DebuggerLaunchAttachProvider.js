@@ -6,22 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type React from 'react';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-
-import type EventEmitter from 'events';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DebuggerConfigAction} from './types';
 
 let uniqueKeySeed = 0;
 
-/**
- * Event types that the EventEmitter passed to getComponent may listen on.
- */
-export const DebuggerLaunchAttachEventTypes = Object.freeze({
-  ENTER_KEY_PRESSED: 'ENTER_KEY_PRESSED',
-  VISIBILITY_CHANGED: 'VISIBILITY_CHANGED',
-});
+export type callbacksForAction = {
+  isEnabled: () => Promise<boolean>,
+  getDebuggerTypeNames: () => Array<string>,
+  getComponent: (
+    debuggerTypeName: string,
+    configIsValidChanged: (valid: boolean) => void,
+  ) => ?React.Element<any>,
+};
 
 /**
  * Base class of all launch/attach providers.
@@ -38,11 +39,32 @@ export default class DebuggerLaunchAttachProvider {
     this._uniqueKey = uniqueKeySeed++;
   }
 
-  /**
-   * Whether this provider is enabled or not.
-   */
-  isEnabled(): Promise<boolean> {
-    return Promise.resolve(true);
+  getCallbacksForAction(action: DebuggerConfigAction): callbacksForAction {
+    return {
+      /**
+       * Whether this provider is enabled or not.
+       */
+      isEnabled: () => {
+        return Promise.resolve(true);
+      },
+
+      /**
+       * Returns a list of supported debugger types + environments for the specified action.
+       */
+      getDebuggerTypeNames: () => {
+        return [this._debuggingTypeName];
+      },
+
+      /**
+       * Returns the UI component for configuring the specified debugger type and action.
+       */
+      getComponent: (
+        debuggerTypeName: string,
+        configIsValidChanged: (valid: boolean) => void,
+      ) => {
+        throw new Error('abstract method');
+      },
+    };
   }
 
   /**
@@ -53,35 +75,10 @@ export default class DebuggerLaunchAttachProvider {
   }
 
   /**
-   * Returns the debugging type name for this provider(e.g. Natve, Php, Node etc...).
-   */
-  getDebuggingTypeName(): string {
-    return this._debuggingTypeName;
-  }
-
-  /**
    * Returns target uri for this provider.
    */
   getTargetUri(): NuclideUri {
     return this._targetUri;
-  }
-
-  /**
-   * Returns a list of supported debugger actions.
-   */
-  getActions(): Promise<Array<string>> {
-    return Promise.reject(new Error('abstract method'));
-  }
-
-  /**
-   * Returns the UI component for input debug action.
-   * The component may use the parentEventEmitter to listen for keyboard events
-   * defined by DebuggerLaunchAttachEventTypes.
-   */
-  getComponent(
-    action: string,
-    parentEventEmitter: EventEmitter): ?React.Element<any> {
-    throw new Error('abstract method');
   }
 
   /**

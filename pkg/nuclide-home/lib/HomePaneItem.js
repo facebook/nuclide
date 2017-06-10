@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HomeFragments} from './types';
@@ -16,9 +17,9 @@ import React from 'react';
 import HomeFeatureComponent from './HomeFeatureComponent';
 import NuclideLogo from './NuclideLogo';
 import createUtmUrl from './createUtmUrl';
-import featureConfig from '../../commons-atom/featureConfig';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {Checkbox} from '../../nuclide-ui/Checkbox';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/home';
 
@@ -32,10 +33,14 @@ const DEFAULT_WELCOME = (
     </p>
     <ul className="text-left">
       <li>
-        <a href={NUCLIDE_DOCS_URL}>Get Started!</a> In-depth docs on our features.
+        <a href={NUCLIDE_DOCS_URL}>Get Started!</a>
+        {' '}
+        In-depth docs on our features.
       </li>
       <li>
-        <a href="https://github.com/facebook/nuclide">GitHub</a> Pull requests, issues, and feedback.
+        <a href="https://github.com/facebook/nuclide">GitHub</a>
+        {' '}
+        Pull requests, issues, and feedback.
       </li>
     </ul>
     <p>
@@ -61,7 +66,9 @@ export default class HomePaneItem extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleShowOnStartupChange = this._handleShowOnStartupChange.bind(this);
+    (this: any)._handleShowOnStartupChange = this._handleShowOnStartupChange.bind(
+      this,
+    );
     this.state = {
       showOnStartup: Boolean(featureConfig.get('nuclide-home.showHome')),
       allHomeFragments: Immutable.Set(),
@@ -71,12 +78,14 @@ export default class HomePaneItem extends React.Component {
   componentDidMount() {
     // Note: We're assuming that the allHomeFragmentsStream prop never changes.
     this._disposables = new UniversalDisposable(
-      this.props.allHomeFragmentsStream.subscribe(
-        allHomeFragments => this.setState({allHomeFragments}),
+      this.props.allHomeFragmentsStream.subscribe(allHomeFragments =>
+        this.setState({allHomeFragments}),
       ),
-      (featureConfig.observeAsStream('nuclide-home.showHome'): Observable<any>).subscribe(
-        showOnStartup => { this.setState({showOnStartup}); },
-      ),
+      (featureConfig.observeAsStream('nuclide-home.showHome'): Observable<
+        any,
+      >).subscribe(showOnStartup => {
+        this.setState({showOnStartup});
+      }),
     );
   }
 
@@ -84,7 +93,8 @@ export default class HomePaneItem extends React.Component {
     const welcomes = [];
     const features = [];
     const sortedHomeFragments = Array.from(this.state.allHomeFragments).sort(
-      (fragmentA, fragmentB) => (fragmentB.priority || 0) - (fragmentA.priority || 0),
+      (fragmentA, fragmentB) =>
+        (fragmentB.priority || 0) - (fragmentA.priority || 0),
     );
     sortedHomeFragments.forEach(fragment => {
       const {welcome, feature} = fragment;
@@ -92,7 +102,9 @@ export default class HomePaneItem extends React.Component {
         welcomes.push(<div key={welcomes.length}>{welcome}</div>);
       }
       if (feature) {
-        features.push(<HomeFeatureComponent key={features.length} {...feature} />);
+        features.push(
+          <HomeFeatureComponent key={features.length} {...feature} />,
+        );
       }
     });
 
@@ -116,14 +128,18 @@ export default class HomePaneItem extends React.Component {
     ];
 
     if (features.length > 0) {
-      containers.push(<div key="features" className="nuclide-home-container">{features}</div>);
+      containers.push(
+        <div key="features" className="nuclide-home-container">{features}</div>,
+      );
     }
 
     return (
       // Re-use styles from the Atom welcome pane where possible.
-      <div className="nuclide-home pane-item padded nuclide-home-containers">
-        {containers}
-      </div>
+      (
+        <div className="nuclide-home pane-item padded nuclide-home-containers">
+          {containers}
+        </div>
+      )
     );
   }
 

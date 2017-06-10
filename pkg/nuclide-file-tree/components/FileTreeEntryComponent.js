@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileTreeNode} from '../lib/FileTreeNode';
@@ -14,15 +15,15 @@ import FileTreeActions from '../lib/FileTreeActions';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
-import fileTypeClass from '../../commons-atom/file-type-class';
-import {nextAnimationFrame} from '../../commons-node/observable';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {nextAnimationFrame} from 'nuclide-commons/observable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {filterName} from '../lib/FileTreeFilterHelper';
-import {Checkbox} from '../../nuclide-ui/Checkbox';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import {StatusCodeNumber} from '../../nuclide-hg-rpc/lib/hg-constants';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import FileTreeHgHelpers from '../lib/FileTreeHgHelpers';
-import addTooltip from '../../nuclide-ui/add-tooltip';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
+import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
 import invariant from 'assert';
 import os from 'os';
 import {Observable} from 'rxjs';
@@ -37,7 +38,11 @@ type State = {
   isLoading: boolean,
 };
 
-type SelectionMode = 'single-select' | 'multi-select' | 'range-select' | 'invalid-select';
+type SelectionMode =
+  | 'single-select'
+  | 'multi-select'
+  | 'range-select'
+  | 'invalid-select';
 
 const SUBSEQUENT_FETCH_SPINNER_DELAY = 500;
 const INITIAL_FETCH_SPINNER_DELAY = 25;
@@ -91,9 +96,9 @@ export class FileTreeEntryComponent extends React.Component {
       }
 
       if (nextProps.node.isLoading) {
-        const spinnerDelay = nextProps.node.wasFetched ?
-          SUBSEQUENT_FETCH_SPINNER_DELAY :
-          INITIAL_FETCH_SPINNER_DELAY;
+        const spinnerDelay = nextProps.node.wasFetched
+          ? SUBSEQUENT_FETCH_SPINNER_DELAY
+          : INITIAL_FETCH_SPINNER_DELAY;
 
         this._loadingTimeout = setTimeout(() => {
           this._loadingTimeout = null;
@@ -137,15 +142,15 @@ export class FileTreeEntryComponent extends React.Component {
       'file list-item': !node.isContainer,
       'directory list-nested-item': node.isContainer,
       'current-working-directory': node.isCwd,
-      'collapsed': !node.isLoading && !node.isExpanded,
-      'expanded': !node.isLoading && node.isExpanded,
+      collapsed: !node.isLoading && !node.isExpanded,
+      expanded: !node.isLoading && node.isExpanded,
       'project-root': node.isRoot,
-      'selected': node.isSelected || node.isDragHovered,
+      selected: node.isSelected || node.isDragHovered,
       'nuclide-file-tree-softened': node.shouldBeSoftened,
     });
     const listItemClassName = classnames({
       'header list-item': node.isContainer,
-      'loading': this.state.isLoading,
+      loading: this.state.isLoading,
     });
 
     let statusClass;
@@ -174,17 +179,11 @@ export class FileTreeEntryComponent extends React.Component {
       }
     }
 
-    let iconName;
     let tooltip;
     if (node.isContainer) {
       if (node.isCwd) {
-        iconName = 'icon-nuclicon-file-directory-starred';
         tooltip = addTooltip({title: 'Current Working Root'});
-      } else {
-        iconName = 'icon-nuclicon-file-directory';
       }
-    } else {
-      iconName = fileTypeClass(node.name);
     }
 
     return (
@@ -195,11 +194,15 @@ export class FileTreeEntryComponent extends React.Component {
         onMouseDown={this._onMouseDown}
         onClick={this._onClick}
         onDoubleClick={this._onDoubleClick}>
-        <div
-          className={listItemClassName}
-          ref="arrowContainer">
-          <span
-            className={`nuclide-file-tree-path icon name ${iconName}`}
+        <div className={listItemClassName} ref="arrowContainer">
+          <PathWithFileIcon
+            className={classnames('name', 'nuclide-file-tree-path', {
+              'icon-nuclicon-file-directory': node.isContainer && !node.isCwd,
+              'icon-nuclicon-file-directory-starred': node.isContainer &&
+                node.isCwd,
+            })}
+            isFolder={node.isContainer}
+            path={node.uri}
             ref={elem => {
               this._pathContainer = elem;
               tooltip && tooltip(elem);
@@ -207,13 +210,8 @@ export class FileTreeEntryComponent extends React.Component {
             data-name={node.name}
             data-path={node.uri}>
             {this._renderCheckbox()}
-            <span
-              className="nuclide-file-tree-path"
-              data-name={node.name}
-              data-path={node.uri}>
-              {filterName(node.name, node.highlightedText, node.isSelected)}
-            </span>
-          </span>
+            {filterName(node.name, node.highlightedText, node.isSelected)}
+          </PathWithFileIcon>
           {this._renderConnectionTitle()}
         </div>
       </li>
@@ -258,12 +256,14 @@ export class FileTreeEntryComponent extends React.Component {
     }
 
     const node = this.props.node;
-    return node.isContainer
+    return (
+      node.isContainer &&
       // $FlowFixMe
-      && ReactDOM.findDOMNode(this.refs.arrowContainer).contains(event.target)
-      // $FlowFixMe
-      && event.clientX < ReactDOM.findDOMNode(this._pathContainer)
-          .getBoundingClientRect().left;
+      ReactDOM.findDOMNode(this.refs.arrowContainer).contains(event.target) &&
+      event.clientX <
+        // $FlowFixMe
+        ReactDOM.findDOMNode(this._pathContainer).getBoundingClientRect().left
+    );
   }
 
   _onMouseDown(event: SyntheticMouseEvent) {
@@ -296,7 +296,10 @@ export class FileTreeEntryComponent extends React.Component {
 
     const selectionMode = getSelectionMode(event);
 
-    if (selectionMode === 'range-select' || selectionMode === 'invalid-select') {
+    if (
+      selectionMode === 'range-select' ||
+      selectionMode === 'invalid-select'
+    ) {
       return;
     }
 
@@ -343,8 +346,11 @@ export class FileTreeEntryComponent extends React.Component {
 
   _onDragEnter(event: DragEvent) {
     event.stopPropagation();
-    const movableNodes = store.getSelectedNodes()
-      .filter(node => FileTreeHgHelpers.isValidRename(node, this.props.node.uri));
+    const movableNodes = store
+      .getSelectedNodes()
+      .filter(node =>
+        FileTreeHgHelpers.isValidRename(node, this.props.node.uri),
+      );
 
     // Ignores hover over invalid targets.
     if (!this.props.node.isContainer || movableNodes.size === 0) {
@@ -352,7 +358,10 @@ export class FileTreeEntryComponent extends React.Component {
     }
     if (this.dragEventCount <= 0) {
       this.dragEventCount = 0;
-      getActions().setDragHoveredNode(this.props.node.rootUri, this.props.node.uri);
+      getActions().setDragHoveredNode(
+        this.props.node.rootUri,
+        this.props.node.uri,
+      );
     }
     this.dragEventCount++;
   }
@@ -372,13 +381,19 @@ export class FileTreeEntryComponent extends React.Component {
 
   _onDragStart(event: DragEvent) {
     event.stopPropagation();
-    const target = this._pathContainer;
+    if (this._pathContainer == null) {
+      return;
+    }
+
+    // $FlowFixMe
+    const target: HTMLElement = ReactDOM.findDOMNode(this._pathContainer);
     if (target == null) {
       return;
     }
 
     const fileIcon = target.cloneNode(false);
-    fileIcon.style.cssText = 'position: absolute; top: 0; left: 0; color: #fff; opacity: .8;';
+    fileIcon.style.cssText =
+      'position: absolute; top: 0; left: 0; color: #fff; opacity: .8;';
     invariant(document.body != null);
     document.body.appendChild(fileIcon);
 
@@ -411,13 +426,19 @@ export class FileTreeEntryComponent extends React.Component {
   _toggleNodeExpanded(deep: boolean): void {
     if (this.props.node.isExpanded) {
       if (deep) {
-        getActions().collapseNodeDeep(this.props.node.rootUri, this.props.node.uri);
+        getActions().collapseNodeDeep(
+          this.props.node.rootUri,
+          this.props.node.uri,
+        );
       } else {
         getActions().collapseNode(this.props.node.rootUri, this.props.node.uri);
       }
     } else {
       if (deep) {
-        getActions().expandNodeDeep(this.props.node.rootUri, this.props.node.uri);
+        getActions().expandNodeDeep(
+          this.props.node.rootUri,
+          this.props.node.uri,
+        );
       } else {
         getActions().expandNode(this.props.node.rootUri, this.props.node.uri);
       }
@@ -444,9 +465,14 @@ export class FileTreeEntryComponent extends React.Component {
 }
 
 function getSelectionMode(event: SyntheticMouseEvent): SelectionMode {
-  if (os.platform() === 'darwin' && event.metaKey && event.button === 0
-    || os.platform() !== 'darwin' && event.ctrlKey && event.button === 0) {
+  if (
+    (os.platform() === 'darwin' && event.metaKey && event.button === 0) ||
+    (os.platform() !== 'darwin' && event.ctrlKey && event.button === 0)
+  ) {
     return 'multi-select';
+  }
+  if (os.platform() === 'darwin' && event.ctrlKey && event.button === 0) {
+    return 'single-select';
   }
   if (event.shiftKey && event.button === 0) {
     return 'range-select';

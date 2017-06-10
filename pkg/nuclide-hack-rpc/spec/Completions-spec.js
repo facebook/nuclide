@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HackCompletionsResult} from '../lib/rpc-types';
@@ -97,8 +98,7 @@ describe('Completions', () => {
         },
       ];
 
-      const result = convertCompletions(
-        contents3, 19, '', serviceResults);
+      const result = convertCompletions(contents3, 19, '', serviceResults);
 
       expect(result).toEqual([
         {

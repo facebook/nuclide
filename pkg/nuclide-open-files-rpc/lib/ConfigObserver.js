@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {BehaviorSubject, Observable} from 'rxjs';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {areSetsEqual} from '../../commons-node/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {areSetsEqual} from 'nuclide-commons/collection';
 import {FileEventKind} from './constants';
 import {FileCache} from './FileCache';
 
@@ -33,8 +34,10 @@ export class ConfigObserver {
     this._findConfigDir = findConfigDir;
     this._currentConfigs = new BehaviorSubject(new Set());
     // TODO: Consider incrementally updating, rather than recomputing on each event.
-    this._subscription = cache.observeFileEvents()
-      .filter(fileEvent => fileEvent.kind !== FileEventKind.EDIT).mapTo(undefined)
+    this._subscription = cache
+      .observeFileEvents()
+      .filter(fileEvent => fileEvent.kind !== FileEventKind.EDIT)
+      .mapTo(undefined)
       .merge(cache.observeDirectoryEvents().mapTo(undefined))
       .switchMap(() => Observable.fromPromise(this._computeOpenConfigs()))
       .distinctUntilChanged(areSetsEqual)
@@ -44,13 +47,18 @@ export class ConfigObserver {
   }
 
   async _computeOpenConfigs(): Promise<Set<NuclideUri>> {
-    const paths = Array.from(this._fileCache.getOpenDirectories())
-      .concat(Array.from(this._fileCache.getOpenFiles())
-        .filter(filePath => this._fileExtensions.indexOf(nuclideUri.extname(filePath)) !== -1));
+    const paths = Array.from(this._fileCache.getOpenDirectories()).concat(
+      Array.from(this._fileCache.getOpenFiles()).filter(
+        filePath =>
+          this._fileExtensions.indexOf(nuclideUri.extname(filePath)) !== -1,
+      ),
+    );
 
     const result = new Set(
-      (await Promise.all(paths.map(path => this._findConfigDir(path))))
-      .filter(path => path != null));
+      (await Promise.all(paths.map(path => this._findConfigDir(path)))).filter(
+        path => path != null,
+      ),
+    );
     // $FlowIssue Flow doesn't understand filter
     return (result: Set<NuclideUri>);
   }

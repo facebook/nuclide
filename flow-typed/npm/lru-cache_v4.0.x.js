@@ -1,5 +1,5 @@
-// flow-typed signature: bb8c907e5137ea7b164eca6cb4839acc
-// flow-typed version: a9bec9eec1/lru-cache_v4.0.x/flow_>=v0.26.0
+// flow-typed signature: 2b18e21f9bd758821dbc1c72e8aef6bf
+// flow-typed version: 94e9f7e0a4/lru-cache_v4.0.x/flow_>=v0.26.0
 
 declare module 'lru-cache' {
 

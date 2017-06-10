@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -37,7 +38,9 @@ export class View extends React.Component {
   }
 
   _update(item: ?Object): void {
-    if (item === this._renderedItem) { return; }
+    if (item === this._renderedItem) {
+      return;
+    }
 
     // Remove the current children.
     const container = ReactDOM.findDOMNode(this);
@@ -48,7 +51,9 @@ export class View extends React.Component {
     }
 
     this._renderedItem = item;
-    if (item == null) { return; }
+    if (item == null) {
+      return;
+    }
     const el = atom.views.getView(item);
     // $FlowFixMe
     container.appendChild(el);

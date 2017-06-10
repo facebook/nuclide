@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
@@ -22,7 +23,10 @@ export {RpcProcess} from './RpcProcess';
 import loadServicesConfig from './loadServicesConfig';
 export {loadServicesConfig};
 
-export type MessageLogger = (direction: 'send' | 'receive', message: string) => void;
+export type MessageLogger = (
+  direction: 'send' | 'receive',
+  message: string,
+) => void;
 
 export type ConfigEntry = {
   name: string,
@@ -32,7 +36,10 @@ export type ConfigEntry = {
   preserveFunctionNames?: boolean,
 };
 
-export type NamedTransformer = (value: any, context: ObjectRegistry) => (any | Promise<any>);
+export type NamedTransformer = (
+  value: any,
+  context: ObjectRegistry,
+) => any | Promise<any>;
 
 export type PredefinedTransformer = {
   typeName: string,

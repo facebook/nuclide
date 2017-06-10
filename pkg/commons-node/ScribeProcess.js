@@ -6,10 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import os from 'os';
-import {asyncExecute, safeSpawn} from './process';
+import {runCommand, spawn} from 'nuclide-commons/process';
+// $FlowFixMe: Add EmptyError to type defs
+import {EmptyError, Subject} from 'rxjs';
 
 const DEFAULT_JOIN_TIMEOUT = 5000;
 let SCRIBE_CAT_COMMAND = 'scribe_cat';
@@ -22,84 +25,109 @@ let SCRIBE_CAT_COMMAND = 'scribe_cat';
  */
 export default class ScribeProcess {
   _scribeCategory: string;
-  _childProcess: ?child_process$ChildProcess;
-  _childProcessRunning: WeakMap<child_process$ChildProcess, boolean>;
+  _disposals: Subject<void>;
+  _childPromise: ?Promise<child_process$ChildProcess>;
+  _subscription: ?rxjs$ISubscription;
 
   constructor(scribeCategory: string) {
+    this._disposals = new Subject();
     this._scribeCategory = scribeCategory;
-    this._childProcessRunning = new WeakMap();
-    this._getOrCreateChildProcess();
+    this._getChildProcess();
   }
 
   /**
    * Check if `scribe_cat` exists in PATH.
    */
   static async isScribeCatOnPath(): Promise<boolean> {
-    const {exitCode} = await asyncExecute('which', [SCRIBE_CAT_COMMAND]);
-    return exitCode === 0;
+    try {
+      await runCommand('which', [SCRIBE_CAT_COMMAND]).toPromise();
+      return true;
+    } catch (err) {
+      return false;
+    }
   }
 
   /**
    * Write a string to a Scribe category.
    * Ensure newlines are properly escaped.
    */
-  write(message: string): Promise<void> {
-    const child = this._getOrCreateChildProcess();
-    return new Promise((resolve, reject) => {
+  async write(message: string): Promise<void> {
+    const child = await this._getChildProcess();
+    await new Promise(resolve => {
       child.stdin.write(`${message}${os.EOL}`, resolve);
     });
   }
 
-  dispose(): Promise<void> {
-    if (this._childProcess != null) {
-      const child = this._childProcess;
-      if (this._childProcessRunning.get(child)) {
-        child.kill();
-      }
+  async dispose(): Promise<void> {
+    this._disposals.next();
+    if (this._subscription != null) {
+      this._childPromise = null;
+      this._subscription.unsubscribe();
+      this._subscription = null;
     }
-    return Promise.resolve();
   }
 
-  join(timeout: number = DEFAULT_JOIN_TIMEOUT): Promise<void> {
-    if (this._childProcess != null) {
-      const {stdin} = this._childProcess;
-      // Make sure stdin has drained before ending it.
-      if (!stdin.write(os.EOL)) {
-        stdin.once('drain', () => stdin.end());
-      } else {
-        stdin.end();
-      }
-      return new Promise(resolve => {
-        if (this._childProcess == null) {
-          resolve();
-        } else {
-          this._childProcess.on('exit', () => resolve());
-          setTimeout(resolve, timeout);
-        }
-      });
+  /**
+   * Waits for the remaining messages to be written, then closes the write stream. Resolves once the
+   * process has exited. This method is called when the server shuts down in order to guarantee we
+   * capture logging during shutdown.
+   */
+  async join(timeout: number = DEFAULT_JOIN_TIMEOUT): Promise<void> {
+    if (this._childPromise == null) {
+      return;
+    }
+
+    const {stdin} = await this._childPromise;
+    // Make sure stdin has drained before ending it.
+    if (!stdin.write(os.EOL)) {
+      stdin.once('drain', () => stdin.end());
     } else {
-      return Promise.resolve();
+      stdin.end();
     }
+    if (this._childPromise == null) {
+      return;
+    }
+    const child = await this._childPromise;
+    await new Promise(resolve => {
+      child.on('exit', () => {
+        resolve();
+      });
+      setTimeout(resolve, timeout);
+    });
   }
 
-  _getOrCreateChildProcess(): child_process$ChildProcess {
-    if (this._childProcess) {
-      return this._childProcess;
+  _getChildProcess(): Promise<child_process$ChildProcess> {
+    if (this._childPromise) {
+      return this._childPromise;
     }
 
-    const child = this._childProcess = safeSpawn(SCRIBE_CAT_COMMAND, [this._scribeCategory]);
-    child.stdin.setDefaultEncoding('utf8');
-    this._childProcessRunning.set(child, true);
-    child.on('error', error => {
-      this._childProcess = null;
-      this._childProcessRunning.set(child, false);
-    });
-    child.on('exit', e => {
-      this._childProcess = null;
-      this._childProcessRunning.set(child, false);
-    });
+    // Kick off the process. Ideally we would store the subscription and unsubscribe when
+    // `dispose()` was called. Practically, it probably doesn't matter since there's very little
+    // chance we'd want to cancel before the process was ready.
+    const processStream = spawn(SCRIBE_CAT_COMMAND, [this._scribeCategory])
+      .do(child => {
+        child.stdin.setDefaultEncoding('utf8');
+      })
+      .finally(() => {
+        this._childPromise = null;
+        this._subscription = null;
+      })
+      .publish();
 
-    return child;
+    const childPromise = (this._childPromise = processStream
+      .takeUntil(this._disposals)
+      .first()
+      .catch(err => {
+        if (err instanceof EmptyError) {
+          // Disposing before we have a process should send an error to anybody waiting on the
+          // process promise.
+          throw new Error('Disconnected before process was spawned');
+        }
+        throw err;
+      })
+      .toPromise());
+    this._subscription = processStream.connect();
+    return childPromise;
   }
 }
 

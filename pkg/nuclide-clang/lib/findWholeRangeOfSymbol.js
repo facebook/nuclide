@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Range} from 'atom';
@@ -31,17 +32,20 @@ const OBJC_SELECTOR_NAME_REGEX = /([^\s:]+:)+$/g;
  * @return The true range of the symbol, which may extend beyond the `text` word.
  */
 export default function findWholeRangeOfSymbol(
-    textEditor: TextEditor,
-    text: string,
-    textRange: Range,
-    spelling: ?string,
-    extent: atom$Range,
-  ): Array<atom$Range> {
+  textEditor: TextEditor,
+  text: string,
+  textRange: Range,
+  spelling: ?string,
+  extent: atom$Range,
+): Array<atom$Range> {
   if (!spelling || text === spelling) {
     return [textRange];
-  } else if ((text + ':') === spelling) {
+  } else if (text + ':' === spelling) {
     // Quick check for a common case, an Obj-C selector with one argument.
-    const newRange = new Range(textRange.start, [textRange.end.row, textRange.end.column + 1]);
+    const newRange = new Range(textRange.start, [
+      textRange.end.row,
+      textRange.end.column + 1,
+    ]);
     return [newRange];
   } else if (spelling.match(OBJC_SELECTOR_NAME_REGEX)) {
     // Obj-C selector with multiple arguments, e.g. doFoo:withBar:
@@ -69,8 +73,10 @@ export default function findWholeRangeOfSymbol(
       const segmentWithColon = selectorSegment + ':';
       const regex = new RegExp(segmentWithColon);
 
-      const rangeOfPreviousSegment = ranges[(ranges.length - 1)];
-      const rangeStart = rangeOfPreviousSegment ? rangeOfPreviousSegment.end : extent.start;
+      const rangeOfPreviousSegment = ranges[ranges.length - 1];
+      const rangeStart = rangeOfPreviousSegment
+        ? rangeOfPreviousSegment.end
+        : extent.start;
       const rangeToScan = new Range(rangeStart, extent.end);
 
       textEditor.scanInBufferRange(regex, rangeToScan, iterator);

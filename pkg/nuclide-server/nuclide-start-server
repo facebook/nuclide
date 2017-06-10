@@ -10,4 +10,4 @@
 cd "$( cd "$(dirname $0)" ; pwd -P )" > /dev/null 2>&1
 # This will make the current directory the path that contains the scripts dir
 cd "$(dirname "$(readlink "$0" || printf %s "$0")")" > /dev/null 2>&1
-scripts/nuclide_server_manager.py "$@"
+python2.7 scripts/nuclide_server_manager.py "$@"

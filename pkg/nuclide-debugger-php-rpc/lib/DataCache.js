@@ -6,8 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type {
+  Scope,
+  ScopeType,
+  PropertyDescriptor,
+  RemoteObject,
+  RemoteObjectId,
+} from '../../nuclide-debugger-base/lib/protocol-types';
 
 import logger from './utils';
 import {
@@ -18,10 +26,7 @@ import {
   getWatchContextObjectId,
   isWatchContextObjectId,
 } from './ObjectId';
-import {
-  convertProperties,
-  getPagedProperties,
-} from './properties';
+import {convertProperties, getPagedProperties} from './properties';
 import invariant from 'assert';
 import {convertValue} from './values';
 
@@ -80,7 +85,7 @@ export class DataCache {
     this._enabled = true;
   }
 
-  async getScopesForFrame(frameIndex: number): Promise<Array<Debugger$Scope>> {
+  async getScopesForFrame(frameIndex: number): Promise<Array<Scope>> {
     if (!this.isEnabled()) {
       throw new Error('Must be enabled to get scopes.');
     }
@@ -93,11 +98,16 @@ export class DataCache {
     });
   }
 
-  async runtimeEvaluate(frameIndex: number, expression: string): Promise<Object> {
+  async runtimeEvaluate(
+    frameIndex: number,
+    expression: string,
+  ): Promise<Object> {
     // Every evaluation we perform with xdebug's eval command is saved in a unique variable
     // for later lookup.
     const newIdentifier = `${EVAL_IDENTIFIER}${++this._evalIdentifierId}`;
-    const evaluatedResult = await this._socket.runtimeEvaluate(`${newIdentifier} = ${expression}`);
+    const evaluatedResult = await this._socket.runtimeEvaluate(
+      `${newIdentifier} = ${expression}`,
+    );
     if (evaluatedResult.wasThrown) {
       return evaluatedResult;
     }
@@ -115,7 +125,10 @@ export class DataCache {
     };
   }
 
-  async evaluateOnCallFrame(frameIndex: number, expression: string): Promise<Object> {
+  async evaluateOnCallFrame(
+    frameIndex: number,
+    expression: string,
+  ): Promise<Object> {
     if (!this.isEnabled()) {
       throw new Error('Must be enabled to evaluate expression.');
     }
@@ -127,7 +140,10 @@ export class DataCache {
       return this.runtimeEvaluate(frameIndex, expression);
     }
 
-    const evaluatedResult = await this._socket.evaluateOnCallFrame(frameIndex, expression);
+    const evaluatedResult = await this._socket.evaluateOnCallFrame(
+      frameIndex,
+      expression,
+    );
     if (evaluatedResult.wasThrown) {
       return evaluatedResult;
     }
@@ -140,11 +156,16 @@ export class DataCache {
     };
   }
 
-  _remoteObjectOfContext(frameIndex: number, context: DbgpContext): Runtime$RemoteObject {
+  _remoteObjectOfContext(
+    frameIndex: number,
+    context: DbgpContext,
+  ): RemoteObject {
     return {
       description: context.name,
       type: 'object',
-      objectId: remoteObjectIdOfObjectId(this._objectIdOfContext(frameIndex, context)),
+      objectId: remoteObjectIdOfObjectId(
+        this._objectIdOfContext(frameIndex, context),
+      ),
     };
   }
 
@@ -153,12 +174,14 @@ export class DataCache {
   }
 
   async getProperties(
-    remoteId: Runtime$RemoteObjectId,
-  ): Promise<Array<Runtime$PropertyDescriptor>> {
-    logger.log(`DataCache.getProperties call on ID: ${remoteId}`);
+    remoteId: RemoteObjectId,
+  ): Promise<Array<PropertyDescriptor>> {
+    logger.debug(`DataCache.getProperties call on ID: ${remoteId}`);
     const id = JSON.parse(remoteId);
     if (id.enableCount !== this._enableCount) {
-      logger.logErrorAndThrow(`Got request for stale RemoteObjectId ${remoteId}`);
+      const message = `Got request for stale RemoteObjectId ${remoteId}`;
+      logger.error(message);
+      throw new Error(message);
     }
 
     // context and single paged ids require getting children from the debuggee and converting
@@ -174,7 +197,9 @@ export class DataCache {
     }
   }
 
-  async _getSinglePageOfProperties(id: ObjectId): Promise<Array<Runtime$PropertyDescriptor>> {
+  async _getSinglePageOfProperties(
+    id: ObjectId,
+  ): Promise<Array<PropertyDescriptor>> {
     let properties = null;
     const {fullname, page} = id;
     invariant(fullname != null);
@@ -196,8 +221,13 @@ export class DataCache {
     return convertProperties(id, properties);
   }
 
-  async _getContextProperties(id: ObjectId): Promise<Array<Runtime$PropertyDescriptor>> {
-    const properties = await this._socket.getContextProperties(id.frameIndex, id.contextId);
+  async _getContextProperties(
+    id: ObjectId,
+  ): Promise<Array<PropertyDescriptor>> {
+    const properties = await this._socket.getContextProperties(
+      id.frameIndex,
+      id.contextId,
+    );
     // Some properties in the environment are created by us for internal use, so we filter them out.
     const filteredProperties = properties.filter(property => {
       invariant(property.$.fullname != null);
@@ -207,7 +237,7 @@ export class DataCache {
   }
 }
 
-function contextNameToScopeType(name: string): Debugger$ScopeType {
+function contextNameToScopeType(name: string): ScopeType {
   switch (name) {
     case 'Locals':
       return 'local';
@@ -215,9 +245,9 @@ function contextNameToScopeType(name: string): Debugger$ScopeType {
       return 'global';
     case 'User defined constants':
       return 'global';
-  // TODO: Verify this ...
+    // TODO: Verify this ...
     default:
-      logger.log(`Unexpected context name: ${name}`);
+      logger.debug(`Unexpected context name: ${name}`);
       return 'closure';
   }
 }

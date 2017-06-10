@@ -6,15 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  RefactorUIFactory,
-  Store,
-  RefactorState,
-} from './types';
+import type {RefactorUIFactory, Store, RefactorState} from './types';
 
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import invariant from 'assert';
@@ -38,7 +35,10 @@ function genericRefactorUI(store: Store): IDisposable {
   const renderer: GenericUIRenderer = new GenericUIRenderer(store);
   const disposeFn: () => void = store.subscribe(() => {
     const state = store.getState();
-    if (state.type === 'closed' || (state.type === 'open' && state.ui === 'generic')) {
+    if (
+      state.type === 'closed' ||
+      (state.type === 'open' && state.ui === 'generic')
+    ) {
       renderer.renderState(state);
     }
   });
@@ -69,9 +69,13 @@ function focusEditorOnClose(store: Store): IDisposable {
       const state = store.getState();
       if (state.type === 'closed') {
         const editor = atom.workspace.getActiveTextEditor();
-        if (editor == null) { return; }
+        if (editor == null) {
+          return;
+        }
         const pane = atom.workspace.paneForItem(editor);
-        if (pane == null) { return; }
+        if (pane == null) {
+          return;
+        }
         pane.activate();
         pane.activateItem(editor);
       }
@@ -94,12 +98,20 @@ function renameShortcut(store: Store): IDisposable {
           case 'pick':
             let renameRefactoring = null;
             for (const refactoring of phase.availableRefactorings) {
-              if (refactoring.kind === 'rename') {
+              if (
+                refactoring.kind === 'rename' ||
+                (refactoring.kind === 'freeform' &&
+                  refactoring.disabled !== false &&
+                  refactoring.name.match(/rename/i))
+              ) {
                 renameRefactoring = refactoring;
+                break;
               }
             }
             if (renameRefactoring == null) {
-              atom.notifications.addWarning('Unable to rename at this location');
+              atom.notifications.addWarning(
+                'Unable to rename at this location',
+              );
               store.dispatch(Actions.close());
             } else {
               store.dispatch(Actions.pickedRefactor(renameRefactoring));
@@ -128,10 +140,7 @@ class GenericUIRenderer {
         this._panel = atom.workspace.addModalPanel({item: element});
       }
       ReactDOM.render(
-        <MainRefactorComponent
-          appState={state}
-          store={this._store}
-        />,
+        <MainRefactorComponent appState={state} store={this._store} />,
         this._panel.getItem(),
       );
     } else {

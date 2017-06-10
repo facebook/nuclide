@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {denodeify} from '../../../commons-node/promise';
+import {denodeify} from 'nuclide-commons/promise';
 
 import tempModule from 'temp';
 tempModule.track();
@@ -20,16 +21,21 @@ const mkdir = denodeify(makeTree);
 import touchModule from 'touch';
 const touch = denodeify(touchModule);
 
-import nuclideUri from '../../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-export async function buildTempDirTree(...paths: Array<string>): Promise<Map<string, string>> {
+export async function buildTempDirTree(
+  ...paths: Array<string>
+): Promise<Map<string, string>> {
   const rootPath = await tempMkDir('/');
   const fileMap = new Map();
 
   for (let i = 0; i < paths.length; i++) {
     const pathItem = paths[i];
     const arrPathItemParts = nuclideUri.split(pathItem);
-    const itemGlobalDirPath = nuclideUri.join(rootPath, ...arrPathItemParts.slice(0, -1));
+    const itemGlobalDirPath = nuclideUri.join(
+      rootPath,
+      ...arrPathItemParts.slice(0, -1),
+    );
     const itemLocalFileName = arrPathItemParts[arrPathItemParts.length - 1];
 
     // eslint-disable-next-line no-await-in-loop
@@ -40,12 +46,21 @@ export async function buildTempDirTree(...paths: Array<string>): Promise<Map<str
     }
 
     arrPathItemParts.forEach((val, j) => {
-      let prefixNodePath = nuclideUri.join(rootPath, ...arrPathItemParts.slice(0, j + 1));
-      if (j < arrPathItemParts.length - 1 || nuclideUri.endsWithSeparator(val)) {
+      let prefixNodePath = nuclideUri.join(
+        rootPath,
+        ...arrPathItemParts.slice(0, j + 1),
+      );
+      if (
+        j < arrPathItemParts.length - 1 ||
+        nuclideUri.endsWithSeparator(val)
+      ) {
         prefixNodePath = nuclideUri.ensureTrailingSeparator(prefixNodePath);
       }
 
-      fileMap.set(nuclideUri.join(...arrPathItemParts.slice(0, j + 1)), prefixNodePath);
+      fileMap.set(
+        nuclideUri.join(...arrPathItemParts.slice(0, j + 1)),
+        prefixNodePath,
+      );
     });
   }
 

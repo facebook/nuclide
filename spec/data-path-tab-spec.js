@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -54,7 +55,9 @@ describe('clicking on a tab', () => {
   // We target `[data-path]` in order to add content menu items to tabs and other locations. This
   // tests ensures that we know if it ever stops working (with the default theme).
   it("targets an element that's a descendant of a [data-path] element", () => {
-    const tab = workspaceElement.querySelector(`.tab-bar [data-path="${filePath}"]`);
+    const tab = workspaceElement.querySelector(
+      `.tab-bar [data-path="${filePath}"]`,
+    );
     expect(tab).toBeTruthy();
     invariant(tab != null);
     const bounds = tab.getBoundingClientRect();

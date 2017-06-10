@@ -6,25 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {ConfigCache} from '../../commons-node/ConfigCache';
-import {asyncExecute} from '../../commons-node/process';
-import {getCategoryLogger} from '../../nuclide-logging';
+import {ConfigCache} from 'nuclide-commons/ConfigCache';
+import {runCommand} from 'nuclide-commons/process';
+import {getLogger} from 'log4js';
 
 const HACK_LOGGER_CATEGORY = 'nuclide-hack';
-export const logger = getCategoryLogger(HACK_LOGGER_CATEGORY);
+export const logger = getLogger(HACK_LOGGER_CATEGORY);
 
 const HACK_CONFIG_FILE_NAME = '.hhconfig';
 const PATH_TO_HH_CLIENT = 'hh_client';
 
 // From hack/src/utils/findUtils.ml
 export const HACK_FILE_EXTENSIONS: Array<string> = [
-  '.php',  // normal php file
-  '.hh',   // Hack extension some open source code is starting to use
+  '.php', // normal php file
+  '.hh', // Hack extension some open source code is starting to use
   '.phpt', // our php template files
-  '.hhi',  // interface files only visible to the type checker
-  '.xhp',  // XHP extensions
+  '.hhi', // interface files only visible to the type checker
+  '.xhp', // XHP extensions
 ];
 
 // Kick this off early, so we don't need to repeat this on every call.
@@ -45,15 +46,18 @@ export function findHackConfigDir(localFile: string): Promise<?string> {
 
 // Returns the empty string on failure
 async function findHackCommand(): Promise<string> {
-  // `stdout` would be empty if there is no such command.
-  return (await asyncExecute('which', [PATH_TO_HH_CLIENT])).stdout.trim();
+  try {
+    return (await runCommand('which', [PATH_TO_HH_CLIENT]).toPromise()).trim();
+  } catch (err) {
+    return '';
+  }
 }
 
 export function setHackCommand(newHackCommand: string): void {
   if (newHackCommand === '') {
     hackCommand = DEFAULT_HACK_COMMAND;
   } else {
-    logger.log(`Using custom hh_client: ${newHackCommand}`);
+    logger.debug(`Using custom hh_client: ${newHackCommand}`);
     hackCommand = Promise.resolve(newHackCommand);
   }
 }

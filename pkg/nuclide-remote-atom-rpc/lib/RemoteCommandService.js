@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AtomCommands} from './rpc-types';
@@ -31,7 +32,9 @@ export class RemoteCommandService {
   ): Promise<void> {
     invariant(fileNotifier instanceof FileCache);
     const fileCache = fileNotifier;
-    this._disposables.add(await CommandServer.register(fileCache, atomCommands));
+    this._disposables.add(
+      await CommandServer.register(fileCache, atomCommands),
+    );
   }
 
   dispose(): void {

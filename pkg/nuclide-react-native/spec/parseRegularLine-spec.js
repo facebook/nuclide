@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {parseRegularLine} from '../lib/packager/parseRegularLine';
@@ -17,17 +18,23 @@ describe('parseRegularLine', () => {
   });
 
   it('parses the message when the date is included', () => {
-    const parsed = parseRegularLine('[8/30/2016, 2:10:50 PM] This is the message text');
+    const parsed = parseRegularLine(
+      '[8/30/2016, 2:10:50 PM] This is the message text',
+    );
     expect(parsed.text).toBe('This is the message text');
   });
 
   it('parses the message when the time is short', () => {
-    const parsed = parseRegularLine('[08/30/2016 14:08:50] This is the message text');
+    const parsed = parseRegularLine(
+      '[08/30/2016 14:08:50] This is the message text',
+    );
     expect(parsed.text).toBe('This is the message text');
   });
 
   it("parses the message when the timestamp's not in brackets", () => {
-    const parsed = parseRegularLine('2016-08-31 10:28:11.931 This is the message text');
+    const parsed = parseRegularLine(
+      '2016-08-31 10:28:11.931 This is the message text',
+    );
     expect(parsed.text).toBe('This is the message text');
   });
 

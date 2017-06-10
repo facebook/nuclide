@@ -6,12 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import * as arcanist from '..';
-import nuclideUri from '../../commons-node/nuclideUri';
-import fsPromise from '../../commons-node/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 import {copyFixture} from '../../nuclide-test-helpers';
+import {Observable} from 'rxjs';
 
 const rootConfig = {
   project_id: 'project1',
@@ -56,7 +58,9 @@ describe('nuclide-arcanist-rpc', () => {
       expect(await arcanist.findArcConfigDirectory(dirPath)).toBe(rootPath);
       expect(await arcanist.findArcConfigDirectory(file1Path)).toBe(rootPath);
       expect(await arcanist.findArcConfigDirectory(file2Path)).toBe(rootPath);
-      expect(await arcanist.findArcConfigDirectory(nestedPath)).toBe(nestedPath);
+      expect(await arcanist.findArcConfigDirectory(nestedPath)).toBe(
+        nestedPath,
+      );
       expect(await arcanist.findArcConfigDirectory(rootParentPath)).toBe(null);
     });
   });
@@ -78,7 +82,9 @@ describe('nuclide-arcanist-rpc', () => {
       expect(await arcanist.findArcProjectIdOfPath(dirPath)).toBe('project1');
       expect(await arcanist.findArcProjectIdOfPath(file1Path)).toBe('project1');
       expect(await arcanist.findArcProjectIdOfPath(file2Path)).toBe('project1');
-      expect(await arcanist.findArcProjectIdOfPath(nestedPath)).toBe('project-nested');
+      expect(await arcanist.findArcProjectIdOfPath(nestedPath)).toBe(
+        'project-nested',
+      );
       expect(await arcanist.findArcProjectIdOfPath(rootParentPath)).toBe(null);
     });
   });
@@ -87,7 +93,9 @@ describe('nuclide-arcanist-rpc', () => {
     waitsForPromise(async () => {
       expect(await arcanist.getProjectRelativePath(rootPath)).toBe('');
       expect(await arcanist.getProjectRelativePath(dirPath)).toBe('dir1');
-      expect(await arcanist.getProjectRelativePath(file1Path)).toBe('dir1/file1');
+      expect(await arcanist.getProjectRelativePath(file1Path)).toBe(
+        'dir1/file1',
+      );
       expect(await arcanist.getProjectRelativePath(file2Path)).toBe('file2');
       expect(await arcanist.getProjectRelativePath(nestedPath)).toBe('');
       expect(await arcanist.getProjectRelativePath(rootParentPath)).toBe(null);
@@ -97,15 +105,8 @@ describe('nuclide-arcanist-rpc', () => {
   describe('findDiagnostics', () => {
     // Map from fake arc config dir to fake files within it.
     const filePathMap: Map<string, Array<string>> = new Map([
-      ['/fake/path/one', [
-        'path1',
-        'path2',
-        '/fake/path/one/path1',
-      ]],
-      ['/fake/path/two', [
-        'foo',
-        'bar',
-      ]],
+      ['/fake/path/one', ['path1', 'path2', '/fake/path/one/path1']],
+      ['/fake/path/two', ['foo', 'bar']],
     ]);
     let arcResult: any;
     let execArgs: any;
@@ -143,14 +144,15 @@ describe('nuclide-arcanist-rpc', () => {
     beforeEach(() => {
       setResult({});
       execArgs = [];
-      spyOn(require('../../commons-node/nice'), 'niceSafeSpawn')
-        .andCallFake(async (command, args, options) => {
-          execArgs.push(args);
-        });
-      spyOn(require('../../commons-node/process'), 'getOutputStream')
-        .andCallFake(() => {
-          return arcResult.map(line => ({kind: 'stdout', data: line}));
-        });
+      spyOn(
+        require('nuclide-commons/nice'),
+        'niceObserveProcess',
+      ).andCallFake((command, args, options) => {
+        execArgs.push(args);
+        return Observable.from(
+          arcResult.map(line => ({kind: 'stdout', data: line})),
+        );
+      });
       arcanist.__TEST__.reset();
       // Add these paths to the arcConfigDirectoryMap as a roundabout way to mock
       // findArcConfigDirectory.
@@ -164,8 +166,7 @@ describe('nuclide-arcanist-rpc', () => {
     it('should call `arc lint` with the paths', () => {
       waitsForPromise(async () => {
         const filePath = 'path1';
-        await arcanist.findDiagnostics(filePath, [])
-          .refCount().toPromise();
+        await arcanist.findDiagnostics(filePath, []).refCount().toPromise();
         // Expect arc lint to be called once
         expect(execArgs.length).toBe(1);
         expect(execArgs[0].indexOf(filePath)).toBeGreaterThan(-1);
@@ -177,8 +178,11 @@ describe('nuclide-arcanist-rpc', () => {
         setResult({
           path1: [fakeLint],
         });
-        const lints = await arcanist.findDiagnostics('/fake/path/one/path1', [])
-          .refCount().toArray().toPromise();
+        const lints = await arcanist
+          .findDiagnostics('/fake/path/one/path1', [])
+          .refCount()
+          .toArray()
+          .toPromise();
         expect(lints).toEqual([fakeLintResult]);
       });
     });
@@ -187,8 +191,11 @@ describe('nuclide-arcanist-rpc', () => {
       waitsForPromise(async () => {
         const fakeArcResult = {path1: [fakeLint]};
         setResult(fakeArcResult, fakeArcResult);
-        const lints = await arcanist.findDiagnostics('/fake/path/one/path1', [])
-          .refCount().toArray().toPromise();
+        const lints = await arcanist
+          .findDiagnostics('/fake/path/one/path1', [])
+          .refCount()
+          .toArray()
+          .toPromise();
         expect(lints).toEqual([fakeLintResult, fakeLintResult]);
       });
     });

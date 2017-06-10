@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {WatchResult} from '..';
 
 import {Observable} from 'rxjs';
-import {takeWhileInclusive} from '../../commons-node/observable';
+import {takeWhileInclusive} from 'nuclide-commons/observable';
 
 const DELETE_DELAY = 1000;
 
@@ -36,9 +37,7 @@ export default function debounceDeletes(
         case 'change':
           return Observable.of(change);
         case 'delete':
-          return Observable.of(change)
-            .delay(DELETE_DELAY)
-            .takeUntil(shared);
+          return Observable.of(change).delay(DELETE_DELAY).takeUntil(shared);
       }
       throw new Error('unknown change type');
     }),

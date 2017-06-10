@@ -1,0 +1,45 @@
+{
+  "name": "atom-ide-diagnostics",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides an API to consume diagnostics.",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "activationCommands": {},
+  "consumedServices": {
+    "linter": {
+      "versions": {
+        "^1.0.0 || ^2.0.0": "consumeLinterProvider"
+      }
+    },
+    "nuclide-diagnostics": {
+      "versions": {
+        "0.1.0": "consumeDiagnosticsProviderV1",
+        "0.2.0": "consumeDiagnosticsProviderV2"
+      }
+    },
+    "atom-ide-diagnostics": {
+      "versions": {
+        "0.1.0": "consumeDiagnosticsProviderV1",
+        "0.2.0": "consumeDiagnosticsProviderV2"
+      }
+    }
+  },
+  "providedServices": {
+    "atom-ide-diagnostics-store": {
+      "versions": {
+        "0.0.0": "provideDiagnosticUpdates",
+        "0.2.0": "provideObservableDiagnosticUpdates"
+      }
+    },
+    "linter-indie": {
+      "versions": {
+        "2.0.0": "provideIndie"
+      }
+    }
+  }
+}

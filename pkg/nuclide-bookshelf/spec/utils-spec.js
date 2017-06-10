@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RepositoryShortHeadChange} from '../lib/types';
@@ -67,9 +68,12 @@ describe('BookShelf Utils', () => {
         expect(serializedRepoState1[1].activeShortHead).toBe(ACTIVE_SHOTHEAD_1);
         expect((serializedRepoState1[1]: any).isRestoring).toBeUndefined();
         expect(serializedRepoState1[1].shortHeadsToFileList.length).toBe(1);
-        expect(serializedRepoState1[1].shortHeadsToFileList[0][0]).toBe(SHOTHEAD_1_1);
-        expect(serializedRepoState1[1].shortHeadsToFileList[0][1].join(','))
-          .toBe(['a.txt', 'b.txt'].join(','));
+        expect(serializedRepoState1[1].shortHeadsToFileList[0][0]).toBe(
+          SHOTHEAD_1_1,
+        );
+        expect(
+          serializedRepoState1[1].shortHeadsToFileList[0][1].join(','),
+        ).toBe(['a.txt', 'b.txt'].join(','));
 
         const serializedRepoState2 = serialized.repositoryPathToState[1];
         expect(serializedRepoState2.length).toBe(2);
@@ -90,56 +94,93 @@ describe('BookShelf Utils', () => {
 
       it('dserializes one repository state', () => {
         const deserialized = deserializeBookShelfState({
-          repositoryPathToState: [[REPO_PATH_1, {
-            ...REPO_STATE_1,
-            shortHeadsToFileList: Array.from(REPO_STATE_1.shortHeadsToFileList.entries()),
-          }]],
+          repositoryPathToState: [
+            [
+              REPO_PATH_1,
+              {
+                ...REPO_STATE_1,
+                shortHeadsToFileList: Array.from(
+                  REPO_STATE_1.shortHeadsToFileList.entries(),
+                ),
+              },
+            ],
+          ],
         });
         expect(deserialized.repositoryPathToState.size).toBe(1);
-        const deserializedRepoState = deserialized.repositoryPathToState.get(REPO_PATH_1);
+        const deserializedRepoState = deserialized.repositoryPathToState.get(
+          REPO_PATH_1,
+        );
         expect(deserializedRepoState).not.toBeNull();
         expect(deserializedRepoState.activeShortHead).toBe(ACTIVE_SHOTHEAD_1);
         expect(deserializedRepoState.isRestoring).toBe(false);
         expect(deserializedRepoState.shortHeadsToFileList.size).toBe(1);
-        expect(deserializedRepoState.shortHeadsToFileList.get(SHOTHEAD_1_1).join(','))
-          .toBe(['a.txt', 'b.txt'].join(','));
+        expect(
+          deserializedRepoState.shortHeadsToFileList
+            .get(SHOTHEAD_1_1)
+            .join(','),
+        ).toBe(['a.txt', 'b.txt'].join(','));
       });
 
       it('dserializes two repository states', () => {
         const deserialized = deserializeBookShelfState({
           repositoryPathToState: [
-            [REPO_PATH_1, {
-              ...REPO_STATE_1,
-              shortHeadsToFileList: Array.from(REPO_STATE_1.shortHeadsToFileList.entries()),
-            }],
-            [REPO_PATH_2, {
-              ...REPO_STATE_2,
-              shortHeadsToFileList: Array.from(REPO_STATE_2.shortHeadsToFileList.entries()),
-            }],
+            [
+              REPO_PATH_1,
+              {
+                ...REPO_STATE_1,
+                shortHeadsToFileList: Array.from(
+                  REPO_STATE_1.shortHeadsToFileList.entries(),
+                ),
+              },
+            ],
+            [
+              REPO_PATH_2,
+              {
+                ...REPO_STATE_2,
+                shortHeadsToFileList: Array.from(
+                  REPO_STATE_2.shortHeadsToFileList.entries(),
+                ),
+              },
+            ],
           ],
         });
         expect(deserialized.repositoryPathToState.size).toBe(2);
-        const deserializedRepoState1 = deserialized.repositoryPathToState.get(REPO_PATH_1);
+        const deserializedRepoState1 = deserialized.repositoryPathToState.get(
+          REPO_PATH_1,
+        );
         expect(deserializedRepoState1).not.toBeNull();
         expect(deserializedRepoState1.activeShortHead).toBe(ACTIVE_SHOTHEAD_1);
         expect(deserializedRepoState1.isRestoring).toBe(false);
         expect(deserializedRepoState1.shortHeadsToFileList.size).toBe(1);
-        expect(deserializedRepoState1.shortHeadsToFileList.get(SHOTHEAD_1_1).join(','))
-          .toBe(['a.txt', 'b.txt'].join(','));
+        expect(
+          deserializedRepoState1.shortHeadsToFileList
+            .get(SHOTHEAD_1_1)
+            .join(','),
+        ).toBe(['a.txt', 'b.txt'].join(','));
 
-        const deserializedRepoState2 = deserialized.repositoryPathToState.get(REPO_PATH_2);
+        const deserializedRepoState2 = deserialized.repositoryPathToState.get(
+          REPO_PATH_2,
+        );
         expect(deserializedRepoState2).not.toBeNull();
         expect(deserializedRepoState2.activeShortHead).toBe(ACTIVE_SHOTHEAD_2);
         expect(deserializedRepoState2.isRestoring).toBe(false);
         expect(deserializedRepoState2.shortHeadsToFileList.size).toBe(2);
-        expect(deserializedRepoState2.shortHeadsToFileList.get(SHOTHEAD_2_1).join(','))
-          .toBe(['c.txt', 'd.txt'].join(','));
-        expect(deserializedRepoState2.shortHeadsToFileList.get(SHOTHEAD_2_2).join(','))
-          .toBe('e.txt');
+        expect(
+          deserializedRepoState2.shortHeadsToFileList
+            .get(SHOTHEAD_2_1)
+            .join(','),
+        ).toBe(['c.txt', 'd.txt'].join(','));
+        expect(
+          deserializedRepoState2.shortHeadsToFileList
+            .get(SHOTHEAD_2_2)
+            .join(','),
+        ).toBe('e.txt');
       });
 
       it('deserializing an invalid state throws an exception', () => {
-        expect(() => deserializeBookShelfState(({repositoryPathToState: 123}: any))).toThrow();
+        expect(() =>
+          deserializeBookShelfState(({repositoryPathToState: 123}: any)),
+        ).toThrow();
       });
     });
   });
@@ -155,8 +196,9 @@ describe('BookShelf Utils', () => {
 
     const newActiveShortHead = 'foo_bar';
     const newStateWithShortHeadChange = getDummyBookShelfState();
-    const newRepositoryState = newStateWithShortHeadChange.repositoryPathToState
-      .get(DUMMY_REPO_PATH_1);
+    const newRepositoryState = newStateWithShortHeadChange.repositoryPathToState.get(
+      DUMMY_REPO_PATH_1,
+    );
     newRepositoryState.activeShortHead = newActiveShortHead;
 
     states.next(newStateWithShortHeadChange);

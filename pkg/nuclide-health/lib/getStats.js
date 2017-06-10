@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HealthStats} from './types';
@@ -13,14 +14,14 @@ import type {HealthStats} from './types';
 import os from 'os';
 
 export default function getStats(): HealthStats {
-  const stats = process.memoryUsage();                          // RSS, heap and usage.
+  const stats = process.memoryUsage(); // RSS, heap and usage.
   const activeHandles = getActiveHandles();
   const activeHandlesByType = getActiveHandlesByType(Array.from(activeHandles));
 
   return {
     ...stats,
-    heapPercentage: (100 * stats.heapUsed / stats.heapTotal),   // Just for convenience.
-    cpuPercentage: os.loadavg()[0],                             // 1 minute CPU average.
+    heapPercentage: 100 * stats.heapUsed / stats.heapTotal, // Just for convenience.
+    cpuPercentage: os.loadavg()[0], // 1 minute CPU average.
     activeHandles: activeHandles.length,
     activeRequests: getActiveRequests().length,
     activeHandlesByType,
@@ -33,7 +34,9 @@ function getActiveHandles(): Array<Object> {
   return process._getActiveHandles();
 }
 
-function getActiveHandlesByType(handles: Array<Object>): {[type: string]: Array<Object>} {
+function getActiveHandlesByType(
+  handles: Array<Object>,
+): {[type: string]: Array<Object>} {
   const activeHandlesByType = {
     childprocess: [],
     tlssocket: [],

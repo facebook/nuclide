@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import util from 'util';
@@ -15,7 +16,8 @@ function layout(loggingEvent: any): Array<any> {
     '[%s] [%s] %s - ',
     loggingEvent.startTime.toISOString(),
     loggingEvent.level,
-    loggingEvent.categoryName);
+    loggingEvent.categoryName,
+  );
 
   const data = loggingEvent.data.slice();
 

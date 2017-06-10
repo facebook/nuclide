@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -13,7 +14,7 @@ import {
   deactivateAllPackages,
   jasmineIntegrationTestSetup,
 } from './utils/integration-test-helpers';
-import {sleep} from '../pkg/commons-node/promise';
+import {sleep} from 'nuclide-commons/promise';
 
 describe('nuclide', () => {
   it('deactivates cleanly', () => {

@@ -6,18 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  EvaluationResult,
-  ExpansionResult,
-  ScopeSection,
-} from './types';
+import type {EvaluationResult, ExpansionResult, ScopeSection} from './types';
 import {WatchExpressionStore} from './WatchExpressionStore';
 import type {Observable} from 'rxjs';
 
 import React from 'react';
-import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
+import {
+  LazyNestedValueComponent,
+} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 import {Section} from '../../nuclide-ui/Section';
 
@@ -26,9 +25,16 @@ type ScopesComponentProps = {
   watchExpressionStore: WatchExpressionStore,
 };
 
+function isLocalScopeName(scopeName: string): boolean {
+  return ['Local', 'Locals'].indexOf(scopeName) !== -1;
+}
+
 export class ScopesComponent extends React.Component {
   props: ScopesComponentProps;
-  _expansionStates: Map<string /* expression */, /* unique reference for expression */ Object>;
+  _expansionStates: Map<
+    string /* expression */,
+    /* unique reference for expression */ Object,
+  >;
 
   constructor(props: ScopesComponentProps) {
     super(props);
@@ -57,16 +63,10 @@ export class ScopesComponent extends React.Component {
       // `binding` might be `null` while switching threads.
       return null;
     }
-    const {
-      name,
-      value,
-    } = binding;
+    const {name, value} = binding;
     return (
-      <div
-        className="nuclide-debugger-expression-value-row"
-        key={index}>
-        <div
-          className="nuclide-debugger-expression-value-content">
+      <div className="nuclide-debugger-expression-value-row" key={index}>
+        <div className="nuclide-debugger-expression-value-content">
           <LazyNestedValueComponent
             expression={name}
             evaluationResult={value}
@@ -84,10 +84,13 @@ export class ScopesComponent extends React.Component {
     scope: ScopeSection,
   ): ?React.Element<any> {
     // Non-local scopes should be collapsed by default since users typically care less about them.
-    const collapsedByDefault = scope.name !== 'Locals';
-    const noLocals = (scope.name !== 'Locals' || scope.scopeVariables.length > 0) ? null
+    const collapsedByDefault = !isLocalScopeName(scope.name);
+    const noLocals = collapsedByDefault || scope.scopeVariables.length > 0
+      ? null
       : <div className="nuclide-debugger-expression-value-row">
-          <span className="nuclide-debugger-expression-value-content">(no variables)</span>
+          <span className="nuclide-debugger-expression-value-content">
+            (no variables)
+          </span>
         </div>;
 
     return (
@@ -97,21 +100,24 @@ export class ScopesComponent extends React.Component {
         size="small"
         collapsedByDefault={collapsedByDefault}>
         {noLocals}
-        {scope.scopeVariables.map(this._renderExpression.bind(this, fetchChildren))}
+        {scope.scopeVariables.map(
+          this._renderExpression.bind(this, fetchChildren),
+        )}
       </Section>
     );
   }
 
   render(): ?React.Element<any> {
-    const {
-      watchExpressionStore,
-      scopes,
-    } = this.props;
+    const {watchExpressionStore, scopes} = this.props;
     if (scopes == null || scopes.length === 0) {
       return <span>(no variables)</span>;
     }
-    const fetchChildren = watchExpressionStore.getProperties.bind(watchExpressionStore);
-    const scopeSections = scopes.map(this._renderScopeSection.bind(this, fetchChildren));
+    const fetchChildren = watchExpressionStore.getProperties.bind(
+      watchExpressionStore,
+    );
+    const scopeSections = scopes.map(
+      this._renderScopeSection.bind(this, fetchChildren),
+    );
     return (
       <div className="nuclide-debugger-expression-value-list">
         {scopeSections}

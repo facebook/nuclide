@@ -1,0 +1,12 @@
+{
+  ".platform-darwin atom-text-editor": {
+    "alt": "nuclide-datatip:toggle",
+    "^alt": "nuclide-datatip:toggle",
+    "cmd-alt": "nuclide-datatip:toggle"
+  },
+  ".platform-win32 atom-text-editor, .platform-linux atom-text-editor": {
+    "alt": "nuclide-datatip:toggle",
+    "^alt": "nuclide-datatip:toggle",
+    "ctrl-alt": "nuclide-datatip:toggle"
+  }
+}

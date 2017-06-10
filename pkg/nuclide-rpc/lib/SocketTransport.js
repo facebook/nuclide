@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Socket} from 'net';
@@ -13,7 +14,7 @@ import type {MessageLogger} from './index';
 
 import {StreamTransport} from './StreamTransport';
 import {Emitter} from 'event-kit';
-import {Deferred} from '../../commons-node/promise';
+import {Deferred} from 'nuclide-commons/promise';
 
 export class SocketTransport extends StreamTransport {
   _socket: Socket;
@@ -22,7 +23,9 @@ export class SocketTransport extends StreamTransport {
 
   constructor(
     socket: Socket,
-    messageLogger: MessageLogger = (direction, message) => { return; },
+    messageLogger: MessageLogger = (direction, message) => {
+      return;
+    },
   ) {
     super(socket, socket, messageLogger);
     this._socket = socket;

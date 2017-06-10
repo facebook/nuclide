@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import {DUMMY_FRAME_ID} from './helpers';
 import Handler from './Handler';
@@ -16,9 +16,7 @@ import type {ClientCallback} from './ClientCallback';
 
 // Handles all 'Page.*' Chrome dev tools messages
 export default class PageHandler extends Handler {
-  constructor(
-    clientCallback: ClientCallback,
-  ) {
+  constructor(clientCallback: ClientCallback) {
     super('Page', clientCallback);
   }
 
@@ -33,7 +31,8 @@ export default class PageHandler extends Handler {
         break;
 
       case 'getResourceTree':
-        this.replyToCommand(id,
+        this.replyToCommand(
+          id,
           // For now, return a dummy resource tree so various initializations in
           // client happens.
           {
@@ -49,7 +48,8 @@ export default class PageHandler extends Handler {
                 url: 'hhvm:///',
               },
             },
-          });
+          },
+        );
         break;
 
       default:

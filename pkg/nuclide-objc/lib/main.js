@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import ObjectiveCColonIndenter from './ObjectiveCColonIndenter';
 import ObjectiveCBracketBalancer from './ObjectiveCBracketBalancer';
 
@@ -23,8 +24,12 @@ class Activation {
 
     this._bracketFeature = new ObjectiveCBracketBalancer();
     this._configSubscription = featureConfig.observe(
-        'nuclide-objc.enableAutomaticSquareBracketInsertion',
-        enabled => (enabled ? this._bracketFeature.enable() : this._bracketFeature.disable()));
+      'nuclide-objc.enableAutomaticSquareBracketInsertion',
+      enabled =>
+        enabled
+          ? this._bracketFeature.enable()
+          : this._bracketFeature.disable(),
+    );
   }
 
   dispose() {

@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
 
 import {CompositeDisposable} from 'atom';
-import createPackage from '../../commons-atom/createPackage';
+import createPackage from 'nuclide-commons-atom/createPackage';
 
 import HhvmBuildSystem from './HhvmBuildSystem';
 

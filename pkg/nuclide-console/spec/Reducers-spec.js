@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Action, Executor} from '../lib/types';
@@ -49,7 +50,10 @@ describe('createStateStream', () => {
           },
         });
       }
-      finalState = ((actions: any): Array<Action>).reduce(Reducers, initialState);
+      finalState = ((actions: any): Array<Action>).reduce(
+        Reducers,
+        initialState,
+      );
     });
 
     it('adds records', () => {
@@ -61,8 +65,7 @@ describe('createStateStream', () => {
     });
 
     it('truncates the least recent records', () => {
-      expect(finalState.records.map(record => record.text))
-        .toEqual(['3', '4']);
+      expect(finalState.records.map(record => record.text)).toEqual(['3', '4']);
     });
 
     it("doesn't mutate the original records list", () => {
@@ -70,7 +73,7 @@ describe('createStateStream', () => {
     });
   });
 
-  describe('REGISTER_RECORD_PROVIDER', () => {
+  describe('REGISTER_SOURCE', () => {
     let initialProviders;
     let finalState;
 
@@ -80,16 +83,21 @@ describe('createStateStream', () => {
         ...emptyAppState,
         providers: initialProviders,
       };
-      const actions = [{
-        type: Actions.REGISTER_RECORD_PROVIDER,
-        payload: {
-          recordProvider: {
-            sourceId: 'test',
-            records: Observable.empty(),
+      const actions = [
+        {
+          type: Actions.REGISTER_SOURCE,
+          payload: {
+            source: {
+              id: 'test',
+              records: Observable.empty(),
+            },
           },
         },
-      }];
-      finalState = ((actions: any): Array<Action>).reduce(Reducers, initialState);
+      ];
+      finalState = ((actions: any): Array<Action>).reduce(
+        Reducers,
+        initialState,
+      );
     });
 
     it('adds providers to the registry', () => {
@@ -106,14 +114,17 @@ describe('createStateStream', () => {
     let finalState;
 
     beforeEach(() => {
-      initialRecords = [{
-        kind: 'message',
-        sourceId: 'Test',
-        level: 'info',
-        text: 'test',
-        scopeName: null,
-        timestamp: new Date('2017-01-01T12:34:56.789Z'),
-      }];
+      initialRecords = [
+        {
+          kind: 'message',
+          sourceId: 'Test',
+          level: 'info',
+          text: 'test',
+          scopeName: null,
+          timestamp: new Date('2017-01-01T12:34:56.789Z'),
+          data: null,
+        },
+      ];
       const initialState = {
         ...emptyAppState,
         records: initialRecords,
@@ -148,12 +159,14 @@ describe('createStateStream', () => {
 
     describe('REGISTER_EXECUTOR', () => {
       beforeEach(() => {
-        const actions = [{
-          type: Actions.REGISTER_EXECUTOR,
-          payload: {
-            executor: createDummyExecutor('b'),
+        const actions = [
+          {
+            type: Actions.REGISTER_EXECUTOR,
+            payload: {
+              executor: createDummyExecutor('b'),
+            },
           },
-        }];
+        ];
         finalState = actions.reduce(Reducers, initialState);
       });
 

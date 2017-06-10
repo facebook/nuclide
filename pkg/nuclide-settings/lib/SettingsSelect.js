@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import {normalizeIdentifier} from './settings-utils';
 import React from 'react';
 import type {SettingsPropsDefault} from './types';

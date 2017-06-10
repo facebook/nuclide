@@ -6,22 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  ContextProvider,
-  NuclideContextView,
-} from './types';
-import type {DefinitionService} from '../../nuclide-definition-service';
+import type {ContextProvider, NuclideContextView} from './types';
+import type {DefinitionProvider} from 'atom-ide-ui';
 import type {HomeFragments} from '../../nuclide-home/lib/types';
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 
 import {ContextViewManager, WORKSPACE_VIEW_URI} from './ContextViewManager';
 import {Disposable, CompositeDisposable} from 'atom';
 import invariant from 'assert';
 
-
-let currentService: ?DefinitionService = null;
 let manager: ?ContextViewManager = null;
 let disposables: CompositeDisposable;
 
@@ -30,10 +28,8 @@ export function activate(): void {
 }
 
 export function deactivate(): void {
-  currentService = null;
   disposables.dispose();
   if (manager != null) {
-    manager.consumeDefinitionService(null);
     manager.dispose();
     manager = null;
   }
@@ -64,17 +60,10 @@ const Service: NuclideContextView = {
   },
 };
 
-export function consumeDefinitionService(service: DefinitionService): IDisposable {
-  if (service !== currentService) {
-    currentService = service;
-    getContextViewManager().consumeDefinitionService(currentService);
-  }
-  return new Disposable(() => {
-    currentService = null;
-    if (manager != null) {
-      manager.consumeDefinitionService(null);
-    }
-  });
+export function consumeDefinitionProvider(
+  provider: DefinitionProvider,
+): IDisposable {
+  return getContextViewManager().consumeDefinitionProvider(provider);
 }
 
 export function provideNuclideContextView(): NuclideContextView {
@@ -110,13 +99,15 @@ export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
         return getContextViewManager();
       }
     }),
-    new Disposable(
-      () => api.destroyWhere(item => item instanceof ContextViewManager),
+    new Disposable(() =>
+      api.destroyWhere(item => item instanceof ContextViewManager),
     ),
     atom.commands.add(
       'atom-workspace',
       'nuclide-context-view:toggle',
-      event => { api.toggle(WORKSPACE_VIEW_URI, (event: any).detail); },
+      event => {
+        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      },
     ),
   );
 }

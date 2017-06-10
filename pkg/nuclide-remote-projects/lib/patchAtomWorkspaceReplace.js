@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {setDifference} from '../../commons-node/collection';
-import nuclideUri from '../../commons-node/nuclideUri';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {setDifference} from 'nuclide-commons/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getGrepServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 /**
@@ -47,23 +48,22 @@ export default function patchAtomWorkspaceReplace(): UniversalDisposable {
     // Atom can handle local paths and opened buffers, so filter those out.
     const filePathSet = new Set(filePaths);
     const openBuffers = new Set(
-      atom.project.getBuffers()
-        .map(buf => buf.getPath())
-        .filter(Boolean),
+      atom.project.getBuffers().map(buf => buf.getPath()).filter(Boolean),
     );
     const unopenedRemotePaths = new Set(
-      filePaths
-        .filter(path => nuclideUri.isRemote(path) && !openBuffers.has(path)),
+      filePaths.filter(
+        path => nuclideUri.isRemote(path) && !openBuffers.has(path),
+      ),
     );
-    const regularReplace = unopenedRemotePaths.size === filePathSet.size ?
-      Promise.resolve(null) :
-      originalReplace.call(
-        atom.workspace,
-        regex,
-        replacementText,
-        Array.from(setDifference(filePathSet, unopenedRemotePaths)),
-        iterator,
-      );
+    const regularReplace = unopenedRemotePaths.size === filePathSet.size
+      ? Promise.resolve(null)
+      : originalReplace.call(
+          atom.workspace,
+          regex,
+          replacementText,
+          Array.from(setDifference(filePathSet, unopenedRemotePaths)),
+          iterator,
+        );
     const remotePaths = new Map();
     for (const path of unopenedRemotePaths) {
       const service = getGrepServiceByNuclideUri(path);
@@ -77,11 +77,15 @@ export default function patchAtomWorkspaceReplace(): UniversalDisposable {
     const promises = [regularReplace];
     remotePaths.forEach((paths, service) => {
       promises.push(
-        service.grepReplace(paths, regex, replacementText)
+        service
+          .grepReplace(paths, regex, replacementText)
           .refCount()
           .do(result => {
             if (result.type === 'error') {
-              iterator(null, new Error(`${result.filePath}: ${result.message}`));
+              iterator(
+                null,
+                new Error(`${result.filePath}: ${result.message}`),
+              );
             } else {
               iterator(result);
             }

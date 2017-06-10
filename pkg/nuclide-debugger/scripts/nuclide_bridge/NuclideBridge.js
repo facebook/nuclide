@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -21,19 +22,15 @@ import invariant from 'assert';
 import electron from 'electron';
 
 import Emitter from './Emitter';
-import {MultiMap} from '../../../commons-node/collection';
-import nuclideUri from '../../../commons-node/nuclideUri';
-import {
-  beginTimerTracking,
-  endTimerTracking,
-} from '../../lib/AnalyticsHelper';
+import {MultiMap} from 'nuclide-commons/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {beginTimerTracking, endTimerTracking} from '../../lib/AnalyticsHelper';
 import WebInspector from '../../lib/WebInspector';
 
 const {ipcRenderer} = electron;
 invariant(ipcRenderer != null);
 
 const NUCLIDE_DEBUGGER_CONSOLE_OBJECT_GROUP = 'console';
-const DebuggerSettingsChangedEvent = 'debugger-settings-updated';
 
 type BreakpointNotificationType = 'BreakpointAdded' | 'BreakpointRemoved';
 
@@ -43,7 +40,7 @@ class NuclideBridge {
   _emitter: Emitter;
   _debuggerPausedCount: number;
   _suppressBreakpointNotification: boolean;
-  _settings: Object;
+  _callframeId: number;
 
   constructor() {
     this._allBreakpoints = [];
@@ -51,7 +48,7 @@ class NuclideBridge {
     this._emitter = new Emitter();
     this._debuggerPausedCount = 0;
     this._suppressBreakpointNotification = false;
-    this._settings = {};
+    this._callframeId = -1;
 
     ipcRenderer.on('command', this._handleIpcCommand.bind(this));
 
@@ -59,44 +56,49 @@ class NuclideBridge {
       WebInspector.DebuggerModel,
       WebInspector.DebuggerModel.Events.CallFrameSelected,
       this._handleCallFrameSelected,
-      this);
+      this,
+    );
 
     WebInspector.targetManager.addModelListener(
       WebInspector.DebuggerModel,
       WebInspector.DebuggerModel.Events.ClearInterface,
       this._handleClearInterface,
-      this);
+      this,
+    );
 
     WebInspector.targetManager.addModelListener(
       WebInspector.DebuggerModel,
       WebInspector.DebuggerModel.Events.DebuggerResumed,
       this._handleDebuggerResumed,
-      this);
+      this,
+    );
 
     WebInspector.targetManager.addModelListener(
       WebInspector.DebuggerModel,
       WebInspector.DebuggerModel.Events.DebuggerPaused,
       this._handleDebuggerPaused,
-      this);
+      this,
+    );
 
     WebInspector.targetManager.addModelListener(
-        WebInspector.DebuggerModel,
-        WebInspector.DebuggerModel.Events.ThreadsUpdateIPC,
-        this._handleThreadsUpdated,
-        this,
-      );
+      WebInspector.DebuggerModel,
+      WebInspector.DebuggerModel.Events.ThreadsUpdateIPC,
+      this._handleThreadsUpdated,
+      this,
+    );
 
     WebInspector.targetManager.addModelListener(
-        WebInspector.DebuggerModel,
-        WebInspector.DebuggerModel.Events.ThreadUpdateIPC,
-        this._handleThreadUpdated,
-        this,
-        );
+      WebInspector.DebuggerModel,
+      WebInspector.DebuggerModel.Events.ThreadUpdateIPC,
+      this._handleThreadUpdated,
+      this,
+    );
 
     WebInspector.workspace.addEventListener(
       WebInspector.Workspace.Events.UISourceCodeAdded,
       this._handleUISourceCodeAdded,
-      this);
+      this,
+    );
 
     WebInspector.notifications.addEventListener(
       WebInspector.UserMetrics.UserAction,
@@ -105,19 +107,21 @@ class NuclideBridge {
           this._handleOpenSourceLocation(event);
         }
       },
-      this);
+      this,
+    );
 
     WebInspector.breakpointManager.addEventListener(
       WebInspector.BreakpointManager.Events.BreakpointAdded,
       this._handleBreakpointAdded,
-      this);
+      this,
+    );
 
     WebInspector.breakpointManager.addEventListener(
       WebInspector.BreakpointManager.Events.BreakpointRemoved,
       this._handleBreakpointRemoved,
-      this);
+      this,
+    );
 
-    (this: any)._handleSettingsUpdated = this._handleSettingsUpdated.bind(this);
     this._customizeWebInspector();
     window.runOnWindowLoad(this._handleWindowLoad.bind(this));
   }
@@ -128,53 +132,56 @@ class NuclideBridge {
    */
   _customizeWebInspector() {
     // $FlowFixMe.
-    WebInspector.ObjectPropertyTreeElement._populate =
-      function(treeElement, value, skipProto, emptyPlaceholder) {
-        /**
+    WebInspector.ObjectPropertyTreeElement._populate = function(
+      treeElement,
+      value,
+      skipProto,
+      emptyPlaceholder,
+    ) {
+      /**
          * @param {?Array.<!WebInspector.RemoteObjectProperty>} properties
          * @param {?Array.<!WebInspector.RemoteObjectProperty>} internalProperties
          */
-        function callback(properties, internalProperties) {
-          treeElement.removeChildren();
-          if (!properties) {
-            return;
-          }
-          // $FlowFixMe.
-          WebInspector.ObjectPropertyTreeElement.populateWithProperties(
-            treeElement,
-            properties,
-            internalProperties,
-            skipProto,
-            value,
-            emptyPlaceholder,
-          );
+      function callback(properties, internalProperties) {
+        treeElement.removeChildren();
+        if (!properties) {
+          return;
         }
         // $FlowFixMe.
-        WebInspector.RemoteObject.loadFromObjectPerProto(value, callback);
-      };
+        WebInspector.ObjectPropertyTreeElement.populateWithProperties(
+          treeElement,
+          properties,
+          internalProperties,
+          skipProto,
+          value,
+          emptyPlaceholder,
+        );
+      }
+      // $FlowFixMe.
+      WebInspector.RemoteObject.loadFromObjectPerProto(value, callback);
+    };
 
     // $FlowFixMe.
-    WebInspector.ObjectPropertiesSection.prototype.update =
-      function() {
-        /**
+    WebInspector.ObjectPropertiesSection.prototype.update = function() {
+      /**
          * @param {?Array.<!WebInspector.RemoteObjectProperty>} properties
          * @param {?Array.<!WebInspector.RemoteObjectProperty>} internalProperties
          * @this {WebInspector.ObjectPropertiesSection}
          */
-        function callback(scopeName, properties, internalProperties) {
-          if (!properties) {
-            return;
-          }
-          this.updateProperties(properties, internalProperties);
+      function callback(scopeName, properties, internalProperties) {
+        if (!properties) {
+          return;
         }
-        // $FlowFixMe.
-        WebInspector.RemoteObject.loadFromObject(
-          this.object,
-          Boolean(this.ignoreHasOwnProperty),
-          // We use the scope object's `description` field as the scope's section header in the UI.
-          callback.bind(this),
-        );
-      };
+        this.updateProperties(properties, internalProperties);
+      }
+      // $FlowFixMe.
+      WebInspector.RemoteObject.loadFromObject(
+        this.object,
+        Boolean(this.ignoreHasOwnProperty),
+        // We use the scope object's `description` field as the scope's section header in the UI.
+        callback.bind(this),
+      );
+    };
   }
 
   _handleWindowLoad() {
@@ -183,9 +190,6 @@ class NuclideBridge {
 
   _handleIpcCommand(event: Object, command: string, ...args: any[]) {
     switch (command) {
-      case 'UpdateSettings':
-        this._handleSettingsUpdated(args[0]);
-        break;
       case 'SyncBreakpoints':
         this._allBreakpoints = args[0];
         this._syncBreakpoints();
@@ -201,6 +205,9 @@ class NuclideBridge {
         break;
       case 'Continue':
         this._continue();
+        break;
+      case 'Pause':
+        this._pause();
         break;
       case 'StepOver':
         this._stepOver();
@@ -243,27 +250,15 @@ class NuclideBridge {
     }
   }
 
-  getSettings(): Object {
-    return this._settings;
-  }
-
-  _handleSettingsUpdated(settingsData: string): void {
-    this._settings = JSON.parse(settingsData);
-    this._emitter.emit(DebuggerSettingsChangedEvent, null);
-  }
-
-  onDebuggerSettingsChanged(callback: () => void): IDisposable {
-    return this._emitter.on(DebuggerSettingsChangedEvent, callback);
-  }
-
   _handleCallFrameSelected(event: WebInspector.Event) {
     // TODO(jonaldislarry): Extend chrome protocol as per t12187369.
     if (this._debuggerPausedCount <= 1) {
       return;
     }
     const frame: WebInspector$CallFrame = event.data;
-    const uiLocation =
-      WebInspector.debuggerWorkspaceBinding.rawLocationToUILocation(frame.location());
+    const uiLocation = WebInspector.debuggerWorkspaceBinding.rawLocationToUILocation(
+      frame.location(),
+    );
     ipcRenderer.sendToHost('notification', 'CallFrameSelected', {
       sourceURL: uiLocation.uiSourceCode.uri(),
       lineNumber: uiLocation.lineNumber,
@@ -304,6 +299,7 @@ class NuclideBridge {
       const selectedFrame = target.debuggerModel.callFrames[callframeIndex];
       target.debuggerModel.setSelectedCallFrame(selectedFrame);
       this._updateScopes(selectedFrame);
+      this._callframeId = selectedFrame.id;
     }
   }
 
@@ -311,27 +307,33 @@ class NuclideBridge {
     const scopes = frame.scopeChain();
     // We need to wait for the backend to send us the scope data, and only want to continue when
     // we have each scope.
-    const scopeSections = await Promise.all(scopes.map(scope => {
-      const scopeObj = scope.object();
-      return new Promise(
-        resolve => scopeObj.getOwnProperties(
-          scopeVariables => resolve({name: scopeObj.description, scopeVariables}),
-        ),
-      );
-    }));
-    ipcRenderer.sendToHost('notification', 'ScopesUpdate', scopeSections.map(scope => {
-      const {name, scopeVariables} = scope;
-      return {
-        name,
-        scopeVariables: scopeVariables.map(scopeVariable => {
-          const {name: variableName, value: scopeValue} = scopeVariable;
-          return {
-            name: variableName,
-            value: getIpcEvaluationResult(false /* wasThrown */, scopeValue),
-          };
-        }),
-      };
-    }));
+    const scopeSections = await Promise.all(
+      scopes.map(scope => {
+        const scopeObj = scope.object();
+        return new Promise(resolve =>
+          scopeObj.getOwnProperties(scopeVariables =>
+            resolve({name: scopeObj.description, scopeVariables}),
+          ),
+        );
+      }),
+    );
+    ipcRenderer.sendToHost(
+      'notification',
+      'ScopesUpdate',
+      scopeSections.map(scope => {
+        const {name, scopeVariables} = scope;
+        return {
+          name,
+          scopeVariables: scopeVariables.map(scopeVariable => {
+            const {name: variableName, value: scopeValue} = scopeVariable;
+            return {
+              name: variableName,
+              value: getIpcEvaluationResult(false /* wasThrown */, scopeValue),
+            };
+          }),
+        };
+      }),
+    );
   }
 
   _sendCallstack(): void {
@@ -354,14 +356,23 @@ class NuclideBridge {
   _convertFramesToIPCFrames(callFrames: Array<Object>): Array<Object> {
     return callFrames.map(callFrame => {
       const location = callFrame.location();
+      // If there is a sourcemap available, use it to adjust the column and line numbers.
+      const uiLocation = WebInspector.debuggerWorkspaceBinding.rawLocationToUILocation(
+        location,
+      );
       /* names anonymous functions "(anonymous function)" */
-      const functionName = WebInspector.beautifyFunctionName(callFrame.functionName);
+      const functionName = WebInspector.beautifyFunctionName(
+        callFrame.functionName,
+      );
       return {
         name: functionName,
         location: {
-          path: callFrame.script.sourceURL,
-          column: location.columnNumber,
-          line: location.lineNumber,
+          path: uiLocation.uiSourceCode.uri(),
+          column: uiLocation.columnNumber,
+          line: uiLocation.lineNumber,
+          hasSource: callFrame.hasSource() != null
+            ? callFrame.hasSource()
+            : true,
         },
       };
     });
@@ -393,7 +404,11 @@ class NuclideBridge {
     );
   }
 
-  _evaluateOnSelectedCallFrame(id: number, expression: string, objectGroup: ObjectGroup): void {
+  _evaluateOnSelectedCallFrame(
+    id: number,
+    expression: string,
+    objectGroup: ObjectGroup,
+  ): void {
     const mainTarget = WebInspector.targetManager.mainTarget();
     if (mainTarget == null) {
       return;
@@ -401,18 +416,39 @@ class NuclideBridge {
     mainTarget.debuggerModel.evaluateOnSelectedCallFrame(
       expression,
       objectGroup,
-      false, /* includeCommandLineAPI */
-      true, /* doNotPauseOnExceptionsAndMuteConsole */
-      false,  /* returnByValue */
-      false, /* generatePreview */
+      false /* includeCommandLineAPI */,
+      true /* doNotPauseOnExceptionsAndMuteConsole */,
+      false /* returnByValue */,
+      false /* generatePreview */,
       (remoteObject, wasThrown, error) => {
         const result = getIpcEvaluationResult(wasThrown, remoteObject);
         ipcRenderer.sendToHost('notification', 'ExpressionEvaluationResponse', {
           result,
-          error: wasThrown ? error : null,
+          error: wasThrown ? error || result : null,
           expression,
           id,
         });
+
+        if (!wasThrown) {
+          // Evaluate could have had a side effect. Force a refresh of scopes for the current
+          // frame.
+          mainTarget.debuggerModel.threadStore.getRefreshedThreadStack(
+            callFrames => {
+              const frames = callFrames != null && callFrames.length > 0
+                ? callFrames
+                : mainTarget.debuggerModel.callFrames;
+
+              const targetFrameId = frames.length === 0 ||
+                this._callframeId !== -1
+                ? this._callframeId
+                : frames[0].id;
+
+              frames
+                .filter(frame => frame.id === targetFrameId)
+                .forEach(frame => this._updateScopes(frame));
+            },
+          );
+        }
       },
     );
   }
@@ -430,10 +466,10 @@ class NuclideBridge {
     firstContext.evaluate(
       expression,
       NUCLIDE_DEBUGGER_CONSOLE_OBJECT_GROUP,
-      false, /* includeCommandLineAPI */
-      true, /* doNotPauseOnExceptionsAndMuteConsole */
-      false,  /* returnByValue */
-      false, /* generatePreview */
+      false /* includeCommandLineAPI */,
+      true /* doNotPauseOnExceptionsAndMuteConsole */,
+      false /* returnByValue */,
+      false /* generatePreview */,
       (remoteObject, wasThrown, error) => {
         const result = getIpcEvaluationResult(wasThrown, remoteObject);
         ipcRenderer.sendToHost('notification', 'ExpressionEvaluationResponse', {
@@ -451,7 +487,9 @@ class NuclideBridge {
   }
 
   _setPauseOnCaughtException(pauseOnCaughtExceptionEnabled: boolean): void {
-    WebInspector.settings.pauseOnCaughtException.set(pauseOnCaughtExceptionEnabled);
+    WebInspector.settings.pauseOnCaughtException.set(
+      pauseOnCaughtExceptionEnabled,
+    );
   }
 
   _setSingleThreadStepping(singleThreadStepping: boolean): void {
@@ -470,7 +508,10 @@ class NuclideBridge {
       default:
         // console.error because throwing can fatal the Chrome dev tools.
         // eslint-disable-next-line no-console
-        console.error('_triggerDebuggerAction: unrecognized actionId', actionId);
+        console.error(
+          '_triggerDebuggerAction: unrecognized actionId',
+          actionId,
+        );
         break;
     }
   }
@@ -485,17 +526,23 @@ class NuclideBridge {
       ipcRenderer.sendToHost('notification', 'NonLoaderDebuggerPaused', {
         stopThreadId: event.data.stopThreadId,
         threadSwitchNotification: this._generateThreadSwitchNotification(
-          event.data.threadSwitchMessage, event.data.location),
+          event.data.threadSwitchMessage,
+          event.data.location,
+        ),
       });
       // Only send callstack for non-loader breakpoint pause.
       this._sendCallstack();
     }
   }
 
-  _generateThreadSwitchNotification(message?: string, location?: Object): ?Object {
+  _generateThreadSwitchNotification(
+    message?: string,
+    location?: Object,
+  ): ?Object {
     if (message != null && location != null) {
       const uiLocation = WebInspector.debuggerWorkspaceBinding.rawLocationToUILocation(
-        location);
+        location,
+      );
       return {
         sourceURL: uiLocation.uiSourceCode.uri(),
         lineNumber: uiLocation.lineNumber,
@@ -518,9 +565,15 @@ class NuclideBridge {
     // doing this results in an "Runtime.getProperties failed" error in node-inspector since that
     // call is only valid during a paused state.
     process.nextTick(() => {
-      const targetManager = WebInspector != null ? WebInspector.targetManager : null;
-      const mainTarget = targetManager != null ? targetManager.mainTarget() : null;
-      const debuggerModel = mainTarget != null ? mainTarget.debuggerModel : null;
+      const targetManager = WebInspector != null
+        ? WebInspector.targetManager
+        : null;
+      const mainTarget = targetManager != null
+        ? targetManager.mainTarget()
+        : null;
+      const debuggerModel = mainTarget != null
+        ? mainTarget.debuggerModel
+        : null;
       const stillPaused = debuggerModel != null && debuggerModel.isPaused();
       if (stillPaused) {
         this._continue();
@@ -546,7 +599,10 @@ class NuclideBridge {
     this._sendBreakpointNotification(event, 'BreakpointRemoved');
   }
 
-  _sendBreakpointNotification(event: WebInspector$Event, type: BreakpointNotificationType) {
+  _sendBreakpointNotification(
+    event: WebInspector$Event,
+    type: BreakpointNotificationType,
+  ) {
     if (!this._suppressBreakpointNotification) {
       ipcRenderer.sendToHost(
         'notification',
@@ -588,10 +644,7 @@ class NuclideBridge {
     if (target == null) {
       return;
     }
-    target.debuggerModel._parsedScriptSource(
-      sourceUrl,
-      sourceUrl,
-    );
+    target.debuggerModel._parsedScriptSource(sourceUrl, sourceUrl);
   }
 
   // Synchronizes nuclide BreakpointStore and BreakpointManager
@@ -604,7 +657,9 @@ class NuclideBridge {
       if (!this._addBreakpoint(breakpoint)) {
         // No API exists for adding breakpoints to source files that are not
         // yet known, store it locally and try to add them later.
-        this._unresolvedBreakpoints.set(breakpoint.sourceURL, [breakpoint.lineNumber]);
+        this._unresolvedBreakpoints.set(breakpoint.sourceURL, [
+          breakpoint.lineNumber,
+        ]);
       }
     });
     this._emitter.emit('unresolved-breakpoints-changed', null);
@@ -620,9 +675,9 @@ class NuclideBridge {
     WebInspector.breakpointManager.setBreakpoint(
       source,
       lineNumber,
-      0,                  // columnNumber
-      condition || '',    // Condition
-      true,               // enabled
+      0, // columnNumber
+      condition || '', // Condition
+      true, // enabled
     );
     return true;
   }
@@ -648,7 +703,9 @@ class NuclideBridge {
   }
 
   _deleteBreakpoint(breakpoint: Object): boolean {
-    const source = WebInspector.workspace.uiSourceCodeForOriginURL(breakpoint.sourceURL);
+    const source = WebInspector.workspace.uiSourceCodeForOriginURL(
+      breakpoint.sourceURL,
+    );
     if (source == null) {
       return false;
     }
@@ -668,6 +725,14 @@ class NuclideBridge {
     if (target) {
       beginTimerTracking('nuclide-debugger-atom:continue');
       target.debuggerModel.resume();
+    }
+  }
+
+  _pause(): void {
+    const target = WebInspector.targetManager.mainTarget();
+    if (target) {
+      beginTimerTracking('nuclide-debugger-atom:pause');
+      target.debuggerModel.pause();
     }
   }
 
@@ -700,7 +765,11 @@ class NuclideBridge {
     if (target) {
       beginTimerTracking('nuclide-debugger-atom:runToLocation');
       const url = nuclideUri.nuclideUriToUri(path);
-      const location = target.debuggerModel.createRawLocationByURL(url, line, 0);
+      const location = target.debuggerModel.createRawLocationByURL(
+        url,
+        line,
+        0,
+      );
       location.continueToLocation();
     }
   }
@@ -737,10 +806,7 @@ class NuclideBridge {
   }
 
   _handleThreadsUpdated(event: WebInspector.Event): void {
-    // Debugger.ThreadsUpdate happens before Debugger.paused
-    // so the first Debugger.ThreadsUpdate has this._debuggerPausedCount
-    // of zero.
-    if (this._debuggerPausedCount < 1) {
+    if (this._debuggerPausedCount <= 1) {
       return;
     }
     ipcRenderer.sendToHost('notification', 'ThreadsUpdate', event.data);
@@ -755,7 +821,7 @@ function getIpcEvaluationResult(
   wasThrown: boolean,
   remoteObject: ?EvaluationResult,
 ): ?EvaluationResult {
-  if (wasThrown || remoteObject == null) {
+  if (remoteObject == null) {
     return null;
   }
   return {

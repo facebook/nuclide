@@ -6,25 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import debounce from '../../commons-node/debounce';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {ShowUncommittedChangesKind} from './Constants';
 import FileTreeDispatcher, {ActionTypes} from './FileTreeDispatcher';
 import FileTreeHelpers from './FileTreeHelpers';
 import {FileTreeStore} from './FileTreeStore';
 import Immutable from 'immutable';
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 import {hgConstants} from '../../nuclide-hg-rpc';
-import {getLogger} from '../../nuclide-logging';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {getLogger} from 'log4js';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {Observable} from 'rxjs';
+import {objectFromMap} from 'nuclide-commons/collection';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import type React from 'react';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
 import type {WorkingSet} from '../../nuclide-working-sets-common';
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 let instance: ?FileTreeActions;
 
@@ -59,9 +63,12 @@ export default class FileTreeActions {
   }
 
   setRootKeys(rootKeys: Array<string>): void {
-    const existingRootKeySet: Immutable.Set<string> = new Immutable.Set(this._store.getRootKeys());
-    const addedRootKeys: Immutable.Set<string> =
-      new Immutable.Set(rootKeys).subtract(existingRootKeySet);
+    const existingRootKeySet: Immutable.Set<string> = new Immutable.Set(
+      this._store.getRootKeys(),
+    );
+    const addedRootKeys: Immutable.Set<string> = new Immutable.Set(
+      rootKeys,
+    ).subtract(existingRootKeySet);
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_ROOT_KEYS,
       rootKeys,
@@ -151,6 +158,13 @@ export default class FileTreeActions {
     });
   }
 
+  setIsCalculatingChanges(isCalculatingChanges: boolean): void {
+    this._dispatcher.dispatch({
+      actionType: ActionTypes.SET_IS_CALCULATING_CHANGES,
+      isCalculatingChanges,
+    });
+  }
+
   setIgnoredNames(ignoredNames: Array<string>): void {
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_IGNORED_NAMES,
@@ -194,7 +208,11 @@ export default class FileTreeActions {
     });
   }
 
-  confirmNode(rootKey: string, nodeKey: string, pending: boolean = false): void {
+  confirmNode(
+    rootKey: string,
+    nodeKey: string,
+    pending: boolean = false,
+  ): void {
     const node = this._store.getNode(rootKey, nodeKey);
     if (node == null) {
       return;
@@ -243,7 +261,10 @@ export default class FileTreeActions {
     );
   }
 
-  setVcsStatuses(rootKey: string, vcsStatuses: {[path: string]: StatusCodeNumberValue}): void {
+  setVcsStatuses(
+    rootKey: string,
+    vcsStatuses: {[path: string]: StatusCodeNumberValue},
+  ): void {
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_VCS_STATUSES,
       rootKey,
@@ -260,13 +281,15 @@ export default class FileTreeActions {
   /**
    * Updates the root repositories to match the provided directories.
    */
-  async updateRepositories(rootDirectories: Array<atom$Directory>): Promise<void> {
-    const rootKeys = rootDirectories.map(
-      directory => FileTreeHelpers.dirPathToKey(directory.getPath()),
+  async updateRepositories(
+    rootDirectories: Array<atom$Directory>,
+  ): Promise<void> {
+    const rootKeys = rootDirectories.map(directory =>
+      FileTreeHelpers.dirPathToKey(directory.getPath()),
     );
-    const rootRepos: Array<?atom$Repository> = await Promise.all(rootDirectories.map(
-      directory => repositoryForPath(directory.getPath()),
-    ));
+    const rootRepos: Array<?atom$Repository> = await Promise.all(
+      rootDirectories.map(directory => repositoryForPath(directory.getPath())),
+    );
 
     // t7114196: Given the current implementation of HgRepositoryClient, each root directory will
     // always correspond to a unique instance of HgRepositoryClient. Ideally, if multiple subfolders
@@ -283,8 +306,9 @@ export default class FileTreeActions {
     const prevRepos = this._store.getRepositories();
 
     // Let the store know we have some new repos!
-    const nextRepos: Immutable.Set<atom$Repository> =
-      new Immutable.Set(rootKeysForRepository.keys());
+    const nextRepos: Immutable.Set<atom$Repository> = new Immutable.Set(
+      rootKeysForRepository.keys(),
+    );
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_REPOSITORIES,
       repositories: nextRepos,
@@ -292,7 +316,6 @@ export default class FileTreeActions {
 
     const removedRepos = prevRepos.subtract(nextRepos);
     const addedRepos = nextRepos.subtract(prevRepos);
-
 
     // TODO: Rewrite `_repositoryAdded` to return the subscription instead of adding it to a map as
     //       a side effect. The map can be created here with something like
@@ -305,7 +328,9 @@ export default class FileTreeActions {
     removedRepos.forEach(repo => this._repositoryRemoved(repo));
 
     // Create subscriptions for addedRepos.
-    addedRepos.forEach(repo => this._repositoryAdded(repo, rootKeysForRepository));
+    addedRepos.forEach(repo =>
+      this._repositoryAdded(repo, rootKeysForRepository),
+    );
   }
 
   updateWorkingSet(workingSet: WorkingSet): void {
@@ -466,33 +491,79 @@ export default class FileTreeActions {
 
   async _repositoryAdded(
     repo: atom$GitRepository | HgRepositoryClient,
-    rootKeysForRepository: Immutable.Map<atom$Repository, Immutable.Set<string>>,
+    rootKeysForRepository: Immutable.Map<
+      atom$Repository,
+      Immutable.Set<string>,
+    >,
   ): Promise<void> {
     // We support HgRepositoryClient and GitRepositoryAsync objects.
-    if ((repo.getType() !== 'hg' && repo.getType() !== 'git') || repo.isDestroyed()) {
-      return;
-    }
-    const statusCodeForPath = this._getCachedPathStatuses(repo);
 
-    for (const rootKeyForRepo of rootKeysForRepository.get(repo)) {
-      this.setVcsStatuses(rootKeyForRepo, statusCodeForPath);
+    // Observe the repository so that the VCS statuses are kept up to date.
+    // This observer should fire off an initial value after we subscribe to it,
+    // and subsequent values after any changes to the repository.
+    let vcsChanges: Observable<{
+      [filePath: NuclideUri]: StatusCodeNumberValue,
+    }> = Observable.empty();
+    let vcsCalculating: Observable<boolean> = Observable.of(false);
+
+    if (repo.isDestroyed()) {
+      // Don't observe anything on a destroyed repo.
+    } else if (
+      repo.getType() === 'git' ||
+      !await FileTreeHelpers.areStackChangesEnabled()
+    ) {
+      // Different repo types emit different events at individual and refresh updates.
+      // Hence, the need to debounce and listen to both change types.
+      vcsChanges = Observable.merge(
+        observableFromSubscribeFunction(repo.onDidChangeStatus.bind(repo)),
+        observableFromSubscribeFunction(repo.onDidChangeStatuses.bind(repo)),
+      )
+        .debounceTime(1000)
+        .startWith(null)
+        .map(_ => this._getCachedPathStatuses(repo));
+    } else if (repo.getType() === 'hg') {
+      // We special-case the HgRepository because it offers up the
+      // required observable directly, and because it actually allows us to pick
+      // between two different observables.
+      const hgRepo: HgRepositoryClient = (repo: any);
+
+      const hgChanges = FileTreeHelpers.observeUncommittedChangesKindConfigKey()
+        .map(kind => {
+          switch (kind) {
+            case ShowUncommittedChangesKind.UNCOMMITTED:
+              return hgRepo.observeUncommittedStatusChanges();
+            case ShowUncommittedChangesKind.HEAD:
+              return hgRepo.observeHeadStatusChanges();
+            case ShowUncommittedChangesKind.STACK:
+              return hgRepo.observeStackStatusChanges();
+            default:
+              const error = Observable.throw(
+                new Error('Unrecognized ShowUncommittedChangesKind config'),
+              );
+              return {statusChanges: error, isCalculatingChanges: error};
+          }
+        })
+        .share();
+
+      vcsChanges = hgChanges.switchMap(c => c.statusChanges).map(objectFromMap);
+      vcsCalculating = hgChanges.switchMap(c => c.isCalculatingChanges);
     }
-    // Now that the initial VCS statuses are set, subscribe to changes to the Repository so that the
-    // VCS statuses are kept up to date.
-    const debouncedChangeStatuses = debounce(
-      this._onDidChangeStatusesForRepository.bind(this, repo, rootKeysForRepository),
-      /* wait */ 1000,
-      /* immediate */ false,
+
+    const subscription = vcsChanges.subscribe(statusCodeForPath => {
+      for (const rootKeyForRepo of rootKeysForRepository.get(repo)) {
+        this.setVcsStatuses(rootKeyForRepo, statusCodeForPath);
+      }
+    });
+
+    const subscriptionCalculating = vcsCalculating.subscribe(
+      isCalculatingChanges => {
+        this.setIsCalculatingChanges(isCalculatingChanges);
+      },
     );
-    // Different repo types emit different events at individual and refresh updates.
-    // Hence, the need to debounce and listen to both change types.
-    const changeStatusesSubscriptions = new UniversalDisposable(
-      repo.onDidChangeStatuses(debouncedChangeStatuses),
-      repo.onDidChangeStatus(debouncedChangeStatuses),
-    );
+
     this._disposableForRepository = this._disposableForRepository.set(
       repo,
-      changeStatusesSubscriptions,
+      new UniversalDisposable(subscription, subscriptionCalculating),
     );
   }
 
@@ -529,7 +600,9 @@ export default class FileTreeActions {
         } else if (internalGitRepo.isStatusDeleted(gitStatusNumber)) {
           statusCode = StatusCodeNumber.REMOVED;
         } else {
-          getLogger().warn(`Unrecognized git status number ${gitStatusNumber}`);
+          getLogger('nuclide-file-tree').warn(
+            `Unrecognized git status number ${gitStatusNumber}`,
+          );
           statusCode = StatusCodeNumber.MODIFIED;
         }
         relativeCodePaths[relativePath] = statusCode;
@@ -546,18 +619,9 @@ export default class FileTreeActions {
     return absoluteCodePaths;
   }
 
-  _onDidChangeStatusesForRepository(
-    repo: atom$GitRepository | HgRepositoryClient,
-    rootKeysForRepository: Immutable.Map<atom$Repository, Immutable.Set<string>>,
-  ): void {
-    for (const rootKey of rootKeysForRepository.get(repo)) {
-      this.setVcsStatuses(rootKey, this._getCachedPathStatuses(repo));
-    }
-  }
-
   _repositoryRemoved(repo: atom$Repository) {
     const disposable = this._disposableForRepository.get(repo);
-    if (!disposable) {
+    if (disposable == null) {
       // There is a small chance that the add/remove of the Repository could happen so quickly that
       // the entry for the repo in _disposableForRepository has not been set yet.
       // TODO: Report a soft error for this.

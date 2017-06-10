@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -15,30 +16,14 @@ import type {Datatip} from '../../nuclide-datatip/lib/types';
 import type DebuggerModel from './DebuggerModel';
 import type {EvaluationResult} from './types';
 
-import {wordAtPosition} from '../../commons-atom/range';
-import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {
+  getEvaluationExpressionFromRegexp,
+} from '../../nuclide-language-service/lib/EvaluationExpressionProvider';
 import {DebuggerMode} from './DebuggerStore';
 import {DebuggerDatatipComponent} from './DebuggerDatatipComponent';
 
 const DEFAULT_WORD_REGEX = /\w+/gi;
-function defaultGetEvaluationExpression(
-  editor: atom$TextEditor,
-  position: atom$Point,
-): Promise<?NuclideEvaluationExpression> {
-  const extractedIdentifier = wordAtPosition(editor, position, DEFAULT_WORD_REGEX);
-  if (extractedIdentifier == null) {
-    return Promise.resolve(null);
-  }
-  const {
-    wordMatch,
-    range,
-  } = extractedIdentifier;
-  const [expression] = wordMatch;
-  return Promise.resolve({
-    expression,
-    range,
-  });
-}
 
 function getEvaluationExpression(
   model: DebuggerModel,
@@ -56,7 +41,9 @@ function getEvaluationExpression(
     }
   }
   return matchingProvider === null
-    ? defaultGetEvaluationExpression(editor, position)
+    ? Promise.resolve(
+        getEvaluationExpressionFromRegexp(editor, position, DEFAULT_WORD_REGEX),
+      )
     : matchingProvider.getEvaluationExpression(editor, position);
 }
 
@@ -72,32 +59,36 @@ export async function debuggerDatatip(
   if (activeEditor == null) {
     return null;
   }
-  const evaluationExpression = await getEvaluationExpression(model, editor, position);
+  const evaluationExpression = await getEvaluationExpression(
+    model,
+    editor,
+    position,
+  );
   if (evaluationExpression == null) {
     return null;
   }
-  const {
-    expression,
-    range,
-  } = evaluationExpression;
+  const {expression, range} = evaluationExpression;
   if (expression == null) {
     return null;
   }
   const watchExpressionStore = model.getWatchExpressionStore();
   const evaluation = watchExpressionStore.evaluateWatchExpression(expression);
   // Avoid creating a datatip if the evaluation fails
-  const evaluationResult: ?EvaluationResult = await evaluation.take(1).toPromise();
+  const evaluationResult: ?EvaluationResult = await evaluation
+    .take(1)
+    .toPromise();
   if (evaluationResult === null) {
     return null;
   }
   const propStream = evaluation
     .filter(result => result != null)
-    .map(result => ({expression, evaluationResult: result, watchExpressionStore}));
+    .map(result => ({
+      expression,
+      evaluationResult: result,
+      watchExpressionStore,
+    }));
   return {
-    component: bindObservableAsProps(
-      propStream,
-      DebuggerDatatipComponent,
-    ),
+    component: bindObservableAsProps(propStream, DebuggerDatatipComponent),
     pinnable: true,
     range,
   };

@@ -6,32 +6,39 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
+import typeof * as FileSystemService
+  from '../../nuclide-server/lib/services/FileSystemService';
 import type {ServerConnection} from './ServerConnection';
-import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
+import type {
+  HgRepositoryDescription,
+} from '../../nuclide-source-control-helpers';
 import type {RemoteFile} from './RemoteFile';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Disposable, Emitter} from 'atom';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-connection');
 
 const MARKER_PROPERTY_FOR_REMOTE_DIRECTORY = '__nuclide_remote_directory__';
 
 /* Mostly implements https://atom.io/docs/api/latest/Directory */
 export class RemoteDirectory {
-  static isRemoteDirectory(directory: atom$Directory | RemoteDirectory): boolean {
+  static isRemoteDirectory(
+    directory: atom$Directory | RemoteDirectory,
+  ): boolean {
     /* $FlowFixMe */
     return directory[MARKER_PROPERTY_FOR_REMOTE_DIRECTORY] === true;
   }
 
   _watchSubscription: ?rxjs$ISubscription;
   _server: ServerConnection;
-  _uri: string;
+  _uri: NuclideUri;
   _emitter: atom$Emitter;
   _subscriptionCount: number;
   _host: string;
@@ -49,7 +56,9 @@ export class RemoteDirectory {
     symlink: boolean = false,
     options: ?any,
   ) {
-    Object.defineProperty(this, MARKER_PROPERTY_FOR_REMOTE_DIRECTORY, {value: true});
+    Object.defineProperty(this, MARKER_PROPERTY_FOR_REMOTE_DIRECTORY, {
+      value: true,
+    });
     this._server = server;
     this._uri = uri;
     this._emitter = new Emitter();
@@ -62,7 +71,9 @@ export class RemoteDirectory {
     /** In the example, this would be "/path/to/directory". */
     this._localPath = directoryPath;
     // A workaround before Atom 2.0: see ::getHgRepoInfo of main.js.
-    this._hgRepositoryDescription = options ? options.hgRepositoryDescription : null;
+    this._hgRepositoryDescription = options
+      ? options.hgRepositoryDescription
+      : null;
     this._deleted = false;
   }
 
@@ -86,7 +97,11 @@ export class RemoteDirectory {
     try {
       this._subscribeToNativeChangeEvents();
     } catch (err) {
-      logger.error('Failed to subscribe RemoteDirectory:', this._localPath, err);
+      logger.error(
+        'Failed to subscribe RemoteDirectory:',
+        this._localPath,
+        err,
+      );
     }
   }
 
@@ -95,22 +110,26 @@ export class RemoteDirectory {
       return;
     }
     const watchStream = this._server.getDirectoryWatch(this._uri);
-    this._watchSubscription = watchStream.subscribe(watchUpdate => {
-      logger.debug('watchDirectory update:', watchUpdate);
-      switch (watchUpdate.type) {
-        case 'change':
-          return this._handleNativeChangeEvent();
-        case 'delete':
-          return this._handleNativeDeleteEvent();
-      }
-    }, error => {
-      logger.error('Failed to subscribe RemoteDirectory:', this._uri, error);
-      this._watchSubscription = null;
-    }, () => {
-      // Nothing needs to be done if the root directory watch has ended.
-      logger.debug(`watchDirectory ended: ${this._uri}`);
-      this._watchSubscription = null;
-    });
+    this._watchSubscription = watchStream.subscribe(
+      watchUpdate => {
+        logger.debug('watchDirectory update:', watchUpdate);
+        switch (watchUpdate.type) {
+          case 'change':
+            return this._handleNativeChangeEvent();
+          case 'delete':
+            return this._handleNativeDeleteEvent();
+        }
+      },
+      error => {
+        logger.error('Failed to subscribe RemoteDirectory:', this._uri, error);
+        this._watchSubscription = null;
+      },
+      () => {
+        // Nothing needs to be done if the root directory watch has ended.
+        logger.debug(`watchDirectory ended: ${this._uri}`);
+        this._watchSubscription = null;
+      },
+    );
   }
 
   _handleNativeChangeEvent(): void {
@@ -167,7 +186,7 @@ export class RemoteDirectory {
   }
 
   exists(): Promise<boolean> {
-    return this._getFileSystemService().exists(this._localPath);
+    return this._getFileSystemService().exists(this._uri);
   }
 
   existsSync(): boolean {
@@ -213,24 +232,33 @@ export class RemoteDirectory {
     if (this.isRoot()) {
       return this;
     } else {
-      const uri = nuclideUri.createRemoteUri(this._host, nuclideUri.dirname(this._localPath));
+      const uri = nuclideUri.createRemoteUri(
+        this._host,
+        nuclideUri.dirname(this._localPath),
+      );
       return this._server.createDirectory(uri, this._hgRepositoryDescription);
     }
   }
 
   getFile(filename: string): RemoteFile {
-    const uri = nuclideUri.createRemoteUri(this._host, nuclideUri.join(this._localPath, filename));
+    const uri = nuclideUri.createRemoteUri(
+      this._host,
+      nuclideUri.join(this._localPath, filename),
+    );
     return this._server.createFile(uri);
   }
 
   getSubdirectory(dir: string): RemoteDirectory {
-    const uri = nuclideUri.createRemoteUri(this._host, nuclideUri.join(this._localPath, dir));
+    const uri = nuclideUri.createRemoteUri(
+      this._host,
+      nuclideUri.join(this._localPath, dir),
+    );
     return this._server.createDirectory(uri, this._hgRepositoryDescription);
   }
 
   async create(): Promise<boolean> {
     invariant(!this._deleted, 'RemoteDirectory has been deleted');
-    const created = await this._getFileSystemService().mkdirp(this._localPath);
+    const created = await this._getFileSystemService().mkdirp(this._uri);
     if (this._subscriptionCount > 0) {
       this._subscribeToNativeChangeEvents();
     }
@@ -238,7 +266,7 @@ export class RemoteDirectory {
   }
 
   async delete(): Promise<any> {
-    await this._getFileSystemService().rmdir(this._localPath);
+    await this._getFileSystemService().rmdir(this._uri);
     this._handleNativeDeleteEvent();
   }
 
@@ -254,33 +282,43 @@ export class RemoteDirectory {
    * passed to `callback` is `null` to determine if there was an error.
    */
   async getEntries(
-    callback: (error: ?atom$GetEntriesError, entries: ?Array<RemoteDirectory | RemoteFile>) => any,
+    callback: (
+      error: ?atom$GetEntriesError,
+      entries: ?Array<RemoteDirectory | RemoteFile>,
+    ) => any,
   ): Promise<void> {
     let entries;
     try {
-      entries = await this._getFileSystemService().readdir(this._localPath);
+      entries = await this._getFileSystemService().readdir(this._uri);
     } catch (e) {
       callback(e, null);
       return;
     }
 
-    const directories : Array<RemoteDirectory> = [];
+    const directories: Array<RemoteDirectory> = [];
     const files = [];
-    entries.sort((a, b) => {
-      return a.file.toLowerCase().localeCompare(b.file.toLowerCase());
-    }).forEach(entry => {
-      invariant(entry);
-      const uri = nuclideUri.createRemoteUri(
-        this._host,
-        nuclideUri.join(this._localPath, entry.file),
-      );
-      const symlink = entry.isSymbolicLink;
-      if (entry.stats && entry.stats.isFile()) {
-        files.push(this._server.createFile(uri, symlink));
-      } else {
-        directories.push(this._server.createDirectory(uri, this._hgRepositoryDescription, symlink));
-      }
-    });
+    entries
+      .sort((a, b) => {
+        return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
+      })
+      .forEach(entry => {
+        const [name, isFile, symlink] = entry;
+        const uri = nuclideUri.createRemoteUri(
+          this._host,
+          nuclideUri.join(this._localPath, name),
+        );
+        if (isFile) {
+          files.push(this._server.createFile(uri, symlink));
+        } else {
+          directories.push(
+            this._server.createDirectory(
+              uri,
+              this._hgRepositoryDescription,
+              symlink,
+            ),
+          );
+        }
+      });
     callback(null, directories.concat(files));
   }
 

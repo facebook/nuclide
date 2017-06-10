@@ -6,14 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import {Point, Range} from 'atom';
 import fs from 'fs';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import Refactoring from '../lib/Refactoring';
+import {getDiagnostics} from '../lib/libclang';
 
 const TEST_PATH = nuclideUri.join(__dirname, 'fixtures', 'references.cpp');
 
@@ -23,6 +25,13 @@ const fakeEditor: any = {
 };
 
 describe('Refactoring', () => {
+  beforeEach(() => {
+    waitsForPromise(async () => {
+      // Ensure that the file is compiled.
+      await getDiagnostics(fakeEditor);
+    });
+  });
+
   describe('Refactoring.refactoringsAtPoint', () => {
     it('returns refactorings for a variable', () => {
       waitsForPromise({timeout: 15000}, async () => {
@@ -65,25 +74,27 @@ describe('Refactoring', () => {
             text: 'var1',
           },
           originalPoint: new Point(1, 25),
-        });
-        invariant(response != null, 'Expected edits');
-        expect(Array.from(response.edits)).toEqual([[
-          TEST_PATH,
+        }).toPromise();
+        invariant(response.type === 'edit', 'Must be a standard edit');
+        expect(Array.from(response.edits)).toEqual([
           [
-            {
-              // param declaration
-              oldRange: new Range([1, 25], [1, 29]),
-              oldText: 'var1',
-              newText: 'new_var',
-            },
-            {
-              // int var2 = var1
-              oldRange: new Range([2, 13], [2, 17]),
-              oldText: 'var1',
-              newText: 'new_var',
-            },
+            TEST_PATH,
+            [
+              {
+                // param declaration
+                oldRange: new Range([1, 25], [1, 29]),
+                oldText: 'var1',
+                newText: 'new_var',
+              },
+              {
+                // int var2 = var1
+                oldRange: new Range([2, 13], [2, 17]),
+                oldText: 'var1',
+                newText: 'new_var',
+              },
+            ],
           ],
-        ]]);
+        ]);
       });
     });
   });

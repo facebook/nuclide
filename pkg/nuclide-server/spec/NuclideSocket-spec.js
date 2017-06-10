@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RpcConnection} from '../../nuclide-rpc';
@@ -84,7 +85,11 @@ xdescribe('NuclideSocket test suite', () => {
       server.close();
       advanceClock(5050); // Advance the heartbeat interval.
       waitsFor(() => heartbeatErrorHandler.callCount > 0);
-      runs(() => expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe('PORT_NOT_ACCESSIBLE'));
+      runs(() =>
+        expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe(
+          'PORT_NOT_ACCESSIBLE',
+        ),
+      );
     });
 
     it('on ECONNREFUSED, emits SERVER_CRASHED, when the server was once reachable', () => {
@@ -94,7 +99,11 @@ xdescribe('NuclideSocket test suite', () => {
       server.close();
       advanceClock(5050); // Advance the heartbeat interval.
       waitsFor(() => heartbeatErrorHandler.callCount > 0);
-      runs(() => expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe('SERVER_CRASHED'));
+      runs(() =>
+        expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe(
+          'SERVER_CRASHED',
+        ),
+      );
     });
 
     it('on ENOTFOUND, emits NETWORK_AWAY error, when the server cannot be located', () => {
@@ -103,7 +112,11 @@ xdescribe('NuclideSocket test suite', () => {
       socket._serverUri = 'http://not.existing.uri.conf:8657';
       advanceClock(5050); // Advance the heartbeat interval.
       waitsFor(() => heartbeatErrorHandler.callCount > 0);
-      runs(() => expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe('NETWORK_AWAY'));
+      runs(() =>
+        expect(heartbeatErrorHandler.argsForCall[0][0].code).toBe(
+          'NETWORK_AWAY',
+        ),
+      );
     });
   });
 
@@ -121,7 +134,10 @@ xdescribe('NuclideSocket test suite', () => {
 
       waitsForPromise(() => socket.waitForConnect());
       runs(() => socket.send(message0));
-      waitsFor(() => serverSocketClient.getTransport()._onSocketMessage.calls.length === 1);
+      waitsFor(
+        () =>
+          serverSocketClient.getTransport()._onSocketMessage.calls.length === 1,
+      );
 
       runs(() => {
         // This call will error, because the socket will be closed on the next statement
@@ -138,18 +154,26 @@ xdescribe('NuclideSocket test suite', () => {
         advanceClock(6000); // The maximum reconnect time is 5 seconds.
       });
       waitsFor(() => reconnectHandler.callCount > 0);
-      waitsFor(() => serverSocketClient.getTransport()._onSocketMessage.calls.length === 5);
+      waitsFor(
+        () =>
+          serverSocketClient.getTransport()._onSocketMessage.calls.length === 5,
+      );
       runs(() => {
-        expect(serverSocketClient.getTransport()._onSocketMessage.calls[0].args[1])
-          .toEqual(message0);
-        expect(serverSocketClient.getTransport()._onSocketMessage.calls[1].args[1])
-          .toEqual(message1);
-        expect(serverSocketClient.getTransport()._onSocketMessage.calls[2].args[1])
-          .toEqual(message2);
-        expect(serverSocketClient.getTransport()._onSocketMessage.calls[3].args[1])
-          .toEqual(message3);
-        expect(serverSocketClient.getTransport()._onSocketMessage.calls[4].args[1])
-          .toEqual(message4);
+        expect(
+          serverSocketClient.getTransport()._onSocketMessage.calls[0].args[1],
+        ).toEqual(message0);
+        expect(
+          serverSocketClient.getTransport()._onSocketMessage.calls[1].args[1],
+        ).toEqual(message1);
+        expect(
+          serverSocketClient.getTransport()._onSocketMessage.calls[2].args[1],
+        ).toEqual(message2);
+        expect(
+          serverSocketClient.getTransport()._onSocketMessage.calls[3].args[1],
+        ).toEqual(message3);
+        expect(
+          serverSocketClient.getTransport()._onSocketMessage.calls[4].args[1],
+        ).toEqual(message4);
       });
     });
   });

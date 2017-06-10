@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {LazyTestTreeNode} from './LazyTestTreeNode';
@@ -45,8 +46,8 @@ describe('TreeNodeComponent', () => {
     spyOn(props, 'onDoubleClick');
 
     treeNodeComponent = TestUtils.renderIntoDocument(
-        <TreeNodeComponent {...props} />,
-      );
+      <TreeNodeComponent {...props} />,
+    );
   });
 
   describe('rendering its icons', () => {
@@ -85,12 +86,12 @@ describe('TreeNodeComponent', () => {
     });
   });
 
-  describe('clicking a node\'s arrow', () => {
+  describe("clicking a node's arrow", () => {
     it('calls its `onClickArrow` callback, not its `onClick` callback', () => {
       const arrow = TestUtils.findRenderedDOMComponentWithClass(
-          treeNodeComponent,
-          'nuclide-tree-component-item-arrow',
-        );
+        treeNodeComponent,
+        'nuclide-tree-component-item-arrow',
+      );
 
       TestUtils.Simulate.click(arrow);
       invariant(props);

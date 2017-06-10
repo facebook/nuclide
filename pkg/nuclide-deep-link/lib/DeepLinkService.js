@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DeepLinkParams} from './types';
@@ -14,7 +15,7 @@ import electron from 'electron';
 import invariant from 'invariant';
 import {Observable} from 'rxjs';
 
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import SharedObservableCache from '../../commons-node/SharedObservableCache';
 
 const {ipcRenderer} = electron;
@@ -40,14 +41,17 @@ export default class DeepLinkService {
       // These events will be sent from lib/url-main.js.
       // TODO: Use real Atom URI handler from
       // https://github.com/atom/atom/pull/11399.
-      Observable.fromEvent(ipcRenderer, CHANNEL, (event, data) => data)
-        .subscribe(({message, params}) => {
-          const path = message.replace(/\/+$/, '');
-          const observer = this._observers.get(path);
-          if (observer != null) {
-            observer.next(params);
-          }
-        }),
+      Observable.fromEvent(
+        ipcRenderer,
+        CHANNEL,
+        (event, data) => data,
+      ).subscribe(({message, params}) => {
+        const path = message.replace(/\/+$/, '');
+        const observer = this._observers.get(path);
+        if (observer != null) {
+          observer.next(params);
+        }
+      }),
       () => this._observers.forEach(observer => observer.complete()),
     );
   }

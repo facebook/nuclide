@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  HyperclickProvider,
-  HyperclickSuggestion,
-} from '../../hyperclick/lib/types';
+import type {HyperclickProvider, HyperclickSuggestion} from 'atom-ide-ui';
 
 import semver from 'semver';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {shell} from 'electron';
 
 import {parseJSON, babelLocToRange} from './parsing';
@@ -63,7 +61,11 @@ function getSuggestionForWord(
 
 // Exported for testing. We could derive the token from the json text and the range, but since
 // hyperclick provides it we may as well use it.
-export function getPackageUrlForRange(json: string, token: string, range: atom$Range): ?string {
+export function getPackageUrlForRange(
+  json: string,
+  token: string,
+  range: atom$Range,
+): ?string {
   const version = getDependencyVersion(json, range);
   if (version == null) {
     return null;
@@ -78,9 +80,11 @@ export function getPackageUrlForRange(json: string, token: string, range: atom$R
 function isPackageJson(textEditor: atom$TextEditor): boolean {
   const scopeName = textEditor.getGrammar().scopeName;
   const filePath = textEditor.getPath();
-  return scopeName === 'source.json' &&
+  return (
+    scopeName === 'source.json' &&
     filePath != null &&
-    nuclideUri.basename(filePath) === 'package.json';
+    nuclideUri.basename(filePath) === 'package.json'
+  );
 }
 
 function getPackageUrl(packageName: string, version: string): ?string {
@@ -116,7 +120,8 @@ function getDependencyVersion(json: string, range: atom$Range): ?string {
   }
   const pathToNode = getPathToNodeForRange(ast, range);
 
-  if (pathToNode != null &&
+  if (
+    pathToNode != null &&
     pathToNode.length === 2 &&
     DEPENDENCY_PROPERTIES.has(pathToNode[0].key.value) &&
     isValidVersion(pathToNode[1].value)
@@ -136,7 +141,10 @@ function isValidVersion(valueASTNode: Object): boolean {
 }
 
 // return an array of property AST nodes
-function getPathToNodeForRange(objectExpression: Object, range: atom$Range): ?Array<Object> {
+function getPathToNodeForRange(
+  objectExpression: Object,
+  range: atom$Range,
+): ?Array<Object> {
   const properties = objectExpression.properties;
   if (properties == null) {
     return null;

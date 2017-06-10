@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import React from 'react';
 import SettingsCategory from './SettingsCategory';
 
-import {AtomInput} from '../../nuclide-ui/AtomInput';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Section} from '../../nuclide-ui/Section';
 
 import {matchesFilter} from './settings-utils';
@@ -44,8 +45,9 @@ export default class NuclideSettingsPaneItem extends React.Component {
     }
 
     const configData = {};
-    const nuclidePackages =
-      atom.packages.getLoadedPackages().filter(pkg => pkg.metadata && pkg.metadata.nuclide);
+    const nuclidePackages = atom.packages
+      .getLoadedPackages()
+      .filter(pkg => pkg.metadata && pkg.metadata.nuclide);
 
     // Config data is organized as a series of nested objects. First, by category
     // and then by packages in each category. Each package contains a title and an
@@ -73,15 +75,16 @@ export default class NuclideSettingsPaneItem extends React.Component {
     nuclidePackages.forEach(pkg => {
       const pkgName = pkg.name;
       const {nuclide} = pkg.metadata;
+      const config = pkg.metadata.atomConfig || nuclide.config;
 
-      if (nuclide.config && nuclide.configMetadata) {
+      if (config && nuclide.configMetadata) {
         const {pathComponents} = nuclide.configMetadata;
         const categoryName = pathComponents[0];
         const packageTitle = pathComponents[1] || pkgName;
-        const categoryMatches = this.state == null
-          || matchesFilter(this.state.filter, categoryName);
-        const packageMatches = this.state == null
-          || matchesFilter(this.state.filter, packageTitle);
+        const categoryMatches =
+          this.state == null || matchesFilter(this.state.filter, categoryName);
+        const packageMatches =
+          this.state == null || matchesFilter(this.state.filter, packageTitle);
 
         // Group packages according to their category.
         let packages = configData[categoryName];
@@ -92,21 +95,25 @@ export default class NuclideSettingsPaneItem extends React.Component {
 
         // Create settingData for each setting.
         const settings = {};
-        Object.keys(nuclide.config).forEach(settingName => {
+        Object.keys(config).forEach(settingName => {
           const keyPath = pkgName + '.' + settingName;
           const schema = featureConfig.getSchema(keyPath);
           const title = getTitle(schema, settingName);
           const description = getDescription(schema);
-          if (this.state == null
-            || categoryMatches
-            || packageMatches
-            || matchesFilter(this.state.filter, title)
-            || matchesFilter(this.state.filter, description)) {
+          if (
+            this.state == null ||
+            categoryMatches ||
+            packageMatches ||
+            matchesFilter(this.state.filter, title) ||
+            matchesFilter(this.state.filter, description)
+          ) {
             settings[settingName] = {
               name: settingName,
               description,
               keyPath,
-              onChange: value => { this._handleComponentChange(keyPath, value); },
+              onChange: value => {
+                this._handleComponentChange(keyPath, value);
+              },
               order: getOrder(schema),
               schema,
               title,
@@ -115,7 +122,10 @@ export default class NuclideSettingsPaneItem extends React.Component {
           }
 
           if (disposables) {
-            const disposable = featureConfig.onDidChange(keyPath, this._handleConfigChange);
+            const disposable = featureConfig.onDidChange(
+              keyPath,
+              this._handleConfigChange,
+            );
             this._disposables.add(disposable);
           }
         });
@@ -158,33 +168,31 @@ export default class NuclideSettingsPaneItem extends React.Component {
         );
       }
     });
-    const settings = (elements.length === 0) ? null : elements;
+    const settings = elements.length === 0 ? null : elements;
     return (
       <div className="pane-item padded settings-gadgets-pane">
-         <div className="settings-view panels panels-item">
-           <div className="panels">
-             <div className="panels-item">
+        <div className="settings-view panels panels-item">
+          <div className="panels">
+            <div className="panels-item">
               <section className="section">
-                 <Section
-                  headline="Filter"
-                  collapsable={true}>
-                    <AtomInput
-                     size="lg"
-                     placeholderText="Filter by setting title or description"
-                     onDidChange={this._onFilterTextChanged}
-                    />
-                 </Section>
-               </section>
-               {settings}
-             </div>
-           </div>
-         </div>
+                <Section headline="Filter" collapsable={true}>
+                  <AtomInput
+                    size="lg"
+                    placeholderText="Filter by setting title or description"
+                    onDidChange={this._onFilterTextChanged}
+                  />
+                </Section>
+              </section>
+              {settings}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   _onFilterTextChanged(filterText: string): void {
-    const filter = (filterText != null) ? filterText.trim() : '';
+    const filter = filterText != null ? filterText.trim() : '';
     this.setState({
       filter,
     });

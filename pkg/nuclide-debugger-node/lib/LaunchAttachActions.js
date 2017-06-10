@@ -6,18 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type LaunchAttachDispatcher from './LaunchAttachDispatcher';
 import type {
   NodeAttachTargetInfo,
 } from '../../nuclide-debugger-node-rpc/lib/NodeDebuggerService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
 
 import {ActionTypes} from './LaunchAttachDispatcher';
 import {NodeAttachProcessInfo} from './NodeAttachProcessInfo';
-import {getNodeDebuggerServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {
+  getNodeDebuggerServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 import {LaunchAttachActionsBase} from '../../nuclide-debugger-base';
 
@@ -30,12 +33,17 @@ export class LaunchAttachActions extends LaunchAttachActionsBase {
   }
 
   attachDebugger(attachTarget: NodeAttachTargetInfo): Promise<void> {
-    const attachInfo = new NodeAttachProcessInfo(this.getTargetUri(), attachTarget);
+    const attachInfo = new NodeAttachProcessInfo(
+      this.getTargetUri(),
+      attachTarget,
+    );
     return this._startDebugging(attachInfo);
   }
 
   async _startDebugging(processInfo: DebuggerProcessInfo): Promise<void> {
-    const debuggerService = await consumeFirstProvider('nuclide-debugger.remote');
+    const debuggerService = await consumeFirstProvider(
+      'nuclide-debugger.remote',
+    );
     await debuggerService.startDebugging(processInfo);
   }
 

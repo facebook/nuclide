@@ -6,22 +6,25 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BlameProvider} from './types';
-import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu
+  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {FileTreeNode} from '../../nuclide-file-tree/lib/FileTreeNode';
 
 import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
 
 import BlameGutter from './BlameGutter';
-import {getLogger} from '../../nuclide-logging';
-import {goToLocation} from '../../commons-atom/go-to-location';
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {getLogger} from 'log4js';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 import {track, trackTiming} from '../../nuclide-analytics';
 
-const PACKAGES_MISSING_MESSAGE = 'Could not open blame. Missing at least one blame provider.';
+const PACKAGES_MISSING_MESSAGE =
+  'Could not open blame. Missing at least one blame provider.';
 const TOGGLE_BLAME_FILE_TREE_CONTEXT_MENU_PRIORITY = 2000;
 
 class Activation {
@@ -37,33 +40,40 @@ class Activation {
     this._textEditorToBlameGutter = new Map();
     this._textEditorToDestroySubscription = new Map();
     this._packageDisposables = new CompositeDisposable();
-    this._packageDisposables.add(atom.contextMenu.add({
-      'atom-text-editor': [{
-        label: 'Source Control',
-        submenu: [{
-          label: 'Toggle Blame',
-          command: 'nuclide-blame:toggle-blame',
-          shouldDisplay: (event: MouseEvent) => (this._canShowBlame() || this._canHideBlame()),
-        }],
-      }],
-    }));
     this._packageDisposables.add(
-      atom.commands.add('atom-text-editor', 'nuclide-blame:toggle-blame', () => {
-        if (this._canShowBlame()) {
-          this._showBlame();
-        } else if (this._canHideBlame()) {
-          this._hideBlame();
-        }
+      atom.contextMenu.add({
+        'atom-text-editor': [
+          {
+            label: 'Source Control',
+            submenu: [
+              {
+                label: 'Toggle Blame',
+                command: 'nuclide-blame:toggle-blame',
+                shouldDisplay: (event: MouseEvent) =>
+                  this._canShowBlame() || this._canHideBlame(),
+              },
+            ],
+          },
+        ],
       }),
+    );
+    this._packageDisposables.add(
       atom.commands.add(
         'atom-text-editor',
-        'nuclide-blame:hide-blame',
+        'nuclide-blame:toggle-blame',
         () => {
-          if (this._canHideBlame()) {
+          if (this._canShowBlame()) {
+            this._showBlame();
+          } else if (this._canHideBlame()) {
             this._hideBlame();
           }
         },
       ),
+      atom.commands.add('atom-text-editor', 'nuclide-blame:hide-blame', () => {
+        if (this._canHideBlame()) {
+          this._hideBlame();
+        }
+      }),
     );
   }
 
@@ -106,9 +116,15 @@ class Activation {
       }
 
       if (providerForEditor) {
-        blameGutter = new BlameGutter('nuclide-blame', editor, providerForEditor);
+        blameGutter = new BlameGutter(
+          'nuclide-blame',
+          editor,
+          providerForEditor,
+        );
         this._textEditorToBlameGutter.set(editor, blameGutter);
-        const destroySubscription = editor.onDidDestroy(() => this._editorWasDestroyed(editor));
+        const destroySubscription = editor.onDidDestroy(() =>
+          this._editorWasDestroyed(editor),
+        );
         this._textEditorToDestroySubscription.set(editor, destroySubscription);
 
         track('blame-open', {
@@ -119,9 +135,9 @@ class Activation {
           'Could not open blame: no blame information currently available for this file.',
         );
 
-        getLogger().info(
+        getLogger('nuclide-blame').info(
           'nuclide-blame: Could not open blame: no blame provider currently available for this ' +
-          `file: ${String(editor.getPath())}`,
+            `file: ${String(editor.getPath())}`,
         );
       }
     }
@@ -188,7 +204,10 @@ class Activation {
         callback() {
           findBlameableNodes(contextMenu).forEach(async node => {
             const editor = await goToLocation(node.uri);
-            atom.commands.dispatch(atom.views.getView(editor), 'nuclide-blame:toggle-blame');
+            atom.commands.dispatch(
+              atom.views.getView(editor),
+              'nuclide-blame:toggle-blame',
+            );
           });
         },
         shouldDisplay() {
@@ -202,14 +221,18 @@ class Activation {
     // We don't need to dispose of the contextDisposable when the provider is disabled -
     // it needs to be handled by the provider itself. We only should remove it from the list
     // of the disposables we maintain.
-    return new Disposable(() => this._packageDisposables.remove(contextDisposable));
+    return new Disposable(() =>
+      this._packageDisposables.remove(contextDisposable),
+    );
   }
 }
 
 /**
  * @return list of nodes against which "Toggle Blame" is an appropriate action.
  */
-function findBlameableNodes(contextMenu: FileTreeContextMenu): Array<FileTreeNode> {
+function findBlameableNodes(
+  contextMenu: FileTreeContextMenu,
+): Array<FileTreeNode> {
   const nodes = [];
   for (const node of contextMenu.getSelectedNodes()) {
     if (node == null || !node.uri) {
@@ -243,7 +266,9 @@ export function consumeBlameProvider(provider: BlameProvider): IDisposable {
   return activation.consumeBlameProvider(provider);
 }
 
-export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
+export function addItemsToFileTreeContextMenu(
+  contextMenu: FileTreeContextMenu,
+): IDisposable {
   invariant(activation);
   return activation.addItemsToFileTreeContextMenu(contextMenu);
 }

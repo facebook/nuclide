@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import fs from 'fs';
-import fsPromise from '../../commons-node/fsPromise';
+import fsPromise from 'nuclide-commons/fsPromise';
 import http from 'http';
 import xfetch from '../../commons-node/xfetch';
 
@@ -44,17 +45,19 @@ describe('xfetch', () => {
     let port;
 
     beforeEach(() => {
-      server = http.createServer((req, res) => {
-        fs.readFile(req.url, 'utf8', (err, contents) => {
-          if (err) {
-            res.statusCode = 404;
-            res.end('Not found', 'utf8');
-          } else {
-            res.setHeader('Content-Type', 'text/plain;charset=utf8');
-            res.end(contents, 'utf8');
-          }
-        });
-      }).listen(0);
+      server = http
+        .createServer((req, res) => {
+          fs.readFile(req.url, 'utf8', (err, contents) => {
+            if (err) {
+              res.statusCode = 404;
+              res.end('Not found', 'utf8');
+            } else {
+              res.setHeader('Content-Type', 'text/plain;charset=utf8');
+              res.end(contents, 'utf8');
+            }
+          });
+        })
+        .listen(0);
       port = server.address().port;
     });
 
@@ -79,7 +82,9 @@ describe('xfetch', () => {
       waitsForPromise(async () => {
         // eslint-disable-next-line no-path-concat
         const nonexistingFilename = __filename + 'XXX';
-        const response = await xfetch(`http://0.0.0.0:${port}${nonexistingFilename}`);
+        const response = await xfetch(
+          `http://0.0.0.0:${port}${nonexistingFilename}`,
+        );
         expect(response.ok).toBe(false);
         expect(response.status).toBe(404);
         expect(response.statusText).toBe('Not Found');

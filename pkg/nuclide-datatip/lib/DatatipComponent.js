@@ -6,10 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type {Datatip} from './types';
+
 import React from 'react';
-import {maybeToString} from '../../commons-node/string';
+
+import {maybeToString} from 'nuclide-commons/string';
+import MarkedStringDatatip from './MarkedStringDatatip';
 
 export const DATATIP_ACTIONS = Object.freeze({
   PIN: 'PIN',
@@ -24,33 +29,36 @@ const IconsForAction = {
 type DatatipComponentProps = {
   action: string,
   actionTitle: string,
-  children?: any,
   className?: string,
+  datatip: Datatip,
   onActionClick: Function,
 };
 
 export class DatatipComponent extends React.Component {
   props: DatatipComponentProps;
 
-  constructor(props: DatatipComponentProps) {
-    super(props);
-    (this: any).handleActionClick = this.handleActionClick.bind(this);
-  }
-
-  handleActionClick(event: SyntheticEvent): void {
+  handleActionClick = (event: SyntheticEvent) => {
     this.props.onActionClick();
-  }
+  };
 
   render(): React.Element<any> {
     const {
       className,
-      children,
       action,
       actionTitle,
+      datatip,
+      onActionClick,
       ...props
     } = this.props;
-    delete props.onActionClick;
-    let actionButton;
+
+    let content;
+    if (datatip.component != null) {
+      content = <datatip.component />;
+    } else if (datatip.markedStrings != null) {
+      content = <MarkedStringDatatip markedStrings={datatip.markedStrings} />;
+    }
+
+    let actionButton = null;
     if (action != null && IconsForAction[action] != null) {
       const actionIcon = IconsForAction[action];
       actionButton = (
@@ -61,12 +69,13 @@ export class DatatipComponent extends React.Component {
         />
       );
     }
+
     return (
       <div
         className={`${maybeToString(className)} nuclide-datatip-container`}
         {...props}>
         <div className="nuclide-datatip-content">
-          {children}
+          {content}
         </div>
         {actionButton}
       </div>

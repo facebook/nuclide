@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Task} from '../../commons-node/tasks';
 import type {Action} from './redux/Actions';
 import type {PlatformService} from './PlatformService';
 import type {Observable} from 'rxjs';
-import type {TaskEvent} from '../../commons-node/tasks';
+import type {TaskEvent} from 'nuclide-commons/process';
 import type {BuckBuildSystem} from '../../nuclide-buck/lib/BuckBuildSystem';
 import type {
   ResolvedBuildTarget,
@@ -26,10 +27,10 @@ export type TaskType = 'build' | 'run' | 'test' | 'debug';
 
 export type BuckSubcommand = 'build' | 'run' | 'install' | 'test';
 
-export type TaskSettings = {
+export type TaskSettings = {|
   buildArguments?: Array<string>,
   runArguments?: Array<string>,
-};
+|};
 
 export type AppState = {
   platformGroups: Array<PlatformGroup>,
@@ -43,7 +44,7 @@ export type AppState = {
   buildRuleType: ?ResolvedRuleType,
   selectedDeploymentTarget: ?DeploymentTarget,
   taskSettings: TaskSettings,
-  extraPlatformUi: ?React.Element<any>,
+  platformProviderUi: ?PlatformProviderUi,
 
   lastSessionPlatformName: ?string,
   lastSessionDeviceName: ?string,
@@ -61,15 +62,17 @@ export type SerializedState = {
   selectedDeviceName: ?string,
 };
 
-export type BuildArtifactTask = Task & {
-  getPathToBuildArtifact(): NuclideUri,
+export type BuckBuildOutput = {
+  target: string,
+  successType: string,
+  path: string,
 };
 
-export type BuckBuilder = {
-  build(opts: BuckBuilderBuildOptions): BuildArtifactTask,
+export type BuckBuildTask = Task & {
+  getBuildOutput(): BuckBuildOutput,
 };
 
-export type BuckBuilderBuildOptions = {
+export type BuckBuildOptions = {
   root: NuclideUri,
   target: ResolvedBuildTarget,
   args?: Array<string>,
@@ -80,18 +83,35 @@ export type PlatformGroup = {
   platforms: Array<Platform>,
 };
 
-export type Platform = {
+export type MobilePlatform = {
+  isMobile: true,
   name: string,
   tasksForDevice: (device: ?Device) => Set<TaskType>,
   runTask: (
     builder: BuckBuildSystem,
     type: TaskType,
     buildTarget: ResolvedBuildTarget,
+    taskSettings: TaskSettings,
     device: ?Device,
   ) => Observable<TaskEvent>,
   deviceGroups: Array<DeviceGroup>,
-  extraUiWhenSelected?: (device: ?Device) => ?React.Element<any>,
+  extraUiWhenSelected?: (device: ?Device) => ?PlatformProviderUi,
 };
+
+export type DesktopPlatform = {
+  isMobile: false,
+  name: string,
+  tasksForBuildRuleType: (ruleType: ResolvedRuleType) => Set<TaskType>,
+  runTask: (
+    builder: BuckBuildSystem,
+    type: TaskType,
+    buildTarget: ResolvedBuildTarget,
+    taskSettings: TaskSettings,
+    device: ?Device,
+  ) => Observable<TaskEvent>,
+};
+
+export type Platform = MobilePlatform | DesktopPlatform;
 
 export type DeviceGroup = {
   name: ?string,
@@ -105,4 +125,14 @@ export type Device = {
 export type DeploymentTarget = {
   platform: Platform,
   device: ?Device,
+};
+
+export type PlatformProviderSettings = {
+  onSave: () => mixed,
+  ui: React.Element<any>,
+};
+
+export type PlatformProviderUi = {
+  settings: ?PlatformProviderSettings,
+  toolbar: ?React.Element<any>,
 };

@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
-import fsPromise from '../../commons-node/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 import * as BuckService from '../../nuclide-buck-rpc';
 
 const BUCK_GEN_PATH = 'buck-out/gen';
@@ -87,16 +88,18 @@ export default class LinkTreeManager {
       return bins.map(bin => {
         const linkTreeSuffix = LINK_TREE_SUFFIXES[kind];
         const binPath = this._getDirForBuckTarget(bin);
-        return nuclideUri.join(buckRoot, BUCK_GEN_PATH, binPath + linkTreeSuffix);
+        return nuclideUri.join(
+          buckRoot,
+          BUCK_GEN_PATH,
+          binPath + linkTreeSuffix,
+        );
       });
     } catch (e) {
       return [];
     }
   }
 
-  reset(src: string): void {
-  }
+  reset(src: string): void {}
 
-  dispose() {
-  }
+  dispose() {}
 }

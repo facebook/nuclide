@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export const JS_GRAMMARS = Object.freeze(['source.js', 'source.js.jsx']);

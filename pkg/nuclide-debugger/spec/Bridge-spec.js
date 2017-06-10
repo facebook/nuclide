@@ -6,61 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type CommandDispatcherType from '../lib/CommandDispatcher';
+import type {IPCEvent} from '../lib/types';
+
+import {Subject} from 'rxjs';
 import invariant from 'assert';
 import DebuggerModel from '../lib/DebuggerModel';
-import {sleep} from '../../commons-node/promise';
 import * as utils from './utils';
-
-class MockWebview {
-  _listeners: Map<string, Set<Function>>;
-  _sendSpy: Object;
-
-  constructor() {
-    this._listeners = new Map();
-    this._sendSpy = jasmine.createSpy('send');
-  }
-
-  addEventListener(name, callback) {
-    const set = this._listeners.get(name);
-    if (set) {
-      set.add(callback);
-    } else {
-      this._listeners.set(name, new Set([callback]));
-    }
-  }
-
-  removeEventListener(name, callback) {
-    const set = this._listeners.get(name);
-    if (set) {
-      set.delete(callback);
-    }
-  }
-
-  _simulateDispatch(name, obj) {
-    const set = this._listeners.get(name);
-    if (set) {
-      set.forEach(callback => callback(obj));
-    }
-  }
-
-  getListeners(name): Set<Function> {
-    return this._listeners.get(name) || new Set();
-  }
-
-  // send(...args: any[])
-  get send() {
-    return this._sendSpy;
-  }
-}
 
 describe('Bridge', () => {
   let debuggerModel;
   let breakpointStore;
   let bridge;
   let editor;
-  let mockWebview;
+  let mockDispatcher: CommandDispatcherType;
+  let mockEvent$: Subject<IPCEvent>;
   let path;
 
   function getCallFrameDecorationInRow(row: number): ?atom$Decoration {
@@ -88,7 +51,7 @@ describe('Bridge', () => {
   }
 
   function sendIpcNotification(...args: any[]) {
-    mockWebview._simulateDispatch('ipc-message', {
+    mockEvent$.next({
       channel: 'notification',
       args,
     });
@@ -102,14 +65,33 @@ describe('Bridge', () => {
       const editorPath = editor.getPath();
       invariant(editorPath);
       path = editorPath;
-      mockWebview = new MockWebview();
+
+      mockDispatcher = ((jasmine.createSpyObj('commandDispatcher', [
+        'send',
+        'getEventObservable',
+        'isNewChannel',
+      ]): any): CommandDispatcherType);
+      mockEvent$ = new Subject();
+      // $FlowFixMe override instance methods.
+      mockDispatcher.getEventObservable = jasmine
+        .createSpy('getEventObservable')
+        .andReturn(mockEvent$.asObservable());
+      spyOn(require('../lib/CommandDispatcher'), 'default').andReturn(
+        mockDispatcher,
+      );
+      // $FlowFixMe override instance methods.
+      mockDispatcher.isNewChannel = jasmine
+        .createSpy('isNewChannel')
+        .andReturn(false);
+
       debuggerModel = new DebuggerModel();
       bridge = debuggerModel.getBridge();
       breakpointStore = debuggerModel.getBreakpointStore();
       spyOn(breakpointStore, '_addBreakpoint').andCallThrough();
       spyOn(breakpointStore, '_bindBreakpoint').andCallThrough();
       spyOn(breakpointStore, '_deleteBreakpoint').andCallThrough();
-      bridge._setWebviewElement(((mockWebview: any): WebviewElement));
+      bridge.enterDebugMode();
+      bridge.enableEventsListening();
     });
     runs(() => {
       sendIpcNotification('CallFrameSelected', {
@@ -120,58 +102,22 @@ describe('Bridge', () => {
   });
 
   it('should add decoration to line of current call frame', () => {
-    waitsFor(() => {
-      return Boolean(getCallFrameDecorationInRow(1));
-    }, 'call frame highlight to appear', 100);
+    waitsFor(
+      () => {
+        return Boolean(getCallFrameDecorationInRow(1));
+      },
+      'call frame highlight to appear',
+      100,
+    );
 
     runs(() => {
       expect(getCallFrameDecorationInRow(1)).toBeTruthy();
-    });
-  });
-
-  it('should remove decoration when clear interface', () => {
-    waitsFor(() => {
-      return Boolean(getCallFrameDecorationInRow(1));
-    }, 'call frame highlight to appear', 100);
-
-    runs(() => {
-      expect(getCallFrameDecorationInRow(1)).toBeTruthy();
-      sendIpcNotification('ClearInterface');
-      expect(getCallFrameDecorationInRow(1)).toBeFalsy();
-    });
-  });
-
-  it('should remove decoration and unregister listener when disposed', () => {
-    waitsFor(() => {
-      return Boolean(getCallFrameDecorationInRow(1));
-    }, 'call frame highlight to appear', 100);
-
-    runs(async () => {
-      expect(getCallFrameDecorationInRow(1)).toBeTruthy();
-      bridge.dispose();
-      await sleep(10);
-      expect(getCallFrameDecorationInRow(1)).toBeFalsy();
-      expect(mockWebview.getListeners('ipc-message').size).toEqual(0);
-    });
-  });
-
-  it('should remove decoration and unregister listener after cleanup', () => {
-    waitsFor(() => {
-      return Boolean(getCallFrameDecorationInRow(1));
-    }, 'call frame highlight to appear', 100);
-
-    runs(async () => {
-      expect(getCallFrameDecorationInRow(1)).toBeTruthy();
-      bridge.cleanup();
-      await sleep(10);
-      expect(getCallFrameDecorationInRow(1)).toBeFalsy();
-      expect(mockWebview.getListeners('ipc-message').size).toEqual(0);
     });
   });
 
   it('should send breakpoints over ipc when breakpoints change', () => {
     breakpointStore._addBreakpoint('/tmp/foobarbaz.js', 4);
-    expect(mockWebview.send).toHaveBeenCalledWith('command', 'AddBreakpoint', {
+    expect(mockDispatcher.send).toHaveBeenCalledWith('AddBreakpoint', {
       sourceURL: 'file:///tmp/foobarbaz.js',
       lineNumber: 4,
       condition: '',
@@ -181,16 +127,16 @@ describe('Bridge', () => {
 
   it('should send execution control commands over ipc', () => {
     bridge.continue();
-    expect(mockWebview.send).toHaveBeenCalledWith('command', 'Continue');
+    expect(mockDispatcher.send).toHaveBeenCalledWith('Continue');
 
     bridge.stepOver();
-    expect(mockWebview.send).toHaveBeenCalledWith('command', 'StepOver');
+    expect(mockDispatcher.send).toHaveBeenCalledWith('StepOver');
 
     bridge.stepInto();
-    expect(mockWebview.send).toHaveBeenCalledWith('command', 'StepInto');
+    expect(mockDispatcher.send).toHaveBeenCalledWith('StepInto');
 
     bridge.stepOut();
-    expect(mockWebview.send).toHaveBeenCalledWith('command', 'StepOut');
+    expect(mockDispatcher.send).toHaveBeenCalledWith('StepOut');
   });
 
   it('should move cursor to target line when open source location', () => {
@@ -200,9 +146,13 @@ describe('Bridge', () => {
       lineNumber: line,
     });
 
-    waitsFor(() => {
-      return Boolean(getCursorInRow(line));
-    }, 'cursor at line to appear', 100);
+    waitsFor(
+      () => {
+        return Boolean(getCursorInRow(line));
+      },
+      'cursor at line to appear',
+      100,
+    );
 
     runs(() => {
       expect(editor.getCursorBufferPosition().row).toEqual(line);
@@ -221,13 +171,22 @@ describe('Bridge', () => {
       enabled,
       resolved,
     });
-    expect(breakpointStore._bindBreakpoint)
-      .toHaveBeenCalledWith(path, line, condition, enabled, resolved);
+    expect(breakpointStore._bindBreakpoint).toHaveBeenCalledWith(
+      path,
+      line,
+      condition,
+      enabled,
+      resolved,
+    );
 
     sendIpcNotification('BreakpointRemoved', {
       sourceURL: 'file://' + path,
       lineNumber: line,
     });
-    expect(breakpointStore._deleteBreakpoint).toHaveBeenCalledWith(path, line, false);
+    expect(breakpointStore._deleteBreakpoint).toHaveBeenCalledWith(
+      path,
+      line,
+      false,
+    );
   });
 });

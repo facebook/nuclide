@@ -1,0 +1,222 @@
+{
+  "name": "hyperclick",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Hyperclick UI",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "atomConfig": {
+    "darwinTriggerKeys": {
+      "title": "Trigger keys for macOS",
+      "description": "macOS: Combination of keys to activate Hyperclick while hovering for text",
+      "type": "string",
+      "default": "metaKey",
+      "enum": [
+        {
+          "value": "shiftKey",
+          "description": "shift + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey",
+          "description": "shift + control + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey",
+          "description": "shift + control + option + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey,metaKey",
+          "description": "shift + control + option + command + click"
+        },
+        {
+          "value": "shiftKey,altKey",
+          "description": "shift + option + click"
+        },
+        {
+          "value": "shiftKey,altKey,metaKey",
+          "description": "shift + option + command + click"
+        },
+        {
+          "value": "shiftKey,metaKey",
+          "description": "shift + command + click"
+        },
+        {
+          "value": "ctrlKey",
+          "description": "control + click"
+        },
+        {
+          "value": "ctrlKey,metaKey",
+          "description": "control + command + click"
+        },
+        {
+          "value": "ctrlKey,altKey",
+          "description": "control + option + click"
+        },
+        {
+          "value": "ctrlKey,altKey,metaKey",
+          "description": "control + option + command + click"
+        },
+        {
+          "value": "altKey",
+          "description": "option + click"
+        },
+        {
+          "value": "altKey,metaKey",
+          "description": "option + command + click"
+        },
+        {
+          "value": "metaKey",
+          "description": "command + click"
+        }
+      ]
+    },
+    "linuxTriggerKeys": {
+      "title": "Trigger keys for Linux",
+      "description": "Linux: Combination of keys to activate Hyperclick while hovering for text",
+      "type": "string",
+      "default": "ctrlKey",
+      "enum": [
+        {
+          "value": "shiftKey",
+          "description": "shift + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey",
+          "description": "shift + control + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey",
+          "description": "shift + control + alt + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey,metaKey",
+          "description": "shift + control + alt + meta + click"
+        },
+        {
+          "value": "shiftKey,altKey",
+          "description": "shift + alt + click"
+        },
+        {
+          "value": "shiftKey,altKey,metaKey",
+          "description": "shift + alt + meta + click"
+        },
+        {
+          "value": "shiftKey,metaKey",
+          "description": "shift + meta + click"
+        },
+        {
+          "value": "ctrlKey",
+          "description": "control + click"
+        },
+        {
+          "value": "ctrlKey,metaKey",
+          "description": "control + meta + click"
+        },
+        {
+          "value": "ctrlKey,altKey",
+          "description": "control + alt + click"
+        },
+        {
+          "value": "ctrlKey,altKey,metaKey",
+          "description": "control + alt + meta + click"
+        },
+        {
+          "value": "altKey",
+          "description": "alt + click"
+        },
+        {
+          "value": "altKey,metaKey",
+          "description": "alt + meta + click"
+        },
+        {
+          "value": "metaKey",
+          "description": "meta + click"
+        }
+      ]
+    },
+    "win32TriggerKeys": {
+      "title": "Trigger keys for Windows",
+      "description": "Windows: Combination of keys to activate Hyperclick while hovering for text",
+      "type": "string",
+      "default": "ctrlKey",
+      "enum": [
+        {
+          "value": "shiftKey",
+          "description": "shift + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey",
+          "description": "shift + control + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey",
+          "description": "shift + control + alt + click"
+        },
+        {
+          "value": "shiftKey,ctrlKey,altKey,metaKey",
+          "description": "shift + control + alt + meta + click"
+        },
+        {
+          "value": "shiftKey,altKey",
+          "description": "shift + alt + click"
+        },
+        {
+          "value": "shiftKey,altKey,metaKey",
+          "description": "shift + alt + meta + click"
+        },
+        {
+          "value": "shiftKey,metaKey",
+          "description": "shift + meta + click"
+        },
+        {
+          "value": "ctrlKey",
+          "description": "control + click"
+        },
+        {
+          "value": "ctrlKey,metaKey",
+          "description": "control + meta + click"
+        },
+        {
+          "value": "ctrlKey,altKey",
+          "description": "control + alt + click"
+        },
+        {
+          "value": "ctrlKey,altKey,metaKey",
+          "description": "control + alt + meta + click"
+        },
+        {
+          "value": "altKey",
+          "description": "alt + click"
+        },
+        {
+          "value": "altKey,metaKey",
+          "description": "alt + meta + click"
+        },
+        {
+          "value": "metaKey",
+          "description": "meta + click"
+        }
+      ]
+    }
+  },
+  "consumedServices": {
+    "hyperclick.provider": {
+      "versions": {
+        "0.0.0": "addLegacyProvider"
+      }
+    },
+    "hyperclick": {
+      "versions": {
+        "0.1.0": "addProvider"
+      }
+    }
+  },
+  "providedServices": {
+    "hyperclick.observeTextEditor": {
+      "versions": {
+        "0.0.0": "observeTextEditor"
+      }
+    }
+  },
+  "private": true
+}

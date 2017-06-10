@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ServerStatusUpdate} from '../../nuclide-flow-rpc';
-import type {BusySignalMessage} from '../../nuclide-busy-signal/lib/types';
 
 import {Observable} from 'rxjs';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {addMatchers} from '../../nuclide-test-helpers';
 
 import {serverStatusUpdatesToBusyMessages} from '..';
@@ -45,31 +46,51 @@ describe('serverStatusUpdatesToBusyMessages', () => {
           pathToRoot: 'nuclide://host.example.com/remote/root',
           status: 'ready',
         },
-      ];
-      const expected: Array<BusySignalMessage> = [
+        // Ending the stream should also dispose this one.
         {
+          pathToRoot: '/local/test',
           status: 'busy',
-          id: 0,
+        },
+      ];
+      const expected = [
+        {
           message: 'Flow server is busy (/local/root)',
         },
         {
-          status: 'busy',
-          id: 1,
           message: 'Flow server is initializing (host.example.com:/remote/root)',
         },
         {
-          status: 'done',
-          id: 0,
+          message: 'Flow server is busy (/local/root)',
+          dispose: true,
         },
         {
-          status: 'done',
-          id: 1,
+          message: 'Flow server is initializing (host.example.com:/remote/root)',
+          dispose: true,
+        },
+        {
+          message: 'Flow server is busy (/local/test)',
+        },
+        {
+          message: 'Flow server is busy (/local/test)',
+          dispose: true,
         },
       ];
 
-      expect(
-        await serverStatusUpdatesToBusyMessages(Observable.from(input)).toArray().toPromise(),
-      ).diffJson(expected);
+      const messages = [];
+      const mockBusySignal = {
+        reportBusyWhile() {
+          throw new Error('stub');
+        },
+        reportBusy(message) {
+          messages.push({message});
+          return new UniversalDisposable(() => {
+            messages.push({message, dispose: true});
+          });
+        },
+        dispose() {},
+      };
+      serverStatusUpdatesToBusyMessages(Observable.from(input), mockBusySignal);
+      expect(messages).diffJson(expected);
     });
   });
 });

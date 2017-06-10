@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
@@ -14,12 +15,12 @@ import type {ServerConnectionConfiguration} from './ServerConnection';
 
 import crypto from 'crypto';
 import invariant from 'assert';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import keytarWrapper from './keytarWrapper';
 
 const CONFIG_DIR = 'nuclide-connections';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-connection');
 
 /**
  * Version of ServerConnectionConfiguration that uses string instead of Buffer for fields so it can
@@ -36,15 +37,20 @@ type SerializableServerConnectionConfiguration = {
 
 // Insecure configs are used for testing only.
 function isInsecure(config: ServerConnectionConfiguration): boolean {
-  return config.clientKey == null && config.clientCertificate == null
-      && config.certificateAuthorityCertificate == null;
+  return (
+    config.clientKey == null &&
+    config.clientCertificate == null &&
+    config.certificateAuthorityCertificate == null
+  );
 }
 
 function getStorageKey(host: string): string {
   return `${CONFIG_DIR}:${host}`;
 }
 
-export function getConnectionConfig(host: string): ?ServerConnectionConfiguration {
+export function getConnectionConfig(
+  host: string,
+): ?ServerConnectionConfiguration {
   const storedConfig = localStorage.getItem(getStorageKey(host));
   if (storedConfig == null) {
     return null;
@@ -98,11 +104,19 @@ function encryptConfig(
   sha1.update(`${remoteProjectConfig.host}:${remoteProjectConfig.port}`);
   const sha1sum = sha1.digest('hex');
 
-  const {certificateAuthorityCertificate, clientCertificate, clientKey} = remoteProjectConfig;
+  const {
+    certificateAuthorityCertificate,
+    clientCertificate,
+    clientKey,
+  } = remoteProjectConfig;
   invariant(clientKey);
   const realClientKey = clientKey.toString(); // Convert from Buffer to string.
   const {salt, password, encryptedString} = encryptString(realClientKey);
-  keytarWrapper.replacePassword('nuclide.remoteProjectConfig', sha1sum, password);
+  keytarWrapper.replacePassword(
+    'nuclide.remoteProjectConfig',
+    sha1sum,
+    password,
+  );
 
   const clientKeyWithSalt = encryptedString + '.' + salt;
 
@@ -131,13 +145,20 @@ function decryptConfig(
   sha1.update(`${remoteProjectConfig.host}:${remoteProjectConfig.port}`);
   const sha1sum = sha1.digest('hex');
 
-  const password = keytarWrapper.getPassword('nuclide.remoteProjectConfig', sha1sum);
+  const password = keytarWrapper.getPassword(
+    'nuclide.remoteProjectConfig',
+    sha1sum,
+  );
 
   if (!password) {
     throw new Error('Cannot find password for encrypted client key');
   }
 
-  const {certificateAuthorityCertificate, clientCertificate, clientKey} = remoteProjectConfig;
+  const {
+    certificateAuthorityCertificate,
+    clientCertificate,
+    clientKey,
+  } = remoteProjectConfig;
   invariant(clientKey);
   const [encryptedString, salt] = clientKey.split('.');
 
@@ -146,10 +167,13 @@ function decryptConfig(
   }
 
   const restoredClientKey = decryptString(encryptedString, password, salt);
-  //  "nolint" is to suppress ArcanistPrivateKeyLinter errors
-  if (!restoredClientKey.startsWith('-----BEGIN RSA PRIVATE KEY-----')) { /* nolint */
-    getLogger().error(
-      `decrypted client key did not start with expected header: ${restoredClientKey}`);
+  // "nolint" is to suppress ArcanistPrivateKeyLinter errors
+  if (
+    !restoredClientKey.startsWith('-----BEGIN RSA PRIVATE KEY-----') // nolint
+  ) {
+    getLogger('nuclide-remote-connection').error(
+      `decrypted client key did not start with expected header: ${restoredClientKey}`,
+    );
   }
 
   invariant(certificateAuthorityCertificate);
@@ -158,7 +182,9 @@ function decryptConfig(
     host: remoteProjectConfig.host,
     port: remoteProjectConfig.port,
     family: remoteProjectConfig.family,
-    certificateAuthorityCertificate: new Buffer(certificateAuthorityCertificate),
+    certificateAuthorityCertificate: new Buffer(
+      certificateAuthorityCertificate,
+    ),
     clientCertificate: new Buffer(clientCertificate),
     clientKey: new Buffer(restoredClientKey),
   };
@@ -166,9 +192,10 @@ function decryptConfig(
 
 function decryptString(text: string, password: string, salt: string): string {
   const decipher = crypto.createDecipheriv(
-      'aes-128-cbc',
-      new Buffer(password, 'base64'),
-      new Buffer(salt, 'base64'));
+    'aes-128-cbc',
+    new Buffer(password, 'base64'),
+    new Buffer(salt, 'base64'),
+  );
 
   let decryptedString = decipher.update(text, 'base64', 'utf8');
   decryptedString += decipher.final('utf8');
@@ -176,14 +203,17 @@ function decryptString(text: string, password: string, salt: string): string {
   return decryptedString;
 }
 
-function encryptString(text: string): {password: string, salt: string, encryptedString: string} {
+function encryptString(
+  text: string,
+): {password: string, salt: string, encryptedString: string} {
   const password = crypto.randomBytes(16).toString('base64');
   const salt = crypto.randomBytes(16).toString('base64');
 
   const cipher = crypto.createCipheriv(
     'aes-128-cbc',
     new Buffer(password, 'base64'),
-    new Buffer(salt, 'base64'));
+    new Buffer(salt, 'base64'),
+  );
 
   let encryptedString = cipher.update(
     text,

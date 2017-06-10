@@ -6,13 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {waitsForFile} from '../pkg/commons-atom/testHelpers';
 import {copyFixture} from '../pkg/nuclide-test-helpers';
-import {
-  describeRemotableTest,
-} from './utils/remotable-tests';
+import {describeRemotableTest} from './utils/remotable-tests';
 import {
   getAutocompleteSuggestions,
   waitsForAutocompleteSuggestions,
@@ -27,7 +26,9 @@ describeRemotableTest('Python Integration Test', context => {
     waitsForPromise({timeout: 60000}, async () => {
       pyProjPath = await copyFixture('python_project_1', __dirname);
       await context.setProject(pyProjPath);
-      textEditor = await atom.workspace.open(context.getProjectRelativePath('Foo.py'));
+      textEditor = await atom.workspace.open(
+        context.getProjectRelativePath('Foo.py'),
+      );
     });
 
     waitsForFile('Foo.py');
@@ -53,10 +54,6 @@ describeRemotableTest('Python Integration Test', context => {
     });
 
     // Hyperclick
-    waitsForHyperclickResult(
-      [6, 8],
-      'os.py',
-      [0, 0],
-    );
+    waitsForHyperclickResult([6, 8], 'os.py', [0, 0]);
   });
 });

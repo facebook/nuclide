@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DistractionFreeModeProvider} from '..';
 
 import invariant from 'assert';
 
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 export function getBuiltinProviders(): Array<DistractionFreeModeProvider> {
   const providers = [];
@@ -27,6 +28,20 @@ export function getBuiltinProviders(): Array<DistractionFreeModeProvider> {
     providers.push(new FindAndReplaceProvider('project-find'));
   }
 
+  if (atom.workspace.getLeftDock != null) {
+    providers.push(new DockProvider(atom.workspace.getLeftDock(), 'left-dock'));
+  }
+  if (atom.workspace.getRightDock != null) {
+    providers.push(
+      new DockProvider(atom.workspace.getRightDock(), 'right-dock'),
+    );
+  }
+  if (atom.workspace.getBottomDock != null) {
+    providers.push(
+      new DockProvider(atom.workspace.getBottomDock(), 'bottom-dock'),
+    );
+  }
+
   return providers;
 }
 
@@ -39,9 +54,11 @@ class FindAndReplaceProvider {
     const paneElem = document.querySelector('.' + this.name);
     if (paneElem != null) {
       const paneContainer = paneElem.parentElement;
-      if (paneContainer != null
-        && paneContainer.style != null
-        && paneContainer.style.display != null) {
+      if (
+        paneContainer != null &&
+        paneContainer.style != null &&
+        paneContainer.style.display != null
+      ) {
         const display = paneContainer.style.display;
         if (display !== 'none') {
           return true;
@@ -52,7 +69,9 @@ class FindAndReplaceProvider {
     return false;
   }
   toggle(): void {
-    if (!atom.packages.isPackageActive('find-and-replace')) { return; }
+    if (!atom.packages.isPackageActive('find-and-replace')) {
+      return;
+    }
 
     const command = this.isVisible() ? 'toggle' : 'show';
     atom.commands.dispatch(
@@ -102,5 +121,23 @@ class StatusBarProvider {
   }
   _getStatusBarElement(): ?HTMLElement {
     return document.querySelector('status-bar');
+  }
+}
+
+class DockProvider {
+  _dock: atom$Dock;
+  name: string;
+
+  constructor(dock: atom$Dock, name: string) {
+    this._dock = dock;
+    this.name = name;
+  }
+
+  isVisible(): boolean {
+    return this._dock.isVisible();
+  }
+
+  toggle(): void {
+    this._dock.toggle();
   }
 }

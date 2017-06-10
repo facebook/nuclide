@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PythonDiagnostic} from '../../nuclide-python-rpc';
 
 import {Point, Range} from 'atom';
-import {wordAtPosition, trimRange} from '../../commons-atom/range';
-import {getLogger} from '../../nuclide-logging';
+import {wordAtPosition, trimRange} from 'nuclide-commons-atom/range';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-python');
 
 function tokenizedLineForRow(
   editor: atom$TextEditor,
@@ -29,7 +30,11 @@ function tokenizedLineForRow(
 // Finds the range of the module name from a pyflakes F4XX message.
 // Assumes that the module name exists.
 // Ported from https://github.com/AtomLinter/linter-flake8
-function getModuleNameRange(message: string, line: number, editor: atom$TextEditor): ?Range {
+function getModuleNameRange(
+  message: string,
+  line: number,
+  editor: atom$TextEditor,
+): ?Range {
   // Split on space or dot to get the basename or alias, i.e. retrieve <a> in
   // "from .. import <a>" or "from .. import .. as <a>".
   const match = /'([^']+)'/.exec(message);
@@ -49,10 +54,15 @@ function getModuleNameRange(message: string, line: number, editor: atom$TextEdit
     for (let i = 0; i < tokenizedLine.tokens.length; i++) {
       const token = tokenizedLine.tokens[i];
       if (foundImport && token.value === symbol) {
-        return new Range([lineNumber, offset], [lineNumber, offset + token.value.length]);
+        return new Range(
+          [lineNumber, offset],
+          [lineNumber, offset + token.value.length],
+        );
       }
-      if (token.value === 'import' &&
-          token.scopes.indexOf('keyword.control.import.python') >= 0) {
+      if (
+        token.value === 'import' &&
+        token.scopes.indexOf('keyword.control.import.python') >= 0
+      ) {
         foundImport = true;
       }
       offset += token.value.length;
@@ -65,7 +75,10 @@ function getModuleNameRange(message: string, line: number, editor: atom$TextEdit
 // Computes an appropriate underline range using the diagnostic type information.
 // Range variants include underlining the entire line, entire trimmed line,
 // or a word or whitespace range within the line.
-export function getDiagnosticRange(diagnostic: PythonDiagnostic, editor: atom$TextEditor): Range {
+export function getDiagnosticRange(
+  diagnostic: PythonDiagnostic,
+  editor: atom$TextEditor,
+): Range {
   const buffer = editor.getBuffer();
 
   // The diagnostic message's line index may be out of bounds if buffer contents
@@ -73,7 +86,7 @@ export function getDiagnosticRange(diagnostic: PythonDiagnostic, editor: atom$Te
   // unsafeLine is out of bounds.
   const {code, line: unsafeLine, column, message} = diagnostic;
   const lastRow = buffer.getLastRow();
-  const line = (unsafeLine <= lastRow) ? unsafeLine : lastRow;
+  const line = unsafeLine <= lastRow ? unsafeLine : lastRow;
 
   const lineLength = buffer.lineLengthForRow(line);
   const trimmedRange = trimRange(editor, buffer.rangeForRow(line, false));
@@ -96,12 +109,12 @@ export function getDiagnosticRange(diagnostic: PythonDiagnostic, editor: atom$Te
       case 'E2':
         // '#' comment spacing
         if (code.startsWith('E26')) {
-          return new Range([line, column - 1], [line, trimmedEndCol]);
+          return new Range([line, column], [line, trimmedEndCol]);
         }
         const numericCode = parseInt(code.slice(1), 10);
         // Missing whitespace - underline the closest symbol
         if ((numericCode >= 225 && numericCode <= 231) || numericCode === 275) {
-          return new Range([line, column - 1], [line, column]);
+          return new Range([line, column], [line, column + 1]);
         }
         // Extra whitespace - underline the offending whitespace
         const whitespace = wordAtPosition(
@@ -158,7 +171,10 @@ export function getDiagnosticRange(diagnostic: PythonDiagnostic, editor: atom$Te
     }
   } catch (e) {
     const diagnosticAsString = `${diagnostic.file}:${unsafeLine}:${column} - ${code}: ${message}`;
-    logger.error(`Failed to find flake8 diagnostic range: ${diagnosticAsString}`, e);
+    logger.error(
+      `Failed to find flake8 diagnostic range: ${diagnosticAsString}`,
+      e,
+    );
   }
 
   return new Range([line, trimmedStartCol], [line, trimmedEndCol]);

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Activation} from '../lib/Activation';
@@ -47,7 +48,9 @@ describe('current-working-directory', () => {
 
     it('errors if you set an invalid cwd', () => {
       const api = new CwdApi('/a/b/c');
-      const setInvalidCwd = () => { api.setCwd('/x/y/z'); };
+      const setInvalidCwd = () => {
+        api.setCwd('/x/y/z');
+      };
       expect(setInvalidCwd).toThrow();
     });
 
@@ -63,10 +66,7 @@ describe('current-working-directory', () => {
 
 describe('CwdApi event handling', () => {
   it('falls back to an existing project when you remove one', () => {
-    let projects = [
-      new Directory('/a/b/c'),
-      new Directory('/d/e/f'),
-    ];
+    let projects = [new Directory('/a/b/c'), new Directory('/d/e/f')];
     spyOn(atom.project, 'getDirectories').andCallFake(() => projects);
 
     const api = new CwdApi('/d/e/f');
@@ -87,7 +87,9 @@ describe('CwdApi event handling', () => {
     spyOn(atom.project, 'getDirectories').andCallFake(() => projects);
 
     let callback;
-    const onDidChangePaths = cb => { callback = cb; };
+    const onDidChangePaths = cb => {
+      callback = cb;
+    };
     spyOn(atom.project, 'onDidChangePaths').andCallFake(onDidChangePaths);
 
     // The initial path does not exist, so observeCwd is initially undefined.

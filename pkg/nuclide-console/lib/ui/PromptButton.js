@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -38,7 +39,9 @@ export default class PromptButton extends React.Component {
 
   render(): ?React.Element<any> {
     return (
-      <span className="nuclide-console-prompt-wrapper" onClick={this._handleClick}>
+      <span
+        className="nuclide-console-prompt-wrapper"
+        onClick={this._handleClick}>
         <span className="nuclide-console-prompt-label">
           {this.props.children}
         </span>
@@ -52,12 +55,14 @@ export default class PromptButton extends React.Component {
     const menu = new remote.Menu();
     // TODO: Sort alphabetically by label
     this.props.options.forEach(option => {
-      menu.append(new remote.MenuItem({
-        type: 'checkbox',
-        checked: this.props.value === option.id,
-        label: option.label,
-        click: () => this.props.onChange(option.id),
-      }));
+      menu.append(
+        new remote.MenuItem({
+          type: 'checkbox',
+          checked: this.props.value === option.id,
+          label: option.label,
+          click: () => this.props.onChange(option.id),
+        }),
+      );
     });
     menu.popup(currentWindow, event.clientX, event.clientY);
   }

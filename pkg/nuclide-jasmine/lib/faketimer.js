@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -32,12 +33,14 @@ function resetTimeouts(): void {
 function fakeSetTimeout(callback: () => ?any, ms: number): number {
   const id = ++timeoutCount;
   timeouts.push([id, now + ms, callback]);
-  timeouts.sort(([, strikeTime0], [, strikeTime1]) => strikeTime0 - strikeTime1);
+  timeouts.sort(
+    ([, strikeTime0], [, strikeTime1]) => strikeTime0 - strikeTime1,
+  );
   return id;
 }
 
 function fakeClearTimeout(idToClear: number): void {
-  timeouts = timeouts.filter(([id]) => (id !== idToClear));
+  timeouts = timeouts.filter(([id]) => id !== idToClear);
 }
 
 function fakeSetInterval(callback: () => ?any, ms: number): number {

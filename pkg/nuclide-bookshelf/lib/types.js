@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type Immutable from 'immutable';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 export type BookShelfState = {
   repositoryPathToState: Immutable.Map<NuclideUri, BookShelfRepositoryState>,
@@ -35,19 +36,19 @@ export type RepositoryShortHeadChange = {
   activeShortHead: string,
 };
 
-export type ActiveShortHeadChangeBehaviorValue = 'Always Ignore'
+export type ActiveShortHeadChangeBehaviorValue =
+  | 'Always Ignore'
   | 'Always Restore'
-  | 'Prompt to Restore'
-;
+  | 'Prompt to Restore';
 
-export type ActionTypeValue = 'add-project-repository'
+export type ActionTypeValue =
+  | 'add-project-repository'
   | 'complete-restoring-repository-state'
   | 'remove-project-repository'
   | 'restore-pane-item-state'
   | 'start-restoring-repository-state'
   | 'update-pane-item-state'
-  | 'update-repository-bookmarks'
-;
+  | 'update-repository-bookmarks';
 
 export type AddProjectRepositoryAction = {
   payload: {
@@ -102,11 +103,11 @@ export type UpdateRepositoryBookmarksAction = {
 };
 
 // Flow Issue: sorting alphabetically has a flow union issue.
-export type Action = UpdatePaneItemStateAction
+export type Action =
+  | UpdatePaneItemStateAction
   | RestorePaneItemStateAction
   | UpdateRepositoryBookmarksAction
   | StartRestoringRepositoryStateAction
   | CompleteRestoringRepositoryStateAction
   | AddProjectRepositoryAction
-  | RemoveProjectRepositoryAction
-;
+  | RemoveProjectRepositoryAction;

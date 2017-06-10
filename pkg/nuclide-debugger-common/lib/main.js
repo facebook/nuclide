@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export {default as ClientCallback} from './ClientCallback';
@@ -14,3 +15,5 @@ export {
   DebuggerRpcServiceBase,
   DebuggerRpcWebSocketService,
 } from './DebuggerRpcServiceBase';
+
+export {default as FileCache} from './FileCache';

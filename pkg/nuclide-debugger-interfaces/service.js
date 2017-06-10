@@ -6,17 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  DebuggerLaunchAttachProvider,
-} from '../nuclide-debugger-base';
-import type {NuclideUri} from '../commons-node/nuclideUri';
+import type {DebuggerLaunchAttachProvider} from '../nuclide-debugger-base';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {NuclideEvaluationExpression} from './rpc-types';
 
 export type NuclideDebuggerProvider = {
   name: string,
-  getLaunchAttachProvider(connection: NuclideUri): ?DebuggerLaunchAttachProvider,
+  getLaunchAttachProvider(
+    connection: NuclideUri,
+  ): ?DebuggerLaunchAttachProvider,
 };
 
 export type NuclideEvaluationExpressionProvider = {

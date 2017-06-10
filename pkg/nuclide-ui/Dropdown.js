@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {IconName} from './types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
-import {Button, ButtonSizes} from './Button';
-import {Icon} from './Icon';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {Icon} from 'nuclide-commons-ui/Icon';
 import classnames from 'classnames';
 import invariant from 'assert';
 import electron from 'electron';
@@ -28,23 +29,26 @@ type Separator = {
   type: 'separator',
 };
 
-export type Option = Separator | {
-  type?: void,
-  value: any,
-  label: string,
-  selectedLabel?: string,
-  submenu?: void,
-  icon?: IconName,
-  iconset?: string,
-  disabled?: boolean,
-} | {
-  type: 'submenu',
-  label: string,
-  submenu: Array<Option>,
-  icon?: IconName,
-  iconset?: string,
-  disabled?: boolean,
-};
+export type Option =
+  | Separator
+  | {
+      type?: void,
+      value: any,
+      label: string,
+      selectedLabel?: string,
+      submenu?: void,
+      icon?: IconName,
+      iconset?: string,
+      disabled?: boolean,
+    }
+  | {
+      type: 'submenu',
+      label: string,
+      submenu: Array<Option>,
+      icon?: IconName,
+      iconset?: string,
+      disabled?: boolean,
+    };
 
 type Props = {
   className: string,
@@ -125,7 +129,9 @@ export class Dropdown extends React.Component {
       text = option.label;
     }
 
-    if (text == null || text === '') { return null; }
+    if (text == null || text === '') {
+      return null;
+    }
     return text;
   }
 
@@ -141,25 +147,29 @@ export class Dropdown extends React.Component {
       if (option.type === 'separator') {
         menu.append(new remote.MenuItem({type: 'separator'}));
       } else if (option.type === 'submenu') {
-        const submenu = (((option.submenu): any): Array<Option>);
-        menu.append(new remote.MenuItem({
-          type: 'submenu',
-          label: option.label,
-          enabled: option.disabled !== true,
-          submenu: this._menuFromOptions(submenu),
-        }));
+        const submenu = ((option.submenu: any): Array<Option>);
+        menu.append(
+          new remote.MenuItem({
+            type: 'submenu',
+            label: option.label,
+            enabled: option.disabled !== true,
+            submenu: this._menuFromOptions(submenu),
+          }),
+        );
       } else {
-        menu.append(new remote.MenuItem({
-          type: 'checkbox',
-          checked: this._optionIsSelected(this.props.value, option.value),
-          label: option.label,
-          enabled: option.disabled !== true,
-          click: () => {
-            if (this.props.onChange != null) {
-              this.props.onChange(option.value);
-            }
-          },
-        }));
+        menu.append(
+          new remote.MenuItem({
+            type: 'checkbox',
+            checked: this._optionIsSelected(this.props.value, option.value),
+            label: option.label,
+            enabled: option.disabled !== true,
+            click: () => {
+              if (this.props.onChange != null) {
+                this.props.onChange(option.value);
+              }
+            },
+          }),
+        );
       }
     });
     return menu;
@@ -177,7 +187,7 @@ export class Dropdown extends React.Component {
       if (option.type === 'separator') {
         continue;
       } else if (option.type === 'submenu') {
-        const submenu = (((option.submenu): any): Array<Option>);
+        const submenu = ((option.submenu: any): Array<Option>);
         result = this._findSelectedOption(submenu);
       } else if (this._optionIsSelected(this.props.value, option.value)) {
         result = option;
@@ -211,17 +221,15 @@ const noop = () => {};
  */
 export function DropdownButton(props: DropdownButtonProps): React.Element<any> {
   const ButtonComponent = props.buttonComponent || Button;
-  const className = classnames(
-    'nuclide-ui-dropdown',
-    props.className,
-    {
-      'nuclide-ui-dropdown-flat': props.isFlat === true,
-    },
-  );
+  const className = classnames('nuclide-ui-dropdown', props.className, {
+    'nuclide-ui-dropdown-flat': props.isFlat === true,
+  });
 
   const label = props.children == null
     ? null
-    : <span className="nuclide-dropdown-label-text-wrapper">{props.children}</span>;
+    : <span className="nuclide-dropdown-label-text-wrapper">
+        {props.children}
+      </span>;
 
   return (
     <ButtonComponent
@@ -231,20 +239,21 @@ export function DropdownButton(props: DropdownButtonProps): React.Element<any> {
       disabled={props.disabled === true}
       onClick={props.onExpand || noop}>
       {label}
-      <Icon
-        icon="triangle-down"
-        className="nuclide-ui-dropdown-icon"
-      />
+      <Icon icon="triangle-down" className="nuclide-ui-dropdown-icon" />
     </ButtonComponent>
   );
 }
 
 function getButtonSize(size: ?ShortButtonSize): ButtonSize {
   switch (size) {
-    case 'xs': return 'EXTRA_SMALL';
-    case 'sm': return 'SMALL';
-    case 'lg': return 'LARGE';
-    default: return 'SMALL';
+    case 'xs':
+      return 'EXTRA_SMALL';
+    case 'sm':
+      return 'SMALL';
+    case 'lg':
+      return 'LARGE';
+    default:
+      return 'SMALL';
   }
 }
 

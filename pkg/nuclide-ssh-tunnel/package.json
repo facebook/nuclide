@@ -1,0 +1,33 @@
+{
+  "name": "nuclide-ssh-tunnel",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Adds a panel for managing ssh tunnels from a remote host to localhost",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "activationCommands": {},
+  "deserializers": {
+    "nuclide.SshTunnelsPanel": "deserializeSshTunnelsPanel"
+  },
+  "consumedServices": {
+    "nuclide.workspace-views": {
+      "versions": {
+        "0.0.0": "consumeWorkspaceViewsService"
+      }
+    }
+  },
+  "providedServices": {
+    "nuclide.ssh-tunnel": {
+      "versions": {
+        "0.0.0": "provideSshTunnelService"
+      }
+    }
+  },
+  "activationHooks": [
+    "nuclide_ssh_tunnels:gk:nuclide"
+  ]
+}

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
@@ -36,10 +37,9 @@ class Activation {
       }),
     );
     this._subscriptions.add(
-      atom.commands.add(
-        'atom-workspace',
-        'sample-web-view:open-url',
-        () => this._openUrl()),
+      atom.commands.add('atom-workspace', 'sample-web-view:open-url', () =>
+        this._openUrl(),
+      ),
     );
   }
 

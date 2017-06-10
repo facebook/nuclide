@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {MerlinCases} from '../../nuclide-ocaml-rpc';
@@ -13,7 +14,10 @@ import type {MerlinCases} from '../../nuclide-ocaml-rpc';
 import {Range} from 'atom';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 
-export async function cases(editor: atom$TextEditor, position: atom$Point): Promise<void> {
+export async function cases(
+  editor: atom$TextEditor,
+  position: atom$Point,
+): Promise<void> {
   const path = editor.getPath();
   if (path == null) {
     return;
@@ -23,14 +27,20 @@ export async function cases(editor: atom$TextEditor, position: atom$Point): Prom
     return;
   }
   await instance.pushNewBuffer(path, editor.getText());
-  const casesResult: ?MerlinCases = await instance.cases(path, position, position);
+  const casesResult: ?MerlinCases = await instance.cases(
+    path,
+    position,
+    position,
+  );
   if (casesResult == null) {
     return;
   }
   const [{start, end}, content] = casesResult;
 
-  editor.getBuffer().setTextInRange(
-    new Range([start.line - 1, start.col], [end.line - 1, end.col]),
-    content,
-  );
+  editor
+    .getBuffer()
+    .setTextInRange(
+      new Range([start.line - 1, start.col], [end.line - 1, end.col]),
+      content,
+    );
 }

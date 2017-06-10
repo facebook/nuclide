@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // This is a stubbed implementation that other packages use to record analytics data & performance.
@@ -13,5 +14,4 @@ export function track(
   eventName: string,
   values?: {[key: string]: mixed},
   immediate?: boolean,
-): ?Promise<mixed> {
-}
+): ?Promise<mixed> {}

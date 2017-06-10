@@ -17,33 +17,6 @@ integration with support for [Mercurial](https://www.mercurial-scm.org/).
 * TOC
 {:toc}
 
-## Diff View
-
-The Diff View allows you to quickly see what has changed in the files you have modified. It
-shows what has changed from the current committed revision.
-
-*Right-click* in the editor and select `Source Control | Open in Diff View` in the context-aware menu (alternatively, you can use `Alt-Cmd-Shift-D` on Mac or `Alt-Ctrl-Shift-D` on Linux).
-
-![](/static/images/docs/feature-hg-diff-view-access.png)
-
-The Diff View opens in a new tab in the [Editing Area](/docs/editor/basics/#editing). In the bottom pane are the files that
-have been modified, along with the Mercurial commit on which this diff is based. Click on a file
-in the bottom pane to see the changes for that file.
-
-The left pane shows what is currently committed for that file, while the right pane displays what you have
-changed. The highlighted sections are the changed lines.
-
-Here is a picture of the Diff View in action.
-
-![](/static/images/docs/feature-hg-diff-view-actual.png)
-
-If you are tracking, for example, a remote bookmark, and you have a stack of diffs that that have
-not been pushed to that remote, then the Diff View will show you the entire stack of bookmarks.
-If you click on each bookmark, you will see the changes associated with that bookmark and all of its
-children, as compared to the remotely tracked bookmark.
-
-![](/static/images/docs/feature-hg-diff-view-stacked.png)
-
 ## Blame
 
 Nuclide provides the capability to show you line-by-line

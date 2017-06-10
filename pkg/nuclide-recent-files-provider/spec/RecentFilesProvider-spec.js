@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Provider} from '../../nuclide-quick-open/lib/types';
@@ -43,7 +44,6 @@ const FakeRecentFilesService = {
 
 let fakeGetProjectPathsImpl = () => [];
 const fakeGetProjectPaths = () => fakeGetProjectPathsImpl();
-
 
 // Per https://github.com/facebook/react/issues/4692#issuecomment-163029873
 class Wrapper extends React.Component {
@@ -135,8 +135,12 @@ describe('RecentFilesProvider', () => {
       };
       invariant(provider.getComponentForItem != null);
       const reactElement = provider.getComponentForItem(mockResult);
-      expect(reactElement.props.title).toEqual(new Date(mockResult.timestamp).toLocaleString());
-      const renderedComponent = TestUtils.renderIntoDocument(<Wrapper>{reactElement}</Wrapper>);
+      expect(reactElement.props.title).toEqual(
+        new Date(mockResult.timestamp).toLocaleString(),
+      );
+      const renderedComponent = TestUtils.renderIntoDocument(
+        <Wrapper>{reactElement}</Wrapper>,
+      );
       expect(
         TestUtils.scryRenderedDOMComponentsWithClass(
           renderedComponent,
@@ -162,28 +166,36 @@ describe('RecentFilesProvider', () => {
       const DAYS = 24 * HOURS;
 
       invariant(provider.getComponentForItem != null);
-      expect(provider.getComponentForItem({
-        path: '/some/arbitrary/path',
-        timestamp: now,
-      }).props.style.opacity).toEqual(1);
+      expect(
+        provider.getComponentForItem({
+          path: '/some/arbitrary/path',
+          timestamp: now,
+        }).props.style.opacity,
+      ).toEqual(1);
 
       invariant(provider.getComponentForItem != null);
-      expect(provider.getComponentForItem({
-        path: '/some/arbitrary/path',
-        timestamp: now - 7 * HOURS,
-      }).props.style.opacity).toEqual(1);
+      expect(
+        provider.getComponentForItem({
+          path: '/some/arbitrary/path',
+          timestamp: now - 7 * HOURS,
+        }).props.style.opacity,
+      ).toEqual(1);
 
       invariant(provider.getComponentForItem != null);
-      expect(provider.getComponentForItem({
-        path: '/some/arbitrary/path',
-        timestamp: now - 8 * HOURS,
-      }).props.style.opacity).not.toBeGreaterThan(1);
+      expect(
+        provider.getComponentForItem({
+          path: '/some/arbitrary/path',
+          timestamp: now - 8 * HOURS,
+        }).props.style.opacity,
+      ).not.toBeGreaterThan(1);
 
       invariant(provider.getComponentForItem != null);
-      expect(provider.getComponentForItem({
-        path: '/some/arbitrary/path',
-        timestamp: now - 10 * DAYS,
-      }).props.style.opacity).toEqual(0.6);
+      expect(
+        provider.getComponentForItem({
+          path: '/some/arbitrary/path',
+          timestamp: now - 10 * DAYS,
+        }).props.style.opacity,
+      ).toEqual(0.6);
     });
   });
 });

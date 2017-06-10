@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {createProxyFactory, __test__} from '../lib/main';
@@ -23,12 +24,16 @@ describe('Module public API.', () => {
 
     expect(__test__.proxiesCache.size).toBe(0);
 
-    const factory = createProxyFactory(
-      'FunctionService', false, defFile, []);
+    const factory = createProxyFactory('FunctionService', false, defFile, []);
     const proxy = factory(fakeClient);
 
     expect(Object.keys(proxy)).diffJson([
-      'TestFunctionA', 'TestFunctionB', 'TestFunctionC', 'TestFunctionD', 'ReturnAlias']);
+      'TestFunctionA',
+      'TestFunctionB',
+      'TestFunctionC',
+      'TestFunctionD',
+      'ReturnAlias',
+    ]);
 
     // Expect that createProxyFactory added files to the cache.
     expect(__test__.proxiesCache.size).toBe(1);

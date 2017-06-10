@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   BootstrapDebuggerInfo,
   DebuggerConfig,
@@ -26,7 +27,7 @@ import {
 import {DebuggerInstance} from '../../nuclide-debugger-base';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getConfig} from './utils';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class BootstrapInfo extends DebuggerProcessInfo {
   _bootstrapInfo: BootstrapDebuggerInfo;
@@ -34,6 +35,10 @@ export class BootstrapInfo extends DebuggerProcessInfo {
   constructor(targetUri: NuclideUri, bootstrapInfo: BootstrapDebuggerInfo) {
     super('lldb', targetUri);
     this._bootstrapInfo = bootstrapInfo;
+  }
+
+  clone(): BootstrapInfo {
+    return new BootstrapInfo(this._targetUri, this._bootstrapInfo);
   }
 
   supportThreads(): boolean {
@@ -74,15 +79,18 @@ export class BootstrapInfo extends DebuggerProcessInfo {
       logLevel: getConfig().serverLogLevel,
       pythonBinaryPath: getConfig().pythonBinaryPath,
       buckConfigRootFile: getConfig().buckConfigRootFile,
-      lldbPythonPath: this._bootstrapInfo.lldbPythonPath || getConfig().lldbPythonPath,
+      lldbPythonPath: this._bootstrapInfo.lldbPythonPath ||
+        getConfig().lldbPythonPath,
       envPythonPath: '',
     };
   }
 
   _getRpcService(): NativeDebuggerServiceType {
     const debuggerConfig = this.getDebuggerConfig();
-    const service: ?NativeDebuggerService
-      = getServiceByNuclideUri('NativeDebuggerService', this.getTargetUri());
+    const service: ?NativeDebuggerService = getServiceByNuclideUri(
+      'NativeDebuggerService',
+      this.getTargetUri(),
+    );
     invariant(service);
     return new service.NativeDebuggerService(debuggerConfig);
   }

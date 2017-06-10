@@ -6,16 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global getComputedStyle */
 
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
-import debounce from '../../commons-node/debounce';
-import {maybeToString} from '../../commons-node/string';
+import debounce from 'nuclide-commons/debounce';
+import {maybeToString} from 'nuclide-commons/string';
 import {track} from '../../nuclide-analytics';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
 const VALID_NUX_POSITIONS = new Set(['top', 'bottom', 'left', 'right', 'auto']);
 // The maximum number of times the NuxView will attempt to attach to the DOM.
@@ -25,7 +26,7 @@ const RESIZE_EVENT_DEBOUNCE_DURATION = 100; // milliseconds
 // The frequency with which to poll the element that the NUX is bound to.
 const POLL_ELEMENT_TIMEOUT = 100; // milliseconds
 
-const logger = getLogger();
+const logger = getLogger('nuclide-nux');
 
 function validatePlacement(position: string): boolean {
   return VALID_NUX_POSITIONS.has(position);
@@ -36,9 +37,9 @@ export class NuxView {
   _position: 'top' | 'bottom' | 'left' | 'right' | 'auto';
   _content: string;
   _disposables: CompositeDisposable;
-  _callback: ?((success: boolean) => void);
+  _callback: ?(success: boolean) => void;
   _tooltipDisposable: IDisposable;
-  _completePredicate: ?(() => boolean);
+  _completePredicate: ?() => boolean;
   _tooltipDiv: HTMLElement;
   _modifiedElem: HTMLElement;
   _tourId: number;
@@ -71,7 +72,7 @@ export class NuxView {
     selectorFunction: ?Function,
     position: 'top' | 'bottom' | 'left' | 'right' | 'auto',
     content: string,
-    completePredicate: ?(() => boolean) = null,
+    completePredicate: ?() => boolean = null,
     indexInTour: number,
     tourSize: number,
   ): void {
@@ -81,7 +82,9 @@ export class NuxView {
     } else if (selectorString != null) {
       this._selector = () => document.querySelector(selectorString);
     } else {
-      throw new Error('Either the selector or selectorFunction must be non-null!');
+      throw new Error(
+        'Either the selector or selectorFunction must be non-null!',
+      );
     }
     this._content = content;
     this._position = validatePlacement(position) ? position : 'auto';
@@ -97,24 +100,26 @@ export class NuxView {
       this._onNuxComplete(false);
       // An error is logged and tracked instead of simply throwing an error since this function
       // will execute outside of the parent scope's execution and cannot be caught.
-      const error = `NuxView #${this._index} for NUX#"${this._tourId}" `
-                      + 'failed to succesfully attach to the DOM.';
+      const error =
+        `NuxView #${this._index} for NUX#"${this._tourId}" ` +
+        'failed to succesfully attach to the DOM.';
       logger.error(`ERROR: ${error}`);
-      this._track(
-       error,
-       error,
-      );
+      this._track(error, error);
       return;
     }
     const elem: ?HTMLElement = this._selector();
     if (elem == null) {
-      const attachmentTimeout =
-        setTimeout(this._createNux.bind(this, creationAttempt + 1), ATTACHMENT_RETRY_TIMEOUT);
-      this._disposables.add(new Disposable(() => {
-        if (attachmentTimeout !== null) {
-          clearTimeout(attachmentTimeout);
-        }
-      }));
+      const attachmentTimeout = setTimeout(
+        this._createNux.bind(this, creationAttempt + 1),
+        ATTACHMENT_RETRY_TIMEOUT,
+      );
+      this._disposables.add(
+        new Disposable(() => {
+          if (attachmentTimeout !== null) {
+            clearTimeout(attachmentTimeout);
+          }
+        }),
+      );
       return;
     }
 
@@ -129,8 +134,11 @@ export class NuxView {
 
     this._createDisposableTooltip();
 
-    const debouncedWindowResizeListener =
-      debounce(this._handleWindowResize.bind(this), RESIZE_EVENT_DEBOUNCE_DURATION, false);
+    const debouncedWindowResizeListener = debounce(
+      this._handleWindowResize.bind(this),
+      RESIZE_EVENT_DEBOUNCE_DURATION,
+      false,
+    );
     window.addEventListener('resize', debouncedWindowResizeListener);
 
     // Destroy the NUX if the element it is bound to is no longer visible.
@@ -160,21 +168,25 @@ export class NuxView {
       tryDismissTooltip.bind(this, elem),
       POLL_ELEMENT_TIMEOUT,
     );
-    this._disposables.add(new Disposable(() => {
-      if (pollElementTimeout !== null) {
-        clearTimeout(pollElementTimeout);
-      }
-    }));
+    this._disposables.add(
+      new Disposable(() => {
+        if (pollElementTimeout !== null) {
+          clearTimeout(pollElementTimeout);
+        }
+      }),
+    );
 
     const boundClickListener = this._handleDisposableClick.bind(
       this,
       true /* continue to the next NUX in the NuxTour */,
     );
     this._modifiedElem.addEventListener('click', boundClickListener);
-    this._disposables.add(new Disposable(() => {
-      this._modifiedElem.removeEventListener('click', boundClickListener);
-      window.removeEventListener('resize', debouncedWindowResizeListener);
-    }));
+    this._disposables.add(
+      new Disposable(() => {
+        this._modifiedElem.removeEventListener('click', boundClickListener);
+        window.removeEventListener('resize', debouncedWindowResizeListener);
+      }),
+    );
   }
 
   _handleWindowResize(): void {
@@ -189,17 +201,17 @@ export class NuxView {
     // Let the link to the next NuxView be enabled iff
     //  a) it is not the last NuxView in the tour AND
     //  b) there is no condition for completion
-    const nextLinkStyle =
-      !this._finalNuxInTour && this._completePredicate == null ?
-        LINK_ENABLED : LINK_DISABLED;
+    const nextLinkStyle = !this._finalNuxInTour &&
+      this._completePredicate == null
+      ? LINK_ENABLED
+      : LINK_DISABLED;
 
     // Additionally, the `Next` button may be disabled if an action must be completed.
     // In this case we show a hint to the user.
     const nextLinkButton = `\
       <span
         class="nuclide-nux-link ${nextLinkStyle} nuclide-nux-next-link-${this._index}"
-        ${nextLinkStyle === LINK_DISABLED ?
-            'title="Interact with the indicated UI element to proceed."' : ''}>
+        ${nextLinkStyle === LINK_DISABLED ? 'title="Interact with the indicated UI element to proceed."' : ''}>
         Continue
       </span>
     `;
@@ -222,54 +234,71 @@ export class NuxView {
       </div>
     </span>`;
 
-    this._tooltipDisposable = atom.tooltips.add(
-      this._tooltipDiv,
-      {
-        title: content,
-        trigger: 'manual',
-        placement: this._position,
-        html: true,
-        template: `<div class="tooltip nuclide-nux-tooltip">
+    this._tooltipDisposable = atom.tooltips.add(this._tooltipDiv, {
+      title: content,
+      trigger: 'manual',
+      placement: this._position,
+      html: true,
+      template: `<div class="tooltip nuclide-nux-tooltip">
                     <div class="tooltip-arrow"></div>
                     <div class="tooltip-inner"></div>
                   </div>`,
-      },
-    );
+    });
     this._disposables.add(this._tooltipDisposable);
 
     if (nextLinkStyle === LINK_ENABLED) {
-      const nextElementClickListener =
-        this._handleDisposableClick.bind(this, true /* continue to the next NUX in the tour */);
-      const nextElement = document.querySelector(`.nuclide-nux-next-link-${this._index}`);
+      const nextElementClickListener = this._handleDisposableClick.bind(
+        this,
+        true /* continue to the next NUX in the tour */,
+      );
+      const nextElement = document.querySelector(
+        `.nuclide-nux-next-link-${this._index}`,
+      );
       invariant(nextElement != null);
       nextElement.addEventListener('click', nextElementClickListener);
-      this._disposables.add(new Disposable(() =>
-        nextElement.removeEventListener('click', nextElementClickListener),
-      ));
+      this._disposables.add(
+        new Disposable(() =>
+          nextElement.removeEventListener('click', nextElementClickListener),
+        ),
+      );
     }
 
     // Record the NUX as dismissed iff it is not the last NUX in the tour.
     // Clicking "Complete Tour" on the last NUX should be tracked as succesful completion.
-    const dismissElementClickListener =
-      !this._finalNuxInTour ?
-        this._handleDisposableClick.bind(this, false  /* skip to the end of the tour */) :
-        this._handleDisposableClick.bind(this, true /* continue to the next NUX in the tour */);
-    const dismissElement = document.querySelector(`.nuclide-nux-dismiss-link-${this._index}`);
+    const dismissElementClickListener = !this._finalNuxInTour
+      ? this._handleDisposableClick.bind(
+          this,
+          false /* skip to the end of the tour */,
+        )
+      : this._handleDisposableClick.bind(
+          this,
+          true /* continue to the next NUX in the tour */,
+        );
+    const dismissElement = document.querySelector(
+      `.nuclide-nux-dismiss-link-${this._index}`,
+    );
     invariant(dismissElement != null);
     dismissElement.addEventListener('click', dismissElementClickListener);
 
-    this._disposables.add(new Disposable(() =>
-      dismissElement.removeEventListener('click', dismissElementClickListener),
-    ));
+    this._disposables.add(
+      new Disposable(() =>
+        dismissElement.removeEventListener(
+          'click',
+          dismissElementClickListener,
+        ),
+      ),
+    );
   }
 
-  _handleDisposableClick(
-    success: boolean = true,
-  ): void {
+  _handleDisposableClick(success: boolean = true): void {
     // If a completion predicate exists, only consider the NUX as complete
     // if the completion condition has been met.
     // Use `success` to short circuit the check and immediately dispose of the NUX.
-    if (success && this._completePredicate != null && !this._completePredicate()) {
+    if (
+      success &&
+      this._completePredicate != null &&
+      !this._completePredicate()
+    ) {
       return;
     }
 
@@ -284,16 +313,14 @@ export class NuxView {
     this._createNux();
   }
 
-  setNuxCompleteCallback(callback: ((success: boolean) => void)): void {
+  setNuxCompleteCallback(callback: (success: boolean) => void): void {
     this._callback = callback;
   }
 
-  _onNuxComplete(
-    success: boolean = true,
-  ): boolean {
+  _onNuxComplete(success: boolean = true): boolean {
     if (this._callback) {
       this._callback(success);
-       // Avoid the callback being invoked again.
+      // Avoid the callback being invoked again.
       this._callback = null;
     }
     this.dispose();
@@ -304,17 +331,11 @@ export class NuxView {
     this._disposables.dispose();
   }
 
-  _track(
-    message: string,
-    error: ?string,
-  ): void {
-    track(
-      'nux-view-action',
-      {
-        tourId: this._tourId,
-        message: `${message}`,
-        error: maybeToString(error),
-      },
-    );
+  _track(message: string, error: ?string): void {
+    track('nux-view-action', {
+      tourId: this._tourId,
+      message: `${message}`,
+      error: maybeToString(error),
+    });
   }
 }

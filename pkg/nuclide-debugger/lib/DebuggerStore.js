@@ -6,18 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
   NuclideEvaluationExpressionProvider,
 } from '../../nuclide-debugger-interfaces/service';
-import type {
-  DebuggerInstanceBase,
-} from '../../nuclide-debugger-base';
+import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
 import type DebuggerModel from './DebuggerModel';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {RegisterExecutorFunction} from '../../nuclide-console/lib/types';
 import type {ControlButtonSpecification, DebuggerModeType} from './types';
+import type Bridge from './Bridge';
 
 import {Emitter} from 'atom';
 import {DebuggerSettings} from './DebuggerSettings';
@@ -25,13 +25,16 @@ import invariant from 'assert';
 import {ActionTypes} from './DebuggerDispatcher';
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
 
-export const DebuggerMode: {[key: string]: DebuggerModeType} = Object.freeze({
+export const DebuggerMode = Object.freeze({
   STARTING: 'starting',
   RUNNING: 'running',
   PAUSED: 'paused',
   STOPPING: 'stopping',
   STOPPED: 'stopped',
 });
+
+// This is to work around flow's missing support of enums.
+(DebuggerMode: {[key: string]: DebuggerModeType});
 
 const DEBUGGER_CHANGE_EVENT = 'change';
 const DEBUGGER_MODE_CHANGE_EVENT = 'debugger mode change';
@@ -60,13 +63,16 @@ export class DebuggerStore {
   _consoleDisposable: ?IDisposable;
   _customControlButtons: Array<ControlButtonSpecification>;
   _debugProcessInfo: ?DebuggerProcessInfo;
+  _setSourcePathCallback: ?() => void;
   loaderBreakpointResumePromise: Promise<void>;
 
   constructor(dispatcher: DebuggerDispatcher, model: DebuggerModel) {
     this._dispatcher = dispatcher;
     this._model = model;
     this._emitter = new Emitter();
-    this._dispatcherToken = this._dispatcher.register(this._handlePayload.bind(this));
+    this._dispatcherToken = this._dispatcher.register(
+      this._handlePayload.bind(this),
+    );
 
     this._debuggerSettings = new DebuggerSettings();
     this._debuggerInstance = null;
@@ -81,6 +87,7 @@ export class DebuggerStore {
     this._consoleDisposable = null;
     this._customControlButtons = [];
     this._debugProcessInfo = null;
+    this._setSourcePathCallback = null;
     this.loaderBreakpointResumePromise = new Promise(resolve => {
       this._onLoaderBreakpointResume = resolve;
     });
@@ -113,6 +120,10 @@ export class DebuggerStore {
     return this._registerExecutor;
   }
 
+  getBridge(): Bridge {
+    return this._model.getBridge();
+  }
+
   getDebuggerInstance(): ?DebuggerInstanceBase {
     return this._debuggerInstance;
   }
@@ -127,6 +138,13 @@ export class DebuggerStore {
 
   getDebuggerMode(): DebuggerModeType {
     return this._debuggerMode;
+  }
+
+  isDebugging(): boolean {
+    return (
+      this._debuggerMode !== DebuggerMode.STOPPED &&
+      this._debuggerMode !== DebuggerMode.STOPPING
+    );
   }
 
   getTogglePauseOnException(): boolean {
@@ -147,6 +165,18 @@ export class DebuggerStore {
 
   getEvaluationExpressionProviders(): Set<NuclideEvaluationExpressionProvider> {
     return this._evaluationExpressionProviders;
+  }
+
+  getCanSetSourcePaths(): boolean {
+    return this._setSourcePathCallback != null;
+  }
+
+  getCanRestartDebugger(): boolean {
+    return this._debugProcessInfo != null;
+  }
+
+  getDebugProcessInfo(): ?DebuggerProcessInfo {
+    return this._debugProcessInfo;
   }
 
   initializeSingleThreadStepping(mode: boolean) {
@@ -180,7 +210,9 @@ export class DebuggerStore {
       case ActionTypes.TOGGLE_PAUSE_ON_CAUGHT_EXCEPTION:
         const pauseOnCaughtException = payload.data;
         this._togglePauseOnCaughtException = pauseOnCaughtException;
-        this._model.getBridge().setPauseOnCaughtException(pauseOnCaughtException);
+        this._model
+          .getBridge()
+          .setPauseOnCaughtException(pauseOnCaughtException);
         break;
       case ActionTypes.TOGGLE_SINGLE_THREAD_STEPPING:
         const singleThreadStepping = payload.data;
@@ -229,6 +261,14 @@ export class DebuggerStore {
         break;
       case ActionTypes.UPDATE_CUSTOM_CONTROL_BUTTONS:
         this._customControlButtons = payload.data;
+        break;
+      case ActionTypes.UPDATE_CONFIGURE_SOURCE_PATHS_CALLBACK:
+        this._setSourcePathCallback = payload.data;
+        break;
+      case ActionTypes.CONFIGURE_SOURCE_PATHS:
+        if (this._setSourcePathCallback != null) {
+          this._setSourcePathCallback();
+        }
         break;
       case ActionTypes.SET_DEBUG_PROCESS_INFO:
         if (this._debugProcessInfo != null) {

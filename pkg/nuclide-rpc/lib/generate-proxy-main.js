@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* eslint-disable no-console */
 
 import yargs from 'yargs';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {createProxyFactory, proxyFilename} from './main';
 import {stripLocationsFileName} from './location';
 import {generateProxy} from './proxy-generator';
@@ -67,8 +68,7 @@ const argv = yargs
       describe: 'Validate the proxy by running it',
       type: 'boolean',
     },
-  })
-  .argv;
+  }).argv;
 
 const definitionPath = nuclideUri.resolve(argv.definitionPath);
 const preserveFunctionNames = argv.preserveFunctionNames;
@@ -84,7 +84,10 @@ const predefinedTypeNames = [
 const filename = proxyFilename(definitionPath);
 const definitionSource = fs.readFileSync(definitionPath, 'utf8');
 const defs = parseServiceDefinition(
-  definitionPath, definitionSource, predefinedTypeNames);
+  definitionPath,
+  definitionSource,
+  predefinedTypeNames,
+);
 if (argv.useBasename) {
   stripLocationsFileName(defs);
 }
@@ -111,11 +114,17 @@ if (argv.save) {
 }
 
 if (argv.json) {
-  console.log(JSON.stringify({
-    src: definitionPath,
-    dest: filename,
-    code: argv.code ? code : undefined,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        src: definitionPath,
+        dest: filename,
+        code: argv.code ? code : undefined,
+      },
+      null,
+      2,
+    ),
+  );
 } else if (argv.code) {
   console.log(code);
 }

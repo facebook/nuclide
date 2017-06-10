@@ -6,9 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {RemoteConnection, RemoteDirectory} from '../../nuclide-remote-connection';
+import {
+  RemoteConnection,
+  RemoteDirectory,
+} from '../../nuclide-remote-connection';
 
 /**
  * The prefix a URI must have for `RemoteDirectoryProvider` to try to produce a

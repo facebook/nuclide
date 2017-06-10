@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {NavigationStackController} from '../lib/NavigationStackController';
@@ -18,17 +19,25 @@ describe('NavigationStackController test suite', () => {
   let controller: NavigationStackController = (null: any);
 
   beforeEach(() => {
-    setPositionAndScroll =
-      spyOn(require('../../commons-atom/text-editor'), 'setPositionAndScroll');
-    spyOn(require('../lib/Location'), 'getPathOfLocation')
-      .andCallFake(location => location.editor.getPath());
-    spyOn(require('../lib/Location'), 'getLocationOfEditor')
-      .andCallFake(editor => editor.location);
-    spyOn(require('../lib/Location'), 'editorOfLocation')
-      .andCallFake(location => location.editor);
+    setPositionAndScroll = spyOn(
+      require('nuclide-commons-atom/text-editor'),
+      'setPositionAndScroll',
+    );
+    spyOn(
+      require('../lib/Location'),
+      'getPathOfLocation',
+    ).andCallFake(location => location.editor.getPath());
+    spyOn(require('../lib/Location'), 'getLocationOfEditor').andCallFake(
+      editor => editor.location,
+    );
+    spyOn(require('../lib/Location'), 'editorOfLocation').andCallFake(
+      location => location.editor,
+    );
 
-    const moduleToTest: ModuleType =
-      (uncachedRequire(require, '../lib/NavigationStackController'): any);
+    const moduleToTest: ModuleType = (uncachedRequire(
+      require,
+      '../lib/NavigationStackController',
+    ): any);
     controller = new moduleToTest.NavigationStackController();
   });
 
@@ -65,7 +74,10 @@ describe('NavigationStackController test suite', () => {
       expect(controller.getIndex()).toEqual(0);
       expect(controller.getLocations()).toEqual([location1, location2]);
       expect(setPositionAndScroll).toHaveBeenCalledWith(
-        location1.editor, location1.bufferPosition, location1.scrollTop);
+        location1.editor,
+        location1.bufferPosition,
+        location1.scrollTop,
+      );
 
       // noop nav backwards
       await controller.navigateBackwards();
@@ -76,7 +88,10 @@ describe('NavigationStackController test suite', () => {
       expect(controller.getIndex()).toEqual(1);
       expect(controller.getLocations()).toEqual([location1, location2]);
       expect(setPositionAndScroll).toHaveBeenCalledWith(
-        location2.editor, location2.bufferPosition, location2.scrollTop);
+        location2.editor,
+        location2.bufferPosition,
+        location2.scrollTop,
+      );
     });
   });
 
@@ -233,18 +248,25 @@ describe('NavigationStackController test suite', () => {
     controller.onDestroy(editor1);
 
     expect(controller.getIndex()).toEqual(1);
-    expect(controller.getLocations()).toEqual([{
-      type: 'uri',
-      uri: '/a/f1',
-      bufferPosition: toPoint(10),
-      scrollTop: 100,
-    }, location2]);
+    expect(controller.getLocations()).toEqual([
+      {
+        type: 'uri',
+        uri: '/a/f1',
+        bufferPosition: toPoint(10),
+        scrollTop: 100,
+      },
+      location2,
+    ]);
 
     setPosition(editor1, 11);
     setScroll(editor1, 110);
     const location3 = editor1.location;
     controller.onCreate(editor1);
-    expect(controller.getLocations()).toEqual([location1, location2, location3]);
+    expect(controller.getLocations()).toEqual([
+      location1,
+      location2,
+      location3,
+    ]);
   });
 
   it('close unsaved file', () => {
@@ -303,7 +325,9 @@ function toPoint(line: number): any {
 
 function toEditor(filePath: ?string, line: number, scrollTop: number) {
   const editor: any = {
-    getPath() { return filePath; },
+    getPath() {
+      return filePath;
+    },
     location: {
       type: 'editor',
       bufferPosition: toPoint(line),

@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import {
-  getCommands,
-  startCommands,
-} from './CommandClient';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import {getCommands, startCommands} from './CommandClient';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {
   setupErrorHandling,
   setupLogging,
@@ -23,12 +21,10 @@ import {
   EXIT_CODE_APPLICATION_ERROR,
   EXIT_CODE_INVALID_ARGUMENTS,
 } from './errors';
-import {
-  getLogger,
-} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import yargs from 'yargs';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-atom-rpc');
 
 type FileLocation = {
   filePath: string,
@@ -60,7 +56,6 @@ function parseLocationParameter(value: string): FileLocation {
     column,
   };
 }
-
 
 async function getRealPath(filePath: NuclideUri): Promise<NuclideUri> {
   if (nuclideUri.isRemote(filePath)) {
@@ -102,8 +97,9 @@ async function main(argv): Promise<number> {
       const isDirectory = await getIsDirectory(realpath);
       try {
         if (nuclideUri.isRemote(realpath)) {
-          const result =
-            commands.openRemoteFile(realpath, line, column, Boolean(argv.wait)).refCount();
+          const result = commands
+            .openRemoteFile(realpath, line, column, Boolean(argv.wait))
+            .refCount();
           if (argv.wait) {
             // eslint-disable-next-line no-await-in-loop
             await result.toPromise();
@@ -116,7 +112,9 @@ async function main(argv): Promise<number> {
           // eslint-disable-next-line no-await-in-loop
           await commands.addProject(realpath);
         } else {
-          const result = commands.openFile(realpath, line, column, Boolean(argv.wait)).refCount();
+          const result = commands
+            .openFile(realpath, line, column, Boolean(argv.wait))
+            .refCount();
           if (argv.wait) {
             // eslint-disable-next-line no-await-in-loop
             await result.toPromise();
@@ -160,8 +158,10 @@ async function run() {
       describe: 'Address family for connecting to nuclide. Either "IPv4" or "IPv6".',
       type: 'string',
     });
-  if ((argv.port == null) !== (argv.family == null)) {
-    process.stderr.write('Invalid options. Both port and family must be specified.\n');
+  if (argv.port == null !== (argv.family == null)) {
+    process.stderr.write(
+      'Invalid options. Both port and family must be specified.\n',
+    );
     process.exit(EXIT_CODE_INVALID_ARGUMENTS);
   }
   const exitCode = await main(argv);

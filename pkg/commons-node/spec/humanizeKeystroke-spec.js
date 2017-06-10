@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import humanizeKeystroke from '../humanizeKeystroke';
@@ -18,16 +19,24 @@ describe('nuclide-keystroke-label', () => {
       expect(humanizeKeystroke('cmd-O', 'linux')).toEqual('Cmd+Shift+O');
 
       expect(humanizeKeystroke('cmd-shift-up', 'darwin')).toEqual('⌘⇧↑');
-      expect(humanizeKeystroke('cmd-shift-up', 'linux')).toEqual('Cmd+Shift+Up');
+      expect(humanizeKeystroke('cmd-shift-up', 'linux')).toEqual(
+        'Cmd+Shift+Up',
+      );
 
       expect(humanizeKeystroke('cmd-option-down', 'darwin')).toEqual('⌘⌥↓');
-      expect(humanizeKeystroke('cmd-option-down', 'linux')).toEqual('Cmd+Alt+Down');
+      expect(humanizeKeystroke('cmd-option-down', 'linux')).toEqual(
+        'Cmd+Alt+Down',
+      );
 
       expect(humanizeKeystroke('cmd-option-left', 'darwin')).toEqual('⌘⌥←');
-      expect(humanizeKeystroke('cmd-option-left', 'linux')).toEqual('Cmd+Alt+Left');
+      expect(humanizeKeystroke('cmd-option-left', 'linux')).toEqual(
+        'Cmd+Alt+Left',
+      );
 
       expect(humanizeKeystroke('cmd-option-right', 'darwin')).toEqual('⌘⌥→');
-      expect(humanizeKeystroke('cmd-option-right', 'linux')).toEqual('Cmd+Alt+Right');
+      expect(humanizeKeystroke('cmd-option-right', 'linux')).toEqual(
+        'Cmd+Alt+Right',
+      );
 
       expect(humanizeKeystroke('cmd-o', 'darwin')).toEqual('⌘O');
       expect(humanizeKeystroke('cmd-o', 'linux')).toEqual('Cmd+O');
@@ -55,10 +64,16 @@ describe('nuclide-keystroke-label', () => {
 
     it('replaces multiple keystrokes', () => {
       expect(humanizeKeystroke('cmd-O cmd-n', 'darwin')).toEqual('⌘⇧O ⌘N');
-      expect(humanizeKeystroke('cmd-O cmd-n', 'linux')).toEqual('Cmd+Shift+O Cmd+N');
+      expect(humanizeKeystroke('cmd-O cmd-n', 'linux')).toEqual(
+        'Cmd+Shift+O Cmd+N',
+      );
 
-      expect(humanizeKeystroke('cmd-shift-- cmd-n', 'darwin')).toEqual('⌘⇧- ⌘N');
-      expect(humanizeKeystroke('cmd-shift-- cmd-n', 'linux')).toEqual('Cmd+Shift+- Cmd+N');
+      expect(humanizeKeystroke('cmd-shift-- cmd-n', 'darwin')).toEqual(
+        '⌘⇧- ⌘N',
+      );
+      expect(humanizeKeystroke('cmd-shift-- cmd-n', 'linux')).toEqual(
+        'Cmd+Shift+- Cmd+N',
+      );
 
       expect(humanizeKeystroke('cmd-k right', 'darwin')).toEqual('⌘K →');
       expect(humanizeKeystroke('cmd-k right', 'linux')).toEqual('Cmd+K Right');

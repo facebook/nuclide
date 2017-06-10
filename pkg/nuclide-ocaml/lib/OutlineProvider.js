@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {Outline} from '../../nuclide-outline-view/lib/rpc-types';
+import type {Outline} from 'atom-ide-ui';
 import type {MerlinProcess} from '../../nuclide-ocaml-rpc/lib/MerlinProcess';
 
 import {Point} from 'atom';
@@ -20,7 +21,7 @@ import {
   plain,
   type,
   whitespace,
-} from '../../commons-node/tokenizedText';
+} from 'nuclide-commons/tokenized-text';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 function makeTokens(data) {
@@ -84,7 +85,10 @@ export async function getOutline(editor: atom$TextEditor): Promise<?Outline> {
   if (path == null) {
     return null;
   }
-  const instance: ?MerlinProcess = getServiceByNuclideUri('MerlinService', path);
+  const instance: ?MerlinProcess = getServiceByNuclideUri(
+    'MerlinService',
+    path,
+  );
   if (!instance) {
     return null;
   }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LazyTreeNode} from './LazyTreeNode';
@@ -72,7 +73,11 @@ export class TreeNodeComponent extends React.PureComponent {
     if (this.props.isContainer) {
       if (this.props.isExpanded) {
         if (this.props.isLoading) {
-          arrow = <span className="nuclide-tree-component-item-arrow-spinner">{SPINNER}</span>;
+          arrow = (
+            <span className="nuclide-tree-component-item-arrow-spinner">
+              {SPINNER}
+            </span>
+          );
         } else {
           arrow = DOWN_ARROW;
         }
@@ -91,18 +96,16 @@ export class TreeNodeComponent extends React.PureComponent {
         <span className="nuclide-tree-component-item-arrow" ref="arrow">
           {arrow}
         </span>
-        {
-          this.props.labelElement != null ?
-          this.props.labelElement :
-          <span
-            className={this.props.labelClassName}
-            // `data-name` is support for selectors in the "file-icons" package.
-            // @see {@link https://atom.io/packages/file-icons|file-icons}
-            data-name={this.props.label}
-            data-path={this.props.path}>
-            {this.props.label}
-          </span>
-        }
+        {this.props.labelElement != null
+          ? this.props.labelElement
+          : <span
+              className={this.props.labelClassName}
+              // `data-name` is support for selectors in the "file-icons" package.
+              // @see {@link https://atom.io/packages/file-icons|file-icons}
+              data-name={this.props.label}
+              data-path={this.props.path}>
+              {this.props.label}
+            </span>}
       </div>
     );
   }

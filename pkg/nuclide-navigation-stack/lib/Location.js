@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
-import {getScrollTop} from '../../commons-atom/text-editor';
-import {goToLocation} from '../../commons-atom/go-to-location';
+import {getScrollTop} from 'nuclide-commons-atom/text-editor';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 // A location which can be navigated to. Includes the file (as uri for closed files and as
 // atom$TextEditor for open files) as well as the cursor position and scroll.
@@ -43,7 +44,9 @@ export function getLocationOfEditor(editor: atom$TextEditor): EditorLocation {
   };
 }
 
-export async function editorOfLocation(location: Location): Promise<atom$TextEditor> {
+export async function editorOfLocation(
+  location: Location,
+): Promise<atom$TextEditor> {
   if (location.type === 'uri') {
     return goToLocation(location.uri);
   } else {

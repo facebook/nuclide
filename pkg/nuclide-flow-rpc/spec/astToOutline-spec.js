@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {OutlineTree} from '../../nuclide-outline-view/lib/rpc-types';
+import type {OutlineTree} from 'atom-ide-ui';
 
 import {Point} from 'simple-text-buffer';
 
@@ -24,8 +25,10 @@ import toplevelASTOld from './fixtures/toplevel-ast-old.json';
 import toplevelAST34 from './fixtures/toplevel-ast-v0.34.json';
 import exportsASTOld from './fixtures/exports-ast-old.json';
 import exportsAST34 from './fixtures/exports-ast-v0.34.json';
-import exportDefaultArrowFuncAST34 from './fixtures/export-default-arrow-func-v0.34.json';
-import exportDefaultAnonymousFuncAST34 from './fixtures/export-default-anonymous-func-v0.34.json';
+import exportDefaultArrowFuncAST34
+  from './fixtures/export-default-arrow-func-v0.34.json';
+import exportDefaultAnonymousFuncAST34
+  from './fixtures/export-default-anonymous-func-v0.34.json';
 import typesASTOld from './fixtures/types-ast-old.json';
 import typesAST34 from './fixtures/types-ast-v0.34.json';
 
@@ -283,9 +286,7 @@ const expectedJasmineOutline: Array<OutlineTree> = [
 
 const expectedExportsOutline: Array<OutlineTree> = [
   {
-    tokenizedText: [
-      {value: 'module.exports', kind: 'plain'},
-    ],
+    tokenizedText: [{value: 'module.exports', kind: 'plain'}],
     startPosition: new Point(12, 0),
     endPosition: new Point(23, 1),
     children: [
@@ -360,9 +361,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
-        tokenizedText: [
-          {value: 'thing', kind: 'string'},
-        ],
+        tokenizedText: [{value: 'thing', kind: 'string'}],
         representativeName: 'thing',
         startPosition: new Point(21, 2),
         endPosition: new Point(21, 7),
@@ -469,39 +468,61 @@ describe('astToOutline', () => {
 
   it('should provide a class outline', () => {
     // Old version
-    expect(astToOutline(classASTOld).outlineTrees).diffJson(expectedClassOutline);
+    expect(astToOutline(classASTOld).outlineTrees).diffJson(
+      expectedClassOutline,
+    );
     // Newer, introduced AssignmentPattern for default function args (v0.33), made a bunch of other
     // changes (v0.34)
-    expect(astToOutline(classAST34).outlineTrees).diffJson(expectedClassOutline);
+    expect(astToOutline(classAST34).outlineTrees).diffJson(
+      expectedClassOutline,
+    );
   });
 
   it('should provide an outline for miscellaneous top-level statements', () => {
-    expect(astToOutline(toplevelASTOld).outlineTrees).diffJson(expectedToplevelOutline);
-    expect(astToOutline(toplevelAST34).outlineTrees).diffJson(expectedToplevelOutline);
+    expect(astToOutline(toplevelASTOld).outlineTrees).diffJson(
+      expectedToplevelOutline,
+    );
+    expect(astToOutline(toplevelAST34).outlineTrees).diffJson(
+      expectedToplevelOutline,
+    );
   });
 
   it('should provide an outline for Jasmine specs', () => {
-    expect(astToOutline(jasmineASTOld).outlineTrees).diffJson(expectedJasmineOutline);
-    expect(astToOutline(jasmineAST34).outlineTrees).diffJson(expectedJasmineOutline);
+    expect(astToOutline(jasmineASTOld).outlineTrees).diffJson(
+      expectedJasmineOutline,
+    );
+    expect(astToOutline(jasmineAST34).outlineTrees).diffJson(
+      expectedJasmineOutline,
+    );
   });
 
   it('should provide an outline for module.exports', () => {
-    expect(astToOutline(exportsASTOld).outlineTrees).diffJson(expectedExportsOutline);
-    expect(astToOutline(exportsAST34).outlineTrees).diffJson(expectedExportsOutline);
+    expect(astToOutline(exportsASTOld).outlineTrees).diffJson(
+      expectedExportsOutline,
+    );
+    expect(astToOutline(exportsAST34).outlineTrees).diffJson(
+      expectedExportsOutline,
+    );
   });
 
   it('should provide an outline for type declarations', () => {
-    expect(astToOutline(typesASTOld).outlineTrees).diffJson(expectedTypesOutline);
-    expect(astToOutline(typesAST34).outlineTrees).diffJson(expectedTypesOutline);
+    expect(astToOutline(typesASTOld).outlineTrees).diffJson(
+      expectedTypesOutline,
+    );
+    expect(astToOutline(typesAST34).outlineTrees).diffJson(
+      expectedTypesOutline,
+    );
   });
 
   it('should provide an outline for export default () => {}', () => {
-    expect(astToOutline(exportDefaultArrowFuncAST34).outlineTrees)
-      .diffJson(expectedExportDefaultArrowFuncOutline);
+    expect(astToOutline(exportDefaultArrowFuncAST34).outlineTrees).diffJson(
+      expectedExportDefaultArrowFuncOutline,
+    );
   });
 
   it('should provide an outline for export default function() {}', () => {
-    expect(astToOutline(exportDefaultAnonymousFuncAST34).outlineTrees)
-      .diffJson(expectedExportDefaultAnonymousFuncOutline);
+    expect(astToOutline(exportDefaultAnonymousFuncAST34).outlineTrees).diffJson(
+      expectedExportDefaultAnonymousFuncOutline,
+    );
   });
 });

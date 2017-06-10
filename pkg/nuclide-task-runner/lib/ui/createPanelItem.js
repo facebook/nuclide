@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Store, TaskRunner} from '../types';
 
-import {bindObservableAsProps} from '../../../nuclide-ui/bindObservableAsProps';
-import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactElement';
-import {nextAnimationFrame, throttle} from '../../../commons-node/observable';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {
+  viewableFromReactElement,
+} from '../../../commons-atom/viewableFromReactElement';
+import {nextAnimationFrame, throttle} from 'nuclide-commons/observable';
 import * as Actions from '../redux/Actions';
 import {Toolbar} from './Toolbar';
 import React from 'react';
@@ -21,10 +24,15 @@ import shallowequal from 'shallowequal';
 
 export function createPanelItem(store: Store): Object {
   const staticProps = {
-    runTask: taskMeta => { store.dispatch(Actions.runTask(taskMeta)); },
-    selectTaskRunner:
-     taskRunner => { store.dispatch(Actions.selectTaskRunner(taskRunner, true)); },
-    stopRunningTask: () => { store.dispatch(Actions.stopTask()); },
+    runTask: taskMeta => {
+      store.dispatch(Actions.runTask(taskMeta));
+    },
+    selectTaskRunner: taskRunner => {
+      store.dispatch(Actions.selectTaskRunner(taskRunner, true));
+    },
+    stopRunningTask: () => {
+      store.dispatch(Actions.stopTask());
+    },
   };
 
   // $FlowFixMe: We need to teach Flow about Symbol.observable
@@ -41,23 +49,28 @@ export function createPanelItem(store: Store): Object {
       taskRunners: state.taskRunners,
       statesForTaskRunners: state.statesForTaskRunners,
       activeTaskRunner: state.activeTaskRunner,
-      iconComponent: state.activeTaskRunner ? state.activeTaskRunner.getIcon() : null,
+      iconComponent: state.activeTaskRunner
+        ? state.activeTaskRunner.getIcon()
+        : null,
       extraUiComponent: getExtraUiComponent(state.activeTaskRunner),
     }))
-     .distinctUntilChanged(shallowequal);
+    .distinctUntilChanged(shallowequal);
 
-  const alwaysUpToDateProps = states
-    .map(state => ({
-      ...staticProps,
-      toolbarDisabled: !state.taskRunnersReady || state.isUpdatingTaskRunners,
-      progress: state.runningTask ? state.runningTask.progress : null,
-      taskIsRunning: state.runningTask != null,
-      runningTaskIsCancelable:
-        state.runningTask ? state.runningTask.metadata.cancelable !== false : undefined,
-    }));
+  const alwaysUpToDateProps = states.map(state => ({
+    ...staticProps,
+    toolbarDisabled: !state.taskRunnersReady || state.isUpdatingTaskRunners,
+    progress: state.runningTask ? state.runningTask.progress : null,
+    taskIsRunning: state.runningTask != null,
+    runningTaskIsCancelable: state.runningTask
+      ? state.runningTask.metadata.cancelable !== false
+      : undefined,
+  }));
 
   const props = throttle(
-    Observable.combineLatest(stickyProps, alwaysUpToDateProps, (a, b) => ({...a, ...b})),
+    Observable.combineLatest(stickyProps, alwaysUpToDateProps, (a, b) => ({
+      ...a,
+      ...b,
+    })),
     () => nextAnimationFrame,
   );
 
@@ -68,10 +81,16 @@ export function createPanelItem(store: Store): Object {
 // Since `getExtraUi` may create a React class dynamically, the classes are cached
 const extraUiComponentCache = new WeakMap();
 function getExtraUiComponent(taskRunner: ?TaskRunner): ?ReactClass<any> {
-  if (!taskRunner) { return null; }
+  if (!taskRunner) {
+    return null;
+  }
   let extraUi = extraUiComponentCache.get(taskRunner);
-  if (extraUi != null) { return extraUi; }
-  if (!taskRunner.getExtraUi) { return null; }
+  if (extraUi != null) {
+    return extraUi;
+  }
+  if (!taskRunner.getExtraUi) {
+    return null;
+  }
   extraUi = taskRunner.getExtraUi();
   extraUiComponentCache.set(taskRunner, extraUi);
   return extraUi;

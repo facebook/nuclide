@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import {trackEvent} from '../../nuclide-analytics';
 import {CompositeDisposable} from 'atom';
 import {NuclideSocket} from '../../nuclide-server/lib/NuclideSocket';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-connection');
 
 const HEARTBEAT_AWAY_REPORT_COUNT = 3;
 const HEARTBEAT_NOTIFICATION_ERROR = 1;
@@ -49,7 +50,8 @@ export class ConnectionHealthNotifier {
       dismissable: boolean,
       askToReload: boolean,
     ) => {
-      const {code, notification: existingNotification} = this._lastHeartbeatNotification || {};
+      const {code, notification: existingNotification} = this
+        ._lastHeartbeatNotification || {};
       if (code && code === errorCode && dismissable) {
         // A dismissible heartbeat notification with this code is already active.
         return;
@@ -59,7 +61,9 @@ export class ConnectionHealthNotifier {
       if (askToReload) {
         options.buttons.push({
           className: 'icon icon-zap',
-          onDidClick() { atom.reload(); },
+          onDidClick() {
+            atom.reload();
+          },
           text: 'Reload Atom',
         });
       }
@@ -90,7 +94,9 @@ export class ConnectionHealthNotifier {
         // being restored without a reconnect prompt.
         const {notification} = this._lastHeartbeatNotification;
         notification.dismiss();
-        atom.notifications.addSuccess('Connection restored to Nuclide Server at: ' + serverUri);
+        atom.notifications.addSuccess(
+          'Connection restored to Nuclide Server at: ' + serverUri,
+        );
         this._heartbeatNetworkAwayCount = 0;
         this._lastHeartbeatNotification = null;
       }
@@ -99,11 +105,14 @@ export class ConnectionHealthNotifier {
     const notifyNetworkAway = (code: string) => {
       this._heartbeatNetworkAwayCount++;
       if (this._heartbeatNetworkAwayCount >= HEARTBEAT_AWAY_REPORT_COUNT) {
-        addHeartbeatNotification(HEARTBEAT_NOTIFICATION_WARNING, code,
+        addHeartbeatNotification(
+          HEARTBEAT_NOTIFICATION_WARNING,
+          code,
           `Nuclide server cannot be reached at "${serverUri}".<br/>` +
-          'Nuclide will reconnect when the network is restored.',
+            'Nuclide will reconnect when the network is restored.',
           /* dismissable */ true,
-          /* askToReload */ false);
+          /* askToReload */ false,
+        );
       }
     };
 
@@ -120,40 +129,49 @@ export class ConnectionHealthNotifier {
       logger.info('Heartbeat network error:', code, originalCode, message);
       switch (code) {
         case 'NETWORK_AWAY':
-            // Notify switching networks, disconnected, timeout, unreachable server or fragile
-            // connection.
+          // Notify switching networks, disconnected, timeout, unreachable server or fragile
+          // connection.
           notifyNetworkAway(code);
           break;
         case 'SERVER_CRASHED':
-            // Server shut down or port no longer accessible.
-            // Notify the server was there, but now gone.
-          addHeartbeatNotification(HEARTBEAT_NOTIFICATION_ERROR, code,
-                '**Nuclide Server Crashed**<br/>' +
-                'Please reload Atom to restore your remote project connection.',
-                /* dismissable */ true,
-                /* askToReload */ true);
+          // Server shut down or port no longer accessible.
+          // Notify the server was there, but now gone.
+          addHeartbeatNotification(
+            HEARTBEAT_NOTIFICATION_ERROR,
+            code,
+            '**Nuclide Server Crashed**<br/>' +
+              'Please reload Atom to restore your remote project connection.',
+            /* dismissable */ true,
+            /* askToReload */ true,
+          );
           break;
         case 'PORT_NOT_ACCESSIBLE':
-            // Notify never heard a heartbeat from the server.
+          // Notify never heard a heartbeat from the server.
           const port = socket.getServerPort();
-          addHeartbeatNotification(HEARTBEAT_NOTIFICATION_ERROR, code,
-                '**Nuclide Server Is Not Reachable**<br/>' +
-                `It could be running on a port that is not accessible: ${String(port)}.`,
-                /* dismissable */ true,
-                /* askToReload */ false);
+          addHeartbeatNotification(
+            HEARTBEAT_NOTIFICATION_ERROR,
+            code,
+            '**Nuclide Server Is Not Reachable**<br/>' +
+              `It could be running on a port that is not accessible: ${String(port)}.`,
+            /* dismissable */ true,
+            /* askToReload */ false,
+          );
           break;
         case 'INVALID_CERTIFICATE':
-            // Notify the client certificate is not accepted by nuclide server
-            // (certificate mismatch).
-          addHeartbeatNotification(HEARTBEAT_NOTIFICATION_ERROR, code,
-                '**Certificate Expired**<br/>' +
-                // The expiration date should be synced with
-                // nuclide-server/scripts/nuclide_server_manager.py.
-                'The Nuclide server certificate has most likely expired.<br>' +
-                'For your security, certificates automatically expire after 14 days.<br>' +
-                'Please reload Atom to restore your remote project connection.',
-                /* dismissable */ true,
-                /* askToReload */ true);
+          // Notify the client certificate is not accepted by nuclide server
+          // (certificate mismatch).
+          addHeartbeatNotification(
+            HEARTBEAT_NOTIFICATION_ERROR,
+            code,
+            '**Certificate Expired**<br/>' +
+              // The expiration date should be synced with
+              // nuclide-server/scripts/nuclide_server_manager.py.
+              'The Nuclide server certificate has most likely expired.<br>' +
+              'For your security, certificates automatically expire after 14 days.<br>' +
+              'Please reload Atom to restore your remote project connection.',
+            /* dismissable */ true,
+            /* askToReload */ true,
+          );
           break;
         default:
           notifyNetworkAway(code);

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {parseMessageText} from '../lib/parseMessageText';
@@ -41,9 +42,16 @@ describe('parseMessageText', () => {
   });
 
   it('parses levels', () => {
-    expect(parsed.map(message => message.level)).toEqual(
-      ['info', 'warning', 'error', 'info', 'info', 'info', 'debug', 'info'],
-    );
+    expect(parsed.map(message => message.level)).toEqual([
+      'info',
+      'warning',
+      'error',
+      'info',
+      'info',
+      'info',
+      'debug',
+      'info',
+    ]);
   });
 
   it('parses text', () => {
@@ -63,7 +71,8 @@ describe('parseMessageText', () => {
 
   it('ends the tag list when it encounters a tag with brackets in it', () => {
     // eslint-disable-next-line max-len
-    const line = '2016-08-24 17:39:32.278 [debug][cpuspindetector][tid:com.facebook.FBTimer][-[FBCPUSpinDetector _checkUsage]] Begin check usage';
+    const line =
+      '2016-08-24 17:39:32.278 [debug][cpuspindetector][tid:com.facebook.FBTimer][-[FBCPUSpinDetector _checkUsage]] Begin check usage';
     const {tags, text} = parseMessageText(line);
     expect(tags).toEqual(['cpuspindetector', 'tid:com.facebook.FBTimer']);
     expect(text).toBe('[-[FBCPUSpinDetector _checkUsage]] Begin check usage');

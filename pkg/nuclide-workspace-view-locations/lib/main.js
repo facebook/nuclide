@@ -6,14 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  DistractionFreeModeProvider,
+} from '../../nuclide-distraction-free-mode';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 import type {PanelLocationId} from './types';
 
-import createPackage from '../../commons-atom/createPackage';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {PaneLocation} from './PaneLocation';
 import {PanelLocation} from './PanelLocation';
 import PanelLocationIds from './PanelLocationIds';
@@ -55,29 +60,37 @@ class Activation {
     const layout = require('../../nuclide-ui/VendorLib/atom-tabs/lib/layout');
     layout.activate();
     this._disposables.add(
-      () => { layout.deactivate(); },
+      () => {
+        layout.deactivate();
+      },
       api.registerLocation({id: 'center', create: () => new PaneLocation()}),
-      ...PanelLocationIds.map(id => api.registerLocation({
-        id,
-        create: serializedState_ => {
-          const serializedState = serializedState_ == null ? {} : serializedState_;
-          const initialVisibility = this._initialPanelVisibility.get(id);
-          if (initialVisibility != null) {
-            serializedState.visible = initialVisibility;
-          }
-          const location = new PanelLocation(id, serializedState);
-          location.initialize();
-          this._panelLocations.set(id, location);
-          return location;
-        },
-      })),
-      ...PanelLocationIds.map(id => (
+      ...PanelLocationIds.map(id =>
+        api.registerLocation({
+          id,
+          create: serializedState_ => {
+            const serializedState = serializedState_ == null
+              ? {}
+              : serializedState_;
+            const initialVisibility = this._initialPanelVisibility.get(id);
+            if (initialVisibility != null) {
+              serializedState.visible = initialVisibility;
+            }
+            const location = new PanelLocation(id, serializedState);
+            location.initialize();
+            this._panelLocations.set(id, location);
+            return location;
+          },
+        }),
+      ),
+      ...PanelLocationIds.map(id =>
         atom.commands.add(
           'atom-workspace',
           `nuclide-workspace-views:toggle-${id}`,
-          () => { this._toggleVisibility(id); },
-        )
-      )),
+          () => {
+            this._toggleVisibility(id);
+          },
+        ),
+      ),
     );
   }
 
@@ -88,7 +101,9 @@ class Activation {
    * store the visiblity DSF wants and use it when we create the panel later.
    */
   provideDistractionFreeModeProvider(): Array<DistractionFreeModeProvider> {
-    this._initialPanelVisibility = new Map(PanelLocationIds.map(id => [id, false]));
+    this._initialPanelVisibility = new Map(
+      PanelLocationIds.map(id => [id, false]),
+    );
     return PanelLocationIds.map(id => ({
       name: `nuclide-workspace-view-locations:${id}`,
       isVisible: () => {
@@ -97,7 +112,9 @@ class Activation {
           ? Boolean(this._initialPanelVisibility.get(id))
           : location.isVisible();
       },
-      toggle: () => { this._toggleVisibility(id); },
+      toggle: () => {
+        this._toggleVisibility(id);
+      },
     }));
   }
 }

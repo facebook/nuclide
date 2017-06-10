@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ClangCompletion} from '../../nuclide-clang-rpc/lib/rpc-types';
@@ -13,7 +14,7 @@ import type {ClangCompletion} from '../../nuclide-clang-rpc/lib/rpc-types';
 import {Point} from 'atom';
 import fuzzaldrinPlus from 'fuzzaldrin-plus';
 import AutocompleteCacher from '../../commons-atom/AutocompleteCacher';
-import {arrayFindLastIndex} from '../../commons-node/collection';
+import {arrayFindLastIndex} from 'nuclide-commons/collection';
 import {track, trackTiming} from '../../nuclide-analytics';
 import {ClangCursorToDeclarationTypes} from '../../nuclide-clang-rpc';
 import {getCompletions} from './libclang';
@@ -56,8 +57,11 @@ function getCompletionBody(
   indentation: number,
 ): string {
   const inlineBody = getCompletionBodyInline(completion);
-  const multiLineBody =
-    getCompletionBodyMultiLine(completion, columnOffset, indentation);
+  const multiLineBody = getCompletionBodyMultiLine(
+    completion,
+    columnOffset,
+    indentation,
+  );
 
   if (columnOffset + inlineBody.length > MAX_LINE_LENGTH && multiLineBody) {
     return multiLineBody;
@@ -106,7 +110,7 @@ function getCompletionBodyMultiLine(
     args.push({
       text,
       placeholder,
-      offset: (i === 0) ? columnOffset : indentation * TAB_LENGTH,
+      offset: i === 0 ? columnOffset : indentation * TAB_LENGTH,
     });
   }
 
@@ -135,12 +139,15 @@ function _convertArgsToMultiLineSnippet(
   //     Argument3:arg3]
   //
 
-  const colonPosition = Math.max.apply(null,
+  const colonPosition = Math.max.apply(
+    null,
     args.map(arg => arg.offset + arg.text.length),
   );
 
   return args.reduce((body, arg, index) => {
-    const spacesCnt = index === 0 ? 0 : colonPosition - arg.offset - arg.text.length;
+    const spacesCnt = index === 0
+      ? 0
+      : colonPosition - arg.offset - arg.text.length;
     if (spacesCnt < 0) {
       throw Error('This is a bug! Spaces count is negative.');
     }
@@ -159,11 +166,13 @@ function getCompletionBodyInline(completion: ClangCompletion): string {
 
   // Merge everything between the last non-optional placeholder
   // and the last optional placeholder into one big optional.
-  const lastOptional =
-    arrayFindLastIndex(chunks, chunk => Boolean(chunk.isOptional && chunk.isPlaceHolder));
+  const lastOptional = arrayFindLastIndex(chunks, chunk =>
+    Boolean(chunk.isOptional && chunk.isPlaceHolder),
+  );
   if (lastOptional !== -1) {
-    const lastNonOptional =
-      arrayFindLastIndex(chunks, chunk => Boolean(!chunk.isOptional && chunk.isPlaceHolder));
+    const lastNonOptional = arrayFindLastIndex(chunks, chunk =>
+      Boolean(!chunk.isOptional && chunk.isPlaceHolder),
+    );
     if (lastNonOptional !== -1 && lastNonOptional < lastOptional) {
       let mergedSpelling = '';
       for (let i = lastNonOptional + 1; i <= lastOptional; i++) {
@@ -221,7 +230,8 @@ export default class AutocompleteHelpers {
         if (results.length === 200) {
           return null;
         }
-        return fuzzaldrinPlus.filter(results, prefix, {key: 'filterText'})
+        return fuzzaldrinPlus
+          .filter(results, prefix, {key: 'filterText'})
           .map(result => ({...result, replacementPrefix: prefix}));
       },
     },
@@ -230,16 +240,13 @@ export default class AutocompleteHelpers {
   static getAutocompleteSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<Array<atom$AutocompleteSuggestion>> {
-    return trackTiming(
-      'nuclide-clang-atom.autocomplete',
-      async () => {
-        const results = await AutocompleteHelpers._cacher.getSuggestions(request);
-        if (results != null) {
-          return [...results];
-        }
-        return [];
-      },
-    );
+    return trackTiming('nuclide-clang-atom.autocomplete', async () => {
+      const results = await AutocompleteHelpers._cacher.getSuggestions(request);
+      if (results != null) {
+        return [...results];
+      }
+      return [];
+    });
   }
 
   static async _getAutocompleteSuggestions(
@@ -289,10 +296,12 @@ export default class AutocompleteHelpers {
       } else {
         snippet = getCompletionBody(completion, column, indentation);
       }
-      const rightLabel = completion.cursor_kind ?
-        ClangCursorToDeclarationTypes[completion.cursor_kind] : null;
-      const type = completion.cursor_kind ?
-        ClangCursorToAutocompletionTypes[completion.cursor_kind] : null;
+      const rightLabel = completion.cursor_kind
+        ? ClangCursorToDeclarationTypes[completion.cursor_kind]
+        : null;
+      const type = completion.cursor_kind
+        ? ClangCursorToAutocompletionTypes[completion.cursor_kind]
+        : null;
       return {
         snippet,
         displayText,

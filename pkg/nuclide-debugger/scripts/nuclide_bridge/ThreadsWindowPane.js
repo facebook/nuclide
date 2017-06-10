@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ThreadData} from '../../lib/types';
@@ -115,8 +116,14 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
    * '*' means the current selected thread.
    * Empty space for other threads.
    */
-  _getIndicator(thread: Object, stopThreadId: number, selectedThreadId: number): string {
-    return thread.id === stopThreadId ? '>' : (thread.id === selectedThreadId ? '*' : ' ');
+  _getIndicator(
+    thread: Object,
+    stopThreadId: number,
+    selectedThreadId: number,
+  ): string {
+    return thread.id === stopThreadId
+      ? '>'
+      : thread.id === selectedThreadId ? '*' : ' ';
   }
 
   _setStoppedThread(ref: Element) {
@@ -177,7 +184,9 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
 
     if (children.length > 0) {
       return (
-        <div style={containerStyle} className="nuclide-chrome-debugger-data-grid">
+        <div
+          style={containerStyle}
+          className="nuclide-chrome-debugger-data-grid">
           <table width="100%">
             <thead>
               <tr key={0}>
@@ -209,9 +218,7 @@ export default class ThreadsWindowPane extends WebInspector.SidebarPane {
     // TODO: change.
     this.registerRequiredCSS('components/breakpointsList.css');
 
-    ReactDOM.render(
-      <ThreadsWindowComponent />,
-      this.bodyElement);
+    ReactDOM.render(<ThreadsWindowComponent />, this.bodyElement);
 
     this.expand();
   }
@@ -219,6 +226,5 @@ export default class ThreadsWindowPane extends WebInspector.SidebarPane {
   // This is implemented by various UI views, but is not declared anywhere as
   // an official interface. There's callers to various `reset` functions, so
   // it's probably safer to have this.
-  reset() {
-  }
+  reset() {}
 }

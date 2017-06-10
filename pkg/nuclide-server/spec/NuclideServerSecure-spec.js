@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import NuclideServer from '../lib/NuclideServer';
 import {RpcConnection} from '../../nuclide-rpc';
 import servicesConfig from '../lib/servicesConfig';
@@ -47,12 +48,15 @@ describe('Nuclide Secure Server test suite', () => {
     waitsForPromise(async () => {
       generateCertificates();
 
-      server = new NuclideServer({
-        port: 8176,
-        serverKey: fs.readFileSync(server_key_path),
-        serverCertificate: fs.readFileSync(server_cert_path),
-        certificateAuthorityCertificate: fs.readFileSync(ca_cert_path),
-      }, servicesConfig);
+      server = new NuclideServer(
+        {
+          port: 8176,
+          serverKey: fs.readFileSync(server_key_path),
+          serverCertificate: fs.readFileSync(server_cert_path),
+          certificateAuthorityCertificate: fs.readFileSync(ca_cert_path),
+        },
+        servicesConfig,
+      );
 
       await server.connect();
 
@@ -65,7 +69,8 @@ describe('Nuclide Secure Server test suite', () => {
       const client = RpcConnection.createRemote(
         socket,
         [getRemoteNuclideUriMarshalers('localhost')],
-        servicesConfig);
+        servicesConfig,
+      );
       invariant(client);
 
       const version = await client.getService('InfoService').getServerVersion();
@@ -86,7 +91,9 @@ describe('Nuclide Secure Server test suite', () => {
 });
 
 function generateCertificates() {
-  const out = child_process.execSync(`${gen_certs_path} -s localhost`).toString('utf8');
+  const out = child_process
+    .execSync(`${gen_certs_path} -s localhost`)
+    .toString('utf8');
   const json = JSON.parse(out);
   ca_cert_path = json.ca_cert;
   server_cert_path = json.server_cert;

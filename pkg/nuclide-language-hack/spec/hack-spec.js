@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 import grammarTest from 'atom-grammar-test';
 
@@ -16,7 +17,9 @@ describe('PHP grammar', () => {
   let grammar: atom$Grammar = (null: any);
 
   beforeEach(() => {
-    waitsForPromise(() => atom.packages.activatePackage('nuclide-language-hack'));
+    waitsForPromise(() =>
+      atom.packages.activatePackage('nuclide-language-hack'),
+    );
     runs(() => {
       const hackGrammar = atom.grammars.grammarForScopeName('text.html.hack');
       invariant(hackGrammar);
@@ -40,7 +43,8 @@ describe('PHP grammar', () => {
         scopes: [
           'text.html.hack',
           'meta.embedded.block.php',
-          'source.hack', 'variable.other.php',
+          'source.hack',
+          'variable.other.php',
           'punctuation.definition.variable.php',
         ],
       });
@@ -96,11 +100,7 @@ describe('PHP grammar', () => {
       });
       expect(tokens[1][1]).toEqual({
         value: ' ',
-        scopes: [
-          'text.html.hack',
-          'meta.embedded.block.php',
-          'source.hack',
-        ],
+        scopes: ['text.html.hack', 'meta.embedded.block.php', 'source.hack'],
       });
       expect(tokens[1][2]).toEqual({
         value: '+',
@@ -340,7 +340,9 @@ describe('PHP grammar', () => {
     it('should tokenize heredocs correctly', () => {
       expect(grammar).toBeTruthy();
       grammar = grammar || {};
-      const tokens = grammar.tokenizeLines('<?hh\n$x = <<<EOTXT\ntest {$str}\nEOTXT;');
+      const tokens = grammar.tokenizeLines(
+        '<?hh\n$x = <<<EOTXT\ntest {$str}\nEOTXT;',
+      );
       expect(tokens[1][5].scopes).toContain('string.unquoted.heredoc.php');
       expect(tokens[1][6].scopes).toContain(
         'string.unquoted.heredoc.php',
@@ -1131,7 +1133,12 @@ describe('PHP grammar', () => {
         });
         expect(tokens[1][1]).toEqual({
           value: ' ',
-          scopes: ['text.html.hack', 'meta.embedded.block.php', 'source.hack', 'meta.function.php'],
+          scopes: [
+            'text.html.hack',
+            'meta.embedded.block.php',
+            'source.hack',
+            'meta.function.php',
+          ],
         });
         expect(tokens[1][2]).toEqual({
           value: 'array_test',
@@ -1313,7 +1320,9 @@ describe('PHP grammar', () => {
       it('should tokenize default array type with short array value correctly', () => {
         expect(grammar).toBeTruthy();
         grammar = grammar || {};
-        const tokens = grammar.tokenizeLines('<?hh\nfunction array_test(array $value = []) {}');
+        const tokens = grammar.tokenizeLines(
+          '<?hh\nfunction array_test(array $value = []) {}',
+        );
         expect(tokens[1][0]).toEqual({
           value: 'function',
           scopes: [
@@ -1326,7 +1335,12 @@ describe('PHP grammar', () => {
         });
         expect(tokens[1][1]).toEqual({
           value: ' ',
-          scopes: ['text.html.hack', 'meta.embedded.block.php', 'source.hack', 'meta.function.php'],
+          scopes: [
+            'text.html.hack',
+            'meta.embedded.block.php',
+            'source.hack',
+            'meta.function.php',
+          ],
         });
         expect(tokens[1][2]).toEqual({
           value: 'array_test',
@@ -1494,9 +1508,15 @@ describe('PHP grammar', () => {
     });
   });
 
-  grammarTest(nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_typing.php'));
-  grammarTest(nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_typedecl.php'));
-  grammarTest(nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_generics.php'));
+  grammarTest(
+    nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_typing.php'),
+  );
+  grammarTest(
+    nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_typedecl.php'),
+  );
+  grammarTest(
+    nuclideUri.join(__dirname, 'fixtures/syntax_test_hack_generics.php'),
+  );
   grammarTest(nuclideUri.join(__dirname, 'fixtures/syntax_test_xhp.php'));
 
   describe('magic method parsing', () => {
@@ -1578,7 +1598,9 @@ describe('PHP grammar', () => {
 
     it('parses correctly with a return type', () => {
       invariant(grammar != null);
-      const tokens = grammar.tokenizeLines('<?hh\nfunction(): void use ($var) {}');
+      const tokens = grammar.tokenizeLines(
+        '<?hh\nfunction(): void use ($var) {}',
+      );
       const useToken = tokens[1].find(token => token.value === 'use');
       expect(useToken).not.toBeUndefined();
       invariant(useToken != null);
@@ -1587,7 +1609,9 @@ describe('PHP grammar', () => {
 
     it("doesn't terminate the closure when there's a type annotation", () => {
       invariant(grammar != null);
-      const tokens = grammar.tokenizeLines('<?hh\nfunction(): void use ($var)\n{}');
+      const tokens = grammar.tokenizeLines(
+        '<?hh\nfunction(): void use ($var)\n{}',
+      );
       // Every token should be tagged as being part of the closure.
       const nonClosureTokens = tokens[1]
         .filter(token => !token.scopes.includes('meta.function.closure.php'))
@@ -1596,6 +1620,18 @@ describe('PHP grammar', () => {
         0,
         `These tokens are missing the closure tag: ${nonClosureTokens.join(', ')}`,
       );
+    });
+  });
+
+  describe('function typehints', () => {
+    it('terminates the function scope', () => {
+      invariant(grammar != null);
+      const tokens = grammar.tokenizeLines(
+        '<?hh\nnewtype T = (function(): bool); $test = 1;',
+      );
+      const testToken = tokens[1].find(token => token.value === 'test');
+      invariant(testToken != null);
+      expect(testToken.scopes).toContain('variable.other.php');
     });
   });
 });

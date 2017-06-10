@@ -6,22 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {TaskSettings} from '../types';
+import type {PlatformProviderSettings, TaskSettings} from '../types';
 
 import React from 'react';
 import {quote} from 'shell-quote';
 
-import {shellParse} from '../../../commons-node/string';
-import {AtomInput} from '../../../nuclide-ui/AtomInput';
-import {Button, ButtonTypes} from '../../../nuclide-ui/Button';
-import {ButtonGroup} from '../../../nuclide-ui/ButtonGroup';
+import {shellParse} from 'nuclide-commons/string';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Modal} from '../../../nuclide-ui/Modal';
 
 type Props = {
   currentBuckRoot: ?string,
   settings: TaskSettings,
+  platformProviderSettings: ?PlatformProviderSettings,
   onDismiss: () => void,
   onSave: (settings: TaskSettings) => void,
 };
@@ -45,6 +47,9 @@ export default class BuckToolbarSettings extends React.Component {
   }
 
   render(): React.Element<any> {
+    const extraSettingsUi = this.props.platformProviderSettings != null
+      ? this.props.platformProviderSettings.ui
+      : null;
     return (
       <Modal onDismiss={this.props.onDismiss}>
         <div className="block">
@@ -73,6 +78,7 @@ export default class BuckToolbarSettings extends React.Component {
                 onConfirm={this._onSave.bind(this)}
               />
             </div>
+            {extraSettingsUi}
           </div>
           <div style={{display: 'flex', justifyContent: 'flex-end'}}>
             <ButtonGroup>
@@ -109,6 +115,9 @@ export default class BuckToolbarSettings extends React.Component {
       atom.notifications.addError('Could not parse arguments', {
         detail: err.stack,
       });
+    }
+    if (this.props.platformProviderSettings != null) {
+      this.props.platformProviderSettings.onSave();
     }
   }
 }

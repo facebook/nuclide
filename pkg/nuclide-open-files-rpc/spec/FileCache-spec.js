@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Subject} from 'rxjs';
@@ -38,8 +39,13 @@ describe('FileCache', () => {
   let finishEvents: () => Promise<Array<Object>> = async () => [];
   let finishDirEvents: () => Promise<Array<Array<string>>> = async () => [];
 
-  async function getFileContentsByVersion(filePath, changeCount): Promise<?string> {
-    const buffer = await cache.getBufferAtVersion(cache.createFileVersion(filePath, changeCount));
+  async function getFileContentsByVersion(
+    filePath,
+    changeCount,
+  ): Promise<?string> {
+    const buffer = await cache.getBufferAtVersion(
+      cache.createFileVersion(filePath, changeCount),
+    );
     if (buffer == null) {
       return null;
     }
@@ -50,7 +56,9 @@ describe('FileCache', () => {
     cache = new FileCache();
 
     const done = new Subject();
-    const events = cache.observeFileEvents().takeUntil(done)
+    const events = cache
+      .observeFileEvents()
+      .takeUntil(done)
       .map(event => {
         const result = {
           ...event,
@@ -59,15 +67,20 @@ describe('FileCache', () => {
         };
         delete result.fileVersion;
         return result;
-      }).toArray().toPromise();
+      })
+      .toArray()
+      .toPromise();
     finishEvents = () => {
       done.next();
       done.complete();
       return events;
     };
-    const dirEvents = cache.observeDirectoryEvents().takeUntil(done)
+    const dirEvents = cache
+      .observeDirectoryEvents()
+      .takeUntil(done)
       .map(dirs => Array.from(dirs))
-      .toArray().toPromise();
+      .toArray()
+      .toPromise();
     finishDirEvents = () => {
       done.next();
       done.complete();
@@ -92,12 +105,14 @@ describe('FileCache', () => {
           changeCount: 3,
         },
       });
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
+        },
+      ]);
     });
   });
   it('open/close', () => {
@@ -120,17 +135,19 @@ describe('FileCache', () => {
         },
       });
       expect(cacheToObject(cache)).toEqual({});
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      },
-      {
-        kind: 'close',
-        filePath: 'f1',
-        changeCount: 3,
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
+        },
+        {
+          kind: 'close',
+          filePath: 'f1',
+          changeCount: 3,
+        },
+      ]);
     });
   });
   it('edit', () => {
@@ -151,38 +168,34 @@ describe('FileCache', () => {
           filePath: 'f1',
           version: 4,
         },
-        oldRange: new ServerRange(
-          new ServerPoint(0, 3),
-          new ServerPoint(0, 6),
-        ),
+        oldRange: new ServerRange(new ServerPoint(0, 3), new ServerPoint(0, 6)),
         oldText: 'ten',
-        newRange: new ServerRange(
-          new ServerPoint(0, 3),
-          new ServerPoint(0, 9),
-        ),
+        newRange: new ServerRange(new ServerPoint(0, 3), new ServerPoint(0, 9)),
         newText: 'eleven',
       });
-      expect(await finishEvents()).diffJson([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      },
-      {
-        kind: 'edit',
-        filePath: 'f1',
-        changeCount: 4,
-        oldRange: {
-          start: {row: 0, column: 3},
-          end: {row: 0, column: 6},
+      expect(await finishEvents()).diffJson([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
         },
-        oldText: 'ten',
-        newRange: {
-          start: {row: 0, column: 3},
-          end: {row: 0, column: 9},
+        {
+          kind: 'edit',
+          filePath: 'f1',
+          changeCount: 4,
+          oldRange: {
+            start: {row: 0, column: 3},
+            end: {row: 0, column: 6},
+          },
+          oldText: 'ten',
+          newRange: {
+            start: {row: 0, column: 3},
+            end: {row: 0, column: 9},
+          },
+          newText: 'eleven',
         },
-        newText: 'eleven',
-      }]);
+      ]);
     });
   });
   it('sync closed file', () => {
@@ -202,12 +215,14 @@ describe('FileCache', () => {
           changeCount: 4,
         },
       });
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f2',
-        changeCount: 4,
-        contents: 'contents12',
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f2',
+          changeCount: 4,
+          contents: 'contents12',
+        },
+      ]);
     });
   });
   it('sync opened file', () => {
@@ -237,27 +252,30 @@ describe('FileCache', () => {
         },
       });
       expect(JSON.stringify(await finishEvents())).toEqual(
-        JSON.stringify([{
-          kind: 'open',
-          contents: 'blip',
-          filePath: 'f2',
-          changeCount: 4,
-        },
-        {
-          kind: 'edit',
-          oldRange: {
-            start: {row: 0, column: 0},
-            end: {row: 0, column: 4},
+        JSON.stringify([
+          {
+            kind: 'open',
+            contents: 'blip',
+            filePath: 'f2',
+            changeCount: 4,
           },
-          oldText: 'blip',
-          newRange: {
-            start: {row: 0, column: 0},
-            end: {row: 0, column: 10},
+          {
+            kind: 'edit',
+            oldRange: {
+              start: {row: 0, column: 0},
+              end: {row: 0, column: 4},
+            },
+            oldText: 'blip',
+            newRange: {
+              start: {row: 0, column: 0},
+              end: {row: 0, column: 10},
+            },
+            newText: 'contents12',
+            filePath: 'f2',
+            changeCount: 42,
           },
-          newText: 'contents12',
-          filePath: 'f2',
-          changeCount: 42,
-        }]));
+        ]),
+      );
     });
   });
   it('out of date sync', () => {
@@ -287,12 +305,15 @@ describe('FileCache', () => {
         },
       });
       expect(JSON.stringify(await finishEvents())).toEqual(
-        JSON.stringify([{
-          kind: 'open',
-          contents: 'blip',
-          filePath: 'f2',
-          changeCount: 42,
-        }]));
+        JSON.stringify([
+          {
+            kind: 'open',
+            contents: 'blip',
+            filePath: 'f2',
+            changeCount: 42,
+          },
+        ]),
+      );
     });
   });
 
@@ -319,12 +340,14 @@ describe('FileCache', () => {
           contents: 'contents1',
         });
       }).toThrow();
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
+        },
+      ]);
     });
   });
   it('close non-existing file', () => {
@@ -402,12 +425,14 @@ describe('FileCache', () => {
           newText: 'eleven',
         });
       }).toThrow();
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
+        },
+      ]);
     });
   });
   it('edit with incorrect oldText', () => {
@@ -441,12 +466,14 @@ describe('FileCache', () => {
           newText: 'eleven',
         });
       }).toThrow();
-      expect(await finishEvents()).toEqual([{
-        kind: 'open',
-        filePath: 'f1',
-        changeCount: 3,
-        contents: 'contents1',
-      }]);
+      expect(await finishEvents()).toEqual([
+        {
+          kind: 'open',
+          filePath: 'f1',
+          changeCount: 3,
+          contents: 'contents1',
+        },
+      ]);
     });
   });
 
@@ -500,15 +527,9 @@ describe('FileCache', () => {
           filePath: 'f1',
           version: 4,
         },
-        oldRange: new ServerRange(
-          new ServerPoint(0, 3),
-          new ServerPoint(0, 6),
-        ),
+        oldRange: new ServerRange(new ServerPoint(0, 3), new ServerPoint(0, 6)),
         oldText: 'ten',
-        newRange: new ServerRange(
-          new ServerPoint(0, 3),
-          new ServerPoint(0, 9),
-        ),
+        newRange: new ServerRange(new ServerPoint(0, 3), new ServerPoint(0, 9)),
         newText: 'eleven',
       });
       const value = await result;
@@ -624,13 +645,13 @@ describe('FileCache', () => {
   });
   it('Initial dirs', () => {
     waitsForPromise(async () => {
-      expect((await finishDirEvents())).toEqual([[]]);
+      expect(await finishDirEvents()).toEqual([[]]);
     });
   });
   it('Single dir', () => {
     waitsForPromise(async () => {
       cache.onDirectoriesChanged(new Set(['abc']));
-      expect((await finishDirEvents())).toEqual([[], ['abc']]);
+      expect(await finishDirEvents()).toEqual([[], ['abc']]);
     });
   });
 

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestContext} from './remotable-tests';
@@ -27,7 +28,9 @@ export function runTest(context: TestContext) {
       // Add this directory as an atom project.
       await context.setProject(projectPath);
 
-      const textEditor = await atom.workspace.open(context.getProjectRelativePath('test.txt'));
+      const textEditor = await atom.workspace.open(
+        context.getProjectRelativePath('test.txt'),
+      );
       invariant(textEditor);
       const textEditorView = atom.views.getView(textEditor);
 
@@ -40,7 +43,10 @@ export function runTest(context: TestContext) {
       await pollFor(
         () => {
           const fileElement = getVisibleEntryFromFileTree('test.txt');
-          return fileElement != null && fileElement.classList.contains('status-modified');
+          return (
+            fileElement != null &&
+            fileElement.classList.contains('status-modified')
+          );
         },
         'File did not change its appearance in the file-tree',
         30000,

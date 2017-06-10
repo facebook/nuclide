@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
+import {Block} from 'nuclide-commons-ui/Block';
 import Tabs from './Tabs';
 
 const tabs = [
@@ -46,7 +47,10 @@ class TabExample extends React.Component {
     };
   }
 
-  handleTabChange(newTabName: {name: string, tabContent: React.Element<any>}): void {
+  handleTabChange(newTabName: {
+    name: string,
+    tabContent: React.Element<any>,
+  }): void {
     this.setState({
       activeTabName: newTabName.name,
     });

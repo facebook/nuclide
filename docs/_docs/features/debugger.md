@@ -12,9 +12,12 @@ One of the key features of Nuclide is its multiple-language debugging support pr
 
 ## Instantiation
 
-In general, the Debugger is instantiated via `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux). You can also
+Attach to a running debug target via `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux and Windows). You can also
 toggle the Debugger through the [Command Palette](/docs/editor/basics/#command-palette) and the
-[Nuclide toolbar](/docs/features/toolbar/#buttons)'s **Toggle Debugger** icon.
+[Nuclide toolbar](/docs/features/toolbar/#buttons)'s **Toggle Debugger** icon. You can also launch a new target with the debugger
+attached via `Cmd-F8` (`Ctrl-F8` on Linux and Windows).
+
+You can also bring up the Debugger panel by choosing `Debugger -> Show` from the Nuclide menu.
 
 ## Basics
 
@@ -32,7 +35,7 @@ attach to a currently running process (e.g., `node`) for debugging.
 *Example*
 
 If you have a Node project running (e.g, via `npm start` or `node yourfile.js`), press
-`Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) to toggle the Debugger; this opens the Debugger Selection window. Then, attach Nuclide to the
+`Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) to toggle the Debugger Attach Dialog. Then, attach Nuclide to the
 relevant `node` process.
 
 ![](/static/images/docs/feature-debugger-basics-attach-target-process.png)
@@ -94,7 +97,7 @@ information so that it is relevant to that function.
 ***Breakpoints***
 
 The **Breakpoints** area shows you all the places in your project where you have breakpoints set. If
-any are highlighted, that means that you have now hit that breakpoint while running the code. Clicking on a breakpoint in this list will move your cursor to its line of code in the Editing Area.  You can deactivate/reactive breakpoints using the green checkmarks next to each one.  Right-clicking in the area will give you the option to quickly remove all breakpoints at once.
+any are highlighted, that means that you have now hit that breakpoint while running the code. Clicking on a breakpoint in this list will move your cursor to its line of code in the Editing Area.  You can deactivate/reactive breakpoints by clicking the checkmark next to each one.  Right-clicking in the area will give you the option to quickly remove, enable, or disable all breakpoints at once.
 
 <img src="/static/images/docs/feature-debugger-basics-breakpoint-menu.png" align="middle" style="width: 250px" />
 
@@ -102,11 +105,13 @@ any are highlighted, that means that you have now hit that breakpoint while runn
 
 These are breakpoints that cannot be resolved by the debugger. The most likely cause of an
 unresolved breakpoint is putting a breakpoint on code that is not part of the project on which the
-debugger process is attached.
+debugger process is attached. For some languages, this can also indicate that the program was built without debug symbols (check
+ your compiler flags!), or that the symbols are missing or do not match the binary being debugged.
 
-***Locals***
+***Scopes***
 
-The **Locals** area shows you information about local variables based upon the current point in the running of the code.
+The **Scopes** pane shows you information about variables based upon the current point in the running of the code. Which scopes are visible
+depends on the language being debugged.
 
 ***Watch Expressions***
 
@@ -121,18 +126,8 @@ currently in the `processSum` method and started from the `onData` method.
 
 ***Detaching***
 
-![](/static/images/docs/feature-debugger-basics-detach.png)
-
-You can detach the debugger from the current process by clicking the white "X" with the red background in the upper-right corner.
-This will stop the entire debugging session for that process.
-
-***Web Inspector***
-
-![](/static/images/docs/feature-debugger-basics-webinspector.png)
-
-You can open the Web Inspector by clicking on the Web Inspector icon (i.e., gear symbol). This will bring up
-a [Chrome Developer Tools window](https://developers.google.com/web/tools/chrome-devtools/) for the
-current debugging frame.
+You can detach the debugger from the current process by clicking "X" to close the debugger controls pane, or by clicking the "stop" button.
+This will stop the entire debugging session for that process, but will not kill the target.
 
 ### Stepping
 

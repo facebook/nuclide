@@ -6,18 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  ClangCompileResult,
-} from '../../nuclide-clang-rpc/lib/rpc-types';
-import type {LinterMessage} from '../../nuclide-diagnostics-common';
+import type {ClangCompileResult} from '../../nuclide-clang-rpc/lib/rpc-types';
+import type {LinterMessage} from 'atom-ide-ui';
 
 import invariant from 'assert';
 import {track, trackTiming} from '../../nuclide-analytics';
-import featureConfig from '../../commons-atom/featureConfig';
-import {wordAtPosition} from '../../commons-atom/range';
-import {getLogger} from '../../nuclide-logging';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {wordAtPosition} from 'nuclide-commons-atom/range';
+import {getLogger} from 'log4js';
 import {getDiagnostics} from './libclang';
 
 const IDENTIFIER_REGEX = /[a-z0-9_]+/gi;
@@ -25,11 +24,13 @@ const DEFAULT_FLAGS_WARNING =
   'Diagnostics are disabled due to lack of compilation flags. ' +
   'Build this file with Buck, or create a compile_commands.json file manually.';
 
-function isValidRange(
-  clangRange: atom$Range,
-): boolean {
+function isValidRange(clangRange: atom$Range): boolean {
   // Some ranges are unbounded/invalid (end with -1) or empty.
-  return clangRange.end.row !== -1 && !clangRange.start.isEqual(clangRange.end);
+  return (
+    clangRange.start.row !== -1 &&
+    clangRange.end.row !== -1 &&
+    !clangRange.start.isEqual(clangRange.end)
+  );
 }
 
 function getRangeFromPoint(
@@ -48,12 +49,9 @@ function getRangeFromPoint(
 }
 
 export default class ClangLinter {
-  static lint(
-    textEditor: atom$TextEditor,
-  ): Promise<Array<LinterMessage>> {
-    return trackTiming(
-      'nuclide-clang-atom.fetch-diagnostics',
-      () => ClangLinter._lint(textEditor),
+  static lint(textEditor: atom$TextEditor): Promise<Array<LinterMessage>> {
+    return trackTiming('nuclide-clang-atom.fetch-diagnostics', () =>
+      ClangLinter._lint(textEditor),
     );
   }
 
@@ -79,7 +77,10 @@ export default class ClangLinter {
       });
       return ClangLinter._processDiagnostics(diagnostics, textEditor);
     } catch (error) {
-      getLogger().error(`ClangLinter: error linting ${filePath}`, error);
+      getLogger('nuclide-clang').error(
+        `ClangLinter: error linting ${filePath}`,
+        error,
+      );
       return [];
     }
   }
@@ -92,7 +93,10 @@ export default class ClangLinter {
     const buffer = editor.getBuffer();
     const bufferPath = buffer.getPath();
     invariant(bufferPath != null);
-    if (data.accurateFlags || featureConfig.get('nuclide-clang.defaultDiagnostics')) {
+    if (
+      data.accurateFlags ||
+      featureConfig.get('nuclide-clang.defaultDiagnostics')
+    ) {
       data.diagnostics.forEach(diagnostic => {
         // We show only warnings, errors and fatals (2, 3 and 4, respectively).
         if (diagnostic.severity < 2) {
@@ -134,8 +138,6 @@ export default class ClangLinter {
         }
 
         result.push({
-          scope: 'file',
-          providerName: 'Clang',
           type: diagnostic.severity === 2 ? 'Warning' : 'Error',
           filePath,
           text: diagnostic.spelling,
@@ -146,8 +148,6 @@ export default class ClangLinter {
       });
     } else {
       result.push({
-        scope: 'file',
-        providerName: 'Clang',
         type: 'Warning',
         filePath: bufferPath,
         text: DEFAULT_FLAGS_WARNING,

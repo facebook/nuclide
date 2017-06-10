@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Level, Message} from '../../nuclide-console/lib/types';
@@ -15,8 +16,8 @@ import type {LogcatEntry, Priority} from './types';
  * Convert a structured logcat entry into the format that nuclide-console wants.
  */
 export default function createMessage(entry: LogcatEntry): Message {
-  const priority = entry.metadata && entry.metadata.priority || 'I';
-  const tag = entry.metadata && entry.metadata.tag || null;
+  const priority = (entry.metadata && entry.metadata.priority) || 'I';
+  const tag = (entry.metadata && entry.metadata.tag) || null;
   return {
     text: entry.message,
     level: priorityToLevel(priority),

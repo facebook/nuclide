@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {
-  CompositeDisposable,
-  Disposable,
-} from 'atom';
+import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
 
 import {NuxManager} from './NuxManager';
@@ -86,7 +84,7 @@ export function deactivate(): void {
 }
 
 export function provideRegisterNuxService(): RegisterNux {
-  return ((nux: NuxTourModel): Disposable => {
+  return (nux: NuxTourModel): Disposable => {
     if (activation == null) {
       throw new Error('An error occurred when instantiating the NUX package.');
     }
@@ -94,19 +92,21 @@ export function provideRegisterNuxService(): RegisterNux {
       throw new Error('Cannot register a "null" NuxTour.');
     }
     return activation.addNewNux(nux);
-  });
+  };
 }
 
 export function provideTriggerNuxService(): TriggerNux {
-  return ((id: number): void => {
+  return (id: number): void => {
     if (activation == null) {
       throw new Error('An error occurred when instantiating the NUX package.');
     }
     activation.tryTriggerNux(id);
-  });
+  };
 }
 
-export function consumeSyncCompletedNuxService(syncCompletedNuxService: SyncCompletedNux): void {
+export function consumeSyncCompletedNuxService(
+  syncCompletedNuxService: SyncCompletedNux,
+): void {
   invariant(activation != null);
   activation.setSyncCompletedNuxService(syncCompletedNuxService);
 }

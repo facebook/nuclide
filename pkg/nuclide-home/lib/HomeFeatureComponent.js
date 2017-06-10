@@ -6,19 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {
-  Button,
-  ButtonSizes,
-} from '../../nuclide-ui/Button';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 
 type Props = {
   title: string,
   icon: string,
   description: string | React.Element<any>,
-  command: ?(string | () => void),
+  command: ?(string | (() => void)),
 };
 
 export default class HomeFeatureComponent extends React.Component {
@@ -31,7 +29,9 @@ export default class HomeFeatureComponent extends React.Component {
 
   _tryIt(): void {
     const {command} = this.props;
-    if (command == null) { return; }
+    if (command == null) {
+      return;
+    }
     switch (typeof command) {
       case 'string':
         atom.commands.dispatch(atom.views.getView(atom.workspace), command);
@@ -48,14 +48,17 @@ export default class HomeFeatureComponent extends React.Component {
     const {title, command} = this.props;
     return (
       <details className="nuclide-home-card">
-        <summary className={`nuclide-home-summary icon icon-${this.props.icon}`}>
+        <summary
+          className={`nuclide-home-summary icon icon-${this.props.icon}`}>
           {title}
-          {command ? <Button
-            className="pull-right nuclide-home-tryit"
-            size={ButtonSizes.SMALL}
-            onClick={this._tryIt}>
-            Try it
-          </Button> : null}
+          {command
+            ? <Button
+                className="pull-right nuclide-home-tryit"
+                size={ButtonSizes.SMALL}
+                onClick={this._tryIt}>
+                Try it
+              </Button>
+            : null}
         </summary>
         <div className="nuclide-home-detail">
           {this.props.description}

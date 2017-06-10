@@ -6,12 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Provider} from '../../nuclide-quick-open/lib/types';
-import type RecentFilesService from '../../nuclide-recent-files-service/lib/RecentFilesService';
+import type RecentFilesService
+  from '../../nuclide-recent-files-service/lib/RecentFilesService';
 
-import {RecentFilesProvider, setRecentFilesService} from './RecentFilesProvider';
+import {
+  RecentFilesProvider,
+  setRecentFilesService,
+} from './RecentFilesProvider';
 
 export function registerProvider(): Provider {
   return RecentFilesProvider;

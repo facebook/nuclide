@@ -6,14 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {LocalStorageJsonTable} from '../../commons-atom/LocalStorageJsonTable';
+import type {
+  LocalStorageJsonTable,
+} from '../../commons-atom/LocalStorageJsonTable';
 import type {Action, Store, ToolbarStatePreference} from '../lib/types';
+import type {ConsoleApi, SourceInfo} from '../../nuclide-console/lib/types';
 
-import {ActionsObservable, combineEpics} from '../../commons-node/redux-observable';
+import {
+  ActionsObservable,
+  combineEpics,
+} from '../../commons-node/redux-observable';
 import {taskFromObservable} from '../../commons-node/tasks';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as Actions from '../lib/redux/Actions';
 import * as Epics from '../lib/redux/Epics';
 import * as dummy from './dummy';
@@ -82,7 +89,9 @@ describe('Epics', () => {
             .first()
             .toPromise();
           invariant(output.type === Actions.SET_STATES_FOR_TASK_RUNNERS);
-          const runnerState = output.payload.statesForTaskRunners.get(taskRunner);
+          const runnerState = output.payload.statesForTaskRunners.get(
+            taskRunner,
+          );
           invariant(runnerState);
           expect(runnerState.enabled).toEqual(true);
           expect(runnerState.tasks[0].type).toEqual('test task');
@@ -120,7 +129,10 @@ describe('Epics', () => {
     describe('if this working root doesnt have a preference', () => {
       it('selects an enabled runner with the highest priority', () => {
         waitsForPromise(async () => {
-          const output = await runActions([Actions.setStatesForTaskRunners(newStates)], state)
+          const output = await runActions(
+            [Actions.setStatesForTaskRunners(newStates)],
+            state,
+          )
             .toArray()
             .toPromise();
           expect(output.length).toEqual(2);
@@ -133,7 +145,10 @@ describe('Epics', () => {
 
       it('shows the toolbar since it might be useful', () => {
         waitsForPromise(async () => {
-          const output = await runActions([Actions.setStatesForTaskRunners(newStates)], state)
+          const output = await runActions(
+            [Actions.setStatesForTaskRunners(newStates)],
+            state,
+          )
             .toArray()
             .toPromise();
           expect(output.length).toEqual(2);
@@ -157,7 +172,7 @@ describe('Epics', () => {
             [Actions.setStatesForTaskRunners(newStates)],
             state,
             createMockPreferences([{key: 'foo', value: preference}]),
-        )
+          )
             .toArray()
             .toPromise();
           expect(output.length).toEqual(2);
@@ -169,6 +184,332 @@ describe('Epics', () => {
           expect(taskRunnerAction.payload.taskRunner.id).toEqual('b');
           expect(visibilityAction.payload.visible).toEqual(true);
           expect(visibilityAction.payload.updateUserPreferences).toEqual(false);
+        });
+      });
+    });
+  });
+
+  describe('SET_CONSOLE_SERVICE', () => {
+    describe('if the console service is null', () => {
+      it('does nothing', () => {
+        waitsForPromise(async () => {
+          const state = {
+            consoleService: null,
+            taskRunnersReady: true,
+          };
+          const output = await runActions(
+            [Actions.setConsoleService(null)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+          expect(output).toEqual([]);
+        });
+      });
+    });
+
+    describe('if the task runners arent ready', () => {
+      it('does nothing', () => {
+        waitsForPromise(async () => {
+          const state = {
+            consoleService: createMockConsole,
+            taskRunnersReady: false,
+          };
+          const output = await runActions(
+            [Actions.setConsoleService(createMockConsole)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+          expect(output).toEqual([]);
+        });
+      });
+    });
+
+    describe('if the task runners are ready and the console service exists', () => {
+      it('sets consoles for all registered task runners', () => {
+        waitsForPromise(async () => {
+          const state = {
+            consoleService: createMockConsole,
+            taskRunnersReady: true,
+            taskRunners: [new dummy.TaskRunner()],
+          };
+          const output = await runActions(
+            [Actions.setConsoleService(createMockConsole)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(1);
+          const setConsolesAction = output[0];
+          invariant(
+            setConsolesAction.type === Actions.SET_CONSOLES_FOR_TASK_RUNNERS,
+          );
+          const {consolesForTaskRunners} = setConsolesAction.payload;
+          expect(consolesForTaskRunners.size).toEqual(1);
+        });
+      });
+    });
+  });
+
+  describe('DID_ACTIVATE_INITIAL_PACKAGES', () => {
+    describe('if the console service is null', () => {
+      it('sends another project root message', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const state = {
+            consoleService: null,
+            taskRunnersReady: true,
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.didActivateInitialPackages()],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners arent ready', () => {
+      it('sets the project root', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const state = {
+            consoleService: createMockConsole,
+            taskRunnersReady: false,
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.didActivateInitialPackages()],
+            state,
+          )
+            .toArray()
+            .toPromise();
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners are ready and the console service exists', () => {
+      it('sets the project root, sets consoles for all registered task runners', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const state = {
+            consoleService: createMockConsole,
+            projectRoot: mockProjectRoot,
+            taskRunnersReady: true,
+            taskRunners: [new dummy.TaskRunner()],
+          };
+          const output = await runActions(
+            [Actions.didActivateInitialPackages()],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(2);
+          const setConsolesAction = output[1];
+          const setProjectRootAction = output[0];
+          invariant(
+            setConsolesAction.type === Actions.SET_CONSOLES_FOR_TASK_RUNNERS,
+          );
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          const {consolesForTaskRunners} = setConsolesAction.payload;
+          expect(consolesForTaskRunners.size).toEqual(1);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+  });
+
+  describe('REGISTER_TASK_RUNNER', () => {
+    describe('if the console service is null', () => {
+      it('sends another project root message', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const state = {
+            consoleService: null,
+            taskRunnersReady: true,
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.registerTaskRunner(new dummy.TaskRunner())],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners arent ready', () => {
+      it('sets the project root', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const state = {
+            consoleService: createMockConsole,
+            taskRunnersReady: false,
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.registerTaskRunner(new dummy.TaskRunner())],
+            state,
+          )
+            .toArray()
+            .toPromise();
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners are ready and the console service exists', () => {
+      it('sets the project root, sets consoles for all registered task runners', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const taskRunner = new dummy.TaskRunner();
+          const state = {
+            consoleService: createMockConsole,
+            projectRoot: mockProjectRoot,
+            taskRunnersReady: true,
+            taskRunners: [],
+          };
+          const output = await runActions(
+            [Actions.registerTaskRunner(taskRunner)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(2);
+          const addConsoleAction = output[1];
+          const setProjectRootAction = output[0];
+          invariant(
+            addConsoleAction.type === Actions.ADD_CONSOLE_FOR_TASK_RUNNER,
+          );
+          expect(addConsoleAction.payload.taskRunner).toEqual(taskRunner);
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+  });
+
+  describe('UNREGISTER_TASK_RUNNER', () => {
+    describe('if the console service is null', () => {
+      it('sends another project root message', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const taskRunner = new dummy.TaskRunner();
+          const state = {
+            consoleService: null,
+            taskRunnersReady: true,
+            taskRunners: [taskRunner],
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.unregisterTaskRunner(taskRunner)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners arent ready', () => {
+      it('sets the project root', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const taskRunner = new dummy.TaskRunner();
+          const state = {
+            consoleService: createMockConsole,
+            taskRunnersReady: false,
+            taskRunners: [taskRunner],
+            projectRoot: mockProjectRoot,
+          };
+          const output = await runActions(
+            [Actions.unregisterTaskRunner(taskRunner)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+          expect(output.length).toEqual(1);
+          const setProjectRootAction = output[0];
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
+        });
+      });
+    });
+
+    describe('if the task runners are ready and the console service exists', () => {
+      it('sets the project root, sets consoles for all registered task runners', () => {
+        waitsForPromise(async () => {
+          const mockProjectRoot = {};
+          const taskRunner = new dummy.TaskRunner();
+          const state = {
+            consoleService: createMockConsole,
+            projectRoot: mockProjectRoot,
+            taskRunnersReady: true,
+            taskRunners: [taskRunner],
+          };
+          const output = await runActions(
+            [Actions.unregisterTaskRunner(taskRunner)],
+            state,
+          )
+            .toArray()
+            .toPromise();
+
+          expect(output.length).toEqual(2);
+          const removeConsoleAction = output[1];
+          const setProjectRootAction = output[0];
+          invariant(
+            removeConsoleAction.type === Actions.REMOVE_CONSOLE_FOR_TASK_RUNNER,
+          );
+          expect(removeConsoleAction.payload.taskRunner).toEqual(taskRunner);
+          invariant(setProjectRootAction.type === Actions.SET_PROJECT_ROOT);
+          expect(setProjectRootAction.payload.projectRoot).toEqual(
+            mockProjectRoot,
+          );
         });
       });
     });
@@ -189,9 +530,12 @@ describe('Epics', () => {
 
         const actions = [
           Actions.runTask({...taskMeta, taskRunner}, false),
-          {type: Actions.TASK_STOPPED,
-            payload:
-           {taskStatus: {metadata: taskMeta, task, progress: 1}},
+          {
+            type: Actions.TASK_STOPPED,
+            payload: {
+              taskStatus: {metadata: taskMeta, task, progress: 1},
+              taskRunner,
+            },
           },
         ];
         await runActions(actions, state).toArray().toPromise();
@@ -245,8 +589,9 @@ function createMockStore(state: Object): Store {
 function runActions(
   actions: Array<Action>,
   initialState: Object,
-  preferencesForWorkingRoots: LocalStorageJsonTable<?ToolbarStatePreference>
-    = createMockPreferences([]),
+  preferencesForWorkingRoots: LocalStorageJsonTable<?ToolbarStatePreference> = createMockPreferences(
+    [],
+  ),
 ): ReplaySubject<Action> {
   const store = createMockStore(initialState);
   const input = new Subject();
@@ -264,6 +609,12 @@ function runActions(
 function createMockPreferences(
   db: Array<{key: string, value: ?ToolbarStatePreference}>,
 ): LocalStorageJsonTable<?ToolbarStatePreference> {
-  return ((new dummy.ToolbarStatePreferences(db): any):
-    LocalStorageJsonTable<?ToolbarStatePreference>);
+  return ((new dummy.ToolbarStatePreferences(
+    db,
+  ): any): LocalStorageJsonTable<?ToolbarStatePreference>);
+}
+
+function createMockConsole(source: SourceInfo): ConsoleApi {
+  const consoleApi = {};
+  return ((consoleApi: any): ConsoleApi);
 }

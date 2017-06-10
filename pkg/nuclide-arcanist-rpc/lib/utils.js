@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type PhabricatorRevisionInfo = {
- url: string,
- id: number,
- name: string,
+  url: string,
+  id: number,
+  name: string,
 };
 
 const DIFFERENTIAL_REVISION_REGEX = /^Differential Revision:\s*(\S+)/im;
@@ -44,9 +45,7 @@ export function getPhabricatorRevisionFromUrl(
   };
 }
 
-export function getCommitAuthorFromAuthorEmail(
-  author: string,
-): ?string {
+export function getCommitAuthorFromAuthorEmail(author: string): ?string {
   const match = COMMIT_AUTHOR_REGEX.exec(author);
   if (match === null) {
     return null;

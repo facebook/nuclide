@@ -6,15 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
 import {trackTiming, track} from '../../nuclide-analytics';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
-import {getLogger} from '../../nuclide-logging';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-file-watcher');
 
 export default class FileWatcher {
   _editor: TextEditor;
@@ -27,12 +30,16 @@ export default class FileWatcher {
       return;
     }
     const _subscriptions = new CompositeDisposable();
-    _subscriptions.add(this._editor.onDidConflict(() => {
-      if (this._shouldPromptToReload()) {
-        logger.info(`Conflict at file: ${this._editor.getPath() || 'File not found'}`);
-        this._promptReload();
-      }
-    }));
+    _subscriptions.add(
+      this._editor.onDidConflict(() => {
+        if (this._shouldPromptToReload()) {
+          logger.info(
+            `Conflict at file: ${this._editor.getPath() || 'File not found'}`,
+          );
+          this._promptReload();
+        }
+      }),
+    );
     this._subscriptions = _subscriptions;
   }
 
@@ -41,9 +48,8 @@ export default class FileWatcher {
   }
 
   _promptReload(): Promise<any> {
-    return trackTiming(
-      'file-watcher:promptReload',
-      () => this.__promptReload(),
+    return trackTiming('file-watcher:promptReload', () =>
+      this.__promptReload(),
     );
   }
 
@@ -74,8 +80,7 @@ export default class FileWatcher {
 
     // Load the file contents locally or remotely.
     const service = getFileSystemServiceByNuclideUri(filePath);
-    const localFilePath = nuclideUri.getPath(filePath);
-    const contents = (await service.readFile(localFilePath)).toString(encoding);
+    const contents = (await service.readFile(filePath)).toString(encoding);
 
     // Open a right split pane to compare the contents.
     // TODO: We can use the diff-view here when ready.

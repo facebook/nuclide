@@ -6,64 +6,108 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {DebuggerActionUIProvider} from './actions/DebuggerActionUIProvider';
-import type EventEmitter from 'events';
+import type {
+  DebuggerActionUIProvider,
+} from './actions/DebuggerActionUIProvider';
+import type {DebuggerConfigAction} from '../../nuclide-debugger-base';
 
-import {asyncFilter} from '../../commons-node/promise';
+import {asyncFilter} from 'nuclide-commons/promise';
 import {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
-import React from 'react';
 import {LaunchAttachStore} from './LaunchAttachStore';
 import LaunchAttachDispatcher from './LaunchAttachDispatcher';
 import {LaunchAttachActions} from './LaunchAttachActions';
-import * as LaunchActionUIProvider from './actions/LaunchActionUIProvider';
-import * as AttachActionUIProvider from './actions/AttachActionUIProvider';
-
+import {NativeActionUIProvider} from './actions/NativeActionUIProvider';
+import invariant from 'invariant';
 
 export class LLDBLaunchAttachProvider extends DebuggerLaunchAttachProvider {
   _dispatcher: LaunchAttachDispatcher;
   _actions: LaunchAttachActions;
   _store: LaunchAttachStore;
   _uiProviderMap: Map<string, DebuggerActionUIProvider>;
+  _enabledProviderNames: Map<string, Array<string>>;
 
   constructor(debuggingTypeName: string, targetUri: string) {
     super(debuggingTypeName, targetUri);
     this._dispatcher = new LaunchAttachDispatcher();
-    this._actions = new LaunchAttachActions(this._dispatcher, this.getTargetUri());
+    this._actions = new LaunchAttachActions(
+      this._dispatcher,
+      this.getTargetUri(),
+    );
     this._store = new LaunchAttachStore(this._dispatcher);
 
     this._uiProviderMap = new Map();
-    this._loadAction(AttachActionUIProvider);
-    this._loadAction(LaunchActionUIProvider);
+    this._enabledProviderNames = new Map();
+    this._loadAction(new NativeActionUIProvider(targetUri));
     try {
       // $FlowFB
-      this._loadAction(require('./actions/fb-omActionUIProvider'));
+      const module = require('./actions/fb-omActionUIProvider');
+      if (module != null) {
+        this._loadAction(new module.omActionUIProvider(targetUri));
+      }
     } catch (_) {}
   }
 
   _loadAction(actionProvider: ?DebuggerActionUIProvider): void {
     if (actionProvider != null) {
-      this._uiProviderMap.set(actionProvider.name, actionProvider);
+      this._uiProviderMap.set(actionProvider.getName(), actionProvider);
     }
   }
 
-  async getActions(): Promise<Array<string>> {
-    const providers = await asyncFilter(
-      Array.from(this._uiProviderMap.values()),
-      provider => provider.isEnabled(),
-    );
-    return providers.map(provider => provider.name);
-  }
+  getCallbacksForAction(action: DebuggerConfigAction) {
+    return {
+      /**
+       * Whether this provider is enabled or not.
+       */
+      isEnabled: async () => {
+        if (this._enabledProviderNames.get(action) == null) {
+          this._enabledProviderNames.set(action, []);
+        }
 
-  getComponent(
-    actionName: string,
-    parentEventEmitter: EventEmitter): ?React.Element<any> {
-    const action = this._uiProviderMap.get(actionName);
-    if (action) {
-      return action.getComponent(this._store, this._actions, parentEventEmitter);
-    }
-    return null;
+        const providers = await asyncFilter(
+          Array.from(this._uiProviderMap.values()),
+          provider => provider.isEnabled(action),
+        );
+
+        const list = this._enabledProviderNames.get(action);
+        invariant(list != null);
+
+        for (const provider of providers) {
+          list.push(provider.getName());
+        }
+
+        return providers.length > 0;
+      },
+
+      /**
+       * Returns a list of supported debugger types + environments for the specified action.
+       */
+      getDebuggerTypeNames: () => {
+        return this._enabledProviderNames.get(action) || [];
+      },
+
+      /**
+       * Returns the UI component for configuring the specified debugger type and action.
+       */
+      getComponent: (
+        debuggerTypeName: string,
+        configIsValidChanged: (valid: boolean) => void,
+      ) => {
+        const provider = this._uiProviderMap.get(debuggerTypeName);
+        if (provider) {
+          return provider.getComponent(
+            this._store,
+            this._actions,
+            debuggerTypeName,
+            action,
+            configIsValidChanged,
+          );
+        }
+        return null;
+      },
+    };
   }
 
   dispose(): void {

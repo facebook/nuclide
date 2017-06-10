@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type LogLevel =
-  'ALL' |
-  'TRACE' |
-  'DEBUG' |
-  'INFO' |
-  'WARN' |
-  'ERROR' |
-  'FATAL' |
-  'OFF';
+  | 'ALL'
+  | 'TRACE'
+  | 'DEBUG'
+  | 'INFO'
+  | 'WARN'
+  | 'ERROR'
+  | 'FATAL'
+  | 'OFF';

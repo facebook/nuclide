@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type HgRepositoryDescription = {
@@ -13,7 +14,6 @@ export type HgRepositoryDescription = {
   originURL: ?string,
   workingDirectoryPath: string,
 };
-
 
 import findHgRepository from './hg-repository';
 

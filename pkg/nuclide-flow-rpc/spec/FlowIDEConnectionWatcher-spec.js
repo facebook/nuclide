@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FlowIDEConnection} from '../lib/FlowIDEConnection';
@@ -13,10 +14,11 @@ import type {FlowIDEConnection} from '../lib/FlowIDEConnection';
 import invariant from 'assert';
 
 import {FlowIDEConnectionWatcher} from '../lib/FlowIDEConnectionWatcher';
+import {Observable} from 'rxjs';
 
 describe('FlowIDEConnectionWatcher', () => {
-  let processFactory: () => Promise<?child_process$ChildProcess> = (null: any);
-  let processFactoryReturn: Promise<?child_process$ChildProcess> = (null: any);
+  let processFactory: Observable<?child_process$ChildProcess> = (null: any);
+  let processFactoryReturn: ?child_process$ChildProcess = null;
 
   let ideConnectionCallback: JasmineSpy = (null: any);
 
@@ -27,7 +29,10 @@ describe('FlowIDEConnectionWatcher', () => {
   let watcher: FlowIDEConnectionWatcher = (null: any);
 
   let currentTime: number = (null: any);
-  let waitingPromises: Set<{dueTime: number, resolve: () => void}> = (null: any);
+  let waitingPromises: Set<{
+    dueTime: number,
+    resolve: () => void,
+  }> = (null: any);
 
   // Apparently Jasmine doesn't mock Date.now(), and for whatever reason, using the Jasmine clock
   // mocks didn't properly call setTimeout (which sleep relies upon), which caused things to hang.
@@ -44,7 +49,9 @@ describe('FlowIDEConnectionWatcher', () => {
 
   const sleep: (millis: number) => Promise<void> = millis => {
     let resolve = null;
-    const promise = new Promise(r => { resolve = r; });
+    const promise = new Promise(r => {
+      resolve = r;
+    });
     invariant(resolve != null);
     const dueTime = currentTime + millis;
     waitingPromises.add({dueTime, resolve});
@@ -58,9 +65,11 @@ describe('FlowIDEConnectionWatcher', () => {
         'dispose',
       ]): any);
     };
-    processFactory = jasmine.createSpy('processFactory').andCallFake(() => processFactoryReturn);
+    processFactory = Observable.defer(() =>
+      Observable.of(processFactoryReturn),
+    );
     // We can use a stub value here because it's just passed through to the ideConnectionFactory
-    processFactoryReturn = Promise.resolve(({}: any));
+    processFactoryReturn = ({}: any);
 
     ideConnectionCallback = jasmine.createSpy('ideConnectionCallback');
 
@@ -75,7 +84,7 @@ describe('FlowIDEConnectionWatcher', () => {
     watcher = new FlowIDEConnectionWatcher(
       // Additional indirection so the callbacks can be reassigned in tests after the creation of
       // this object
-      (...args) => processFactory(...args),
+      Observable.defer(() => processFactory),
       (...args) => ideConnectionCallback(...args),
       (...args) => ideConnectionFactory(...args),
     );
@@ -92,19 +101,24 @@ describe('FlowIDEConnectionWatcher', () => {
     });
     waitsFor(() => currentFakeIDEConnection != null);
     runs(() => {
-      expect(ideConnectionCallback.calls[0].args).toEqual([currentFakeIDEConnection]);
+      expect(ideConnectionCallback.calls[0].args).toEqual([
+        currentFakeIDEConnection,
+      ]);
       expect(ideConnectionCallback.callCount).toBe(1);
       invariant(currentFakeIDEConnection != null);
       expect(currentFakeIDEConnection.onWillDispose).toHaveBeenCalled();
 
       // TODO check that when the underlying connection dies, it gets re-established
-      const onWillDisposeHandler: any = currentFakeIDEConnection.onWillDispose.calls[0].args[0];
+      const onWillDisposeHandler: any =
+        currentFakeIDEConnection.onWillDispose.calls[0].args[0];
       onWillDisposeHandler();
     });
     waitsFor(() => ideConnectionCallback.callCount === 3);
     runs(() => {
       expect(ideConnectionCallback.calls[1].args).toEqual([null]);
-      expect(ideConnectionCallback.calls[2].args).toEqual([currentFakeIDEConnection]);
+      expect(ideConnectionCallback.calls[2].args).toEqual([
+        currentFakeIDEConnection,
+      ]);
       invariant(currentFakeIDEConnection != null);
       watcher.dispose();
       expect(currentFakeIDEConnection.dispose).toHaveBeenCalled();
@@ -113,43 +127,56 @@ describe('FlowIDEConnectionWatcher', () => {
 
   it('should retry when the IDE process fails to start', () => {
     // Obviously, this will have to be updated if the number of retries is changed
-    const processFactoryReturns = [null, null, {}];
+    const processFactoryReturns = (([
+      null,
+      null,
+      {},
+    ]: any): Array<?child_process$ChildProcess>);
     runs(() => {
       let currentCall = 0;
-      processFactory = jasmine.createSpy('processFactory').andCallFake(() => {
+      processFactory = Observable.defer(() => {
         invariant(currentCall < processFactoryReturns.length);
         const result = processFactoryReturns[currentCall];
         currentCall++;
         tick(7 * 60 * 1000);
-        return result;
+        return Observable.of(result);
       });
+      spyOn(processFactory, 'subscribe').andCallThrough();
     });
     waitsForPromise(() => watcher.start());
     runs(() => {
       expect(ideConnectionCallback.callCount).toBe(1);
       expect(ideConnectionFactory.callCount).toBe(1);
-      expect(ideConnectionFactory.calls[0].args[0]).toBe(processFactoryReturns[2]);
-      expect(processFactory.callCount).toBe(3);
+      expect(ideConnectionFactory.calls[0].args[0]).toBe(
+        processFactoryReturns[2],
+      );
+      expect(processFactory.subscribe.callCount).toBe(3);
       watcher.dispose();
     });
   });
 
   it('should give up when the IDE process fails to start too many times', () => {
     // Obviously, this will have to be updated if the number of retries is changed
-    const processFactoryReturns = [null, null, null, {}];
+    const processFactoryReturns = (([
+      null,
+      null,
+      null,
+      {},
+    ]: any): Array<?child_process$ChildProcess>);
     runs(() => {
       let currentCall = 0;
-      processFactory = jasmine.createSpy('processFactory').andCallFake(() => {
+      processFactory = Observable.defer(() => {
         invariant(currentCall < processFactoryReturns.length);
         const result = processFactoryReturns[currentCall];
         currentCall++;
         tick(7 * 60 * 1000);
-        return result;
+        return Observable.of(result);
       });
+      spyOn(processFactory, 'subscribe').andCallThrough();
     });
     waitsForPromise(() => watcher.start());
     runs(() => {
-      expect(processFactory.callCount).toBe(3);
+      expect(processFactory.subscribe.callCount).toBe(3);
       expect(ideConnectionCallback.callCount).toBe(0);
       expect(ideConnectionFactory.callCount).toBe(0);
       watcher.dispose();
@@ -158,16 +185,17 @@ describe('FlowIDEConnectionWatcher', () => {
 
   it('should throttle attempts to start the IDE process', () => {
     waitsForPromise(async () => {
-      processFactory = jasmine.createSpy('processFactory').andReturn(Promise.resolve(null));
+      processFactory = Observable.defer(() => Promise.resolve(null));
+      spyOn(processFactory, 'subscribe').andCallThrough();
       watcher.start();
 
       await new Promise(resolve => setImmediate(resolve));
-      expect(processFactory.callCount).toBe(1);
+      expect(processFactory.subscribe.callCount).toBe(1);
 
       tick(1100);
 
       await new Promise(resolve => setImmediate(resolve));
-      expect(processFactory.callCount).toBe(2);
+      expect(processFactory.subscribe.callCount).toBe(2);
     });
   });
 
@@ -177,7 +205,9 @@ describe('FlowIDEConnectionWatcher', () => {
         'onWillDispose',
         'dispose',
       ]);
-      spy.onWillDispose = spy.onWillDispose.andCallFake(cb => { cb(); });
+      spy.onWillDispose = spy.onWillDispose.andCallFake(cb => {
+        cb();
+      });
       return (spy: any);
     };
     runs(() => {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -18,7 +19,7 @@ export type HomeFragments = {
     title: string,
     icon: string,
     description: React.Element<any> | string,
-    command?: string | () => void,
+    command?: string | (() => void),
   },
   priority?: number,
 };

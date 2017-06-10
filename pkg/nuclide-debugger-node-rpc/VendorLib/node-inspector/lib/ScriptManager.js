@@ -241,6 +241,9 @@ ScriptManager.prototype = Object.create(events.EventEmitter.prototype, {
 
   _checkSourceMapIssues: {
     value: function(inspectorScriptData, sourceMap) {
+      if (sourceMap.sources == null) {
+        return;
+      }
       var scriptName = inspectorScriptData.url.replace(/^file:\/\//, '');
       if (process.platform == 'win32') {
         scriptName = scriptName.replace(/^\//, '');

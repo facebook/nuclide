@@ -6,16 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PhpDebuggerSessionConfig} from '../../nuclide-debugger-php-rpc';
 
 import invariant from 'assert';
-import featureConfig from '../../commons-atom/featureConfig';
-import {getCategoryLogger} from '../../nuclide-logging';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {getLogger} from 'log4js';
 
 const DEBUGGER_LOGGER_CATEGORY = 'nuclide-debugger-php';
-export default getCategoryLogger(DEBUGGER_LOGGER_CATEGORY);
+export default getLogger(DEBUGGER_LOGGER_CATEGORY);
 
 export function getConfig(): PhpDebuggerSessionConfig {
   return (featureConfig.get('nuclide-debugger-php'): any);
@@ -38,16 +39,23 @@ function validateConfig(config): void {
   const {attachScriptRegex} = config;
   if (!isValidRegex(attachScriptRegex)) {
     invariant(attachScriptRegex != null);
-    throw Error(`config scriptRegex is not a valid regular expression: ${attachScriptRegex}`);
+    throw Error(
+      `config scriptRegex is not a valid regular expression: ${attachScriptRegex}`,
+    );
   }
 
   if (!isValidRegex(config.idekeyRegex)) {
     invariant(config.idekeyRegex != null);
-    throw Error(`config idekeyRegex is not a valid regular expression: ${config.idekeyRegex}`);
+    throw Error(
+      `config idekeyRegex is not a valid regular expression: ${config.idekeyRegex}`,
+    );
   }
 }
 
-export function getSessionConfig(targetUri: string, isLaunch: boolean): PhpDebuggerSessionConfig {
+export function getSessionConfig(
+  targetUri: string,
+  isLaunch: boolean,
+): PhpDebuggerSessionConfig {
   const config = getConfig();
   validateConfig(config);
   const sessionConfig: PhpDebuggerSessionConfig = {

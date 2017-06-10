@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -149,7 +150,9 @@ describe('Task', () => {
     });
     runs(() => {
       // eslint-disable-next-line no-console
-      expect(console.log.argsForCall[0]).toMatch(/TASK\(\d+\): Error: channel closed/);
+      expect(console.log.argsForCall[0]).toMatch(
+        /TASK\(\d+\): Error: channel closed/,
+      );
     });
   });
 });

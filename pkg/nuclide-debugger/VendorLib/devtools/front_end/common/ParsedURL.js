@@ -118,6 +118,9 @@ WebInspector.ParsedURL.splitURLIntoPathComponents = function(url)
         name = parsedURL.lastPathComponent;
         if (parsedURL.queryParams)
             name += "?" + parsedURL.queryParams;
+        if (parsedURL.fragment) {
+          name += '#' + parsedURL.fragment;
+        }
     } else {
         origin = "";
         folderPath = "";

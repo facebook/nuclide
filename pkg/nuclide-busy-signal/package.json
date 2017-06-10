@@ -11,14 +11,16 @@
   },
   "activationCommands": {},
   "consumedServices": {
-    "nuclide-busy-signal": {
-      "versions": {
-        "0.1.0": "consumeBusySignalProvider"
-      }
-    },
     "status-bar": {
       "versions": {
         "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
+  "providedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.2.0": "provideBusySignal"
       }
     }
   }

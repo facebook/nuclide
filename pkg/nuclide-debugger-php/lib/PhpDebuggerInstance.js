@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
@@ -16,9 +17,8 @@ import type {
 import {DebuggerInstance} from '../../nuclide-debugger-base';
 import {ObservableManager} from './ObservableManager';
 import {translateMessageFromServer} from '../../nuclide-debugger-base';
-import nuclideUri from '../../commons-node/nuclideUri';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class PhpDebuggerInstance extends DebuggerInstance {
   constructor(

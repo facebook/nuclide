@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {
   DebuggerInstance,
@@ -19,7 +20,9 @@ import type {
   NodeAttachTargetInfo,
   NodeDebuggerService,
 } from '../../nuclide-debugger-node-rpc/lib/NodeDebuggerService';
-import {getNodeDebuggerServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {
+  getNodeDebuggerServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
 
 export class NodeAttachProcessInfo extends DebuggerProcessInfo {
   _targetInfo: NodeAttachTargetInfo;
@@ -27,6 +30,10 @@ export class NodeAttachProcessInfo extends DebuggerProcessInfo {
   constructor(targetUri: NuclideUri, targetInfo: NodeAttachTargetInfo) {
     super('node', targetUri);
     this._targetInfo = targetInfo;
+  }
+
+  clone(): NodeAttachProcessInfo {
+    return new NodeAttachProcessInfo(this._targetUri, this._targetInfo);
   }
 
   async debug(): Promise<DebuggerInstanceBase> {
@@ -38,5 +45,9 @@ export class NodeAttachProcessInfo extends DebuggerProcessInfo {
   _getRpcService(): NodeDebuggerService {
     const service = getNodeDebuggerServiceByNuclideUri(this.getTargetUri());
     return new service.NodeDebuggerService();
+  }
+
+  supportContinueToLocation(): boolean {
+    return true;
   }
 }

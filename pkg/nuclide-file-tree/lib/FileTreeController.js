@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
@@ -21,10 +22,10 @@ import FileTreeHelpers from './FileTreeHelpers';
 import {FileTreeStore} from './FileTreeStore';
 import Immutable from 'immutable';
 import {track} from '../../nuclide-analytics';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {goToLocation} from '../../commons-atom/go-to-location';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import getElementFilePath from '../../commons-atom/getElementFilePath';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {Disposable} from 'atom';
 import os from 'os';
@@ -36,7 +37,8 @@ import type {WorkingSet} from '../../nuclide-working-sets-common';
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
 import type {FileTreeNode} from './FileTreeNode';
 
-const VALID_FILTER_CHARS = '!#./0123456789-:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+const VALID_FILTER_CHARS =
+  '!#./0123456789-:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
   '_abcdefghijklmnopqrstuvwxyz~';
 
 class ProjectSelectionManager {
@@ -50,7 +52,9 @@ class ProjectSelectionManager {
 
   addExtraContent(content: React.Element<any>): IDisposable {
     this._actions.addExtraProjectSelectionContent(content);
-    return new Disposable(() => this._actions.removeExtraProjectSelectionContent(content));
+    return new Disposable(() =>
+      this._actions.removeExtraProjectSelectionContent(content),
+    );
   }
 
   getExtraContent(): Immutable.List<React.Element<any>> {
@@ -89,8 +93,10 @@ export default class FileTreeController {
     this._disposables.add(
       atom.project.onDidChangePaths(() => this._updateRootDirectories()),
       atom.commands.add('atom-workspace', {
-        'nuclide-file-tree:reveal-in-file-tree': this._revealFile.bind(this),
-        'nuclide-file-tree:recursive-collapse-all': this._collapseAll.bind(this),
+        'nuclide-file-tree:reveal-active-file': this._revealFile.bind(this),
+        'nuclide-file-tree:recursive-collapse-all': this._collapseAll.bind(
+          this,
+        ),
         'nuclide-file-tree:add-file-relative': () => {
           FileSystemActions.openAddFileDialogRelative(
             this._openAndRevealFilePath.bind(this),
@@ -99,17 +105,20 @@ export default class FileTreeController {
       }),
     );
     const letterKeyBindings = {
-      'nuclide-file-tree:remove-letter':
-        this._handleRemoveLetterKeypress.bind(this),
-      'nuclide-file-tree:clear-filter':
-        this._handleClearFilter.bind(this),
+      'nuclide-file-tree:remove-letter': this._handleRemoveLetterKeypress.bind(
+        this,
+      ),
+      'nuclide-file-tree:clear-filter': this._handleClearFilter.bind(this),
     };
-    for (let i = 0, c = VALID_FILTER_CHARS.charCodeAt(0);
-         i < VALID_FILTER_CHARS.length;
-         i++, c = VALID_FILTER_CHARS.charCodeAt(i)) {
+    for (
+      let i = 0, c = VALID_FILTER_CHARS.charCodeAt(0);
+      i < VALID_FILTER_CHARS.length;
+      i++, (c = VALID_FILTER_CHARS.charCodeAt(i))
+    ) {
       const char = String.fromCharCode(c);
-      letterKeyBindings[`nuclide-file-tree:go-to-letter-${char}`] =
-        this._handlePrefixKeypress.bind(this, char);
+      letterKeyBindings[
+        `nuclide-file-tree:go-to-letter-${char}`
+      ] = this._handlePrefixKeypress.bind(this, char);
     }
     this._disposables.add(
       atom.commands.add(EVENT_HANDLER_SELECTOR, {
@@ -120,35 +129,63 @@ export default class FileTreeController {
         'core:select-up': this._rangeSelectUp.bind(this),
         'core:select-down': this._rangeSelectDown.bind(this),
         'nuclide-file-tree:add-file': () => {
-          FileSystemActions.openAddFileDialog(this._openAndRevealFilePath.bind(this));
+          FileSystemActions.openAddFileDialog(
+            this._openAndRevealFilePath.bind(this),
+          );
         },
         'nuclide-file-tree:add-folder': () => {
-          FileSystemActions.openAddFolderDialog(this._openAndRevealDirectoryPath.bind(this));
+          FileSystemActions.openAddFolderDialog(
+            this._openAndRevealDirectoryPath.bind(this),
+          );
         },
-        'nuclide-file-tree:collapse-directory':
-          this._collapseSelection.bind(this, /* deep */ false),
-        'nuclide-file-tree:recursive-collapse-directory':
-          this._collapseSelection.bind(this, true),
-        'nuclide-file-tree:expand-directory': this._expandSelection.bind(this, /* deep */ false),
-        'nuclide-file-tree:recursive-expand-directory': this._expandSelection.bind(this, true),
-        'nuclide-file-tree:open-selected-entry': this._openSelectedEntry.bind(this),
-        'nuclide-file-tree:open-selected-entry-up':
-          this._openSelectedEntrySplitUp.bind(this),
-        'nuclide-file-tree:open-selected-entry-down':
-          this._openSelectedEntrySplitDown.bind(this),
-        'nuclide-file-tree:open-selected-entry-left':
-          this._openSelectedEntrySplitLeft.bind(this),
-        'nuclide-file-tree:open-selected-entry-right':
-          this._openSelectedEntrySplitRight.bind(this),
+        'nuclide-file-tree:collapse-directory': this._collapseSelection.bind(
+          this,
+          /* deep */ false,
+        ),
+        'nuclide-file-tree:recursive-collapse-directory': this._collapseSelection.bind(
+          this,
+          true,
+        ),
+        'nuclide-file-tree:expand-directory': this._expandSelection.bind(
+          this,
+          /* deep */ false,
+        ),
+        'nuclide-file-tree:recursive-expand-directory': this._expandSelection.bind(
+          this,
+          true,
+        ),
+        'nuclide-file-tree:open-selected-entry': this._openSelectedEntry.bind(
+          this,
+        ),
+        'nuclide-file-tree:open-selected-entry-up': this._openSelectedEntrySplitUp.bind(
+          this,
+        ),
+        'nuclide-file-tree:open-selected-entry-down': this._openSelectedEntrySplitDown.bind(
+          this,
+        ),
+        'nuclide-file-tree:open-selected-entry-left': this._openSelectedEntrySplitLeft.bind(
+          this,
+        ),
+        'nuclide-file-tree:open-selected-entry-right': this._openSelectedEntrySplitRight.bind(
+          this,
+        ),
         'nuclide-file-tree:remove': this._deleteSelection.bind(this),
-        'nuclide-file-tree:remove-project-folder-selection':
-          this._removeRootFolderSelection.bind(this),
-        'nuclide-file-tree:rename-selection': () => FileSystemActions.openRenameDialog(),
+        'nuclide-file-tree:remove-project-folder-selection': this._removeRootFolderSelection.bind(
+          this,
+        ),
+        'nuclide-file-tree:rename-selection': () =>
+          FileSystemActions.openRenameDialog(),
         'nuclide-file-tree:duplicate-selection': () => {
-          FileSystemActions.openDuplicateDialog(this._openAndRevealFilePath.bind(this));
+          FileSystemActions.openDuplicateDialog(
+            this._openAndRevealFilePath.bind(this),
+          );
         },
-        'nuclide-file-tree:search-in-directory': this._searchInDirectory.bind(this),
-        'nuclide-file-tree:set-current-working-root': this._setCwdToSelection.bind(this),
+        'nuclide-file-tree:search-in-directory': this._searchInDirectory.bind(
+          this,
+        ),
+        'nuclide-file-tree:set-current-working-root': this._setCwdToSelection.bind(
+          this,
+        ),
         ...letterKeyBindings,
       }),
       atom.commands.add('atom-workspace', {
@@ -231,11 +268,11 @@ export default class FileTreeController {
   _updateRootDirectories(): void {
     // If the remote-projects package hasn't loaded yet remote directories will be instantiated as
     // local directories but with invalid paths. We need to exclude those.
-    const rootDirectories = atom.project.getDirectories().filter(directory => (
-      FileTreeHelpers.isValidDirectory(directory)
-    ));
-    const rootKeys = rootDirectories.map(
-      directory => FileTreeHelpers.dirPathToKey(directory.getPath()),
+    const rootDirectories = atom.project
+      .getDirectories()
+      .filter(directory => FileTreeHelpers.isValidDirectory(directory));
+    const rootKeys = rootDirectories.map(directory =>
+      FileTreeHelpers.dirPathToKey(directory.getPath()),
     );
     this._actions.setRootKeys(rootKeys);
     this._actions.updateRepositories(rootDirectories);
@@ -327,7 +364,9 @@ export default class FileTreeController {
       // The fake root just stays in the file tree.
       // After remote projects have been reloaded, force a refresh to clear out the fake roots.
       this._disposables.add(
-        service.waitForRemoteProjectReload(this._updateRootDirectories.bind(this)),
+        service.waitForRemoteProjectReload(
+          this._updateRootDirectories.bind(this),
+        ),
       );
     }
     this._remoteProjectsService = service;
@@ -372,9 +411,11 @@ export default class FileTreeController {
   _collapseSelection(deep: boolean = false): void {
     const selectedNodes = this._store.getSelectedNodes();
     const firstSelectedNode = selectedNodes.first();
-    if (selectedNodes.size === 1 &&
+    if (
+      selectedNodes.size === 1 &&
       !firstSelectedNode.isRoot &&
-      !(firstSelectedNode.isContainer && firstSelectedNode.isExpanded)) {
+      !(firstSelectedNode.isContainer && firstSelectedNode.isExpanded)
+    ) {
       /*
        * Select the parent of the selection if the following criteria are met:
        *   * Only 1 node is selected
@@ -423,11 +464,14 @@ export default class FileTreeController {
 
         return nuclideUri.relative(parentOfRoot, nodePath);
       });
-      const message = 'Are you sure you want to delete the following ' +
-          (nodes.size > 1 ? 'items?' : 'item?');
+      const message =
+        'Are you sure you want to delete the following ' +
+        (nodes.size > 1 ? 'items?' : 'item?');
       atom.confirm({
         buttons: {
-          Delete: () => { this._actions.deleteSelectedNodes(); },
+          Delete: () => {
+            this._actions.deleteSelectedNodes();
+          },
           Cancel: () => {},
         },
         detailedMessage: `You are deleting:${os.EOL}${selectedPaths.join(os.EOL)}`,
@@ -438,7 +482,9 @@ export default class FileTreeController {
       if (rootPaths.size === 1) {
         message = `The root directory '${rootPaths.first().nodeName}' can't be removed.`;
       } else {
-        const rootPathNames = rootPaths.map(node => `'${node.nodeName}'`).join(', ');
+        const rootPathNames = rootPaths
+          .map(node => `'${node.nodeName}'`)
+          .join(', ');
         message = `The root directories ${rootPathNames} can't be removed.`;
       }
 
@@ -488,11 +534,17 @@ export default class FileTreeController {
     const singleSelectedNode = this._store.getSingleSelectedNode();
     // Only perform the default action if a single node is selected.
     if (singleSelectedNode != null) {
-      this._actions.confirmNode(singleSelectedNode.rootUri, singleSelectedNode.uri);
+      this._actions.confirmNode(
+        singleSelectedNode.rootUri,
+        singleSelectedNode.uri,
+      );
     }
   }
 
-  _openSelectedEntrySplit(orientation: atom$PaneSplitOrientation, side: atom$PaneSplitSide): void {
+  _openSelectedEntrySplit(
+    orientation: atom$PaneSplitOrientation,
+    side: atom$PaneSplitSide,
+  ): void {
     const singleSelectedNode = this._store.getSingleSelectedNode();
     // Only perform the default action if a single node is selected.
     if (singleSelectedNode != null && !singleSelectedNode.isContainer) {
@@ -556,7 +608,6 @@ export default class FileTreeController {
 
   _searchInDirectory(event: Event): void {
     const targetElement = ((event.target: any): HTMLElement);
-    let shouldClearPath = false;
     // If the event was sent to the entire tree, rather then a single element - attempt to derive
     // the path to work on from the current selection.
     if (targetElement.classList.contains('nuclide-file-tree')) {
@@ -573,28 +624,33 @@ export default class FileTreeController {
 
       // What we see here is an unfortunate example of "DOM as an API" paradigm :-(
       // Atom's handler for the "show-in-current-directory" command is context sensitive
-      // and it derives the context from the custom "data-path" attribute.
-      // This attribute is available through the `.dataset.path` property of the event's target
-      // element. If missing in the target element, the descendants are queried.
-      // See: https://github.com/atom/find-and-replace/blob/66f09c532bb4f7b941282b99d4daf85a08d2288c/lib/project-find-view.coffee#L277
-      //
-      // This works when the command is targeted at an entry in the file-tree DOM structure, because
-      // we add these attributes too, to maintain compatibility with Atom. But, obviously, the
-      // file-tree root can't have one. Unfortunately, when we use keyboard shortcuts to trigger the
-      // commands the focused element is the tree root.
-      // So, to pass the contextual information somehow, we temporarily
-      // add this attribute to the root element (and cleanup once the command is issued).
-      targetElement.dataset.path = path;
-      shouldClearPath = true;
-    }
-    // Dispatch a command to show the `ProjectFindView`. This opens the view and focuses the search
-    // box.
-    atom.commands.dispatch(
-      targetElement,
-      'project-find:show-in-current-directory',
-    );
-    if (shouldClearPath) {
-      delete targetElement.dataset.path;
+      // and it derives the context from the custom "data-path" attribute. The attribute must
+      // be present on a child of a closest element having a ".directory" class.
+      // See: https://github.com/atom/find-and-replace/blob/v0.208.1/lib/project-find-view.js#L356-L360
+      // We will just temporarily create a proper element for the event handler to work on
+      // and remove it immediately afterwards.
+      const temporaryElement = document.createElement('div');
+      temporaryElement.classList.add('directory');
+      const pathChild = document.createElement('div');
+      pathChild.dataset.path = path;
+      temporaryElement.appendChild(pathChild);
+
+      // Must attach to the workspace-view, otherwise the handler won't be found
+      const workspaceView = atom.views.getView(atom.workspace);
+      workspaceView.appendChild(temporaryElement);
+
+      atom.commands.dispatch(
+        temporaryElement,
+        'project-find:show-in-current-directory',
+      );
+
+      // Cleaning for the workspace-view
+      workspaceView.removeChild(temporaryElement);
+    } else {
+      atom.commands.dispatch(
+        targetElement,
+        'project-find:show-in-current-directory',
+      );
     }
   }
 

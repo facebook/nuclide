@@ -6,13 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Provider} from '../../nuclide-quick-open/lib/types';
 
 import {HackSymbolProvider} from './HackSymbolProvider';
 import {hackLanguageService, resetHackLanguageService} from './HackLanguage';
-
 
 export function activate() {
   hackLanguageService.then(value => value.activate());

@@ -47,13 +47,14 @@ COPYRIGHT_BLOCK = """\
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */"""
 
 ATOM_MAIN_JS = """\
 %s
 
-import createPackage from '../../commons-atom/createPackage';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 class Activation {
   _disposables: UniversalDisposable;

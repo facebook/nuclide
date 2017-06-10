@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -18,9 +19,11 @@ import type {Observable} from 'rxjs';
 
 import React from 'react';
 import classnames from 'classnames';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
-import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
-import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {
+  LazyNestedValueComponent,
+} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 
 type WatchExpressionComponentProps = {
@@ -37,13 +40,20 @@ export class WatchExpressionComponent extends React.Component {
     rowBeingEdited: ?number,
   };
   coreCancelDisposable: ?IDisposable;
-  _expansionStates: Map<string /* expression */, /* unique reference for expression */ Object>;
+  _expansionStates: Map<
+    string /* expression */,
+    /* unique reference for expression */ Object,
+  >;
 
   constructor(props: WatchExpressionComponentProps) {
     super(props);
     (this: any)._renderExpression = this._renderExpression.bind(this);
-    (this: any)._onConfirmNewExpression = this._onConfirmNewExpression.bind(this);
-    (this: any)._resetExpressionEditState = this._resetExpressionEditState.bind(this);
+    (this: any)._onConfirmNewExpression = this._onConfirmNewExpression.bind(
+      this,
+    );
+    (this: any)._resetExpressionEditState = this._resetExpressionEditState.bind(
+      this,
+    );
     (this: any)._onEditorCancel = this._onEditorCancel.bind(this);
     (this: any)._onEditorBlur = this._onEditorBlur.bind(this);
     this._expansionStates = new Map();
@@ -97,12 +107,9 @@ export class WatchExpressionComponent extends React.Component {
     if (this.coreCancelDisposable) {
       this.coreCancelDisposable.dispose();
     }
-    this.coreCancelDisposable = atom.commands.add(
-      'atom-workspace',
-      {
-        'core:cancel': () => this._resetExpressionEditState(),
-      },
-    );
+    this.coreCancelDisposable = atom.commands.add('atom-workspace', {
+      'core:cancel': () => this._resetExpressionEditState(),
+    });
     setTimeout(() => {
       if (this.refs.editExpressionEditor) {
         this.refs.editExpressionEditor.focus();
@@ -123,10 +130,7 @@ export class WatchExpressionComponent extends React.Component {
     watchExpression: EvaluatedExpression,
     index: number,
   ): React.Element<any> {
-    const {
-      expression,
-      value,
-    } = watchExpression;
+    const {expression, value} = watchExpression;
     if (index === this.state.rowBeingEdited) {
       return (
         <AtomInput
@@ -162,7 +166,9 @@ export class WatchExpressionComponent extends React.Component {
             expression={expression}
             fetchChildren={fetchChildren}
             simpleValueComponent={SimpleValueComponent}
-            expansionStateId={this._getExpansionStateIdForExpression(expression)}
+            expansionStateId={this._getExpansionStateIdForExpression(
+              expression,
+            )}
           />
         </div>
         <i
@@ -174,12 +180,13 @@ export class WatchExpressionComponent extends React.Component {
   }
 
   render(): ?React.Element<any> {
-    const {
-      watchExpressions,
+    const {watchExpressions, watchExpressionStore} = this.props;
+    const fetchChildren = watchExpressionStore.getProperties.bind(
       watchExpressionStore,
-    } = this.props;
-    const fetchChildren = watchExpressionStore.getProperties.bind(watchExpressionStore);
-    const expressions = watchExpressions.map(this._renderExpression.bind(this, fetchChildren));
+    );
+    const expressions = watchExpressions.map(
+      this._renderExpression.bind(this, fetchChildren),
+    );
     const addNewExpressionInput = (
       <AtomInput
         className={classnames(

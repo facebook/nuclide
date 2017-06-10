@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Observable} from 'rxjs';
 
 /**
@@ -76,8 +77,13 @@ export type ErrorMessage = {
   error: Object,
 };
 
-export type Message = StartMessage | SummaryMessage |
-    RunTestMessage | StderrMessage | StdoutMessage | ErrorMessage;
+export type Message =
+  | StartMessage
+  | SummaryMessage
+  | RunTestMessage
+  | StderrMessage
+  | StdoutMessage
+  | ErrorMessage;
 
 export type TestRunner = {
   label: string,

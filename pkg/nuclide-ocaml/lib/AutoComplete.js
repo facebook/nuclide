@@ -6,19 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {getMerlinServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 module.exports = {
-  async getAutocompleteSuggestions(
-    request: {
-      editor: atom$TextEditor,
-      bufferPosition: atom$Point,
-      scopeDescriptor: any,
-      prefix: string,
-    },
-  ): Promise<?Array<{snippet: string, rightLabel: string}>> {
+  async getAutocompleteSuggestions(request: {
+    editor: atom$TextEditor,
+    bufferPosition: atom$Point,
+    scopeDescriptor: any,
+    prefix: string,
+  }): Promise<?Array<{snippet: string, rightLabel: string}>> {
     const {editor, prefix} = request;
 
     const path = editor.getPath();
@@ -55,7 +54,7 @@ module.exports = {
     return output.entries.map(item => {
       return {
         text: item.name,
-        rightLabel: (item.desc === '' ? '(module)' : item.desc),
+        rightLabel: item.desc === '' ? '(module)' : item.desc,
         replacementPrefix,
       };
     });

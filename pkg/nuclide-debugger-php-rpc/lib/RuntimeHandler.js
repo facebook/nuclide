@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import {DUMMY_FRAME_ID} from './helpers';
 import Handler from './Handler';
@@ -57,14 +57,13 @@ export class RuntimeHandler extends Handler {
   }
 
   _notifyExecutionContext(id: number): void {
-    this.sendMethod('Runtime.executionContextCreated',
-      {
-        context: {
-          id: 1,
-          frameId: DUMMY_FRAME_ID,
-          name: 'hhvm: TODO: mangle in pid, idekey, script from connection',
-        },
-      });
+    this.sendMethod('Runtime.executionContextCreated', {
+      context: {
+        id: 1,
+        frameId: DUMMY_FRAME_ID,
+        name: 'hhvm: TODO: mangle in pid, idekey, script from connection',
+      },
+    });
     this.replyToCommand(id, {});
   }
 
@@ -84,7 +83,9 @@ export class RuntimeHandler extends Handler {
   }
 
   async _evaluate(id: number, params: Object): Promise<any> {
-    const result = await this._connectionMultiplexer.runtimeEvaluate(params.expression);
+    const result = await this._connectionMultiplexer.runtimeEvaluate(
+      params.expression,
+    );
     this.replyToCommand(id, result);
   }
 }

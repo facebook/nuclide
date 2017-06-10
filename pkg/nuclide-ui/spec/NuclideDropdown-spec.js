@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Dropdown} from '../Dropdown';
@@ -13,19 +14,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import TestUtils from 'react-addons-test-utils';
 
-const {
-  renderIntoDocument,
-  scryRenderedDOMComponentsWithTag,
-} = TestUtils;
+const {renderIntoDocument, scryRenderedDOMComponentsWithTag} = TestUtils;
 
 describe('Dropdown', () => {
   it('honors the value param', () => {
     const component = renderIntoDocument(
       <Dropdown
-        options={[
-          {label: 'foo', value: 'vfoo'},
-          {label: 'bar', value: 'vbar'},
-        ]}
+        options={[{label: 'foo', value: 'vfoo'}, {label: 'bar', value: 'vbar'}]}
         onChange={newValue => {}}
         value={'vbar'}
       />,

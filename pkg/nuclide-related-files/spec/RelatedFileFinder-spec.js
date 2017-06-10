@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import RelatedFileFinder from '../lib/RelatedFileFinder';
@@ -16,8 +17,8 @@ function mockFiles(files: Array<string>) {
     'getFileSystemServiceByNuclideUri',
   ).andReturn({
     readdir: async () => {
-      return files.map(file => {
-        return {file, stats: {isFile: () => true}};
+      return files.map(name => {
+        return [name, true, false];
       });
     },
   });
@@ -68,7 +69,9 @@ describe('RelatedFileFinder', () => {
     it('finds related file whose name ends with `t` and itself', () => {
       waitsForPromise(async () => {
         mockFiles(['Test.m', 'Test.v', 'Test.t']);
-        expect(await RelatedFileFinder.find('dir/Test.m', new Set(['.t']))).toEqual({
+        expect(
+          await RelatedFileFinder.find('dir/Test.m', new Set(['.t'])),
+        ).toEqual({
           relatedFiles: ['dir/Test.m', 'dir/Test.t'],
           index: 0,
         });
@@ -78,7 +81,9 @@ describe('RelatedFileFinder', () => {
     it('finds related file but nothing and then return all', () => {
       waitsForPromise(async () => {
         mockFiles(['Test.m', 'Test.v', 'Test.t']);
-        expect(await RelatedFileFinder.find('dir/Test.m', new Set(['.o']))).toEqual({
+        expect(
+          await RelatedFileFinder.find('dir/Test.m', new Set(['.o'])),
+        ).toEqual({
           relatedFiles: ['dir/Test.m', 'dir/Test.t', 'dir/Test.v'],
           index: 0,
         });
@@ -88,7 +93,9 @@ describe('RelatedFileFinder', () => {
     it('finds related file but only itself', () => {
       waitsForPromise(async () => {
         mockFiles(['Test.m', 'Test.v', 'Test.t']);
-        expect(await RelatedFileFinder.find('dir/Test.m', new Set(['.m']))).toEqual({
+        expect(
+          await RelatedFileFinder.find('dir/Test.m', new Set(['.m'])),
+        ).toEqual({
           relatedFiles: ['dir/Test.m'],
           index: 0,
         });

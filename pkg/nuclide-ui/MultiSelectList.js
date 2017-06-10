@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
@@ -77,8 +78,12 @@ export class MultiSelectList extends React.Component {
         // $FlowFixMe
         el,
         {
-          'core:move-up': () => { this._moveSelectionIndex(-1); },
-          'core:move-down': () => { this._moveSelectionIndex(1); },
+          'core:move-up': () => {
+            this._moveSelectionIndex(-1);
+          },
+          'core:move-down': () => {
+            this._moveSelectionIndex(1);
+          },
           'core:confirm': () => {
             const {selectedValue} = this.state;
             if (selectedValue != null) {
@@ -91,8 +96,9 @@ export class MultiSelectList extends React.Component {
   }
 
   _moveSelectionIndex(delta: number): void {
-    const currentIndex = this.props.options
-      .findIndex(option => option.value === this.state.selectedValue);
+    const currentIndex = this.props.options.findIndex(
+      option => option.value === this.state.selectedValue,
+    );
     const nextIndex = currentIndex + delta;
     if (nextIndex >= 0 && nextIndex < this.props.options.length) {
       this.setState({selectedValue: this.props.options[nextIndex].value});
@@ -118,9 +124,7 @@ export class MultiSelectList extends React.Component {
 
   render(): ?React.Element<any> {
     return (
-      <div
-        className="nuclide-multi-select-list select-list block"
-        tabIndex="0">
+      <div className="nuclide-multi-select-list select-list block" tabIndex="0">
         <ol className="list-group mark-active">
           {this._renderOptions()}
         </ol>
@@ -129,7 +133,8 @@ export class MultiSelectList extends React.Component {
   }
 
   _renderOptions(): Array<React.Element<any>> {
-    const OptionComponent = this.props.optionComponent || DefaultOptionComponent;
+    const OptionComponent =
+      this.props.optionComponent || DefaultOptionComponent;
     return this.props.options.map((option, index) => {
       const selected = this.state.selectedValue === option.value;
       const active = this.props.value.indexOf(option.value) !== -1;
@@ -142,8 +147,12 @@ export class MultiSelectList extends React.Component {
         <li
           key={index}
           className={className}
-          onMouseOver={() => { this.setState({selectedValue: option.value}); }}
-          onClick={() => { this._toggleActive(option.value); }}>
+          onMouseOver={() => {
+            this.setState({selectedValue: option.value});
+          }}
+          onClick={() => {
+            this._toggleActive(option.value);
+          }}>
           <OptionComponent
             option={option}
             active={active}

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -46,9 +47,9 @@ type TreeComponentState = {
  *     `forceHas` is defined, the return value will be equal to `forceHas`.
  */
 function toggleSetHas(
-    set: Set<string>,
-    value: string,
-    forceHas?: ?boolean,
+  set: Set<string>,
+  value: string,
+  forceHas?: ?boolean,
 ): boolean {
   let added;
 
@@ -91,7 +92,6 @@ type State = {
   selectedKeys: Set<string>,
 };
 
-
 /**
  * Generic tree component that operates on LazyTreeNodes.
  */
@@ -109,8 +109,10 @@ export class TreeRootComponent extends React.Component {
   static defaultProps: DefaultProps = {
     elementToRenderWhenEmpty: null,
     onConfirmSelection(node: LazyTreeNode) {},
-    rowClassNameForNode(node: LazyTreeNode) { return ''; },
-  };;
+    rowClassNameForNode(node: LazyTreeNode) {
+      return '';
+    },
+  };
 
   constructor(props: Props) {
     super(props);
@@ -155,7 +157,9 @@ export class TreeRootComponent extends React.Component {
       const firstSelectedDescendant = this.refs[FIRST_SELECTED_DESCENDANT_REF];
       if (firstSelectedDescendant !== undefined) {
         // $FlowFixMe
-        ReactDOM.findDOMNode(firstSelectedDescendant).scrollIntoViewIfNeeded(false);
+        ReactDOM.findDOMNode(firstSelectedDescendant).scrollIntoViewIfNeeded(
+          false,
+        );
       }
     }
 
@@ -245,16 +249,25 @@ export class TreeRootComponent extends React.Component {
     }
   }
 
-  addContextMenuItemGroup(menuItemDefinitions: Array<TreeMenuItemDefinition>): void {
+  addContextMenuItemGroup(
+    menuItemDefinitions: Array<TreeMenuItemDefinition>,
+  ): void {
     let items = menuItemDefinitions.slice();
     items = items.map(definition => {
       definition.shouldDisplay = () => {
-        if (this.state.roots.length === 0 && !definition.shouldDisplayIfTreeIsEmpty) {
+        if (
+          this.state.roots.length === 0 &&
+          !definition.shouldDisplayIfTreeIsEmpty
+        ) {
           return false;
         }
-        const shouldDisplayForSelectedNodes = definition.shouldDisplayForSelectedNodes;
+        const shouldDisplayForSelectedNodes =
+          definition.shouldDisplayForSelectedNodes;
         if (shouldDisplayForSelectedNodes) {
-          return shouldDisplayForSelectedNodes.call(definition, this.getSelectedNodes());
+          return shouldDisplayForSelectedNodes.call(
+            definition,
+            this.getSelectedNodes(),
+          );
         }
         return true;
       };
@@ -302,7 +315,8 @@ export class TreeRootComponent extends React.Component {
         }
 
         const child = (
-          <TreeNodeComponent {...item}
+          <TreeNodeComponent
+            {...item}
             isContainer={node.isContainer()}
             isExpanded={this._isNodeExpanded(node)}
             isLoading={!node.isCacheValid()}
@@ -377,9 +391,8 @@ export class TreeRootComponent extends React.Component {
     });
 
     const subscriptions = new CompositeDisposable();
-    subscriptions.add(atom.commands.add(
-      this.props.eventHandlerSelector,
-      {
+    subscriptions.add(
+      atom.commands.add(this.props.eventHandlerSelector, {
         // Expand and collapse.
         'core:move-right': () => this._expandSelection(),
         'core:move-left': () => this._collapseSelection(),
@@ -436,11 +449,15 @@ export class TreeRootComponent extends React.Component {
 
     // We have to create the listener before setting the state so it can pick
     // up the changes from `setState`.
-    const promise = this._createDidUpdateListener(/* shouldResolve */ () => {
-      const rootsReady = (this.state.roots === roots);
-      const childrenReady = this.state.roots.every(root => root.isCacheValid());
-      return rootsReady && childrenReady;
-    });
+    const promise = this._createDidUpdateListener(
+      /* shouldResolve */ () => {
+        const rootsReady = this.state.roots === roots;
+        const childrenReady = this.state.roots.every(root =>
+          root.isCacheValid(),
+        );
+        return rootsReady && childrenReady;
+      },
+    );
 
     this.setState({
       roots,
@@ -554,8 +571,9 @@ export class TreeRootComponent extends React.Component {
 
     // We have to create the listener before setting the state so it can pick
     // up the changes from `setState`.
-    const promise =
-      this._createDidUpdateListener(/* shouldResolve */ () => this.state.selectedKeys.has(nodeKey));
+    const promise = this._createDidUpdateListener(
+      /* shouldResolve */ () => this.state.selectedKeys.has(nodeKey),
+    );
     this.setState({selectedKeys: new Set([nodeKey])});
     return promise;
   }
@@ -579,12 +597,15 @@ export class TreeRootComponent extends React.Component {
     const node = this.getNodeForKey(nodeKey);
 
     if (node && node.isContainer()) {
-      const promise = this._createDidUpdateListener(/* shouldResolve */ () => {
-        const isExpanded = this.state.expandedKeys.has(nodeKey);
-        const nodeNow = this.getNodeForKey(nodeKey);
-        const isDoneFetching = (nodeNow && nodeNow.isContainer() && nodeNow.isCacheValid());
-        return Boolean(isExpanded && isDoneFetching);
-      });
+      const promise = this._createDidUpdateListener(
+        /* shouldResolve */ () => {
+          const isExpanded = this.state.expandedKeys.has(nodeKey);
+          const nodeNow = this.getNodeForKey(nodeKey);
+          const isDoneFetching =
+            nodeNow && nodeNow.isContainer() && nodeNow.isCacheValid();
+          return Boolean(isExpanded && isDoneFetching);
+        },
+      );
       this._toggleNodeExpanded(node, true /* forceExpanded */);
       return promise;
     }
@@ -618,7 +639,7 @@ export class TreeRootComponent extends React.Component {
 
     const expandedKeys = this.state.expandedKeys;
     const node = this.getNodeForKey(key);
-    if ((node != null) && (!expandedKeys.has(key) || !node.isContainer())) {
+    if (node != null && (!expandedKeys.has(key) || !node.isContainer())) {
       // If the selection is already collapsed or it's not a container, select its parent.
       const parent = node.getParent();
       if (parent) {

@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {checkOutput} from '../../commons-node/process';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {runCommand} from 'nuclide-commons/process';
 import {generateFixture} from '../../nuclide-test-helpers';
 
-import {__test__} from '../lib/PathSetFactory';
+import {__test__} from '../lib/process/PathSetFactory';
 const {getFilesFromGit, getFilesFromHg} = __test__;
 
 describe('PathSetFactory', () => {
@@ -40,15 +41,18 @@ describe('PathSetFactory', () => {
   describe('getFilesFromGit()', () => {
     const setUpGitRepo = async () => {
       // Add a tracked file, ignored file, and untracked file.
-      await checkOutput('git', ['init'], {cwd: testDir});
+      await runCommand('git', ['init'], {cwd: testDir}).toPromise();
       invariant(testDir);
       invariant(trackedFile);
       invariant(ignoredFile);
       invariant(untrackedFile);
       fs.writeFileSync(trackedFile, '');
-      fs.writeFileSync(nuclideUri.join(testDir, '.gitignore'), `.gitignore\n${IGNORED_FILE_BASE}`);
+      fs.writeFileSync(
+        nuclideUri.join(testDir, '.gitignore'),
+        `.gitignore\n${IGNORED_FILE_BASE}`,
+      );
       fs.writeFileSync(ignoredFile, '');
-      await checkOutput('git', ['add', '*'], {cwd: testDir});
+      await runCommand('git', ['add', '*'], {cwd: testDir}).toPromise();
       fs.writeFileSync(untrackedFile, '');
     };
 
@@ -66,20 +70,23 @@ describe('PathSetFactory', () => {
   describe('getFilesFromHg()', () => {
     const setUpHgRepo = async () => {
       // Add a tracked file, ignored file, and untracked file.
-      await checkOutput('hg', ['init'], {cwd: testDir});
+      await runCommand('hg', ['init'], {cwd: testDir}).toPromise();
       invariant(testDir);
       invariant(trackedFile);
       invariant(ignoredFile);
       invariant(untrackedFile);
       fs.writeFileSync(trackedFile, '');
-      fs.writeFileSync(nuclideUri.join(testDir, '.hgignore'), `.hgignore\n${IGNORED_FILE_BASE}`);
+      fs.writeFileSync(
+        nuclideUri.join(testDir, '.hgignore'),
+        `.hgignore\n${IGNORED_FILE_BASE}`,
+      );
       fs.writeFileSync(ignoredFile, '');
-      await checkOutput('hg', ['addremove'], {cwd: testDir});
+      await runCommand('hg', ['addremove'], {cwd: testDir}).toPromise();
       fs.writeFileSync(untrackedFile, '');
     };
 
     it('returns tracked and untracked files, but not ignored files.', () => {
-      waitsForPromise(async () => {
+      waitsForPromise({timeout: 15000}, async () => {
         await setUpHgRepo();
         const expectedOutput = [TRACKED_FILE_BASE, UNTRACKED_FILE_BASE];
         invariant(testDir);

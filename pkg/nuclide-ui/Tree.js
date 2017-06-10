@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -17,27 +18,21 @@ type TreeItemProps = {
   selected?: boolean,
 };
 export const TreeItem = (props: TreeItemProps) => {
-  const {
-    className,
-    selected,
-    children,
-    ...remainingProps
-  } = props;
+  const {className, selected, children, ...remainingProps} = props;
   return (
-    <li className={classnames(
-      className,
-      {
-        selected,
-      },
-      'list-item',
-    )}
-    {...remainingProps}>
-      {
-        selected && typeof children === 'string'
-          // String children must be wrapped to receive correct styles when selected.
-          ? <span>{children}</span>
-          : children
-      }
+    <li
+      className={classnames(
+        className,
+        {
+          selected,
+        },
+        'list-item',
+      )}
+      {...remainingProps}>
+      {selected && typeof children === 'string'
+        ? // String children must be wrapped to receive correct styles when selected.
+          <span>{children}</span>
+        : children}
     </li>
   );
 };
@@ -59,15 +54,16 @@ export const NestedTreeItem = (props: NestedTreeItemProps) => {
     ...remainingProps
   } = props;
   return (
-    <li className={classnames(
-      className,
-      {
-        selected,
-        collapsed,
-      },
-      'list-nested-item',
-    )}
-    {...remainingProps}>
+    <li
+      className={classnames(
+        className,
+        {
+          selected,
+          collapsed,
+        },
+        'list-nested-item',
+      )}
+      {...remainingProps}>
       <div className="list-item">
         {title}
       </div>
@@ -85,13 +81,14 @@ type TreeListProps = {
   showArrows?: boolean,
 };
 export const TreeList = (props: TreeListProps) => (
-  <ul className={classnames(
-    props.className,
-    {
-      'has-collapsable-children': props.showArrows,
-    },
-    'list-tree',
-  )}>
+  <ul
+    className={classnames(
+      props.className,
+      {
+        'has-collapsable-children': props.showArrows,
+      },
+      'list-tree',
+    )}>
     {props.children}
   </ul>
 );

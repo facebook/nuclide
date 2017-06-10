@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import nuclideUri from '../../commons-node/nuclideUri';
-import fsPromise from '../../commons-node/fsPromise';
-import {arrayCompact} from '../../commons-node/collection';
-import {getLogger} from '../../nuclide-logging';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
+import {arrayCompact} from 'nuclide-commons/collection';
+import {getLogger} from 'log4js';
 
 const TAGS_FILENAME = 'tags';
 
@@ -41,41 +42,55 @@ export class CtagsService {
 
   findTags(
     query: string,
-    options?: {caseInsensitive?: boolean, partialMatch?: boolean, limit?: number},
+    options?: {
+      caseInsensitive?: boolean,
+      partialMatch?: boolean,
+      limit?: number,
+    },
   ): Promise<Array<CtagsResult>> {
     let ctags;
     try {
-      ctags = require('../VendorLib/ctags-prebuilt/lib/ctags');
+      ctags = require('nuclide-prebuilt-libs/ctags');
     } catch (e) {
-      getLogger().error('Could not load the ctags package:', e);
+      getLogger('nuclide-ctags-rpc').error(
+        'Could not load the ctags package:',
+        e,
+      );
       return Promise.resolve([]);
     }
 
     const dir = nuclideUri.dirname(this._tagsPath);
     return new Promise((resolve, reject) => {
-      ctags.findTags(this._tagsPath, query, options, async (error, tags: Array<Object>) => {
-        if (error != null) {
-          reject(error);
-        } else {
-          const processed = await Promise.all(tags.map(async tag => {
-            // Convert relative paths to absolute ones.
-            tag.file = nuclideUri.join(dir, tag.file);
-            // Tag files are often not perfectly in sync - filter out missing files.
-            if (await fsPromise.exists(tag.file)) {
-              if (tag.fields != null) {
-                const map = new Map();
-                for (const key in tag.fields) {
-                  map.set(key, tag.fields[key]);
+      ctags.findTags(
+        this._tagsPath,
+        query,
+        options,
+        async (error, tags: Array<Object>) => {
+          if (error != null) {
+            reject(error);
+          } else {
+            const processed = await Promise.all(
+              tags.map(async tag => {
+                // Convert relative paths to absolute ones.
+                tag.file = nuclideUri.join(dir, tag.file);
+                // Tag files are often not perfectly in sync - filter out missing files.
+                if (await fsPromise.exists(tag.file)) {
+                  if (tag.fields != null) {
+                    const map = new Map();
+                    for (const key in tag.fields) {
+                      map.set(key, tag.fields[key]);
+                    }
+                    tag.fields = map;
+                  }
+                  return tag;
                 }
-                tag.fields = map;
-              }
-              return tag;
-            }
-            return null;
-          }));
-          resolve(arrayCompact(processed));
-        }
-      });
+                return null;
+              }),
+            );
+            resolve(arrayCompact(processed));
+          }
+        },
+      );
     });
   }
 
@@ -85,7 +100,10 @@ export class CtagsService {
 }
 
 export async function getCtagsService(uri: NuclideUri): Promise<?CtagsService> {
-  const dir = await fsPromise.findNearestFile(TAGS_FILENAME, nuclideUri.dirname(uri));
+  const dir = await fsPromise.findNearestFile(
+    TAGS_FILENAME,
+    nuclideUri.dirname(uri),
+  );
   if (dir == null) {
     return null;
   }

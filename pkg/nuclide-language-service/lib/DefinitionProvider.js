@@ -6,13 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {
-  Definition,
-  DefinitionQueryResult,
-} from '../../nuclide-definition-service/lib/rpc-types';
+import type {DefinitionQueryResult} from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -20,7 +17,7 @@ import {trackTiming} from '../../nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type DefinitionConfig = {|
-  version: '0.0.0',
+  version: '0.1.0',
   priority: number,
   definitionEventName: string,
   definitionByIdEventName: string,
@@ -57,7 +54,7 @@ export class DefinitionProvider<T: LanguageService> {
     connectionToLanguageService: ConnectionCache<T>,
   ): IDisposable {
     return atom.packages.serviceHub.provide(
-      'nuclide-definition-provider',
+      'atom-ide-definitions',
       config.version,
       new DefinitionProvider(
         name,
@@ -66,28 +63,23 @@ export class DefinitionProvider<T: LanguageService> {
         config.definitionEventName,
         config.definitionByIdEventName,
         connectionToLanguageService,
-      ));
+      ),
+    );
   }
 
-  async getDefinition(editor: TextEditor, position: atom$Point): Promise<?DefinitionQueryResult> {
+  async getDefinition(
+    editor: TextEditor,
+    position: atom$Point,
+  ): Promise<?DefinitionQueryResult> {
     return trackTiming(this._definitionEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
-      const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
+      const languageService = this._connectionToLanguageService.getForUri(
+        editor.getPath(),
+      );
       if (languageService == null || fileVersion == null) {
         return null;
       }
       return (await languageService).getDefinition(fileVersion, position);
-    });
-  }
-
-  getDefinitionById(filePath: NuclideUri, id: string): Promise<?Definition> {
-    return trackTiming(this._definitionByIdEventName, async () => {
-      const languageService = this._connectionToLanguageService.getForUri(filePath);
-      if (languageService == null) {
-        return null;
-      }
-
-      return (await languageService).getDefinitionById(filePath, id);
     });
   }
 }

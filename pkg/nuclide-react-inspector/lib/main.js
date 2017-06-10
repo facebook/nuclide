@@ -6,12 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 
-import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {
+  viewableFromReactElement,
+} from '../../commons-atom/viewableFromReactElement';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import Inspector, {WORKSPACE_VIEW_URI} from './ui/Inspector';
 import invariant from 'assert';
 import React from 'react';
@@ -40,7 +45,9 @@ export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
     atom.commands.add(
       'atom-workspace',
       'nuclide-react-inspector:toggle',
-      event => { api.toggle(WORKSPACE_VIEW_URI, (event: any).detail); },
+      event => {
+        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      },
     ),
   );
 }

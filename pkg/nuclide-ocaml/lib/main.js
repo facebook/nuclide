@@ -6,12 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {CodeFormatProvider} from '../../nuclide-code-format/lib/types';
-import type {LinterProvider} from '../../nuclide-diagnostics-common';
-import type {OutlineProvider} from '../../nuclide-outline-view/lib/main';
-import type {TypeHintProvider as TypeHintProviderType} from '../../nuclide-type-hint/lib/types';
+import type {
+  CodeFormatProvider,
+  LinterProvider,
+  OutlineProvider,
+} from 'atom-ide-ui';
+import type {
+  TypeHintProvider as TypeHintProviderType,
+} from '../../nuclide-type-hint/lib/types';
 
 import {trackTiming} from '../../nuclide-analytics';
 import HyperclickProvider from './HyperclickProvider';
@@ -30,9 +35,9 @@ export function getHyperclickProvider() {
 
 export function createAutocompleteProvider(): mixed {
   const getSuggestions = request => {
-    return trackTiming(
-      'nuclide-ocaml:getAutocompleteSuggestions',
-      () => AutoComplete.getAutocompleteSuggestions(request));
+    return trackTiming('nuclide-ocaml:getAutocompleteSuggestions', () =>
+      AutoComplete.getAutocompleteSuggestions(request),
+    );
   };
   return {
     selector: '.source.ocaml, .source.reason',
@@ -82,16 +87,14 @@ export function activate() {
   if (!disposables) {
     disposables = new CompositeDisposable();
 
-    disposables.add(atom.commands.add(
-      'atom-workspace',
-      'nuclide-ocaml:destructure',
-      () => {
+    disposables.add(
+      atom.commands.add('atom-workspace', 'nuclide-ocaml:destructure', () => {
         const editor = atom.workspace.getActiveTextEditor();
         if (editor) {
           cases(editor, editor.getCursorScreenPosition());
         }
-      },
-    ));
+      }),
+    );
   }
 }
 

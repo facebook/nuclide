@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -16,7 +17,7 @@ import type {
   UpdatePaneItemStateAction,
   UpdateRepositoryBookmarksAction,
 } from '../lib/types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {accumulateState} from '../lib/accumulateState';
 import {ActionType, EMPTY_SHORTHEAD} from '../lib/constants';
@@ -42,7 +43,9 @@ describe('BookShelf accumulateState', () => {
   let oneRepoState: BookShelfState = (null: any);
 
   beforeEach(() => {
-    fakeRepository = ({getWorkingDirectory: jasmine.createSpy().andReturn(REPO_PATH_1)}: any);
+    fakeRepository = ({
+      getWorkingDirectory: jasmine.createSpy().andReturn(REPO_PATH_1),
+    }: any);
     // a deepFreeze utility would have been better here.
     emptyState = Object.freeze(getEmptBookShelfState());
 
@@ -63,15 +66,16 @@ describe('BookShelf accumulateState', () => {
       expect(fakeRepository.getWorkingDirectory).toHaveBeenCalled();
       expect(emptyState.repositoryPathToState.size).toBe(0);
       expect(newState.repositoryPathToState.size).toBe(1);
-      const addedRepoState: BookShelfRepositoryState
-        = newState.repositoryPathToState.get(REPO_PATH_1);
+      const addedRepoState: BookShelfRepositoryState = newState.repositoryPathToState.get(
+        REPO_PATH_1,
+      );
       expect(addedRepoState).toBeDefined();
       expect(addedRepoState.activeShortHead).toBe(EMPTY_SHORTHEAD);
       expect(addedRepoState.isRestoring).toBeFalsy();
       expect(addedRepoState.shortHeadsToFileList.size).toBe(0);
     });
 
-    it('keeps the existing state when it\'s there', () => {
+    it("keeps the existing state when it's there", () => {
       expect(oneRepoState.repositoryPathToState.size).toBe(1);
       const addRepositoryAction: AddProjectRepositoryAction = {
         payload: {
@@ -82,14 +86,20 @@ describe('BookShelf accumulateState', () => {
       const newState = accumulateState(oneRepoState, addRepositoryAction);
       expect(fakeRepository.getWorkingDirectory).toHaveBeenCalled();
       expect(newState.repositoryPathToState.size).toBe(1);
-      const keptRepoState: BookShelfRepositoryState
-        = newState.repositoryPathToState.get(REPO_PATH_1);
+      const keptRepoState: BookShelfRepositoryState = newState.repositoryPathToState.get(
+        REPO_PATH_1,
+      );
       expect(keptRepoState).toBeDefined();
       expect(keptRepoState.activeShortHead).toBe(ACTIVE_SHOTHEAD_1);
       expect(keptRepoState.isRestoring).toBeFalsy();
       expect(keptRepoState.shortHeadsToFileList.size).toBe(2);
-      expect(keptRepoState.shortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual(['c.txt', 'd.txt']);
-      expect(keptRepoState.shortHeadsToFileList.get(SHOTHEAD_1_2)).toEqual(['e.txt']);
+      expect(keptRepoState.shortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual([
+        'c.txt',
+        'd.txt',
+      ]);
+      expect(keptRepoState.shortHeadsToFileList.get(SHOTHEAD_1_2)).toEqual([
+        'e.txt',
+      ]);
     });
   });
 
@@ -117,7 +127,9 @@ describe('BookShelf accumulateState', () => {
       };
       const newState = accumulateState(emptyState, removeRepositoryAction);
       expect(fakeRepository.getWorkingDirectory).toHaveBeenCalled();
-      expect(newState.repositoryPathToState).toBe(emptyState.repositoryPathToState);
+      expect(newState.repositoryPathToState).toBe(
+        emptyState.repositoryPathToState,
+      );
     });
   });
 
@@ -134,8 +146,9 @@ describe('BookShelf accumulateState', () => {
       const newState = accumulateState(emptyState, updateBookmarksAction);
       expect(emptyState.repositoryPathToState.size).toBe(0);
       expect(newState.repositoryPathToState.size).toBe(1);
-      const newRepositoryState: BookShelfRepositoryState = newState
-        .repositoryPathToState.get(REPO_PATH_1);
+      const newRepositoryState: BookShelfRepositoryState = newState.repositoryPathToState.get(
+        REPO_PATH_1,
+      );
       expect(newRepositoryState.activeShortHead).toBe('a');
       expect(newRepositoryState.isRestoring).toBe(false);
       expect(newRepositoryState.shortHeadsToFileList.size).toBe(0);
@@ -150,21 +163,29 @@ describe('BookShelf accumulateState', () => {
         },
         type: ActionType.UPDATE_REPOSITORY_BOOKMARKS,
       };
-      const oldRpositoryState = oneRepoState.repositoryPathToState.get(REPO_PATH_1);
+      const oldRpositoryState = oneRepoState.repositoryPathToState.get(
+        REPO_PATH_1,
+      );
       expect(oldRpositoryState.shortHeadsToFileList.size).toBe(2);
-      expect(oldRpositoryState.shortHeadsToFileList.has(SHOTHEAD_1_1)).toBeTruthy();
+      expect(
+        oldRpositoryState.shortHeadsToFileList.has(SHOTHEAD_1_1),
+      ).toBeTruthy();
 
       const newState = accumulateState(oneRepoState, updateBookmarksAction);
       expect(newState.repositoryPathToState.size).toBe(1);
 
-      const newRepositoryState: BookShelfRepositoryState = newState
-        .repositoryPathToState.get(REPO_PATH_1);
+      const newRepositoryState: BookShelfRepositoryState = newState.repositoryPathToState.get(
+        REPO_PATH_1,
+      );
       expect(newRepositoryState.activeShortHead).toBe(SHOTHEAD_1_2);
       expect(newRepositoryState.isRestoring).toBe(false);
       expect(newRepositoryState.shortHeadsToFileList.size).toBe(1);
-      expect(newRepositoryState.shortHeadsToFileList.has(SHOTHEAD_1_1)).toBeFalsy();
-      expect(newRepositoryState.shortHeadsToFileList.get(SHOTHEAD_1_2))
-        .toEqual(oldRpositoryState.shortHeadsToFileList.get(SHOTHEAD_1_2));
+      expect(
+        newRepositoryState.shortHeadsToFileList.has(SHOTHEAD_1_1),
+      ).toBeFalsy();
+      expect(newRepositoryState.shortHeadsToFileList.get(SHOTHEAD_1_2)).toEqual(
+        oldRpositoryState.shortHeadsToFileList.get(SHOTHEAD_1_2),
+      );
     });
   });
 
@@ -198,18 +219,26 @@ describe('BookShelf accumulateState', () => {
       };
       const newState = accumulateState(oneRepoState, updatePaneItemAction);
 
-      const oldShortHeadsToFileList = oneRepoState
-        .repositoryPathToState.get(REPO_PATH_1).shortHeadsToFileList;
+      const oldShortHeadsToFileList = oneRepoState.repositoryPathToState.get(
+        REPO_PATH_1,
+      ).shortHeadsToFileList;
       expect(oldShortHeadsToFileList.size).toBe(2);
-      expect(oldShortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual(['c.txt', 'd.txt']);
+      expect(oldShortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual([
+        'c.txt',
+        'd.txt',
+      ]);
 
       // Doesn't add untracked repos.
       expect(newState.repositoryPathToState.size).toBe(1);
 
-      const newShortHeadsToFileList = newState
-        .repositoryPathToState.get(REPO_PATH_1).shortHeadsToFileList;
+      const newShortHeadsToFileList = newState.repositoryPathToState.get(
+        REPO_PATH_1,
+      ).shortHeadsToFileList;
       expect(newShortHeadsToFileList.size).toBe(2);
-      expect(newShortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual(['file1.txt', 'file2.txt']);
+      expect(newShortHeadsToFileList.get(SHOTHEAD_1_1)).toEqual([
+        'file1.txt',
+        'file2.txt',
+      ]);
       expect(newShortHeadsToFileList.get(SHOTHEAD_1_2)).toEqual(['e.txt']);
     });
   });

@@ -2,13 +2,13 @@
   ".platform-darwin atom-workspace": {
     "cmd-\\": "nuclide-file-tree:toggle",
     "cmd-k cmd-b": "nuclide-file-tree:toggle",
-    "cmd-|": "nuclide-file-tree:reveal-in-file-tree",
+    "cmd-|": "nuclide-file-tree:reveal-active-file",
     "ctrl-0": "nuclide-file-tree:toggle-focus"
   },
   ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
     "ctrl-\\": "nuclide-file-tree:toggle",
     "ctrl-k ctrl-b": "nuclide-file-tree:toggle",
-    "ctrl-|": "nuclide-file-tree:reveal-in-file-tree",
+    "ctrl-|": "nuclide-file-tree:reveal-active-file",
     "alt-\\": "nuclide-file-tree:toggle-focus"
   },
   "atom-workspace": {

@@ -6,16 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu
+  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 
 import invariant from 'assert';
 import registerGrammar from '../../commons-atom/register-grammar';
 import {CompositeDisposable, Disposable} from 'atom';
-import {repositoryForPath} from '../../commons-atom/vcs';
-import {addPath, confirmAndRevertPath, revertPath} from '../../commons-atom/vcs';
+import {repositoryForPath} from '../../nuclide-vcs-base';
+import {
+  addPath,
+  confirmAndRevertPath,
+  revertPath,
+} from '../../nuclide-vcs-base';
 import HgRepositoryProvider from './HgRepositoryProvider';
 
 const HG_ADD_TREE_CONTEXT_MENU_PRIORITY = 400;
@@ -38,8 +44,10 @@ function shouldDisplayActionTreeItem(
   }
   const hgRepository: HgRepositoryClient = (node.repo: any);
   if (action === 'Revert') {
-    return hgRepository.isStatusModified(node.vcsStatusCode) ||
-      hgRepository.isStatusAdded(node.vcsStatusCode);
+    return (
+      hgRepository.isStatusModified(node.vcsStatusCode) ||
+      hgRepository.isStatusAdded(node.vcsStatusCode)
+    );
   } else if (action === 'Add') {
     return hgRepository.isStatusUntracked(node.vcsStatusCode);
   } else {
@@ -47,7 +55,10 @@ function shouldDisplayActionTreeItem(
   }
 }
 
-function getActivePathAndHgRepository(): ?{activePath: string, repository: HgRepositoryClient} {
+function getActivePathAndHgRepository(): ?{
+  activePath: string,
+  repository: HgRepositoryClient,
+} {
   const editor = atom.workspace.getActiveTextEditor();
   if (editor == null || !editor.getPath()) {
     return null;
@@ -85,67 +96,77 @@ function isActivePathAddable(): boolean {
 export function activate(state: any): void {
   subscriptions = new CompositeDisposable();
 
-  subscriptions.add(atom.commands.add(
-    'atom-text-editor',
-    'nuclide-hg-repository:revert',
-    event => {
-      const editorElement: atom$TextEditorElement = (event.target: any);
-      revertPath(editorElement.getModel().getPath());
-    },
-  ));
+  subscriptions.add(
+    atom.commands.add(
+      'atom-text-editor',
+      'nuclide-hg-repository:revert',
+      event => {
+        const editorElement: atom$TextEditorElement = (event.currentTarget: any);
+        revertPath(editorElement.getModel().getPath());
+      },
+    ),
+  );
 
-  subscriptions.add(atom.commands.add(
-    'atom-text-editor',
-    'nuclide-hg-repository:confirm-and-revert',
-    event => {
-      const editorElement: atom$TextEditorElement = (event.target: any);
-      confirmAndRevertPath(editorElement.getModel().getPath());
-    },
-  ));
+  subscriptions.add(
+    atom.commands.add(
+      'atom-text-editor',
+      'nuclide-hg-repository:confirm-and-revert',
+      event => {
+        const editorElement: atom$TextEditorElement = (event.currentTarget: any);
+        confirmAndRevertPath(editorElement.getModel().getPath());
+      },
+    ),
+  );
 
-  subscriptions.add(atom.commands.add(
-    'atom-text-editor',
-    'nuclide-hg-repository:add',
-    event => {
-      const editorElement: atom$TextEditorElement = (event.target: any);
-      addPath(editorElement.getModel().getPath());
-    },
-  ));
+  subscriptions.add(
+    atom.commands.add(
+      'atom-text-editor',
+      'nuclide-hg-repository:add',
+      event => {
+        const editorElement: atom$TextEditorElement = (event.currentTarget: any);
+        addPath(editorElement.getModel().getPath());
+      },
+    ),
+  );
 
   // Text editor context menu items.
-  subscriptions.add(atom.contextMenu.add({
-    'atom-text-editor': [
-      {type: 'separator'},
-      {
-        label: 'Source Control',
-        submenu: [
-          {
-            label: 'Revert',
-            command: 'nuclide-hg-repository:confirm-and-revert',
-            shouldDisplay() {
-              return isActivePathRevertable();
+  subscriptions.add(
+    atom.contextMenu.add({
+      'atom-text-editor': [
+        {type: 'separator'},
+        {
+          label: 'Source Control',
+          submenu: [
+            {
+              label: 'Revert',
+              command: 'nuclide-hg-repository:confirm-and-revert',
+              shouldDisplay() {
+                return isActivePathRevertable();
+              },
             },
-          },
-          {
-            label: 'Add to Mercurial',
-            command: 'nuclide-hg-repository:add',
-            shouldDisplay() {
-              return isActivePathAddable();
+            {
+              label: 'Add to Mercurial',
+              command: 'nuclide-hg-repository:add',
+              shouldDisplay() {
+                return isActivePathAddable();
+              },
             },
+          ],
+          shouldDisplay() {
+            return getActivePathAndHgRepository() != null;
           },
-        ],
-        shouldDisplay() {
-          return getActivePathAndHgRepository() != null;
         },
-      },
-      {type: 'separator'},
-    ],
-  }));
+        {type: 'separator'},
+      ],
+    }),
+  );
 
   registerGrammar('source.ini', ['.hgrc']);
 }
 
-export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
+export function addItemsToFileTreeContextMenu(
+  contextMenu: FileTreeContextMenu,
+): IDisposable {
   invariant(subscriptions);
 
   const revertContextDisposable = contextMenu.addItemToSourceControlMenu(

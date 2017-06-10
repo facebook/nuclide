@@ -6,18 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point} from 'atom';
 
 import {trackTiming} from '../../nuclide-analytics';
-import observeLanguageTextEditors from
-  '../../commons-atom/observe-language-text-editors';
+import observeLanguageTextEditors
+  from '../../commons-atom/observe-language-text-editors';
 
-const GRAMMARS = [
-  'source.objc',
-  'source.objcpp',
-];
+const GRAMMARS = ['source.objc', 'source.objcpp'];
 
 /**
  * This closes square brackets for Objective-C message calls.
@@ -35,9 +33,10 @@ export default class ObjectiveCBracketBalancer {
 
     this._editingSubscriptionsMap = new Map();
     this._languageListener = observeLanguageTextEditors(
-        GRAMMARS,
-        textEditor => this._enableInTextEditor(textEditor),
-        textEditor => this._disableInTextEditor(textEditor));
+      GRAMMARS,
+      textEditor => this._enableInTextEditor(textEditor),
+      textEditor => this._disableInTextEditor(textEditor),
+    );
   }
 
   disable(): void {
@@ -48,7 +47,9 @@ export default class ObjectiveCBracketBalancer {
     this._languageListener.dispose();
     this._languageListener = null;
 
-    this._editingSubscriptionsMap.forEach(subscription => subscription.dispose());
+    this._editingSubscriptionsMap.forEach(subscription =>
+      subscription.dispose(),
+    );
     this._editingSubscriptionsMap.clear();
   }
 
@@ -58,8 +59,10 @@ export default class ObjectiveCBracketBalancer {
         const {range, text} = event;
         if (text === ']') {
           const buffer = textEditor.getBuffer();
-          const leftBracketInsertPosition = ObjectiveCBracketBalancer
-            .getOpenBracketInsertPosition(buffer, range.start);
+          const leftBracketInsertPosition = ObjectiveCBracketBalancer.getOpenBracketInsertPosition(
+            buffer,
+            range.start,
+          );
           if (leftBracketInsertPosition) {
             buffer.insert(leftBracketInsertPosition, '[');
           }
@@ -92,7 +95,7 @@ export default class ObjectiveCBracketBalancer {
     // Iterate through the line, determining if we have balanced brackets.
     // We do not count brackets we encounter inside string/char literals.
     for (let i = 0; i < startingLine.length; i++) {
-      if (startingLine[i] === '\'') {
+      if (startingLine[i] === "'") {
         singleQuoteCount++;
       } else if (startingLine[i] === '"') {
         doubleQuoteCount++;
@@ -106,7 +109,10 @@ export default class ObjectiveCBracketBalancer {
 
     const stringLiteralMatch = /@".*"\s.*]/.exec(startingLine);
     if (stringLiteralMatch) {
-      return Point.fromObject([closeBracketPosition.row, stringLiteralMatch.index]);
+      return Point.fromObject([
+        closeBracketPosition.row,
+        stringLiteralMatch.index,
+      ]);
     } else if (characterCount['['] < characterCount[']']) {
       // Check if we're at the bottom of a multi-line method.
       const multiLineMethodRegex = /^[\s\w[]*:.*[^;{];?$/;
@@ -119,7 +125,10 @@ export default class ObjectiveCBracketBalancer {
         match = multiLineMethodRegex.exec(buffer.lineForRow(--currentRow));
       }
 
-      if (currentRowPlusOne !== null && currentRowPlusOne !== closeBracketPosition.row) {
+      if (
+        currentRowPlusOne !== null &&
+        currentRowPlusOne !== closeBracketPosition.row
+      ) {
         const targetLine = buffer.lineForRow(currentRowPlusOne);
         const targetMatch = /\S/.exec(targetLine);
 

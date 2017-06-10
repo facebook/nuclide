@@ -6,16 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import React from 'react';
 import classnames from 'classnames';
-import {PanelComponentScroller} from '../../nuclide-ui/PanelComponentScroller';
+import {
+  PanelComponentScroller,
+} from 'nuclide-commons-ui/PanelComponentScroller';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
 import {track} from '../../nuclide-analytics';
-import {goToLocation} from '../../commons-atom/go-to-location';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 type OpenFileEntry = {
   name: string,
@@ -78,9 +81,12 @@ export class OpenFilesListComponent extends React.PureComponent {
   _closeFile(uri: NuclideUri): void {
     track('filetree-close-from-open-files', {uri});
     atom.workspace.getPanes().forEach(pane => {
-      pane.getItems().filter(item => item.getPath && item.getPath() === uri).forEach(item => {
-        pane.destroyItem(item);
-      });
+      pane
+        .getItems()
+        .filter(item => item.getPath && item.getPath() === uri)
+        .forEach(item => {
+          pane.destroyItem(item);
+        });
     });
   }
 
@@ -103,33 +109,33 @@ export class OpenFilesListComponent extends React.PureComponent {
       <div className="nuclide-file-tree-open-files">
         <PanelComponentScroller>
           <ul className="list-tree nuclide-file-tree-open-files-list">
-          {sortedEntries.map(e => {
-            const isHoveredUri = this.state.hoveredUri === e.uri;
-            return (
-              <li
-                className={classnames('list-item', {
-                  'selected': e.isSelected,
-                  'text-highlight': isHoveredUri,
-                })}
-                key={e.uri}
-                onClick={this._onClick.bind(this, e)}
-                onMouseEnter={this._onListItemMouseEnter.bind(this, e)}
-                onMouseLeave={this._onListItemMouseLeave}
-                ref={e.isSelected ? 'selectedRow' : null}>
-                <span
-                  className={classnames('icon', {
-                    'icon-primitive-dot': e.isModified && !isHoveredUri,
-                    'icon-x': isHoveredUri || !e.isModified,
-                    'text-info': e.isModified,
+            {sortedEntries.map(e => {
+              const isHoveredUri = this.state.hoveredUri === e.uri;
+              return (
+                <li
+                  className={classnames('list-item', {
+                    selected: e.isSelected,
+                    'text-highlight': isHoveredUri,
                   })}
-                  onClick={this._onCloseClick.bind(this, e)}
-                />
-                <span className="icon icon-file-text" data-name={e.name}>
-                  {e.name}
-                </span>
-              </li>
-            );
-          })}
+                  key={e.uri}
+                  onClick={this._onClick.bind(this, e)}
+                  onMouseEnter={this._onListItemMouseEnter.bind(this, e)}
+                  onMouseLeave={this._onListItemMouseLeave}
+                  ref={e.isSelected ? 'selectedRow' : null}>
+                  <span
+                    className={classnames('icon', {
+                      'icon-primitive-dot': e.isModified && !isHoveredUri,
+                      'icon-x': isHoveredUri || !e.isModified,
+                      'text-info': e.isModified,
+                    })}
+                    onClick={this._onCloseClick.bind(this, e)}
+                  />
+                  <span className="icon icon-file-text" data-name={e.name}>
+                    {e.name}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </PanelComponentScroller>
       </div>
@@ -144,6 +150,8 @@ function propsToEntries(props: Props): Array<OpenFileEntry> {
     return {uri, name: FileTreeHelpers.keyToName(uri), isModified, isSelected};
   });
 
-  entries.sort((e1, e2) => e1.name.toLowerCase().localeCompare(e2.name.toLowerCase()));
+  entries.sort((e1, e2) =>
+    e1.name.toLowerCase().localeCompare(e2.name.toLowerCase()),
+  );
   return entries;
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -50,7 +51,9 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
     waitsForPromise({timeout: 60000}, async () => {
       testDir = await copyBuildFixture('cpp_project', __dirname);
       await context.setProject(testDir);
-      textEditor = await atom.workspace.open(context.getProjectRelativePath('test.cpp'));
+      textEditor = await atom.workspace.open(
+        context.getProjectRelativePath('test.cpp'),
+      );
       textEditorView = atom.views.getView(textEditor);
     });
 
@@ -91,7 +94,9 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
       // Confirm autocomplete.
       dispatchKeyboardEvent('enter', document.activeElement);
       expect(getAutocompleteView()).not.toExist();
-      const lineText = textEditor.lineTextForBufferRow(textEditor.getCursorBufferPosition().row);
+      const lineText = textEditor.lineTextForBufferRow(
+        textEditor.getCursorBufferPosition().row,
+      );
       expect(lineText).toBe('t.method()}');
 
       // This is a clear syntax error, so we should get an error on save.
@@ -99,7 +104,8 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
     });
 
     waitsFor('error to show up in diagnostics', 10000, () => {
-      const errors = atom.views.getView(atom.workspace)
+      const errors = atom.views
+        .getView(atom.workspace)
         .querySelector('.nuclide-diagnostics-status-bar-highlight');
       if (errors instanceof HTMLElement) {
         const innerText = errors.innerText;
@@ -115,7 +121,8 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
 
     let names;
     waitsFor('outline view to load', 10000, () => {
-      names = atom.views.getView(atom.workspace)
+      names = atom.views
+        .getView(atom.workspace)
         .querySelectorAll('.nuclide-outline-view-item .syntax--name');
       return names.length > 0;
     });
@@ -134,19 +141,11 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
       });
       expect(getOutlineData(names[2])).toEqual({
         name: 'method',
-        classes: [
-          'syntax--entity',
-          'syntax--function',
-          'syntax--name',
-        ],
+        classes: ['syntax--entity', 'syntax--function', 'syntax--name'],
       });
       expect(getOutlineData(names[3])).toEqual({
         name: 'main',
-        classes: [
-          'syntax--entity',
-          'syntax--function',
-          'syntax--name',
-        ],
+        classes: ['syntax--entity', 'syntax--function', 'syntax--name'],
       });
 
       // Trigger a datatip on t
@@ -156,7 +155,8 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
 
     let datatip;
     waitsFor('datatip to appear for TestClass', () => {
-      datatip = atom.views.getView(atom.workspace)
+      datatip = atom.views
+        .getView(atom.workspace)
         .querySelector('.nuclide-datatip-content atom-text-editor');
       return datatip;
     });
@@ -168,7 +168,10 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
       // Hyperclick on TestClass
       textEditor.setCursorBufferPosition([12, 10]);
       // hyperclick:confirm-cursor
-      dispatchKeyboardEvent('enter', document.activeElement, {cmd: true, alt: true});
+      dispatchKeyboardEvent('enter', document.activeElement, {
+        cmd: true,
+        alt: true,
+      });
     });
 
     waitsForFilePosition('test.cpp', 3, 6);

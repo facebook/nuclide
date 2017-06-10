@@ -6,24 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BuckWebSocketMessage} from '../../nuclide-buck-rpc';
-import type {Level} from '../../nuclide-console/lib/types';
-import type {
-  FileDiagnosticMessage,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
-import type {ProcessMessage} from '../../commons-node/process-rpc-types';
-import type {BuckSubcommand} from './types';
+import type {Level} from 'nuclide-commons/process';
+import type {FileDiagnosticMessage} from 'atom-ide-ui';
+import type {LegacyProcessMessage} from 'nuclide-commons/process';
+import type {BuckBuildOutput, BuckSubcommand} from './types';
 
 import {Observable} from 'rxjs';
 import stripAnsi from 'strip-ansi';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import DiagnosticsParser from './DiagnosticsParser';
-import {exitEventToMessage} from '../../commons-node/process';
+import {exitEventToMessage} from 'nuclide-commons/process';
 
 const PROGRESS_OUTPUT_INTERVAL = 5 * 1000;
 const BUILD_FAILED_MESSAGE = 'BUILD FAILED:';
+const BUILD_OUTPUT_REGEX = /^OK {3}(.*?) (.*?) (.*?)$/;
 
 export type BuckEvent =
   | {
@@ -45,7 +45,8 @@ export type BuckEvent =
     }
   | {
       type: 'socket-connected',
-    };
+    }
+  | {type: 'build-output', output: BuckBuildOutput};
 
 function convertJavaLevel(level: string): Level {
   switch (level) {
@@ -62,11 +63,12 @@ function convertJavaLevel(level: string): Level {
 export function getEventsFromSocket(
   socketStream: Observable<BuckWebSocketMessage>,
 ): Observable<BuckEvent> {
-  const log = (message, level = 'log') => Observable.of({
-    type: 'log',
-    message,
-    level,
-  });
+  const log = (message, level = 'log') =>
+    Observable.of({
+      type: 'log',
+      message,
+      level,
+    });
 
   const eventStream = socketStream
     .flatMap((message: BuckWebSocketMessage) => {
@@ -78,7 +80,13 @@ export function getEventsFromSocket(
         case 'ParseFinished':
           return log('Parsing finished. Starting build...');
         case 'ConsoleEvent':
-          return log(message.message, convertJavaLevel(message.level.name));
+          const match = message.message.match(BUILD_OUTPUT_REGEX);
+          if (match != null && match.length === 4) {
+            // The result is also printed to stdout and converted into build-output there.
+            return Observable.empty();
+          } else {
+            return log(message.message, convertJavaLevel(message.level.name));
+          }
         case 'InstallFinished':
           return log('Install finished.', 'info');
         case 'BuildFinished':
@@ -98,7 +106,7 @@ export function getEventsFromSocket(
       return Observable.empty();
     })
     .catch(err => {
-      getLogger().error('Got Buck websocket error', err);
+      getLogger('nuclide-buck').error('Got Buck websocket error', err);
       // Return to indeterminate progress.
       return Observable.of({
         type: 'progress',
@@ -128,7 +136,7 @@ export function getEventsFromSocket(
 }
 
 export function getEventsFromProcess(
-  processStream: Observable<ProcessMessage>,
+  processStream: Observable<LegacyProcessMessage>, // TODO(T17463635)
 ): Observable<BuckEvent> {
   return processStream.map(message => {
     switch (message.kind) {
@@ -152,16 +160,28 @@ export function getEventsFromProcess(
         };
       case 'stderr':
       case 'stdout':
-        return {
-          type: 'log',
-          // Some Buck steps output ansi escape codes regardless of terminal setting.
-          message: stripAnsi(message.data),
-          // Build failure messages typically do not show up in the web socket.
-          // TODO(hansonw): fix this on the Buck side
-          level: message.data.indexOf(BUILD_FAILED_MESSAGE) === -1
-            ? 'log'
-            : 'error',
-        };
+        const match = message.data.trim().match(BUILD_OUTPUT_REGEX);
+        if (match != null && match.length === 4) {
+          return {
+            type: 'build-output',
+            output: {
+              target: match[1],
+              successType: match[2],
+              path: match[3],
+            },
+          };
+        } else {
+          return {
+            type: 'log',
+            // Some Buck steps output ansi escape codes regardless of terminal setting.
+            message: stripAnsi(message.data),
+            // Build failure messages typically do not show up in the web socket.
+            // TODO(hansonw): fix this on the Buck side
+            level: message.data.indexOf(BUILD_FAILED_MESSAGE) === -1
+              ? 'log'
+              : 'error',
+          };
+        }
       default:
         throw new Error('impossible');
     }
@@ -199,7 +219,7 @@ export function combineEventStreams(
     // We ensure that error/info logs will not duplicate messages from the websocket.
     processEvents.skipWhile(isRegularLogMessage),
   );
-  if (subcommand === 'test') {
+  if (subcommand === 'test' || subcommand === 'run') {
     // The websocket does not reliably provide test output.
     // After the build finishes, fall back to the Buck output stream.
     mergedEvents = Observable.concat(

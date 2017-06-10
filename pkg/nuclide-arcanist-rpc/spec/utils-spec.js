@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -16,16 +17,24 @@ describe('utils', () => {
   const testCases = [
     [
       'Differential Revision: https://phabricator.intern.facebook.com/D169775',
-      {id: 169775, name: 'D169775', url: 'https://phabricator.intern.facebook.com/D169775'},
+      {
+        id: 169775,
+        name: 'D169775',
+        url: 'https://phabricator.intern.facebook.com/D169775',
+      },
     ],
     ['Some stuff', null],
     [
-      (`Multiline
+      `Multiline
 
       message
       Differential Revision: https://phabricator.intern.facebook.com/d123456
-      Test plan: foo!`).replace(/^ +/gm, ''),
-      {id: 123456, name: 'D123456', url: 'https://phabricator.intern.facebook.com/d123456'},
+      Test plan: foo!`.replace(/^ +/gm, ''),
+      {
+        id: 123456,
+        name: 'D123456',
+        url: 'https://phabricator.intern.facebook.com/d123456',
+      },
     ],
   ];
   it('can parse a commit message and get the revision ID', () => {

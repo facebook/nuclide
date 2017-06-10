@@ -6,28 +6,45 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {Level, OutputService} from '../../nuclide-console/lib/types';
+import type {Level, ConsoleService} from '../../nuclide-console/lib/types';
 
-import {CompositeDisposable} from 'atom';
-import createPackage from '../../commons-atom/createPackage';
-import {getNuclideConsoleMessages} from '../../nuclide-logging/lib/nuclideConsoleAppender';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import {
+  getNuclideConsoleMessages,
+} from '../../nuclide-logging/lib/nuclideConsoleAppender';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
-  consumeOutputService(api: OutputService): void {
-    const messages = getNuclideConsoleMessages()
-      .map(loggingEvent => ({
-        text: loggingEvent.data,
-        level: getLevel(loggingEvent.level),
-      }));
-    this._disposables.add(api.registerOutputProvider({id: 'Nuclide', messages}));
+  consumeConsole(getConsole: ConsoleService): IDisposable {
+    const console = getConsole({
+      id: 'Nuclide',
+      name: 'Nuclide',
+    });
+    const disposable = new UniversalDisposable(
+      getNuclideConsoleMessages()
+        .map(loggingEvent => ({
+          text: String(loggingEvent.data),
+          level: getLevel(loggingEvent.level),
+        }))
+        .subscribe(message => {
+          console.append(message);
+        }),
+    );
+
+    // If this package is disabled, stop producing messages and dispose of the console we created.
+    this._disposables.add(disposable, console);
+
+    // If the console package goes away, stop producing messages.
+    return disposable;
   }
 
   dispose() {

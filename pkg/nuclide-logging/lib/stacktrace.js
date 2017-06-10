@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import singleton from '../../commons-node/singleton';
@@ -28,39 +29,38 @@ let hookedPrepareStackTrace: ?PrepareStackTraceFunction;
  * customize Error.prepareStackTrace.
  */
 export default function addPrepareStackTraceHook(): void {
-  singleton.get(
-    PREPARE_STACK_TRACE_HOOKED_KEY,
-    () => {
-      hookedPrepareStackTrace = createHookedPrepareStackTrace(Error.prepareStackTrace
-        || defaultPrepareStackTrace);
+  singleton.get(PREPARE_STACK_TRACE_HOOKED_KEY, () => {
+    hookedPrepareStackTrace = createHookedPrepareStackTrace(
+      Error.prepareStackTrace || defaultPrepareStackTrace,
+    );
 
-      // Hook Error.prepareStackTrace by leveraging get/set accessor. In this way, writing to
-      // Error.prepareStackTrace will put the new prepareStackTrace functions in a wrapper that
-      // calls the hook.
-      // $FlowIssue
-      Object.defineProperty(Error, 'prepareStackTrace', {
-        get() {
-          return hookedPrepareStackTrace;
-        },
-        set(newValue) {
-          hookedPrepareStackTrace = createHookedPrepareStackTrace(newValue
-            || defaultPrepareStackTrace);
-        },
-        enumerable: false,
-        configurable: true,
-      });
+    // Hook Error.prepareStackTrace by leveraging get/set accessor. In this way, writing to
+    // Error.prepareStackTrace will put the new prepareStackTrace functions in a wrapper that
+    // calls the hook.
+    // $FlowIssue
+    Object.defineProperty(Error, 'prepareStackTrace', {
+      get() {
+        return hookedPrepareStackTrace;
+      },
+      set(newValue) {
+        hookedPrepareStackTrace = createHookedPrepareStackTrace(
+          newValue || defaultPrepareStackTrace,
+        );
+      },
+      enumerable: false,
+      configurable: true,
+    });
 
-      // TODO (chenshen) t8789330.
-      // Atom added getRawStack to Error.prototype to get Error's structured stacktrace
-      // (https://github.com/atom/grim/blob/master/src/grim.coffee#L43). However, this
-      // doesn't work well with our customization of stacktrace. So here we temporarily
-      // walk around this by following hack, until https://github.com/atom/atom/issues/9641
-      // get addressed.
-      /* $FlowFixMe */ // eslint-disable-next-line no-extend-native
-      Error.prototype.getRawStack = null;
-      return true;
-    },
-  );
+    // TODO (chenshen) t8789330.
+    // Atom added getRawStack to Error.prototype to get Error's structured stacktrace
+    // (https://github.com/atom/grim/blob/master/src/grim.coffee#L43). However, this
+    // doesn't work well with our customization of stacktrace. So here we temporarily
+    // walk around this by following hack, until https://github.com/atom/atom/issues/9641
+    // get addressed.
+    // $FlowFixMe
+    Error.prototype.getRawStack = null; // eslint-disable-line no-extend-native
+    return true;
+  });
 }
 
 /**
@@ -106,8 +106,13 @@ function structuredStackTraceHook(error: Error, frames: Array<CallSite>): void {
   });
 }
 
-function defaultPrepareStackTrace(error: Error, frames: Array<CallSite>): string {
-  let formattedStackTrace = error.message ? `${error.name}: ${error.message}` : `${error.name}`;
+function defaultPrepareStackTrace(
+  error: Error,
+  frames: Array<CallSite>,
+): string {
+  let formattedStackTrace = error.message
+    ? `${error.name}: ${error.message}`
+    : `${error.name}`;
   frames.forEach(frame => {
     // Do not use `maybeToString` here since lazily loading it (inline-imports) may
     // result in a circular load of `babel-core` via `nuclide-node-transpiler`.

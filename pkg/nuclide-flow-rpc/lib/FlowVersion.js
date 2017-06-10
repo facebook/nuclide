@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import semver from 'semver';
@@ -25,9 +26,7 @@ export class FlowVersion {
 
   _versionFn: () => Promise<?string>;
 
-  constructor(
-    versionFn: () => Promise<?string>,
-  ) {
+  constructor(versionFn: () => Promise<?string>) {
     this._versionFn = versionFn;
     this._lastVersion = null;
   }

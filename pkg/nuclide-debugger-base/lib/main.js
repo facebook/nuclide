@@ -6,21 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export {default as DebuggerInstanceBase} from './DebuggerInstance';
 export {default as DebuggerProcessInfo} from './DebuggerProcessInfo';
 export {
   default as DebuggerLaunchAttachProvider,
-  DebuggerLaunchAttachEventTypes,
 } from './DebuggerLaunchAttachProvider';
 export {DebuggerInstance} from './DebuggerInstance';
+export {
+  serializeDebuggerConfig,
+  deserializeDebuggerConfig,
+  getLastUsedDebugger,
+  setLastUsedDebugger,
+} from './DebuggerConfigSerializer';
 
 export {
   translateMessageFromServer,
   translateMessageToServer,
 } from './ChromeMessageRemoting';
 export {LaunchAttachActionsBase} from './LaunchAttachActionsBase';
+export {getDefaultEvaluationExpression} from './evaluationExpression';
+export {DebuggerConfigAction} from './types';
 
 export {
   setOutputService,

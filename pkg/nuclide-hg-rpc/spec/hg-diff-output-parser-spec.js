@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -13,8 +14,7 @@ import {
   parseMultiFileHgDiffUnifiedOutput,
 } from '../lib/hg-diff-output-parser';
 
-const MULTI_CHUNK_CHANGE_HG_DIFF_OUTPUT =
-`diff --git a/test-test/blah/blah.js b/test-test/blah/blah.js
+const MULTI_CHUNK_CHANGE_HG_DIFF_OUTPUT = `diff --git a/test-test/blah/blah.js b/test-test/blah/blah.js
 --- a/jar-rename/blah/blah.js
 +++ b/jar-rename/blah/blah.js
 @@ -1,0 +2,2 @@
@@ -28,8 +28,7 @@ diff --git a/test.xml b/test.xml
 +test
 +test`;
 
-const MULTI_FILE_HG_DIFF_OUTPUT =
-`diff --git test-test/blah/blah.js test-test/blah/blah.js
+const MULTI_FILE_HG_DIFF_OUTPUT = `diff --git test-test/blah/blah.js test-test/blah/blah.js
 --- test-test/blah/blah.js
 +++ test-test/blah/blah.js
 @@ -90,0 +91,1 @@
@@ -62,12 +61,14 @@ describe('hg-diff-output-parser', () => {
       expect(diffInfo).toEqual({
         added: 2,
         deleted: 11,
-        lineDiffs: [{
-          oldStart: 150,
-          oldLines: 11,
-          newStart: 150,
-          newLines: 2,
-        }],
+        lineDiffs: [
+          {
+            oldStart: 150,
+            oldLines: 11,
+            newStart: 150,
+            newLines: 2,
+          },
+        ],
       });
     });
 
@@ -77,12 +78,14 @@ describe('hg-diff-output-parser', () => {
       expect(diffInfo).toEqual({
         added: 1,
         deleted: 1,
-        lineDiffs: [{
-          oldStart: 150,
-          oldLines: 1,
-          newStart: 150,
-          newLines: 1,
-        }],
+        lineDiffs: [
+          {
+            oldStart: 150,
+            oldLines: 1,
+            newStart: 150,
+            newLines: 1,
+          },
+        ],
       });
     });
 
@@ -92,12 +95,14 @@ describe('hg-diff-output-parser', () => {
       expect(diffInfo).toEqual({
         added: 2,
         deleted: 1,
-        lineDiffs: [{
-          oldStart: 150,
-          oldLines: 1,
-          newStart: 150,
-          newLines: 2,
-        }],
+        lineDiffs: [
+          {
+            oldStart: 150,
+            oldLines: 1,
+            newStart: 150,
+            newLines: 2,
+          },
+        ],
       });
     });
 
@@ -107,17 +112,21 @@ describe('hg-diff-output-parser', () => {
       expect(diffInfo).toEqual({
         added: 1,
         deleted: 11,
-        lineDiffs: [{
-          oldStart: 150,
-          oldLines: 11,
-          newStart: 150,
-          newLines: 1,
-        }],
+        lineDiffs: [
+          {
+            oldStart: 150,
+            oldLines: 11,
+            newStart: 150,
+            newLines: 1,
+          },
+        ],
       });
     });
 
     it('parses a full diff output correctly when multiple chunks changes.', () => {
-      const diffInfo = parseHgDiffUnifiedOutput(MULTI_CHUNK_CHANGE_HG_DIFF_OUTPUT);
+      const diffInfo = parseHgDiffUnifiedOutput(
+        MULTI_CHUNK_CHANGE_HG_DIFF_OUTPUT,
+      );
       expect(diffInfo).toEqual({
         added: 5,
         deleted: 0,
@@ -152,8 +161,9 @@ describe('hg-diff-output-parser', () => {
 
   describe('parseMultiFileHgDiffUnifiedOutput', () => {
     it('parses the diff information correctly for each file.', () => {
-      const diffInfoForManyFiles =
-          parseMultiFileHgDiffUnifiedOutput(MULTI_FILE_HG_DIFF_OUTPUT);
+      const diffInfoForManyFiles = parseMultiFileHgDiffUnifiedOutput(
+        MULTI_FILE_HG_DIFF_OUTPUT,
+      );
       expect(diffInfoForManyFiles.size).toBe(2);
       expect(diffInfoForManyFiles.get('test-test/blah/blah.js')).toEqual({
         added: 1,

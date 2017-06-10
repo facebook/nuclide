@@ -13,9 +13,9 @@
     "language-json:grammar-used"
   ],
   "providedServices": {
-    "nuclide-outline-view": {
+    "atom-ide-outline-view": {
       "versions": {
-        "0.0.0": "provideOutlines"
+        "0.1.0": "provideOutlines"
       }
     },
     "hyperclick.provider": {

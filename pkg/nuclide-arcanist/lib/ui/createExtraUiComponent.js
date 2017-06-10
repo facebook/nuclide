@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ArcToolbarModel} from '../ArcToolbarModel';
@@ -24,9 +25,7 @@ export function createExtraUiComponent(
 ): ReactClass<any> {
   return class ExtraUi extends React.Component {
     render(): React.Element<any> {
-      return (
-        <ArcToolbarSection model={model} />
-      );
+      return <ArcToolbarSection model={model} />;
     }
   };
 }

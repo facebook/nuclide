@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable, Disposable} from 'atom';
@@ -41,9 +42,12 @@ export class Webview extends React.Component<void, Props, void> {
     // $FlowFixMe
     element.addEventListener('did-finish-load', this._handleDidFinishLoad);
     this._disposables.add(
-      new Disposable(
+      new Disposable(() =>
         // $FlowFixMe
-        () => element.removeEventListener('did-finish-load', this._handleDidFinishLoad),
+        element.removeEventListener(
+          'did-finish-load',
+          this._handleDidFinishLoad,
+        ),
       ),
     );
 
@@ -73,7 +77,9 @@ export class Webview extends React.Component<void, Props, void> {
   updateAttributes(prevProps: Object): void {
     const element = ReactDOM.findDOMNode(this);
     const specialProps = ['className', 'style', 'onDidFinishLoad'];
-    const normalProps = Object.keys(this.props).filter(prop => specialProps.indexOf(prop) === -1);
+    const normalProps = Object.keys(this.props).filter(
+      prop => specialProps.indexOf(prop) === -1,
+    );
     normalProps.forEach(prop => {
       const value = this.props[prop];
       const prevValue = prevProps[prop];

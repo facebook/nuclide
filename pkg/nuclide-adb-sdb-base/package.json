@@ -1,0 +1,12 @@
+{
+  "name": "nuclide-adb-sdb-base",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Utilities for adb and sdb for Nuclide",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "apm"
+  }
+}

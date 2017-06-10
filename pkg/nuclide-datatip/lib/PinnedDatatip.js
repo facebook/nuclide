@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Datatip} from './types';
@@ -54,8 +55,7 @@ export class PinnedDatatip {
   _rangeDecoration: ?atom$Decoration;
   _mouseSubscription: ?rxjs$ISubscription;
   _subscriptions: atom$CompositeDisposable;
-  _range: atom$Range;
-  _component: ReactClass<any>;
+  _datatip: Datatip;
   _editor: TextEditor;
   _hostElement: HTMLElement;
   _boundDispose: Function;
@@ -63,19 +63,17 @@ export class PinnedDatatip {
   _isDragging: boolean;
   _offset: Position;
   _isHovering: boolean;
+  _hideDataTips: () => void;
 
   constructor(
     datatip: Datatip,
     editor: TextEditor,
-    onDispose: (pinnedDatatip: PinnedDatatip) => void) {
-    const {
-      component,
-      range,
-    } = datatip;
+    onDispose: (pinnedDatatip: PinnedDatatip) => void,
+    hideDataTips: () => void,
+  ) {
     this._subscriptions = new CompositeDisposable();
     this._subscriptions.add(new Disposable(() => onDispose(this)));
-    this._range = range;
-    this._component = component;
+    this._datatip = datatip;
     this._editor = editor;
     this._marker = null;
     this._rangeDecoration = null;
@@ -86,28 +84,46 @@ export class PinnedDatatip {
     this._boundHandleMouseEnter = this.handleMouseEnter.bind(this);
     this._boundHandleMouseLeave = this.handleMouseLeave.bind(this);
     this._boundHandleCapturedClick = this.handleCapturedClick.bind(this);
-    this._hostElement.addEventListener('mouseenter', this._boundHandleMouseEnter);
-    this._hostElement.addEventListener('mouseleave', this._boundHandleMouseLeave);
-    this._subscriptions.add(new Disposable(() => {
-      this._hostElement.removeEventListener('mouseenter', this._boundHandleMouseEnter);
-      this._hostElement.removeEventListener('mouseleave', this._boundHandleMouseLeave);
-    }));
+    this._hostElement.addEventListener(
+      'mouseenter',
+      this._boundHandleMouseEnter,
+    );
+    this._hostElement.addEventListener(
+      'mouseleave',
+      this._boundHandleMouseLeave,
+    );
+    this._subscriptions.add(
+      new Disposable(() => {
+        this._hostElement.removeEventListener(
+          'mouseenter',
+          this._boundHandleMouseEnter,
+        );
+        this._hostElement.removeEventListener(
+          'mouseleave',
+          this._boundHandleMouseLeave,
+        );
+      }),
+    );
     this._mouseUpTimeout = null;
     this._offset = {x: 0, y: 0};
     this._isDragging = false;
     this._dragOrigin = null;
     this._isHovering = false;
+    this._hideDataTips = hideDataTips;
     this.render();
   }
 
   handleMouseEnter(event: MouseEvent): void {
     this._isHovering = true;
-    this.render();
+    this._hideDataTips();
   }
 
   handleMouseLeave(event: MouseEvent): void {
     this._isHovering = false;
-    this.render();
+  }
+
+  isHovering(): boolean {
+    return this._isHovering;
   }
 
   handleGlobalMouseMove(event: Event): void {
@@ -148,12 +164,17 @@ export class PinnedDatatip {
       y: evt.clientY - this._offset.y,
     };
     this._ensureMouseSubscriptionDisposed();
-    this._mouseSubscription =
-      documentMouseMove$().takeUntil(documentMouseUp$()).subscribe(
-      (e: MouseEvent) => { this.handleGlobalMouseMove(e); },
-      (error: any) => {},
-      () => { this.handleGlobalMouseUp(); },
-    );
+    this._mouseSubscription = documentMouseMove$()
+      .takeUntil(documentMouseUp$())
+      .subscribe(
+        (e: MouseEvent) => {
+          this.handleGlobalMouseMove(e);
+        },
+        (error: any) => {},
+        () => {
+          this.handleGlobalMouseUp();
+        },
+      );
   }
 
   handleCapturedClick(event: SyntheticEvent): void {
@@ -164,29 +185,22 @@ export class PinnedDatatip {
 
   // Ensure positioning of the Datatip at the end of the current line.
   _updateHostElementPosition(): void {
-    const {
-      _editor,
-      _range,
-      _hostElement,
-      _offset,
-    } = this;
+    const {_editor, _datatip, _hostElement, _offset} = this;
+    const {range} = _datatip;
     const charWidth = _editor.getDefaultCharWidth();
-    const lineLength = _editor.getBuffer().getLines()[_range.start.row].length;
+    const lineLength = _editor.getBuffer().getLines()[range.start.row].length;
     _hostElement.style.display = 'block';
-    _hostElement.style.top = -_editor.getLineHeightInPixels() + _offset.y + 'px';
+    _hostElement.style.top =
+      -_editor.getLineHeightInPixels() + _offset.y + 'px';
     _hostElement.style.left =
-      (lineLength - _range.end.column) * charWidth + LINE_END_MARGIN + _offset.x + 'px';
+      (lineLength - range.end.column) * charWidth +
+      LINE_END_MARGIN +
+      _offset.x +
+      'px';
   }
 
   render(): void {
-    const {
-      _editor,
-      _range,
-      _component: ProvidedComponent,
-      _hostElement,
-      _isDragging,
-      _isHovering,
-    } = this;
+    const {_editor, _datatip, _hostElement, _isDragging, _isHovering} = this;
     this._updateHostElementPosition();
     ReactDOM.render(
       <DatatipComponent
@@ -196,11 +210,11 @@ export class PinnedDatatip {
           _isDragging ? 'nuclide-datatip-dragging' : '',
           'nuclide-datatip-pinned',
         )}
+        datatip={_datatip}
         onActionClick={this._boundDispose}
         onMouseDown={this._boundHandleMouseDown}
-        onClickCapture={this._boundHandleCapturedClick}>
-        <ProvidedComponent />
-      </DatatipComponent>,
+        onClickCapture={this._boundHandleCapturedClick}
+      />,
       _hostElement,
     );
 
@@ -210,23 +224,19 @@ export class PinnedDatatip {
     }
 
     if (this._marker == null) {
-      const marker: atom$Marker = _editor.markBufferRange(_range, {invalidate: 'never'});
+      const marker: atom$Marker = _editor.markBufferRange(_datatip.range, {
+        invalidate: 'never',
+      });
       this._marker = marker;
-      _editor.decorateMarker(
-        marker,
-        {
-          type: 'overlay',
-          position: 'head',
-          item: this._hostElement,
-        },
-      );
-      this._rangeDecoration = _editor.decorateMarker(
-        marker,
-        {
-          type: 'highlight',
-          class: rangeClassname,
-        },
-      );
+      _editor.decorateMarker(marker, {
+        type: 'overlay',
+        position: 'head',
+        item: this._hostElement,
+      });
+      this._rangeDecoration = _editor.decorateMarker(marker, {
+        type: 'highlight',
+        class: rangeClassname,
+      });
     } else {
       // `this._rangeDecoration` is guaranteed to exist iff `this._marker` exists.
       invariant(this._rangeDecoration);

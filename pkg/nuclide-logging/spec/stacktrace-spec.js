@@ -6,14 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import addPrepareStackTraceHook from '../lib/stacktrace';
 import {__test__} from '../lib/stacktrace';
 
 const STACK_FRAME_PROPERTIES = [
-  'functionName', 'methodName', 'fileName', 'lineNumber', 'columnNumber', 'evalOrigin',
-  'isTopLevel', 'isEval', 'isNative', 'isConstructor',
+  'functionName',
+  'methodName',
+  'fileName',
+  'lineNumber',
+  'columnNumber',
+  'evalOrigin',
+  'isTopLevel',
+  'isEval',
+  'isNative',
+  'isConstructor',
 ];
 
 function validateStructuredStackTraceCreated(e: Error): void {
@@ -42,7 +51,7 @@ describe('stacktrace hook', () => {
     expect(hooked !== prepareStackTrace).toBe(true);
   });
 
-  it('does\'t hook a hooked function again', () => {
+  it("does't hook a hooked function again", () => {
     const {createHookedPrepareStackTrace} = __test__;
     const prepareStackTrace = (error, frames) => 'test';
     const hooked = createHookedPrepareStackTrace(prepareStackTrace);
@@ -64,7 +73,7 @@ describe('stacktrace hook', () => {
     validateStructuredStackTraceCreated(e);
   });
 
-  it('doesn\'t screw up previous customization', () => {
+  it("doesn't screw up previous customization", () => {
     const customizedStack = 'There is no spoon';
     Error.prepareStackTrace = (_, frames) => {
       return customizedStack;

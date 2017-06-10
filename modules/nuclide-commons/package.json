@@ -1,0 +1,25 @@
+{
+  "name": "nuclide-commons",
+  "version": "0.1.5",
+  "description": "Common Nuclide node modules.",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide",
+  "scripts": {
+    "prepublish": "../../scripts/modules-prepublish.sh",
+    "test": "node ../../pkg/nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "dependencies": {
+    "async-to-generator": "1.0.0",
+    "event-kit": "2.2.0",
+    "fs-plus": "2.9.3",
+    "glob": "7.1.1",
+    "idx": "1.2.0",
+    "lru-cache": "4.0.2",
+    "mkdirp": "0.5.1",
+    "rimraf": "2.5.4",
+    "rxjs": "5.3.1",
+    "shell-quote": "1.6.1",
+    "temp": "0.8.3"
+  }
+}

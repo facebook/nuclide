@@ -6,13 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
-import type {EvaluationResult, ExpansionResult} from '../../nuclide-debugger/lib/types';
+import type {Level as TaskLevelType} from 'nuclide-commons/process';
+import type {
+  EvaluationResult,
+  ExpansionResult,
+} from '../../nuclide-debugger/lib/types';
 
-export type Level = 'info' | 'log' | 'warning' | 'error' | 'debug' | 'success' | Color;
-type Color = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'violet' | 'rainbow';
+export type Level = TaskLevelType | Color;
+type Color =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'violet'
+  | 'rainbow';
 
 type MessageKind = 'message' | 'request' | 'response';
 
@@ -22,11 +35,18 @@ export type Message = {
   level: Level,
   data?: EvaluationResult,
   tags?: ?Array<string>,
+  kind?: ?MessageKind,
+  scopeName?: ?string,
 };
 
 // A normalized type used internally to represent all possible kinds of messages. Responses and
 // Messages are transformed into these.
-export type Record = Message & {
+export type Record = {
+  text: string,
+  level: Level,
+  data?: EvaluationResult,
+  tags?: ?Array<string>,
+
   kind: MessageKind,
   sourceId: string,
   scopeName: ?string,
@@ -40,7 +60,7 @@ export type AppState = {
   maxMessageCount: number,
   records: Array<Record>,
   history: Array<string>,
-  providers: Map<string, RecordProvider>,
+  providers: Map<string, SourceInfo>,
   providerStatuses: Map<string, OutputProviderStatus>,
 };
 
@@ -56,8 +76,11 @@ export type DisplayableRecord = {
   expansionStateId: Object,
 };
 
-export type RecordHeightChangeHandler =
-  (recordId: number, newHeight: number, callback: () => void) => void;
+export type RecordHeightChangeHandler = (
+  recordId: number,
+  newHeight: number,
+  callback: () => void,
+) => void;
 
 export type OutputProviderStatus = 'starting' | 'running' | 'stopped';
 
@@ -75,7 +98,8 @@ type ControllableOutputProviderProps = {
   stop(): void,
 };
 
-type ControllableOutputProvider = BasicOutputProvider & ControllableOutputProviderProps;
+type ControllableOutputProvider = BasicOutputProvider &
+  ControllableOutputProviderProps;
 
 export type OutputProvider = BasicOutputProvider | ControllableOutputProvider;
 
@@ -85,7 +109,8 @@ type BasicRecordProvider = {
   getProperties?: (objectId: string) => Observable<?ExpansionResult>,
 };
 
-type ControllableRecordProvider = BasicRecordProvider & ControllableOutputProviderProps;
+type ControllableRecordProvider = BasicRecordProvider &
+  ControllableOutputProviderProps;
 
 export type RecordProvider = BasicRecordProvider | ControllableRecordProvider;
 
@@ -93,12 +118,38 @@ export type Source = {
   id: string,
   name: string,
   status: OutputProviderStatus,
-  start: ?() => void,
-  stop: ?() => void,
+  start?: () => void,
+  stop?: () => void,
 };
 
 export type OutputService = {
   registerOutputProvider(outputProvider: OutputProvider): IDisposable,
+};
+
+export type SourceInfo = {
+  id: string,
+  name: string,
+  start?: () => void,
+  stop?: () => void,
+};
+export type ConsoleService = (options: SourceInfo) => ConsoleApi;
+export type ConsoleApi = {
+  setStatus(status: OutputProviderStatus): void,
+  append(message: Message): void,
+  dispose(): void,
+
+  // TODO: Update these to be (object: any, ...objects: Array<any>): void.
+  log(object: string, _: void): void,
+  error(object: string, _: void): void,
+  warn(object: string, _: void): void,
+  info(object: string, _: void): void,
+};
+
+export type ConsolePersistedState = {
+  deserializer: 'nuclide.ConsoleContainer',
+  filterText?: string,
+  enableRegExpFilter?: boolean,
+  unselectedSourceIds?: Array<string>,
 };
 
 export type Executor = {
@@ -149,6 +200,13 @@ export type RegisterRecordProviderAction = {
   },
 };
 
+export type RegisterSourceAction = {
+  type: 'REGISTER_SOURCE',
+  payload: {
+    source: SourceInfo,
+  },
+};
+
 export type RemoveSourceAction = {
   type: 'REMOVE_SOURCE',
   payload: {
@@ -179,11 +237,12 @@ export type UpdateStatusAction = {
 };
 
 export type Action =
-  ClearRecordsAction
+  | ClearRecordsAction
   | ExecuteAction
   | RecordReceivedAction
   | RegisterExecutorAction
   | RegisterRecordProviderAction
+  | RegisterSourceAction
   | RemoveSourceAction
   | SelectExecutorAction
   | SetMaxMessageCountAction

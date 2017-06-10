@@ -6,23 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {ProcessMessage} from '../../commons-node/process-rpc-types';
+import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {HgExecOptions} from './hg-exec-types';
 
 import {Observable} from 'rxjs';
-import {asyncExecute, createArgsForScriptCommand} from '../../commons-node/process';
-import {getLogger} from '../../nuclide-logging';
-import fsPromise from '../../commons-node/fsPromise';
+import {runCommandDetailed, scriptifyCommand} from 'nuclide-commons/process';
+import {getLogger} from 'log4js';
+import fsPromise from 'nuclide-commons/fsPromise';
 import {
   getOriginalEnvironment,
   observeProcess,
-  scriptSafeSpawn,
   runCommand,
-} from '../../commons-node/process';
+} from 'nuclide-commons/process';
 import {getConnectionDetails} from '../../nuclide-remote-atom-rpc';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 // Mercurial (as of v3.7.2) [strips lines][1] matching the following prefix when a commit message is
 // created by an editor invoked by Mercurial. Because Nuclide is not invoked by Mercurial, Nuclide
@@ -33,19 +33,33 @@ import nuclideUri from '../../commons-node/nuclideUri';
 // [1] https://selenic.com/hg/file/3.7.2/mercurial/cmdutil.py#l2734
 const COMMIT_MESSAGE_STRIP_LINE = /^HG:.*(\n|$)/gm;
 
+// Avoid spamming the hg blackbox with read-only hg commands.
+const EXCLUDE_FROM_HG_BLACKBOX_COMMANDS = new Set([
+  // 'bookmarks' is technically another read-only command, but the possible
+  //  --rename/--delete options make this detection unreliable.
+  'cat',
+  'config', // Nuclide only ever *reads* the config.
+  'diff',
+  'log',
+  'show',
+  'status',
+]);
+
 /**
  * Calls out to checkOutput using the 'hg' command.
  * @param options as specified by http://nodejs.org/api/child_process.html. Additional options:
  *   - NO_HGPLAIN set if the $HGPLAIN environment variable should not be used.
  *   - TTY_OUTPUT set if the command should be run as if it were attached to a tty.
  */
-export async function hgAsyncExecute(args_: Array<string>, options_: HgExecOptions): Promise<any> {
+export async function hgAsyncExecute(
+  args_: Array<string>,
+  options_: HgExecOptions,
+): Promise<any> {
   const {command, args, options} = await getHgExecParams(args_, options_);
-  const result = await asyncExecute(command, args, options);
-  if (result.exitCode === 0) {
-    return result;
-  } else {
-    logAndThrowHgError(args, options, result.stdout, result.stderr);
+  try {
+    return await runCommandDetailed(command, args, options).toPromise();
+  } catch (err) {
+    logAndThrowHgError(args, options, err.stdout, err.stderr);
   }
 }
 
@@ -55,14 +69,19 @@ export async function hgAsyncExecute(args_: Array<string>, options_: HgExecOptio
 export function hgObserveExecution(
   args_: Array<string>,
   options_: HgExecOptions,
-): Observable<ProcessMessage> {
-  return Observable.fromPromise(getHgExecParams(args_, options_))
-    .switchMap(({command, args, options}) => (
-      observeProcess(
-        () => scriptSafeSpawn(command, args, options),
-        true, // kill process tree on complete.
-      )
-    ));
+): Observable<LegacyProcessMessage> {
+  // TODO(T17463635)
+  return Observable.fromPromise(
+    getHgExecParams(args_, options_),
+  ).switchMap(({command, args, options}) => {
+    return observeProcess(
+      ...scriptifyCommand(command, args, {
+        ...options,
+        killTreeWhenDone: true,
+        /* TODO(T17353599) */ isExitError: () => false,
+      }),
+    ).catch(error => Observable.of({kind: 'error', error})); // TODO(T17463635)
+  });
 }
 
 /**
@@ -73,10 +92,11 @@ export function hgRunCommand(
   args_: Array<string>,
   options_: HgExecOptions,
 ): Observable<string> {
-  return Observable.fromPromise(getHgExecParams(args_, options_))
-    .switchMap(({command, args, options}) => (
-      runCommand(command, args, options, true /* kill process tree on complete */)
-    ));
+  return Observable.fromPromise(
+    getHgExecParams(args_, options_),
+  ).switchMap(({command, args, options}) =>
+    runCommand(command, args, {...options, killTreeWhenDone: true}),
+  );
 }
 
 function logAndThrowHgError(
@@ -85,9 +105,11 @@ function logAndThrowHgError(
   stdout: string,
   stderr: string,
 ): void {
-  getLogger().error(`Error executing hg command: ${JSON.stringify(args)}\n`
-    + `stderr: ${stderr}\nstdout: ${stdout}\n`
-    + `options: ${JSON.stringify(options)}`);
+  getLogger('nuclide-hg-rpc').error(
+    `Error executing hg command: ${JSON.stringify(args)}\n` +
+      `stderr: ${stderr}\nstdout: ${stdout}\n` +
+      `options: ${JSON.stringify(options)}`,
+  );
   if (stderr.length > 0 && stdout.length > 0) {
     throw new Error(`hg error\nstderr: ${stderr}\nstdout: ${stdout}`);
   } else {
@@ -116,14 +138,15 @@ async function getHgExecParams(
     // fail instantly rather than just wait for an input that will never arrive
     sshCommand = 'ssh -oBatchMode=yes -oControlMaster=no';
   }
-  args.push(
-    '--config',
-    `ui.ssh=${sshCommand}`,
-  );
-  const options = {
+  args.push('--config', `ui.ssh=${sshCommand}`, '--noninteractive');
+  const [hgCommandName] = args;
+  if (EXCLUDE_FROM_HG_BLACKBOX_COMMANDS.has(hgCommandName)) {
+    args.push('--config', 'extensions.blackbox=!');
+  }
+  let options = {
     ...options_,
     env: {
-      ...await getOriginalEnvironment(),
+      ...(await getOriginalEnvironment()),
       ATOM_BACKUP_EDITOR: 'false',
     },
   };
@@ -137,43 +160,36 @@ async function getHgExecParams(
 
   let command;
   if (options.TTY_OUTPUT) {
-    command = 'script';
-    args = createArgsForScriptCommand('hg', args);
+    [command, args, options] = scriptifyCommand('hg', args, options);
   } else {
     command = 'hg';
   }
   return {command, args, options};
 }
 
-export async function createCommmitMessageTempFile(commitMessage: string): Promise<string> {
-  const tempFile = await fsPromise.tempfile();
-  const strippedMessage = commitMessage.replace(COMMIT_MESSAGE_STRIP_LINE, '');
-  await fsPromise.writeFile(tempFile, strippedMessage);
-  return tempFile;
+export function formatCommitMessage(commitMessage: string): string {
+  return commitMessage.replace(COMMIT_MESSAGE_STRIP_LINE, '');
 }
 
-export async function getEditMergeConfigs(): Promise<{args: Array<string>, hgEditor: string}> {
+export async function getInteractiveCommitEditorConfig(): Promise<?{
+  args: Array<string>,
+  hgEditor: string,
+}> {
   const connectionDetails = await getConnectionDetails();
   if (connectionDetails == null) {
-    getLogger().error('CommandServer not initialized!');
-    return {
-      args: [],
-      hgEditor: '',
-    };
+    getLogger('nuclide-hg-rpc').error('CommandServer not initialized!');
+    return null;
   }
   // Atom RPC needs to agree with the Atom process / nuclide server on the address and port.
-  const hgEditor = getAtomRpcScriptPath()
-    + ` -f ${connectionDetails.family} -p ${connectionDetails.port} --wait`;
+  const hgEditor =
+    getAtomRpcScriptPath() +
+    ` -f ${connectionDetails.family} -p ${connectionDetails.port} --wait`;
   return {
     args: [
       '--config',
-      'merge-tools.editmerge.check=conflicts',
-      '--config',
-      'ui.merge=editmerge',
-      '--config',
-      'ui.interactive=no',
-      '--config',
       'ui.interface.chunkselector=editor',
+      '--config',
+      'extensions.edrecord=',
     ],
     hgEditor,
   };
@@ -184,17 +200,22 @@ let atomRpcEditorPath;
 function getAtomRpcScriptPath(): string {
   if (atomRpcEditorPath == null) {
     try {
-      atomRpcEditorPath = require.resolve('../../nuclide-remote-atom-rpc/bin/fb-atom');
+      atomRpcEditorPath = require.resolve(
+        '../../nuclide-remote-atom-rpc/bin/fb-atom',
+      );
     } catch (error) {
-      atomRpcEditorPath = require.resolve('../../nuclide-remote-atom-rpc/bin/atom');
+      atomRpcEditorPath = require.resolve(
+        '../../nuclide-remote-atom-rpc/bin/atom',
+      );
     }
   }
   return atomRpcEditorPath;
 }
 
 export function processExitCodeAndThrow(
-  processMessage: ProcessMessage,
-): Observable<ProcessMessage> {
+  processMessage: LegacyProcessMessage,
+): Observable<LegacyProcessMessage> {
+  // TODO(T17463635)
   if (processMessage.kind === 'exit' && processMessage.exitCode !== 0) {
     return Observable.throw(
       new Error(`HG failed with exit code: ${String(processMessage.exitCode)}`),

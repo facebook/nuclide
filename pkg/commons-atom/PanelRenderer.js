@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 type PanelLocation = 'top' | 'right' | 'bottom' | 'left';
@@ -35,7 +36,7 @@ export default class PanelRenderer {
     if (props.visible) {
       if (this._panel == null) {
         const item = this._item == null
-          ? this._item = this._createItem()
+          ? (this._item = this._createItem())
           : this._item;
         this._panel = addPanel(this._location, {
           item,
@@ -59,7 +60,10 @@ export default class PanelRenderer {
   }
 }
 
-function addPanel(location: PanelLocation, options: atom$WorkspaceAddPanelOptions): atom$Panel {
+function addPanel(
+  location: PanelLocation,
+  options: atom$WorkspaceAddPanelOptions,
+): atom$Panel {
   switch (location) {
     case 'top':
       return atom.workspace.addTopPanel(options);

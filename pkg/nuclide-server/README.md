@@ -27,7 +27,7 @@ Ensure that the Nuclide project is checked out onto the remote server. From the 
 
 ## Running Nuclide Server
 
-You do not need to explicitly start the server since the Nuclide client will attempt to do so when it first connects over SSH, as explained in [Remote Projects README](../remote-projects/README.md).
+You do not need to explicitly start the server since the Nuclide client will attempt to do so when it first connects over SSH, as explained in [Remote Projects README](../nuclide-remote-projects/README.md).
 
 ## Troubleshooting
 

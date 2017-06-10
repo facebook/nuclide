@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ActionsObservable} from '../../../commons-node/redux-observable';
@@ -33,7 +34,8 @@ export function setProjectRootEpic(
         Actions.setBuckRoot(buckRoot),
         // Also refresh the rule type of the current target.
         Actions.setBuildTarget(store.getState().buildTarget),
-      ));
+      ),
+    );
   });
 }
 
@@ -64,8 +66,8 @@ export function setBuildTargetEpic(
         return Observable.of(null);
       }
       return Observable.defer(() =>
-        buckService.buildRuleTypeFor(buckRoot, buildTarget)).catch(() =>
-        Observable.of(null));
+        buckService.buildRuleTypeFor(buckRoot, buildTarget),
+      ).catch(() => Observable.of(null));
     })
     .switchMap(ruleType => Observable.of(setRuleType(ruleType)));
 }

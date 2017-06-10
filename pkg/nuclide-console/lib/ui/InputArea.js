@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {AtomTextEditor} from '../../../nuclide-ui/AtomTextEditor';
+import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 import {Observable} from 'rxjs';
 
 type Props = {
@@ -53,7 +54,9 @@ export default class OutputTable extends React.Component {
     if (component) {
       this._textEditorModel = component.getModel();
       const el = ReactDOM.findDOMNode(component);
-      this._keySubscription = Observable.fromEvent(el, 'keydown').subscribe(this._handleKeyDown);
+      this._keySubscription = Observable.fromEvent(el, 'keydown').subscribe(
+        this._handleKeyDown,
+      );
     }
   }
 
@@ -87,14 +90,18 @@ export default class OutputTable extends React.Component {
       }
       event.preventDefault();
       event.stopImmediatePropagation();
-      const historyIndex = Math.min(this.state.historyIndex + 1,
-                                    this.props.history.length - 1);
+      const historyIndex = Math.min(
+        this.state.historyIndex + 1,
+        this.props.history.length - 1,
+      );
       if (this.state.historyIndex === -1) {
         this.setState({historyIndex, draft: editor.getText()});
       } else {
         this.setState({historyIndex});
       }
-      editor.setText(this.props.history[this.props.history.length - historyIndex - 1]);
+      editor.setText(
+        this.props.history[this.props.history.length - historyIndex - 1],
+      );
     } else if (event.which === DOWN_KEY_CODE) {
       if (this.props.history.length === 0) {
         return;
@@ -106,14 +113,17 @@ export default class OutputTable extends React.Component {
       if (historyIndex === -1) {
         editor.setText(this.state.draft);
       } else {
-        editor.setText(this.props.history[this.props.history.length - historyIndex - 1]);
+        editor.setText(
+          this.props.history[this.props.history.length - historyIndex - 1],
+        );
       }
     }
   }
 
   render(): ?React.Element<any> {
     const grammar = this.props.scopeName == null
-      ? null : atom.grammars.grammarForScopeName(this.props.scopeName);
+      ? null
+      : atom.grammars.grammarForScopeName(this.props.scopeName);
     return (
       <div className="nuclide-console-input-wrapper">
         <AtomTextEditor

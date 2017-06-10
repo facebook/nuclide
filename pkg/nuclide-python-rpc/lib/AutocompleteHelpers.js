@@ -6,14 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PythonCompletion} from './PythonService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  AutocompleteResult,
+} from '../../nuclide-language-service/lib/LanguageService';
 import type JediServerManager from './JediServerManager';
 
-import {matchRegexEndingAt} from '../../commons-node/range';
+import {matchRegexEndingAt} from 'nuclide-commons/range';
 
 // Type mappings between Jedi types and autocomplete-plus types used for styling.
 const TYPES = {
@@ -28,8 +31,7 @@ const TYPES = {
   property: 'property',
 };
 
-const IMPLICIT_TRIGGER_COMPLETION_REGEX = /([. ]|[a-zA-Z_][a-zA-Z0-9_]*)$/;
-const EXPLICIT_TRIGGER_COMPLETION_REGEX = /([. (]|[a-zA-Z_][a-zA-Z0-9_]*)$/;
+const TRIGGER_REGEX = /(\.|[a-zA-Z_][a-zA-Z0-9_]*)$/;
 
 /**
  * Generate a function-signature line string if completion is a function.
@@ -49,9 +51,9 @@ function getText(
   if (completion.params) {
     const params = includeOptionalArgs
       ? completion.params
-      : completion.params.filter(param =>
-        param.indexOf('=') < 0 && param.indexOf('*') < 0,
-      );
+      : completion.params.filter(
+          param => param.indexOf('=') < 0 && param.indexOf('*') < 0,
+        );
 
     const paramTexts = params.map((param, index) => {
       return createPlaceholders ? `\${${index + 1}:${param}}` : param;
@@ -71,9 +73,10 @@ export async function getAutocompleteSuggestions(
   autocompleteArguments: boolean,
   includeOptionalArguments: boolean,
 ): Promise<AutocompleteResult> {
-  const triggerRegex =
-    activatedManually ? EXPLICIT_TRIGGER_COMPLETION_REGEX : IMPLICIT_TRIGGER_COMPLETION_REGEX;
-  if (matchRegexEndingAt(buffer, position, triggerRegex) == null) {
+  if (
+    !activatedManually &&
+    matchRegexEndingAt(buffer, position, TRIGGER_REGEX) == null
+  ) {
     return {isIncomplete: false, items: []};
   }
 
@@ -93,7 +96,11 @@ export async function getAutocompleteSuggestions(
     const displayText = getText(completion);
     // Only autocomplete arguments if the include optional arguments setting is on.
     const snippet = autocompleteArguments
-      ? getText(completion, includeOptionalArguments, true /* createPlaceholders */)
+      ? getText(
+          completion,
+          includeOptionalArguments,
+          true /* createPlaceholders */,
+        )
       : completion.text;
     return {
       displayText,
@@ -116,10 +123,5 @@ export async function getCompletions(
   column: number,
 ): Promise<?Array<PythonCompletion>> {
   const service = await serverManager.getJediService(src);
-  return service.get_completions(
-    src,
-    contents,
-    line,
-    column,
-  );
+  return service.get_completions(src, contents, line, column);
 }

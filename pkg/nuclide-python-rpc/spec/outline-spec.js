@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import fs from 'fs';
 import {itemsToOutline} from '../lib/outline';
 import {addMatchers} from '../../nuclide-test-helpers';
@@ -23,7 +24,10 @@ describe('Python outline', () => {
     // the PythonService.getOutline result. We're only testing the conversion
     // of the raw outline to an OutlineTree, without calling the service.
     const outlinePath = nuclideUri.join(__dirname, './fixtures/t.json');
-    const resultPath = nuclideUri.join(__dirname, './fixtures/t_expected_result.json');
+    const resultPath = nuclideUri.join(
+      __dirname,
+      './fixtures/t_expected_result.json',
+    );
 
     const outlineItems = JSON.parse(fs.readFileSync(outlinePath, 'utf8'));
     const expectedResult = JSON.parse(fs.readFileSync(resultPath, 'utf8'));

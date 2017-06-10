@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CommandInfo} from './types';
 
-import fsPromise from '../../commons-node/fsPromise';
-import featureConfig from '../../commons-atom/featureConfig';
+import fsPromise from 'nuclide-commons/fsPromise';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import {getBuckProjectRoot} from '../../nuclide-buck-base';
 import ini from 'ini';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 type PartialCommandInfo = {
   command: string,
@@ -27,14 +28,23 @@ type PartialCommandInfo = {
  *       (i.e. where we should look for commands like this) and use that here. The current behavior
  *       of everything having its own algorithm is bad.
  */
-export async function getCommandInfo(projectRootPath: ?string): Promise<?CommandInfo> {
-  if (projectRootPath == null || nuclideUri.isRemote(projectRootPath)) { return null; }
+export async function getCommandInfo(
+  projectRootPath: ?string,
+): Promise<?CommandInfo> {
+  if (projectRootPath == null || nuclideUri.isRemote(projectRootPath)) {
+    return null;
+  }
 
-  return await getCommandFromNodePackage(projectRootPath) || getCommandFromBuck(projectRootPath);
+  return (
+    (await getCommandFromNodePackage(projectRootPath)) ||
+    getCommandFromBuck(projectRootPath)
+  );
 }
 
 async function getCommandFromNodePackage(dir: string): Promise<?CommandInfo> {
-  return await getCommandFromNodeModules(dir) || getCommandFromReactNative(dir);
+  return (
+    (await getCommandFromNodeModules(dir)) || getCommandFromReactNative(dir)
+  );
 }
 
 /**
@@ -42,7 +52,10 @@ async function getCommandFromNodePackage(dir: string): Promise<?CommandInfo> {
  * it's found.
  */
 async function getCommandFromNodeModules(dir: string): Promise<?CommandInfo> {
-  const nodeModulesParent = await fsPromise.findNearestFile('node_modules', dir);
+  const nodeModulesParent = await fsPromise.findNearestFile(
+    'node_modules',
+    dir,
+  );
   if (nodeModulesParent == null) {
     return null;
   }
@@ -51,10 +64,12 @@ async function getCommandFromNodeModules(dir: string): Promise<?CommandInfo> {
     nuclideUri.join(nodeModulesParent, 'node_modules', 'react-native'),
   );
 
-  return command == null ? null : {
-    ...command,
-    cwd: nodeModulesParent,
-  };
+  return command == null
+    ? null
+    : {
+        ...command,
+        cwd: nodeModulesParent,
+      };
 }
 
 /**
@@ -77,10 +92,12 @@ async function getCommandFromReactNative(dir: string): Promise<?CommandInfo> {
 
   const command = await getCommandForCli(projectRoot);
 
-  return command == null ? null : {
-    ...command,
-    cwd: projectRoot,
-  };
+  return command == null
+    ? null
+    : {
+        ...command,
+        cwd: projectRoot,
+      };
 }
 
 async function getCommandFromBuck(dir: string): Promise<?CommandInfo> {
@@ -90,7 +107,7 @@ async function getCommandFromBuck(dir: string): Promise<?CommandInfo> {
   }
 
   // TODO(matthewwithanm): Move this to BuckUtils?
-  const filePath = nuclideUri.join(projectRoot, '.buckConfig');
+  const filePath = nuclideUri.join(projectRoot, '.buckconfig');
   const content = await fsPromise.readFile(filePath, 'utf8');
   const parsed = ini.parse(`scope = global\n${content}`);
   const section = parsed['react-native'];
@@ -103,14 +120,18 @@ async function getCommandFromBuck(dir: string): Promise<?CommandInfo> {
   };
 }
 
-async function getCommandForCli(pathToReactNative: string): Promise<?PartialCommandInfo> {
+async function getCommandForCli(
+  pathToReactNative: string,
+): Promise<?PartialCommandInfo> {
   const cliPath = nuclideUri.join(pathToReactNative, 'local-cli', 'cli.js');
   const cliExists = await fsPromise.exists(cliPath);
   if (!cliExists) {
     return null;
   }
   return {
-    command: ((featureConfig.get('nuclide-react-native.pathToNode'): any): string),
+    command: ((featureConfig.get(
+      'nuclide-react-native.pathToNode',
+    ): any): string),
     args: [cliPath, 'start'],
   };
 }

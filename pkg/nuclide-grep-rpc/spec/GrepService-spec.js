@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {generateFixture} from '../../nuclide-test-helpers';
 import {grepReplace} from '..';
 
@@ -17,10 +18,10 @@ describe('GrepService.grepReplace', () => {
   let tempDir: string;
   beforeEach(() => {
     waitsForPromise(async () => {
-      tempDir = await generateFixture('grepReplace', new Map([
-        ['test.txt', 'test\ntest2\n'],
-        ['nomatch.txt', 'nomatch'],
-      ]));
+      tempDir = await generateFixture(
+        'grepReplace',
+        new Map([['test.txt', 'test\ntest2\n'], ['nomatch.txt', 'nomatch']]),
+      );
     });
   });
 
@@ -34,31 +35,40 @@ describe('GrepService.grepReplace', () => {
         ],
         /test/g,
         'replace',
-      ).refCount().toArray().toPromise();
+      )
+        .refCount()
+        .toArray()
+        .toPromise();
 
-      expect(results.sort((a, b) => a.filePath.localeCompare(b.filePath)))
-        .toEqual([
-          {
-            type: 'success',
-            filePath: nuclideUri.join(tempDir, 'nomatch.txt'),
-            replacements: 0,
-          },
-          {
-            type: 'error',
-            filePath: nuclideUri.join(tempDir, 'nonexistent.txt'),
-            message: jasmine.any(String),
-          },
-          {
-            type: 'success',
-            filePath: nuclideUri.join(tempDir, 'test.txt'),
-            replacements: 2,
-          },
-        ]);
+      expect(
+        results.sort((a, b) => a.filePath.localeCompare(b.filePath)),
+      ).toEqual([
+        {
+          type: 'success',
+          filePath: nuclideUri.join(tempDir, 'nomatch.txt'),
+          replacements: 0,
+        },
+        {
+          type: 'error',
+          filePath: nuclideUri.join(tempDir, 'nonexistent.txt'),
+          message: jasmine.any(String),
+        },
+        {
+          type: 'success',
+          filePath: nuclideUri.join(tempDir, 'test.txt'),
+          replacements: 2,
+        },
+      ]);
 
-      expect(await fsPromise.readFile(nuclideUri.join(tempDir, 'test.txt'), 'utf8'))
-        .toBe('replace\nreplace2\n');
-      expect(await fsPromise.readFile(nuclideUri.join(tempDir, 'nomatch.txt'), 'utf8'))
-        .toBe('nomatch');
+      expect(
+        await fsPromise.readFile(nuclideUri.join(tempDir, 'test.txt'), 'utf8'),
+      ).toBe('replace\nreplace2\n');
+      expect(
+        await fsPromise.readFile(
+          nuclideUri.join(tempDir, 'nomatch.txt'),
+          'utf8',
+        ),
+      ).toBe('nomatch');
     });
   });
 });

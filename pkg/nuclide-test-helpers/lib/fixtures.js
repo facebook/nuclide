@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
@@ -13,10 +14,10 @@ import fse from 'fs-extra';
 import temp from 'temp';
 import invariant from 'assert';
 
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {asyncLimit} from '../../commons-node/promise';
-import {checkOutput} from '../../commons-node/process';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {asyncLimit} from 'nuclide-commons/promise';
+import {runCommand} from 'nuclide-commons/process';
 
 /**
  * Traverses up the parent directories looking for `fixtures/FIXTURE_NAME`.
@@ -75,22 +76,26 @@ export async function copyFixture(
  */
 export async function generateHgRepo1Fixture(): Promise<string> {
   const testTxt = 'this is a test file\nline 2\n\n  indented line\n';
-  const tempDir = await generateFixture('hg_repo_1', new Map([
-    ['.watchmanconfig', '{}\n'],
-    ['test.txt', testTxt],
-  ]));
+  const tempDir = await generateFixture(
+    'hg_repo_1',
+    new Map([['.watchmanconfig', '{}\n'], ['test.txt', testTxt]]),
+  );
   const repoPath = await fsPromise.realpath(tempDir);
-  await checkOutput('hg', ['init'], {cwd: repoPath});
+  await runCommand('hg', ['init'], {cwd: repoPath}).toPromise();
   await fsPromise.writeFile(
     nuclideUri.join(repoPath, '.hg', 'hgrc'),
     '[ui]\nusername = Test <test@mail.com>\n',
   );
-  await checkOutput('hg', ['commit', '-A', '-m', 'first commit'], {cwd: repoPath});
+  await runCommand('hg', ['commit', '-A', '-m', 'first commit'], {
+    cwd: repoPath,
+  }).toPromise();
   await fsPromise.writeFile(
     nuclideUri.join(repoPath, 'test.txt'),
     testTxt + '\nthis line added on second commit\n',
   );
-  await checkOutput('hg', ['commit', '-A', '-m', 'second commit'], {cwd: repoPath});
+  await runCommand('hg', ['commit', '-A', '-m', 'second commit'], {
+    cwd: repoPath,
+  }).toPromise();
   return repoPath;
 }
 
@@ -109,32 +114,45 @@ export async function generateHgRepo1Fixture(): Promise<string> {
  */
 export async function generateHgRepo2Fixture(): Promise<string> {
   const testTxt = 'this is a test file\nline 2\n\n  indented line\n';
-  const tempDir = await generateFixture('hg_repo_2', new Map([
-    ['.watchmanconfig', '{}\n'],
-    ['test.txt', testTxt],
-  ]));
+  const tempDir = await generateFixture(
+    'hg_repo_2',
+    new Map([['.watchmanconfig', '{}\n'], ['test.txt', testTxt]]),
+  );
   const repoPath = await fsPromise.realpath(tempDir);
-  await checkOutput('hg', ['init'], {cwd: repoPath});
+  await runCommand('hg', ['init'], {cwd: repoPath}).toPromise();
   await fsPromise.writeFile(
     nuclideUri.join(repoPath, '.hg', 'hgrc'),
-    '[paths]\ndefault = .\n' +
-    '[ui]\nusername = Test <test@mail.com>\n',
+    '[paths]\ndefault = .\n[ui]\nusername = Test <test@mail.com>\n',
   );
-  await checkOutput('hg', ['commit', '-A', '-m', 'first commit'], {cwd: repoPath});
+  await runCommand('hg', ['commit', '-A', '-m', 'first commit'], {
+    cwd: repoPath,
+  }).toPromise();
   await fsPromise.writeFile(
     nuclideUri.join(repoPath, 'test.txt'),
     testTxt + '\nthis line added on second commit\n',
   );
-  await checkOutput('hg', ['commit', '-A', '-m', 'second commit'], {cwd: repoPath});
+  await runCommand('hg', ['commit', '-A', '-m', 'second commit'], {
+    cwd: repoPath,
+  }).toPromise();
   await fsPromise.writeFile(
     nuclideUri.join(repoPath, '.arcconfig'),
     '{\n  "arc.feature.start.default": "master"\n}\n',
   );
-  await checkOutput('hg', ['commit', '-A', '-m', 'add .arcconfig to set base'], {cwd: repoPath});
-  await checkOutput('hg', [
-    'bookmark', '--rev', '.~2', 'master',
-    '--config', 'remotenames.disallowedbookmarks=',
-  ], {cwd: repoPath});
+  await runCommand('hg', ['commit', '-A', '-m', 'add .arcconfig to set base'], {
+    cwd: repoPath,
+  }).toPromise();
+  await runCommand(
+    'hg',
+    [
+      'bookmark',
+      '--rev',
+      '.~2',
+      'master',
+      '--config',
+      'remotenames.disallowedbookmarks=',
+    ],
+    {cwd: repoPath},
+  ).toPromise();
   return repoPath;
 }
 
@@ -151,17 +169,17 @@ export async function copyBuildFixture(
 ): Promise<string> {
   const projectDir = await copyFixture(fixtureName, source);
 
-  await Promise.all([
-    copyBuckVersion(projectDir),
-    renameBuckFiles(projectDir),
-  ]);
+  await Promise.all([copyBuckVersion(projectDir), renameBuckFiles(projectDir)]);
 
   return projectDir;
 }
 
 async function copyBuckVersion(projectDir: string) {
   const versionFile = '.buckversion';
-  const buckVersionDir = await fsPromise.findNearestFile(versionFile, __dirname);
+  const buckVersionDir = await fsPromise.findNearestFile(
+    versionFile,
+    __dirname,
+  );
   if (buckVersionDir != null) {
     await fsPromise.copy(
       nuclideUri.join(buckVersionDir, versionFile),
@@ -171,7 +189,9 @@ async function copyBuckVersion(projectDir: string) {
 }
 
 async function renameBuckFiles(projectDir: string) {
-  const renames = await fsPromise.glob('**/{BUCK,TARGETS}-rename', {cwd: projectDir});
+  const renames = await fsPromise.glob('**/{BUCK,TARGETS}-rename', {
+    cwd: projectDir,
+  });
   await Promise.all(
     renames.map(name => {
       const prevName = nuclideUri.join(projectDir, name);
@@ -220,10 +240,8 @@ export async function generateFixture(
     .map(([filename]) => nuclideUri.dirname(filename))
     .filter((dirname, i, arr) => arr.indexOf(dirname) === i);
 
-  await asyncLimit(
-    dirsToMake,
-    MAX_CONCURRENT_FILE_OPS,
-    dirname => fsPromise.mkdirp(dirname),
+  await asyncLimit(dirsToMake, MAX_CONCURRENT_FILE_OPS, dirname =>
+    fsPromise.mkdirp(dirname),
   );
 
   await asyncLimit(

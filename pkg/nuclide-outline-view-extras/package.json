@@ -1,0 +1,26 @@
+{
+  "name": "nuclide-outline-view-extras",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "nuclide-home and nuclide-nux providers for Outline View.",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "consumedServices": {
+    "nux-register": {
+      "versions": {
+        "0.0.0": "consumeRegisterNuxService"
+      }
+    }
+  },
+  "providedServices": {
+    "nuclide-home.homeFragments": {
+      "versions": {
+        "0.0.0": "getHomeFragments"
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /*
@@ -73,7 +74,9 @@ export function diffLines(expected: string): boolean {
  * @returns On object containing the number of changes (added or removed parts),
  *   and a string containing the colored diff output.
  */
-function formatMessage(parts: Array<Change>): {changes: number, message: string} {
+function formatMessage(
+  parts: Array<Change>,
+): {changes: number, message: string} {
   let changes = 0;
   let message = '';
   for (const part of parts) {

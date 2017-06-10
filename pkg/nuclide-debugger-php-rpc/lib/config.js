@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import logger from './utils';
@@ -32,7 +33,7 @@ export function setConfig(newConfig: PhpDebuggerSessionConfig): void {
   config = {
     ...newConfig,
   };
-  logger.log(`Config was set to ${JSON.stringify(config)}`);
+  logger.debug(`Config was set to ${JSON.stringify(config)}`);
 }
 
 export function clearConfig(): void {

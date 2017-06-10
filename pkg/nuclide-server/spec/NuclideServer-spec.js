@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import WS from 'ws';
@@ -32,7 +33,8 @@ describe('Nuclide Server test suite', () => {
       client = RpcConnection.createRemote(
         socket,
         [getRemoteNuclideUriMarshalers('localhost')],
-        servicesConfig);
+        servicesConfig,
+      );
     });
   });
 
@@ -60,7 +62,9 @@ describe('Nuclide Server test suite', () => {
       nuclideSocket.onReconnect(reconnectHandler);
       nuclideSocket.onMessage().subscribe(messageHandler);
       // The maximum reconnect time is 5 seconds - advance clock to sip the reconnect time.
-      nuclideSocket.onDisconnect(() => process.nextTick(() => advanceClock(6000)));
+      nuclideSocket.onDisconnect(() =>
+        process.nextTick(() => advanceClock(6000)),
+      );
 
       waitsForPromise(() => nuclideSocket.waitForConnect());
 

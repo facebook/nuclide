@@ -69,11 +69,11 @@ try:
 except ImportError as _:
     pass
 
-def run(name, cmd):
+def run(name, cmd, cwd=NUCLIDE_PATH):
     try:
         start = datetime.now()
         logging.info('Running %s...', name)
-        subprocess.check_call(cmd, cwd=NUCLIDE_PATH)
+        subprocess.check_call(cmd, cwd=cwd)
     except subprocess.CalledProcessError as err:
         logging.info('FAILED: %s', name)
         sys.exit(err.returncode)
@@ -88,6 +88,18 @@ def lint_py_headers():
         print(lint_error, file=sys.stderr)
     if errors:
         raise utils.TestFailureError('FAILED: Python file license header lint.')
+
+def test_eslint_plugin_nuclide_internal():
+    run('lint_eslint-plugin-nuclide-internal',
+        ['npm', 'test'],
+        os.path.join(NUCLIDE_PATH, 'resources/eslint-plugin-nuclide-internal'))
+
+def test_modules():
+    for root, dirs, _ in os.walk(os.path.join(NUCLIDE_PATH, 'modules')):
+        for module in dirs:
+            module_path = os.path.join(root, module)
+            run('test_module_%s' % module, ['npm', 'test'], module_path)
+        break
 
 def run_compile_steps(destructive_compile=False):
     if destructive_compile:
@@ -126,12 +138,14 @@ try:
         run('lint_packages', ['scripts/lint-packages'])
         run('flow', ['flow', 'check', '--show-all-errors'])
         run('eslint', ['scripts/lint-eslint.js'])
+        test_eslint_plugin_nuclide_internal()
         lint_py_headers()
         if not options.no_module_cycle_check:
             run('module_cycle_check', ['scripts/module-cycle-check.sh'])
         # Some tests have fixtures that are services. These should be declared
         # in a services-3.json file first.
         run_compile_steps(destructive_compile=False)
+        test_modules()
         test_runner.run_unit_tests()
 except utils.TestFailureError as err:
     logging.info(err)

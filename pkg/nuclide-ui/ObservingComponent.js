@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
@@ -25,7 +26,8 @@ export type Props<T> = {
 
 // Derived classes must override render()
 // Also might want to override shouldComponentUpdate(nextProps, nextState).
-export class ObservingComponent<T> extends React.Component<void, Props<T>, State<T>> {
+export class ObservingComponent<T>
+  extends React.Component<void, Props<T>, State<T>> {
   state: State<T>;
   props: Props<T>;
 

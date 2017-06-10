@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global MouseEvent */
 
-import {sleep} from '../pkg/commons-node/promise';
+import {sleep} from 'nuclide-commons/promise';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {
   activateAllPackages,
@@ -86,10 +87,10 @@ describe('Buck building via toolbar', () => {
     waitsFor('results to appear', 30000, () => {
       invariant(document.body != null);
       listGroup = document.body.querySelector('.nuclide-combobox-list-group');
-      const hasListItems = listGroup &&
-        listGroup.querySelectorAll('li').length > 0;
-      const isLoading = listGroup &&
-        listGroup.querySelector('.loading-message') != null;
+      const hasListItems =
+        listGroup && listGroup.querySelectorAll('li').length > 0;
+      const isLoading =
+        listGroup && listGroup.querySelector('.loading-message') != null;
       return hasListItems && !isLoading;
     });
 

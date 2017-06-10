@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PredefinedTransformer} from '../../nuclide-rpc';
@@ -32,7 +33,9 @@ const atomRangeMarshalers = {
   unmarshaller: jsonToAtomRange,
 };
 
-export function getAtomSideMarshalers(hostname: string): Array<PredefinedTransformer> {
+export function getAtomSideMarshalers(
+  hostname: string,
+): Array<PredefinedTransformer> {
   return [
     getRemoteNuclideUriMarshalers(hostname),
     atomPointMarshalers,

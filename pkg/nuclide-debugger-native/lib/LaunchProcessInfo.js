@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   LaunchTargetInfo,
   DebuggerConfig,
@@ -26,7 +27,7 @@ import {
 import {DebuggerInstance} from '../../nuclide-debugger-base';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getConfig} from './utils';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class LaunchProcessInfo extends DebuggerProcessInfo {
   _launchTargetInfo: LaunchTargetInfo;
@@ -36,7 +37,15 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
     this._launchTargetInfo = launchTargetInfo;
   }
 
+  clone(): LaunchProcessInfo {
+    return new LaunchProcessInfo(this._targetUri, this._launchTargetInfo);
+  }
+
   supportThreads(): boolean {
+    return true;
+  }
+
+  supportContinueToLocation(): boolean {
     return true;
   }
 
@@ -78,15 +87,18 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
       logLevel: getConfig().serverLogLevel,
       pythonBinaryPath: getConfig().pythonBinaryPath,
       buckConfigRootFile: getConfig().buckConfigRootFile,
-      lldbPythonPath: this._launchTargetInfo.lldbPythonPath || getConfig().lldbPythonPath,
+      lldbPythonPath: this._launchTargetInfo.lldbPythonPath ||
+        getConfig().lldbPythonPath,
       envPythonPath: '',
     };
   }
 
   _getRpcService(): NativeDebuggerServiceType {
     const debuggerConfig = this.getDebuggerConfig();
-    const service: ?NativeDebuggerService
-      = getServiceByNuclideUri('NativeDebuggerService', this.getTargetUri());
+    const service: ?NativeDebuggerService = getServiceByNuclideUri(
+      'NativeDebuggerService',
+      this.getTargetUri(),
+    );
     invariant(service);
     return new service.NativeDebuggerService(debuggerConfig);
   }

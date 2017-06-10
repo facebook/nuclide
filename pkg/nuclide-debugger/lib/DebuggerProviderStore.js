@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
@@ -19,6 +20,7 @@ import {CompositeDisposable, Disposable, Emitter} from 'atom';
 import {ActionTypes} from './DebuggerDispatcher';
 
 const CONNECTIONS_UPDATED_EVENT = 'CONNECTIONS_UPDATED_EVENT';
+const PROVIDERS_UPDATED_EVENT = 'PROVIDERS_UPDATED_EVENT';
 
 /**
  * Flux style store holding all data related to debugger provider.
@@ -31,7 +33,10 @@ export class DebuggerProviderStore {
   _debuggerProviders: Set<NuclideDebuggerProvider>;
   _connections: Array<string>;
 
-  constructor(dispatcher: DebuggerDispatcher, debuggerActions: DebuggerActions) {
+  constructor(
+    dispatcher: DebuggerDispatcher,
+    debuggerActions: DebuggerActions,
+  ) {
     this._dispatcher = dispatcher;
     this._disposables = new CompositeDisposable(
       this._registerDispatcherEvents(),
@@ -40,11 +45,14 @@ export class DebuggerProviderStore {
     this._debuggerActions = debuggerActions;
     this._emitter = new Emitter();
     this._debuggerProviders = new Set();
-    this._connections = [];
+    // There is always a local connection.
+    this._connections = ['local'];
   }
 
   _registerDispatcherEvents(): IDisposable {
-    const dispatcherToken = this._dispatcher.register(this._handlePayload.bind(this));
+    const dispatcherToken = this._dispatcher.register(
+      this._handlePayload.bind(this),
+    );
     return new Disposable(() => this._dispatcher.unregister(dispatcherToken));
   }
 
@@ -65,6 +73,10 @@ export class DebuggerProviderStore {
     return this._emitter.on(CONNECTIONS_UPDATED_EVENT, callback);
   }
 
+  onProvidersUpdated(callback: () => void): IDisposable {
+    return this._emitter.on(PROVIDERS_UPDATED_EVENT, callback);
+  }
+
   getConnections(): Array<string> {
     return this._connections;
   }
@@ -73,7 +85,9 @@ export class DebuggerProviderStore {
    * Return available launch/attach provider for input connection.
    * Caller is responsible for disposing the results.
    */
-  getLaunchAttachProvidersForConnection(connection: string): Array<DebuggerLaunchAttachProvider> {
+  getLaunchAttachProvidersForConnection(
+    connection: string,
+  ): Array<DebuggerLaunchAttachProvider> {
     const availableLaunchAttachProviders = [];
     for (const provider of this._debuggerProviders) {
       const launchAttachProvider = provider.getLaunchAttachProvider(connection);
@@ -91,6 +105,7 @@ export class DebuggerProviderStore {
           return;
         }
         this._debuggerProviders.add(payload.data);
+        this._emitter.emit(PROVIDERS_UPDATED_EVENT);
         break;
       case ActionTypes.REMOVE_DEBUGGER_PROVIDER:
         if (!this._debuggerProviders.has(payload.data)) {

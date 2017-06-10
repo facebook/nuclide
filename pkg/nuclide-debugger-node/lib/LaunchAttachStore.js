@@ -6,12 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
   NodeAttachTargetInfo,
 } from '../../nuclide-debugger-node-rpc/lib/NodeDebuggerService';
-import type LaunchAttachDispatcher, {LaunchAttachAction} from './LaunchAttachDispatcher';
+import type LaunchAttachDispatcher, {
+  LaunchAttachAction,
+} from './LaunchAttachDispatcher';
 
 import {Emitter} from 'atom';
 import {ActionTypes} from './LaunchAttachDispatcher';
@@ -26,7 +29,9 @@ export class LaunchAttachStore {
 
   constructor(dispatcher: LaunchAttachDispatcher) {
     this._dispatcher = dispatcher;
-    this._dispatcherToken = this._dispatcher.register(this._handleActions.bind(this));
+    this._dispatcherToken = this._dispatcher.register(
+      this._handleActions.bind(this),
+    );
     this._emitter = new Emitter();
     this._attachTargetInfos = [];
   }

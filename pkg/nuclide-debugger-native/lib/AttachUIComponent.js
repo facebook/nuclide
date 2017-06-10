@@ -6,35 +6,35 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LaunchAttachStore} from './LaunchAttachStore';
 import type {LaunchAttachActions} from './LaunchAttachActions';
 import type {
   AttachTargetInfo,
 } from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
-import type {Column} from '../../nuclide-ui/Table';
+import type {Column} from 'nuclide-commons-ui/Table';
 
-import {DebuggerLaunchAttachEventTypes} from '../../nuclide-debugger-base';
 import React from 'react';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
-import {Table} from '../../nuclide-ui/Table';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {Table} from 'nuclide-commons-ui/Table';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
-import {ButtonGroup} from '../../nuclide-ui/ButtonGroup';
-
-import type EventEmitter from 'events';
+  serializeDebuggerConfig,
+  deserializeDebuggerConfig,
+} from '../../nuclide-debugger-base';
 
 type PropsType = {
+  targetUri: NuclideUri,
   store: LaunchAttachStore,
   actions: LaunchAttachActions,
-  parentEmitter: EventEmitter,
+  configIsValidChanged: (valid: boolean) => void,
 };
 
 type StateType = {
-  targetListChangeDisposable: IDisposable,
   attachTargetInfos: Array<AttachTargetInfo>,
   selectedAttachTarget: ?AttachTargetInfo,
   filterText: string,
@@ -69,9 +69,8 @@ function getCompareFunction(
   switch (sortedColumn) {
     case 'pid':
       const order = sortDescending ? -1 : 1;
-      return (target1: AttachTargetInfo, target2: AttachTargetInfo) => (
-        order * (target1.pid - target2.pid)
-      );
+      return (target1: AttachTargetInfo, target2: AttachTargetInfo) =>
+        order * (target1.pid - target2.pid);
     case 'process':
       return (target1: AttachTargetInfo, target2: AttachTargetInfo) => {
         const first = sortDescending ? target2.name : target1.name;
@@ -80,32 +79,49 @@ function getCompareFunction(
       };
     case 'command':
       return (target1: AttachTargetInfo, target2: AttachTargetInfo) => {
-        const first = sortDescending ? target2.commandName : target1.commandName;
-        const second = sortDescending ? target1.commandName : target2.commandName;
+        const first = sortDescending
+          ? target2.commandName
+          : target1.commandName;
+        const second = sortDescending
+          ? target1.commandName
+          : target2.commandName;
         return first.toLowerCase().localeCompare(second.toLowerCase());
       };
-    default: break;
+    default:
+      break;
   }
   return () => 0;
 }
 
-export class AttachUIComponent extends React.Component<void, PropsType, StateType> {
+export class AttachUIComponent
+  extends React.Component<void, PropsType, StateType> {
   props: PropsType;
   state: StateType;
+  _targetListUpdating: boolean;
+  _disposables: UniversalDisposable;
+  _deserializedSavedSettings: boolean;
 
   constructor(props: PropsType) {
     super(props);
 
-    (this: any)._handleFilterTextChange = this._handleFilterTextChange.bind(this);
+    (this: any)._handleFilterTextChange = this._handleFilterTextChange.bind(
+      this,
+    );
     (this: any)._handleSelectTableRow = this._handleSelectTableRow.bind(this);
-    (this: any)._handleCancelButtonClick = this._handleCancelButtonClick.bind(this);
     (this: any)._handleAttachClick = this._handleAttachClick.bind(this);
-    (this: any)._handleParentVisibilityChanged = this._handleParentVisibilityChanged.bind(this);
-    (this: any)._updateAttachTargetList = this._updateAttachTargetList.bind(this);
+    (this: any)._updateAttachTargetList = this._updateAttachTargetList.bind(
+      this,
+    );
     (this: any)._updateList = this._updateList.bind(this);
     (this: any)._handleSort = this._handleSort.bind(this);
+    this._disposables = new UniversalDisposable();
+    this._targetListUpdating = false;
+    this._deserializedSavedSettings = false;
+    this._disposables.add(
+      this.props.store.onAttachTargetListChanged(this._updateList),
+    );
+
     this.state = {
-      targetListChangeDisposable: this.props.store.onAttachTargetListChanged(this._updateList),
       attachTargetInfos: [],
       selectedAttachTarget: null,
       filterText: '',
@@ -114,36 +130,77 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
     };
   }
 
-  componentWillMount() {
-    this.props.parentEmitter.on(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleAttachClick);
-    this.props.parentEmitter.on(
-      DebuggerLaunchAttachEventTypes.VISIBILITY_CHANGED,
-      this._handleParentVisibilityChanged);
+  _getSerializationArgs() {
+    return [
+      nuclideUri.isRemote(this.props.targetUri)
+        ? nuclideUri.getHostname(this.props.targetUri)
+        : 'local',
+      'attach',
+      'native',
+    ];
+  }
+
+  componentDidMount(): void {
+    this.props.actions.updateParentUIVisibility(true);
     this.props.actions.updateAttachUIVisibility(true);
+    this._disposables.add(
+      atom.commands.add('atom-workspace', {
+        'core:confirm': () => {
+          if (this._debugButtonShouldEnable()) {
+            this._handleAttachClick();
+          }
+        },
+      }),
+    );
   }
 
   componentWillUnmount() {
+    this.props.actions.updateParentUIVisibility(false);
     this.props.actions.updateAttachUIVisibility(false);
-    if (this.state.targetListChangeDisposable != null) {
-      this.state.targetListChangeDisposable.dispose();
-    }
-    this.props.parentEmitter.removeListener(
-      DebuggerLaunchAttachEventTypes.VISIBILITY_CHANGED,
-      this._handleParentVisibilityChanged);
-    this.props.parentEmitter.removeListener(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleAttachClick);
+    this._disposables.dispose();
+  }
+
+  setState(newState: Object): void {
+    super.setState(newState);
+    this.props.configIsValidChanged(this._debugButtonShouldEnable());
+  }
+
+  _debugButtonShouldEnable(): boolean {
+    return this.state.selectedAttachTarget != null;
   }
 
   _updateList(): void {
-    const newSelectedTarget = this.state.selectedAttachTarget == null
-      ? null
-      : this._getAttachTargetOfPid(this.state.selectedAttachTarget.pid);
+    let filterText = null;
+    let newSelectedTarget = null;
+    if (
+      !this._deserializedSavedSettings &&
+      this.state.attachTargetInfos.length > 0
+    ) {
+      // Deserialize the saved settings the first time the process list updates.
+      this._deserializedSavedSettings = true;
+      deserializeDebuggerConfig(
+        ...this._getSerializationArgs(),
+        (transientSettings, savedSettings) => {
+          newSelectedTarget = this.state.attachTargetInfos.find(
+            target =>
+              target.pid === transientSettings.attachPid &&
+              target.name === transientSettings.attachName,
+          );
+          filterText = transientSettings.filterText;
+        },
+      );
+    }
+
+    if (newSelectedTarget == null) {
+      newSelectedTarget = this.state.selectedAttachTarget == null
+        ? null
+        : this._getAttachTargetOfPid(this.state.selectedAttachTarget.pid);
+    }
+    this._targetListUpdating = false;
     this.setState({
       attachTargetInfos: this.props.store.getAttachTargetInfos(),
       selectedAttachTarget: newSelectedTarget,
+      filterText: filterText || this.state.filterText,
     });
   }
 
@@ -165,17 +222,17 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
 
   render(): React.Element<any> {
     const filterRegex = new RegExp(this.state.filterText, 'i');
-    const {
-      attachTargetInfos,
-      sortedColumn,
-      sortDescending,
-    } = this.state;
+    const {attachTargetInfos, sortedColumn, sortDescending} = this.state;
     const compareFn = getCompareFunction(sortedColumn, sortDescending);
     const {selectedAttachTarget} = this.state;
     let selectedIndex = null;
     const rows = attachTargetInfos
-      .filter(item => filterRegex.test(item.name) || filterRegex.test(item.pid.toString()) ||
-        filterRegex.test(item.commandName))
+      .filter(
+        item =>
+          filterRegex.test(item.name) ||
+          filterRegex.test(item.pid.toString()) ||
+          filterRegex.test(item.commandName),
+      )
       .sort(compareFn)
       .map((item, index) => {
         const row = {
@@ -185,7 +242,10 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
             command: item.commandName,
           },
         };
-        if (selectedAttachTarget != null && row.data.pid === selectedAttachTarget.pid) {
+        if (
+          selectedAttachTarget != null &&
+          row.data.pid === selectedAttachTarget.pid
+        ) {
           selectedIndex = index;
         }
         return row;
@@ -194,9 +254,10 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
       <div className="block">
         <AtomInput
           placeholderText="Search..."
-          initialValue={this.state.filterText}
+          value={this.state.filterText}
           onDidChange={this._handleFilterTextChange}
           size="sm"
+          autofocus={true}
         />
         <Table
           columns={getColumns()}
@@ -212,19 +273,6 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
           onSelect={this._handleSelectTableRow}
           collapsable={true}
         />
-        <div className="nuclide-debugger-native-launch-attach-actions">
-          <ButtonGroup>
-            <Button onClick={this._handleCancelButtonClick}>
-              Cancel
-            </Button>
-            <Button
-                buttonType={ButtonTypes.PRIMARY}
-                onClick={this._handleAttachClick}
-                disabled={selectedIndex == null}>
-              Attach
-            </Button>
-          </ButtonGroup>
-        </div>
       </div>
     );
   }
@@ -250,17 +298,12 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
     this._attachToProcess();
   }
 
-  _handleParentVisibilityChanged(visible: boolean): void {
-    this.props.actions.updateParentUIVisibility(visible);
-  }
-
-  _handleCancelButtonClick(): void {
-    this.props.actions.toggleLaunchAttachDialog();
-  }
-
   _updateAttachTargetList(): void {
     // Fire and forget.
-    this.props.actions.updateAttachTargetList();
+    if (!this._targetListUpdating) {
+      this._targetListUpdating = true;
+      this.props.actions.updateAttachTargetList();
+    }
   }
 
   _attachToProcess(): void {
@@ -268,8 +311,15 @@ export class AttachUIComponent extends React.Component<void, PropsType, StateTyp
     if (attachTarget != null) {
       // Fire and forget.
       this.props.actions.attachDebugger(attachTarget);
-      this.props.actions.showDebuggerPanel();
-      this.props.actions.toggleLaunchAttachDialog();
+      serializeDebuggerConfig(
+        ...this._getSerializationArgs(),
+        {},
+        {
+          attachPid: attachTarget.pid,
+          attachName: attachTarget.name,
+          filterText: this.state.filterText,
+        },
+      );
     }
   }
 }

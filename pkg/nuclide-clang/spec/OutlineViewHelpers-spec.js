@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point, Range} from 'atom';
@@ -18,20 +19,22 @@ import {
   whitespace,
   string,
   plain,
-} from '../../commons-node/tokenizedText';
+} from 'nuclide-commons/tokenized-text';
 import {outlineFromClangOutline} from '../lib/OutlineViewHelpers';
 
 describe('outlineFromClangOutline', () => {
   it('works for a function', () => {
-    expect(outlineFromClangOutline([
-      {
-        name: 'testFunction',
-        extent: new Range([0, 1], [2, 3]),
-        cursor_kind: ClangCursorTypes.FUNCTION_DECL,
-        params: ['p1', 'p2'],
-        tparams: ['tp1', 'tp2'],
-      },
-    ])).toEqual([
+    expect(
+      outlineFromClangOutline([
+        {
+          name: 'testFunction',
+          extent: new Range([0, 1], [2, 3]),
+          cursor_kind: ClangCursorTypes.FUNCTION_DECL,
+          params: ['p1', 'p2'],
+          tparams: ['tp1', 'tp2'],
+        },
+      ]),
+    ).toEqual([
       {
         tokenizedText: [
           method('testFunction'),
@@ -55,21 +58,23 @@ describe('outlineFromClangOutline', () => {
   });
 
   it('works for a class with children', () => {
-    expect(outlineFromClangOutline([
-      {
-        name: 'TestClass',
-        extent: new Range([0, 1], [2, 3]),
-        cursor_kind: ClangCursorTypes.CLASS_DECL,
-        children: [
-          {
-            name: 'testMethod',
-            extent: new Range([1, 1], [1, 2]),
-            cursor_kind: ClangCursorTypes.CXX_METHOD,
-            params: [],
-          },
-        ],
-      },
-    ])).toEqual([
+    expect(
+      outlineFromClangOutline([
+        {
+          name: 'TestClass',
+          extent: new Range([0, 1], [2, 3]),
+          cursor_kind: ClangCursorTypes.CLASS_DECL,
+          children: [
+            {
+              name: 'testMethod',
+              extent: new Range([1, 1], [1, 2]),
+              cursor_kind: ClangCursorTypes.CXX_METHOD,
+              params: [],
+            },
+          ],
+        },
+      ]),
+    ).toEqual([
       {
         tokenizedText: [
           keyword('class'),
@@ -81,11 +86,7 @@ describe('outlineFromClangOutline', () => {
         endPosition: new Point(2, 3),
         children: [
           {
-            tokenizedText: [
-              method('testMethod'),
-              plain('('),
-              plain(')'),
-            ],
+            tokenizedText: [method('testMethod'), plain('('), plain(')')],
             representativeName: 'testMethod',
             startPosition: new Point(1, 1),
             endPosition: new Point(1, 2),
@@ -97,14 +98,16 @@ describe('outlineFromClangOutline', () => {
   });
 
   it('works for a global variable', () => {
-    expect(outlineFromClangOutline([
-      {
-        name: 'testVariable',
-        extent: new Range([0, 1], [2, 3]),
-        cursor_kind: ClangCursorTypes.VAR_DECL,
-        cursor_type: 'std::string',
-      },
-    ])).toEqual([
+    expect(
+      outlineFromClangOutline([
+        {
+          name: 'testVariable',
+          extent: new Range([0, 1], [2, 3]),
+          cursor_kind: ClangCursorTypes.VAR_DECL,
+          cursor_type: 'std::string',
+        },
+      ]),
+    ).toEqual([
       {
         tokenizedText: [
           plain('std::string'),
@@ -120,14 +123,16 @@ describe('outlineFromClangOutline', () => {
   });
 
   it('collapses very long types', () => {
-    expect(outlineFromClangOutline([
-      {
-        name: 'testVariable',
-        extent: new Range([0, 1], [2, 3]),
-        cursor_kind: ClangCursorTypes.VAR_DECL,
-        cursor_type: 'std::vector<std::vector<std::vector<std::vector<int>>>>',
-      },
-    ])).toEqual([
+    expect(
+      outlineFromClangOutline([
+        {
+          name: 'testVariable',
+          extent: new Range([0, 1], [2, 3]),
+          cursor_kind: ClangCursorTypes.VAR_DECL,
+          cursor_type: 'std::vector<std::vector<std::vector<std::vector<int>>>>',
+        },
+      ]),
+    ).toEqual([
       {
         tokenizedText: [
           plain('std::vector<'),

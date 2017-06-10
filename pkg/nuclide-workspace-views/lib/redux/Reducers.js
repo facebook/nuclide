@@ -6,13 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Action, Location, Opener} from '../types';
 
 import * as Actions from './Actions';
 
-export function locations(state: Map<string, Location> = new Map(), action: Action) {
+export function locations(
+  state: Map<string, Location> = new Map(),
+  action: Action,
+) {
   switch (action.type) {
     case Actions.REGISTER_LOCATION: {
       const {id, location} = action.payload;
@@ -45,7 +49,10 @@ export function openers(state: Set<Opener> = new Set(), action: Action) {
   }
 }
 
-export function serializedLocationStates(state: Map<string, ?Object> = new Map(), action: Action) {
+export function serializedLocationStates(
+  state: Map<string, ?Object> = new Map(),
+  action: Action,
+) {
   switch (action.type) {
     case Actions.REGISTER_LOCATION: {
       // Now that we've used the serialized state (to create the location instance), we can get rid

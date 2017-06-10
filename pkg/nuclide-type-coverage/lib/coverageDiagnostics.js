@@ -6,17 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {Result} from '../../commons-atom/ActiveEditorRegistry';
-import type {
-  ObservableDiagnosticProvider,
-} from '../../nuclide-diagnostics-common';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {Result} from 'nuclide-commons-atom/ActiveEditorRegistry';
+import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 import type {
   DiagnosticProviderUpdate,
   FileDiagnosticMessage,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
+} from 'atom-ide-ui';
 
 import type {CoverageProvider} from './types';
 import type {CoverageResult, UncoveredRegion} from './rpc-types';
@@ -24,7 +23,7 @@ import type {CoverageResult, UncoveredRegion} from './rpc-types';
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 
-import {toggle, compact} from '../../commons-node/observable';
+import {toggle, compact} from 'nuclide-commons/observable';
 
 export function diagnosticProviderForResultStream(
   results: Observable<Result<CoverageProvider, ?CoverageResult>>,
@@ -77,8 +76,8 @@ function diagnosticsForResult(
 
   const providerName = result.provider.displayName;
 
-  const diagnostics = value.uncoveredRegions.map(
-    region => uncoveredRangeToDiagnostic(region, editorPath, providerName),
+  const diagnostics = value.uncoveredRegions.map(region =>
+    uncoveredRangeToDiagnostic(region, editorPath, providerName),
   );
 
   return {
@@ -91,9 +90,9 @@ function uncoveredRangeToDiagnostic(
   path: NuclideUri,
   providerName: string,
 ): FileDiagnosticMessage {
-  const text = region.message != null ?
-    region.message :
-    `Not covered by ${providerName}`;
+  const text = region.message != null
+    ? region.message
+    : `Not covered by ${providerName}`;
   return {
     scope: 'file',
     providerName: 'Type Coverage',

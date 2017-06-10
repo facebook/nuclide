@@ -6,16 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileSearchResult} from './rpc-types';
 
-import {getLogger} from '../../nuclide-logging';
-import {arrayEqual} from '../../commons-node/collection';
-import fsPromise from '../../commons-node/fsPromise';
+import {getLogger} from 'log4js';
+import {arrayEqual} from 'nuclide-commons/collection';
+import fsPromise from 'nuclide-commons/fsPromise';
 import Task from '../../nuclide-task';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-fuzzy-file-search-rpc');
 
 /**
  * This is an object that lives in the main process that delegates calls to the
@@ -29,7 +30,10 @@ class FileSearchProcess {
   constructor(task: Task, directory: string, ignoredNames: Array<string>) {
     this._task = task;
     task.onError(buffer => {
-      logger.error('File search process crashed with message:', buffer.toString());
+      logger.error(
+        'File search process crashed with message:',
+        buffer.toString(),
+      );
       this.dispose();
     });
     task.onExit(() => this.dispose());
@@ -43,7 +47,7 @@ class FileSearchProcess {
       throw new Error('Task has been disposed');
     }
     return task.invokeRemoteMethod({
-      file: require.resolve('./FileSearch'),
+      file: require.resolve('./process/FileSearch'),
       method: 'doSearch',
       args: [this._directory, query],
     });
@@ -80,7 +84,7 @@ async function newFileSearch(
 
   const task = new Task();
   await task.invokeRemoteMethod({
-    file: require.resolve('./FileSearch'),
+    file: require.resolve('./process/FileSearch'),
     method: 'initFileSearchForDirectory',
     args: [directory, ignoredNames],
   });
@@ -101,12 +105,11 @@ export async function fileSearchForDirectory(
     fileSearch.dispose();
   }
 
-  const promise = newFileSearch(directory, ignoredNames)
-    .catch(error => {
-      // Remove errored processes from the cache so we can try again.
-      delete processForDirectory[directory];
-      throw error;
-    });
+  const promise = newFileSearch(directory, ignoredNames).catch(error => {
+    // Remove errored processes from the cache so we can try again.
+    delete processForDirectory[directory];
+    throw error;
+  });
   processForDirectory[directory] = promise;
   return promise;
 }
@@ -115,7 +118,9 @@ export function getExistingSearchDirectories(): Array<string> {
   return Object.keys(processForDirectory);
 }
 
-export async function disposeSearchForDirectory(directory: string): Promise<void> {
+export async function disposeSearchForDirectory(
+  directory: string,
+): Promise<void> {
   const cached = processForDirectory[directory];
   if (cached != null) {
     const search = await cached;

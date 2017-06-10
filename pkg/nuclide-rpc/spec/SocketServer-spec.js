@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as EchoService from './EchoService';
@@ -19,7 +20,7 @@ import loadServicesConfig from '../lib/loadServicesConfig';
 import {generateFixture} from '../../nuclide-test-helpers';
 import {ServiceRegistry} from '../lib/ServiceRegistry';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('SocketServer', () => {
   let configPath: ?string;
@@ -32,12 +33,14 @@ describe('SocketServer', () => {
           name: 'EchoService',
         },
       ];
-      const fbservices3json = [
-      ];
-      configPath = await generateFixture('services', new Map([
-        ['services-3.json', JSON.stringify(services3json)],
-        ['fb-services-3.json', JSON.stringify(fbservices3json)],
-      ]));
+      const fbservices3json = [];
+      configPath = await generateFixture(
+        'services',
+        new Map([
+          ['services-3.json', JSON.stringify(services3json)],
+          ['fb-services-3.json', JSON.stringify(fbservices3json)],
+        ]),
+      );
     });
   });
 
@@ -47,7 +50,8 @@ describe('SocketServer', () => {
       const services = loadServicesConfig(configPath);
       const registry = new ServiceRegistry(
         [localNuclideUriMarshalers],
-        services);
+        services,
+      );
       const server = new SocketServer(registry);
       const address = await server.getAddress();
       invariant(address.port !== 0);
@@ -55,9 +59,14 @@ describe('SocketServer', () => {
       const clientSocket = net.connect(address.port);
       const clientTransport = new SocketTransport(clientSocket);
       const clientConnection = RpcConnection.createLocal(
-        clientTransport, [localNuclideUriMarshalers], services);
+        clientTransport,
+        [localNuclideUriMarshalers],
+        services,
+      );
 
-      const echoService: EchoService = clientConnection.getService('EchoService');
+      const echoService: EchoService = clientConnection.getService(
+        'EchoService',
+      );
       const result = await echoService.echoString('Hello World!');
 
       expect(result).toBe('Hello World!');

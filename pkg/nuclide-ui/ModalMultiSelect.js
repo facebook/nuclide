@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {ButtonSize} from './Button';
+import type {ButtonSize} from 'nuclide-commons-ui/Button';
 import type {OptionComponentProps} from './MultiSelectList';
 
-import {Button, ButtonSizes, ButtonTypes} from './Button';
-import {ButtonGroup} from './ButtonGroup';
+import {Button, ButtonSizes, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Modal} from './Modal';
 import {MultiSelectList} from './MultiSelectList';
 import classnames from 'classnames';
@@ -73,8 +74,9 @@ export class ModalMultiSelect extends React.Component {
 
   render(): React.Element<any> {
     const LabelComponent = this.props.labelComponent || DefaultLabelComponent;
-    const selectedOptions = this.props.options
-      .filter(option => this.props.value.indexOf(option.value) !== -1);
+    const selectedOptions = this.props.options.filter(
+      option => this.props.value.indexOf(option.value) !== -1,
+    );
     const className = classnames(this.props.className, {
       'btn-warning': this.props.value.length === 0,
     });
@@ -122,11 +124,12 @@ export class ModalMultiSelect extends React.Component {
   }
 
   _renderModal(): ?React.Element<any> {
-    if (!this.state.showModal) { return; }
+    if (!this.state.showModal) {
+      return;
+    }
 
     return (
-      <Modal
-        onDismiss={this._dismissModal}>
+      <Modal onDismiss={this._dismissModal}>
         <MultiSelectList
           commandScope={atom.views.getView(atom.workspace)}
           value={this.state.activeValues}
@@ -163,7 +166,5 @@ type LabelComponentProps = {
 function DefaultLabelComponent(props: LabelComponentProps) {
   const count = props.selectedOptions.length;
   const noun = count === 1 ? 'Item' : 'Items';
-  return (
-    <span>{`${count} ${noun} Selected`}</span>
-  );
+  return <span>{`${count} ${noun} Selected`}</span>;
 }

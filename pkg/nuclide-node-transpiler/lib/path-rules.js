@@ -25,14 +25,19 @@ const ignoreRe = new RegExp(
 );
 
 module.exports = {
-  getIncludedFiles() {
+  /**
+   * @param ?string directory
+   *        An optional [absolute] directory to list files from.
+   */
+  getIncludedFiles(directory) {
+    const cwd = directory || basedir;
     const glob = require('glob');
     // Do not use `basedir + '**/*.js'`, otherwise we risk ignoring ourselves
     // if a parent directory matches an ignore pattern.
     const files = glob.sync('**/*.js', {
-      cwd: basedir,
+      cwd,
       ignore: ignorePatterns,
-    }).map(x => path.join(basedir, x));
+    }).map(x => path.join(cwd, x));
     return files;
   },
   isIncluded(filename) {

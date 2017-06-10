@@ -11,13 +11,15 @@
 
 /* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
 
-const resolveFrom = require('resolve-from');
 const path = require('path');
-const fs = require('fs');
+const resolveFrom = require('resolve-from');
 
-const KNOWN_ATOM_BUILTIN_PACKAGES = new Set([
-  'atom',
-  'electron',
+const {ATOM_BUILTIN_PACKAGES, getPackage, isRequire} = require('./utils');
+
+const ATOM_IDE_PACKAGES = new Set([
+  'atom-ide-ui',
+  'nuclide-commons-atom',
+  'nuclide-commons-ui',
 ]);
 
 module.exports = function(context) {
@@ -36,21 +38,33 @@ module.exports = function(context) {
   // packageType: Atom & testRunner: apm
   // packageType: Node & testRunner: apm
   // packageType: Node & testRunner: npm
+  const isPureNode = ownPackage.nuclide && ownPackage.nuclide.testRunner === 'npm';
 
   function getCrossImportPackage(id) {
     // npm packages can't require Atom builtins.
-    if (KNOWN_ATOM_BUILTIN_PACKAGES.has(id)) {
-      if (ownPackage.nuclide &&
-          ownPackage.nuclide.testRunner === 'npm') {
+    if (ATOM_BUILTIN_PACKAGES.has(id)) {
+      if (isPureNode) {
         return {type: 'NO_NPM_TO_ATOM_BUILTIN', name: id};
       } else {
         return null;
       }
     }
 
+    if (ATOM_IDE_PACKAGES.has(id)) {
+      if (isPureNode) {
+        return {type: 'NO_NPM_TO_ATOM_UI_PACKAGES', name: id};
+      } else {
+        return null;
+      }
+    }
+
     const resolved = resolveFrom(dirname, id);
-    // Exclude modules that are not found or not ours.
-    if (resolved == null || resolved.includes('/node_modules/')) {
+    // Exclude modules that are not found, builtins, or not ours.
+    if (
+      resolved == null ||
+      resolved === id ||
+      resolved.includes('/node_modules/')
+    ) {
       return null;
     }
     const resolvedPackage = getPackage(resolved);
@@ -88,6 +102,8 @@ module.exports = function(context) {
         ? 'apm package "{{name}}" is not {{action}} from an npm package.' :
       result.type === 'NO_NPM_TO_ATOM_BUILTIN'
         ? 'Atom builtin package "{{name}}" is not {{action}} from an npm package.' :
+      result.type === 'NO_NPM_TO_ATOM_UI_PACKAGES'
+        ? 'Nuclide/Atom UI package "{{name}}" is not {{action}} from an npm package.' :
       null;
     context.report({
       node,
@@ -140,37 +156,3 @@ module.exports = function(context) {
     },
   };
 };
-
-function getPackage(start) {
-  let current = path.resolve(start);
-  for (;;) {
-    const filename = path.join(current, 'package.json');
-    try {
-      const source = fs.readFileSync(filename, 'utf8');
-      const json = JSON.parse(source);
-      json.__filename = filename;
-      json.__dirname = current;
-      return json;
-    } catch (err) {
-      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        const next = path.join(current, '..');
-        if (next === current) {
-          return null;
-        } else {
-          current = next;
-        }
-      } else {
-        throw err;
-      }
-    }
-  }
-}
-
-function isRequire(node) {
-  return (
-    node.callee.type === 'Identifier' &&
-    node.callee.name === 'require' &&
-    node.arguments[0] &&
-    node.arguments[0].type === 'Literal'
-  );
-}

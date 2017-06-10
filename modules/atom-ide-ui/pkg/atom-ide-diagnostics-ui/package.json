@@ -1,0 +1,45 @@
+{
+  "name": "atom-ide-diagnostics-ui",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Displays diagnostics in context in a TextEditor",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "deserializers": {
+    "nuclide.DiagnosticsPanelModel": "deserializeDiagnosticsViewModel",
+    "atom-ide-ui.DiagnosticsViewModel": "deserializeDiagnosticsViewModel"
+  },
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Diagnostics"
+      ]
+    }
+  },
+  "atomConfig": {
+    "showDiagnosticTraces": {
+      "title": "Show full diagnostic traces",
+      "type": "boolean",
+      "default": false,
+      "description": "Shows full trace information in diagnostics."
+    }
+  },
+  "consumedServices": {
+    "nuclide-datatip.provider": {
+      "versions": {
+        "0.0.0": "consumeDatatipService"
+      }
+    },
+    "atom-ide-diagnostics-store": {
+      "versions": {
+        "0.2.0": "consumeDiagnosticUpdates"
+      }
+    },
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  }
+}

@@ -6,15 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {trackTiming} from '../../nuclide-analytics';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
 import libclang from './libclang';
 
 export default class CodeFormatHelpers {
-  static formatEntireFile(editor: atom$TextEditor, range: atom$Range): Promise<{
+  static formatEntireFile(
+    editor: atom$TextEditor,
+    range: atom$Range,
+  ): Promise<{
     newCursor?: number,
     formatted: string,
   }> {
@@ -22,8 +26,10 @@ export default class CodeFormatHelpers {
       try {
         return await libclang.formatCode(editor, range);
       } catch (e) {
-        getLogger().error('Could not run clang-format:', e);
-        throw new Error('Could not run clang-format.<br>Ensure it is installed and in your $PATH.');
+        getLogger('nuclide-clang').error('Could not run clang-format:', e);
+        throw new Error(
+          'Could not run clang-format.<br>Ensure it is installed and in your $PATH.',
+        );
       }
     });
   }

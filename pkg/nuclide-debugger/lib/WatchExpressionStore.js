@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type Bridge from './Bridge';
@@ -22,9 +23,9 @@ import {DebuggerMode} from './DebuggerStore';
 import {ActionTypes} from './DebuggerDispatcher';
 import {BehaviorSubject, Observable} from 'rxjs';
 import invariant from 'assert';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {Deferred} from '../../commons-node/promise';
-import {getLogger} from '../../nuclide-logging';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {Deferred} from 'nuclide-commons/promise';
+import {getLogger} from 'log4js';
 import {normalizeRemoteObjectValue} from './normalizeRemoteObjectValue';
 
 type Expression = string;
@@ -50,7 +51,9 @@ export class WatchExpressionStore {
     // `this._disposables`.
     this._previousEvaluationSubscriptions = new UniversalDisposable();
     this._disposables.add(this._previousEvaluationSubscriptions);
-    const _dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
+    const _dispatcherToken = dispatcher.register(
+      this._handlePayload.bind(this),
+    );
     this._disposables.add(() => {
       dispatcher.unregister(_dispatcherToken);
     });
@@ -98,7 +101,11 @@ export class WatchExpressionStore {
         this._watchExpressions.delete(expression);
         continue;
       }
-      this._requestExpressionEvaluation(expression, subject, false /* no REPL support */);
+      this._requestExpressionEvaluation(
+        expression,
+        subject,
+        false /* no REPL support */,
+      );
     }
   }
 
@@ -126,12 +133,19 @@ export class WatchExpressionStore {
     return Observable.fromPromise(getPropertiesPromise);
   }
 
-  evaluateConsoleExpression(expression: Expression): Observable<?EvaluationResult> {
+  evaluateConsoleExpression(
+    expression: Expression,
+  ): Observable<?EvaluationResult> {
     return this._evaluateExpression(expression, true /* support REPL */);
   }
 
-  evaluateWatchExpression(expression: Expression): Observable<?EvaluationResult> {
-    return this._evaluateExpression(expression, false /* do not support REPL */);
+  evaluateWatchExpression(
+    expression: Expression,
+  ): Observable<?EvaluationResult> {
+    return this._evaluateExpression(
+      expression,
+      false /* do not support REPL */,
+    );
   }
 
   /**
@@ -169,12 +183,14 @@ export class WatchExpressionStore {
         ? this._evaluateOnSelectedCallFrame(expression, 'console')
         : this._runtimeEvaluate(expression);
     } else {
-      evaluationPromise = this._evaluateOnSelectedCallFrame(expression, 'watch-group');
+      evaluationPromise = this._evaluateOnSelectedCallFrame(
+        expression,
+        'watch-group',
+      );
     }
 
     const evaluationDisposable = new UniversalDisposable(
-      Observable
-        .fromPromise(evaluationPromise)
+      Observable.fromPromise(evaluationPromise)
         .merge(Observable.never()) // So that we do not unsubscribe `subject` when disposed.
         .subscribe(subject),
     );
@@ -193,55 +209,85 @@ export class WatchExpressionStore {
     expression: string,
     objectGroup: ObjectGroup,
   ): Promise<?EvaluationResult> {
-    const result: ?EvaluationResult = await this._sendEvaluationCommand(
-      'evaluateOnSelectedCallFrame',
-      expression,
-      objectGroup,
-    );
-    if (result == null) {
-      // TODO: It would be nice to expose a better error from the backend here.
+    try {
+      const result: ?EvaluationResult = await this._sendEvaluationCommand(
+        'evaluateOnSelectedCallFrame',
+        expression,
+        objectGroup,
+      );
+      if (result == null) {
+        // Backend returned neither a result nor an error message
+        return {
+          type: 'text',
+          value: `Failed to evaluate: ${expression}`,
+        };
+      } else {
+        return result;
+      }
+    } catch (e) {
       return {
         type: 'text',
-        value: `Failed to evaluate: ${expression}`,
+        value: `Failed to evaluate: ${expression} ` + e.toString(),
       };
-    } else {
-      return result;
     }
   }
 
   async _runtimeEvaluate(expression: string): Promise<?EvaluationResult> {
-    const result: ?EvaluationResult = await this._sendEvaluationCommand(
-      'runtimeEvaluate',
-      expression,
-    );
-    if (result == null) {
-      // TODO: It would be nice to expose a better error from the backend here.
+    try {
+      const result: ?EvaluationResult = await this._sendEvaluationCommand(
+        'runtimeEvaluate',
+        expression,
+      );
+      if (result == null) {
+        // Backend returned neither a result nor an error message
+        return {
+          type: 'text',
+          value: `Failed to evaluate: ${expression}`,
+        };
+      } else {
+        return result;
+      }
+    } catch (e) {
       return {
         type: 'text',
-        value: `Failed to evaluate: ${expression}`,
+        value: `Failed to evaluate: ${expression} ` + e.toString(),
       };
-    } else {
-      return result;
     }
   }
 
-  async _sendEvaluationCommand(command: EvalCommand, ...args: Array<mixed>): Promise<any> {
+  async _sendEvaluationCommand(
+    command: EvalCommand,
+    ...args: Array<mixed>
+  ): Promise<any> {
     const deferred = new Deferred();
     const evalId = this._evaluationId;
     ++this._evaluationId;
     this._evaluationRequestsInFlight.set(evalId, deferred);
     this._bridge.sendEvaluationCommand(command, evalId, ...args);
     let result = null;
+    let errorMsg = null;
     try {
       result = await deferred.promise;
     } catch (e) {
-      getLogger().warn(`${command}: Error getting result.`, e);
+      getLogger('nuclide-debugger').warn(
+        `${command}: Error getting result.`,
+        e,
+      );
+      if (e.description) {
+        errorMsg = e.description;
+      }
     }
     this._evaluationRequestsInFlight.delete(evalId);
+    if (errorMsg != null) {
+      throw new Error(errorMsg);
+    }
     return result;
   }
 
-  _handleResponseForPendingRequest(id: number, response: ChromeProtocolResponse): void {
+  _handleResponseForPendingRequest(
+    id: number,
+    response: ChromeProtocolResponse,
+  ): void {
     const {result, error} = response;
     const deferred = this._evaluationRequestsInFlight.get(id);
     if (deferred == null) {

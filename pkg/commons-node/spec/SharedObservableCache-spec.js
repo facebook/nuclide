@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Subject} from 'rxjs';
@@ -14,8 +15,7 @@ import SharedObservableCache from '../SharedObservableCache';
 describe('SharedObservableCache', () => {
   it('creates and deletes observables on demand', () => {
     const mockObservable = new Subject();
-    const mockFactory = jasmine.createSpy('factory')
-      .andReturn(mockObservable);
+    const mockFactory = jasmine.createSpy('factory').andReturn(mockObservable);
 
     const map = new SharedObservableCache(mockFactory);
     const stream1 = map.get('key');

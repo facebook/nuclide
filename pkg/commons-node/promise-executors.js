@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import Dequeue from 'dequeue';
@@ -67,15 +68,18 @@ export class PromisePool {
     const {id, executor} = this._fifo.shift();
     this._numPromisesRunning++;
 
-    executor().then(result => {
-      this._emitter.emit(id, {isSuccess: true, value: result});
-      this._numPromisesRunning--;
-      this._run();
-    }, error => {
-      this._emitter.emit(id, {isSuccess: false, value: error});
-      this._numPromisesRunning--;
-      this._run();
-    });
+    executor().then(
+      result => {
+        this._emitter.emit(id, {isSuccess: true, value: result});
+        this._numPromisesRunning--;
+        this._run();
+      },
+      error => {
+        this._emitter.emit(id, {isSuccess: false, value: error});
+        this._numPromisesRunning--;
+        this._run();
+      },
+    );
   }
 
   _getNextRequestId(): string {

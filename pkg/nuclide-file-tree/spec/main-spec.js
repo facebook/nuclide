@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 describe('main', () => {
@@ -20,10 +21,11 @@ describe('main', () => {
   });
 
   // Closing an Atom window calls `deactivate` on loaded packages.
-  it("re-enables Atom's builtin tree-view package on deactivation", () => {
+  it("re-enables Atom's builtin tree-view package on disable", () => {
     waitsForPromise(async () => {
       expect(atom.packages.isPackageDisabled('tree-view')).toBe(false);
       await atom.packages.activatePackage('nuclide-file-tree');
+      atom.packages.disablePackage('nuclide-file-tree');
       atom.packages.deactivatePackage('nuclide-file-tree');
       expect(atom.packages.isPackageDisabled('tree-view')).toBe(false);
     });

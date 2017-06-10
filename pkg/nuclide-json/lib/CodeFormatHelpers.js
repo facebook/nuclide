@@ -6,18 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {trackTiming} from '../../nuclide-analytics';
 
 export default class CodeFormatHelpers {
-  static formatEntireFile(editor: atom$TextEditor, range: atom$Range): Promise<{
+  static formatEntireFile(
+    editor: atom$TextEditor,
+    range: atom$Range,
+  ): Promise<{
     newCursor?: number,
     formatted: string,
   }> {
     return trackTiming('json.formatCode', () => {
       const buffer_as_json = JSON.parse(editor.getBuffer().getText());
-      const formatted = JSON.stringify(buffer_as_json, null, editor.getTabLength());
+      const formatted = JSON.stringify(
+        buffer_as_json,
+        null,
+        editor.getTabLength(),
+      );
       return Promise.resolve({formatted});
     });
   }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {timedAsync, timedSync, makeSizedFixture} from '../../benchmarker-utils';
@@ -25,7 +26,16 @@ const REPETITIONS = 3;
 
 module.exports = {
   description: 'times how long a 10k file takes to open, edit, save, close with different packages',
-  columns: ['packages', 'activate', 'open', 'insert0', 'insert', 'append', 'save', 'close'],
+  columns: [
+    'packages',
+    'activate',
+    'open',
+    'insert0',
+    'insert',
+    'append',
+    'save',
+    'close',
+  ],
   timeout: TIMEOUT,
   iterations: PACKAGES.length,
   repetitions: REPETITIONS,
@@ -36,7 +46,10 @@ module.exports = {
     makeSizedFixture(SAMPLE_FILE, FILE_SIZE);
 
     // Activate packages for this iteration.
-    const packages = PACKAGES[iteration].split(',').map(p => p.trim()).filter(p => p !== '');
+    const packages = PACKAGES[iteration]
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p !== '');
     result.packages = packages.join(',');
     const {time: activate} = await timedAsync(
       Promise.all(packages.map(p => atom.packages.activatePackage(p))),
@@ -44,8 +57,10 @@ module.exports = {
     result.activate = activate;
 
     // Open the file, insert text, append text, save and close.
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    const {ret: editor, time: open} = await timedAsync(atom.workspace.open(SAMPLE_FILE));
+    const {ret: editor, time: open} = await timedAsync(
+      // eslint-disable-next-line nuclide-internal/atom-apis
+      atom.workspace.open(SAMPLE_FILE),
+    );
     result.open = open;
 
     // The first insertion forces buffer tokenization and is much slower than subsequent mutations.
@@ -59,7 +74,9 @@ module.exports = {
     result.append = timedSync(() => editor.insertText('// new line\n')).time;
 
     result.save = timedSync(() => editor.save()).time;
-    result.close = timedSync(() => atom.workspace.destroyActivePaneItemOrEmptyPane()).time;
+    result.close = timedSync(() =>
+      atom.workspace.destroyActivePaneItemOrEmptyPane(),
+    ).time;
 
     return result;
   },

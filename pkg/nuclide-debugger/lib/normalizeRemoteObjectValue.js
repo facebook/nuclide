@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {EvaluationResult} from './types';
 
 import invariant from 'assert';
 
-export function normalizeRemoteObjectValue(remoteObject: ?Object): ?EvaluationResult {
+export function normalizeRemoteObjectValue(
+  remoteObject: ?Object,
+): ?EvaluationResult {
   if (remoteObject == null) {
     return null;
   }
@@ -21,9 +24,15 @@ export function normalizeRemoteObjectValue(remoteObject: ?Object): ?EvaluationRe
     invariant(remoteObject != null);
     modifiedProperties[field] = remoteObject[field];
     const underscoreField = `_${field}`;
-    if (remoteObject.hasOwnProperty(underscoreField) && remoteObject[underscoreField] != null) {
+    if (
+      remoteObject.hasOwnProperty(underscoreField) &&
+      remoteObject[underscoreField] != null
+    ) {
       modifiedProperties[field] = String(remoteObject[underscoreField]);
-    } else if (remoteObject.hasOwnProperty(field) && remoteObject[field] != null) {
+    } else if (
+      remoteObject.hasOwnProperty(field) &&
+      remoteObject[field] != null
+    ) {
       modifiedProperties[field] = String(remoteObject[field]);
     }
   };

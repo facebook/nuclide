@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
   expressionForRevisionsBeforeHead,
   parseRevisionInfoOutput,
   INFO_REV_END_MARK,
+  NULL_CHAR,
 } from '../lib/hg-revision-expression-helpers';
+import {SuccessorType} from '../lib/hg-constants';
 
 describe('hg-revision-expression-helpers', () => {
   describe('expressionForRevisionsBeforeHead', () => {
@@ -28,28 +31,31 @@ describe('hg-revision-expression-helpers', () => {
 
   describe('parseRevisionInfoOutput', () => {
     it('returns the parsed revision info if is valid.', () => {
-      const commit1Description =
-`Commit 1 'title'.
+      const commit1Description = `Commit 1 'title'.
 Continue Commit 1 message.`;
-      const commit2Description =
-`Commit 2 'title'.
+      const commit2Description = `Commit 2 'title'.
 
 Still, multi-line commit 2 message
 
 Test Plan: complete`;
-      const revisionsString =
-`124
+      const revisionsString = `124
 Commit 1 'title'.
 Author Name<auth_2_alias@domain.com>
 2015-10-15 16:03 -0700
 a343fb3
 default
 draft
-b-1 b-2
+b-1${NULL_CHAR}b-2${NULL_CHAR}
 
-tip
-a343fb211111 000000000000
+tip${NULL_CHAR}
+a343fb211111${NULL_CHAR}000000000000${NULL_CHAR}
 @
+
+
+
+
+
+
 ${commit1Description}
 ${INFO_REV_END_MARK}
 123
@@ -60,9 +66,15 @@ a343fb2
 default
 public
 
-remote/master
+remote/master${NULL_CHAR}
 
-abc123411111 000000000000
+abc123411111${NULL_CHAR}000000000000${NULL_CHAR}
+
+
+af3435454321
+
+
+
 
 ${commit2Description}
 ${INFO_REV_END_MARK}
@@ -83,6 +95,7 @@ ${INFO_REV_END_MARK}
           tags: ['tip'],
           parents: ['a343fb211111'],
           description: commit1Description,
+          successorInfo: null,
         },
         {
           id: 123,
@@ -98,6 +111,10 @@ ${INFO_REV_END_MARK}
           tags: [],
           parents: ['abc123411111'],
           description: commit2Description,
+          successorInfo: {
+            hash: 'af3435454321',
+            type: SuccessorType.AMEND,
+          },
         },
       ]);
     });

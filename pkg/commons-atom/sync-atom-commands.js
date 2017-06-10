@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type AtomCommands = {
   [target: string]: {
-    [commandName: string]: (event: Event) => mixed,
+    [commandName: string]: (event: atom$CustomEvent) => mixed,
   },
 };
 
-import {reconcileSets} from '../commons-node/observable';
+import {reconcileSets} from 'nuclide-commons/observable';
 import {CompositeDisposable} from 'atom';
 import {Observable} from 'rxjs';
 
@@ -41,9 +42,9 @@ export default function syncAtomCommands<T>(
     sets,
     item => {
       const commands = project(item);
-      const disposables = Object.keys(commands).map(target => (
-        atom.commands.add(target, commands[target])
-      ));
+      const disposables = Object.keys(commands).map(target =>
+        atom.commands.add(target, commands[target]),
+      );
       return new CompositeDisposable(...disposables);
     },
     hash,

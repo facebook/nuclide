@@ -6,18 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import React from 'react';
 
-import addTooltip from '../../nuclide-ui/add-tooltip';
-import featureConfig from '../../commons-atom/featureConfig';
+import {Icon} from 'nuclide-commons-ui/Icon';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import classnames from 'classnames';
 
 type Props = {
   result: ?{
     percentage: number,
     providerName: string,
+    icon?: IconName,
   },
   pending: boolean,
   // true iff we are currently displaying uncovered regions in the editor.
@@ -44,7 +49,8 @@ export class StatusBarTileComponent extends React.Component {
       if (featureConfig.get(COLOR_DISPLAY_SETTING)) {
         colorClasses = {
           'text-error': percentage <= REALLY_BAD_THRESHOLD,
-          'text-warning': percentage > REALLY_BAD_THRESHOLD && percentage <= NOT_GREAT_THRESHOLD,
+          'text-warning': percentage > REALLY_BAD_THRESHOLD &&
+            percentage <= NOT_GREAT_THRESHOLD,
           // Nothing applied if percentage > NOT_GREAT_THRESHOLD,
           'nuclide-type-coverage-status-bar-active': this.props.isActive,
         };
@@ -55,17 +61,21 @@ export class StatusBarTileComponent extends React.Component {
         ...colorClasses,
       });
       const formattedPercentage: string = `${Math.floor(percentage)}%`;
-      const tooltipString = getTooltipString(formattedPercentage, result.providerName);
+      const tooltipString = getTooltipString(
+        formattedPercentage,
+        result.providerName,
+      );
       return (
         <div
-            style={{cursor: 'pointer'}}
-            onClick={this.props.onClick}
-            className={classes}
-            ref={addTooltip({
-              title: tooltipString,
-              delay: 0,
-              placement: 'top',
-            })}>
+          style={{cursor: 'pointer'}}
+          onClick={this.props.onClick}
+          className={classes}
+          ref={addTooltip({
+            title: tooltipString,
+            delay: 0,
+            placement: 'top',
+          })}>
+          {this._getIconElement(result.icon)}
           {formattedPercentage}
         </div>
       );
@@ -73,9 +83,21 @@ export class StatusBarTileComponent extends React.Component {
       return null;
     }
   }
+
+  _getIconElement(icon: ?IconName): ?React.Element<any> {
+    if (icon == null) {
+      return null;
+    }
+    return <Icon icon={icon} />;
+  }
 }
 
-function getTooltipString(formattedPercentage: string, providerName: string): string {
-  return `This file is ${formattedPercentage} covered by ${providerName}.<br/>` +
-    'Click to toggle display of uncovered areas.';
+function getTooltipString(
+  formattedPercentage: string,
+  providerName: string,
+): string {
+  return (
+    `This file is ${formattedPercentage} covered by ${providerName}.<br/>` +
+    'Click to toggle display of uncovered areas.'
+  );
 }

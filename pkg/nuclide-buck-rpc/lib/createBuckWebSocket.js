@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BuckWebSocketMessage} from './BuckService';
 
 import {Observable} from 'rxjs';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import WS from 'ws';
 
 export default function createBuckWebSocket(
@@ -32,7 +33,10 @@ export default function createBuckWebSocket(
       try {
         message = JSON.parse(data);
       } catch (err) {
-        getLogger().error('Error parsing Buck websocket message', err);
+        getLogger('nuclide-buck-rpc').error(
+          'Error parsing Buck websocket message',
+          err,
+        );
         return;
       }
 

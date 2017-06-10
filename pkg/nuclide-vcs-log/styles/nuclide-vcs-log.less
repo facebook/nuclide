@@ -12,6 +12,15 @@
   overflow-y: scroll;
 }
 
+.nuclide-vcs-log-container {
+  height: 100%;
+  display: flex;
+}
+
+.nuclide-vcs-log-entries-container {
+  overflow: scroll;
+}
+
 .nuclide-vcs-log-cell {
   font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   padding: @CELL_PADDING;
@@ -45,7 +54,7 @@
   text-decoration: underline;
 }
 
-.nuclide-vcs-log-differential-cell-text {  
+.nuclide-vcs-log-differential-cell-text {
   cursor: pointer;
 }
 
@@ -57,4 +66,30 @@
 .nuclide-vcs-log-summary-cell {
   .nuclide-vcs-log-cell;
   color: @text-color-highlight;
+}
+
+.nuclide-vcs-log-show-diff-cell {
+  textAlign: center;
+}
+
+.nuclide-vcs-log-diff-container {
+  display: flex;
+}
+
+.nuclide-vcs-log-editor-loading-indicator {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.nuclide-vcs-log-editor-loading {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.nuclide-vcs-log-editor {
+  width: 50%;
 }

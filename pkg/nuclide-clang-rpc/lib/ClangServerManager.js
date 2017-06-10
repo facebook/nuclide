@@ -6,16 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ClangServerFlags} from './ClangServer';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import LRUCache from 'lru-cache';
 import os from 'os';
 
-import {serializeAsyncCall} from '../../commons-node/promise';
-import {getLogger} from '../../nuclide-logging';
+import {serializeAsyncCall} from 'nuclide-commons/promise';
+import {getLogger} from 'log4js';
 import ClangFlagsManager from './ClangFlagsManager';
 import ClangServer from './ClangServer';
 import findClangServerArgs from './find-clang-server-args';
@@ -27,7 +28,10 @@ const SERVER_LIMIT = 20;
 const MEMORY_LIMIT = Math.round(os.totalmem() * 15 / 100);
 
 let _getDefaultFlags;
-async function augmentDefaultFlags(src: string, flags: Array<string>): Promise<Array<string>> {
+async function augmentDefaultFlags(
+  src: string,
+  flags: Array<string>,
+): Promise<Array<string>> {
   if (_getDefaultFlags === undefined) {
     _getDefaultFlags = null;
     try {
@@ -75,13 +79,13 @@ export default class ClangServerManager {
    * Currently, there's no "status" observable, so we can only provide a busy signal to the user
    * on diagnostic requests - and hence we only restart on 'compile' requests.
    */
-  async getClangServer(
+  getClangServer(
     src: string,
     contents: string,
     compilationDBFile: ?NuclideUri,
     defaultFlags?: ?Array<string>,
     restartIfChanged?: boolean,
-  ): Promise<?ClangServer> {
+  ): ClangServer {
     let server = this._servers.get(src);
     if (server != null) {
       if (restartIfChanged && server.getFlagsChanged()) {
@@ -90,22 +94,13 @@ export default class ClangServerManager {
         return server;
       }
     }
-    const [serverArgs, flagsResult] = await Promise.all([
+    server = new ClangServer(
+      src,
+      contents,
       findClangServerArgs(src),
       this._getFlags(src, compilationDBFile, defaultFlags),
-    ]);
-    if (flagsResult == null) {
-      return null;
-    }
-    // Another server could have been created while we were waiting.
-    server = this._servers.get(src);
-    if (server != null) {
-      return server;
-    }
-    server = new ClangServer(src, serverArgs, flagsResult);
-    // Seed with a compile request to ensure fast responses.
-    server.compile(contents)
-      .then(() => this._checkMemoryUsage());
+    );
+    server.waitForReady().then(() => this._checkMemoryUsage());
     this._servers.set(src, server);
     return server;
   }
@@ -117,9 +112,13 @@ export default class ClangServerManager {
     compilationDBFile: ?NuclideUri,
     defaultFlags: ?Array<string>,
   ): Promise<?ClangServerFlags> {
-    const flagsData = await this._flagsManager.getFlagsForSrc(src, compilationDBFile)
+    const flagsData = await this._flagsManager
+      .getFlagsForSrc(src, compilationDBFile)
       .catch(e => {
-        getLogger().error(`Error getting flags for ${src}:`, e);
+        getLogger('nuclide-clang-rpc').error(
+          `Error getting flags for ${src}:`,
+          e,
+        );
         return null;
       });
     if (flagsData != null && flagsData.flags != null) {
@@ -155,10 +154,12 @@ export default class ClangServerManager {
 
   async _checkMemoryUsageImpl(): Promise<void> {
     const usage = new Map();
-    await Promise.all(this._servers.values().map(async server => {
-      const mem = await server.getMemoryUsage();
-      usage.set(server, mem);
-    }));
+    await Promise.all(
+      this._servers.values().map(async server => {
+        const mem = await server.getMemoryUsage();
+        usage.set(server, mem);
+      }),
+    );
 
     // Servers may have been deleted in the meantime, so calculate the total now.
     let total = 0;

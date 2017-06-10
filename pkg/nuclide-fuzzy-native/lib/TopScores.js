@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import Heap from 'heap';
 
 import type {QueryScore} from './QueryScore';
-import {
-  scoreComparator,
-  inverseScoreComparator,
-} from './utils';
+import {scoreComparator, inverseScoreComparator} from './utils';
 
 /**
  * This data structure is designed to hold the top K scores from a collection of

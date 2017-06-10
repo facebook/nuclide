@@ -6,14 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {refmtResult} from './ReasonService';
+import type {formatResult} from './ReasonService';
 
-import {asyncExecute, getOriginalEnvironment} from '../../commons-node/process';
+import {runCommand, getOriginalEnvironment} from 'nuclide-commons/process';
 
-export async function refmt(content: string, flags: Array<string>): Promise<refmtResult> {
-  const refmtPath = getPathToRefmt();
+export async function formatImpl(
+  content: string,
+  language: 're' | 'ml',
+  refmtFlags: Array<string>,
+): Promise<formatResult> {
+  // refmt is designed for reason->reason and ocaml->reason formatting
+  // ocp-indent is designed for ocaml->ocaml formatting
+  const path = language === 're' ? getPathToRefmt() : 'ocp-indent';
+  const flags = language === 're' ? refmtFlags : [];
   const options = {
     // Starts the process with the user's bashrc, which might contain a
     // different refmt. See `MerlinProcess` for the same consistent
@@ -21,17 +29,21 @@ export async function refmt(content: string, flags: Array<string>): Promise<refm
     // extra override; to simulate the same behavior, do this in your bashrc:
     // if [ "$TERM" = "nuclide"]; then someOverrideLogic if
     env: await getOriginalEnvironment(),
-    stdin: content,
+    input: content,
   };
-  const result = await asyncExecute(refmtPath, flags, options);
-  if (result.exitCode === 0) {
-    return {type: 'result', formattedResult: result.stdout};
+  try {
+    const stdout = await runCommand(path, flags, options).toPromise();
+    return {type: 'result', formattedResult: stdout};
+  } catch (err) {
+    // Unsuccessfully exited. Two cases: syntax error and refmt nonexistent.
+    if (err.errno === 'ENOENT') {
+      return {
+        type: 'error',
+        error: `${path} is not found. Is it available in the path?`,
+      };
+    }
+    return {type: 'error', error: err.stderr};
   }
-  // Unsuccessfully exited. Two cases: syntax error and refmt nonexistent.
-  if (result.errorCode === 'ENOENT') {
-    return {type: 'error', error: 'refmt is not found. Is it available in the path?'};
-  }
-  return {type: 'error', error: result.stderr};
 }
 /**
  * @return The path to ocamlmerlin on the user's machine. It is recommended not to cache the result
@@ -39,6 +51,9 @@ export async function refmt(content: string, flags: Array<string>): Promise<refm
  *   return value will be stale.
  */
 function getPathToRefmt(): string {
-  return global.atom
-    && global.atom.config.get('nuclide.nuclide-ocaml.pathToRefmt') || 'refmt';
+  return (
+    (global.atom &&
+      global.atom.config.get('nuclide.nuclide-ocaml.pathToRefmt')) ||
+    'refmt'
+  );
 }

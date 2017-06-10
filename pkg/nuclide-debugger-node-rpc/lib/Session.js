@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type WS from 'ws';
@@ -18,7 +19,11 @@ import util from 'util';
  * do this here so we can pull in new versions of node-inspector without having to worry about what
  * modifications we've made to the source.)
  */
-function CustomSession(config: Object, debuggerPort: number, wsConnection: WS): void {
+function CustomSession(
+  config: Object,
+  debuggerPort: number,
+  wsConnection: WS,
+): void {
   BaseSession.call(this, config, debuggerPort, wsConnection);
   this.frontendCommandHandler._registerNoopCommands(
     'Emulation.canEmulate',

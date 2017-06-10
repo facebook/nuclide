@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AgentOptions} from './main';
@@ -143,7 +144,8 @@ export function serializeArgs(args: Array<any>): SerializedArguments {
     } else if (typeof arg === 'string') {
       argsOnHttp.push(arg);
       argTypes.push('string');
-    } else { // object, number, boolean null
+    } else {
+      // object, number, boolean null
       argsOnHttp.push(JSON.stringify(arg));
       argTypes.push('object');
     }

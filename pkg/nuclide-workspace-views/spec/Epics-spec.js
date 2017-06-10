@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -71,7 +72,10 @@ describe('Epics', () => {
       spyOn(location, 'activateItem');
 
       runActions(
-        [Actions.didActivateInitialPackages(), Actions.open(VIEW_URI, {searchAllPanes: false})],
+        [
+          Actions.didActivateInitialPackages(),
+          Actions.open(VIEW_URI, {searchAllPanes: false}),
+        ],
         openEpic,
         ((store: any): Store),
       );
@@ -94,7 +98,13 @@ describe('Epics', () => {
       spyOn(location, 'activateItem');
 
       runActions(
-        [Actions.setItemVisibility({item, locationId: 'test-location', visible: true})],
+        [
+          Actions.setItemVisibility({
+            item,
+            locationId: 'test-location',
+            visible: true,
+          }),
+        ],
         setItemVisibilityEpic,
         ((store: any): Store),
       );
@@ -113,7 +123,13 @@ describe('Epics', () => {
       spyOn(location, 'hideItem');
 
       runActions(
-        [Actions.setItemVisibility({item, locationId: 'test-location', visible: false})],
+        [
+          Actions.setItemVisibility({
+            item,
+            locationId: 'test-location',
+            visible: false,
+          }),
+        ],
         setItemVisibilityEpic,
         ((store: any): Store),
       );
@@ -148,7 +164,9 @@ describe('Epics', () => {
           [Actions.itemCreated({}, 'test-view')],
           trackActionsEpic,
           ((null: any): Store),
-        ).first().toPromise();
+        )
+          .first()
+          .toPromise();
         invariant(trackAction.type === 'TRACK');
         expect(trackAction.type).toBe('TRACK');
         const {event} = trackAction.payload;
@@ -186,8 +204,15 @@ function createMockViewable(): Viewable {
   return ((mock: any): Viewable);
 }
 
-type Epic = (actions: ActionsObservable<Action>, store: Store) => Observable<Action>;
-function runActions(actions: Array<Action>, epic: Epic, store: Store): ReplaySubject<Action> {
+type Epic = (
+  actions: ActionsObservable<Action>,
+  store: Store,
+) => Observable<Action>;
+function runActions(
+  actions: Array<Action>,
+  epic: Epic,
+  store: Store,
+): ReplaySubject<Action> {
   const input = new Subject();
   const output = new ReplaySubject();
   epic(new ActionsObservable(input), store).subscribe(output);

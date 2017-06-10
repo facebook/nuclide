@@ -6,10 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {SymbolResult} from '../../nuclide-language-service/lib/LanguageService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {
+  SymbolResult,
+} from '../../nuclide-language-service/lib/LanguageService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {HackSymbolProvider} from '../lib/HackSymbolProvider';
 import ReactDOM from 'react-dom';
@@ -21,24 +24,28 @@ describe('HackSymbolProvider', () => {
   // These tests are set up so that calls to getHackLanguageForUri() will delegate to this
   // function, so make sure to define this function at the start of your test to mock out this
   // behavior.
-  let getHackLanguageForUri: ?((directory: NuclideUri) => Promise<mixed>);
-  let isFileInProject: ?((directory: NuclideUri) => Promise<boolean>);
+  let getHackLanguageForUri: ?(directory: NuclideUri) => Promise<mixed>;
+  let isFileInProject: ?(directory: NuclideUri) => Promise<boolean>;
   const mockDirectory: atom$Directory = ({getPath: () => 'uri1'}: any);
   const mockDirectory2: atom$Directory = ({getPath: () => 'uri2'}: any);
 
   beforeEach(() => {
     getHackLanguageForUri = null;
     isFileInProject = null;
-    spyOn(require('../lib/HackLanguage'), 'getHackLanguageForUri')
-      .andCallFake((directory: NuclideUri) => {
-        invariant(getHackLanguageForUri);
-        return getHackLanguageForUri(directory);
-      });
-    spyOn(require('../lib/HackLanguage'), 'isFileInHackProject')
-      .andCallFake((directory: NuclideUri) => {
-        invariant(isFileInProject);
-        return isFileInProject(directory);
-      });
+    spyOn(
+      require('../lib/HackLanguage'),
+      'getHackLanguageForUri',
+    ).andCallFake((directory: NuclideUri) => {
+      invariant(getHackLanguageForUri);
+      return getHackLanguageForUri(directory);
+    });
+    spyOn(
+      require('../lib/HackLanguage'),
+      'isFileInHackProject',
+    ).andCallFake((directory: NuclideUri) => {
+      invariant(isFileInProject);
+      return isFileInProject(directory);
+    });
     uncachedRequire(require, '../lib/HackSymbolProvider');
   });
 
@@ -60,27 +67,48 @@ describe('HackSymbolProvider', () => {
       waitsForPromise(async () => {
         // Set up the HackService to return some canned results.
         const cannedResults = [
-          {path: '/some/local/path/asdf.txt', line: 1, column: 42, context: 'aha'},
+          {
+            path: '/some/local/path/asdf.txt',
+            line: 1,
+            column: 42,
+            context: 'aha',
+          },
         ];
         const hackService = createDummyHackService();
-        const supportsMethod = spyOn(hackService, 'supportsSymbolSearch').andReturn(true);
-        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(cannedResults);
-        getHackLanguageForUri = jasmine.createSpy('getHackLanguageForUri').andReturn(hackService);
+        const supportsMethod = spyOn(
+          hackService,
+          'supportsSymbolSearch',
+        ).andReturn(true);
+        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(
+          cannedResults,
+        );
+        getHackLanguageForUri = jasmine
+          .createSpy('getHackLanguageForUri')
+          .andReturn(hackService);
 
         // test that SymbolProvider.isEligibleForDirectories
         // calls into HackService.supportsSymbolSearch correctly
-        const supports = await HackSymbolProvider.isEligibleForDirectories([mockDirectory]);
+        const supports = await HackSymbolProvider.isEligibleForDirectories([
+          mockDirectory,
+        ]);
         expect(supports).toEqual(true);
         expect(supportsMethod.callCount).toBe(1);
-        expect(supportsMethod.argsForCall[0]).toEqual([[mockDirectory.getPath()]]);
+        expect(supportsMethod.argsForCall[0]).toEqual([
+          [mockDirectory.getPath()],
+        ]);
 
         // test that SymbolProvider.executeQuery
         // calls into HackService.symbolSearch correctly
         const query = 'asdf';
-        const results = await HackSymbolProvider.executeQuery(query, [mockDirectory]);
+        const results = await HackSymbolProvider.executeQuery(query, [
+          mockDirectory,
+        ]);
         expect(results).toEqual(cannedResults);
         expect(searchMethod.callCount).toBe(1);
-        expect(searchMethod.argsForCall[0]).toEqual([query, [mockDirectory.getPath()]]);
+        expect(searchMethod.argsForCall[0]).toEqual([
+          query,
+          [mockDirectory.getPath()],
+        ]);
       });
     });
 
@@ -96,17 +124,26 @@ describe('HackSymbolProvider', () => {
           },
         ];
         const hackService = createDummyHackService();
-        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(cannedResults);
-        getHackLanguageForUri = jasmine.createSpy('getHackLanguageForUri').andReturn(hackService);
+        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(
+          cannedResults,
+        );
+        getHackLanguageForUri = jasmine
+          .createSpy('getHackLanguageForUri')
+          .andReturn(hackService);
 
         const query = 'asdf';
-        const results = await HackSymbolProvider.executeQuery(query, [mockDirectory]);
+        const results = await HackSymbolProvider.executeQuery(query, [
+          mockDirectory,
+        ]);
 
         // Verify the expected results were returned by delegating to the HackService,
         // and that local file paths are converted to NuclideUris.
         expect(results).toEqual(cannedResults);
         expect(searchMethod.callCount).toBe(1);
-        expect(searchMethod.argsForCall[0]).toEqual([query, [mockDirectory.getPath()]]);
+        expect(searchMethod.argsForCall[0]).toEqual([
+          query,
+          [mockDirectory.getPath()],
+        ]);
       });
     });
 
@@ -122,23 +159,28 @@ describe('HackSymbolProvider', () => {
           },
         ];
         const hackService = createDummyHackService();
-        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(cannedResults);
-        getHackLanguageForUri = jasmine.createSpy('getHackLanguageForUri').andReturn(hackService);
+        const searchMethod = spyOn(hackService, 'symbolSearch').andReturn(
+          cannedResults,
+        );
+        getHackLanguageForUri = jasmine
+          .createSpy('getHackLanguageForUri')
+          .andReturn(hackService);
         // both directories return the same service
 
         const query = 'asdf';
-        const results = await HackSymbolProvider.executeQuery(
-          query,
-          [mockDirectory, mockDirectory2],
-        );
+        const results = await HackSymbolProvider.executeQuery(query, [
+          mockDirectory,
+          mockDirectory2,
+        ]);
 
         // Verify the expected results were returned by delegating to the HackService,
         // and that local file paths are converted to NuclideUris.
         expect(results).toEqual(cannedResults);
         expect(searchMethod.callCount).toBe(1);
-        expect(searchMethod.argsForCall[0]).toEqual(
-          [query, [mockDirectory.getPath(), mockDirectory2.getPath()]],
-        );
+        expect(searchMethod.argsForCall[0]).toEqual([
+          query,
+          [mockDirectory.getPath(), mockDirectory2.getPath()],
+        ]);
       });
     });
 
@@ -163,25 +205,39 @@ describe('HackSymbolProvider', () => {
         ];
         const hackService1 = createDummyHackService();
         const hackService2 = createDummyHackService();
-        const searchMethod1 = spyOn(hackService1, 'symbolSearch').andReturn(cannedResults1);
-        const searchMethod2 = spyOn(hackService2, 'symbolSearch').andReturn(cannedResults2);
-        getHackLanguageForUri = jasmine.createSpy('getHackLanguageForUri').andCallFake(uri => {
-          return (uri === mockDirectory.getPath()) ? hackService1 : hackService2;
-        });
+        const searchMethod1 = spyOn(hackService1, 'symbolSearch').andReturn(
+          cannedResults1,
+        );
+        const searchMethod2 = spyOn(hackService2, 'symbolSearch').andReturn(
+          cannedResults2,
+        );
+        getHackLanguageForUri = jasmine
+          .createSpy('getHackLanguageForUri')
+          .andCallFake(uri => {
+            return uri === mockDirectory.getPath()
+              ? hackService1
+              : hackService2;
+          });
 
         const query = 'asdf';
-        const results = await HackSymbolProvider.executeQuery(
-          query,
-          [mockDirectory, mockDirectory2],
-        );
+        const results = await HackSymbolProvider.executeQuery(query, [
+          mockDirectory,
+          mockDirectory2,
+        ]);
 
         // Verify the expected results were returned by delegating to the HackService,
         // and that local file paths are converted to NuclideUris.
         expect(results).toEqual(cannedResults1.concat(cannedResults2));
         expect(searchMethod1.callCount).toBe(1);
-        expect(searchMethod1.argsForCall[0]).toEqual([query, [mockDirectory.getPath()]]);
+        expect(searchMethod1.argsForCall[0]).toEqual([
+          query,
+          [mockDirectory.getPath()],
+        ]);
         expect(searchMethod2.callCount).toBe(1);
-        expect(searchMethod2.argsForCall[0]).toEqual([query, [mockDirectory2.getPath()]]);
+        expect(searchMethod2.argsForCall[0]).toEqual([
+          query,
+          [mockDirectory2.getPath()],
+        ]);
       });
     });
   });
@@ -203,8 +259,11 @@ describe('HackSymbolProvider', () => {
       const renderedComponent = TestUtils.renderIntoDocument(reactElement);
       const renderedNode = ReactDOM.findDOMNode(renderedComponent);
 
-      // $FlowFixMe
-      expect(renderedNode.querySelectorAll('.omnisearch-symbol-result-filename').length).toBe(1);
+      expect(
+        // $FlowFixMe
+        renderedNode.querySelectorAll('.omnisearch-symbol-result-filename')
+          .length,
+      ).toBe(1);
       // $FlowFixMe
       expect(renderedNode.querySelectorAll('.icon-puzzle').length).toBe(1);
     });
@@ -213,10 +272,10 @@ describe('HackSymbolProvider', () => {
 
 function createDummyHackService(): any {
   return {
-    supportsSymbolSearch(
-      directories: Array<NuclideUri>,
-    ): Promise<boolean> {
-      throw new Error('replace supportsSymbolSearch with implementation for testing');
+    supportsSymbolSearch(directories: Array<NuclideUri>): Promise<boolean> {
+      throw new Error(
+        'replace supportsSymbolSearch with implementation for testing',
+      );
     },
     symbolSearch(
       queryString: string,

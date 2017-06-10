@@ -40,6 +40,7 @@ declare module 'ws' {
     close(): void,
     terminate(): void,
     ping(data: ?string, mask?: boolean, failSilently?: boolean): void,
+    url: string,
   }
 
   declare var exports: typeof ws$WebSocket;

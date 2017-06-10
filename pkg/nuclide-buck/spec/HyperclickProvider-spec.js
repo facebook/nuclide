@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import {findTargetLocation, parseTarget} from '../lib/HyperclickProvider';
 
@@ -24,28 +25,38 @@ describe('HyperclickProvider', () => {
     it('searches //Apps/TestApp/BUCK-rename', () => {
       waitsForPromise(async () => {
         let target = await parseTarget(
-            ([':target1', null, 'target1']: Array<?string>),
-            null,
-            projectPath);
+          ([':target1', null, 'target1']: Array<?string>),
+          null,
+          projectPath,
+        );
         expect(target).toBe(null);
 
         target = await parseTarget(
-            ([':target1', null, 'target1']: Array<?string>),
-            projectPath + 'test/BUCK',
-            projectPath);
-        expect(target).toEqual({path: projectPath + 'test/BUCK', name: 'target1'});
+          ([':target1', null, 'target1']: Array<?string>),
+          projectPath + 'test/BUCK',
+          projectPath,
+        );
+        expect(target).toEqual({
+          path: projectPath + 'test/BUCK',
+          name: 'target1',
+        });
 
         target = await parseTarget(
-            (['//Apps/TestApp:w3ird', '//Apps/TestApp', 'w3ird']: Array<string>),
-            null,
-            projectPath);
+          (['//Apps/TestApp:w3ird', '//Apps/TestApp', 'w3ird']: Array<string>),
+          null,
+          projectPath,
+        );
         expect(target).toEqual(null);
 
         target = await parseTarget(
-            (['//Apps/TestApp:w3ird', '//Apps/TestApp', 'w3ird']: Array<string>),
-            '//test/BUCK',
-            projectPath);
-        expect(target).toEqual({path: projectPath + 'Apps/TestApp/BUCK', name: 'w3ird'});
+          (['//Apps/TestApp:w3ird', '//Apps/TestApp', 'w3ird']: Array<string>),
+          '//test/BUCK',
+          projectPath,
+        );
+        expect(target).toEqual({
+          path: projectPath + 'Apps/TestApp/BUCK',
+          name: 'w3ird',
+        });
       });
     });
   });
@@ -53,30 +64,30 @@ describe('HyperclickProvider', () => {
   describe('findTargetLocation', () => {
     const targetsByFile = {
       'Apps/TestApp/BUCK-rename': {
-        'Target1': 1,
+        Target1: 1,
         'w3ird_target-name': 7,
-        'Target2': 13,
-        'TestsTarget': 27,
+        Target2: 13,
+        TestsTarget: 27,
         'non-existing-target': -1,
       },
       'Apps/BUCK-rename': {
         test_target123: 1,
       },
       'Libraries/TestLib1/BUCK-rename': {
-        'target_with_no_trailling_comma': 1,
-        'target_with_no_trailling_commas': -1,
-        'lib_target1': 5,
+        target_with_no_trailling_comma: 1,
+        target_with_no_trailling_commas: -1,
+        lib_target1: 5,
         'lib_target-test': 12,
-        'lib_target': -1,
-        'TestsTarget': 23,
-        'PUBLIC': -1,
+        lib_target: -1,
+        TestsTarget: 23,
+        PUBLIC: -1,
         '[]': -1,
       },
       'Libraries/TestLib1/test-ios-sdk/sdk-v.1.2.3/BUCK-rename': {
         'target-v.1': 1,
-        'target': 7,
-        'targett': -1,
-        'arget': -1,
+        target: 7,
+        targett: -1,
+        arget: -1,
       },
     };
 
@@ -84,18 +95,23 @@ describe('HyperclickProvider', () => {
       for (const targetName in targetsByFile[file]) {
         it('asks for a location of the target', () => {
           waitsForPromise(() => {
-            return findTargetLocation({path: projectPath + file, name: targetName})
-            .then(location => {
+            return findTargetLocation({
+              path: projectPath + file,
+              name: targetName,
+            }).then(location => {
               const line = targetsByFile[file][targetName];
               if (line !== -1) {
-                expect(location).toEqual(
-                  {
-                    path: projectPath + file,
-                    line,
-                    column: 0,
-                  });
+                expect(location).toEqual({
+                  path: projectPath + file,
+                  line,
+                  column: 0,
+                });
               } else {
-                expect(location).toEqual({path: projectPath + file, line: 0, column: 0});
+                expect(location).toEqual({
+                  path: projectPath + file,
+                  line: 0,
+                  column: 0,
+                });
               }
             });
           });

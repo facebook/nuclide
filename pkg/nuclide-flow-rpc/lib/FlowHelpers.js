@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FlowLocNoSource} from './flowOutputTypes';
@@ -17,12 +18,11 @@ export function getStopFlowOnExit(): boolean {
   return Boolean(getConfig('stopFlowOnExit'));
 }
 
-export function flowCoordsToAtomCoords(flowCoords: FlowLocNoSource): atom$Range {
+export function flowCoordsToAtomCoords(
+  flowCoords: FlowLocNoSource,
+): atom$Range {
   return new Range(
-    [
-      flowCoords.start.line - 1,
-      flowCoords.start.column - 1,
-    ],
+    [flowCoords.start.line - 1, flowCoords.start.column - 1],
     [
       flowCoords.end.line - 1,
       // Yes, this is inconsistent. Yes, it works as expected in practice.

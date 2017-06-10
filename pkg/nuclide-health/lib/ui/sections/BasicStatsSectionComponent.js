@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HandlesByType} from '../../types';
@@ -23,10 +24,7 @@ type Props = {
   activeHandlesByType: HandlesByType,
 };
 
-import {
-  Button,
-  ButtonSizes,
-} from '../../../../nuclide-ui/Button';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 
 export default class BasicStatsSectionComponent extends React.Component {
   props: Props;
@@ -40,19 +38,24 @@ export default class BasicStatsSectionComponent extends React.Component {
       {
         name: 'CPU',
         value: `${this.props.cpuPercentage.toFixed(0)}%`,
-      }, {
+      },
+      {
         name: 'Heap',
         value: `${this.props.heapPercentage.toFixed(1)}%`,
-      }, {
+      },
+      {
         name: 'Memory',
         value: `${Math.floor(this.props.memory / 1024 / 1024)}MB`,
-      }, {
+      },
+      {
         name: 'Handles',
         value: `${this.props.activeHandles}`,
-      }, {
+      },
+      {
         name: 'Child processes',
         value: `${this.props.activeHandlesByType.childprocess.length}`,
-      }, {
+      },
+      {
         name: 'Event loop',
         value: `${this.props.activeRequests}`,
       },

@@ -6,15 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {onDidRemoveProjectPath} from '../../commons-atom/projects';
-import {getViewOfEditor, isValidTextEditor} from '../../commons-atom/text-editor';
+import {onDidRemoveProjectPath} from 'nuclide-commons-atom/projects';
+import {
+  getViewOfEditor,
+  isValidTextEditor,
+} from 'nuclide-commons-atom/text-editor';
 import {NavigationStackController} from './NavigationStackController';
 import {trackTiming} from '../../nuclide-analytics';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {observeNavigatingEditors} from '../../commons-atom/go-to-location';
-import createPackage from '../../commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {observeNavigatingEditors} from 'nuclide-commons-atom/go-to-location';
+import createPackage from 'nuclide-commons-atom/createPackage';
 import {consumeStatusBar} from './StatusBar';
 
 const controller = new NavigationStackController();
@@ -29,11 +33,13 @@ class Activation {
       const cursorSubscription = editor.onDidChangeCursorPosition(
         (event: ChangeCursorPositionEvent) => {
           controller.updatePosition(editor, event.newBufferPosition);
-        });
-      const scrollSubscription = getViewOfEditor(editor).onDidChangeScrollTop(
-        scrollTop => {
-          controller.updateScroll(editor, scrollTop);
-        });
+        },
+      );
+      const scrollSubscription = getViewOfEditor(
+        editor,
+      ).onDidChangeScrollTop(scrollTop => {
+        controller.updateScroll(editor, scrollTop);
+      });
       this._disposables.add(cursorSubscription);
       this._disposables.add(scrollSubscription);
       const destroySubscription = editor.onDidDestroy(() => {
@@ -73,21 +79,31 @@ class Activation {
       }),
       onDidRemoveProjectPath(path => {
         controller.removePath(
-          path, atom.project.getDirectories().map(directory => directory.getPath()));
+          path,
+          atom.project.getDirectories().map(directory => directory.getPath()),
+        );
       }),
       observeNavigatingEditors().subscribe(editor => {
         controller.onOptInNavigation(editor);
       }),
-      atom.commands.add('atom-workspace',
-      'nuclide-navigation-stack:navigate-forwards', () => {
-        trackTiming(
-          'nuclide-navigation-stack:forwards', () => controller.navigateForwards());
-      }),
-      atom.commands.add('atom-workspace',
-      'nuclide-navigation-stack:navigate-backwards', () => {
-        trackTiming(
-          'nuclide-navigation-stack:backwards', () => controller.navigateBackwards());
-      }),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-navigation-stack:navigate-forwards',
+        () => {
+          trackTiming('nuclide-navigation-stack:forwards', () =>
+            controller.navigateForwards(),
+          );
+        },
+      ),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-navigation-stack:navigate-backwards',
+        () => {
+          trackTiming('nuclide-navigation-stack:backwards', () =>
+            controller.navigateBackwards(),
+          );
+        },
+      ),
     );
   }
 

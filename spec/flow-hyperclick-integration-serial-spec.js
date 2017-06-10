@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {describeRemotableTest} from './utils/remotable-tests';
@@ -17,10 +18,6 @@ describeRemotableTest('Flow Hyperclick', context => {
   it('tests flow hyperclick example', () => {
     setup(context);
 
-    waitsForHyperclickResult(
-      [3, 12],
-      'Foo.js',
-      [2, 2],
-    );
+    waitsForHyperclickResult([3, 12], 'Foo.js', [2, 2]);
   });
 });

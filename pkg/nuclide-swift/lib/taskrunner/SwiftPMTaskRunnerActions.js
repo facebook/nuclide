@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type SwiftPMTaskRunnerDispatcher from './SwiftPMTaskRunnerDispatcher';
@@ -55,12 +56,13 @@ export default class SwiftPMTaskRunnerActions {
       compileCommandsPromise = readCompileCommands(yamlPath);
     } catch (e) {
       atom.notifications.addError(
-        'The YAML produced by the Swift package manager is malformed', {
-          description:
-            `Nuclide could not parse the YAML file at \`${yamlPath}\`. ` +
+        'The YAML produced by the Swift package manager is malformed',
+        {
+          description: `Nuclide could not parse the YAML file at \`${yamlPath}\`. ` +
             'Please file a bug, and include the contents of the file in ' +
             'your report.',
-        });
+        },
+      );
       return;
     }
     compileCommandsPromise.then(compileCommands => {

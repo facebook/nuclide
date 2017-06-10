@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -39,7 +40,8 @@ describe('nuclide-open-files', () => {
       waitsForPromise(async () => {
         eventCount = 0;
         const done = new Subject();
-        const events = (await getFileCache()).observeFileEvents()
+        const events = (await getFileCache())
+          .observeFileEvents()
           .map(event => {
             eventCount++;
             const result = {
@@ -49,7 +51,10 @@ describe('nuclide-open-files', () => {
             };
             delete result.fileVersion;
             return result;
-          }).takeUntil(done).toArray().toPromise();
+          })
+          .takeUntil(done)
+          .toArray()
+          .toPromise();
 
         finishEvents = () => {
           done.next();
@@ -271,8 +276,14 @@ describe('nuclide-open-files', () => {
       let buffer3;
       let waiting = true;
       runs(() => {
-        brokenBuffer1 = new TextBuffer({filePath: 'nuclide:/f1', text: 'contents1'});
-        brokenBuffer2 = new TextBuffer({filePath: 'nuclide:\\f1', text: 'contents1'});
+        brokenBuffer1 = new TextBuffer({
+          filePath: 'nuclide:/f1',
+          text: 'contents1',
+        });
+        brokenBuffer2 = new TextBuffer({
+          filePath: 'nuclide:\\f1',
+          text: 'contents1',
+        });
         atom.project.addBuffer(brokenBuffer1);
         atom.project.addBuffer(brokenBuffer2);
 
@@ -338,12 +349,17 @@ describe('nuclide-open-files', () => {
       waitsForPromise(async () => {
         eventCount = 0;
         const done = new Subject();
-        const dirEvents = (await getFileCache()).observeDirectoryEvents().takeUntil(done)
+        const dirEvents = (await getFileCache())
+          .observeDirectoryEvents()
+          .takeUntil(done)
           // apm test adds a directory with a name like:
           // '/Applications/Atom.app/Contents/Resources/app.asar/spec'
           .map(dirs => Array.from(dirs).filter(dir => !dir.includes('asar')))
-          .do(dirs => { eventCount++; })
-          .toArray().toPromise();
+          .do(dirs => {
+            eventCount++;
+          })
+          .toArray()
+          .toPromise();
         finishDirEvents = () => {
           done.next();
           done.complete();
@@ -384,7 +400,11 @@ describe('nuclide-open-files', () => {
 
     it('get current version', () => {
       waitsForPromise(async () => {
-        const buffer = new TextBuffer({notifier, filePath: 'f1', text: 'contents1'});
+        const buffer = new TextBuffer({
+          notifier,
+          filePath: 'f1',
+          text: 'contents1',
+        });
         atom.project.addBuffer(buffer);
 
         const fileVersion = await getFileVersionOfBuffer(buffer);
@@ -487,7 +507,8 @@ describe('nuclide-open-files', () => {
         invariant(serverBuffer != null);
         expect(serverBuffer.getText()).toEqual('contents3');
 
-        const recievedClose = (await getFileCache()).observeFileEvents()
+        const recievedClose = (await getFileCache())
+          .observeFileEvents()
           .filter(event => event.kind === 'close')
           .take(1)
           .toArray()
@@ -501,8 +522,7 @@ describe('nuclide-open-files', () => {
         invariant(fileVersion2 != null);
         const serverBuffer2 = await getBufferAtVersion(fileVersion2);
         invariant(serverBuffer2 != null);
-        expect(serverBuffer2.getText())
-          .toEqual('contents4');
+        expect(serverBuffer2.getText()).toEqual('contents4');
 
         buffer2.destroy();
       });

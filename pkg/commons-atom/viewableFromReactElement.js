@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import ReactMountRootElement from '../nuclide-ui/ReactMountRootElement';
+import ReactMountRootElement from 'nuclide-commons-ui/ReactMountRootElement';
 
 /**
  * Create an object that can be used as an Atom model from a React element. Example:
@@ -32,7 +33,9 @@ import ReactMountRootElement from '../nuclide-ui/ReactMountRootElement';
  *    const item = viewableFromReactElement(<UsageStats />);
  *    atom.workspace.getPanes()[0].addItem(item); // Or anywhere else Atom uses model "items."
  */
-export function viewableFromReactElement(reactElement: React.Element<any>): Object {
+export function viewableFromReactElement(
+  reactElement: React.Element<any>,
+): Object {
   const container = new ReactMountRootElement();
   const item = ReactDOM.render(reactElement, container);
 

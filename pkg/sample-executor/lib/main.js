@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RegisterExecutorFunction} from '../../nuclide-console/lib/types';
@@ -27,7 +28,9 @@ export function deactivate(): void {
   disposables = null;
 }
 
-export function consumeRegisterExecutor(registerExecutor: RegisterExecutorFunction): void {
+export function consumeRegisterExecutor(
+  registerExecutor: RegisterExecutorFunction,
+): void {
   invariant(disposables != null);
   const messages: Subject<{result?: Object}> = new Subject();
   disposables.add(

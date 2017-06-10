@@ -6,14 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PredefinedTransformer} from '../../nuclide-rpc';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Range as ServerRange, Point as ServerPoint} from 'simple-text-buffer';
 
-export function getRemoteNuclideUriMarshalers(hostname: string): PredefinedTransformer {
+export function getRemoteNuclideUriMarshalers(
+  hostname: string,
+): PredefinedTransformer {
   return {
     typeName: nuclideUri.NUCLIDE_URI_TYPE_NAME,
     marshaller: remoteUri => nuclideUri.getPath(remoteUri),
@@ -21,18 +24,17 @@ export function getRemoteNuclideUriMarshalers(hostname: string): PredefinedTrans
   };
 }
 
-export const localNuclideUriMarshalers: PredefinedTransformer =
-  {
-    typeName: nuclideUri.NUCLIDE_URI_TYPE_NAME,
-    marshaller: uri => {
-      nuclideUri.validate(uri, false);
-      return uri;
-    },
-    unmarshaller: remotePath => {
-      nuclideUri.validate(remotePath, false);
-      return remotePath;
-    },
-  };
+export const localNuclideUriMarshalers: PredefinedTransformer = {
+  typeName: nuclideUri.NUCLIDE_URI_TYPE_NAME,
+  marshaller: uri => {
+    nuclideUri.validate(uri, false);
+    return uri;
+  },
+  unmarshaller: remotePath => {
+    nuclideUri.validate(remotePath, false);
+    return remotePath;
+  },
+};
 
 const jsonToServerPoint = json => new ServerPoint(json.row, json.column);
 const jsonToServerRange = json =>

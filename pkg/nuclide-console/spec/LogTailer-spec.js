@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {LogTailer} from '../lib/LogTailer';
@@ -109,13 +110,13 @@ describe('LogTailer', () => {
     logTailer.start({onRunning: handleRunning});
     logTailer.stop();
     expect(handleRunning).toHaveBeenCalled();
-    const err = ((handleRunning.calls[0].args[0]): any);
+    const err = (handleRunning.calls[0].args[0]: any);
     expect(err.name).toBe('ProcessCancelledError');
   });
 
   it(
-    'invokes the running callback with a cancellation error when the source completes before ever'
-    + ' becoming ready',
+    'invokes the running callback with a cancellation error when the source completes before ever' +
+      ' becoming ready',
     () => {
       const messages = new Subject();
       const logTailer = new LogTailer({
@@ -132,7 +133,7 @@ describe('LogTailer', () => {
       logTailer.start({onRunning: handleRunning});
       messages.complete();
       expect(handleRunning).toHaveBeenCalled();
-      const err = ((handleRunning.calls[0].args[0]): any);
+      const err = (handleRunning.calls[0].args[0]: any);
       expect(err.name).toBe('ProcessCancelledError');
     },
   );
@@ -201,7 +202,9 @@ describe('LogTailer', () => {
 
   it('uses the default error handling when the error is re-thrown by the handler', () => {
     spyOn(atom.notifications, 'addError');
-    const handleError = jasmine.createSpy('handleError').andCallFake(err => { throw err; });
+    const handleError = jasmine.createSpy('handleError').andCallFake(err => {
+      throw err;
+    });
     const messages = new Subject();
     const logTailer = new LogTailer({
       name: 'test',
@@ -221,8 +224,9 @@ describe('LogTailer', () => {
 
   it("doesn't use the default notification when the error handler throws a new error", () => {
     spyOn(atom.notifications, 'addError');
-    const handleError = jasmine.createSpy('handleError')
-      .andCallFake(() => { throw new Error('Unexpected'); });
+    const handleError = jasmine.createSpy('handleError').andCallFake(() => {
+      throw new Error('Unexpected');
+    });
     const messages = new Subject();
     const logTailer = new LogTailer({
       name: 'test',

@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  FileResult,
-  Provider,
-} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import {
   RemoteDirectory,
@@ -36,19 +34,27 @@ export default ({
     return directory.exists();
   },
 
-  async executeQuery(query: string, directory: atom$Directory): Promise<Array<FileResult>> {
+  async executeQuery(
+    query: string,
+    directory: atom$Directory,
+  ): Promise<Array<FileResult>> {
     if (query.length === 0) {
       return [];
     }
 
     const directoryPath = directory.getPath();
     const service = getFuzzyFileSearchServiceByNuclideUri(directoryPath);
-    const results = await service.queryFuzzyFile(directoryPath, query, getIgnoredNames());
+    const results = await service.queryFuzzyFile(
+      directoryPath,
+      query,
+      getIgnoredNames(),
+    );
 
     // Take the `nuclide://<host>` prefix into account for matchIndexes of remote files.
     if (RemoteDirectory.isRemoteDirectory(directory)) {
       const remoteDir: RemoteDirectory = (directory: any);
-      const indexOffset = directoryPath.length - remoteDir.getLocalPath().length;
+      const indexOffset =
+        directoryPath.length - remoteDir.getLocalPath().length;
       for (let i = 0; i < results.length; i++) {
         for (let j = 0; j < results[i].matchIndexes.length; j++) {
           results[i].matchIndexes[j] += indexOffset;

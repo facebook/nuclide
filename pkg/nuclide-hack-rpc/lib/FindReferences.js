@@ -6,10 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {FindReferencesReturn} from '../../nuclide-find-references/lib/rpc-types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  FindReferencesReturn,
+} from '../../nuclide-find-references/lib/rpc-types';
 
 import {hackRangeToAtomRange} from './HackHelpers';
 

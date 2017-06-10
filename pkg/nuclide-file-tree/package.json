@@ -79,6 +79,17 @@
         "type": "boolean",
         "default": true,
         "description": "Display a list of uncommitted changes in the top section of the tree"
+      },
+      "showUncommittedChangesKind": {
+        "title": "What kind of changes to show",
+        "type": "string",
+        "default": "Uncommitted changes",
+        "description": "Show changes from which part of your current stack",
+        "enum": [
+          "Uncommitted changes",
+          "Head changes",
+          "Stack changes"
+        ]
       }
     },
     "packageType": "Atom",

@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export default function once<
   T,
   TArgs: Array<T>,
   TReturn,
-  TFunc:(...TArgs) => TReturn,
+  TFunc: (...TArgs) => TReturn, // eslint-disable-line space-before-function-paren
 >(fn: TFunc): (...TArgs) => TReturn {
   let fnMaybe: ?TFunc = fn;
   let ret: ?TReturn;

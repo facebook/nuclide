@@ -39,11 +39,6 @@
       "versions": {
         "0.0.0": "consumeTaskRunnerServiceApi"
       }
-    },
-    "nuclide-output": {
-      "versions": {
-        "0.0.0": "consumeOutputService"
-      }
     }
   },
   "providedServices": {
@@ -52,7 +47,7 @@
         "0.0.0": "getHyperclickProvider"
       }
     },
-    "nuclide-diagnostics-provider": {
+    "atom-ide-diagnostics": {
       "versions": {
         "0.2.0": "provideObservableDiagnosticUpdates"
       }

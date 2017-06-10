@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {SwiftPMTaskRunnerStoreState} from './SwiftPMTaskRunnerStoreState';
 import type SwiftPMTaskRunnerDispatcher from './SwiftPMTaskRunnerDispatcher';
 
-import {objectEntries, objectFromMap} from '../../../commons-node/collection';
+import {objectEntries, objectFromMap} from 'nuclide-commons/collection';
 import {Emitter} from 'atom';
 import {ActionTypes} from './SwiftPMTaskRunnerDispatcher';
 
@@ -27,18 +28,24 @@ export default class SwiftPMTaskRunnerStore {
   _compileCommands: Map<string, string>;
   _projectRoot: ?string;
 
-  constructor(dispatcher: SwiftPMTaskRunnerDispatcher, initialState: ?SwiftPMTaskRunnerStoreState) {
+  constructor(
+    dispatcher: SwiftPMTaskRunnerDispatcher,
+    initialState: ?SwiftPMTaskRunnerStoreState,
+  ) {
     this._dispatcher = dispatcher;
     this._emitter = new Emitter();
 
     if (initialState) {
-      this._configuration = initialState.configuration ? initialState.configuration : 'debug';
+      this._configuration = initialState.configuration
+        ? initialState.configuration
+        : 'debug';
       this._buildPath = initialState.buildPath ? initialState.buildPath : '';
       this._Xcc = initialState.Xcc ? initialState.Xcc : '';
       this._Xlinker = initialState.Xlinker ? initialState.Xlinker : '';
       this._Xswiftc = initialState.Xswiftc ? initialState.Xswiftc : '';
-      this._compileCommands = initialState.compileCommands ?
-        new Map(objectEntries(initialState.compileCommands)) : new Map();
+      this._compileCommands = initialState.compileCommands
+        ? new Map(objectEntries(initialState.compileCommands))
+        : new Map();
     } else {
       this._configuration = 'debug';
       this._buildPath = '';

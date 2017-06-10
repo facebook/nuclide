@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 /**
  * Helps to easily poll in integration tests for a DOM (or any other) change.

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -19,9 +20,9 @@ import {
   waitsForFilePosition,
 } from '../pkg/commons-atom/testHelpers';
 import {copyFixture} from '../pkg/nuclide-test-helpers';
-import {sleep} from '../pkg/commons-node/promise';
-import {goToLocation} from '../pkg/commons-atom/go-to-location';
-import nuclideUri from '../pkg/commons-node/nuclideUri';
+import {sleep} from 'nuclide-commons/promise';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 const NAV_SLEEP_MS = 1000;
 

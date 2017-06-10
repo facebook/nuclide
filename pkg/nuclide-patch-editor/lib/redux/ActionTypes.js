@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export const DEREGISTER_PATCH_EDITOR = 'DEREGISTER_PATCH_EDITOR';

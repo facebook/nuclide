@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 const GLOBAL_MAP_NAME = '__NUCLIDE_SINGLETONS__';
 

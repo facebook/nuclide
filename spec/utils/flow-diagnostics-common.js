@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestContext} from './remotable-tests';
@@ -34,9 +35,8 @@ export function runTest(context: TestContext) {
     waitsForStatusBarItem();
     runs(() => {
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeTruthy();
     });
-
+    waitsFor(() => isDiagnosticsPanelShowing());
     waitsForPromise(async () => {
       textEditor = await textEditorPromise;
       // Change `bar` to `baz`
@@ -44,7 +44,7 @@ export function runTest(context: TestContext) {
 
       expect(doGutterDiagnosticsExist()).toBeFalsy();
 
-      dispatchKeyboardEvent('s', document.activeElement, {cmd: true});
+      save();
     });
 
     waitsForGutterDiagnostics();
@@ -53,20 +53,32 @@ export function runTest(context: TestContext) {
       // This may need to be updated if Flow changes error text
       const expectedGutterText = 'property `baz`\nProperty not found in\nFoo';
       expectGutterDiagnosticToContain(expectedGutterText);
+    });
 
-      // The text is rendered slightly differently in the gutter and the panel
-      const expectedPanelText = 'property `baz` Property not found in Foo';
+    // The text is rendered slightly differently in the gutter and the panel
+    const expectedPanelText = 'property `baz` Property not found in Foo';
+    let diagnosticDescriptionElements;
 
+    waitsFor(() => {
       const [diagnosticRowElement] = getPanelDiagnosticElements();
-      const diagnosticDescriptionElements = diagnosticRowElement.querySelectorAll(
+      diagnosticDescriptionElements = diagnosticRowElement.querySelectorAll(
         '.nuclide-ui-table-row:last-child .nuclide-ui-table-body-cell:last-child',
       );
-      expect(diagnosticDescriptionElements.length).toBe(1);
-      const diagnosticElement = diagnosticDescriptionElements[0];
-      expect(diagnosticElement.innerText).toContain(expectedPanelText);
+      return (
+        diagnosticDescriptionElements.length === 1 &&
+        diagnosticDescriptionElements[0].innerText &&
+        diagnosticDescriptionElements[0].innerText.includes(expectedPanelText)
+      );
+    }, 'Diagnostic renders correct text');
 
+    runs(() => {
       textEditor.setCursorBufferPosition([0, 0]);
-      diagnosticElement.click();
+      if (
+        diagnosticDescriptionElements &&
+        diagnosticDescriptionElements.length > 0
+      ) {
+        diagnosticDescriptionElements[0].click();
+      }
     });
 
     waitsFor(() => {
@@ -77,14 +89,16 @@ export function runTest(context: TestContext) {
       // We've had an issue where the diagnostics panel stops getting updated after it's been
       // toggled off and on again. Guard against that.
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeFalsy();
-
+    });
+    waitsFor(() => !isDiagnosticsPanelShowing());
+    runs(() => {
       clickStatusBarItem();
-      expect(isDiagnosticsPanelShowing()).toBeTruthy();
-
+    });
+    waitsFor(() => isDiagnosticsPanelShowing());
+    runs(() => {
       // Change `baz` back to `bar`
       textEditor.setTextInBufferRange(new Range([3, 12], [3, 13]), 'r');
-      dispatchKeyboardEvent('s', document.activeElement, {cmd: true});
+      save();
     });
 
     waitsFor(() => {
@@ -92,4 +106,15 @@ export function runTest(context: TestContext) {
       return panelElement.innerHTML.indexOf('No diagnostic messages') !== -1;
     });
   });
+}
+
+function save(): void {
+  // In Atom 1.17, using cmd + S while a dock item is focused will atempt to save that dock item.
+  // (This behavior was changed in 1.18.) To make sure we're compatible with that version, forcibly
+  // activate the workspace center. This `activate()` call can be removed after we upgrade to 1.18.
+  const center = atom.workspace.getCenter ? atom.workspace.getCenter() : null;
+  if (center != null) {
+    center.activate();
+  }
+  dispatchKeyboardEvent('s', document.activeElement, {cmd: true});
 }

@@ -6,16 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {LazyTreeNode} from '../LazyTreeNode';
 
 export class LazyTestTreeNode extends LazyTreeNode {
   constructor(
-      item: any,
-      parent: ?LazyTreeNode,
-      isContainer: boolean,
-      fetchChildren: ?(node: LazyTreeNode) => Promise<any>) {
+    item: any,
+    parent: ?LazyTreeNode,
+    isContainer: boolean,
+    fetchChildren: ?(node: LazyTreeNode) => Promise<any>,
+  ) {
     // Test tree nodes that provide no `fetchChildren` get a default fetcher that returns nothing.
     const localFetchChildren = fetchChildren || (() => Promise.resolve());
     super(item, parent, isContainer, localFetchChildren);

@@ -6,15 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
 
 import {Emitter} from 'atom';
 
-import type {
-  NuxTourModel,
-} from './NuxModel';
+import type {NuxTourModel} from './NuxModel';
 
 const NEW_NUX_EVENT = 'newNuxModel';
 
@@ -72,10 +71,7 @@ export class NuxStore {
     if (nuxState && !nux.developmentMode) {
       return;
     }
-    this._nuxMap.set(
-      nux.id,
-      false,
-    );
+    this._nuxMap.set(nux.id, false);
     this._emitter.emit(NEW_NUX_EVENT, nux);
   }
 
@@ -84,10 +80,7 @@ export class NuxStore {
   }
 
   _saveNuxState(): void {
-    localStorage.setItem(
-      NUX_SAVED_STORE,
-      JSON.stringify([...this._nuxMap]),
-    );
+    localStorage.setItem(NUX_SAVED_STORE, JSON.stringify([...this._nuxMap]));
   }
 
   /**
@@ -101,10 +94,7 @@ export class NuxStore {
     if (!this._nuxMap.has(nuxModel.id)) {
       return;
     }
-    this._nuxMap.set(
-      nuxModel.id,
-      /* completed */ true,
-    );
+    this._nuxMap.set(nuxModel.id, /* completed */ true);
     this._saveNuxState();
   }
 }

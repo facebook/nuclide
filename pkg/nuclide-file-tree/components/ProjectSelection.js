@@ -6,12 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Button} from '../../nuclide-ui/Button';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+
 import {FileTreeStore} from '../lib/FileTreeStore';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import TruncatedButton from 'nuclide-commons-ui/TruncatedButton';
 
 type Props = {};
 
@@ -37,9 +39,7 @@ export class ProjectSelection extends React.Component {
     this._processExternalUpdate();
 
     this._disposables.add(
-      this._store.subscribe(
-        this._processExternalUpdate.bind(this),
-      ),
+      this._store.subscribe(this._processExternalUpdate.bind(this)),
     );
   }
 
@@ -64,21 +64,18 @@ export class ProjectSelection extends React.Component {
   render(): React.Element<any> {
     return (
       <div className="padded">
-        <Button
+        <TruncatedButton
           onClick={() => this.runCommand('application:add-project-folder')}
           icon="device-desktop"
-          className="btn-block">
-          Add Project Folder
-        </Button>
-        <Button
+          label="Add Project Folder"
+        />
+        <TruncatedButton
           onClick={() => this.runCommand('nuclide-remote-projects:connect')}
           icon="cloud-upload"
-          className="btn-block">
-          Add Remote Project Folder
-        </Button>
+          label="Add Remote Project Folder"
+        />
         {this.state.extraContent}
       </div>
-
     );
   }
 

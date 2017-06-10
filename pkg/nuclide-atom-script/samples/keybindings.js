@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* eslint-disable no-console */
 
 import type {ExitCode} from '../lib/types';
 
-export default async function runCommand(args: Array<string>): Promise<ExitCode> {
+export default (async function runCommand(
+  args: Array<string>,
+): Promise<ExitCode> {
   const commands = [];
   for (const keybinding of atom.keymaps.getKeyBindings()) {
     commands.push(keybinding.command);
@@ -21,4 +24,4 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
   commands.sort();
   commands.forEach(command => console.log(command));
   return 0;
-}
+});

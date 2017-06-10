@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import RecentFilesService from '../lib/RecentFilesService';
@@ -104,12 +105,16 @@ describe('RecentFilesService', () => {
 
   describe('initialization and de-serialization', () => {
     it('correctly restores itself from serialized state', () => {
-      const serializedState = {filelist: [
-        {path: FILE_PATH_1, timestamp: 100},
-        {path: FILE_PATH_2, timestamp: 200},
-        {path: FILE_PATH_3, timestamp: 300},
-      ]};
-      const restoredRecentFilesService = new RecentFilesService(serializedState);
+      const serializedState = {
+        filelist: [
+          {path: FILE_PATH_1, timestamp: 100},
+          {path: FILE_PATH_2, timestamp: 200},
+          {path: FILE_PATH_3, timestamp: 300},
+        ],
+      };
+      const restoredRecentFilesService = new RecentFilesService(
+        serializedState,
+      );
       const mostRecentFiles = restoredRecentFilesService.getRecentFiles();
       expect(mostRecentFiles).toEqual(serializedState.filelist);
     });

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -39,8 +40,6 @@
 // The export is typed with `typeof fetch` so flow treats the polyfill as the
 // real `fetch`.
 
-export default (
-  (typeof global.fetch === 'function'
-    ? global.fetch
-    : require('node-fetch')): typeof fetch
-  );
+export default (typeof global.fetch === 'function'
+  ? global.fetch
+  : require('node-fetch'): typeof fetch);

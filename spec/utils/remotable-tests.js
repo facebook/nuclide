@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../pkg/commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {RemoteConnection} from '../../pkg/nuclide-remote-connection';
 
 import {
@@ -20,8 +21,8 @@ import {
   stopNuclideServer,
 } from './integration-test-helpers';
 import {setLocalProject} from '../../pkg/commons-atom/testHelpers';
-import nuclideUri from '../../pkg/commons-node/nuclideUri';
-import fsPromise from '../../pkg/commons-node/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 import invariant from 'assert';
 
 export type TestContext = {

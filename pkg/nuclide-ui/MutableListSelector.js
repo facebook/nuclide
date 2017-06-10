@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {Button} from './Button';
-import {ButtonGroup} from './ButtonGroup';
+import {Button} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import React from 'react';
 
 type NuclideListSelectorItem = {
@@ -114,7 +115,9 @@ export class MutableListSelector extends React.Component {
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           <ButtonGroup>
             <Button
-              disabled={selectedItem == null || selectedItem.deletable === false}
+              disabled={
+                selectedItem == null || selectedItem.deletable === false
+              }
               onClick={this._onDeleteButtonClicked}
               title={deleteButtonTitle}>
               -

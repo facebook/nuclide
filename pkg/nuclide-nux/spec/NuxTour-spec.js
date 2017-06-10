@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
@@ -13,10 +14,7 @@
 import {CompositeDisposable} from 'atom';
 
 import {NuxManager} from '../lib/NuxManager';
-import {
-  NuxStore,
-  NUX_SAVED_STORE,
-} from '../lib/NuxStore';
+import {NuxStore, NUX_SAVED_STORE} from '../lib/NuxStore';
 
 import type {NuxTourModel} from '../lib/NuxModel';
 
@@ -59,13 +57,10 @@ describe('NuxTour', () => {
   afterEach(() => {
     disposables.dispose();
     // Restore viewed state of NUXes
-    localStorage.setItem(
-      NUX_SAVED_STORE,
-      String(nuclideNuxState),
-    );
+    localStorage.setItem(NUX_SAVED_STORE, String(nuclideNuxState));
   });
 
-  it('stores a NuxTour\'s state in the NuxStore', () => {
+  it("stores a NuxTour's state in the NuxStore", () => {
     nuxStore.addNewNux(generateTestNuxTour(-1, 'a'));
     nuxStore.addNewNux(generateTestNuxTour(-2, 'b'));
 
@@ -90,14 +85,13 @@ describe('NuxTour', () => {
     const nuxManager = new NuxManager(nuxStore, () => {});
     disposables.add(nuxManager);
 
-    const nuxTour =
-      generateTestNuxTour(
-        NUX_TOUR_SPEC_EXAMPLE_NUX_ID,
-        NUX_TOUR_SPEC_EXAMPLE_NUX_NAME,
-      );
+    const nuxTour = generateTestNuxTour(
+      NUX_TOUR_SPEC_EXAMPLE_NUX_ID,
+      NUX_TOUR_SPEC_EXAMPLE_NUX_NAME,
+    );
     nuxTour.trigger = {
       triggerType: 'editor',
-      triggerCallback: (() => false),
+      triggerCallback: () => false,
     };
     nuxStore.addNewNux(nuxTour);
 

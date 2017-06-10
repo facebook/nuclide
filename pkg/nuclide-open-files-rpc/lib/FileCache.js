@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   FileOpenEvent,
   FileCloseEvent,
@@ -22,8 +23,8 @@ import TextBuffer from 'simple-text-buffer';
 import invariant from 'assert';
 import {BehaviorSubject, Subject, Observable} from 'rxjs';
 import {FileVersionNotifier} from './FileVersionNotifier';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import nuclideUri from '../../commons-node/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import {FileEventKind} from './constants';
 
@@ -31,6 +32,9 @@ export class FileCache {
   _buffers: Map<NuclideUri, simpleTextBuffer$TextBuffer>;
   _requests: FileVersionNotifier;
   _fileEvents: Subject<LocalFileEvent>;
+  // Care! update() is the only way you're allowed to update _buffers or _requests
+  // or to fire a _fileEvents.next() event. That's to ensure that the three things
+  // stay in sync.
   _directoryEvents: BehaviorSubject<Set<NuclideUri>>;
   _resources: UniversalDisposable;
 
@@ -42,7 +46,18 @@ export class FileCache {
 
     this._resources = new UniversalDisposable();
     this._resources.add(this._requests);
-    this._resources.add(this._fileEvents.subscribe(event => { this._requests.onEvent(event); }));
+  }
+
+  update(updateBufferAndMakeEventFunc: () => LocalFileEvent) {
+    const event = updateBufferAndMakeEventFunc();
+    this._requests.onEvent(event);
+
+    // invariant: because the above two lines have updated both _buffers and _requests,
+    // then getBufferAtVersion will necessarily return immediately and succesfully.
+    // And getBufferForFileEdit will also succeed.
+    invariant(event.kind !== 'edit' || this.getBufferForFileEdit(event));
+
+    this._fileEvents.next(event);
   }
 
   // If any out of sync state is detected then an Error is thrown.
@@ -58,18 +73,18 @@ export class FileCache {
         break;
       case FileEventKind.CLOSE:
         if (buffer != null) {
-          this._buffers.delete(filePath);
-          this._emitClose(filePath, buffer);
-          buffer.destroy();
+          this._close(filePath, buffer);
         }
         break;
       case FileEventKind.EDIT:
         invariant(buffer != null);
-        invariant(buffer.changeCount === (changeCount - 1));
+        invariant(buffer.changeCount === changeCount - 1);
         invariant(buffer.getTextInRange(event.oldRange) === event.oldText);
-        buffer.setTextInRange(event.oldRange, event.newText);
-        invariant(buffer.changeCount === changeCount);
-        this._fileEvents.next(event);
+        this.update(() => {
+          buffer.setTextInRange(event.oldRange, event.newText);
+          invariant(buffer.changeCount === changeCount);
+          return event;
+        });
         break;
       case FileEventKind.SYNC:
         if (buffer == null) {
@@ -101,16 +116,18 @@ export class FileCache {
 
     const oldText = buffer.getText();
     const oldRange = buffer.getRange();
-    buffer.setText(contents);
-    const newRange = buffer.getRange();
-    buffer.changeCount = changeCount;
-    this._fileEvents.next(createEditEvent(
-      this.createFileVersion(filePath, changeCount),
-      oldRange,
-      oldText,
-      newRange,
-      buffer.getText(),
-    ));
+    this.update(() => {
+      buffer.setText(contents);
+      const newRange = buffer.getRange();
+      buffer.changeCount = changeCount;
+      return createEditEvent(
+        this.createFileVersion(filePath, changeCount),
+        oldRange,
+        oldText,
+        newRange,
+        buffer.getText(),
+      );
+    });
   }
 
   _open(filePath: NuclideUri, contents: string, changeCount: number): void {
@@ -118,31 +135,74 @@ export class FileCache {
     // start the TextBuffer attempting to sync with the file system.
     const newBuffer = new TextBuffer(contents);
     newBuffer.changeCount = changeCount;
-    this._buffers.set(filePath, newBuffer);
-    this._fileEvents.next(createOpenEvent(this.createFileVersion(filePath, changeCount), contents));
+    this.update(() => {
+      this._buffers.set(filePath, newBuffer);
+      return createOpenEvent(
+        this.createFileVersion(filePath, changeCount),
+        contents,
+      );
+    });
+  }
+
+  _close(filePath: NuclideUri, buffer: simpleTextBuffer$TextBuffer): void {
+    this.update(() => {
+      this._buffers.delete(filePath);
+      return createCloseEvent(
+        this.createFileVersion(filePath, buffer.changeCount),
+      );
+    });
+    buffer.destroy();
   }
 
   dispose(): void {
+    // The _close routine will delete elements from the _buffers map.
+    // Per ES6 this is safe to do even while iterating.
     for (const [filePath, buffer] of this._buffers.entries()) {
-      this._emitClose(filePath, buffer);
-      buffer.destroy();
+      this._close(filePath, buffer);
     }
-    this._buffers.clear();
+    invariant(this._buffers.size === 0);
     this._resources.dispose();
     this._fileEvents.complete();
     this._directoryEvents.complete();
   }
 
+  // getBuffer: returns whatever is the current version of the buffer.
   getBuffer(filePath: NuclideUri): ?simpleTextBuffer$TextBuffer {
+    // TODO: change this to return a string, to ensure that no caller will ever mutate
+    // the buffer contents (and hence its changeCount). The only modifications allowed
+    // are those that come from the editor inside this.onFileEvent.
     return this._buffers.get(filePath);
   }
 
-  async getBufferAtVersion(fileVersion: FileVersion): Promise<?simpleTextBuffer$TextBuffer> {
-    if (!(await this._requests.waitForBufferAtVersion(fileVersion))) {
+  // getBufferAtVersion(version): if the stream of onFileEvent gets up to this particular
+  // version, either now or in the future, then will return the buffer for that version.
+  // But if for whatever reason the stream of onFileEvent won't hit that precise version
+  // then returns null. See comments in _requests.waitForBufferAtVersion for
+  // the subtle scenarios where it might return null.
+  async getBufferAtVersion(
+    fileVersion: FileVersion,
+  ): Promise<?simpleTextBuffer$TextBuffer> {
+    // TODO: change this to return a string, like getBuffer() above.
+    if (!await this._requests.waitForBufferAtVersion(fileVersion)) {
       return null;
     }
     const buffer = this.getBuffer(fileVersion.filePath);
-    return buffer != null && buffer.changeCount === fileVersion.version ? buffer : null;
+    return buffer != null && buffer.changeCount === fileVersion.version
+      ? buffer
+      : null;
+  }
+
+  // getBufferForFileEdit - this function may be called immediately when an edit event
+  // happens, before any awaits. At that time the buffer is guaranteed to be
+  // available. If called at any other time, the buffer may no longer be available,
+  // in which case it may throw.
+  getBufferForFileEdit(fileEvent: FileEditEvent): simpleTextBuffer$TextBuffer {
+    // TODO: change this to return a string, like getBuffer() above.
+    const fileVersion = fileEvent.fileVersion;
+    invariant(this._requests.isBufferAtVersion(fileVersion));
+    const buffer = this.getBuffer(fileVersion.filePath);
+    invariant(buffer != null && buffer.changeCount === fileVersion.version);
+    return buffer;
   }
 
   getOpenDirectories(): Set<NuclideUri> {
@@ -172,23 +232,17 @@ export class FileCache {
         invariant(buffer != null);
         return createOpenEvent(
           this.createFileVersion(filePath, buffer.changeCount),
-          buffer.getText());
-      })).concat(this._fileEvents);
+          buffer.getText(),
+        );
+      }),
+    ).concat(this._fileEvents);
   }
 
   observeDirectoryEvents(): Observable<Set<NuclideUri>> {
     return this._directoryEvents;
   }
 
-  _emitClose(filePath: NuclideUri, buffer: simpleTextBuffer$TextBuffer): void {
-    this._fileEvents.next(createCloseEvent(
-      this.createFileVersion(filePath, buffer.changeCount)));
-  }
-
-  createFileVersion(
-    filePath: NuclideUri,
-    version: number,
-  ): FileVersion {
+  createFileVersion(filePath: NuclideUri, version: number): FileVersion {
     return {
       notifier: this,
       filePath,
@@ -208,9 +262,7 @@ function createOpenEvent(
   };
 }
 
-function createCloseEvent(
-  fileVersion: FileVersion,
-): FileCloseEvent {
+function createCloseEvent(fileVersion: FileVersion): FileCloseEvent {
   return {
     kind: FileEventKind.CLOSE,
     fileVersion,

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ConnectableObservable} from 'rxjs';
@@ -18,11 +19,11 @@ import type {
 
 import child_process from 'child_process';
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {DebuggerRpcWebSocketService} from '../../nuclide-debugger-common';
-import {observeStream} from '../../commons-node/stream';
-import {splitStream} from '../../commons-node/observable';
-import {checkOutput} from '../../commons-node/process';
+import {observeStream} from 'nuclide-commons/stream';
+import {splitStream} from 'nuclide-commons/observable';
+import {runCommand} from 'nuclide-commons/process';
 import {Observable} from 'rxjs';
 
 type AttachInfoArgsType = {
@@ -44,7 +45,10 @@ type BootstrapInfoArgsType = {
   basepath: string,
 };
 
-type LaunchAttachArgsType = AttachInfoArgsType | LaunchInfoArgsType | BootstrapInfoArgsType;
+type LaunchAttachArgsType =
+  | AttachInfoArgsType
+  | LaunchInfoArgsType
+  | BootstrapInfoArgsType;
 
 export async function getAttachTargetInfoList(
   targetPid: ?number,
@@ -54,8 +58,12 @@ export async function getAttachTargetInfoList(
   //     done by the OS, not the ps utility
   // -o pid,comm: custom format the output to be two columns(pid and process name)
   const pidToName: Map<number, string> = new Map();
-  const processes = await checkOutput('ps', ['-e', '-o', 'pid,comm'], {});
-  processes.stdout.toString().split('\n').slice(1).forEach(line => {
+  const processes = await runCommand(
+    'ps',
+    ['-e', '-o', 'pid,comm'],
+    {},
+  ).toPromise();
+  processes.toString().split('\n').slice(1).forEach(line => {
     const words = line.trim().split(' ');
     const pid = Number(words[0]);
     const command = words.slice(1).join(' ');
@@ -68,8 +76,12 @@ export async function getAttachTargetInfoList(
   // -ww: provides unlimited width for output and prevents the truncating of command names by ps.
   // -o pid,args: custom format the output to be two columns(pid and command name)
   const pidToCommand: Map<number, string> = new Map();
-  const commands = await checkOutput('ps', ['-eww', '-o', 'pid,args'], {});
-  commands.stdout.toString().split('\n').slice(1).forEach(line => {
+  const commands = await runCommand(
+    'ps',
+    ['-eww', '-o', 'pid,args'],
+    {},
+  ).toPromise();
+  commands.toString().split('\n').slice(1).forEach(line => {
     const words = line.trim().split(' ');
     const pid = Number(words[0]);
     const command = words.slice(1).join(' ');
@@ -77,27 +89,28 @@ export async function getAttachTargetInfoList(
   });
   // Filter out processes that have died in between ps calls and zombiue processes.
   // Place pid, process, and command info into AttachTargetInfo objects and return in an array.
-  return Array.from(pidToName.entries()).filter((arr => {
-    const [pid, name] = arr;
-    if (targetPid != null) {
-      return pid === targetPid;
-    }
-    return (
-      pidToCommand.has(pid) &&
-      !(name.startsWith('(') && name.endsWith(')')) &&
-      (name.length < 9 || name.slice(-9) !== '<defunct>')
-    );
-  }))
-  .map(arr => {
-    const [pid, name] = arr;
-    const commandName = pidToCommand.get(pid);
-    invariant(commandName != null);
-    return {
-      pid,
-      name,
-      commandName,
-    };
-  });
+  return Array.from(pidToName.entries())
+    .filter(arr => {
+      const [pid, name] = arr;
+      if (targetPid != null) {
+        return pid === targetPid;
+      }
+      return (
+        pidToCommand.has(pid) &&
+        !(name.startsWith('(') && name.endsWith(')')) &&
+        (name.length < 9 || name.slice(-9) !== '<defunct>')
+      );
+    })
+    .map(arr => {
+      const [pid, name] = arr;
+      const commandName = pidToCommand.get(pid);
+      invariant(commandName != null);
+      return {
+        pid,
+        name,
+        commandName,
+      };
+    });
 }
 
 export class NativeDebuggerService extends DebuggerRpcWebSocketService {
@@ -106,41 +119,53 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
   constructor(config: DebuggerConfig) {
     super('native');
     this._config = config;
-    this.getLogger().setLogLevel(config.logLevel);
+    this.getLogger().setLevel(config.logLevel);
   }
 
   attach(attachInfo: AttachTargetInfo): ConnectableObservable<void> {
-    this.getLogger().log(`attach process: ${JSON.stringify(attachInfo)}`);
+    this.getLogger().debug(`attach process: ${JSON.stringify(attachInfo)}`);
     const inferiorArguments = {
       pid: String(attachInfo.pid),
-      basepath: attachInfo.basepath ? attachInfo.basepath : this._config.buckConfigRootFile,
+      basepath: attachInfo.basepath
+        ? attachInfo.basepath
+        : this._config.buckConfigRootFile,
       lldb_python_path: this._config.lldbPythonPath,
     };
-    return Observable.fromPromise(this._startDebugging(inferiorArguments)).publish();
+    return Observable.fromPromise(
+      this._startDebugging(inferiorArguments),
+    ).publish();
   }
 
   launch(launchInfo: LaunchTargetInfo): ConnectableObservable<void> {
-    this.getLogger().log(`launch process: ${JSON.stringify(launchInfo)}`);
+    this.getLogger().debug(`launch process: ${JSON.stringify(launchInfo)}`);
     const inferiorArguments = {
       executable_path: launchInfo.executablePath,
       launch_arguments: launchInfo.arguments,
       launch_environment_variables: launchInfo.environmentVariables,
       working_directory: launchInfo.workingDirectory,
       stdin_filepath: launchInfo.stdinFilePath ? launchInfo.stdinFilePath : '',
-      basepath: launchInfo.basepath ? launchInfo.basepath : this._config.buckConfigRootFile,
+      basepath: launchInfo.basepath
+        ? launchInfo.basepath
+        : this._config.buckConfigRootFile,
       lldb_python_path: this._config.lldbPythonPath,
     };
-    return Observable.fromPromise(this._startDebugging(inferiorArguments)).publish();
+    return Observable.fromPromise(
+      this._startDebugging(inferiorArguments),
+    ).publish();
   }
 
   bootstrap(bootstrapInfo: BootstrapDebuggerInfo): ConnectableObservable<void> {
-    this.getLogger().log(`bootstrap lldb: ${JSON.stringify(bootstrapInfo)}`);
+    this.getLogger().debug(`bootstrap lldb: ${JSON.stringify(bootstrapInfo)}`);
     const inferiorArguments = {
       lldb_bootstrap_files: bootstrapInfo.lldbBootstrapFiles,
-      basepath: bootstrapInfo.basepath ? bootstrapInfo.basepath : this._config.buckConfigRootFile,
+      basepath: bootstrapInfo.basepath
+        ? bootstrapInfo.basepath
+        : this._config.buckConfigRootFile,
       lldb_python_path: this._config.lldbPythonPath,
     };
-    return Observable.fromPromise(this._startDebugging(inferiorArguments)).publish();
+    return Observable.fromPromise(
+      this._startDebugging(inferiorArguments),
+    ).publish();
   }
 
   async _startDebugging(
@@ -156,48 +181,62 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     // Investigate if we can use localhost and match protocol version between client/server.
     const lldbWebSocketAddress = `ws://127.0.0.1:${lldbWebSocketListeningPort}/`;
     await this.connectToWebSocketServer(lldbWebSocketAddress);
-    this.getLogger().log(`Connected with lldb at address: ${lldbWebSocketAddress}`);
+    this.getLogger().debug(
+      `Connected with lldb at address: ${lldbWebSocketAddress}`,
+    );
   }
 
   _registerIpcChannel(lldbProcess: child_process$ChildProcess): void {
     const IPC_CHANNEL_FD = 4;
     const ipcStream = lldbProcess.stdio[IPC_CHANNEL_FD];
     this.getSubscriptions().add(
-      splitStream(observeStream(ipcStream)).subscribe(
-        this._handleIpcMessage.bind(this, ipcStream),
-        error => this.getLogger().logError(`ipcStream error: ${JSON.stringify(error)}`),
+      splitStream(
+        observeStream(ipcStream),
+      ).subscribe(this._handleIpcMessage.bind(this, ipcStream), error =>
+        this.getLogger().error(`ipcStream error: ${JSON.stringify(error)}`),
       ),
     );
   }
 
   _handleIpcMessage(ipcStream: Object, message: string): void {
-    this.getLogger().logTrace(`ipc message: ${message}`);
+    this.getLogger().trace(`ipc message: ${message}`);
     const messageJson = JSON.parse(message);
     if (messageJson.type === 'Nuclide.userOutput') {
       // Write response message to ipc for sync message.
       if (messageJson.isSync) {
-        ipcStream.write(JSON.stringify({
-          message_id: messageJson.id,
-        }) + '\n');
+        ipcStream.write(
+          JSON.stringify({
+            message_id: messageJson.id,
+          }) + '\n',
+        );
       }
-      this.getClientCallback().sendUserOutputMessage(JSON.stringify(messageJson.message));
+      this.getClientCallback().sendUserOutputMessage(
+        JSON.stringify(messageJson.message),
+      );
     } else {
-      this.getLogger().logError(`Unknown message: ${message}`);
+      this.getLogger().error(`Unknown message: ${message}`);
     }
   }
 
   _spawnPythonBackend(): child_process$ChildProcess {
-    const lldbPythonScriptPath = nuclideUri.join(__dirname, '../scripts/main.py');
+    const lldbPythonScriptPath = nuclideUri.join(
+      __dirname,
+      '../scripts/main.py',
+    );
     const python_args = [lldbPythonScriptPath, '--arguments_in_json'];
+    const environ = process.env;
+    environ.PYTHONPATH = this._config.envPythonPath;
     const options = {
       cwd: nuclideUri.dirname(lldbPythonScriptPath),
       // FD[3] is used for sending arguments JSON blob.
       // FD[4] is used as a ipc channel for output/atom notifications.
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       detached: false, // When Atom is killed, clang_server.py should be killed, too.
-      env: {PYTHONPATH: this._config.envPythonPath},
+      env: environ,
     };
-    this.getLogger().logInfo(`spawn child_process: ${JSON.stringify(python_args)}`);
+    this.getLogger().info(
+      `spawn child_process: ${JSON.stringify(python_args)}`,
+    );
     const lldbProcess = child_process.spawn(
       this._config.pythonBinaryPath,
       python_args,
@@ -221,27 +260,32 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
         text => {
           if (text.startsWith('ready')) {
             const args_in_json = JSON.stringify(args);
-            this.getLogger().logInfo(`Sending ${args_in_json} to child_process`);
+            this.getLogger().info(`Sending ${args_in_json} to child_process`);
             argumentsStream.write(`${args_in_json}\n`);
           } else {
-            this.getLogger().logError(`Get unknown initial data: ${text}.`);
+            this.getLogger().error(`Get unknown initial data: ${text}.`);
             child.kill();
           }
         },
-        error => this.getLogger().logError(`argumentsStream error: ${JSON.stringify(error)}`),
+        error =>
+          this.getLogger().error(
+            `argumentsStream error: ${JSON.stringify(error)}`,
+          ),
       ),
     );
   }
 
   _connectWithLLDB(lldbProcess: child_process$ChildProcess): Promise<string> {
-    this.getLogger().log('connecting with lldb');
+    this.getLogger().debug('connecting with lldb');
     return new Promise((resolve, reject) => {
       // Async handle parsing websocket address from the stdout of the child.
       lldbProcess.stdout.on('data', chunk => {
         // stdout should hopefully be set to line-buffering, in which case the
         // string would come on one line.
         const block: string = chunk.toString();
-        this.getLogger().log(`child process(${lldbProcess.pid}) stdout: ${block}`);
+        this.getLogger().debug(
+          `child process(${lldbProcess.pid}) stdout: ${block}`,
+        );
         const result = /Port: (\d+)\n/.exec(block);
         if (result != null) {
           // $FlowIssue - flow has wrong typing for it(t9649946).
@@ -251,11 +295,15 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
       });
       lldbProcess.stderr.on('data', chunk => {
         const errorMessage = chunk.toString();
-        this.getClientCallback().sendUserOutputMessage(JSON.stringify({
-          level: 'error',
-          text: errorMessage,
-        }));
-        this.getLogger().logError(`child process(${lldbProcess.pid}) stderr: ${errorMessage}`);
+        this.getClientCallback().sendUserOutputMessage(
+          JSON.stringify({
+            level: 'error',
+            text: errorMessage,
+          }),
+        );
+        this.getLogger().error(
+          `child process(${lldbProcess.pid}) stderr: ${errorMessage}`,
+        );
       });
       lldbProcess.on('error', (err: Object) => {
         reject(new Error(`debugger server error: ${JSON.stringify(err)}`));

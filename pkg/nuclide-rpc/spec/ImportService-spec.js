@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as ImportService from './ImportService';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ServiceTester} from './ServiceTester';
 
 describe('ImportService', () => {
@@ -22,11 +23,16 @@ describe('ImportService', () => {
     testHelper = new ServiceTester();
     waitsForPromise(() => {
       invariant(testHelper);
-      return testHelper.start([{
-        name: 'ImportService',
-        definition: nuclideUri.join(__dirname, 'ImportService.js'),
-        implementation: nuclideUri.join(__dirname, 'ImportService.js'),
-      }], 'import_protocol');
+      return testHelper.start(
+        [
+          {
+            name: 'ImportService',
+            definition: nuclideUri.join(__dirname, 'ImportService.js'),
+            implementation: nuclideUri.join(__dirname, 'ImportService.js'),
+          },
+        ],
+        'import_protocol',
+      );
     });
 
     runs(() => {
@@ -48,6 +54,16 @@ describe('ImportService', () => {
       invariant(service);
       const result = await service.g({field: 'msg'});
       expect(result).toBe('msg');
+    });
+  });
+
+  it('ImportService - type import of export specifiers', () => {
+    waitsForPromise(async () => {
+      invariant(service);
+      const result = await service.f2('msg');
+      expect(result).toBe('msg');
+      const result2 = await service.f3('msg');
+      expect(result2).toBe('msg');
     });
   });
 

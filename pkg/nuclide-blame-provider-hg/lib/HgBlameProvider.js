@@ -6,25 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BlameForEditor} from '../../nuclide-blame/lib/types';
 
 import {hgRepositoryForEditor} from './common';
 import {trackTiming} from '../../nuclide-analytics';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-blame-provider-hg');
 
 function canProvideBlameForEditor(editor: atom$TextEditor): boolean {
   if (editor.isModified()) {
     atom.notifications.addInfo(
       'There is Hg blame information for this file, but only for saved changes. ' +
-      'Save, then try again.',
+        'Save, then try again.',
     );
     logger.info(
       'nuclide-blame: Could not open Hg blame due to unsaved changes in file: ' +
-      String(editor.getPath()),
+        String(editor.getPath()),
     );
     return false;
   }
@@ -33,13 +34,14 @@ function canProvideBlameForEditor(editor: atom$TextEditor): boolean {
 }
 
 function getBlameForEditor(editor: atom$TextEditor): Promise<BlameForEditor> {
-  return trackTiming(
-    'blame-provider-hg:getBlameForEditor',
-    () => doGetBlameForEditor(editor),
+  return trackTiming('blame-provider-hg:getBlameForEditor', () =>
+    doGetBlameForEditor(editor),
   );
 }
 
-async function doGetBlameForEditor(editor: atom$TextEditor): Promise<BlameForEditor> {
+async function doGetBlameForEditor(
+  editor: atom$TextEditor,
+): Promise<BlameForEditor> {
   const path = editor.getPath();
   if (!path) {
     return Promise.resolve([]);

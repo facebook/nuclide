@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {HistogramTracker} from '../lib/HistogramTracker';
@@ -64,16 +65,18 @@ describe('HistogramTracker', () => {
     tracker.track(2);
     advanceClock(5 * 1000);
     expect(trackSpy.callCount).toBe(1);
-    expect(trackSpy.calls[0].args).toEqual(
-      ['performance-histogram', {average: 2, samples: 1, eventName: 'test'}],
-    );
+    expect(trackSpy.calls[0].args).toEqual([
+      'performance-histogram',
+      {average: 2, samples: 1, eventName: 'test'},
+    ]);
 
     tracker.track(42);
     advanceClock(5 * 1000);
     expect(trackSpy.callCount).toBe(2);
-    expect(trackSpy.calls[1].args).toEqual(
-      ['performance-histogram', {average: 42, samples: 1, eventName: 'test'}],
-    );
+    expect(trackSpy.calls[1].args).toEqual([
+      'performance-histogram',
+      {average: 42, samples: 1, eventName: 'test'},
+    ]);
   });
 });
 

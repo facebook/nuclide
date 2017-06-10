@@ -1,0 +1,107 @@
+@import "ui-variables";
+
+.nuclide-ui-table {
+  border: 1px solid @base-border-color;
+  table-layout: fixed;
+  width: 100%;
+  -webkit-user-select: none;
+
+  // Hack around a Chrome rendering bug by which resizing columns doesn't redraw
+  // their borders.
+  transform: translate3d(0, 0, 0);
+}
+
+.nuclide-ui-table-body {
+  border-top: none;
+  -webkit-user-select: text;
+}
+
+.nuclide-ui-table-header {
+  font-weight: bold;
+  background-color: @pane-item-background-color;
+  border-bottom: 1px solid @base-border-color;
+}
+
+.nuclide-ui-table-header, .nuclide-ui-table-row {
+  display: flex;
+}
+
+.nuclide-ui-table-full-header {
+  width: 100%;
+}
+
+.nuclide-ui-table-header-cell,
+.nuclide-ui-table-body-cell {
+  border-right: 1px solid @base-border-color;
+  overflow: hidden;
+  padding: 2px 4px;
+  min-width: 40px;
+}
+
+.nuclide-ui-table-body-cell {
+  word-break: break-word;
+  text-overflow:inherit;
+}
+
+.nuclide-ui-table-header-cell {
+  -webkit-user-select: none;
+  position: relative;
+  text-overflow: ellipsis;
+  vertical-align: baseline; // align sort icons with text
+  white-space: nowrap;
+}
+
+.nuclide-ui-table-header-cell-sortable {
+  cursor: pointer;
+}
+
+.nuclide-ui-table-header-cell-sortable:hover {
+  color: @text-color-highlight;
+}
+
+.nuclide-ui-table-sort-indicator {
+  position: absolute;
+  transform: scale(0.6);
+}
+
+.nuclide-ui-table-header-resize-handle {
+  cursor: ew-resize;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  margin-right: -3px;
+  z-index: 1;
+}
+
+.nuclide-ui-table-row-alternate {
+  background-color: @background-color-highlight;
+}
+
+.nuclide-ui-table-row-selectable {
+  cursor: pointer;
+}
+
+.nuclide-ui-table-row-selectable:hover {
+  background-color: @background-color-selected;
+  color: @text-color-selected;
+}
+
+.nuclide-ui-table-row-selected {
+  background-color: @background-color-selected;
+  color: @text-color-selected;
+  font-weight: bold;
+}
+
+.nuclide-ui-table-collapsed-row {
+  word-break: break-word;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nuclide-ui-table-empty-message {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}

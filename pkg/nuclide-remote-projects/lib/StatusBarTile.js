@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import ConnectionState from './ConnectionState';
@@ -26,16 +27,15 @@ export default class StatusBarTile extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._onStatusBarTileClicked = this._onStatusBarTileClicked.bind(this);
+    (this: any)._onStatusBarTileClicked = this._onStatusBarTileClicked.bind(
+      this,
+    );
   }
 
   render(): ?React.Element<any> {
     let iconName = null;
     switch (this.props.connectionState) {
       case ConnectionState.NONE:
-        break;
-      case ConnectionState.LOCAL:
-        iconName = 'device-desktop';
         break;
       case ConnectionState.CONNECTED:
         iconName = 'cloud-upload';

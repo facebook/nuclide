@@ -6,14 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RemoteDirectory} from '../../nuclide-remote-connection';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
-import type {CheckoutSideName, MergeConflict} from '../../nuclide-hg-rpc/lib/HgService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {
+  CheckoutSideName,
+  MergeConflict,
+} from '../../nuclide-hg-rpc/lib/HgService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {track} from '../../nuclide-analytics';
 import invariant from 'assert';
 import {Directory} from 'atom';
@@ -70,16 +74,24 @@ export class MercurialConflictContext {
       return [];
     }
     this._cachedMergeConflicts = await this._conflictingRepository.fetchMergeConflicts();
-    return this._cachedMergeConflicts;
+    return this._cachedMergeConflicts.map(conflict => ({
+      ...conflict,
+      message: conflict.status,
+    }));
   }
 
   async isResolvedFile(filePath: NuclideUri): Promise<boolean> {
-    return this._cachedMergeConflicts.findIndex(mergeConflict => {
-      return mergeConflict.path === filePath;
-    }) === -1;
+    return (
+      this._cachedMergeConflicts.findIndex(mergeConflict => {
+        return mergeConflict.path === filePath;
+      }) === -1
+    );
   }
 
-  async checkoutSide(sideName: CheckoutSideName, filePath: NuclideUri): Promise<void> {
+  async checkoutSide(
+    sideName: CheckoutSideName,
+    filePath: NuclideUri,
+  ): Promise<void> {
     track('hg-conflict-detctor.checkout-side-requested');
     throw new Error('Checkout sides is still not working for Mercurial repos');
   }
@@ -87,12 +99,18 @@ export class MercurialConflictContext {
   async resolveFile(filePath: NuclideUri): Promise<void> {
     track('hg-conflict-detctor.resolve-file');
     if (this._conflictingRepository == null) {
-      throw new Error('Mercurial merge conflict resolver doesn\'t have a conflicting repository');
+      throw new Error(
+        "Mercurial merge conflict resolver doesn't have a conflicting repository",
+      );
     }
-    await this._conflictingRepository.resolveConflictedFile(filePath).toPromise();
-    this._cachedMergeConflicts = this._cachedMergeConflicts.filter(mergeConflict => {
-      return mergeConflict.path !== filePath;
-    });
+    await this._conflictingRepository
+      .markConflictedFile(filePath, /* resolved */ true)
+      .toPromise();
+    this._cachedMergeConflicts = this._cachedMergeConflicts.filter(
+      mergeConflict => {
+        return mergeConflict.path !== filePath;
+      },
+    );
   }
 
   // Deletermine if that's a rebase or merge operation.
@@ -115,24 +133,28 @@ export class MercurialConflictContext {
     const repository = this._conflictingRepository;
     const notification = atom.notifications.addSuccess(
       'All Conflicts Resolved\n' +
-      'Click `Continue` to run: `hg rebase --continue`',
+        'Click `Continue` to run: `hg rebase --continue`',
       {
-        buttons: [{
-          onDidClick: async () => {
-            notification.dismiss();
-            this.clearConflictState();
-            try {
-              await repository.continueRebase().toPromise();
-              atom.notifications.addInfo('Rebase continued');
-            } catch (error) {
-              atom.notifications.addError(
-                'Failed to continue rebase\n' +
-                'You will have to run `hg rebase --continue` manually.',
-              );
-            }
+        buttons: [
+          {
+            onDidClick: async () => {
+              notification.dismiss();
+              this.clearConflictState();
+              try {
+                await repository
+                  .continueOperation(/* operation to continue */ 'rebase')
+                  .toPromise();
+                atom.notifications.addInfo('Rebase continued');
+              } catch (error) {
+                atom.notifications.addError(
+                  'Failed to continue rebase\n' +
+                    'You will have to run `hg rebase --continue` manually.',
+                );
+              }
+            },
+            text: 'Continue',
           },
-          text: 'Continue',
-        }],
+        ],
         dismissable: true,
       },
     );
@@ -148,24 +170,28 @@ export class MercurialConflictContext {
     const repository = this._conflictingRepository;
     const notification = atom.notifications.addWarning(
       'Careful, You still have conflict markers!<br/>\n' +
-      'Click `Abort` if you want to give up on this and run: `hg rebase --abort`.',
+        'Click `Abort` if you want to give up on this and run: `hg rebase --abort`.',
       {
-        buttons: [{
-          onDidClick: async () => {
-            notification.dismiss();
-            this.clearConflictState();
-            try {
-              await repository.abortRebase();
-              atom.notifications.addInfo('Rebase aborted');
-            } catch (error) {
-              atom.notifications.addError(
-                'Failed to abort rebase\n' +
-                'You will have to run `hg rebase --abort` manually.',
-              );
-            }
+        buttons: [
+          {
+            onDidClick: async () => {
+              notification.dismiss();
+              this.clearConflictState();
+              try {
+                await repository
+                  .abortOperation(/* operation to abort */ 'rebase')
+                  .toPromise();
+                atom.notifications.addInfo('Rebase aborted');
+              } catch (error) {
+                atom.notifications.addError(
+                  'Failed to abort rebase\n' +
+                    'You will have to run `hg rebase --abort` manually.',
+                );
+              }
+            },
+            text: 'Abort',
           },
-          text: 'Abort',
-        }],
+        ],
         dismissable: true,
       },
     );

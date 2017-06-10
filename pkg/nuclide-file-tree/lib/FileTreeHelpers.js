@@ -6,19 +6,31 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {RemoteDirectory, RemoteFile} from '../../nuclide-remote-connection';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  RemoteDirectory,
+  RemoteFile,
+} from '../../nuclide-remote-connection';
+import type {ShowUncommittedChangesKindValue} from './Constants';
 
+import {
+  ShowUncommittedChangesKind,
+  SHOW_UNCOMMITTED_CHANGES_KIND_CONFIG_KEY,
+} from './Constants';
 import {Directory as LocalDirectory} from 'atom';
 import {File as LocalFile} from 'atom';
 import {
   RemoteConnection,
   ServerConnection,
 } from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
-
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {cacheWhileSubscribed} from 'nuclide-commons/observable';
+import {Observable} from 'rxjs';
+import passesGK from '../../commons-node/passesGK';
 import crypto from 'crypto';
 
 export type Directory = LocalDirectory | RemoteDirectory;
@@ -26,7 +38,9 @@ type File = LocalFile | RemoteFile;
 type Entry = LocalDirectory | RemoteDirectory | LocalFile | RemoteFile;
 
 function dirPathToKey(path: string): string {
-  return nuclideUri.ensureTrailingSeparator(nuclideUri.trimTrailingSeparator(path));
+  return nuclideUri.ensureTrailingSeparator(
+    nuclideUri.trimTrailingSeparator(path),
+  );
 }
 
 function isDirKey(key: string): boolean {
@@ -140,7 +154,9 @@ function isLocalEntry(entry: Entry): boolean {
 function isContextClick(event: SyntheticMouseEvent): boolean {
   return (
     event.button === 2 ||
-    (event.button === 0 && event.ctrlKey === true && process.platform === 'darwin')
+    (event.button === 0 &&
+      event.ctrlKey === true &&
+      process.platform === 'darwin')
   );
 }
 
@@ -148,7 +164,32 @@ function buildHashKey(nodeKey: string): string {
   return crypto.createHash('MD5').update(nodeKey).digest('base64');
 }
 
-function updatePathInOpenedEditors(oldPath: NuclideUri, newPath: NuclideUri): void {
+function observeUncommittedChangesKindConfigKey(): Observable<
+  ShowUncommittedChangesKindValue,
+> {
+  return cacheWhileSubscribed(
+    featureConfig
+      .observeAsStream(SHOW_UNCOMMITTED_CHANGES_KIND_CONFIG_KEY)
+      .map(setting => {
+        // We need to map the unsanitized feature-setting string
+        // into a properly typed value:
+        switch (setting) {
+          case ShowUncommittedChangesKind.HEAD:
+            return ShowUncommittedChangesKind.HEAD;
+          case ShowUncommittedChangesKind.STACK:
+            return ShowUncommittedChangesKind.STACK;
+          default:
+            return ShowUncommittedChangesKind.UNCOMMITTED;
+        }
+      })
+      .distinctUntilChanged(),
+  );
+}
+
+function updatePathInOpenedEditors(
+  oldPath: NuclideUri,
+  newPath: NuclideUri,
+): void {
   atom.workspace.getTextEditors().forEach(editor => {
     const buffer = editor.getBuffer();
     const bufferPath = buffer.getPath();
@@ -166,6 +207,10 @@ function updatePathInOpenedEditors(oldPath: NuclideUri, newPath: NuclideUri): vo
   });
 }
 
+function areStackChangesEnabled(): Promise<boolean> {
+  return passesGK('nuclide_file_tree_stack_changes');
+}
+
 export default {
   dirPathToKey,
   isDirKey,
@@ -181,5 +226,7 @@ export default {
   isLocalEntry,
   isContextClick,
   buildHashKey,
+  observeUncommittedChangesKindConfigKey,
   updatePathInOpenedEditors,
+  areStackChangesEnabled,
 };

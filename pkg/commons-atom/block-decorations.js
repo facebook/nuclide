@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -15,7 +16,6 @@ type BlockElementWithProps = {
   element: React.Element<any>,
   customProps: Object,
 };
-
 
 /**
  * Instead of destroying all the decorations and re-rendering them on each edit,
@@ -82,10 +82,14 @@ export function syncBlockDecorations<Value>(
     }
 
     const {element, customProps} = getElementWithProps(value);
-    const marker = editor.markBufferPosition([lineNumber, 0], {invalidate: 'never'});
+    const marker = editor.markBufferPosition([lineNumber, 0], {
+      invalidate: 'never',
+    });
 
     // The position should be `after` if the element is at the end of the file.
-    const position = lineNumber >= editor.getLineCount() - 1 ? 'after' : 'before';
+    const position = lineNumber >= editor.getLineCount() - 1
+      ? 'after'
+      : 'before';
     const item = document.createElement('div');
     ReactDOM.render(element, item);
     marker.onDidDestroy(() => {

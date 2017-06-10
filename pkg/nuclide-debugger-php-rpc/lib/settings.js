@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type HhvmDebuggerSettings = {
-   singleThreadStepping: boolean,
- };
+  singleThreadStepping: boolean,
+};
 
 const defaultSettings: HhvmDebuggerSettings = {
   singleThreadStepping: false,

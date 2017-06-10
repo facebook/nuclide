@@ -6,44 +6,61 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../commons-node/nuclideUri';
-import type {FileChangeStatusValue} from '../commons-atom/vcs';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {FileChangeStatusValue} from '../nuclide-vcs-base';
 
-import addTooltip from './add-tooltip';
+import {repositoryForPath} from '../nuclide-vcs-base';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
 import classnames from 'classnames';
-import {
- FileChangeStatusToIcon,
- FileChangeStatusToTextColor,
- repositoryForPath,
-} from '../commons-atom/vcs';
-import nuclideUri from '../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import React from 'react';
-import {Icon} from './Icon';
+import ChangedFile from './ChangedFile';
+
+function isHgPath(path: NuclideUri): boolean {
+  const repo = repositoryForPath(path);
+  return repo != null && repo.getType() === 'hg';
+}
 
 const FILE_CHANGES_INITIAL_PAGE_SIZE = 100;
 
-type ChangedFilesProps = {
-  fileChanges: Map<NuclideUri, FileChangeStatusValue>,
-  rootPath: NuclideUri,
+type Props = {
+  // List of files that have checked checkboxes next to their names. `null` -> no checkboxes
+  checkedFiles: ?Set<NuclideUri>,
   commandPrefix: string,
-  selectedFile: ?NuclideUri,
+  // whether files can be expanded to reveal a diff of changes. Requires passing `fileChanges`.
+  enableFileExpansion: boolean,
+  enableInlineActions: boolean,
+  // `null` values for FileDiffs for a given key are assumed to be in "loading" state.
+  fileChanges: ?Map<NuclideUri, ?diffparser$FileDiff>,
+  fileStatuses: Map<NuclideUri, FileChangeStatusValue>,
   hideEmptyFolders: boolean,
-  shouldShowFolderName: boolean,
+  onAddFile: (filePath: NuclideUri) => void,
+  onDeleteFile: (filePath: NuclideUri) => void,
+  // Callback when a file's checkbox is toggled
+  onFileChecked: (filePath: NuclideUri) => void,
+  // Call back when a file is clicked on
   onFileChosen: (filePath: NuclideUri) => void,
+  onForgetFile: (filePath: NuclideUri) => void,
+  onOpenFileInDiffView: (filePath: NuclideUri) => void,
+  onRevertFile: (filePath: NuclideUri) => void,
+  rootPath: NuclideUri,
+  selectedFile: ?NuclideUri,
+  shouldShowFolderName: boolean,
 };
 
-type ChangedFilesState = {
+type State = {
   isCollapsed: boolean,
   visiblePagesCount: number,
 };
 
 export default class ChangedFilesList extends React.Component {
-  props: ChangedFilesProps;
-  state: ChangedFilesState;
+  props: Props;
+  state: State;
 
-  constructor(props: ChangedFilesProps) {
+  constructor(props: Props) {
     super(props);
     this.state = {
       isCollapsed: false,
@@ -51,89 +68,98 @@ export default class ChangedFilesList extends React.Component {
     };
   }
 
-  _getFileClassname(file: NuclideUri, fileChangeValue: FileChangeStatusValue): string {
-    const {commandPrefix, rootPath, selectedFile} = this.props;
-    const repository = repositoryForPath(rootPath);
-    return classnames(
-      'nuclide-file-changes-list-item',
-      'list-item', {
-        selected: file === selectedFile,
-        [`${commandPrefix}-file-entry`]: repository != null && repository.getType() === 'hg',
-      },
-      FileChangeStatusToTextColor[fileChangeValue],
-    );
-  }
-
   render(): ?React.Element<any> {
-    const {fileChanges} = this.props;
-    if (fileChanges.size === 0 && this.props.hideEmptyFolders) {
+    const {
+      checkedFiles,
+      commandPrefix,
+      enableFileExpansion,
+      enableInlineActions,
+      fileChanges,
+      fileStatuses,
+      onAddFile,
+      onDeleteFile,
+      onFileChecked,
+      onFileChosen,
+      onForgetFile,
+      onOpenFileInDiffView,
+      onRevertFile,
+      rootPath,
+      selectedFile,
+    } = this.props;
+    if (fileStatuses.size === 0 && this.props.hideEmptyFolders) {
       return null;
     }
 
-    const filesToShow = FILE_CHANGES_INITIAL_PAGE_SIZE * this.state.visiblePagesCount;
-    const sizeLimitedFileChanges = Array.from(fileChanges.entries()).slice(0, filesToShow);
+    const filesToShow =
+      FILE_CHANGES_INITIAL_PAGE_SIZE * this.state.visiblePagesCount;
+    const sizeLimitedFileChanges = Array.from(fileStatuses.entries()).slice(
+      0,
+      filesToShow,
+    );
 
     const rootClassName = classnames('list-nested-item', {
       collapsed: this.state.isCollapsed,
     });
 
-    const fileClassName = classnames(
-      'icon',
-      'icon-file-text',
-      'nuclide-file-changes-file-entry',
-    );
-
-    const showMoreFilesElement = fileChanges.size > filesToShow
+    const showMoreFilesElement = fileStatuses.size > filesToShow
       ? <div
           className="icon icon-ellipsis"
           ref={addTooltip({
             title: 'Show more files with uncommitted changes',
-            delay: 100,
+            delay: 300,
             placement: 'bottom',
           })}
-          onClick={() => this.setState({visiblePagesCount: this.state.visiblePagesCount + 1})}
+          onClick={() =>
+            this.setState({
+              visiblePagesCount: this.state.visiblePagesCount + 1,
+            })}
         />
       : null;
 
+    const isHgRoot = isHgPath(rootPath);
     return (
       <ul className="list-tree has-collapsable-children">
         <li className={rootClassName}>
-          {this.props.shouldShowFolderName ?
-            <div
-              className="list-item"
-              key={this.props.rootPath}
-              onClick={() => this.setState({isCollapsed: !this.state.isCollapsed})}>
-              <span
-                className="icon icon-file-directory nuclide-file-changes-root-entry"
-                data-path={this.props.rootPath}>
-                {nuclideUri.basename(this.props.rootPath)}
-              </span>
-            </div> :
-            null
-          }
+          {this.props.shouldShowFolderName
+            ? <div
+                className="list-item"
+                key={this.props.rootPath}
+                onClick={() =>
+                  this.setState({isCollapsed: !this.state.isCollapsed})}>
+                <span
+                  className="icon icon-file-directory nuclide-file-changes-root-entry"
+                  data-path={this.props.rootPath}>
+                  {nuclideUri.basename(this.props.rootPath)}
+                </span>
+              </div>
+            : null}
           <ul className="list-tree has-flat-children">
-            {sizeLimitedFileChanges.map(
-              ([filePath, fileChangeValue]) => {
-                const baseName = nuclideUri.basename(filePath);
-                return (
-                  <li
-                    data-name={baseName}
-                    data-path={filePath}
-                    data-root={this.props.rootPath}
-                    className={this._getFileClassname(filePath, fileChangeValue)}
-                    key={filePath}
-                    onClick={() => this.props.onFileChosen(filePath)}>
-                    <Icon
-                      className="nuclide-file-changes-file-entry-icon"
-                      icon={FileChangeStatusToIcon[fileChangeValue]}
-                    />
-                    <span className={fileClassName}>
-                      {baseName}
-                    </span>
-                  </li>
-                );
-              },
-            )}
+            {sizeLimitedFileChanges.map(([filePath, fileStatus]) => (
+              <ChangedFile
+                commandPrefix={commandPrefix}
+                enableFileExpansion={enableFileExpansion}
+                enableInlineActions={enableInlineActions}
+                fileChanges={
+                  fileChanges == null ? null : fileChanges.get(filePath)
+                }
+                filePath={filePath}
+                fileStatus={fileStatus}
+                isChecked={
+                  checkedFiles == null ? null : checkedFiles.has(filePath)
+                }
+                isHgPath={isHgRoot}
+                isSelected={selectedFile === filePath}
+                key={filePath}
+                onAddFile={onAddFile}
+                onDeleteFile={onDeleteFile}
+                onFileChecked={onFileChecked}
+                onFileChosen={onFileChosen}
+                onForgetFile={onForgetFile}
+                onOpenFileInDiffView={onOpenFileInDiffView}
+                onRevertFile={onRevertFile}
+                rootPath={rootPath}
+              />
+            ))}
             <li>{showMoreFilesElement}</li>
           </ul>
         </li>

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Observable} from 'rxjs';
@@ -42,7 +43,9 @@ describe('setProjectRootEpic', () => {
       const stream = await setProjectRootEpic(
         new ActionsObservable(Observable.of(Actions.setProjectRoot(null))),
         mockStore,
-      ).toArray().toPromise();
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([
         {type: Actions.SET_BUCK_ROOT, buckRoot: null},
@@ -53,12 +56,16 @@ describe('setProjectRootEpic', () => {
 
   it('Gets the Buck root for a real project', () => {
     waitsForPromise(async () => {
-      spyOn(BuckBase, 'getBuckProjectRoot').andReturn(Promise.resolve('test_buck'));
+      spyOn(BuckBase, 'getBuckProjectRoot').andReturn(
+        Promise.resolve('test_buck'),
+      );
 
       const stream = await setProjectRootEpic(
         new ActionsObservable(Observable.of(Actions.setProjectRoot('test'))),
         mockStore,
-      ).toArray().toPromise();
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([
         {type: Actions.SET_BUCK_ROOT, buckRoot: 'test_buck'},
@@ -74,7 +81,9 @@ describe('setBuildTargetEpic', () => {
       const stream = await setBuildTargetEpic(
         new ActionsObservable(Observable.of(Actions.setBuildTarget(''))),
         mockStore,
-      ).toArray().toPromise();
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([{type: Actions.SET_RULE_TYPE, ruleType: null}]);
     });
@@ -92,7 +101,9 @@ describe('setBuildTargetEpic', () => {
       const stream = await setBuildTargetEpic(
         new ActionsObservable(Observable.of(Actions.setBuildTarget('test'))),
         mockStore,
-      ).toArray().toPromise();
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([
         {
@@ -109,9 +120,12 @@ describe('setRuleTypeEpic', () => {
     waitsForPromise(async () => {
       const stream = await setRuleTypeEpic(
         new ActionsObservable(
-          Observable.of({type: Actions.SET_RULE_TYPE, ruleType: null})),
-          mockStore,
-      ).toArray().toPromise();
+          Observable.of({type: Actions.SET_RULE_TYPE, ruleType: null}),
+        ),
+        mockStore,
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([
         {type: Actions.SET_PLATFORM_GROUPS, platformGroups: []},
@@ -127,9 +141,12 @@ describe('setRuleTypeEpic', () => {
 
       const stream = await setRuleTypeEpic(
         new ActionsObservable(
-          Observable.of({type: Actions.SET_RULE_TYPE, ruleType: 'haha'})),
-          mockStore,
-      ).toArray().toPromise();
+          Observable.of({type: Actions.SET_RULE_TYPE, ruleType: 'haha'}),
+        ),
+        mockStore,
+      )
+        .toArray()
+        .toPromise();
 
       expect(stream).toEqual([
         {type: Actions.SET_PLATFORM_GROUPS, platformGroups: 'random platforms'},

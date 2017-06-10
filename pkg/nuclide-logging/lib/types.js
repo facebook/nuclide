@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type Logger = {
@@ -32,8 +33,4 @@ export type LoggingEvent = {
   },
   storageKey?: string,
   runtime?: any,
-};
-
-export type LoggingAppender = {
-  appenders: any,
 };

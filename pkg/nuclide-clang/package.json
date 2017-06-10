@@ -50,9 +50,15 @@
   },
   "activationHooks": [
     "language-c:grammar-used",
+    "language-cpp14:grammar-used",
     "language-objective-c:grammar-used"
   ],
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.2.0": "consumeBusySignal"
+      }
+    },
     "nuclide.clang.compilation-database": {
       "versions": {
         "0.0.0": "consumeCompilationDatabase"
@@ -75,9 +81,9 @@
         "0.0.0": "provideCodeFormat"
       }
     },
-    "nuclide-definition-provider": {
+    "atom-ide-definitions": {
       "versions": {
-        "0.0.0": "provideDefinitions"
+        "0.1.0": "provideDefinitions"
       }
     },
     "linter": {
@@ -90,14 +96,9 @@
         "0.0.0": "createTypeHintProvider"
       }
     },
-    "nuclide-busy-signal": {
+    "atom-ide-outline-view": {
       "versions": {
-        "0.1.0": "provideBusySignal"
-      }
-    },
-    "nuclide-outline-view": {
-      "versions": {
-        "0.0.0": "provideOutlineView"
+        "0.1.0": "provideOutlineView"
       }
     },
     "nuclide-refactor": {

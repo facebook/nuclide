@@ -6,12 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {OutputService} from '../../nuclide-console/lib/types';
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
-import type {SwiftPMTaskRunner as SwiftPMTaskRunnerType} from './taskrunner/SwiftPMTaskRunner';
-import type {SwiftPMTaskRunnerStoreState} from './taskrunner/SwiftPMTaskRunnerStoreState';
+import type {
+  SwiftPMTaskRunner as SwiftPMTaskRunnerType,
+} from './taskrunner/SwiftPMTaskRunner';
+import type {
+  SwiftPMTaskRunnerStoreState,
+} from './taskrunner/SwiftPMTaskRunnerStoreState';
 
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
@@ -25,8 +29,12 @@ export function activate(rawState: ?Object): void {
   invariant(_disposables == null);
   _initialState = rawState;
   _disposables = new CompositeDisposable(
-    new Disposable(() => { _taskRunner = null; }),
-    new Disposable(() => { _initialState = null; }),
+    new Disposable(() => {
+      _taskRunner = null;
+    }),
+    new Disposable(() => {
+      _initialState = null;
+    }),
   );
 }
 
@@ -43,14 +51,6 @@ export function consumeTaskRunnerServiceApi(
   _disposables.add(serviceApi.register(_getTaskRunner()));
 }
 
-export function consumeOutputService(service: OutputService): void {
-  invariant(_disposables != null);
-  _disposables.add(service.registerOutputProvider({
-    messages: _getTaskRunner().getOutputMessages(),
-    id: 'swift',
-  }));
-}
-
 export function serialize(): ?SwiftPMTaskRunnerStoreState {
   if (_taskRunner != null) {
     return _taskRunner.serialize();
@@ -65,7 +65,9 @@ export function createAutocompleteProvider(): atom$AutocompleteProvider {
     getSuggestions(
       request: atom$AutocompleteRequest,
     ): Promise<?Array<atom$AutocompleteSuggestion>> {
-      return _getTaskRunner().getAutocompletionProvider().getAutocompleteSuggestions(request);
+      return _getTaskRunner()
+        .getAutocompletionProvider()
+        .getAutocompleteSuggestions(request);
     },
   };
 }

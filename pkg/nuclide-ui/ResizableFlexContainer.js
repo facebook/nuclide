@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {arrayCompact, arrayEqual} from '../commons-node/collection';
+import {arrayCompact, arrayEqual} from 'nuclide-commons/collection';
 import classnames from 'classnames';
 import createPaneContainer from '../commons-atom/create-pane-container';
 import React from 'react';
@@ -28,15 +29,19 @@ export const FlexDirections = Object.freeze({
 });
 
 function getChildrenFlexScales(children: ?React.Element<any>): Array<number> {
-  return arrayCompact(React.Children.map(children, child => {
-    if (child == null) {
-      return null;
-    } else if (!(child.type === ResizableFlexItem)) {
-      throw new Error('ResizableFlexContainer may only have ResizableFlexItem children!');
-    } else {
-      return child.props.initialFlexScale;
-    }
-  }) || []);
+  return arrayCompact(
+    React.Children.map(children, child => {
+      if (child == null) {
+        return null;
+      } else if (!(child.type === ResizableFlexItem)) {
+        throw new Error(
+          'ResizableFlexContainer may only have ResizableFlexItem children!',
+        );
+      } else {
+        return child.props.initialFlexScale;
+      }
+    }) || [],
+  );
 }
 
 export class ResizableFlexContainer extends React.Component {
@@ -50,10 +55,12 @@ export class ResizableFlexContainer extends React.Component {
   }
 
   componentWillReceiveProps(newProps: Props): void {
-    if (!arrayEqual(
+    if (
+      !arrayEqual(
         getChildrenFlexScales(this.props.children),
         getChildrenFlexScales(newProps.children),
-      )) {
+      )
+    ) {
       this._destroyPanes();
       this._setupPanes(newProps);
     }
@@ -79,8 +86,10 @@ export class ResizableFlexContainer extends React.Component {
       const flexScale = flexScales[i];
       if (direction === FlexDirections.HORIZONTAL) {
         lastPane = lastPane.splitRight({flexScale});
-      } else /* direction === SplitDirections.VERTICAL */ {
-        lastPane = lastPane.splitDown({flexScale});
+      } else {
+        /* direction === SplitDirections.VERTICAL */ lastPane = lastPane.splitDown(
+          {flexScale},
+        );
       }
       this._panes.push(lastPane);
     }
@@ -94,10 +103,7 @@ export class ResizableFlexContainer extends React.Component {
       if (child == null) {
         return;
       }
-      ReactDOM.render(
-        child,
-        this._getPaneElement(this._panes[i++]),
-      );
+      ReactDOM.render(child, this._getPaneElement(this._panes[i++]));
     });
   }
 
@@ -107,7 +113,9 @@ export class ResizableFlexContainer extends React.Component {
 
   _destroyPanes(): void {
     this._panes.forEach(pane => {
-      ReactDOM.unmountComponentAtNode(ReactDOM.findDOMNode(this._getPaneElement(pane)));
+      ReactDOM.unmountComponentAtNode(
+        ReactDOM.findDOMNode(this._getPaneElement(pane)),
+      );
       pane.destroy();
     });
     this._panes = [];
@@ -120,10 +128,11 @@ export class ResizableFlexContainer extends React.Component {
 
   render(): React.Element<any> {
     const {className} = this.props;
-    const containerClassName = classnames('nuclide-ui-resizable-flex-container', className);
-    return (
-      <div className={containerClassName} ref="flexContainer" />
+    const containerClassName = classnames(
+      'nuclide-ui-resizable-flex-container',
+      className,
     );
+    return <div className={containerClassName} ref="flexContainer" />;
   }
 }
 

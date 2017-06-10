@@ -1,0 +1,18 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "SSH Tunnels Panel",
+          "submenu": [
+            {
+              "label": "Toggle",
+              "command": "nuclide-ssh-tunnels-panel:toggle"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

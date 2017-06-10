@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RelatedFilesProvider} from './types';
@@ -35,8 +36,10 @@ export function activate() {
           command: 'nuclide-related-files:jump-to-next-related-file',
           shouldDisplay() {
             const editor = atom.workspace.getActiveTextEditor();
-            return editor != null &&
-              GRAMMARS_WITH_HEADER_FILES.has(editor.getGrammar().scopeName);
+            return (
+              editor != null &&
+              GRAMMARS_WITH_HEADER_FILES.has(editor.getGrammar().scopeName)
+            );
           },
         },
         {type: 'separator'},
@@ -46,7 +49,9 @@ export function activate() {
   );
 }
 
-export function consumeRelatedFilesProvider(provider: RelatedFilesProvider): IDisposable {
+export function consumeRelatedFilesProvider(
+  provider: RelatedFilesProvider,
+): IDisposable {
   return RelatedFileFinder.registerRelatedFilesProvider(provider);
 }
 

@@ -6,16 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {HyperclickProvider} from '../../hyperclick/lib/types';
-import type {Provider as QuickOpenProviderType} from '../../nuclide-quick-open/lib/types';
+import type {HyperclickProvider} from 'atom-ide-ui';
+import type {
+  Provider as QuickOpenProviderType,
+} from '../../nuclide-quick-open/lib/types';
 
 import HyperclickHelpers from './HyperclickHelpers';
 import QuickOpenHelpers from './QuickOpenHelpers';
 
-export function activate(state: ?Object) {
-}
+export function activate(state: ?Object) {}
 
 export function getHyperclickProvider(): HyperclickProvider {
   return {
@@ -47,5 +49,4 @@ export function getQuickOpenProvider(): QuickOpenProviderType {
   };
 }
 
-export function deactivate() {
-}
+export function deactivate() {}

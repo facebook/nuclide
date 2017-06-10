@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 let nextFileId = 0;
@@ -36,10 +37,11 @@ export function getBreakpointDecorationInRow(
     const decorations = decorationArrays[key];
     for (let i = 0; i < decorations.length; i++) {
       const {gutterName, item} = decorations[i].getProperties();
-      if (gutterName === 'nuclide-breakpoint' &&
+      if (
+        gutterName === 'nuclide-breakpoint' &&
         (item.className === 'nuclide-debugger-breakpoint-icon' ||
-         item.className === 'nuclide-debugger-breakpoint-icon-unresolved' ||
-         item.className === 'nuclide-debugger-breakpoint-icon-disabled')
+          item.className === 'nuclide-debugger-breakpoint-icon-unresolved' ||
+          item.className === 'nuclide-debugger-breakpoint-icon-disabled')
       ) {
         return decorations[i];
       }

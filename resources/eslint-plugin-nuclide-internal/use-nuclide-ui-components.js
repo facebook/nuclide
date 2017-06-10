@@ -24,7 +24,7 @@ module.exports = function(context) {
       if (node.name === 'button') {
         context.report({
           node,
-          message: 'Prefer using `<Button />` from nuclide-ui over home-built `<button />`s',
+          message: 'Prefer using `<Button />` from nuclide-commons-ui over home-built `<button />`s',
         });
       }
     },

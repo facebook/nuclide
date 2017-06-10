@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FreeformRefactoringArgument} from '../..';
@@ -13,9 +14,9 @@ import type {Store, FreeformPhase} from '../types';
 
 import React from 'react';
 
-import {AtomInput} from '../../../nuclide-ui/AtomInput';
-import {Button, ButtonTypes} from '../../../nuclide-ui/Button';
-import {Checkbox} from '../../../nuclide-ui/Checkbox';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
 
 import * as Actions from '../refactorActions';
@@ -53,8 +54,7 @@ export class FreeformRefactorComponent extends React.Component {
   constructor(props: Props) {
     super(props);
     const defaultArgs = new Map(
-      props.phase.refactoring.arguments
-        .map(arg => [arg.name, getDefault(arg)]),
+      props.phase.refactoring.arguments.map(arg => [arg.name, getDefault(arg)]),
     );
     this.state = {
       args: defaultArgs,

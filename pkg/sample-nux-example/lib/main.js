@@ -6,20 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
-import {
-  CompositeDisposable,
-  Disposable,
-} from 'atom';
+import {CompositeDisposable, Disposable} from 'atom';
 
 import type {NuxTourModel} from '../../nuclide-nux/lib/NuxModel';
-import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
-import type {
-  RegisterNux,
-  TriggerNux,
-} from '../../nuclide-nux/lib/main';
+import type {RegisterNux, TriggerNux} from '../../nuclide-nux/lib/main';
 
 const SAMPLE_NUX_ID = 0;
 const SAMPLE_NUX_NAME = 'sample-nux-example.sample-nux-id';
@@ -35,7 +29,7 @@ class Activation {
     this._disposables.dispose();
   }
 
-  consumeToolBar(getToolBar: GetToolBar): IDisposable {
+  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nux-example-toolbar');
     const {element} = toolBar.addButton({
       icon: 'mortar-board',
@@ -43,7 +37,9 @@ class Activation {
       tooltip: 'Example Nux Toolbar Item',
     });
     element.classList.add('sample-nux-toolbar-button');
-    const disposable = new Disposable(() => { toolBar.removeItems(); });
+    const disposable = new Disposable(() => {
+      toolBar.removeItems();
+    });
     this._disposables.add(disposable);
     return disposable;
   }
@@ -68,7 +64,7 @@ export function deactivate() {
   }
 }
 
-export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
+export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   invariant(activation != null);
   return activation.consumeToolBar(getToolBar);
 }
@@ -78,27 +74,25 @@ function generateTestNuxTour(
   name: string,
   numViews: number = 1,
 ): NuxTourModel {
-  const getNuxViewModel = viewNumber => (
-    {
-      content: `Content NUX #${viewNumber}`,
-      selector: '.sample-nux-toolbar-button',
-      position: 'auto',
-      /**
+  const getNuxViewModel = viewNumber => ({
+    content: `Content NUX #${viewNumber}`,
+    selector: '.sample-nux-toolbar-button',
+    position: 'auto',
+    /**
        * OPTIONAL: Use a custom selector function to return a DOM element if the
        * element to bind the NUX to cannot be returned by a query selector class.
        */
-      // selectorFunction: () => document.querySelector('.sample-nux-toolbar-button'),
-      /**
+    // selectorFunction: () => document.querySelector('.sample-nux-toolbar-button'),
+    /**
        * OPTIONAL: If set, the completion predicate will be evaluated after every
        * NUX interaction. The NuxView will not progress to the next one in the
        * NuxTour until the predicate evaluates to true.
        */
-      // completionPredicate: () => true,
-    }
-  );
+    // completionPredicate: () => true,
+  });
   const nuxList = Array(numViews)
-                    .fill() // Fill holes so map doesn't skip them
-                    .map((_, index) => getNuxViewModel(index + 1));
+    .fill() // Fill holes so map doesn't skip them
+    .map((_, index) => getNuxViewModel(index + 1));
   return {
     id,
     name,
@@ -125,7 +119,9 @@ function generateTestNuxTour(
 
 export function consumeRegisterNuxService(addNewNux: RegisterNux): Disposable {
   invariant(activation != null);
-  const disposable = addNewNux(generateTestNuxTour(SAMPLE_NUX_ID, SAMPLE_NUX_NAME, 2));
+  const disposable = addNewNux(
+    generateTestNuxTour(SAMPLE_NUX_ID, SAMPLE_NUX_NAME, 2),
+  );
   activation.addDisposable(disposable);
   return disposable;
 }

@@ -6,12 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {makeMessage, makeDbgpMessage} from '../lib/helpers';
-import {getDbgpMessageHandlerInstance} from '../lib/DbgpMessageHandler';
+import {DbgpMessageHandler} from '../lib/DbgpMessageHandler';
 
-const payload = '<?xml version="1.0" encoding="iso-8859-1"?>' +
+const payload =
+  '<?xml version="1.0" encoding="iso-8859-1"?>' +
   '<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug"' +
   ' command="property_value" transaction_id="14"><property name="$narrow" fullname="$narrow"' +
   ' address="140040883635904" type="bool"><![CDATA[0]]></property></response>';
@@ -21,45 +23,46 @@ describe('debugger-php-rpc DbgpMessageHandler', () => {
 
   beforeEach(() => {
     spyOn(console, 'log'); // Suppress logger messages.
-    messageHandler = getDbgpMessageHandlerInstance();
+    messageHandler = new DbgpMessageHandler();
   });
 
   afterEach(() => {
     messageHandler.clearIncompletedMessage();
   });
 
-  it('singleton', () => {
-    const messageHandler2 = getDbgpMessageHandlerInstance();
-    expect(messageHandler).toBe(messageHandler2);
-  });
-
   it('single completed message', () => {
-    const message = makeMessage({
-      command: 'context_names',
-      transaction_id: '1',
-    },
-    '<context name="Local" id="0"/>' +
-    '<context name="Global" id="1"/>' +
-    '<context name="Class" id="2"/>');
+    const message = makeMessage(
+      {
+        command: 'context_names',
+        transaction_id: '1',
+      },
+      '<context name="Local" id="0"/>' +
+        '<context name="Global" id="1"/>' +
+        '<context name="Class" id="2"/>',
+    );
     const results = messageHandler.parseMessages(message);
     expect(results.length).toBe(1);
   });
 
   it('two completed messages', () => {
-    const message1 = makeMessage({
-      command: 'context_names',
-      transaction_id: '1',
-    },
-    '<context name="Local" id="0"/>' +
-    '<context name="Global" id="1"/>' +
-    '<context name="Class" id="2"/>');
-    const message2 = makeMessage({
-      command: 'context_names',
-      transaction_id: '2',
-    },
-    '<context name="Local2" id="0"/>' +
-    '<context name="Global2" id="1"/>' +
-    '<context name="Class2" id="2"/>');
+    const message1 = makeMessage(
+      {
+        command: 'context_names',
+        transaction_id: '1',
+      },
+      '<context name="Local" id="0"/>' +
+        '<context name="Global" id="1"/>' +
+        '<context name="Class" id="2"/>',
+    );
+    const message2 = makeMessage(
+      {
+        command: 'context_names',
+        transaction_id: '2',
+      },
+      '<context name="Local2" id="0"/>' +
+        '<context name="Global2" id="1"/>' +
+        '<context name="Class2" id="2"/>',
+    );
     const results = messageHandler.parseMessages(message1 + message2);
     expect(results.length).toBe(2);
   });
@@ -77,19 +80,23 @@ describe('debugger-php-rpc DbgpMessageHandler', () => {
   });
 
   it('one completed message with one incompleted message ending', () => {
-    const completedMessage1 = makeMessage({
-      command: 'context_names',
-      transaction_id: '1',
-    },
-    '<context name="Local" id="0"/>' +
-    '<context name="Global" id="1"/>' +
-    '<context name="Class" id="2"/>');
+    const completedMessage1 = makeMessage(
+      {
+        command: 'context_names',
+        transaction_id: '1',
+      },
+      '<context name="Local" id="0"/>' +
+        '<context name="Global" id="1"/>' +
+        '<context name="Class" id="2"/>',
+    );
 
     const completedMessage2 = makeDbgpMessage(payload);
     const messagePart1 = completedMessage2.slice(0, -20);
     const messagePart2 = completedMessage2.slice(-20);
 
-    let results = messageHandler.parseMessages(completedMessage1 + messagePart1);
+    let results = messageHandler.parseMessages(
+      completedMessage1 + messagePart1,
+    );
     expect(results.length).toBe(1);
 
     results = messageHandler.parseMessages(messagePart2);
@@ -133,13 +140,15 @@ describe('debugger-php-rpc DbgpMessageHandler', () => {
     const messagePart1 = completedMessage1.slice(0, -50);
     const messagePart2 = completedMessage1.slice(-50, -20);
 
-    const completedMessage2 = makeMessage({
-      command: 'context_names',
-      transaction_id: '1',
-    },
-    '<context name="Local" id="0"/>' +
-    '<context name="Global" id="1"/>' +
-    '<context name="Class" id="2"/>');
+    const completedMessage2 = makeMessage(
+      {
+        command: 'context_names',
+        transaction_id: '1',
+      },
+      '<context name="Local" id="0"/>' +
+        '<context name="Global" id="1"/>' +
+        '<context name="Class" id="2"/>',
+    );
 
     const results = messageHandler.parseMessages(messagePart1);
     expect(results.length).toBe(0);
@@ -155,7 +164,9 @@ describe('debugger-php-rpc DbgpMessageHandler', () => {
     const completedMessage2 = makeDbgpMessage(payload);
 
     expect(() => {
-      messageHandler.parseMessages(completedMessage1 + IncompletedMessage + completedMessage2);
+      messageHandler.parseMessages(
+        completedMessage1 + IncompletedMessage + completedMessage2,
+      );
     }).toThrow();
   });
 });

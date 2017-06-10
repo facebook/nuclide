@@ -6,17 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileResult} from '../../nuclide-quick-open/lib/types';
 import type {CtagsResult, CtagsService} from '../../nuclide-ctags-rpc';
 
 import React from 'react';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {isFileInHackProject} from '../../nuclide-hack/lib/HackLanguage';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {CTAGS_KIND_ICONS, CTAGS_KIND_NAMES, getLineNumberForTag} from './utils';
 
 // ctags doesn't have a true limit API, so having too many results slows down Nuclide.
@@ -39,7 +41,9 @@ async function getCtagsService(
 }
 
 export default class QuickOpenHelpers {
-  static async isEligibleForDirectory(directory: atom$Directory): Promise<boolean> {
+  static async isEligibleForDirectory(
+    directory: atom$Directory,
+  ): Promise<boolean> {
     const svc = await getCtagsService(directory);
     if (svc != null) {
       svc.dispose();
@@ -66,7 +70,10 @@ export default class QuickOpenHelpers {
     );
   }
 
-  static async executeQuery(query: string, directory: atom$Directory): Promise<Array<FileResult>> {
+  static async executeQuery(
+    query: string,
+    directory: atom$Directory,
+  ): Promise<Array<FileResult>> {
     if (query.length < MIN_QUERY_LENGTH) {
       return [];
     }
@@ -92,17 +99,19 @@ export default class QuickOpenHelpers {
         limit: RESULTS_LIMIT,
       });
 
-      return await Promise.all(results
+      return results
         .filter(tag => !isHackProject || !tag.file.endsWith('.php'))
-        .map(async tag => {
-          const line = await getLineNumberForTag(tag);
+        .map(tag => {
           return {
             ...tag,
             path: tag.file,
             dir,
-            line,
+            async callback() {
+              const line = await getLineNumberForTag(tag);
+              goToLocation(tag.file, line);
+            },
           };
-        }));
+        });
     } finally {
       service.dispose();
     }

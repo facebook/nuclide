@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
-import {splitStream} from '../../commons-node/observable';
-import {observeStream} from '../../commons-node/stream';
+import {splitStream} from 'nuclide-commons/observable';
+import {observeStream} from 'nuclide-commons/stream';
 import invariant from 'assert';
 import type {MessageLogger} from './index';
 
@@ -23,19 +24,24 @@ export class StreamTransport {
   constructor(
     output: stream$Writable,
     input: stream$Readable,
-    messageLogger: MessageLogger = (direction, message) => { return; },
+    messageLogger: MessageLogger = (direction, message) => {
+      return;
+    },
   ) {
     this._isClosed = false;
     this._messageLogger = messageLogger;
     this._output = output;
-    this._messages = splitStream(observeStream(input))
-      .do(message => { this._messageLogger('receive', message); });
+    this._messages = splitStream(observeStream(input)).do(message => {
+      this._messageLogger('receive', message);
+    });
   }
 
   send(message: string): void {
     this._messageLogger('send', message);
-    invariant(message.indexOf('\n') === -1,
-      'StreamTransport.send - unexpected newline in JSON message');
+    invariant(
+      message.indexOf('\n') === -1,
+      'StreamTransport.send - unexpected newline in JSON message',
+    );
     this._output.write(message + '\n');
   }
 

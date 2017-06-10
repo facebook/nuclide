@@ -6,18 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileTreeNode} from './FileTreeNode';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {shell} from 'electron';
 import Immutable from 'immutable';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import FileTreeHelpers from './FileTreeHelpers';
-import {triggerAfterWait} from '../../commons-node/promise';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {triggerAfterWait} from 'nuclide-commons/promise';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
 
 const MOVE_TIMEOUT = 10000;
 
@@ -40,7 +43,8 @@ function isValidRename(node: FileTreeNode, destPath_: NuclideUri): boolean {
 
   destPath = FileTreeHelpers.keyToPath(destPath);
 
-  return FileTreeHelpers.getEntryByKey(node.uri) != null &&
+  return (
+    FileTreeHelpers.getEntryByKey(node.uri) != null &&
     // This will only detect exact equalities, mostly preventing moves of a
     // directory into itself from causing an error. If a case-changing rename
     // should be a noop for the current OS's file system, this is handled by the
@@ -50,13 +54,17 @@ function isValidRename(node: FileTreeNode, destPath_: NuclideUri): boolean {
     !nuclideUri.contains(path, nuclideUri.dirname(destPath)) &&
     // Disallow renames across projects for the time being, since cross-host and
     // cross-repository moves are a bit tricky.
-    nuclideUri.contains(rootPath, destPath);
+    nuclideUri.contains(rootPath, destPath)
+  );
 }
 
 /**
  * Renames a single node to the new path.
  */
-async function renameNode(node: FileTreeNode, destPath: NuclideUri): Promise<void> {
+async function renameNode(
+  node: FileTreeNode,
+  destPath: NuclideUri,
+): Promise<void> {
   if (!isValidRename(node, destPath)) {
     return;
   }
@@ -68,7 +76,7 @@ async function renameNode(node: FileTreeNode, destPath: NuclideUri): Promise<voi
   try {
     const service = getFileSystemServiceByNuclideUri(filePath);
     // Throws if the destPath already exists.
-    await service.rename(nuclideUri.getPath(filePath), nuclideUri.getPath(destPath));
+    await service.rename(filePath, destPath);
 
     const hgRepository = getHgRepositoryForNode(node);
     if (hgRepository == null) {
@@ -95,7 +103,10 @@ function resetIsMoving() {
  * Moves an array of nodes into the destPath, ignoring nodes that cannot be moved.
  * This wrapper prevents concurrent move operations.
  */
-async function moveNodes(nodes: Array<FileTreeNode>, destPath: NuclideUri): Promise<void> {
+async function moveNodes(
+  nodes: Array<FileTreeNode>,
+  destPath: NuclideUri,
+): Promise<void> {
   if (isMoving) {
     return;
   }
@@ -105,8 +116,8 @@ async function moveNodes(nodes: Array<FileTreeNode>, destPath: NuclideUri): Prom
   await triggerAfterWait(
     _moveNodesUnprotected(nodes, destPath),
     MOVE_TIMEOUT,
-    resetIsMoving, /* timeoutFn */
-    resetIsMoving, /* cleanupFn */
+    resetIsMoving /* timeoutFn */,
+    resetIsMoving /* cleanupFn */,
   );
 }
 
@@ -119,9 +130,9 @@ async function _moveNodesUnprotected(
   try {
     const filteredNodes = nodes.filter(node => isValidRename(node, destPath));
     // Collapse paths that are in the same subtree, keeping only the subtree root.
-    paths = nuclideUri.collapse(filteredNodes.map(node =>
-      FileTreeHelpers.keyToPath(node.uri),
-    ));
+    paths = nuclideUri.collapse(
+      filteredNodes.map(node => FileTreeHelpers.keyToPath(node.uri)),
+    );
 
     if (paths.length === 0) {
       return;
@@ -135,7 +146,7 @@ async function _moveNodesUnprotected(
     });
 
     const service = getFileSystemServiceByNuclideUri(paths[0]);
-    await service.move(paths.map(p => nuclideUri.getPath(p)), nuclideUri.getPath(destPath));
+    await service.move(paths, destPath);
 
     // All filtered nodes should have the same rootUri, so we simply attempt to
     // retrieve the hg repository using the first node.
@@ -160,9 +171,9 @@ async function _moveNodesUnprotected(
 async function deleteNodes(nodes: Array<FileTreeNode>): Promise<void> {
   // Filter out children nodes to avoid ENOENTs that happen when parents are
   // deleted before its children. Convert to List so we can use groupBy.
-  const paths = Immutable.List(nuclideUri.collapse(
-    nodes.map(node => FileTreeHelpers.keyToPath(node.uri)),
-  ));
+  const paths = Immutable.List(
+    nuclideUri.collapse(nodes.map(node => FileTreeHelpers.keyToPath(node.uri))),
+  );
   const localPaths = paths.filter(path => nuclideUri.isLocal(path));
   const remotePaths = paths.filter(path => nuclideUri.isRemote(path));
 
@@ -171,13 +182,17 @@ async function deleteNodes(nodes: Array<FileTreeNode>): Promise<void> {
 
   // 2) Batch delete remote nodes, one request per hostname.
   if (remotePaths.size > 0) {
-    const pathsByHost = remotePaths.groupBy(path => nuclideUri.getHostname(path));
+    const pathsByHost = remotePaths.groupBy(path =>
+      nuclideUri.getHostname(path),
+    );
 
-    await Promise.all(pathsByHost.map(async pathGroup => {
-      // Batch delete using fs service.
-      const service = getFileSystemServiceByNuclideUri(pathGroup.get(0));
-      await service.rmdirAll(pathGroup.map(path => nuclideUri.getPath(path)).toJS());
-    }));
+    await Promise.all(
+      pathsByHost.map(async pathGroup => {
+        // Batch delete using fs service.
+        const service = getFileSystemServiceByNuclideUri(pathGroup.get(0));
+        await service.rmdirAll(pathGroup.toJS());
+      }),
+    );
   }
 
   // 3) Batch hg remove nodes that belong to an hg repo, one request per repo.
@@ -186,12 +201,14 @@ async function deleteNodes(nodes: Array<FileTreeNode>): Promise<void> {
     .groupBy(node => getHgRepositoryForNode(node))
     .entrySeq();
 
-  await Promise.all(nodesByHgRepository.map(async ([hgRepository, repoNodes]) => {
-    const hgPaths = nuclideUri.collapse(
-      repoNodes.map(node => FileTreeHelpers.keyToPath(node.uri)).toJS(),
-    );
-    await hgRepository.remove(hgPaths, true /* after */);
-  }));
+  await Promise.all(
+    nodesByHgRepository.map(async ([hgRepository, repoNodes]) => {
+      const hgPaths = nuclideUri.collapse(
+        repoNodes.map(node => FileTreeHelpers.keyToPath(node.uri)).toJS(),
+      );
+      await hgRepository.remove(hgPaths, true /* after */);
+    }),
+  );
 }
 
 export default {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestContext} from './remotable-tests';
@@ -13,13 +14,17 @@ import type {TestContext} from './remotable-tests';
 import dedent from 'dedent';
 import busySignal from './busy-signal-common';
 import {generateFixture} from '../../pkg/nuclide-test-helpers';
-import {Deferred} from '../../pkg/commons-node/promise';
+import {Deferred} from 'nuclide-commons/promise';
 
 export function generateFlowProject(): Promise<string> {
   // When a test fails, the generated fixtures can be found in
   // `$TMP/flow_project_xxxxxxxx`.
-  return generateFixture('flow_project', new Map([
-    ['.flowconfig', dedent`
+  return generateFixture(
+    'flow_project',
+    new Map([
+      [
+        '.flowconfig',
+        dedent`
       [ignore]
 
       [include]
@@ -27,20 +32,28 @@ export function generateFlowProject(): Promise<string> {
       [libs]
 
       [options]
-    `],
-    ['Foo.js', dedent`
+    `,
+      ],
+      [
+        'Foo.js',
+        dedent`
       // @flow
       export class Foo {
         bar(): void {}
       }
-    `],
-    ['main.js', dedent`
+    `,
+      ],
+      [
+        'main.js',
+        dedent`
       // @flow
       const num = 3;
       import {Foo} from './Foo';
       new Foo().bar();
-    `],
-  ]));
+    `,
+      ],
+    ]),
+  );
 }
 
 export function setup(context: TestContext): Promise<atom$TextEditor> {
@@ -51,7 +64,9 @@ export function setup(context: TestContext): Promise<atom$TextEditor> {
     // Add this directory as an atom project.
     await context.setProject(flowProjectPath);
     // Open a file in the flow project we copied, and get reference to the editor's HTML.
-    const editor = await atom.workspace.open(context.getProjectRelativePath('main.js'));
+    const editor = await atom.workspace.open(
+      context.getProjectRelativePath('main.js'),
+    );
     deferred.resolve(editor);
   });
 

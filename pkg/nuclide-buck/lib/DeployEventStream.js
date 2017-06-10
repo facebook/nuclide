@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {ProcessMessage} from '../../commons-node/process-rpc-types';
+import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import typeof * as BuckService from '../../nuclide-buck-rpc';
 import type RemoteControlService
   from '../../nuclide-debugger/lib/RemoteControlService';
@@ -17,7 +18,7 @@ import type {BuckEvent} from './BuckEventStream';
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 
-import {compact} from '../../commons-node/observable';
+import {compact} from 'nuclide-commons/observable';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {
@@ -27,13 +28,15 @@ import {
 import {
   LaunchProcessInfo,
 } from '../../nuclide-debugger-native/lib/LaunchProcessInfo';
-import {getLogger} from '../../nuclide-logging';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {getLogger} from 'log4js';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {track} from '../../nuclide-analytics';
 
 const LLDB_PROCESS_ID_REGEX = /lldb -p ([0-9]+)/;
+const JDWP_PROCESS_PORT_REGEX = /.*Connect a JDWP debugger to port ([0-9]+).*/;
 const ANDROID_ACTIVITY_REGEX = /Starting activity (.*)\/(.*)\.\.\./;
+const ANDROID_DEVICE_REGEX = /Installing apk on ([^ ]+).*/;
 const LLDB_TARGET_TYPE = 'LLDB';
 const ANDROID_TARGET_TYPE = 'android';
 
@@ -50,6 +53,7 @@ async function debugBuckTarget(
   buckRoot: string,
   buildTarget: string,
   runArguments: Array<string>,
+  targetType: string,
 ): Promise<string> {
   const output = await buckService.showOutput(buckRoot, buildTarget);
   if (output.length === 0) {
@@ -107,9 +111,34 @@ async function debugPidWithLLDB(pid: number, buckRoot: string) {
   debuggerService.startDebugging(attachInfo);
 }
 
+async function debugJavaTest(attachPort: number, buckRoot: string) {
+  const javaDebuggerProvider = await consumeFirstProvider(
+    'nuclide-java-debugger',
+  );
+
+  if (javaDebuggerProvider == null) {
+    throw new Error(
+      'Could not debug java_test: the Java debugger is not available.',
+    );
+  }
+
+  // Buck is going to invoke the test twice - once with --dry-run to determine
+  // what tests are being run, and once to actually run the test. We need to
+  // attach the debugger and resume the first instance, and then wait for the
+  // second instance and re-attach.
+
+  const debuggerService = await getDebuggerService();
+  invariant(debuggerService != null);
+
+  debuggerService.startDebugging(
+    javaDebuggerProvider.createJavaTestAttachInfo(buckRoot, attachPort),
+  );
+}
+
 async function debugAndroidActivity(
   buckProjectPath: string,
-  androidActivity: string,
+  androidPackage: string,
+  deviceName: ?string,
 ) {
   const service = getServiceByNuclideUri(
     'JavaDebuggerService',
@@ -120,26 +149,22 @@ async function debugAndroidActivity(
   }
 
   const debuggerService = await getDebuggerService();
-  try {
-    track('fb-java-debugger-start', {
-      startType: 'buck-toolbar',
-      target: buckProjectPath,
-      targetType: 'android',
-      targetClass: androidActivity,
-    });
+  track('fb-java-debugger-start', {
+    startType: 'buck-toolbar',
+    target: buckProjectPath,
+    targetType: 'android',
+    targetClass: androidPackage,
+  });
 
-    /* eslint-disable nuclide-internal/no-cross-atom-imports */
-    // $FlowFB
-    const procInfo = require('../../fb-debugger-java/lib/AdbProcessInfo');
-    debuggerService.startDebugging(
-      new procInfo.AdbProcessInfo(buckProjectPath, null, null, androidActivity),
-    );
-    /* eslint-enable nuclide-internal/no-cross-atom-imports */
-  } catch (e) {
-    track('fb-java-debugger-unavailable', {
-      error: e.toString(),
+  const javaDebugger = await consumeFirstProvider('nuclide-java-debugger');
+
+  if (javaDebugger != null) {
+    const debugInfo = javaDebugger.createAndroidDebugInfo({
+      targetUri: buckProjectPath,
+      packageName: androidPackage,
+      device: deviceName,
     });
-    throw new Error('Java debugger service is not available.');
+    debuggerService.startDebugging(debugInfo);
   }
 }
 
@@ -162,11 +187,12 @@ async function _getAttachProcessInfoFromPid(
 }
 
 export function getDeployBuildEvents(
-  processStream: Observable<ProcessMessage>,
+  processStream: Observable<LegacyProcessMessage>, // TODO(T17463635)
   buckService: BuckService,
   buckRoot: string,
   buildTarget: string,
   runArguments: Array<string>,
+  targetType: string,
 ): Observable<BuckEvent> {
   const argString = runArguments.length === 0
     ? ''
@@ -175,7 +201,13 @@ export function getDeployBuildEvents(
     .filter(message => message.kind === 'exit' && message.exitCode === 0)
     .switchMap(() => {
       return Observable.fromPromise(
-        debugBuckTarget(buckService, buckRoot, buildTarget, runArguments),
+        debugBuckTarget(
+          buckService,
+          buckRoot,
+          buildTarget,
+          runArguments,
+          targetType,
+        ),
       )
         .map(path => ({
           type: 'log',
@@ -183,7 +215,7 @@ export function getDeployBuildEvents(
           level: 'info',
         }))
         .catch(err => {
-          getLogger().error(
+          getLogger('nuclide-buck').error(
             `Failed to launch debugger for ${buildTarget}`,
             err,
           );
@@ -194,27 +226,33 @@ export function getDeployBuildEvents(
           });
         })
         .startWith(
-        {
-          type: 'log',
-          message: `Launching debugger for ${buildTarget}${argString}...`,
-          level: 'log',
-        },
-        {
-          type: 'progress',
-          progress: null,
-        },
+          {
+            type: 'log',
+            message: `Launching debugger for ${buildTarget}${argString}...`,
+            level: 'log',
+          },
+          {
+            type: 'progress',
+            progress: null,
+          },
         );
     });
 }
 
 export function getDeployInstallEvents(
-  processStream: Observable<ProcessMessage>,
+  processStream: Observable<LegacyProcessMessage>, // TODO(T17463635)
   buckRoot: string,
 ): Observable<BuckEvent> {
   let targetType = LLDB_TARGET_TYPE;
+  let deviceName = null;
   return compact(
     processStream.map(message => {
       if (message.kind === 'stdout' || message.kind === 'stderr') {
+        const deviceMatch = message.data.match(ANDROID_DEVICE_REGEX);
+        if (deviceMatch != null && deviceMatch.length > 0) {
+          deviceName = deviceMatch[1];
+        }
+
         const activity = message.data.match(ANDROID_ACTIVITY_REGEX);
         if (activity != null) {
           targetType = ANDROID_TARGET_TYPE;
@@ -245,7 +283,7 @@ export function getDeployInstallEvents(
               });
           } else if (targetInfo.targetType === ANDROID_TARGET_TYPE) {
             return Observable.fromPromise(
-              debugAndroidActivity(buckRoot, targetInfo.targetApp),
+              debugAndroidActivity(buckRoot, targetInfo.targetApp, deviceName),
             )
               .ignoreElements()
               .startWith({
@@ -261,29 +299,55 @@ export function getDeployInstallEvents(
 }
 
 export function getDeployTestEvents(
-  processStream: Observable<ProcessMessage>,
+  processStream: Observable<LegacyProcessMessage>, // TODO(T17463635)
   buckRoot: string,
+  targetType: string,
 ): Observable<BuckEvent> {
+  let attachArgRegex;
+  switch (targetType) {
+    case 'java_test':
+      attachArgRegex = JDWP_PROCESS_PORT_REGEX;
+      break;
+    default:
+      attachArgRegex = LLDB_PROCESS_ID_REGEX;
+      break;
+  }
+
   return processStream
     .flatMap(message => {
       if (message.kind !== 'stderr') {
         return Observable.empty();
       }
-      const pidMatch = message.data.match(LLDB_PROCESS_ID_REGEX);
-      if (pidMatch == null) {
-        return Observable.empty();
+
+      const regMatch = message.data.match(attachArgRegex);
+      if (regMatch != null) {
+        return Observable.of(regMatch[1]);
       }
-      return Observable.of(pidMatch[1]);
+
+      return Observable.empty();
     })
-    .switchMap(pid => {
-      return Observable.fromPromise(
-        debugPidWithLLDB(parseInt(pid, 10), buckRoot),
-      )
-        .ignoreElements()
-        .startWith({
-          type: 'log',
-          message: `Attaching LLDB debugger to pid ${pid}...`,
-          level: 'info',
-        });
+    .switchMap(attachArg => {
+      let debugMsg;
+      let debugObservable;
+      switch (targetType) {
+        case 'java_test':
+          debugMsg = `Attaching Java debugger to port ${attachArg}...`;
+          debugObservable = Observable.fromPromise(
+            debugJavaTest(parseInt(attachArg, 10), buckRoot),
+          );
+          break;
+        default:
+          debugMsg = `Attaching LLDB debugger to pid ${attachArg}...`;
+          debugObservable = Observable.fromPromise(
+            debugPidWithLLDB(parseInt(attachArg, 10), buckRoot),
+          );
+          break;
+      }
+
+      return debugObservable.ignoreElements().startWith({
+        type: 'log',
+        message: debugMsg,
+        level: 'info',
+      });
     });
 }

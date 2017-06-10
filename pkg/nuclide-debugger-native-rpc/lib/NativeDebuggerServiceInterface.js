@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
@@ -34,7 +35,8 @@ export type BootstrapDebuggerInfo = {
   lldbPythonPath?: ?string, // see DebuggerConfig
 };
 
-export type DebuggerConfig = { // config for lldb
+export type DebuggerConfig = {
+  // config for lldb
   logLevel: LogLevel,
   pythonBinaryPath: string, // path of the actual python binary, e.g /usr/bin/python
   buckConfigRootFile: string,
@@ -49,8 +51,7 @@ export async function getAttachTargetInfoList(
 }
 
 export class NativeDebuggerService {
-  constructor(config: DebuggerConfig) {
-  }
+  constructor(config: DebuggerConfig) {}
 
   getOutputWindowObservable(): ConnectableObservable<string> {
     throw new Error('Not implemented');

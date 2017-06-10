@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import type {QueryScore} from './QueryScore';
 
@@ -18,7 +19,9 @@ const NON_UPPERCASE_CHARS_REGEXP = /[^a-z0-9]/g;
  * no common subsequence.
  * A lower number means `needle` is more relevant to `haystack`.
  */
-function scoreCommonSubsequence(needle: string, haystack_: string): number {
+function scoreCommonSubsequence(needle_: string, haystack_: string): number {
+  // Don't ignore the needle's case, but strip punctuation.
+  const needle = needle_.replace(/[^a-zA-Z0-9]/g, '');
   let haystack = haystack_;
   haystack = haystack.toLowerCase();
   haystack = haystack.replace(NON_UPPERCASE_CHARS_REGEXP, '');
@@ -38,7 +41,7 @@ function scoreCommonSubsequence(needle: string, haystack_: string): number {
       inGap = false;
     } else {
       haystackIndex++;
-      score += (inGap ? 2 : 20);
+      score += inGap ? 2 : 20;
       inGap = true;
     }
   }
@@ -54,8 +57,12 @@ const NOT_CAPITAL_LETTERS_REGEXP = /[^A-Z]/g;
  * `haystack`.  E.g. 'fbide' matches 'FaceBookIntegratedDevelopmentEnvironment' and
  *                                   'faceBookIntegratedDevelopmentEnvironment'.
  */
-function checkIfMatchesCamelCaseLetters(needle: string, haystack: string): boolean {
-  const uppercase = haystack.substring(0, 1) +
+function checkIfMatchesCamelCaseLetters(
+  needle: string,
+  haystack: string,
+): boolean {
+  const uppercase =
+    haystack.substring(0, 1) +
     haystack.substring(1).replace(NOT_CAPITAL_LETTERS_REGEXP, '');
   return needle.toLowerCase() === uppercase.toLowerCase();
 }
@@ -85,10 +92,7 @@ function importantCharactersForString(str: string): Set<string> {
   const importantCharacters = new Set();
   for (let index = 0; index < str.length; index++) {
     const char = str[index];
-    if (
-      !importantCharacters.has(char) &&
-      isLetterImportant(index, str)
-    ) {
+    if (!importantCharacters.has(char) && isLetterImportant(index, str)) {
       importantCharacters.add(char);
     }
   }
@@ -139,7 +143,9 @@ export default class QueryItem {
    */
   score(query: string): ?QueryScore {
     const score = this._getScoreFor(query);
-    return score == null ? null : {score, value: this._filepath, matchIndexes: []};
+    return score == null
+      ? null
+      : {score, value: this._filepath, matchIndexes: []};
   }
 
   _getScoreFor(query: string): ?number {
@@ -154,7 +160,10 @@ export default class QueryItem {
     if (!this._importantCharacters.has(firstChar)) {
       return null;
     }
-    if (query.length >= 3 && checkIfMatchesCamelCaseLetters(query, this._filename)) {
+    if (
+      query.length >= 3 &&
+      checkIfMatchesCamelCaseLetters(query, this._filename)
+    ) {
       // If we match the uppercase characters of the filename, we should be ranked the highest
       return 0;
     } else {

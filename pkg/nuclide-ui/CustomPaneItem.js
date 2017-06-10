@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global HTMLElement */
@@ -14,7 +15,13 @@ import invariant from 'assert';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import type {CustomPaneItemOptions} from './types';
+export type CustomPaneItemOptions = {
+  title: string, // Title for the custom pane item being created.
+  iconName?: string, // Optional string representing the octicon that is rendered next to the title.
+  uri?: string,
+  allowSplit?: boolean, // Whether splits are allowed on the pane item. Defaults to false.
+  initialProps: Object, // The pane item specific properties.
+};
 
 export class CustomPaneItem extends HTMLElement {
   _title: ?string;

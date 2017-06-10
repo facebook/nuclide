@@ -6,18 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BusySignalMessage} from './types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Observable} from 'rxjs';
 
-import {Disposable, CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {Subject} from 'rxjs';
 import invariant from 'assert';
 
-import {isPromise} from '../../commons-node/promise';
+import {isPromise} from 'nuclide-commons/promise';
 
 export type MessageDisplayOptions = {
   onlyForFile: NuclideUri,
@@ -37,7 +38,10 @@ export class BusySignalProviderBase {
   /**
    * Displays the message until the returned disposable is disposed
    */
-  displayMessage(message: string, optionsArg?: MessageDisplayOptions): IDisposable {
+  displayMessage(
+    message: string,
+    optionsArg?: MessageDisplayOptions,
+  ): UniversalDisposable {
     // Reassign as const so the type refinement holds in the closure below
     const options = optionsArg;
     if (options == null || options.onlyForFile == null) {
@@ -51,11 +55,13 @@ export class BusySignalProviderBase {
         displayedDisposable = null;
       }
     };
-    return new CompositeDisposable(
+    return new UniversalDisposable(
       atom.workspace.observeActivePaneItem(item => {
-        if (item != null &&
-            typeof item.getPath === 'function' &&
-            item.getPath() === options.onlyForFile) {
+        if (
+          item != null &&
+          typeof item.getPath === 'function' &&
+          item.getPath() === options.onlyForFile
+        ) {
           if (displayedDisposable == null) {
             displayedDisposable = this._displayMessage(message);
           }
@@ -64,19 +70,21 @@ export class BusySignalProviderBase {
         }
       }),
       // We can't add displayedDisposable directly because its value may change.
-      new Disposable(disposeDisplayed),
+      disposeDisplayed,
     );
   }
 
-  _displayMessage(message: string): IDisposable {
+  _displayMessage(message: string): UniversalDisposable {
     const {busy, done} = this._nextMessagePair(message);
     this._messages.next(busy);
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._messages.next(done);
     });
   }
 
-  _nextMessagePair(message: string): {busy: BusySignalMessage, done: BusySignalMessage} {
+  _nextMessagePair(
+    message: string,
+  ): {busy: BusySignalMessage, done: BusySignalMessage} {
     const busy = {
       status: 'busy',
       id: this._nextId,
@@ -97,7 +105,11 @@ export class BusySignalProviderBase {
    * Used to indicate that some work is ongoing while the given asynchronous
    * function executes.
    */
-  reportBusy<T>(message: string, f: () => Promise<T>, options?: MessageDisplayOptions): Promise<T> {
+  reportBusy<T>(
+    message: string,
+    f: () => Promise<T>,
+    options?: MessageDisplayOptions,
+  ): Promise<T> {
     const messageRemover = this.displayMessage(message, options);
     const removeMessage = messageRemover.dispose.bind(messageRemover);
     try {

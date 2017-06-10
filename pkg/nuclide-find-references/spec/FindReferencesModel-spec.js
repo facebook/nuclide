@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point, Range} from 'atom';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {generateFixture} from '../../nuclide-test-helpers';
 import FindReferencesModel from '../lib/FindReferencesModel';
 
@@ -24,7 +25,9 @@ function range(startLine, startColumn, endLine, endColumn) {
 describe('FindReferencesModel', () => {
   let TEST1: string;
   let TEST2: string;
-  const nullGrammar = atom.grammars.grammarForScopeName('text.plain.null-grammar');
+  const nullGrammar = atom.grammars.grammarForScopeName(
+    'text.plain.null-grammar',
+  );
 
   beforeEach(() => {
     waitsForPromise(async () => {
@@ -32,10 +35,10 @@ describe('FindReferencesModel', () => {
       for (let i = 1; i <= 9; i++) {
         contents += i + '\n';
       }
-      const tempFolder = await generateFixture('find-refs', new Map([
-        ['test1', contents],
-        ['test2', contents],
-      ]));
+      const tempFolder = await generateFixture(
+        'find-refs',
+        new Map([['test1', contents], ['test2', contents]]),
+      );
 
       TEST1 = nuclideUri.join(tempFolder, 'test1');
       TEST2 = nuclideUri.join(tempFolder, 'test2');
@@ -70,9 +73,7 @@ describe('FindReferencesModel', () => {
           uri: TEST2,
           grammar: nullGrammar,
           previewText: ['1\n2\n3'],
-          refGroups: [
-            {references: [refs[2]], startLine: 0, endLine: 2},
-          ],
+          refGroups: [{references: [refs[2]], startLine: 0, endLine: 2}],
         },
       ];
       expect(result).toEqual(expectedResult);
@@ -118,9 +119,7 @@ describe('FindReferencesModel', () => {
           uri: TEST2,
           grammar: nullGrammar,
           previewText: ['1\n2\n3\n4\n5'],
-          refGroups: [
-            {references: refs.slice(5, 7), startLine: 0, endLine: 4},
-          ],
+          refGroups: [{references: refs.slice(5, 7), startLine: 0, endLine: 4}],
         },
       ]);
     });

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -15,15 +16,15 @@ import shallowequal from 'shallowequal';
  * Wraps DecoratedComponent in a special `span` with a configurable classname whenever the
  * component's props change.
  */
-export function highlightOnUpdate<T : ReactClass<any>, P: {+[key: string]: mixed}>(
+export function highlightOnUpdate<
+  T: ReactClass<any>,
+  P: {+[key: string]: mixed},
+>(
   ComposedComponent: T,
   /**
    * The result of this function determines whether to apply the highlight or not.
    */
-  arePropsEqual?: (
-    p1: P,
-    p2: P,
-  ) => boolean = shallowequal,
+  arePropsEqual?: (p1: P, p2: P) => boolean = shallowequal,
   /**
    * className used in the wrapper. You can style both `className` and `<className>-highlight`.
    */
@@ -55,19 +56,17 @@ export function highlightOnUpdate<T : ReactClass<any>, P: {+[key: string]: mixed
         return;
       }
       this.showFlash = true;
-      this.timeout = setTimeout(
-        () => {
-          this.showFlash = false;
-          this.timeout = null;
-          this.forceUpdate();
-        },
-        unhighlightDelay,
-      );
+      this.timeout = setTimeout(() => {
+        this.showFlash = false;
+        this.timeout = null;
+        this.forceUpdate();
+      }, unhighlightDelay);
     }
 
     render(): React.Element<any> {
       return (
-        <span className={`${className} ${this.showFlash ? className + '-highlight' : ''}`}>
+        <span
+          className={`${className} ${this.showFlash ? className + '-highlight' : ''}`}>
           <ComposedComponent {...this.props} />
         </span>
       );

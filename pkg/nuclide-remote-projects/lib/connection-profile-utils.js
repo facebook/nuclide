@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
@@ -19,10 +20,15 @@ import type {
 import type {
   SshConnectionConfiguration,
 } from '../../nuclide-remote-connection/lib/SshHandshake';
+import type {
+  DnsLookup,
+} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 
 import invariant from 'assert';
-import featureConfig from '../../commons-atom/featureConfig';
-import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {arrayCompact} from 'nuclide-commons/collection';
+import lookupPreferIpv6
+  from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 
 /**
  * Section: Default Connection Profile
@@ -41,8 +47,9 @@ export function getDefaultConnectionProfile(options?: {
   const defaultConnectionSettings = getDefaultConfig();
   const currentOfficialRSC = defaultConnectionSettings.remoteServerCommand;
 
-  const rawLastConnectionDetails =
-    localStorage.getItem('nuclide:nuclide-remote-projects:lastConnectionDetails');
+  const rawLastConnectionDetails = localStorage.getItem(
+    'nuclide:nuclide-remote-projects:lastConnectionDetails',
+  );
 
   let lastConnectionDetails: ?NuclideSavedConnectionDialogConfig;
   try {
@@ -57,14 +64,19 @@ export function getDefaultConnectionProfile(options?: {
   }
 
   invariant(lastConnectionDetails != null);
-  const {lastOfficialRemoteServerCommand, updatedConfig} = lastConnectionDetails;
+  const {
+    lastOfficialRemoteServerCommand,
+    updatedConfig,
+  } = lastConnectionDetails;
   const lastConfig = updatedConfig || {};
 
   // Only use the user's last saved remote server command if there has been no
   // change (upgrade) in the official remote server command.
   let remoteServerCommand = currentOfficialRSC;
-  if (lastOfficialRemoteServerCommand === currentOfficialRSC
-      && lastConfig.remoteServerCommand) {
+  if (
+    lastOfficialRemoteServerCommand === currentOfficialRSC &&
+    lastConfig.remoteServerCommand
+  ) {
     remoteServerCommand = lastConfig.remoteServerCommand;
   }
   const dialogSettings: NuclideRemoteConnectionParams = {
@@ -97,9 +109,12 @@ export function getDefaultConnectionProfile(options?: {
 /**
  * Returns an array of saved connection profiles.
  */
-export function getSavedConnectionProfiles(): Array<NuclideRemoteConnectionProfile> {
-  const connectionProfiles: ?Array<NuclideRemoteConnectionProfile> =
-    (featureConfig.get('nuclide-remote-projects.connectionProfiles'): any);
+export function getSavedConnectionProfiles(): Array<
+  NuclideRemoteConnectionProfile,
+> {
+  const connectionProfiles: ?Array<
+    NuclideRemoteConnectionProfile,
+  > = (featureConfig.get('nuclide-remote-projects.connectionProfiles'): any);
   invariant(Array.isArray(connectionProfiles));
   prepareSavedConnectionProfilesForDisplay(connectionProfiles);
   return connectionProfiles;
@@ -108,11 +123,12 @@ export function getSavedConnectionProfiles(): Array<NuclideRemoteConnectionProfi
 /**
  * Saves the connection profiles. Overwrites any existing profiles.
  */
-export function saveConnectionProfiles(profiles: Array<NuclideRemoteConnectionProfile>): void {
+export function saveConnectionProfiles(
+  profiles: Array<NuclideRemoteConnectionProfile>,
+): void {
   prepareConnectionProfilesForSaving(profiles);
   featureConfig.set('nuclide-remote-projects.connectionProfiles', profiles);
 }
-
 
 type ConnectionProfileChange = {
   newValue: ?Array<NuclideRemoteConnectionProfile>,
@@ -152,15 +168,14 @@ export function getUniqueHostsForProfiles(
 /**
  * Returns an array of IP addresses for a given array of host names
  */
-export async function getIPsForHosts(hosts: Array<string>,
-): Promise<Array<string>> {
-  const promise_array = hosts.map(
-    host => lookupPreferIpv6(host).catch(() => {}),
+export async function getIPsForHosts(
+  hosts: Array<string>,
+): Promise<Array<DnsLookup>> {
+  const promise_array = hosts.map(host =>
+    lookupPreferIpv6(host).catch(() => {}),
   );
   const values = await Promise.all(promise_array);
-  return values.filter(element => {
-    return element !== undefined;
-  });
+  return arrayCompact(values);
 }
 
 /**

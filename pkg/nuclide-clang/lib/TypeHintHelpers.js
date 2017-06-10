@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FlowSettings} from './FlowService';
@@ -14,6 +15,7 @@ import invariant from 'assert';
 const config: FlowSettings = {
   functionSnippetShouldIncludeArguments: true,
   stopFlowOnExit: true,
+  lazyServer: false,
 };
 
 export function getConfig(key: $Keys<typeof config>): mixed {

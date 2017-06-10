@@ -6,17 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import log4js from 'log4js';
 
 import {
   FileAppender,
   getServerLogAppenderConfig,
-  updateConfig,
   initialUpdateConfig,
-  getLogger,
 } from '../../nuclide-logging';
 
-const logger = getLogger();
+const logger = log4js.getLogger('nuclide-remote-atom-rpc');
 
 export const EXIT_CODE_SUCCESS = 0;
 export const EXIT_CODE_UNKNOWN_ERROR = 1;
@@ -46,9 +47,7 @@ export async function setupLogging() {
   await initialUpdateConfig();
 
   const config = {
-    appenders: [
-      FileAppender,
-    ],
+    appenders: [FileAppender],
   };
 
   const serverLogAppenderConfig = await getServerLogAppenderConfig();
@@ -56,13 +55,13 @@ export async function setupLogging() {
     config.appenders.push(serverLogAppenderConfig);
   }
 
-  updateConfig(config);
+  log4js.configure(config);
 }
 
 export function reportConnectionErrorAndExit(detailMessage: string): void {
   process.stderr.write(`Error: ${detailMessage}.\n`);
   process.stderr.write('Do you have Atom with Nuclide open?\n');
-  process.stderr.write((new Error()).stack);
+  process.stderr.write(new Error().stack);
   process.stderr.write('\n');
   process.exit(EXIT_CODE_CONNECTION_ERROR);
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebugMode} from './types';
@@ -13,9 +14,13 @@ import type {DebugMode} from './types';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {LaunchProcessInfo} from '../../nuclide-debugger-php/lib/LaunchProcessInfo';
+import {
+  LaunchProcessInfo,
+} from '../../nuclide-debugger-php/lib/LaunchProcessInfo';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {AttachProcessInfo} from '../../nuclide-debugger-php/lib/AttachProcessInfo';
+import {
+  AttachProcessInfo,
+} from '../../nuclide-debugger-php/lib/AttachProcessInfo';
 import invariant from 'assert';
 
 export async function debug(
@@ -32,7 +37,10 @@ export async function debug(
   }
 
   // Use commands here to trigger package activation.
-  atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-debugger:show');
+  atom.commands.dispatch(
+    atom.views.getView(atom.workspace),
+    'nuclide-debugger:show',
+  );
   const debuggerService = await consumeFirstProvider('nuclide-debugger.remote');
   await debuggerService.startDebugging(processInfo);
 }

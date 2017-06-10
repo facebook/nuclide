@@ -21,7 +21,7 @@
             },
             {
               "label": "Reveal Active File in File Tree",
-              "command": "nuclide-file-tree:reveal-in-file-tree"
+              "command": "nuclide-file-tree:reveal-active-file"
             },
             {
               "label": "Collapse File Tree",
@@ -39,7 +39,7 @@
   "context-menu": {
     "atom-pane atom-text-editor, [data-path]:not(.nuclide-file-tree-path)": [
       {
-        "command": "nuclide-file-tree:reveal-in-file-tree",
+        "command": "nuclide-file-tree:reveal-active-file",
         "label": "Reveal in File Tree"
       },
       {

@@ -6,9 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {loadedShellEnvironment} from '../../commons-node/process';
+// TODO(T17266325): Remove this package when `atom.whenShellEnvironmentLoaded()` lands.
+
+import {
+  loadedShellEnvironment,
+} from 'nuclide-commons/whenShellEnvironmentLoaded';
 
 /**
  * The sole purpose of this package is to listen to the

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -57,9 +58,11 @@ export default class HandlesTableComponent<T: Object>
           <thead>
             <tr>
               <th width="10%">ID</th>
-              {this.props.columns.map((column, c) =>
-                <th key={c} width={`${column.widthPercentage}%`}>{column.title}</th>,
-              )}
+              {this.props.columns.map((column, c) => (
+                <th key={c} width={`${column.widthPercentage}%`}>
+                  {column.title}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -67,14 +70,21 @@ export default class HandlesTableComponent<T: Object>
               const handleSummary = handleSummaries[key];
               const previousHandle = this.previousHandleSummaries[key];
               return (
-                <tr key={key} className={previousHandle ? '' : 'nuclide-health-handle-new'}>
+                <tr
+                  key={key}
+                  className={previousHandle ? '' : 'nuclide-health-handle-new'}>
                   <th>{key}</th>
                   {this.props.columns.map((column, c) => {
                     let className = '';
-                    if (previousHandle && previousHandle[c] !== handleSummary[c]) {
+                    if (
+                      previousHandle &&
+                      previousHandle[c] !== handleSummary[c]
+                    ) {
                       className = 'nuclide-health-handle-updated';
                     }
-                    return <td key={c} className={className}>{handleSummary[c]}</td>;
+                    return (
+                      <td key={c} className={className}>{handleSummary[c]}</td>
+                    );
                   })}
                 </tr>
               );

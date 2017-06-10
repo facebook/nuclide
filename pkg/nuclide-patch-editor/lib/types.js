@@ -6,7 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import typeof * as BoundActionCreators from './redux/Actions';
 
 export type AppState = {
   // Mapped by editorPath
@@ -34,11 +37,16 @@ export type HunkData = {
   countEnabledChanges: number,
   // Index into the hunk at which the first '+' or '-' line appears
   firstChangedLineIndex: number,
-  hunk: diffparser$Hunk,
   selected: SelectedState,
 };
 
 export type SelectedState = 'all' | 'some' | 'none';
+
+export type ExtraFileChangesData = {
+  actionCreators: BoundActionCreators,
+  fileData: FileData,
+  patchId: string,
+};
 
 export type Store = {
   getState(): AppState,
@@ -87,9 +95,9 @@ export type ToggleLineAction = {
   },
 };
 
-export type Action = RegisterPatchEditorAction
-| DeregisterPatchEditorAction
-| ToggleFileAction
-| ToggleHunkAction
-| ToggleLineAction
-;
+export type Action =
+  | RegisterPatchEditorAction
+  | DeregisterPatchEditorAction
+  | ToggleFileAction
+  | ToggleHunkAction
+  | ToggleLineAction;

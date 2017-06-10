@@ -9,9 +9,9 @@ import sys
 
 
 def log_debug(output):
-    print(output)
+    print(output.encode('utf-8'))
     sys.stdout.flush()
 
 def log_error(output):
-    print(output, file=sys.stderr)
-    sys.stdout.flush()
+    print(output.encode('utf-8'), file=sys.stderr)
+    sys.stderr.flush()

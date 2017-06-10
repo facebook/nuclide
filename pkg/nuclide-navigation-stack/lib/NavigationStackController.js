@@ -6,19 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {EditorLocation, Location} from './Location';
 
-import {
-  setPositionAndScroll,
-} from '../../commons-atom/text-editor';
-import {maybeToString} from '../../commons-node/string';
+import {setPositionAndScroll} from 'nuclide-commons-atom/text-editor';
+import {maybeToString} from 'nuclide-commons/string';
 import {NavigationStack} from './NavigationStack';
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {getPathOfLocation, getLocationOfEditor, editorOfLocation} from './Location';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {
+  getPathOfLocation,
+  getLocationOfEditor,
+  editorOfLocation,
+} from './Location';
 import {Observable} from 'rxjs';
 
 function log(message: string): void {
@@ -100,7 +103,8 @@ export class NavigationStackController {
   updatePosition(editor: atom$TextEditor, newBufferPosition: atom$Point): void {
     log(
       `updatePosition ${newBufferPosition.row}, ` +
-      `${newBufferPosition.column} ${maybeToString(editor.getPath())}`);
+        `${newBufferPosition.column} ${maybeToString(editor.getPath())}`,
+    );
 
     this._updateStackLocation(editor);
   }
@@ -134,9 +138,12 @@ export class NavigationStackController {
     // an activate/onDidStopChangingActivePaneItem pair. So here,
     // we restore top of the stack to the previous location before pushing a new
     // nav stack entry.
-    if (!this._inActivate && this._lastLocation != null
-      && this._lastLocation.editor === editor
-      && this._navigationStack.getCurrentEditor() === editor) {
+    if (
+      !this._inActivate &&
+      this._lastLocation != null &&
+      this._lastLocation.editor === editor &&
+      this._navigationStack.getCurrentEditor() === editor
+    ) {
       this._navigationStack.attemptUpdate(this._lastLocation);
       this._navigationStack.push(getLocationOfEditor(editor));
     } else {
@@ -164,12 +171,22 @@ export class NavigationStackController {
 
   // When closing a project path, we remove all stack entries contained in that
   // path which are not also contained in a project path which is remaining open.
-  removePath(removedPath: NuclideUri, remainingDirectories: Array<NuclideUri>): void {
-    log(`Removing path ${removedPath} remaining: ${JSON.stringify(remainingDirectories)}`);
+  removePath(
+    removedPath: NuclideUri,
+    remainingDirectories: Array<NuclideUri>,
+  ): void {
+    log(
+      `Removing path ${removedPath} remaining: ${JSON.stringify(remainingDirectories)}`,
+    );
     this._navigationStack.filter(location => {
       const uri = getPathOfLocation(location);
-      return uri == null || !nuclideUri.contains(removedPath, uri)
-        || remainingDirectories.find(directory => nuclideUri.contains(directory, uri)) != null;
+      return (
+        uri == null ||
+        !nuclideUri.contains(removedPath, uri) ||
+        remainingDirectories.find(directory =>
+          nuclideUri.contains(directory, uri),
+        ) != null
+      );
     });
   }
 
@@ -184,7 +201,9 @@ export class NavigationStackController {
       const editor = await editorOfLocation(location);
       // Note that this will not actually update the scroll position
       // The scroll position update will happen on the next tick.
-      log(`navigating to: ${location.scrollTop} ${JSON.stringify(location.bufferPosition)}`);
+      log(
+        `navigating to: ${location.scrollTop} ${JSON.stringify(location.bufferPosition)}`,
+      );
       setPositionAndScroll(editor, location.bufferPosition, location.scrollTop);
     } finally {
       this._isNavigating = false;
@@ -206,7 +225,9 @@ export class NavigationStackController {
   }
 
   observeStackChanges(): Observable<NavigationStack> {
-    return Observable.of(this._navigationStack).concat(this._navigationStack.observeChanges());
+    return Observable.of(this._navigationStack).concat(
+      this._navigationStack.observeChanges(),
+    );
   }
 
   // For Testing.

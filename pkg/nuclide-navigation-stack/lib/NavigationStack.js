@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {EditorLocation, Location} from './Location';
@@ -104,7 +105,7 @@ export class NavigationStack {
   }
 
   hasNext(): boolean {
-    return (this._index + 1) < this._elements.length;
+    return this._index + 1 < this._elements.length;
   }
 
   hasPrevious(): boolean {
@@ -161,7 +162,9 @@ export class NavigationStack {
   editorClosed(editor: atom$TextEditor): void {
     const uri = editor.getPath();
     if (uri === '' || uri == null) {
-      this.filter(location => location.type !== 'editor' || editor !== location.editor);
+      this.filter(
+        location => location.type !== 'editor' || editor !== location.editor,
+      );
     } else {
       this._elements.forEach((location, index) => {
         if (location.type === 'editor' && editor === location.editor) {

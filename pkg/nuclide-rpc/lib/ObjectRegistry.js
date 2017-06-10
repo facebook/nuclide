@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import type {ServiceRegistry} from './ServiceRegistry';
 import type {RpcContext} from './main';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-rpc');
 
 type ObjectRegistration = {
   interface: string,
@@ -56,7 +57,7 @@ export class ObjectRegistry {
     serviceRegistry: ServiceRegistry,
     context: RpcContext,
   ) {
-    this._delta = (kind === 'server') ? 1 : -1;
+    this._delta = kind === 'server' ? 1 : -1;
     this._nextObjectId = this._delta;
     this._registrationsById = new Map();
     this._registrationsByObject = new Map();
@@ -75,13 +76,19 @@ export class ObjectRegistry {
   getService(serviceName: string): Object {
     let service = this._services.get(serviceName);
     if (service == null) {
-      service = this._serviceRegistry.getService(serviceName).factory(this._context);
+      service = this._serviceRegistry
+        .getService(serviceName)
+        .factory(this._context);
       this._services.set(serviceName, service);
     }
     return service;
   }
 
-  unmarshal(id: number, interfaceName?: string, proxyClass?: Function): RemoteObject {
+  unmarshal(
+    id: number,
+    interfaceName?: string,
+    proxyClass?: Function,
+  ): RemoteObject {
     if (this._isLocalId(id)) {
       return this._unmarshalLocalObject(id);
     } else {
@@ -114,7 +121,7 @@ export class ObjectRegistry {
   }
 
   _getRegistration(id: number): ObjectRegistration {
-    const result = (this._isLocalId(id))
+    const result = this._isLocalId(id)
       ? this._registrationsById.get(id)
       : this._proxiesById.get(id);
     invariant(result != null);
@@ -197,13 +204,15 @@ export class ObjectRegistry {
     const ids = Array.from(this._registrationsById.keys());
     logger.info(`Disposing ${ids.length} registrations`);
 
-    await Promise.all(ids.map(async id => {
-      try {
-        await this.disposeObject(id);
-      } catch (e) {
-        logger.error('Error disposing marshalled object.', e);
-      }
-    }));
+    await Promise.all(
+      ids.map(async id => {
+        try {
+          await this.disposeObject(id);
+        } catch (e) {
+          logger.error('Error disposing marshalled object.', e);
+        }
+      }),
+    );
 
     const subscriptions = Array.from(this._subscriptions.keys());
     logger.info(`Disposing ${subscriptions.length} subscriptions`);
@@ -228,7 +237,11 @@ export class ObjectRegistry {
     }
   }
 
-  async addProxy(proxy: Object, interfaceName: string, idPromise: Promise<number>): Promise<void> {
+  async addProxy(
+    proxy: Object,
+    interfaceName: string,
+    idPromise: Promise<number>,
+  ): Promise<void> {
     invariant(!this._idsByProxy.has(proxy));
     this._idsByProxy.set(proxy, idPromise);
 
@@ -246,6 +259,6 @@ export class ObjectRegistry {
   }
 
   _isLocalId(id: number): boolean {
-    return (id * this._delta) > 0;
+    return id * this._delta > 0;
   }
 }

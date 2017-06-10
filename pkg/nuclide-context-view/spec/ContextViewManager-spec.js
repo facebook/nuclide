@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ContextElementProps, ContextProvider} from '../lib/types';
-import type {DefinitionService} from '../../nuclide-definition-service';
+import type {DefinitionProvider} from 'atom-ide-ui';
 
 import {CompositeDisposable} from 'atom';
 import {ContextViewManager} from '../lib/ContextViewManager';
 import React from 'react';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import invariant from 'assert';
 
 const PROVIDER1_ID = 'context-provider-1';
@@ -33,11 +34,11 @@ describe('ContextViewManager', () => {
   const provider3Priority = 3;
   const provider4Priority = 4;
   const provider5Priority = 5;
-  let defService: DefinitionService;
+  let defProvider: DefinitionProvider;
 
   function elementFactory() {
     return (props: ContextElementProps) => {
-      return (<div>Some context provider view</div>);
+      return <div>Some context provider view</div>;
     };
   }
 
@@ -61,7 +62,9 @@ describe('ContextViewManager', () => {
     };
     featureConfig.set(provider1.id.concat('.priority'), provider1Priority);
     featureConfig.set(provider2.id.concat('.priority'), provider2Priority);
-    defService = {
+    defProvider = {
+      priority: 1,
+      grammarScopes: ['text.plain.null-grammar'],
       getDefinition: (editor: TextEditor, position: atom$Point) => {
         return Promise.resolve(null);
       },
@@ -118,12 +121,24 @@ describe('ContextViewManager', () => {
     expect(managerShowing._contextProviders.length).toBe(1);
   });
   it('orders providers based on priority', () => {
-    const provider3 = {getElementFactory: elementFactory, id: '3',
-      title: '3', priority: 3};
-    const provider4 = {getElementFactory: elementFactory, id: '4',
-      title: '4', priority: 4};
-    const provider5 = {getElementFactory: elementFactory, id: '5',
-      title: '5', priority: 5};
+    const provider3 = {
+      getElementFactory: elementFactory,
+      id: '3',
+      title: '3',
+      priority: 3,
+    };
+    const provider4 = {
+      getElementFactory: elementFactory,
+      id: '4',
+      title: '4',
+      priority: 4,
+    };
+    const provider5 = {
+      getElementFactory: elementFactory,
+      id: '5',
+      title: '5',
+      priority: 5,
+    };
     featureConfig.set(provider3.id.concat('.priority'), provider3Priority);
     featureConfig.set(provider4.id.concat('.priority'), provider4Priority);
     featureConfig.set(provider5.id.concat('.priority'), provider5Priority);
@@ -150,22 +165,11 @@ describe('ContextViewManager', () => {
     spyOn(managerShowing, 'updateSubscription').andCallThrough();
     spyOn(managerShowing, '_render').andCallThrough();
     spyOn(managerShowing, '_renderProviders');
-    expect(managerShowing._defServiceSubscription).toBeNull();
-    managerShowing.consumeDefinitionService(defService);
-    expect(managerShowing._definitionService).toBe(defService);
+    managerShowing.consumeDefinitionProvider(defProvider);
     expect(managerShowing.updateSubscription).toHaveBeenCalled();
     expect(managerShowing._defServiceSubscription).toBeTruthy();
     expect(managerShowing._render).toHaveBeenCalled();
     expect(managerShowing._renderProviders).toHaveBeenCalled();
-    // Unregister def service
-    invariant(managerShowing._defServiceSubscription != null,
-      'Subscription must be non-null if in visible state and consuming def. service');
-    const subscription = managerShowing._defServiceSubscription;
-    spyOn(subscription, 'unsubscribe').andCallThrough();
-    managerShowing.consumeDefinitionService(null);
-    expect(managerShowing._definitionService).toBeNull();
-    expect(managerShowing._defServiceSubscription).toBeNull();
-    expect(subscription.unsubscribe).toHaveBeenCalled();
   });
   it('consumes the definition service when hidden', () => {
     spyOn(managerHidden, 'updateSubscription').andCallThrough();
@@ -173,21 +177,16 @@ describe('ContextViewManager', () => {
     spyOn(managerHidden, '_renderProviders');
     spyOn(managerHidden, '_disposeView');
     expect(managerHidden._defServiceSubscription).toBeNull();
-    managerHidden.consumeDefinitionService(defService);
-    expect(managerHidden._definitionService).toBe(defService);
+    managerHidden.consumeDefinitionProvider(defProvider);
     expect(managerHidden.updateSubscription).toHaveBeenCalled();
     expect(managerHidden._defServiceSubscription).toBeNull();
     expect(managerHidden._render).toHaveBeenCalled();
     expect(managerHidden._disposeView).toHaveBeenCalled();
     expect(managerHidden._renderProviders).not.toHaveBeenCalled();
-    // Unregister def service
-    managerHidden.consumeDefinitionService(null);
-    expect(managerHidden._definitionService).toBeNull();
-    expect(managerHidden._defServiceSubscription).toBeNull();
   });
   it('shows and hides correctly', () => {
-    managerShowing.consumeDefinitionService(defService);
-    managerHidden.consumeDefinitionService(defService);
+    managerShowing.consumeDefinitionProvider(defProvider);
+    managerHidden.consumeDefinitionProvider(defProvider);
     spyOn(managerShowing, '_render').andCallThrough();
     spyOn(managerShowing, '_disposeView');
     spyOn(managerShowing, 'updateSubscription').andCallThrough();
@@ -206,10 +205,12 @@ describe('ContextViewManager', () => {
     expect(managerHidden.updateSubscription).toHaveBeenCalled();
   });
   it('disposes correctly', () => {
-    managerShowing.consumeDefinitionService(defService);
+    managerShowing.consumeDefinitionProvider(defProvider);
     // i.e. the subscription is unsubscribed if not null
-    invariant(managerShowing._defServiceSubscription != null,
-      'Subscription should exist if panel is visible and def. service consumed');
+    invariant(
+      managerShowing._defServiceSubscription != null,
+      'Subscription should exist if panel is visible and def. service consumed',
+    );
     const subscription = managerShowing._defServiceSubscription;
     spyOn(subscription, 'unsubscribe');
     managerShowing.dispose();

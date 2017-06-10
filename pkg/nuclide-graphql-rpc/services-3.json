@@ -1,7 +1,0 @@
-[
-  {
-    "implementation": "./lib/GraphQLServerService.js",
-    "name": "GraphQLServerService",
-    "preserveFunctionNames": true
-  }
-]

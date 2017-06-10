@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import NuclideBridge from './NuclideBridge';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import nuclideUri from '../../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import url from 'url';
 import invariant from 'assert';
 import WebInspector from '../../lib/WebInspector';
@@ -39,7 +40,9 @@ class UnresolvedBreakpointsComponent extends React.Component {
   }
 
   componentWillMount() {
-    this._changeHandler = NuclideBridge.onUnresolvedBreakpointsChanged(this._updateState);
+    this._changeHandler = NuclideBridge.onUnresolvedBreakpointsChanged(
+      this._updateState,
+    );
   }
 
   componentWillUnmount() {
@@ -87,7 +90,8 @@ class UnresolvedBreakpointsComponent extends React.Component {
   }
 }
 
-export default class UnresolvedBreakpointsSidebarPane extends WebInspector.SidebarPane {
+export default class UnresolvedBreakpointsSidebarPane
+  extends WebInspector.SidebarPane {
   constructor() {
     // WebInspector classes are not es6 classes, but babel forces a super call.
     super();
@@ -96,10 +100,7 @@ export default class UnresolvedBreakpointsSidebarPane extends WebInspector.Sideb
 
     this.registerRequiredCSS('components/breakpointsList.css');
 
-    ReactDOM.render(
-      <UnresolvedBreakpointsComponent />,
-      this.bodyElement,
-    );
+    ReactDOM.render(<UnresolvedBreakpointsComponent />, this.bodyElement);
 
     this.expand();
   }
@@ -107,6 +108,5 @@ export default class UnresolvedBreakpointsSidebarPane extends WebInspector.Sideb
   // This is implemented by various UI views, but is not declared anywhere as
   // an official interface. There's callers to various `reset` functions, so
   // it's probably safer to have this.
-  reset() {
-  }
+  reset() {}
 }

@@ -1,0 +1,18 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "Buck",
+          "submenu": [
+            {
+              "label": "Open nearest BUCK file",
+              "command": "nuclide-buck:open-nearest-build-file"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

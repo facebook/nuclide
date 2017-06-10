@@ -6,11 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {describeRemote} from './utils/remotable-tests';
 import {runTest} from './utils/edits-reflect-in-file-tree-common';
 
-describeRemote('Remote edits reflect in file tree Integration Test', context => {
-  runTest(context);
-});
+describeRemote(
+  'Remote edits reflect in file tree Integration Test',
+  context => {
+    runTest(context);
+  },
+);

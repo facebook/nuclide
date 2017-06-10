@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
-import {
-  ListView,
-  ListViewItem,
-} from './ListView';
-import {Checkbox} from './Checkbox';
+import {Block} from 'nuclide-commons-ui/Block';
+import {ListView, ListViewItem} from './ListView';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import {MultiSelectList} from './MultiSelectList';
 
 const NOOP = () => {};
@@ -95,7 +93,9 @@ class MultiSelectListExample extends React.Component {
       <MultiSelectList
         options={options}
         value={this.state.value}
-        onChange={value => { this.setState({value}); }}
+        onChange={value => {
+          this.setState({value});
+        }}
       />
     );
   }

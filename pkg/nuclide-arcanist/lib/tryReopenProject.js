@@ -6,14 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-export default async function tryReopenProject(
+export default (async function tryReopenProject(
   projectId: string,
   lastPath: string,
   remoteProjectsService: ?RemoteProjectsService,
@@ -22,8 +22,7 @@ export default async function tryReopenProject(
     const notification = atom.notifications.addInfo(
       `Project \`${projectId}\` not open`,
       {
-        description:
-          `You tried to open a file in the \`${projectId}\` project, but it doesn't ` +
+        description: `You tried to open a file in the \`${projectId}\` project, but it doesn't ` +
           'seem to be in your open projects.<br />' +
           `You last had it open at \`${nuclideUri.nuclideUriToDisplayString(lastPath)}\`.<br />` +
           'Would you like to try re-opening it?',
@@ -62,7 +61,9 @@ export default async function tryReopenProject(
     atom.project.addPath(path);
     // Hacky way of checking that the project was successfully added.
     // Atom will not add the path if it doesn't exist.
-    return atom.project.getDirectories().length !== directoryCount ? path : null;
+    return atom.project.getDirectories().length !== directoryCount
+      ? path
+      : null;
   }
 
   if (remoteProjectsService != null) {
@@ -77,4 +78,4 @@ export default async function tryReopenProject(
   }
 
   return null;
-}
+});

@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {describeRemotableTest} from './utils/remotable-tests';
 import {dispatchKeyboardEvent} from '../pkg/commons-atom/testHelpers';
 import {generateHgRepo1Fixture} from '../pkg/nuclide-test-helpers';
-import nuclideUri from '../pkg/commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describeRemotableTest('Clipboard path integration test', context => {
   let repoPath;
@@ -27,7 +28,10 @@ describeRemotableTest('Clipboard path integration test', context => {
     // Absolute path.
     runs(() => {
       // In 1.12 uppercase is required when shift is needed.
-      dispatchKeyboardEvent('X', document.activeElement, {ctrl: true, shift: true});
+      dispatchKeyboardEvent('X', document.activeElement, {
+        ctrl: true,
+        shift: true,
+      });
     });
 
     // In Atom 1.12 keyboard events are async, so we have to wait for the results.
@@ -38,7 +42,11 @@ describeRemotableTest('Clipboard path integration test', context => {
 
     // Project-relative path.
     runs(() => {
-      dispatchKeyboardEvent('X', document.activeElement, {ctrl: true, alt: true, shift: true});
+      dispatchKeyboardEvent('X', document.activeElement, {
+        ctrl: true,
+        alt: true,
+        shift: true,
+      });
     });
 
     waitsFor(
@@ -50,7 +58,10 @@ describeRemotableTest('Clipboard path integration test', context => {
     runs(() => {
       // Clear the clipboard, since the two are results are the same.
       atom.clipboard.write('');
-      dispatchKeyboardEvent('x', document.activeElement, {ctrl: true, alt: true});
+      dispatchKeyboardEvent('x', document.activeElement, {
+        ctrl: true,
+        alt: true,
+      });
     });
 
     waitsFor(

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ConfigEntry, Transport} from '../lib/index';
@@ -21,20 +22,28 @@ export class ServiceTester {
   _client: RpcConnection<Transport>;
   _clientConnection: RpcConnection<Transport>;
 
-  async start(customServices: Array<ConfigEntry>, protocol: string): Promise<void> {
+  async start(
+    customServices: Array<ConfigEntry>,
+    protocol: string,
+  ): Promise<void> {
     const transports = new LoopbackTransports();
     this._serviceRegistry = new ServiceRegistry(
       [localNuclideUriMarshalers],
       customServices,
-      protocol);
+      protocol,
+    );
     this._clientConnection = RpcConnection.createServer(
-      this._serviceRegistry, transports.serverTransport);
+      this._serviceRegistry,
+      transports.serverTransport,
+    );
 
     this._client = RpcConnection.createRemote(
       transports.clientTransport,
       [getRemoteNuclideUriMarshalers('localhost')],
       customServices,
-      protocol);
+      {},
+      protocol,
+    );
   }
 
   stop(): void {

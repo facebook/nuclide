@@ -180,10 +180,10 @@ See the [Task Runner HHVM guide](/docs/features/task-runner/#hhvm-debug-toolbar)
 You can also debug directly from the command-line.
 
 1. Have a PHP or Hack file active in the [Editing Area](/docs/editor/basics/#editing-area).
-2. Click on the **Toggle Debugger** icon in the [Nuclide toolbar](/docs/features/toolbar/#buttons) or press `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) to bring up the Debugger Selection window.
-3. Select the remote server where your project is located from the **Connection** drop-down menu. It should default to the remote location of the PHP or Hack file you have open.
-4. Select the file's type from the **Type** drop-down menu.  For either PHP or Hack, choose **PHP**.
-5. Select **Attach** from the **Action** drop-down menu.
+2. Click on the **Toggle Debugger** icon in the [Nuclide toolbar](/docs/features/toolbar/#buttons) or press `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux or Windows) to bring up the Debugger Attach dialog.
+3. The connection will default to the location of your current working root. If necessary, click the machine name to change to another connection.
+4. Select the **PHP/Hack** tab.
+5. Click **Attach**.
 
     ![](/static/images/docs/feature-debugger-selection-attach-server.png)
 

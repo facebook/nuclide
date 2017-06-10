@@ -6,14 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
-import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
 
 import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
-
-import {track} from '../../nuclide-analytics';
+import analytics from 'nuclide-commons-atom/analytics';
 
 import {DistractionFreeMode} from './DistractionFreeMode';
 import {getBuiltinProviders} from './BuiltinProviders';
@@ -38,14 +36,16 @@ class Activation {
   constructor(state: ?DistractionFreeModeState) {
     this._disposables = new CompositeDisposable();
     this._tunnelVision = new DistractionFreeMode(state);
-    this._disposables.add(atom.commands.add(
-      'atom-workspace',
-      'nuclide-distraction-free-mode:toggle',
-      () => {
-        track('distraction-free-mode:toggle');
-        this._tunnelVision.toggleDistractionFreeMode();
-      },
-    ));
+    this._disposables.add(
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-distraction-free-mode:toggle',
+        () => {
+          analytics.track('distraction-free-mode:toggle');
+          this._tunnelVision.toggleDistractionFreeMode();
+        },
+      ),
+    );
   }
 
   dispose(): void {
@@ -57,15 +57,21 @@ class Activation {
   }
 
   consumeDistractionFreeModeProvider(
-    providerOrList: DistractionFreeModeProvider | Array<DistractionFreeModeProvider>,
+    providerOrList:
+      | DistractionFreeModeProvider
+      | Array<DistractionFreeModeProvider>,
   ): IDisposable {
-    const providers = Array.isArray(providerOrList) ? providerOrList : [providerOrList];
+    const providers = Array.isArray(providerOrList)
+      ? providerOrList
+      : [providerOrList];
     return new CompositeDisposable(
-      ...providers.map(provider => this._tunnelVision.consumeDistractionFreeModeProvider(provider)),
+      ...providers.map(provider =>
+        this._tunnelVision.consumeDistractionFreeModeProvider(provider),
+      ),
     );
   }
 
-  consumeToolBar(getToolBar: GetToolBar): IDisposable {
+  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nuclide-distraction-free-mode');
     toolBar.addSpacer({
       priority: 900,
@@ -76,7 +82,9 @@ class Activation {
       tooltip: 'Toggle Distraction-Free Mode',
       priority: 901,
     });
-    const disposable = new Disposable(() => { toolBar.removeItems(); });
+    const disposable = new Disposable(() => {
+      toolBar.removeItems();
+    });
     this._disposables.add(disposable);
     return disposable;
   }
@@ -112,7 +120,7 @@ export function consumeDistractionFreeModeProvider(
   return activation.consumeDistractionFreeModeProvider(provider);
 }
 
-export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
+export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   invariant(activation != null);
   return activation.consumeToolBar(getToolBar);
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {SimpleModel} from '../SimpleModel';
@@ -46,7 +47,10 @@ describe('SimpleModel', () => {
       // $FlowFixMe: Teach Flow about Symbol.observable
       const states = Observable.from(model).take(2).toArray().toPromise();
       model.setState({count: 5});
-      expect(await states).toEqual([{count: 0, other: true}, {count: 5, other: true}]);
+      expect(await states).toEqual([
+        {count: 0, other: true},
+        {count: 5, other: true},
+      ]);
     });
   });
 });

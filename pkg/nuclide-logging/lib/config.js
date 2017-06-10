@@ -6,25 +6,34 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {LoggingAppender} from './types';
 import ScribeProcess from '../../commons-node/ScribeProcess';
-import {isRunningInTest, isRunningInClient} from '../../commons-node/system-info';
-import fsPromise from '../../commons-node/fsPromise';
+import {
+  isRunningInTest,
+  isRunningInClient,
+} from '../../commons-node/system-info';
+import fsPromise from 'nuclide-commons/fsPromise';
 
+import invariant from 'invariant';
 import os from 'os';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-const LOG_DIRECTORY = nuclideUri.join(os.tmpdir(), `/nuclide-${os.userInfo().username}-logs`);
+const LOG_DIRECTORY = nuclideUri.join(
+  os.tmpdir(),
+  `/nuclide-${os.userInfo().username}-logs`,
+);
 export const LOG_FILE_PATH = nuclideUri.join(LOG_DIRECTORY, 'nuclide.log');
 
-let logDirectoryInitialized = false;
-const scribeAppenderPath = nuclideUri.join(__dirname, '../fb/scribeAppender.js');
+const scribeAppenderPath = nuclideUri.join(
+  __dirname,
+  '../fb/scribeAppender.js',
+);
 
 export type AdditionalLogFile = {
-    title: string,
-    filename: string,
+  title: string,
+  filename: string,
 };
 
 const additionalLogFiles: Array<AdditionalLogFile> = [];
@@ -36,8 +45,10 @@ export async function getServerLogAppenderConfig(): Promise<?Object> {
   // Skip config scribe_cat logger if
   // 1) or running in open sourced version of nuclide
   // 2) or the scribe_cat command is missing.
-  if (!(await fsPromise.exists(scribeAppenderPath)) ||
-      !(await ScribeProcess.isScribeCatOnPath())) {
+  if (
+    !await fsPromise.exists(scribeAppenderPath) ||
+    !await ScribeProcess.isScribeCatOnPath()
+  ) {
     return null;
   }
 
@@ -57,7 +68,7 @@ export function getPathToLogFile(): string {
 }
 
 export const FileAppender: Object = {
-  type: 'file',
+  type: nuclideUri.join(__dirname, './fileAppender'),
   filename: LOG_FILE_PATH,
   maxLogSize: MAX_LOG_SIZE,
   backups: MAX_LOG_BACKUPS,
@@ -69,44 +80,56 @@ export const FileAppender: Object = {
   },
 };
 
-export async function getDefaultConfig(): Promise<LoggingAppender> {
-  if (!logDirectoryInitialized) {
-    await fsPromise.mkdirp(LOG_DIRECTORY);
-    logDirectoryInitialized = true;
-  }
+const baseConfig: log4js$Config = {
+  appenders: [
+    {
+      type: 'logLevelFilter',
+      level: 'ALL',
+      appender: {
+        type: nuclideUri.join(__dirname, './nuclideConsoleAppender'),
+      },
+    },
+    FileAppender,
+  ],
+};
 
-  const config = {
+function getDefaultConfigClient(): log4js$Config {
+  invariant(isRunningInTest() || isRunningInClient());
+  invariant(baseConfig.appenders);
+
+  return {
+    ...baseConfig,
     appenders: [
+      ...baseConfig.appenders,
       {
         type: 'logLevelFilter',
-        level: 'ALL',
+        level: 'WARN',
         appender: {
-          type: nuclideUri.join(__dirname, './nuclideConsoleAppender'),
+          type: nuclideUri.join(__dirname, './consoleAppender'),
         },
       },
-      FileAppender,
     ],
   };
+}
+
+export async function getDefaultConfig(): Promise<log4js$Config> {
+  if (isRunningInClient() || isRunningInTest()) {
+    return getDefaultConfigClient();
+  }
 
   // Do not print server logs to stdout/stderr.
   // These are normally just piped to a .nohup.out file, so doing this just causes
   // the log files to be duplicated.
-  if (isRunningInTest() || isRunningInClient()) {
-    config.appenders.push({
-      type: 'logLevelFilter',
-      level: 'WARN',
-      appender: {
-        type: nuclideUri.join(__dirname, './consoleAppender'),
-      },
-    });
-  } else {
-    const serverLogAppenderConfig = await getServerLogAppenderConfig();
-    if (serverLogAppenderConfig) {
-      config.appenders.push(serverLogAppenderConfig);
-    }
+  const serverLogAppenderConfig = await getServerLogAppenderConfig();
+  invariant(baseConfig.appenders);
+  if (serverLogAppenderConfig) {
+    return {
+      ...baseConfig,
+      appenders: [...baseConfig.appenders, serverLogAppenderConfig],
+    };
   }
 
-  return config;
+  return baseConfig;
 }
 
 export function addAdditionalLogFile(title: string, filename: string) {
@@ -116,8 +139,11 @@ export function addAdditionalLogFile(title: string, filename: string) {
     filename: filePath,
   };
 
-  if (additionalLogFiles
-        .filter(entry => entry.filename === filename && entry.title === title).length === 0) {
+  if (
+    additionalLogFiles.filter(
+      entry => entry.filename === filename && entry.title === title,
+    ).length === 0
+  ) {
     additionalLogFiles.push(logFile);
   }
 }

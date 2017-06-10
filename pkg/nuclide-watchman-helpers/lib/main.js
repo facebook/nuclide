@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import WatchmanClient from './WatchmanClient';
 import WatchmanSubscription from './WatchmanSubscription';
 
-export {
-  WatchmanClient,
-  WatchmanSubscription,
-};
+export {WatchmanClient, WatchmanSubscription};

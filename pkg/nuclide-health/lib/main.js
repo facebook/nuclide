@@ -6,10 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 import type {HealthStats, PaneItemState} from './types';
 
 // Imports from non-Nuclide modules.
@@ -20,11 +22,13 @@ import {Observable} from 'rxjs';
 
 // Imports from other Nuclide packages.
 import {track} from '../../nuclide-analytics';
-import createPackage from '../../commons-atom/createPackage';
-import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
-import featureConfig from '../../commons-atom/featureConfig';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {cacheWhileSubscribed} from '../../commons-node/observable';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import {
+  viewableFromReactElement,
+} from '../../commons-atom/viewableFromReactElement';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 
 // Imports from within this Nuclide package.
 import HealthPaneItem, {WORKSPACE_VIEW_URI} from './HealthPaneItem';
@@ -42,12 +46,18 @@ class Activation {
     (this: any)._updateToolbarJewel = this._updateToolbarJewel.bind(this);
 
     // Observe all of the settings.
-    const configs: Observable<any> = featureConfig.observeAsStream('nuclide-health');
-    const viewTimeouts = configs.map(config => config.viewTimeout * 1000).distinctUntilChanged();
+    const configs: Observable<any> = featureConfig.observeAsStream(
+      'nuclide-health',
+    );
+    const viewTimeouts = configs
+      .map(config => config.viewTimeout * 1000)
+      .distinctUntilChanged();
     const analyticsTimeouts = configs
       .map(config => config.analyticsTimeout * 60 * 1000)
       .distinctUntilChanged();
-    const toolbarJewels = configs.map(config => config.toolbarJewel || '').distinctUntilChanged();
+    const toolbarJewels = configs
+      .map(config => config.toolbarJewel || '')
+      .distinctUntilChanged();
 
     // Update the stats immediately, and then periodically based on the config.
     const statsStream = Observable.of(null)
@@ -85,7 +95,6 @@ class Activation {
       packageStates
         .map(formatToolbarJewelLabel)
         .subscribe(this._updateToolbarJewel),
-
       // Buffer the stats and send analytics periodically.
       statsStream
         .buffer(analyticsTimeouts.switchMap(Observable.interval))
@@ -97,7 +106,7 @@ class Activation {
     this._subscriptions.dispose();
   }
 
-  consumeToolBar(getToolBar: GetToolBar): IDisposable {
+  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nuclide-health');
     this._healthButton = toolBar.addButton({
       icon: 'dashboard',
@@ -120,28 +129,33 @@ class Activation {
       api.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           invariant(this._paneItemStates != null);
-          return viewableFromReactElement(<HealthPaneItem stateStream={this._paneItemStates} />);
+          return viewableFromReactElement(
+            <HealthPaneItem stateStream={this._paneItemStates} />,
+          );
         }
       }),
       () => api.destroyWhere(item => item instanceof HealthPaneItem),
-      atom.commands.add(
-        'atom-workspace',
-        'nuclide-health:toggle',
-        event => { api.toggle(WORKSPACE_VIEW_URI, (event: any).detail); },
-      ),
+      atom.commands.add('atom-workspace', 'nuclide-health:toggle', event => {
+        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      }),
     );
   }
 
   _updateToolbarJewel(label: string): void {
     const healthButton = this._healthButton;
     if (healthButton != null) {
-      healthButton.classList.toggle('updated', healthButton.dataset.jewelValue !== label);
+      healthButton.classList.toggle(
+        'updated',
+        healthButton.dataset.jewelValue !== label,
+      );
       healthButton.dataset.jewelValue = label;
     }
   }
 
   _updateAnalytics(analyticsBuffer: Array<HealthStats>): void {
-    if (analyticsBuffer.length === 0) { return; }
+    if (analyticsBuffer.length === 0) {
+      return;
+    }
 
     // Aggregates the buffered stats up by suffixing avg, min, max to their names.
     const aggregateStats = {};
@@ -181,7 +195,10 @@ function aggregate(
   return {avg, min, max};
 }
 
-function formatToolbarJewelLabel(opts: {stats: HealthStats, toolbarJewel: string}): string {
+function formatToolbarJewelLabel(opts: {
+  stats: HealthStats,
+  toolbarJewel: string,
+}): string {
   const {stats, toolbarJewel} = opts;
   switch (toolbarJewel) {
     case 'CPU':

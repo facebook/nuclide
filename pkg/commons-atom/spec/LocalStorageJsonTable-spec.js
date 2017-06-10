@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
@@ -17,8 +18,10 @@ describe('LocalStorageJsonTable', () => {
     spyOn(localStorage, 'setItem');
     const storage = new LocalStorageJsonTable('test');
     storage.setItem('a', true);
-    expect(localStorage.setItem.calls[0].args)
-      .toEqual(['test', JSON.stringify([{key: 'a', value: true}])]);
+    expect(localStorage.setItem.calls[0].args).toEqual([
+      'test',
+      JSON.stringify([{key: 'a', value: true}]),
+    ]);
   });
 
   it('writes multiple values to localStorage', () => {
@@ -26,18 +29,24 @@ describe('LocalStorageJsonTable', () => {
     const storage = new LocalStorageJsonTable('test');
     storage.setItem('a', 1);
     storage.setItem('b', 2);
-    expect(localStorage.setItem.mostRecentCall.args)
-      .toEqual(['test', JSON.stringify([{key: 'a', value: 1}, {key: 'b', value: 2}])]);
+    expect(localStorage.setItem.mostRecentCall.args).toEqual([
+      'test',
+      JSON.stringify([{key: 'a', value: 1}, {key: 'b', value: 2}]),
+    ]);
   });
 
   it('retrieves values from localStorage', () => {
-    spyOn(localStorage, 'getItem').andReturn(JSON.stringify([{key: 'a', value: true}]));
+    spyOn(localStorage, 'getItem').andReturn(
+      JSON.stringify([{key: 'a', value: true}]),
+    );
     const storage = new LocalStorageJsonTable('test');
     expect(storage.getItem('a')).toBe(true);
   });
 
   it('retrieves entries from localStorage', () => {
-    spyOn(localStorage, 'getItem').andReturn(JSON.stringify([{key: 'a', value: true}]));
+    spyOn(localStorage, 'getItem').andReturn(
+      JSON.stringify([{key: 'a', value: true}]),
+    );
     const storage = new LocalStorageJsonTable('test');
     expect(storage.getEntries()).toEqual([{key: 'a', value: true}]);
   });
@@ -48,11 +57,13 @@ describe('LocalStorageJsonTable', () => {
     storage.setItem('a', 1);
     storage.setItem('b', 2);
     storage.setItem('a', 1);
-    expect(localStorage.setItem.mostRecentCall.args)
-    .toEqual(['test', JSON.stringify([{key: 'b', value: 2}, {key: 'a', value: 1}])]);
+    expect(localStorage.setItem.mostRecentCall.args).toEqual([
+      'test',
+      JSON.stringify([{key: 'b', value: 2}, {key: 'a', value: 1}]),
+    ]);
   });
 
-  it('doesn\'t call setItem when not necessary', () => {
+  it("doesn't call setItem when not necessary", () => {
     spyOn(localStorage, 'setItem');
     const storage = new LocalStorageJsonTable('test');
     storage.setItem('a', 1);

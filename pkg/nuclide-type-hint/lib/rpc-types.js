@@ -6,22 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
-export type HintTree = {
-  value: string,
-  children?: Array<HintTree>,
-};
 
 export type TypeHint = {
   /**
-   * A type hint string to display. One of hint and hintTree must be provided.
+   * A type hint string to display.
    */
-  hint?: string,
-  /**
-   * A hint tree to display. If specified, overrides hint. The top-level value will be displayed,
-   * and it can be expanded to reveal its children.
-   */
-  hintTree?: HintTree,
+  hint: string,
   range: atom$Range,
 };

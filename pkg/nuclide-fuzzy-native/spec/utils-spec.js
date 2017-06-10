@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {scoreComparator, valueComparator} from '../lib/utils';
@@ -13,18 +14,30 @@ import {scoreComparator, valueComparator} from '../lib/utils';
 describe('utils', () => {
   describe('scoreComparator', () => {
     it('returns >1 when the first score is greater', () => {
-      expect(scoreComparator({score: 2, value: ''}, {score: 1, value: ''})).toBeGreaterThan(0);
-      expect(scoreComparator({score: 2, value: 'A'}, {score: 2, value: 'a'})).toBeGreaterThan(0);
+      expect(
+        scoreComparator({score: 2, value: ''}, {score: 1, value: ''}),
+      ).toBeGreaterThan(0);
+      expect(
+        scoreComparator({score: 2, value: 'A'}, {score: 2, value: 'a'}),
+      ).toBeGreaterThan(0);
     });
 
     it('returns <1 when the second score is greater', () => {
-      expect(scoreComparator({score: 1, value: ''}, {score: 2, value: ''})).toBeLessThan(0);
-      expect(scoreComparator({score: 2, value: 'a'}, {score: 2, value: 'A'})).toBeLessThan(0);
+      expect(
+        scoreComparator({score: 1, value: ''}, {score: 2, value: ''}),
+      ).toBeLessThan(0);
+      expect(
+        scoreComparator({score: 2, value: 'a'}, {score: 2, value: 'A'}),
+      ).toBeLessThan(0);
     });
 
     it('returns 0 when the scores are equal', () => {
-      expect(scoreComparator({score: 1, value: ''}, {score: 1, value: ''})).toBe(0);
-      expect(scoreComparator({score: 2, value: 'A'}, {score: 2, value: 'A'})).toBe(0);
+      expect(
+        scoreComparator({score: 1, value: ''}, {score: 1, value: ''}),
+      ).toBe(0);
+      expect(
+        scoreComparator({score: 2, value: 'A'}, {score: 2, value: 'A'}),
+      ).toBe(0);
     });
   });
 

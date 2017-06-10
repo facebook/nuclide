@@ -2,18 +2,13 @@ machine:
   node:
     version: 6.5.0
 
-dependencies:
-  pre:
-    # Force a reinstall of the lint rules.
-    - rm -rf node_modules/eslint-plugin-nuclide-internal
-
 test:
   override:
     # Do not run tests for releases.
     - |
       # eslint
       if [[ "$CIRCLE_BRANCH" != "release-v"* ]]; then
-        ./node_modules/.bin/eslint --max-warnings=0 .
+        ./scripts/lint-eslint.js
       fi
     - |
       # flow

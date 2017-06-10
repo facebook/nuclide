@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 
 /* eslint-disable */
@@ -19,5 +20,5 @@ export class Foo {
 
   baz = (arg: Type): RetType => {};
 
-  foo(arg: Foo = new Foo()) { }
+  foo(arg: Foo = new Foo()) {}
 }

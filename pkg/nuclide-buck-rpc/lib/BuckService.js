@@ -6,30 +6,30 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {AsyncExecuteOptions} from '../../commons-node/process';
-import type {ProcessMessage} from '../../commons-node/process-rpc-types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {ObserveProcessOptions} from 'nuclide-commons/process';
+import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {ConnectableObservable} from 'rxjs';
 
 import {
-  asyncExecute,
-  checkOutput,
+  runCommand,
   observeProcess,
-  safeSpawn,
   getOriginalEnvironment,
-} from '../../commons-node/process';
+} from 'nuclide-commons/process';
 import {PromisePool} from '../../commons-node/promise-executors';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Observable} from 'rxjs';
 import createBuckWebSocket from './createBuckWebSocket';
-import {getLogger} from '../../nuclide-logging';
 import ini from 'ini';
+import {getLogger} from 'log4js';
 import {quote} from 'shell-quote';
+import * as os from 'os';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-buck-rpc');
 
 // Tag these Buck calls as coming from Nuclide for analytics purposes.
 const CLIENT_ID_ARGS = ['--config', 'client.id=nuclide'];
@@ -116,7 +116,7 @@ export type BuckWebSocketMessage =
   | {
       type: 'CompilerErrorEvent',
       error: string,
-      suggestions: Array<mixed>,  // TODO: use this?
+      suggestions: Array<mixed>, // TODO: use this?
       compilerType: string,
     };
 
@@ -128,7 +128,7 @@ export type BaseBuckBuildOptions = {
   debug?: boolean,
   simulator?: ?string,
   // The service framework doesn't support imported types
-  commandOptions?: Object /* AsyncExecuteOptions */,
+  commandOptions?: Object /* ObserveProcessOptions */,
   extraArguments?: Array<string>,
 };
 type FullBuckBuildOptions = {
@@ -138,7 +138,7 @@ type FullBuckBuildOptions = {
 };
 type BuckCommandAndOptions = {
   pathToBuck: string,
-  buckCommandOptions: AsyncExecuteOptions & child_process$spawnOpts,
+  buckCommandOptions: ObserveProcessOptions,
 };
 
 export type CommandInfo = {
@@ -215,10 +215,10 @@ export async function getBuildFile(
 async function _runBuckCommandFromProjectRoot(
   rootPath: string,
   args: Array<string>,
-  commandOptions?: AsyncExecuteOptions,
+  commandOptions?: ObserveProcessOptions,
   addClientId?: boolean = true,
   readOnly?: boolean = true,
-): Promise<{stdout: string, stderr: string, exitCode?: number}> {
+): Promise<string> {
   const {
     pathToBuck,
     buckCommandOptions: options,
@@ -227,7 +227,8 @@ async function _runBuckCommandFromProjectRoot(
   const newArgs = addClientId ? args.concat(CLIENT_ID_ARGS) : args;
   logger.debug('Buck command:', pathToBuck, newArgs, options);
   return getPool(rootPath, readOnly).submit(() =>
-    checkOutput(pathToBuck, newArgs, options));
+    runCommand(pathToBuck, newArgs, options).toPromise(),
+  );
 }
 
 /**
@@ -235,12 +236,16 @@ async function _runBuckCommandFromProjectRoot(
  */
 async function _getBuckCommandAndOptions(
   rootPath: string,
-  commandOptions?: AsyncExecuteOptions = {},
+  commandOptions?: ObserveProcessOptions = {},
 ): Promise<BuckCommandAndOptions> {
   // $UPFixMe: This should use nuclide-features-config
-  const pathToBuck = (global.atom &&
-    global.atom.config.get('nuclide.nuclide-buck.pathToBuck')) ||
+  let pathToBuck =
+    (global.atom &&
+      global.atom.config.get('nuclide.nuclide-buck.pathToBuck')) ||
     'buck';
+  if (pathToBuck === 'buck' && os.platform() === 'win32') {
+    pathToBuck = 'buck.bat';
+  }
   const buckCommandOptions = {
     cwd: rootPath,
     // Buck restarts itself if the environment changes, so try to preserve
@@ -406,7 +411,8 @@ export function buildWithOutput(
   rootPath: NuclideUri,
   buildTargets: Array<string>,
   extraArguments: Array<string>,
-): ConnectableObservable<ProcessMessage> {
+): ConnectableObservable<LegacyProcessMessage> {
+  // TODO(T17463635)
   return _buildWithOutput(rootPath, buildTargets, {extraArguments}).publish();
 }
 
@@ -426,7 +432,8 @@ export function testWithOutput(
   buildTargets: Array<string>,
   extraArguments: Array<string>,
   debug: boolean,
-): ConnectableObservable<ProcessMessage> {
+): ConnectableObservable<LegacyProcessMessage> {
+  // TODO(T17463635)
   return _buildWithOutput(rootPath, buildTargets, {
     test: true,
     extraArguments,
@@ -452,7 +459,8 @@ export function installWithOutput(
   simulator: ?string,
   run: boolean,
   debug: boolean,
-): ConnectableObservable<ProcessMessage> {
+): ConnectableObservable<LegacyProcessMessage> {
+  // TODO(T17463635)
   return _buildWithOutput(rootPath, buildTargets, {
     install: true,
     simulator,
@@ -467,7 +475,8 @@ export function runWithOutput(
   buildTargets: Array<string>,
   extraArguments: Array<string>,
   simulator: ?string,
-): ConnectableObservable<ProcessMessage> {
+): ConnectableObservable<LegacyProcessMessage> {
+  // TODO(T17463635)
   return _buildWithOutput(rootPath, buildTargets, {
     run: true,
     simulator,
@@ -484,7 +493,8 @@ function _buildWithOutput(
   rootPath: NuclideUri,
   buildTargets: Array<string>,
   options: BaseBuckBuildOptions,
-): Observable<ProcessMessage> {
+): Observable<LegacyProcessMessage> {
+  // TODO(T17463635)
   const args = _translateOptionsToBuckBuildArgs({
     baseOptions: {...options},
     buildTargets,
@@ -492,11 +502,16 @@ function _buildWithOutput(
   return Observable.fromPromise(
     _getBuckCommandAndOptions(rootPath),
   ).switchMap(({pathToBuck, buckCommandOptions}) =>
-    observeProcess(() =>
-      safeSpawn(pathToBuck, args, buckCommandOptions)).startWith({
+    observeProcess(pathToBuck, args, {
+      ...buckCommandOptions,
+      /* TODO(T17353599) */ isExitError: () => false,
+    })
+      .catch(error => Observable.of({kind: 'error', error})) // TODO(T17463635)
+      .startWith({
         kind: 'stdout',
         data: `Starting "${pathToBuck} ${_getArgsStringSkipClientId(args)}"`,
-      }));
+      }),
+  );
 }
 
 function _getArgsStringSkipClientId(args: Array<string>): string {
@@ -514,11 +529,7 @@ function _getArgsStringSkipClientId(args: Array<string>): string {
 function _translateOptionsToBuckBuildArgs(
   options: FullBuckBuildOptions,
 ): Array<string> {
-  const {
-    baseOptions,
-    pathToBuildReport,
-    buildTargets,
-  } = options;
+  const {baseOptions, pathToBuildReport, buildTargets} = options;
   const {
     install: doInstall,
     run,
@@ -565,33 +576,24 @@ export async function listAliases(
 ): Promise<Array<string>> {
   const args = ['audit', 'alias', '--list'];
   const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  const stdout = result.stdout.trim();
+  const stdout = result.trim();
   return stdout ? stdout.split('\n') : [];
 }
 
 export async function listFlavors(
   rootPath: NuclideUri,
   targets: Array<string>,
+  additionalArgs: Array<string> = [],
 ): Promise<?Object> {
-  const args = ['audit', 'flavors', '--json'].concat(targets);
+  const args = ['audit', 'flavors', '--json']
+    .concat(targets)
+    .concat(additionalArgs);
   try {
     const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-    return JSON.parse(result.stdout);
+    return JSON.parse(result);
   } catch (e) {
     return null;
   }
-}
-
-/**
- * Currently, if `aliasOrTarget` contains a flavor, this will fail.
- */
-export async function resolveAlias(
-  rootPath: NuclideUri,
-  aliasOrTarget: string,
-): Promise<string> {
-  const args = ['query', aliasOrTarget];
-  const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  return result.stdout.trim();
 }
 
 /**
@@ -610,10 +612,34 @@ export async function showOutput(
     extraArguments,
   );
   const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  return JSON.parse(result.stdout.trim());
+  return JSON.parse(result.trim());
 }
 
 export async function buildRuleTypeFor(
+  rootPath: NuclideUri,
+  aliasesOrTargets: string,
+): Promise<ResolvedRuleType> {
+  const resolvedRuleTypes = await Promise.all(
+    aliasesOrTargets
+      .trim()
+      .split(/\s+/)
+      .map(target => _buildRuleTypeFor(rootPath, target)),
+  );
+
+  if (resolvedRuleTypes.length === 1) {
+    return resolvedRuleTypes[0];
+  } else {
+    return {
+      buildTarget: {
+        qualifiedName: aliasesOrTargets,
+        flavors: [],
+      },
+      type: MULTIPLE_TARGET_RULE_TYPE,
+    };
+  }
+}
+
+export async function _buildRuleTypeFor(
   rootPath: NuclideUri,
   aliasOrTarget: string,
 ): Promise<ResolvedRuleType> {
@@ -634,7 +660,7 @@ export async function buildRuleTypeFor(
     'buck.type',
   ];
   const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  const json: {[target: string]: Object} = JSON.parse(result.stdout);
+  const json: {[target: string]: Object} = JSON.parse(result);
   // If aliasOrTarget is an alias, targets[0] will be the fully qualified build target.
   const targets = Object.keys(json);
   if (targets.length === 0) {
@@ -701,7 +727,7 @@ export async function getHTTPServerPort(rootPath: NuclideUri): Promise<number> {
 
   const args = ['server', 'status', '--json', '--http-port'];
   const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  const json: Object = JSON.parse(result.stdout);
+  const json: Object = JSON.parse(result);
   port = json['http.port'];
   _cachedPorts.set(rootPath, port);
   return port;
@@ -714,7 +740,7 @@ export async function query(
 ): Promise<Array<string>> {
   const args = ['query', '--json', queryString];
   const result = await _runBuckCommandFromProjectRoot(rootPath, args);
-  const json: Array<string> = JSON.parse(result.stdout);
+  const json: Array<string> = JSON.parse(result);
   return json;
 }
 
@@ -734,9 +760,7 @@ export async function queryWithArgs(
 ): Promise<{[aliasOrTarget: string]: Array<string>}> {
   const completeArgs = ['query', '--json', queryString].concat(args);
   const result = await _runBuckCommandFromProjectRoot(rootPath, completeArgs);
-  const json: {[aliasOrTarget: string]: Array<string>} = JSON.parse(
-    result.stdout,
-  );
+  const json: {[aliasOrTarget: string]: Array<string>} = JSON.parse(result);
 
   // `buck query` does not include entries in the JSON for params that did not match anything. We
   // massage the output to ensure that every argument has an entry in the output.
@@ -766,29 +790,32 @@ function stripBrackets(str: string): string {
 
 export async function getLastCommandInfo(
   rootPath: NuclideUri,
+  maxArgs?: number,
 ): Promise<?CommandInfo> {
   const logFile = nuclideUri.join(rootPath, LOG_PATH);
   if (await fsPromise.exists(logFile)) {
-    const result = await asyncExecute('head', ['-n', '1', logFile]);
-    if (result.exitCode === 0) {
-      const line = result.stdout;
-      const matches = line.match(LOG_REGEX);
-      if (matches == null || matches.length < 2) {
-        return null;
-      }
-      // Log lines are of the form:
-      // [time][level][?][?][JavaClass] .... [args]
-      // Parse this to figure out what the last command was.
-      const timestamp = Number(new Date(stripBrackets(matches[0])));
-      if (isNaN(timestamp)) {
-        return null;
-      }
-      const args = stripBrackets(matches[matches.length - 1]).split(', ');
-      if (args.length <= 1) {
-        return null;
-      }
-      return {timestamp, command: args[0], args: args.slice(1)};
+    let line;
+    try {
+      line = await runCommand('head', ['-n', '1', logFile]).toPromise();
+    } catch (err) {
+      return null;
     }
+    const matches = line.match(LOG_REGEX);
+    if (matches == null || matches.length < 2) {
+      return null;
+    }
+    // Log lines are of the form:
+    // [time][level][?][?][JavaClass] .... [args]
+    // Parse this to figure out what the last command was.
+    const timestamp = Number(new Date(stripBrackets(matches[0])));
+    if (isNaN(timestamp)) {
+      return null;
+    }
+    const args = stripBrackets(matches[matches.length - 1]).split(', ');
+    if (args.length <= 1 || (maxArgs != null && args.length - 1 > maxArgs)) {
+      return null;
+    }
+    return {timestamp, command: args[0], args: args.slice(1)};
   }
   return null;
 }

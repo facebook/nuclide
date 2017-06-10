@@ -9,16 +9,18 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
+  "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.2.0": "consumeBusySignal"
+      }
+    }
+  },
   "providedServices": {
     "nuclide-quick-open-register-provider": {
       "description": "Register ourselves with the quick-open package",
       "versions": {
         "0.0.0": "registerProvider"
-      }
-    },
-    "nuclide-busy-signal": {
-      "versions": {
-        "0.1.0": "provideBusySignal"
       }
     }
   }

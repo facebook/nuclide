@@ -6,17 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-fuzzy-native');
 
 // Use the pre-built, native module if available.
 // If not, use the fallback JS implementation.
 try {
-  module.exports = require('../VendorLib/fuzzy-native/lib/main');
+  module.exports = require('nuclide-prebuilt-libs/fuzzy-native');
 } catch (e) {
-  logger.error('Failed to load native fuzzy matching. Falling back to JS implementation', e);
+  logger.error(
+    'Failed to load native fuzzy matching. Falling back to JS implementation',
+    e,
+  );
   module.exports = require('./FallbackMatcher');
 }

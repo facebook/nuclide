@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import child_process from 'child_process';
@@ -42,9 +43,11 @@ export default class Task {
 
   _initialize() {
     invariant(this._child == null);
-    const child = this._child = this._fork();
-    // eslint-disable-next-line no-console
-    const log = buffer => { console.log(`TASK(${child.pid}): ${buffer}`); };
+    const child = (this._child = this._fork());
+    const log = buffer => {
+      // eslint-disable-next-line no-console
+      console.log(`TASK(${child.pid}): ${buffer}`);
+    };
     child.stdout.on('data', log);
     child.stderr.on('data', log);
     child.on('message', response => {
@@ -58,7 +61,9 @@ export default class Task {
       this._emitter.emit('child-process-error', buffer);
     });
 
-    const onExitCallback = () => { child.kill(); };
+    const onExitCallback = () => {
+      child.kill();
+    };
     process.on('exit', onExitCallback);
     child.on('exit', () => {
       this._emitter.emit('exit');
@@ -70,12 +75,14 @@ export default class Task {
     // The transpiler is only loaded in development.
     if (__DEV__) {
       return child_process.fork(
-        '--require', [TRANSPILER_PATH, BOOTSTRAP_PATH],
+        '--require',
+        [TRANSPILER_PATH, BOOTSTRAP_PATH],
         {silent: true}, // Needed so stdout/stderr are available.
       );
     } else {
       return child_process.fork(
-        BOOTSTRAP_PATH, [],
+        BOOTSTRAP_PATH,
+        [],
         {silent: true}, // Needed so stdout/stderr are available.
       );
     }

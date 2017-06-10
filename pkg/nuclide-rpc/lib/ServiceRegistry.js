@@ -6,29 +6,31 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PredefinedTransformer} from './index';
 
 import {createProxyFactory} from './main';
 import {TypeRegistry} from './TypeRegistry';
-import type {
-  FunctionType,
-  Definitions,
-  InterfaceDefinition,
-  Type,
-} from './types';
+import type {FunctionType, Definitions, InterfaceDefinition} from './types';
 import type {ProxyFactory} from './main';
 import invariant from 'assert';
 import type {ConfigEntry} from './index';
 import type {ObjectRegistry} from './ObjectRegistry';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import {SERVICE_FRAMEWORK3_PROTOCOL} from './config';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-rpc');
 
-export type FunctionImplementation = {localImplementation: Function, type: FunctionType};
-export type ClassDefinition = {localImplementation: any, definition: InterfaceDefinition};
+export type FunctionImplementation = {
+  getLocalImplementation: Function,
+  type: FunctionType,
+};
+export type ClassDefinition = {
+  getLocalImplementation: any,
+  definition: InterfaceDefinition,
+};
 export type ServiceDefinition = {
   name: string,
   factory: ProxyFactory, // Maps from RpcContext to proxy
@@ -61,7 +63,9 @@ export class ServiceRegistry {
   ) {
     this._protocol = protocol;
     this._typeRegistry = new TypeRegistry(predefinedTypes);
-    this._predefinedTypes = predefinedTypes.map(predefinedType => predefinedType.typeName);
+    this._predefinedTypes = predefinedTypes.map(
+      predefinedType => predefinedType.typeName,
+    );
     this._functionsByName = new Map();
     this._classesByName = new Map();
     this._services = new Map();
@@ -78,8 +82,8 @@ export class ServiceRegistry {
   }
 
   addService(service: ConfigEntry): void {
-    const preserveFunctionNames = service.preserveFunctionNames != null
-      && service.preserveFunctionNames;
+    const preserveFunctionNames =
+      service.preserveFunctionNames != null && service.preserveFunctionNames;
     try {
       const factory = createProxyFactory(
         service.name,
@@ -87,8 +91,6 @@ export class ServiceRegistry {
         service.definition,
         this._predefinedTypes,
       );
-      // $FlowIssue - the parameter passed to require must be a literal string.
-      const localImpl = require(service.implementation);
       this._services.set(service.name, {
         name: service.name,
         factory,
@@ -103,50 +105,104 @@ export class ServiceRegistry {
           case 'alias':
             if (definition.definition != null) {
               this._typeRegistry.registerAlias(
-                name, definition.location, (definition.definition: Type));
+                name,
+                definition.location,
+                definition.definition,
+              );
             }
             break;
+
           case 'function':
             // Register module-level functions.
             const functionName = service.preserveFunctionNames
-              ? name : `${service.name}/${name}`;
-            this._registerFunction(functionName, localImpl[name], definition.type);
+              ? name
+              : `${service.name}/${name}`;
+            this._registerFunction(
+              functionName,
+              service.implementation,
+              impl => impl[name],
+              definition.type,
+            );
             break;
+
           case 'interface':
             // Register interfaces.
-            this._classesByName.set(name, {
-              localImplementation: localImpl[name],
+            this._registerClass(
+              name,
+              service.implementation,
+              impl => impl[name],
               definition,
-            });
-
+            );
             this._typeRegistry.registerType(
               name,
               definition.location,
-              (object, context: ObjectRegistry) => context.marshal(name, object),
+              (object, context: ObjectRegistry) =>
+                context.marshal(name, object),
               (objectId, context: ObjectRegistry) =>
-                context.unmarshal(objectId, name, context.getService(service.name)[name]));
-
+                context.unmarshal(
+                  objectId,
+                  name,
+                  context.getService(service.name)[name],
+                ),
+            );
             // Register all of the static methods as remote functions.
-            Object.keys(definition.staticMethods).forEach(funcName => {
-              const funcType = definition.staticMethods[funcName];
-              this._registerFunction(`${name}/${funcName}`, localImpl[name][funcName], funcType);
+            Object.keys(definition.staticMethods).forEach(methodName => {
+              this._registerFunction(
+                `${name}/${methodName}`,
+                service.implementation,
+                impl => impl[name][methodName],
+                definition.staticMethods[methodName],
+              );
             });
             break;
         }
       });
     } catch (e) {
-      logger.error(`Failed to load service ${service.name}. Stack Trace:\n${e.stack}`);
+      logger.error(
+        `Failed to load service ${service.name}. Stack Trace:\n${e.stack}`,
+      );
       throw e;
     }
   }
 
-  _registerFunction(name: string, localImpl: Function, type: FunctionType): void {
+  _registerFunction(
+    name: string,
+    id: string,
+    accessor: Function,
+    type: FunctionType,
+  ): void {
     if (this._functionsByName.has(name)) {
       throw new Error(`Duplicate RPC function: ${name}`);
     }
+    let impl;
     this._functionsByName.set(name, {
-      localImplementation: localImpl,
+      getLocalImplementation() {
+        if (impl == null) {
+          // $FlowIgnore
+          impl = accessor(require(id));
+        }
+        return impl;
+      },
       type,
+    });
+  }
+
+  _registerClass(
+    name: string,
+    id: string,
+    accessor: Function,
+    definition: InterfaceDefinition,
+  ): void {
+    let impl;
+    this._classesByName.set(name, {
+      getLocalImplementation() {
+        if (impl == null) {
+          // $FlowIgnore
+          impl = accessor(require(id));
+        }
+        return impl;
+      },
+      definition,
     });
   }
 

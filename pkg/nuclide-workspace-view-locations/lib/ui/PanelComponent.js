@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global getComputedStyle */
 
-import UniversalDisposable from '../../../commons-node/UniversalDisposable';
-import {nextAnimationFrame} from '../../../commons-node/observable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {nextAnimationFrame} from 'nuclide-commons/observable';
 import rectContainsPoint from '../../../commons-node/rectContainsPoint';
 import {View} from '../../../nuclide-ui/View';
 import {ToggleButton} from './ToggleButton';
@@ -76,7 +77,9 @@ export class PanelComponent extends React.Component {
     };
 
     // Bind main events to this object. _updateSize is only ever bound within these.
-    (this: any)._handleResizeHandleDragStart = this._handleResizeHandleDragStart.bind(this);
+    (this: any)._handleResizeHandleDragStart = this._handleResizeHandleDragStart.bind(
+      this,
+    );
     (this: any)._handleMouseMove = this._handleMouseMove.bind(this);
     (this: any)._handleMouseUp = this._handleMouseUp.bind(this);
     (this: any)._handleDragLeave = this._handleDragLeave.bind(this);
@@ -87,12 +90,16 @@ export class PanelComponent extends React.Component {
   }
 
   componentDidMount(): void {
-    const panelContainerEl = document.querySelector(`atom-panel-container.${this.props.position}`);
+    const panelContainerEl = document.querySelector(
+      `atom-panel-container.${this.props.position}`,
+    );
     this._disposables = new UniversalDisposable(
       // Note: This method is called via `requestAnimationFrame` rather than `process.nextTick` like
       // Atom's tree-view does because this does not have a guarantee a paint will have already
       // happened when `componentDidMount` gets called the first time.
-      nextAnimationFrame.subscribe(() => { this._repaint(); }),
+      nextAnimationFrame.subscribe(() => {
+        this._repaint();
+      }),
     );
 
     // The panel container should always be in the DOM, but in tests it may not be. In those cases
@@ -107,32 +114,39 @@ export class PanelComponent extends React.Component {
       // In order to provide as large of a mouse target as possible, we use the entire panel
       // container. When detecting whether the mouse has left the area, we also include the space
       // taken up by the toggle button.
-      Observable.fromEvent(panelContainerEl, 'mouseenter').switchMap(enterEvent => (
-        Observable.concat(
-          Observable.of(enterEvent),
-          Observable.merge(
-            // We want to include the toggle button area when determining whether we've left, so we
-            // need to use "move" events. We only start caring about them after the first leave
-            // event, though, so we're doing as little work as possible. BUT...
-            Observable.fromEvent(panelContainerEl, 'mouseleave')
-              .take(1)
-              .switchMap(event => Observable.fromEvent(window, 'mousemove').startWith(event))
-              .filter(event => shouldHideToggleButton(event, panelContainerEl, position)),
-            // ...mouseleave won't be triggered if you're dragging, so listen for dragend too...
-            Observable.fromEvent(window, 'dragend')
-              .filter(event => shouldHideToggleButton(event, panelContainerEl, position)),
-            // ...nor is it triggered when the pane is hidden (using a command or by removing the
-            // last item), so we listen to that too.
-            this._activeChanges
-              .distinctUntilChanged()
-              .filter(active => !active),
-          )
-            .take(1),
+      Observable.fromEvent(panelContainerEl, 'mouseenter')
+        .switchMap(enterEvent =>
+          Observable.concat(
+            Observable.of(enterEvent),
+            Observable.merge(
+              // We want to include the toggle button area when determining whether we've left, so we
+              // need to use "move" events. We only start caring about them after the first leave
+              // event, though, so we're doing as little work as possible. BUT...
+              Observable.fromEvent(panelContainerEl, 'mouseleave')
+                .take(1)
+                .switchMap(event =>
+                  Observable.fromEvent(window, 'mousemove').startWith(event),
+                )
+                .filter(event =>
+                  shouldHideToggleButton(event, panelContainerEl, position),
+                ),
+              // ...mouseleave won't be triggered if you're dragging, so listen for dragend too...
+              Observable.fromEvent(window, 'dragend').filter(event =>
+                shouldHideToggleButton(event, panelContainerEl, position),
+              ),
+              // ...nor is it triggered when the pane is hidden (using a command or by removing the
+              // last item), so we listen to that too.
+              this._activeChanges
+                .distinctUntilChanged()
+                .filter(active => !active),
+            ).take(1),
+          ),
         )
-      ))
         .map(event => (event.type === 'mouseenter' ? true : false))
         .distinctUntilChanged()
-        .subscribe(showToggleButton => { this.setState({showToggleButton}); }),
+        .subscribe(showToggleButton => {
+          this.setState({showToggleButton});
+        }),
     );
   }
 
@@ -177,7 +191,11 @@ export class PanelComponent extends React.Component {
     if (nextProps.active !== this.props.active) {
       // Never animate toggling visiblity...
       this.setState({shouldAnimate: false});
-    } else if (!nextProps.active && nextProps.draggingItem && !this.props.draggingItem) {
+    } else if (
+      !nextProps.active &&
+      nextProps.draggingItem &&
+      !this.props.draggingItem
+    ) {
       // ...but do animate if you start dragging while the panel is hidden.
       this.setState({shouldAnimate: true});
     }
@@ -202,11 +220,13 @@ export class PanelComponent extends React.Component {
         'nuclide-panel-active': this.props.active,
       },
     );
-    const className = classnames('nuclide-workspace-views-panel', this.props.position);
-    const maskClassName = classnames(
-      'nuclide-workspace-views-panel-mask',
-      {'nuclide-panel-should-animate': this.state.shouldAnimate},
+    const className = classnames(
+      'nuclide-workspace-views-panel',
+      this.props.position,
     );
+    const maskClassName = classnames('nuclide-workspace-views-panel-mask', {
+      'nuclide-panel-should-animate': this.state.shouldAnimate,
+    });
 
     const handle = (
       <Handle
@@ -220,14 +240,19 @@ export class PanelComponent extends React.Component {
     return (
       <div className={wrapperClassName}>
         {/* We need to change the size of the mask... */}
-        <div className={maskClassName} style={{[widthOrHeight]: open ? size : HANDLE_SIZE}}>
+        <div
+          className={maskClassName}
+          style={{[widthOrHeight]: open ? size : HANDLE_SIZE}}>
           {/* ...but the content needs to maintain a constant size. */}
           <div className={className} style={{[widthOrHeight]: size}}>
             {handle}
             <div className="nuclide-workspace-views-panel-content">
               <View item={this.props.paneContainer} />
             </div>
-            <ResizeCursorOverlay position={this.props.position} resizing={this.state.resizing} />
+            <ResizeCursorOverlay
+              position={this.props.position}
+              resizing={this.state.resizing}
+            />
           </div>
         </div>
         {/*
@@ -237,7 +262,9 @@ export class PanelComponent extends React.Component {
         <ToggleButton
           ref={this._handleToggleButton}
           onDragEnter={this._revealDropTarget}
-          visible={this.state.showToggleButton || (this.props.draggingItem && !open)}
+          visible={
+            this.state.showToggleButton || (this.props.draggingItem && !open)
+          }
           position={this.props.position}
           open={open}
           toggle={this.props.toggle}
@@ -256,27 +283,31 @@ export class PanelComponent extends React.Component {
       // it. We should be able to use `onDragLeave` but for some reason, that's only being triggered
       // sporadically with the correct target.
       Observable.merge(
-        Observable.fromEvent(window, 'drag')
-          .filter(event => {
-            const toggleButtonEl = this._toggleButtonEl;
-            const el = ReactDOM.findDOMNode(this);
-            if (el == null || toggleButtonEl == null) { return false; }
-            // $FlowFixMe
-            const panelArea = el.getBoundingClientRect();
-            const toggleButtonArea = toggleButtonEl.getBoundingClientRect();
-            const mousePosition = {x: event.pageX, y: event.pageY};
-            return !rectContainsPoint(panelArea, mousePosition)
-              && !rectContainsPoint(toggleButtonArea, mousePosition);
-          }),
+        Observable.fromEvent(window, 'drag').filter(event => {
+          const toggleButtonEl = this._toggleButtonEl;
+          const el = ReactDOM.findDOMNode(this);
+          if (el == null || toggleButtonEl == null) {
+            return false;
+          }
+          // $FlowFixMe
+          const panelArea = el.getBoundingClientRect();
+          const toggleButtonArea = toggleButtonEl.getBoundingClientRect();
+          const mousePosition = {x: event.pageX, y: event.pageY};
+          return (
+            !rectContainsPoint(panelArea, mousePosition) &&
+            !rectContainsPoint(toggleButtonArea, mousePosition)
+          );
+        }),
         Observable.fromEvent(window, 'dragend'),
-      )
-        .subscribe(this._handleDragLeave),
+      ).subscribe(this._handleDragLeave),
     );
   }
 
   _handleToggleButton(toggleButton: ?ToggleButton): void {
     // $FlowFixMe
-    this._toggleButtonEl = toggleButton == null ? null : ReactDOM.findDOMNode(toggleButton);
+    this._toggleButtonEl = toggleButton == null
+      ? null
+      : ReactDOM.findDOMNode(toggleButton);
   }
 
   _handleDragLeave(): void {
@@ -292,14 +323,17 @@ export class PanelComponent extends React.Component {
       this._resizeDisposable.dispose();
     }
     this._resizeDisposable = new UniversalDisposable(
-      Observable.fromEvent(window, 'mousemove').subscribe(this._handleMouseMove),
+      Observable.fromEvent(window, 'mousemove').subscribe(
+        this._handleMouseMove,
+      ),
       Observable.fromEvent(window, 'mouseup').subscribe(this._handleMouseUp),
     );
     this.setState({resizing: true});
   }
 
   _handleMouseMove(event: SyntheticMouseEvent): void {
-    if (event.buttons === 0) { // We missed the mouseup event. For some reason it happens on Windows
+    if (event.buttons === 0) {
+      // We missed the mouseup event. For some reason it happens on Windows
       this._handleMouseUp(event);
       return;
     }
@@ -348,37 +382,43 @@ export class PanelComponent extends React.Component {
     } else {
       // The item may not have been activated yet. If that's the case, just use the first item.
       const activePaneItem =
-        this.props.paneContainer.getActivePaneItem() || this.props.paneContainer.getPaneItems()[0];
+        this.props.paneContainer.getActivePaneItem() ||
+        this.props.paneContainer.getPaneItems()[0];
       if (activePaneItem != null) {
-        initialSize = getPreferredInitialSize(activePaneItem, this.props.position);
+        initialSize = getPreferredSize(activePaneItem, this.props.position);
       }
     }
     return initialSize == null ? DEFAULT_INITIAL_SIZE : initialSize;
   }
 }
 
-function getPreferredInitialSize(item: Object, position: Position): ?number {
+function getPreferredSize(item: Object, position: Position): ?number {
   switch (position) {
     case 'top':
     case 'bottom':
-      return typeof item.getPreferredInitialHeight === 'function'
-        ? item.getPreferredInitialHeight()
+      return typeof item.getPreferredHeight === 'function'
+        ? item.getPreferredHeight()
         : null;
     case 'left':
     case 'right':
-      return typeof item.getPreferredInitialWidth === 'function'
-        ? item.getPreferredInitialWidth()
+      return typeof item.getPreferredWidth === 'function'
+        ? item.getPreferredWidth()
         : null;
     default:
       throw new Error(`Invalid position: ${position}`);
   }
 }
 
-function ResizeCursorOverlay(props: {resizing: boolean, position: Position}): ?React.Element<any> {
+function ResizeCursorOverlay(props: {
+  resizing: boolean,
+  position: Position,
+}): ?React.Element<any> {
   // We create an overlay to always display the resize cursor while the user is resizing the panel,
   // even if their mouse leaves the handle.
   return props.resizing
-    ? <div className={`nuclide-workspace-views-panel-resize-cursor-overlay ${props.position}`} />
+    ? <div
+        className={`nuclide-workspace-views-panel-resize-cursor-overlay ${props.position}`}
+      />
     : null;
 }
 

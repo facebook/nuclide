@@ -6,26 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import invariant from 'assert';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {WorkingSetSelectionComponent} from './WorkingSetSelectionComponent';
 import {WorkingSetNameAndSaveComponent} from './WorkingSetNameAndSaveComponent';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import FileTreeActions from '../lib/FileTreeActions';
 import {WorkingSet} from '../../nuclide-working-sets-common';
-import {
-  Button,
-  ButtonSizes,
-} from '../../nuclide-ui/Button';
-import {
-  ButtonGroup,
-  ButtonGroupSizes,
-} from '../../nuclide-ui/ButtonGroup';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup, ButtonGroupSizes} from 'nuclide-commons-ui/ButtonGroup';
 
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
 
@@ -65,30 +60,38 @@ export class FileTreeToolbarComponent extends React.Component {
     this._actions = FileTreeActions.getInstance();
 
     this._disposables = new UniversalDisposable(
-      props.workingSetsStore.subscribeToDefinitions(
-        definitions => {
-          const empty = definitions.applicable.length + definitions.notApplicable.length === 0;
-          this.setState({definitionsAreEmpty: empty});
-        },
-      ),
+      props.workingSetsStore.subscribeToDefinitions(definitions => {
+        const empty =
+          definitions.applicable.length + definitions.notApplicable.length ===
+          0;
+        this.setState({definitionsAreEmpty: empty});
+      }),
     );
 
-    (this: any)._toggleWorkingSetsSelector = this._toggleWorkingSetsSelector.bind(this);
-    (this: any)._checkIfClosingSelector = this._checkIfClosingSelector.bind(this);
+    (this: any)._toggleWorkingSetsSelector = this._toggleWorkingSetsSelector.bind(
+      this,
+    );
+    (this: any)._checkIfClosingSelector = this._checkIfClosingSelector.bind(
+      this,
+    );
     (this: any)._editWorkingSet = this._editWorkingSet.bind(this);
     (this: any)._saveWorkingSet = this._saveWorkingSet.bind(this);
     (this: any)._updateWorkingSet = this._updateWorkingSet.bind(this);
-    (this: any)._toggleWorkingSetEditMode = this._toggleWorkingSetEditMode.bind(this);
+    (this: any)._toggleWorkingSetEditMode = this._toggleWorkingSetEditMode.bind(
+      this,
+    );
   }
 
   componentDidMount(): void {
-    this._disposables.add(atom.commands.add(
-      'atom-workspace',
-      // This command is exposed in the nuclide-working-sets menu config.
-      // eslint-disable-next-line nuclide-internal/atom-apis
-      'working-sets:select-active',
-      this._toggleWorkingSetsSelector,
-    ));
+    this._disposables.add(
+      atom.commands.add(
+        'atom-workspace',
+        // This command is exposed in the nuclide-working-sets menu config.
+        // eslint-disable-next-line nuclide-internal/atom-apis
+        'working-sets:select-active',
+        this._toggleWorkingSetsSelector,
+      ),
+    );
   }
 
   componentWillUnmount(): void {
@@ -142,8 +145,7 @@ export class FileTreeToolbarComponent extends React.Component {
       <div
         className={classnames({
           'nuclide-file-tree-toolbar': true,
-          'nuclide-file-tree-toolbar-fader':
-            workingSet.isEmpty() &&
+          'nuclide-file-tree-toolbar-fader': workingSet.isEmpty() &&
             !this.state.selectionIsActive &&
             !this._store.isEditingWorkingSet(),
         })}>
@@ -191,13 +193,14 @@ export class FileTreeToolbarComponent extends React.Component {
       this.setState({selectionIsActive: false});
     };
 
-    ReactDOM.render((
+    ReactDOM.render(
       <WorkingSetSelectionComponent
         workingSetsStore={this.props.workingSetsStore}
         onClose={onClose}
         onEditWorkingSet={this._editWorkingSet}
-      />
-    ), reactDiv);
+      />,
+      reactDiv,
+    );
 
     return onClose;
   }
@@ -266,11 +269,7 @@ class SelectWorkingSetButton extends React.Component {
   };
 
   render(): React.Element<any> {
-    const {
-      isWorkingSetEmpty,
-      onClick,
-      onFocus,
-    } = this.props;
+    const {isWorkingSetEmpty, onClick, onFocus} = this.props;
     return (
       <Button
         icon="pencil"
@@ -299,12 +298,7 @@ class DefineWorkingSetButton extends React.Component {
   };
 
   render(): React.Element<any> {
-    const {
-      isActive,
-      isWorkingSetEmpty,
-      shouldShowLabel,
-      onClick,
-    } = this.props;
+    const {isActive, isWorkingSetEmpty, shouldShowLabel, onClick} = this.props;
     return (
       <Button
         icon={isActive ? undefined : 'plus'}
@@ -315,13 +309,9 @@ class DefineWorkingSetButton extends React.Component {
           placement: 'top',
         }}
         onClick={onClick}>
-        {
-          isActive
-            ? 'Cancel selection'
-            : isWorkingSetEmpty && shouldShowLabel
-              ? 'Working Set...'
-              : null
-        }
+        {isActive
+          ? 'Cancel selection'
+          : isWorkingSetEmpty && shouldShowLabel ? 'Working Set...' : null}
       </Button>
     );
   }

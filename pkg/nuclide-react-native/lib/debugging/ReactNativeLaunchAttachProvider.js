@@ -6,25 +6,50 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {DebuggerConfigAction} from '../../../nuclide-debugger-base';
 
 import {DebuggerLaunchAttachProvider} from '../../../nuclide-debugger-base';
 import {DebugUiComponent} from './DebugUiComponent';
 import invariant from 'assert';
 import React from 'react';
 
-import type EmitterEvent from 'events';
+export class ReactNativeLaunchAttachProvider
+  extends DebuggerLaunchAttachProvider {
+  getCallbacksForAction(action: DebuggerConfigAction) {
+    return {
+      /**
+         * Whether this provider is enabled or not.
+         */
+      isEnabled: () => {
+        return Promise.resolve(action === 'attach');
+      },
 
-export class ReactNativeLaunchAttachProvider extends DebuggerLaunchAttachProvider {
-  getActions(): Promise<Array<string>> {
-    return Promise.resolve(['Attach']);
+      /**
+         * Returns a list of supported debugger types + environments for the specified action.
+         */
+      getDebuggerTypeNames: super.getCallbacksForAction(action)
+        .getDebuggerTypeNames,
+
+      /**
+         * Returns the UI component for configuring the specified debugger type and action.
+         */
+      getComponent: (
+        debuggerTypeName: string,
+        configIsValidChanged: (valid: boolean) => void,
+      ) => {
+        invariant(action === 'attach');
+        return (
+          <DebugUiComponent
+            targetUri={this.getTargetUri()}
+            configIsValidChanged={configIsValidChanged}
+          />
+        );
+      },
+    };
   }
 
-  getComponent(action: string, parentEventEmitter: EmitterEvent): ?React.Element<any> {
-    invariant(action === 'Attach');
-    return <DebugUiComponent targetUri={this.getTargetUri()} parentEmitter={parentEventEmitter} />;
-  }
-
-  dispose(): void {
-  }
+  dispose(): void {}
 }

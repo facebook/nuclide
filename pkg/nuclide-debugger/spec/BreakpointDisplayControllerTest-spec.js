@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global MouseEvent */
@@ -40,6 +41,13 @@ describe('BreakpointDisplayController', () => {
       clientY: position.top,
       bubbles: true,
     });
+
+    const element: HTMLElement = (target: any);
+    const bpClass = 'nuclide-debugger-shadow-breakpoint-icon';
+    if (!element.classList.contains(bpClass)) {
+      element.classList.add(bpClass);
+    }
+
     target.dispatchEvent(event);
   }
 
@@ -103,7 +111,9 @@ describe('BreakpointDisplayController', () => {
     expect(utils.hasBreakpointDecorationInRow(editor, 1)).toBe(false);
     const gutter = editor.gutterWithName('line-number');
     invariant(gutter);
-    const lineNumberElem = atom.views.getView(gutter).querySelector('.line-number');
+    const lineNumberElem = atom.views
+      .getView(gutter)
+      .querySelector('.line-number');
     invariant(lineNumberElem != null);
     simulateClickAtBufferPosition(lineNumberElem, 1);
     expect(utils.hasBreakpointDecorationInRow(editor, 1)).toBe(true);

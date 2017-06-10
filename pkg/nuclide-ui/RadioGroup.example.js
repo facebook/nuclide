@@ -6,19 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
+import {Block} from 'nuclide-commons-ui/Block';
 import RadioGroup from './RadioGroup';
 
-const labels = [
-  'choose',
-  'from',
-  'one of',
-  'several',
-  'options',
-];
+const labels = ['choose', 'from', 'one of', 'several', 'options'];
 
 class RadioGroupExample extends React.Component {
   state: {selectedIndex: number};

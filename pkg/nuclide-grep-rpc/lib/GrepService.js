@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {ConnectableObservable, Observable} from 'rxjs';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import replaceInFile from './replaceInFile';
 import search from './scanhandler';
 
@@ -28,25 +29,32 @@ export type search$FileResult = {
   matches: Array<search$Match>,
 };
 
-export type search$ReplaceResult = {
-  type: 'success',
-  filePath: NuclideUri,
-  replacements: number,
-} | {
-  type: 'error',
-  filePath: NuclideUri,
-  message: string,
-};
+export type search$ReplaceResult =
+  | {
+      type: 'success',
+      filePath: NuclideUri,
+      replacements: number,
+    }
+  | {
+      type: 'error',
+      filePath: NuclideUri,
+      message: string,
+    };
 
 export function grepSearch(
   directory: NuclideUri,
   regex: RegExp,
   subdirs: Array<string>,
 ): ConnectableObservable<search$FileResult> {
-  return search(directory, regex, subdirs).map(update => {
-    // Transform filePath's to absolute paths.
-    return {filePath: nuclideUri.join(directory, update.filePath), matches: update.matches};
-  }).publish();
+  return search(directory, regex, subdirs)
+    .map(update => {
+      // Transform filePath's to absolute paths.
+      return {
+        filePath: nuclideUri.join(directory, update.filePath),
+        matches: update.matches,
+      };
+    })
+    .publish();
 }
 
 export function grepReplace(
@@ -57,19 +65,20 @@ export function grepReplace(
 ): ConnectableObservable<search$ReplaceResult> {
   return Observable.from(filePaths)
     .mergeMap(
-      filePath => replaceInFile(filePath, regex, replacementText)
-        .map(replacements => ({
-          type: 'success',
-          filePath,
-          replacements,
-        }))
-        .catch(err => {
-          return Observable.of({
-            type: 'error',
+      filePath =>
+        replaceInFile(filePath, regex, replacementText)
+          .map(replacements => ({
+            type: 'success',
             filePath,
-            message: err.message,
-          });
-        }),
+            replacements,
+          }))
+          .catch(err => {
+            return Observable.of({
+              type: 'error',
+              filePath,
+              message: err.message,
+            });
+          }),
       concurrency,
     )
     .publish();

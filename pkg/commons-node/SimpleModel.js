@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Observable, Subject} from 'rxjs';
@@ -21,12 +22,15 @@ export class SimpleModel<State: {}> {
 
   constructor() {
     this._states = new Subject();
-    this._states.subscribe(state => { this.state = state; });
+    this._states.subscribe(state => {
+      this.state = state;
+    });
 
     // Create an observable that contains the current, and all future, states. Since the initial
     // state is set directly (assigned to `this.state`), we can't just use a ReplaySubject
     // TODO: Use a computed property key when that's supported.
-    (this: any)[$$observable] = () => Observable.of(this.state).concat(this._states);
+    (this: any)[$$observable] = () =>
+      Observable.of(this.state).concat(this._states);
   }
 
   setState(newState: Object): void {

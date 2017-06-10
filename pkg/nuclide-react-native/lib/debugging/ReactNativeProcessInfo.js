@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {DebuggerProcessInfo} from '../../../nuclide-debugger-base';
 import {ReactNativeDebuggerInstance} from './ReactNativeDebuggerInstance';
@@ -16,6 +17,10 @@ import {ReactNativeDebuggerInstance} from './ReactNativeDebuggerInstance';
 export class ReactNativeProcessInfo extends DebuggerProcessInfo {
   constructor(targetUri: NuclideUri) {
     super('react-native', targetUri);
+  }
+
+  clone(): ReactNativeProcessInfo {
+    return new ReactNativeProcessInfo(this._targetUri);
   }
 
   debug(): Promise<ReactNativeDebuggerInstance> {

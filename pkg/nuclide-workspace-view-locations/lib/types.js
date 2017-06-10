@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type SerializedPanelLocation = {
@@ -18,8 +19,4 @@ export type SerializedPanelLocation = {
   },
 };
 
-export type PanelLocationId =
-  'top'
-  | 'right'
-  | 'bottom'
-  | 'left';
+export type PanelLocationId = 'top' | 'right' | 'bottom' | 'left';

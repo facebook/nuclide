@@ -6,20 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ServerConnection} from './ServerConnection';
 import type {RemoteDirectory} from './RemoteDirectory';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import typeof * as FileSystemService
+  from '../../nuclide-server/lib/services/FileSystemService';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import passesGK from '../../commons-node/passesGK';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import crypto from 'crypto';
 import {Disposable, Emitter} from 'atom';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-connection');
 
 /* Mostly implements https://atom.io/docs/api/latest/File */
 export class RemoteFile {
@@ -27,7 +30,7 @@ export class RemoteFile {
   _emitter: Emitter;
   _encoding: ?string;
   _localPath: string;
-  _path: string;
+  _path: NuclideUri;
   _realpath: ?string;
   _server: ServerConnection;
   _subscriptionCount: number;
@@ -37,7 +40,7 @@ export class RemoteFile {
 
   constructor(
     server: ServerConnection,
-    remotePath: string,
+    remotePath: NuclideUri,
     symlink: boolean = false,
   ) {
     this._server = server;
@@ -70,38 +73,63 @@ export class RemoteFile {
 
   _willAddSubscription(): void {
     this._subscriptionCount++;
-    return this._subscribeToNativeChangeEvents();
+    this._subscribeToNativeChangeEvents();
   }
 
   _subscribeToNativeChangeEvents(): void {
     if (this._watchSubscription) {
       return;
     }
+
     const watchStream = this._server.getFileWatch(this._path);
-    this._watchSubscription = watchStream.subscribe(watchUpdate => {
-      // This only happens after a `setPath` and subsequent file rename.
-      // Getting this message signifies that the new file should be ready for watching.
-      if (watchUpdate.path !== this._path) {
-        logger.debug('watchFile renamed:', this._path);
-        this._unsubscribeFromNativeChangeEvents();
-        this._subscribeToNativeChangeEvents();
-        return;
-      }
-      logger.debug('watchFile update:', watchUpdate);
-      switch (watchUpdate.type) {
-        case 'change':
-          return this._handleNativeChangeEvent();
-        case 'delete':
-          return this._handleNativeDeleteEvent();
-      }
-    }, error => {
-      logger.error('Failed to subscribe RemoteFile:', this._path, error);
-      this._watchSubscription = null;
-    }, () => {
-      // Nothing needs to be done if the root directory watch has ended.
-      logger.debug(`watchFile ended: ${this._path}`);
-      this._watchSubscription = null;
-    });
+    this._watchSubscription = watchStream.subscribe(
+      watchUpdate => {
+        // This only happens after a `setPath` and subsequent file rename.
+        // Getting this message signifies that the new file should be ready for watching.
+        if (watchUpdate.path !== this._path) {
+          logger.debug('watchFile renamed:', this._path);
+          this._unsubscribeFromNativeChangeEvents();
+          this._subscribeToNativeChangeEvents();
+          return;
+        }
+        logger.debug('watchFile update:', watchUpdate);
+        switch (watchUpdate.type) {
+          case 'change':
+            return this._handleNativeChangeEvent();
+          case 'delete':
+            return this._handleNativeDeleteEvent();
+        }
+      },
+      error => {
+        logger.error('Failed to subscribe RemoteFile:', this._path, error);
+        this._watchSubscription = null;
+      },
+      () => {
+        // Nothing needs to be done if the root directory watch has ended.
+        logger.debug(`watchFile ended: ${this._path}`);
+        this._watchSubscription = null;
+      },
+    );
+
+    // No need to wait for that async check.
+    this._checkWatchOutOfOpenDirectories();
+  }
+
+  async _checkWatchOutOfOpenDirectories(): Promise<void> {
+    const isPathInOpenDirectories = atom.project.contains(this._path);
+    if (
+      !isPathInOpenDirectories &&
+      (await passesGK('nuclide_watch_warn_unmanaged_file'))
+    ) {
+      atom.notifications.addWarning(
+        `Couldn't watch remote file \`${nuclideUri.basename(this._path)}\` for changes!`,
+        {
+          detail: "Updates to the file outside Nuclide won't reload automatically\n" +
+            "Please add the file's project directory to Nuclide\n",
+          dismissable: true,
+        },
+      );
+    }
   }
 
   _handleNativeChangeEvent(): Promise<void> {
@@ -158,7 +186,7 @@ export class RemoteFile {
   }
 
   exists(): Promise<boolean> {
-    return this._getFileSystemService().exists(this._localPath);
+    return this._getFileSystemService().exists(this._path);
   }
 
   existsSync(): boolean {
@@ -218,7 +246,7 @@ export class RemoteFile {
 
   async getRealPath(): Promise<string> {
     if (this._realpath == null) {
-      this._realpath = await this._getFileSystemService().realpath(this._localPath);
+      this._realpath = await this._getFileSystemService().realpath(this._path);
     }
     invariant(this._realpath);
     return this._realpath;
@@ -229,7 +257,7 @@ export class RemoteFile {
   }
 
   async create(): Promise<boolean> {
-    const wasCreated = await this._getFileSystemService().newFile(this._localPath);
+    const wasCreated = await this._getFileSystemService().newFile(this._path);
     if (this._subscriptionCount > 0) {
       this._subscribeToNativeChangeEvents();
     }
@@ -238,7 +266,7 @@ export class RemoteFile {
 
   async delete(): Promise<any> {
     try {
-      await this._getFileSystemService().unlink(this._localPath);
+      await this._getFileSystemService().unlink(this._path);
       this._handleNativeDeleteEvent();
     } catch (error) {
       if (error.code !== 'ENOENT') {
@@ -247,14 +275,17 @@ export class RemoteFile {
     }
   }
 
-  async copy(newPath: string): Promise<boolean> {
-    const wasCopied = await this._getFileSystemService().copy(this._localPath, newPath);
+  async copy(newPath: NuclideUri): Promise<boolean> {
+    const wasCopied = await this._getFileSystemService().copy(
+      this._path,
+      newPath,
+    );
     this._subscribeToNativeChangeEvents();
     return wasCopied;
   }
 
   async read(flushCache?: boolean): Promise<string> {
-    const data = await this._getFileSystemService().readFile(this._localPath);
+    const data = await this._getFileSystemService().readFile(this._path);
     const contents = data.toString();
     this._setDigest(contents);
     // TODO: respect encoding
@@ -267,7 +298,7 @@ export class RemoteFile {
 
   async write(text: string): Promise<void> {
     const previouslyExisted = await this.exists();
-    await this._getFileSystemService().writeFile(this._localPath, text);
+    await this._getFileSystemService().writeFile(this._path, text);
     if (!previouslyExisted && this._subscriptionCount > 0) {
       this._subscribeToNativeChangeEvents();
     }
@@ -276,9 +307,9 @@ export class RemoteFile {
   getParent(): RemoteDirectory {
     const directoryPath = nuclideUri.dirname(this._path);
     const remoteConnection = this._server.getRemoteConnectionForUri(this._path);
-    const hgRepositoryDescription = remoteConnection != null ?
-      remoteConnection.getHgRepositoryDescription() :
-      null;
+    const hgRepositoryDescription = remoteConnection != null
+      ? remoteConnection.getHgRepositoryDescription()
+      : null;
     return this._server.createDirectory(directoryPath, hgRepositoryDescription);
   }
 

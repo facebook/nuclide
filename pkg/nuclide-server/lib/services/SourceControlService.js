@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {findHgRepository} from '../../../nuclide-source-control-helpers';
@@ -20,6 +21,8 @@ export type HgRepositoryDescription = {
   workingDirectoryPath: string,
 };
 
-export function getHgRepository(directoryPath: string): Promise<?HgRepositoryDescription> {
+export function getHgRepository(
+  directoryPath: string,
+): Promise<?HgRepositoryDescription> {
   return Promise.resolve(findHgRepository(directoryPath));
 }

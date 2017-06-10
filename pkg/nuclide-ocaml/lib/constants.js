@@ -6,14 +6,9 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-export const EXTENSIONS = new Set([
-  'ml',
-  'mli',
-]);
+export const EXTENSIONS = new Set(['ml', 'mli']);
 
-export const GRAMMARS = new Set([
-  'source.ocaml',
-  'source.reason',
-]);
+export const GRAMMARS = new Set(['source.ocaml', 'source.reason']);

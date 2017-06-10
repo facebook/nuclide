@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -27,7 +28,10 @@ export function waitsForHyperclickResult(
     invariant(currentEditor != null);
     currentEditor.setCursorBufferPosition(startPosition);
     // shortcut key for hyperclick:confirm-cursor
-    dispatchKeyboardEvent('enter', document.activeElement, {cmd: true, alt: true});
+    dispatchKeyboardEvent('enter', document.activeElement, {
+      cmd: true,
+      alt: true,
+    });
   });
 
   waitsForFilePosition(endFile, ...endPosition);
@@ -38,14 +42,19 @@ export function waitsForMultipleHyperclickResults(
   expectedResultsText: Array<string>,
 ) {
   runs(() => {
-    dispatchKeyboardEvent('enter', document.activeElement, {cmd: true, alt: true});
+    dispatchKeyboardEvent('enter', document.activeElement, {
+      cmd: true,
+      alt: true,
+    });
   });
 
   let results;
   waitsFor(() => {
     // Convert from a NodeList to an actual array.
     results = Array.from(
-      atom.views.getView(atom.workspace).querySelectorAll('.hyperclick-result-item'),
+      atom.views
+        .getView(atom.workspace)
+        .querySelectorAll('.hyperclick-result-item'),
     );
     return results.length > 0;
   });

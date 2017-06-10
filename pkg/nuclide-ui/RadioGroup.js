@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -48,14 +49,16 @@ export default class RadioGroup extends React.Component {
     const checkboxes = this.props.optionLabels.map((labelContent, i) => {
       const id = 'nuclide-radiogroup-' + uid + '-' + i;
       return (
-        <div key={i}>
+        <div key={i} className="nuclide-ui-radiogroup-div">
           <input
             className="input-radio"
             type="radio"
             checked={i === this.props.selectedIndex}
             name={'radiogroup-' + this.state.uid}
             id={id}
-            onChange={() => { onSelectedChange(i); }}
+            onChange={() => {
+              onSelectedChange(i);
+            }}
           />
           <label
             className="input-label nuclide-ui-radiogroup-label"

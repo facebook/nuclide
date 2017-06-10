@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebugMode} from './types';
@@ -16,8 +17,8 @@ import {BehaviorSubject} from 'rxjs';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {isFileInHackProject} from '../../nuclide-hack/lib/HackLanguage';
 import {trackTiming} from '../../nuclide-analytics';
-import nuclideUri from '../../commons-node/nuclideUri';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class ProjectStore {
   _disposables: UniversalDisposable;
@@ -87,7 +88,10 @@ export default class ProjectStore {
   }
 
   updateLastScriptCommand(command: string): void {
-    this._filePathsToScriptCommand.set(nuclideUri.getPath(this._currentFilePath), command);
+    this._filePathsToScriptCommand.set(
+      nuclideUri.getPath(this._currentFilePath),
+      command,
+    );
   }
 
   onChange(callback: () => void): IDisposable {

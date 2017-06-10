@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type AslLevel = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7';

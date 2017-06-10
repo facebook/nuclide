@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import {asyncExecute} from '../../commons-node/process';
+import {runCommand} from 'nuclide-commons/process';
 
 let fbFindClangServerArgs: ?(src: ?string) => {[string]: ?string};
 
@@ -20,7 +21,9 @@ export type ClangServerArgs = {
   pythonPathEnv: ?string,
 };
 
-export default async function findClangServerArgs(src?: string): Promise<ClangServerArgs> {
+export default (async function findClangServerArgs(
+  src?: string,
+): Promise<ClangServerArgs> {
   if (fbFindClangServerArgs === undefined) {
     fbFindClangServerArgs = null;
     try {
@@ -33,20 +36,24 @@ export default async function findClangServerArgs(src?: string): Promise<ClangSe
 
   let libClangLibraryFile;
   if (process.platform === 'darwin') {
-    const result = await asyncExecute('xcode-select', ['--print-path']);
-    if (result.exitCode === 0) {
-      libClangLibraryFile = result.stdout.trim();
+    try {
+      const stdout = await runCommand('xcode-select', [
+        '--print-path',
+      ]).toPromise();
+      libClangLibraryFile = stdout.trim();
       // If the user only has Xcode Command Line Tools installed, the path is different.
       if (nuclideUri.basename(libClangLibraryFile) !== 'CommandLineTools') {
         libClangLibraryFile += '/Toolchains/XcodeDefault.xctoolchain';
       }
       libClangLibraryFile += '/usr/lib/libclang.dylib';
-    }
+    } catch (err) {}
   }
 
   // TODO(asuarez): Fix this when we have server-side settings.
   if (global.atom) {
-    const path = ((atom.config.get('nuclide.nuclide-clang.libclangPath'): any): ?string);
+    const path = ((atom.config.get(
+      'nuclide.nuclide-clang.libclangPath',
+    ): any): ?string);
     if (path) {
       libClangLibraryFile = path.trim();
     }
@@ -63,4 +70,4 @@ export default async function findClangServerArgs(src?: string): Promise<ClangSe
   } else {
     return clangServerArgs;
   }
-}
+});

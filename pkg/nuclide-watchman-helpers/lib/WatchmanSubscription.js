@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Emitter} from 'event-kit';
@@ -16,6 +17,20 @@ export type WatchmanSubscriptionOptions = {
   expression?: Array<mixed>, // e.g. ['dirname', relativePath]
   since?: string, // e.g. "c:1439492655:58601:1:14195"
   defer_vcs?: boolean,
+
+  /**
+   * For performance reasons, prefer:
+   *
+   *     "relative_root": "relative/path"
+   *
+   * over:
+   *
+   *     "expression": ["dirname", "relative/path"]
+   */
+  relative_root?: string,
+
+  /** If true, no files will be returned for fresh instances. */
+  empty_on_fresh_instance?: boolean,
 };
 
 /**
@@ -33,13 +48,13 @@ export default class WatchmanSubscription extends Emitter {
   name: string;
   options: WatchmanSubscriptionOptions;
   constructor(
-      subscriptionRoot: string,
-      pathFromSubscriptionRootToSubscriptionPath: ?string,
-      subscriptionPath: string,
-      subscriptionName: string,
-      subscriptionCount: number,
-      subscriptionOptions: WatchmanSubscriptionOptions,
-      ) {
+    subscriptionRoot: string,
+    pathFromSubscriptionRootToSubscriptionPath: ?string,
+    subscriptionPath: string,
+    subscriptionName: string,
+    subscriptionCount: number,
+    subscriptionOptions: WatchmanSubscriptionOptions,
+  ) {
     super();
     this.root = subscriptionRoot;
     this.pathFromSubscriptionRootToSubscriptionPath = pathFromSubscriptionRootToSubscriptionPath;

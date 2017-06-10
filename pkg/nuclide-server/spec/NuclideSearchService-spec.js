@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import NuclideServer from '../lib/NuclideServer';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import servicesConfig from '../lib/servicesConfig';
 
 const pathToTestDir = nuclideUri.join(__dirname, 'testfiles');
@@ -39,15 +40,22 @@ xdescribe('NuclideSearch test suite', () => {
       waitsForPromise(async () => {
         const results = await client.searchDirectory(pathToTestDir, 'te');
         expect(results.length).toBe(1);
-        expect(results[0].path).toBe(nuclideUri.join(pathToTestDir, 'testfile.txt'));
+        expect(results[0].path).toBe(
+          nuclideUri.join(pathToTestDir, 'testfile.txt'),
+        );
       });
     });
 
     it('should return query results for the given directory if it has a hostname', () => {
       waitsForPromise(async () => {
-        const results = await client.searchDirectory(`nuclide://some.host.com${pathToTestDir}`, 'te');
+        const results = await client.searchDirectory(
+          `nuclide://some.host.com${pathToTestDir}`,
+          'te',
+        );
         expect(results.length).toBe(1);
-        expect(results[0].path).toBe(`nuclide://some.host.com${pathToTestDir}/testfile.txt`);
+        expect(results[0].path).toBe(
+          `nuclide://some.host.com${pathToTestDir}/testfile.txt`,
+        );
       });
     });
   });

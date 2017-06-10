@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import Ansi from './Ansi';
@@ -68,7 +69,11 @@ export default class TestRunModel {
    * @return A summary of the test run including its name, its duration, and whether it passed,
    * failed, skipped, etc.
    */
-  static formatStatusMessage(name: string, duration: number, status: TestRunStatus): string {
+  static formatStatusMessage(
+    name: string,
+    duration: number,
+    status: TestRunStatus,
+  ): string {
     const durationStr = duration.toFixed(3);
     return `      ${StatusSymbol[status]} ${name} ${durationStr}s ${StatusMessage[status]}`;
   }

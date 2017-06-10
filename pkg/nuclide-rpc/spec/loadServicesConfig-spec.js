@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import loadServicesConfig from '../lib/loadServicesConfig';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {generateFixture} from '../../nuclide-test-helpers';
 
 describe('loadServicesConfig()', () => {
@@ -36,10 +37,13 @@ describe('loadServicesConfig()', () => {
           preserveFunctionNames: true,
         },
       ];
-      configPath = await generateFixture('services', new Map([
-        ['services-3.json', JSON.stringify(services3json)],
-        ['fb-services-3.json', JSON.stringify(fbservices3json)],
-      ]));
+      configPath = await generateFixture(
+        'services',
+        new Map([
+          ['services-3.json', JSON.stringify(services3json)],
+          ['fb-services-3.json', JSON.stringify(fbservices3json)],
+        ]),
+      );
     });
   });
 
@@ -55,8 +59,9 @@ describe('loadServicesConfig()', () => {
   it('uses the implementation when the definition is missing', () => {
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
-    const fooService = servicesConfig
-      .find(service => service.name === 'FooService');
+    const fooService = servicesConfig.find(
+      service => service.name === 'FooService',
+    );
     invariant(fooService != null);
     expect(fooService.definition).toBe(fooService.implementation);
   });
@@ -65,18 +70,21 @@ describe('loadServicesConfig()', () => {
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
 
-    const fooService = servicesConfig
-      .find(service => service.name === 'FooService');
+    const fooService = servicesConfig.find(
+      service => service.name === 'FooService',
+    );
     invariant(fooService != null);
     expect(fooService.preserveFunctionNames).toBe(false);
 
-    const barService = servicesConfig
-      .find(service => service.name === 'BarService');
+    const barService = servicesConfig.find(
+      service => service.name === 'BarService',
+    );
     invariant(barService != null);
     expect(barService.preserveFunctionNames).toBe(false);
 
-    const BazService = servicesConfig
-      .find(service => service.name === 'BazService');
+    const BazService = servicesConfig.find(
+      service => service.name === 'BazService',
+    );
     invariant(BazService != null);
     expect(BazService.preserveFunctionNames).toBe(true);
   });

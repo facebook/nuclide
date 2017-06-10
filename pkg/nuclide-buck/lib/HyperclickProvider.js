@@ -6,34 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 type Target = {path: NuclideUri, name: string};
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {HyperclickSuggestion} from '../../hyperclick/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {HyperclickSuggestion} from 'atom-ide-ui';
 import type {Point} from 'atom';
 
-import {getBuckProjectRoot, getBuckService} from '../../nuclide-buck-base';
-import {wordAtPosition} from '../../commons-atom/range';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
-import {goToLocation} from '../../commons-atom/go-to-location';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {getBuckProjectRoot} from '../../nuclide-buck-base';
+import {getBuildFileName} from './buildFiles';
+import {wordAtPosition} from 'nuclide-commons-atom/range';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import escapeStringRegExp from 'escape-string-regexp';
-
-const buildFileNameCache = new Map();
-function getBuildFileName(buckRoot: string): Promise<?string> {
-  let buildFileName = buildFileNameCache.get(buckRoot);
-  if (buildFileName != null) {
-    return buildFileName;
-  }
-  const buckService = getBuckService(buckRoot);
-  buildFileName = buckService == null ? Promise.resolve(null) :
-    buckService.getBuckConfig(buckRoot, 'buildfile', 'name')
-      .catch(() => null);
-  buildFileNameCache.set(buckRoot, buildFileName);
-  return buildFileName;
-}
 
 /**
  * Takes target regex match and file path where given target is found as
@@ -60,11 +50,7 @@ export async function parseTarget(
     // Strip off the leading slashes from the fully-qualified build target.
     const basePath = fullTarget.substring('//'.length);
 
-    let buildFileName = await getBuildFileName(buckRoot);
-    if (buildFileName == null) {
-      buildFileName = 'BUCK';
-    }
-
+    const buildFileName = await getBuildFileName(buckRoot);
     path = nuclideUri.join(buckRoot, basePath, buildFileName);
   } else {
     // filePath is already an absolute path.
@@ -88,7 +74,7 @@ export async function findTargetLocation(target: Target): Promise<any> {
   let data;
   try {
     const fs = getFileSystemServiceByNuclideUri(target.path);
-    data = (await fs.readFile(nuclideUri.getPath(target.path))).toString('utf8');
+    data = (await fs.readFile(target.path)).toString('utf8');
   } catch (e) {
     return null;
   }
@@ -98,11 +84,11 @@ export async function findTargetLocation(target: Target): Promise<any> {
   // comma.
   const lines = data.split('\n');
   const regex = new RegExp(
-      '^\\s*' + // beginning of the line
-      'name\\s*=\\s*' + // name =
-      '[\'"]' + // opening quotation mark
-      escapeStringRegExp(target.name) + // target name
-      '[\'"]' + // closing quotation mark
+    '^\\s*' + // beginning of the line
+    'name\\s*=\\s*' + // name =
+    '[\'"]' + // opening quotation mark
+    escapeStringRegExp(target.name) + // target name
+    '[\'"]' + // closing quotation mark
       ',?$', // optional trailling comma
   );
 
@@ -116,11 +102,7 @@ export async function findTargetLocation(target: Target): Promise<any> {
   return {path: target.path, line: lineIndex, column: 0};
 }
 
-const VALID_BUILD_FILE_NAMES = new Set([
-  'BUCK',
-  'BUCK.autodeps',
-  'TARGETS',
-]);
+const VALID_BUILD_FILE_NAMES = new Set(['BUCK', 'BUCK.autodeps', 'TARGETS']);
 
 export async function getSuggestion(
   textEditor: TextEditor,
@@ -143,7 +125,11 @@ export async function getSuggestion(
 
   const results = await Promise.all([
     findBuildTarget(textEditor, position, absolutePath, buckRoot),
-    findRelativeFilePath(textEditor, position, nuclideUri.dirname(absolutePath)),
+    findRelativeFilePath(
+      textEditor,
+      position,
+      nuclideUri.dirname(absolutePath),
+    ),
   ]);
   const hyperclickMatch = results.find(x => x != null);
 
@@ -151,7 +137,9 @@ export async function getSuggestion(
     const match = hyperclickMatch;
     return {
       range: match.range,
-      callback() { goToLocation(match.path, match.line, match.column); },
+      callback() {
+        goToLocation(match.path, match.line, match.column);
+      },
     };
   } else {
     return null;
@@ -206,7 +194,11 @@ async function findRelativeFilePath(
   position: atom$Point,
   directory: NuclideUri,
 ): Promise<?HyperclickMatch> {
-  const wordMatchAndRange = wordAtPosition(textEditor, position, RELATIVE_FILE_PATH_REGEX);
+  const wordMatchAndRange = wordAtPosition(
+    textEditor,
+    position,
+    RELATIVE_FILE_PATH_REGEX,
+  );
   if (!wordMatchAndRange) {
     return null;
   }
@@ -221,7 +213,7 @@ async function findRelativeFilePath(
   let stat;
   try {
     const fs = getFileSystemServiceByNuclideUri(potentialPath);
-    stat = await fs.stat(nuclideUri.getPath(potentialPath));
+    stat = await fs.stat(potentialPath);
   } catch (e) {
     return null;
   }

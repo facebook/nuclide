@@ -6,22 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ServerConnection} from './ServerConnection';
 import type {RemoteFile} from './RemoteFile';
 
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import invariant from 'assert';
 import {CompositeDisposable, TextBuffer} from 'atom';
 import {track} from '../../nuclide-analytics';
 import {RpcTimeoutError} from '../../nuclide-rpc';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {countOccurrences} from '../../commons-node/string';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {countOccurrences} from 'nuclide-commons/string';
 import loadingNotification from '../../commons-atom/loading-notification';
 
 // Diffing is O(lines^2), so don't bother for files with too many lines.
-const DIFF_LINE_LIMIT = 10000;
+const DIFF_LINE_LIMIT = 5000;
 
 export default class NuclideTextBuffer extends TextBuffer {
   _connection: ServerConnection;
@@ -93,7 +94,7 @@ export default class NuclideTextBuffer extends TextBuffer {
 
   async saveAs(filePath: string): Promise<void> {
     if (!filePath) {
-      throw new Error('Can\'t save buffer with no file path');
+      throw new Error("Can't save buffer with no file path");
     }
 
     let success;
@@ -106,8 +107,8 @@ export default class NuclideTextBuffer extends TextBuffer {
       this._pendingSaveContents = toSaveContents;
       await loadingNotification(
         file.write(toSaveContents),
-        `Saving ${nuclideUri.nuclideUriToDisplayString(filePath)}...`,
-        1000, /* delay */
+        `Saving \`${nuclideUri.nuclideUriToDisplayString(filePath)}\`...`,
+        1000 /* delay */,
       );
       this.cachedDiskContents = toSaveContents;
       this._saveID++;
@@ -118,8 +119,10 @@ export default class NuclideTextBuffer extends TextBuffer {
     } catch (e) {
       // Timeouts occur quite frequently when the network is unstable.
       // Demote these to 'error' level.
-      const logger = getLogger();
-      const logFunction = e instanceof RpcTimeoutError ? logger.error : logger.fatal;
+      const logger = getLogger('nuclide-remote-connection');
+      const logFunction = e instanceof RpcTimeoutError
+        ? logger.error
+        : logger.fatal;
       logFunction('Failed to save remote file.', e);
       let message = e.message;
       // This can happen if the user triggered the save while closing the file.
@@ -128,10 +131,11 @@ export default class NuclideTextBuffer extends TextBuffer {
         message += '<br><br>Opening a new tab with your unsaved changes.';
         // goToLocation does not support opening an untitled editor
         // eslint-disable-next-line nuclide-internal/atom-apis
-        atom.workspace.open()
-          .then(editor => editor.setText(toSaveContents));
+        atom.workspace.open().then(editor => editor.setText(toSaveContents));
       }
-      atom.notifications.addError(`Failed to save remote file ${filePath}: ${message}`);
+      atom.notifications.addError(
+        `Failed to save remote file ${filePath}: ${message}`,
+      );
       success = false;
     }
 
@@ -145,14 +149,23 @@ export default class NuclideTextBuffer extends TextBuffer {
   }
 
   updateCachedDiskContentsSync(): void {
-    throw new Error('updateCachedDiskContentsSync isn\'t supported in NuclideTextBuffer');
+    throw new Error(
+      "updateCachedDiskContentsSync isn't supported in NuclideTextBuffer",
+    );
   }
 
-  async updateCachedDiskContents(flushCache?: boolean, callback?: () => mixed): Promise<void> {
+  async updateCachedDiskContents(
+    flushCache?: boolean,
+    callback?: () => mixed,
+  ): Promise<void> {
     try {
       // Babel workaround: w/o the es2015-classes transform, async functions can't call `super`.
       // https://github.com/babel/babel/issues/3930
-      await TextBuffer.prototype.updateCachedDiskContents.call(this, flushCache, callback);
+      await TextBuffer.prototype.updateCachedDiskContents.call(
+        this,
+        flushCache,
+        callback,
+      );
       this._exists = true;
     } catch (e) {
       this._exists = false;
@@ -165,8 +178,10 @@ export default class NuclideTextBuffer extends TextBuffer {
   // easily cause the editor to lock.
   // TODO(hansonw): Remove after https://github.com/atom/text-buffer/issues/153 is resolved.
   setTextViaDiff(newText: string): void {
-    if (this.getLineCount() > DIFF_LINE_LIMIT ||
-        countOccurrences(newText, '\n') > DIFF_LINE_LIMIT) {
+    if (
+      this.getLineCount() > DIFF_LINE_LIMIT ||
+      countOccurrences(newText, '\n') > DIFF_LINE_LIMIT
+    ) {
       this.setText(newText);
     } else {
       super.setTextViaDiff(newText);
@@ -181,60 +196,70 @@ export default class NuclideTextBuffer extends TextBuffer {
     invariant(file, 'Cannot subscribe to no-file');
     const fileSubscriptions = new CompositeDisposable();
 
-    fileSubscriptions.add(file.onDidChange(async () => {
-      const isModified = this._isModified();
-      this.emitModifiedStatusChanged(isModified);
-      if (isModified) {
-        this.conflict = true;
-      }
-      const previousContents = this.cachedDiskContents;
-      const previousSaveID = this._saveID;
-      await this.updateCachedDiskContents();
-      // If any save requests finished in the meantime, previousContents is not longer accurate.
-      // The most recent save request should trigger another change event, so we'll check for
-      // conflicts when that happens.
-      // Also, if a save is currently pending, it's possible we get the change event before the
-      // write promise comes back.
-      // Otherwise, what we wrote and what we read should match exactly.
-      if (this._saveID !== previousSaveID ||
+    fileSubscriptions.add(
+      file.onDidChange(async () => {
+        const isModified = this._isModified();
+        this.emitModifiedStatusChanged(isModified);
+        if (isModified) {
+          this.conflict = true;
+        }
+        const previousContents = this.cachedDiskContents;
+        const previousSaveID = this._saveID;
+        await this.updateCachedDiskContents();
+        // If any save requests finished in the meantime, previousContents is not longer accurate.
+        // The most recent save request should trigger another change event, so we'll check for
+        // conflicts when that happens.
+        // Also, if a save is currently pending, it's possible we get the change event before the
+        // write promise comes back.
+        // Otherwise, what we wrote and what we read should match exactly.
+        if (
+          this._saveID !== previousSaveID ||
           previousContents === this.cachedDiskContents ||
-          this._pendingSaveContents === this.cachedDiskContents) {
-        this.conflict = false;
-        return;
-      }
-      if (this.conflict) {
-        this.emitter.emit('did-conflict');
-      } else {
-        this.reload();
-      }
-    }));
+          this._pendingSaveContents === this.cachedDiskContents
+        ) {
+          this.conflict = false;
+          return;
+        }
+        if (this.conflict) {
+          this.emitter.emit('did-conflict');
+        } else {
+          this.reload();
+        }
+      }),
+    );
 
-    fileSubscriptions.add(file.onDidDelete(() => {
-      this._exists = false;
-      const modified = this.getText() !== this.cachedDiskContents;
-      this.wasModifiedBeforeRemove = modified;
-      if (modified) {
-        this.updateCachedDiskContents();
-      } else {
-        this._maybeDestroy();
-      }
-    }));
+    fileSubscriptions.add(
+      file.onDidDelete(() => {
+        this._exists = false;
+        const modified = this.getText() !== this.cachedDiskContents;
+        this.wasModifiedBeforeRemove = modified;
+        if (modified) {
+          this.updateCachedDiskContents();
+        } else {
+          this._maybeDestroy();
+        }
+      }),
+    );
 
     // TODO: Not supported by RemoteFile.
     // fileSubscriptions.add(file.onDidRename(() => {
     //   this.emitter.emit('did-change-path', this.getPath());
     // }));
 
-    fileSubscriptions.add(file.onWillThrowWatchError(errorObject => {
-      this.emitter.emit('will-throw-watch-error', errorObject);
-    }));
+    fileSubscriptions.add(
+      file.onWillThrowWatchError(errorObject => {
+        this.emitter.emit('will-throw-watch-error', errorObject);
+      }),
+    );
 
     this.fileSubscriptions = fileSubscriptions;
   }
 
   _maybeDestroy(): void {
-    if (this.shouldDestroyOnFileDelete == null ||
-        this.shouldDestroyOnFileDelete()) {
+    if (
+      this.shouldDestroyOnFileDelete == null ||
+      this.shouldDestroyOnFileDelete()
+    ) {
       this.destroy();
     } else {
       if (this.fileSubscriptions != null) {

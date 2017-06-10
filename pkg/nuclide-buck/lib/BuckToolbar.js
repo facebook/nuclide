@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -22,11 +23,11 @@ import shallowequal from 'shallowequal';
 
 import BuckToolbarSettings from './ui/BuckToolbarSettings';
 import BuckToolbarTargetSelector from './ui/BuckToolbarTargetSelector';
-import {maybeToString} from '../../commons-node/string';
-import {Button, ButtonSizes} from '../../nuclide-ui/Button';
+import {maybeToString} from 'nuclide-commons/string';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
-import {LoadingSpinner} from '../../nuclide-ui/LoadingSpinner';
-import addTooltip from '../../nuclide-ui/add-tooltip';
+import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
 import invariant from 'assert';
 
 type Props = {
@@ -45,6 +46,12 @@ type DropdownGroup = {
   selectableOptions: Array<Option>,
 };
 
+function hasMobilePlatform(platformGroups: Array<PlatformGroup>): boolean {
+  return platformGroups.some(platformGroup =>
+    platformGroup.platforms.some(platform => platform.isMobile),
+  );
+}
+
 export default class BuckToolbar extends React.Component {
   props: Props;
   state: State;
@@ -62,14 +69,20 @@ export default class BuckToolbar extends React.Component {
       buildRuleType,
       buildTarget,
       buckRoot,
-      extraPlatformUi,
       isLoadingRule,
       isLoadingPlatforms,
       platformGroups,
+      platformProviderUi,
       projectRoot,
       selectedDeploymentTarget,
       taskSettings,
     } = this.props.appState;
+    const extraToolbarUi = platformProviderUi != null
+      ? platformProviderUi.toolbar
+      : null;
+    const extraSettings = platformProviderUi != null
+      ? platformProviderUi.settings
+      : null;
 
     let status;
     if (isLoadingRule || isLoadingPlatforms) {
@@ -93,7 +106,8 @@ export default class BuckToolbar extends React.Component {
           title = 'No Current Working Root.';
         }
       } else {
-        title = `Rule "${buildTarget}" could not be found in ${buckRoot}.<br />` +
+        title =
+          `Rule "${buildTarget}" could not be found in ${buckRoot}.<br />` +
           `Check your Current Working Root: ${maybeToString(projectRoot)}`;
       }
 
@@ -117,7 +131,7 @@ export default class BuckToolbar extends React.Component {
           {status}
         </div>,
       );
-    } else if (platformGroups.length) {
+    } else if (hasMobilePlatform(platformGroups)) {
       const options = this._optionsFromPlatformGroups(platformGroups);
 
       widgets.push(
@@ -133,8 +147,8 @@ export default class BuckToolbar extends React.Component {
         />,
       );
 
-      if (extraPlatformUi) {
-        widgets.push(extraPlatformUi);
+      if (extraToolbarUi) {
+        widgets.push(extraToolbarUi);
       }
     }
 
@@ -154,6 +168,7 @@ export default class BuckToolbar extends React.Component {
           ? <BuckToolbarSettings
               currentBuckRoot={buckRoot}
               settings={taskSettings}
+              platformProviderSettings={extraSettings}
               onDismiss={() => this._hideSettings()}
               onSave={settings => this._saveSettings(settings)}
             />
@@ -182,22 +197,19 @@ export default class BuckToolbar extends React.Component {
   _optionsFromPlatformGroups(
     platformGroups: Array<PlatformGroup>,
   ): Array<Option> {
-    return platformGroups.reduce(
-      (options, platformGroup) => {
-        let dropdownGroup = null;
-        if (platformGroup.platforms.length === 1) {
-          dropdownGroup = this._turnDevicesIntoSelectableOptions(
-            platformGroup.platforms[0],
-          );
-        } else {
-          dropdownGroup = this._putDevicesIntoSubmenus(platformGroup);
-        }
+    return platformGroups.reduce((options, platformGroup) => {
+      let dropdownGroup = null;
+      if (platformGroup.platforms.length === 1) {
+        dropdownGroup = this._turnDevicesIntoSelectableOptions(
+          platformGroup.platforms[0],
+        );
+      } else {
+        dropdownGroup = this._putDevicesIntoSubmenus(platformGroup);
+      }
 
-        options.push(dropdownGroup.header);
-        return options.concat(dropdownGroup.selectableOptions);
-      },
-      [],
-    );
+      options.push(dropdownGroup.header);
+      return options.concat(dropdownGroup.selectableOptions);
+    }, []);
   }
 
   _turnDevicesIntoSelectableOptions(platform: Platform): DropdownGroup {
@@ -207,14 +219,28 @@ export default class BuckToolbar extends React.Component {
       disabled: true,
     };
 
-    invariant(platform.deviceGroups.length === 1);
-    const selectableOptions = platform.deviceGroups[0].devices.map(device => {
-      return {
-        label: `  ${device.name}`,
-        selectedLabel: device.name,
-        value: {platform, device},
-      };
-    });
+    let selectableOptions;
+
+    invariant(platform.isMobile);
+
+    if (platform.deviceGroups.length === 0) {
+      selectableOptions = [
+        {
+          label: `  ${platform.name}`,
+          selectedLabel: platform.name,
+          value: {platform, device: null},
+        },
+      ];
+    } else {
+      selectableOptions = platform.deviceGroups[0].devices.map(device => {
+        return {
+          label: `  ${device.name}`,
+          selectedLabel: device.name,
+          value: {platform, device},
+        };
+      });
+    }
+
     return {header, selectableOptions};
   }
 
@@ -228,7 +254,7 @@ export default class BuckToolbar extends React.Component {
     const selectableOptions = [];
 
     for (const platform of platformGroup.platforms) {
-      if (platform.deviceGroups.length) {
+      if (platform.isMobile && platform.deviceGroups.length) {
         const submenu = [];
 
         for (const deviceGroup of platform.deviceGroups) {

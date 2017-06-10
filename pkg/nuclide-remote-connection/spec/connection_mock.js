@@ -6,11 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ServerConnection} from '..';
 
-import fsPromise from '../../commons-node/fsPromise';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {RemoteDirectory} from '../lib/RemoteDirectory';
 import {RemoteFile} from '../lib/RemoteFile';
 
@@ -23,9 +25,15 @@ const fsService = {
     await fsPromise.copy(src, dst);
     return true;
   },
+  rmdir(uri) {
+    return fsPromise.rmdir(nuclideUri.getPath(uri));
+  },
+  exists(uri) {
+    return fsPromise.exists(nuclideUri.getPath(uri));
+  },
 };
 
-const connectionMock: ServerConnection & { getFsService(): Object } = ({
+const connectionMock: ServerConnection & {getFsService(): Object} = ({
   getFsService: () => fsService,
   createDirectory: uri => new RemoteDirectory(connectionMock, uri),
   createFile: uri => new RemoteFile(connectionMock, uri),

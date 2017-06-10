@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -63,8 +64,12 @@ export function deactivate() {
   }
 }
 
-export async function consumeNuclideContextView(contextView: NuclideContextView): Promise<void> {
+export async function consumeNuclideContextView(
+  contextView: NuclideContextView,
+): Promise<void> {
   invariant(activation != null);
-  const registration = await contextView.registerProvider(activation.getContextProvider());
+  const registration = await contextView.registerProvider(
+    activation.getContextProvider(),
+  );
   activation.setContextViewRegistration(registration);
 }

@@ -6,19 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu
+  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {TestRunner} from './types';
-import type {GetToolBar} from '../../commons-atom/suda-tool-bar';
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
+import createPackage from 'nuclide-commons-atom/createPackage';
 import {TestRunnerController, WORKSPACE_VIEW_URI} from './TestRunnerController';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-test-runner');
 
 const FILE_TREE_CONTEXT_MENU_PRIORITY = 200;
 
@@ -31,9 +35,9 @@ const FILE_TREE_CONTEXT_MENU_PRIORITY = 200;
  */
 function limitString(str: string, length?: number = 20): string {
   const strLength = str.length;
-  return (strLength > length) ?
-    `${str.substring(0, length / 2)}…${str.substring(str.length - length / 2)}` :
-    str;
+  return strLength > length
+    ? `${str.substring(0, length / 2)}…${str.substring(str.length - length / 2)}`
+    : str;
 }
 
 class Activation {
@@ -50,7 +54,9 @@ class Activation {
         '.tree-view .entry.file.list-item',
         'nuclide-test-runner:run-tests',
         event => {
-          const target = ((event.currentTarget: any): HTMLElement).querySelector('.name');
+          const target = ((event.currentTarget: any): HTMLElement).querySelector(
+            '.name',
+          );
           invariant(target != null);
           this.getController().runTests(target.dataset.path);
           // Ensure ancestors of this element don't attempt to run tests as well.
@@ -64,9 +70,23 @@ class Activation {
         '.tree-view .entry.directory.list-nested-item',
         'nuclide-test-runner:run-tests',
         event => {
-          const target = ((event.currentTarget: any): HTMLElement).querySelector('.name');
+          const target = ((event.currentTarget: any): HTMLElement).querySelector(
+            '.name',
+          );
           invariant(target != null);
           this.getController().runTests(target.dataset.path);
+          // Ensure ancestors of this element don't attempt to run tests as well.
+          event.stopPropagation();
+        },
+      ),
+    );
+    // Listen for untargeted run-tests events
+    this._disposables.add(
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-test-runner:run-tests',
+        event => {
+          this.getController().runTests();
           // Ensure ancestors of this element don't attempt to run tests as well.
           event.stopPropagation();
         },
@@ -75,14 +95,22 @@ class Activation {
   }
 
   addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
-    const fileItem = this._createRunTestsContextMenuItem(/* isForFile */ true, contextMenu);
-    const directoryItem = this._createRunTestsContextMenuItem(/* isForFile */ false, contextMenu);
+    const fileItem = this._createRunTestsContextMenuItem(
+      /* isForFile */ true,
+      contextMenu,
+    );
+    const directoryItem = this._createRunTestsContextMenuItem(
+      /* isForFile */ false,
+      contextMenu,
+    );
 
     // Create a separator menu item that displays if either the file or directory item displays.
     invariant(fileItem.shouldDisplay);
     const fileItemShouldDisplay = fileItem.shouldDisplay.bind(fileItem);
     invariant(directoryItem.shouldDisplay);
-    const directoryItemShouldDisplay = directoryItem.shouldDisplay.bind(directoryItem);
+    const directoryItemShouldDisplay = directoryItem.shouldDisplay.bind(
+      directoryItem,
+    );
     const separatorShouldDisplay = (event: MouseEvent) => {
       return fileItemShouldDisplay(event) || directoryItemShouldDisplay(event);
     };
@@ -93,18 +121,31 @@ class Activation {
 
     const menuItemSubscriptions = new CompositeDisposable();
     menuItemSubscriptions.add(
-      contextMenu.addItemToTestSection(fileItem, FILE_TREE_CONTEXT_MENU_PRIORITY),
-      contextMenu.addItemToTestSection(directoryItem, FILE_TREE_CONTEXT_MENU_PRIORITY + 1),
-      contextMenu.addItemToTestSection(separator, FILE_TREE_CONTEXT_MENU_PRIORITY + 2),
+      contextMenu.addItemToTestSection(
+        fileItem,
+        FILE_TREE_CONTEXT_MENU_PRIORITY,
+      ),
+      contextMenu.addItemToTestSection(
+        directoryItem,
+        FILE_TREE_CONTEXT_MENU_PRIORITY + 1,
+      ),
+      contextMenu.addItemToTestSection(
+        separator,
+        FILE_TREE_CONTEXT_MENU_PRIORITY + 2,
+      ),
     );
     this._disposables.add(menuItemSubscriptions);
 
-    return new Disposable(() => this._disposables.remove(menuItemSubscriptions));
+    return new Disposable(() =>
+      this._disposables.remove(menuItemSubscriptions),
+    );
   }
 
-  addTestRunner(testRunner: TestRunner): ?Disposable {
+  consumeTestRunner(testRunner: TestRunner): ?Disposable {
     if (this._testRunners.has(testRunner)) {
-      logger.info(`Attempted to add test runner "${testRunner.label}" that was already added`);
+      logger.info(
+        `Attempted to add test runner "${testRunner.label}" that was already added`,
+      );
       return;
     }
 
@@ -128,7 +169,7 @@ class Activation {
     });
   }
 
-  addToolBar(getToolBar: GetToolBar): IDisposable {
+  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nuclide-test-runner');
     toolBar.addButton({
       icon: 'checklist',
@@ -136,7 +177,9 @@ class Activation {
       tooltip: 'Toggle Test Runner',
       priority: 600,
     });
-    const disposable = new Disposable(() => { toolBar.removeItems(); });
+    const disposable = new Disposable(() => {
+      toolBar.removeItems();
+    });
     this._disposables.add(disposable);
     return disposable;
   }
@@ -169,7 +212,7 @@ class Activation {
       // Intentionally **not** an arrow function because Atom sets the context when calling this and
       // allows dynamically setting values by assigning to `this`.
       created(event) {
-        let target = (((event.target): any): HTMLElement);
+        let target = ((event.target: any): HTMLElement);
         if (target.dataset.name === undefined) {
           // If the event did not happen on the `name` span, search for it in the descendants.
           target = target.querySelector('.name');
@@ -193,14 +236,18 @@ class Activation {
           return false;
         }
 
-        let target = (((event.target): any): HTMLElement);
+        let target = ((event.target: any): HTMLElement);
         if (target.dataset.name === undefined) {
           // If the event did not happen on the `name` span, search for it in the descendants.
           target = target.querySelector('.name');
         }
         // If no descendant has the necessary dataset to create this menu item, don't create
         // it.
-        return target != null && target.dataset.name != null && target.dataset.path != null;
+        return (
+          target != null &&
+          target.dataset.name != null &&
+          target.dataset.path != null
+        );
       },
     };
   }
@@ -221,58 +268,22 @@ class Activation {
           return this.getController();
         }
       }),
-      new Disposable(
-        () => api.destroyWhere(item => item instanceof TestRunnerController),
+      new Disposable(() =>
+        api.destroyWhere(item => item instanceof TestRunnerController),
       ),
       atom.commands.add(
         'atom-workspace',
         'nuclide-test-runner:toggle-panel',
-        event => { api.toggle(WORKSPACE_VIEW_URI, (event: any).detail); },
+        event => {
+          api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+        },
       ),
     );
   }
-}
 
-let activation: ?Activation;
-
-export function activate(): void {
-  if (!activation) {
-    activation = new Activation();
+  deserializeTestRunnerPanelState(): TestRunnerController {
+    return this.getController();
   }
 }
 
-export function deactivate(): void {
-  if (activation) {
-    activation.dispose();
-    activation = null;
-  }
-}
-
-export function consumeTestRunner(testRunner: TestRunner): ?Disposable {
-  if (activation) {
-    return activation.addTestRunner(testRunner);
-  }
-}
-
-export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
-  invariant(activation);
-  return activation.addItemsToFileTreeContextMenu(contextMenu);
-}
-
-export function consumeToolBar(getToolBar: GetToolBar): IDisposable {
-  invariant(activation);
-  return activation.addToolBar(getToolBar);
-}
-
-export function deserializeTestRunnerPanelState(): TestRunnerController {
-  // Workaround until the bug where deserialize is ran before activation
-  activate();
-
-  invariant(activation);
-  return activation.getController();
-}
-
-export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-  invariant(activation);
-  return activation.consumeWorkspaceViewsService(api);
-}
+createPackage(module.exports, Activation);

@@ -9,39 +9,19 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "arg1",
       type: {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 1
-        },
         kind: "string"
       }
     }, {
       name: "arg2",
       type: {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 1
-        },
         kind: "boolean"
       }
     }]).then(args => {
       return _client.callRemoteFunction("FunctionService/TestFunctionA", "promise", args);
     }).then(value => {
       return _client.unmarshal(value, {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 1
-        },
         kind: "array",
         type: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 1
-          },
           kind: "string"
         }
       });
@@ -53,11 +33,6 @@ module.exports = _client => {
       return _client.callRemoteFunction("FunctionService/TestFunctionB", "observable", args);
     })).concatMap(id => id).concatMap(value => {
       return _client.unmarshal(value, {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 3
-        },
         kind: "number"
       });
     }).publish();
@@ -73,18 +48,8 @@ module.exports = _client => {
     return _client.marshalArguments(Array.from(arguments), [{
       name: "p1",
       type: {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 7
-        },
         kind: "nullable",
         type: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 7
-          },
           kind: "named",
           name: "Object"
         }
@@ -92,18 +57,8 @@ module.exports = _client => {
     }, {
       name: "p2",
       type: {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 7
-        },
         kind: "nullable",
         type: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 7
-          },
           kind: "named",
           name: "Object"
         }
@@ -118,11 +73,6 @@ module.exports = _client => {
       return _client.callRemoteFunction("FunctionService/ReturnAlias", "promise", args);
     }).then(value => {
       return _client.unmarshal(value, {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 9
-        },
         kind: "number"
       });
     });
@@ -191,44 +141,19 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "arg1",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 1
-            },
             kind: "string"
           }
         }, {
           name: "arg2",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 1
-            },
             kind: "boolean"
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 1
-          },
           kind: "promise",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 1
-            },
             kind: "array",
             type: {
-              location: {
-                type: "source",
-                fileName: "FunctionService.def",
-                line: 1
-              },
               kind: "string"
             }
           }
@@ -252,18 +177,8 @@ Object.defineProperty(module.exports, "defs", {
         kind: "function",
         argumentTypes: [],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 3
-          },
           kind: "observable",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 3
-            },
             kind: "number"
           }
         }
@@ -286,11 +201,6 @@ Object.defineProperty(module.exports, "defs", {
         kind: "function",
         argumentTypes: [],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 5
-          },
           kind: "void"
         }
       }
@@ -313,18 +223,8 @@ Object.defineProperty(module.exports, "defs", {
         argumentTypes: [{
           name: "p1",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 7
-            },
             kind: "nullable",
             type: {
-              location: {
-                type: "source",
-                fileName: "FunctionService.def",
-                line: 7
-              },
               kind: "named",
               name: "Object"
             }
@@ -332,29 +232,14 @@ Object.defineProperty(module.exports, "defs", {
         }, {
           name: "p2",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 7
-            },
             kind: "nullable",
             type: {
-              location: {
-                type: "source",
-                fileName: "FunctionService.def",
-                line: 7
-              },
               kind: "named",
               name: "Object"
             }
           }
         }],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 7
-          },
           kind: "void"
         }
       }
@@ -368,18 +253,8 @@ Object.defineProperty(module.exports, "defs", {
       },
       name: "PN",
       definition: {
-        location: {
-          type: "source",
-          fileName: "FunctionService.def",
-          line: 9
-        },
         kind: "promise",
         type: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 9
-          },
           kind: "number"
         }
       }
@@ -401,18 +276,8 @@ Object.defineProperty(module.exports, "defs", {
         kind: "function",
         argumentTypes: [],
         returnType: {
-          location: {
-            type: "source",
-            fileName: "FunctionService.def",
-            line: 9
-          },
           kind: "promise",
           type: {
-            location: {
-              type: "source",
-              fileName: "FunctionService.def",
-              line: 9
-            },
             kind: "number"
           }
         }

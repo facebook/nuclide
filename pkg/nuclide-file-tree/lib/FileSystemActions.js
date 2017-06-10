@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileTreeNode} from './FileTreeNode';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {RemoteFile} from '../../nuclide-remote-connection';
 
 import FileDialogComponent from '../components/FileDialogComponent';
@@ -19,10 +20,12 @@ import FileTreeHgHelpers from './FileTreeHgHelpers';
 import {FileTreeStore} from './FileTreeStore';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {File} from 'atom';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 
 let atomPanel: ?Object;
 let dialogComponent: ?React.Component<any, any, any>;
@@ -174,7 +177,10 @@ class FileSystemActions {
 
     // Create a remote nuclide uri when the node being moved is remote.
     if (nuclideUri.isRemote(node.uri)) {
-      newPath = nuclideUri.createRemoteUri(nuclideUri.getHostname(node.uri), newPath);
+      newPath = nuclideUri.createRemoteUri(
+        nuclideUri.getHostname(node.uri),
+        newPath,
+      );
     }
 
     await FileTreeHgHelpers.renameNode(node, newPath);
@@ -182,7 +188,6 @@ class FileSystemActions {
 
   async _onConfirmDuplicate(
     file: File | RemoteFile,
-    nodePath: string,
     newBasename: string,
     addToVCS: boolean,
     onDidConfirm: (filePath: ?string) => mixed,
@@ -191,7 +196,7 @@ class FileSystemActions {
     const newFile = directory.getFile(newBasename);
     const newPath = newFile.getPath();
     const service = getFileSystemServiceByNuclideUri(newPath);
-    const exists = !(await service.copy(nodePath, nuclideUri.getPath(newPath)));
+    const exists = !await service.copy(file.getPath(), newPath);
     if (exists) {
       atom.notifications.addError(`'${newPath}' already exists.`);
       onDidConfirm(null);
@@ -204,8 +209,11 @@ class FileSystemActions {
         // it's either templates or files that have greatly changed since duplicating.
         await hgRepository.addAll([newPath]);
       } catch (e) {
-        const message = newPath + ' was duplicated, but there was an error adding it to ' +
-          'version control.  Error: ' + e.toString();
+        const message =
+          newPath +
+          ' was duplicated, but there was an error adding it to ' +
+          'version control.  Error: ' +
+          e.toString();
         atom.notifications.addError(message);
         onDidConfirm(null);
         return;
@@ -233,7 +241,9 @@ class FileSystemActions {
         : <span>Enter the new path for the file.</span>,
       onConfirm: (newBasename: string, options: Object) => {
         this._onConfirmRename(node, nodePath, newBasename).catch(error => {
-          atom.notifications.addError(`Rename to ${newBasename} failed: ${error.message}`);
+          atom.notifications.addError(
+            `Rename to ${newBasename} failed: ${error.message}`,
+          );
         });
       },
       onClose: this._closeDialog,
@@ -253,7 +263,8 @@ class FileSystemActions {
     const nodePath = node.localPath;
     let initialValue = nuclideUri.basename(nodePath);
     const ext = nuclideUri.extname(nodePath);
-    initialValue = initialValue.substr(0, initialValue.length - ext.length) + '-copy' + ext;
+    initialValue =
+      initialValue.substr(0, initialValue.length - ext.length) + '-copy' + ext;
     const hgRepository = FileTreeHgHelpers.getHgRepositoryForNode(node);
     const additionalOptions = {};
     if (hgRepository !== null) {
@@ -271,12 +282,13 @@ class FileSystemActions {
         }
         this._onConfirmDuplicate(
           file,
-          nodePath,
           newBasename.trim(),
           Boolean(options.addToVCS),
           onDidConfirm,
         ).catch(error => {
-          atom.notifications.addError(`Failed to duplicate '${file.getPath()}'`);
+          atom.notifications.addError(
+            `Failed to duplicate '${file.getPath()}'`,
+          );
         });
       },
       onClose: this._closeDialog,
@@ -308,7 +320,11 @@ class FileSystemActions {
   ) {
     this._openDialog({
       iconClassName: 'icon-file-add',
-      message: <span>Enter the path for the new {entryType} in the root:<br />{path}</span>,
+      message: (
+        <span>
+          Enter the path for the new {entryType} in the root:<br />{path}
+        </span>
+      ),
       onConfirm,
       onClose: this._closeDialog,
       additionalOptions,

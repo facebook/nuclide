@@ -6,17 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import type {ConfigEntry} from '../../nuclide-rpc';
 
 /**
  * Load service configs, and resolve all of the paths to absolute paths.
  */
-export default function loadServicesConfig(dirname: string): Array<ConfigEntry> {
+export default function loadServicesConfig(
+  dirname: string,
+): Array<ConfigEntry> {
   return [
     nuclideUri.resolve(dirname, './services-3.json'),
     nuclideUri.resolve(dirname, './fb-services-3.json'),
@@ -45,7 +48,10 @@ function createServiceConfigObject(
     return {
       name: config.name,
       // TODO(peterhal): Remove this once all services have had their def files removed.
-      definition: nuclideUri.resolve(basedir, config.definition || config.implementation),
+      definition: nuclideUri.resolve(
+        basedir,
+        config.definition || config.implementation,
+      ),
       implementation: nuclideUri.resolve(basedir, config.implementation),
       preserveFunctionNames: config.preserveFunctionNames === true,
     };

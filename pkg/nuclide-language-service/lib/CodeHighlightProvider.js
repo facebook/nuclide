@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LanguageService} from './LanguageService';
@@ -42,15 +43,23 @@ export class CodeHighlightProvider<T: LanguageService> {
     this._connectionToLanguageService = connectionToLanguageService;
   }
 
-  highlight(editor: atom$TextEditor, position: atom$Point): Promise<?Array<atom$Range>> {
+  highlight(
+    editor: atom$TextEditor,
+    position: atom$Point,
+  ): Promise<?Array<atom$Range>> {
     return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
-      const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
+      const languageService = this._connectionToLanguageService.getForUri(
+        editor.getPath(),
+      );
       if (languageService == null || fileVersion == null) {
         return null;
       }
 
-      const result = await (await languageService).highlight(fileVersion, position);
+      const result = await (await languageService).highlight(
+        fileVersion,
+        position,
+      );
       if (result == null) {
         return null;
       }
@@ -74,6 +83,7 @@ export class CodeHighlightProvider<T: LanguageService> {
         config.priority,
         config.analyticsEventName,
         connectionToLanguageService,
-      ));
+      ),
+    );
   }
 }

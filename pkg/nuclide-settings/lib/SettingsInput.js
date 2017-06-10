@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {SettingsPropsDefault} from './types';
 
-import {AtomInput} from '../../nuclide-ui/AtomInput';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import React from 'react';
 import {
   isDefaultConfigValue,
@@ -22,7 +23,7 @@ import {
 
 type Props = SettingsPropsDefault & {
   type: string,
-  value: (number | string | Array<any>),
+  value: number | string | Array<any>,
 };
 
 export default class SettingsInput extends React.Component {
@@ -84,7 +85,7 @@ export default class SettingsInput extends React.Component {
 
   _getPlaceholder(): string {
     const defaultValue = getDefaultConfigValueString(this.props.keyPath);
-    return (defaultValue ? 'Default: ' + defaultValue : '');
+    return defaultValue ? 'Default: ' + defaultValue : '';
   }
 
   // $FlowIgnore: This method requires declaring State's type

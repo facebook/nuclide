@@ -6,41 +6,33 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type WS from 'ws';
 import type DebuggerProcessInfo from './DebuggerProcessInfo';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {
-  NodeDebuggerService,
-} from '../../nuclide-debugger-node-rpc/lib/NodeDebuggerService';
-import type {
-  NativeDebuggerService,
-} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
-import type {
-  IwdpDebuggerService,
-} from '../../nuclide-debugger-iwdp-rpc/lib/IwdpDebuggerService';
-import type {
-  PhpDebuggerService,
-} from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
-import type {CategoryLogger} from '../../nuclide-logging';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {AtomNotification} from './types';
 
 import {Emitter} from 'atom';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {translateMessageFromServer, translateMessageToServer} from './ChromeMessageRemoting';
-import nuclideUri from '../../commons-node/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {
+  translateMessageFromServer,
+  translateMessageToServer,
+} from './ChromeMessageRemoting';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {
   WebSocketServer,
 } from '../../nuclide-debugger-common/lib/WebSocketServer';
-import {stringifyError} from '../../commons-node/string';
+import {stringifyError} from 'nuclide-commons/string';
+import {
+  isNewProtocolChannelEnabled,
+} from '../../nuclide-debugger-common/lib/NewProtocolChannelChecker';
+import NewProtocolMessageChecker from './NewProtocolMessageChecker';
 
-import {getCategoryLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 const SESSION_END_EVENT = 'session-end-event';
-
-export type RpcDebuggerService =
-  NodeDebuggerService | NativeDebuggerService | IwdpDebuggerService |
-  PhpDebuggerService;
+const RECEIVED_MESSAGE_EVENT = 'received-message-event';
 
 export default class DebuggerInstanceBase {
   _processInfo: DebuggerProcessInfo;
@@ -77,7 +69,9 @@ export class DebuggerInstance extends DebuggerInstanceBase {
   _chromeWebSocketServer: WebSocketServer;
   _chromeWebSocket: ?WS;
   _emitter: Emitter;
-  _logger: CategoryLogger;
+  _logger: log4js$Logger;
+  _useNewChannel: boolean;
+  _newProtocolMessageChecker: NewProtocolMessageChecker;
 
   constructor(
     processInfo: DebuggerProcessInfo,
@@ -91,25 +85,30 @@ export class DebuggerInstance extends DebuggerInstanceBase {
       this._disposables.add(subscriptions);
     }
     this._disposables.add(rpcService);
-    this._logger = getCategoryLogger(`nuclide-debugger-${this.getProviderName()}`);
+    this._logger = getLogger(`nuclide-debugger-${this.getProviderName()}`);
     this._chromeWebSocketServer = new WebSocketServer();
     this._chromeWebSocket = null;
+    this._useNewChannel = false;
+    this._newProtocolMessageChecker = new NewProtocolMessageChecker();
     this._emitter = new Emitter();
     this._disposables.add(this._chromeWebSocketServer);
     this._registerServerHandlers();
   }
 
-  getLogger(): CategoryLogger {
+  getLogger(): log4js$Logger {
     return this._logger;
   }
 
   _registerServerHandlers(): void {
     const disposables = new UniversalDisposable(
-      this._rpcService.getServerMessageObservable().refCount().subscribe(
-        this._handleServerMessage.bind(this),
-        this._handleServerError.bind(this),
-        this._handleSessionEnd.bind(this),
-      ),
+      this._rpcService
+        .getServerMessageObservable()
+        .refCount()
+        .subscribe(
+          this._handleServerMessage.bind(this),
+          this._handleServerError.bind(this),
+          this._handleSessionEnd.bind(this),
+        ),
     );
     if (rpcServiceSupportsAtomNotifications(this._rpcService)) {
       disposables.add(
@@ -127,18 +126,20 @@ export class DebuggerInstance extends DebuggerInstanceBase {
     atom.notifications.add(type, message);
   }
 
-  getWebsocketAddress(): Promise<string> {
+  async getWebsocketAddress(): Promise<string> {
+    this._useNewChannel = await isNewProtocolChannelEnabled();
     return Promise.resolve(this._startChromeWebSocketServer());
   }
 
   _startChromeWebSocketServer(): string {
     // setup web socket
     const wsPort = this._getWebSocketPort();
-    this._chromeWebSocketServer.start(wsPort)
+    this._chromeWebSocketServer
+      .start(wsPort)
       .catch(this._handleWebSocketServerError.bind(this))
       .then(this._handleWebSocketServerConnection.bind(this));
     const result = 'ws=localhost:' + String(wsPort) + '/';
-    this.getLogger().logInfo('Listening for connection at: ' + result);
+    this.getLogger().info('Listening for connection at: ' + result);
     return result;
   }
 
@@ -149,17 +150,23 @@ export class DebuggerInstance extends DebuggerInstanceBase {
       Please choose a different port in the debugger config settings.`;
     }
     atom.notifications.addError(errorMessage);
-    this.getLogger().logError(errorMessage);
+    this.getLogger().error(errorMessage);
     this.dispose();
   }
 
-  _handleWebSocketServerConnection(webSocket: WS): void {
+  _handleWebSocketServerConnection(webSocket: ?WS): void {
+    if (webSocket == null) {
+      // This means there was an error, which was already handled by _handleWebSocketServerError
+      return;
+    }
     if (this._chromeWebSocket) {
-      this.getLogger().log('Already connected to Chrome WebSocket. Discarding new connection.');
+      this.getLogger().debug(
+        'Already connected to Chrome WebSocket. Discarding new connection.',
+      );
       webSocket.close();
       return;
     }
-    this.getLogger().log('Connecting to Chrome WebSocket client.');
+    this.getLogger().debug('Connecting to Chrome WebSocket client.');
     this._chromeWebSocket = webSocket;
     webSocket.on('message', this._handleChromeSocketMessage.bind(this));
     webSocket.on('error', this._handleChromeSocketError.bind(this));
@@ -185,38 +192,61 @@ export class DebuggerInstance extends DebuggerInstanceBase {
     if (nuclideUri.isRemote(this.getTargetUri())) {
       message = translateMessageFromServer(
         nuclideUri.getHostname(this.getTargetUri()),
-        message);
+        message,
+      );
     }
     return message;
   }
 
   _handleServerMessage(message_: string): void {
     let message = message_;
-    this.getLogger().log('Recieved server message: ' + message);
+    this.getLogger().debug('Recieved server message: ' + message);
     const processedMessage = this.preProcessServerMessage(message);
     const webSocket = this._chromeWebSocket;
-    if (webSocket) {
-      message = this._translateMessageIfNeeded(processedMessage);
-      webSocket.send(message);
+    message = this._translateMessageIfNeeded(processedMessage);
+    if (this._useNewChannel) {
+      this.receiveNuclideMessage(message);
     } else {
-      this.getLogger().logError('Why isn\'t chrome websocket available?');
+      if (webSocket != null) {
+        webSocket.send(message);
+      } else {
+        this.getLogger().error("Why isn't chrome websocket available?");
+      }
     }
   }
 
   _handleServerError(error: string): void {
-    this.getLogger().logError('Received server error: ' + error);
+    this.getLogger().error('Received server error: ' + error);
   }
 
   _handleSessionEnd(): void {
-    this.getLogger().log('Ending Session');
+    this.getLogger().debug('Ending Session');
     this._emitter.emit(SESSION_END_EVENT);
     this.dispose();
   }
 
   async _handleChromeSocketMessage(message: string): Promise<void> {
-    this.getLogger().log('Recieved Chrome message: ' + message);
+    this.getLogger().debug('Recieved Chrome message: ' + message);
     const processedMessage = await this.preProcessClientMessage(message);
     this._rpcService.sendCommand(translateMessageToServer(processedMessage));
+  }
+
+  /**
+   * The following three methods are used by new Nuclide channel.
+   */
+  sendNuclideMessage(message: string): Promise<void> {
+    this._newProtocolMessageChecker.registerSentMessage(message);
+    return this._handleChromeSocketMessage(message);
+  }
+
+  registerNuclideNotificationHandler(
+    callback: (message: string) => mixed,
+  ): IDisposable {
+    return this._emitter.on(RECEIVED_MESSAGE_EVENT, callback);
+  }
+
+  receiveNuclideMessage(message: string): void {
+    this._emitter.emit(RECEIVED_MESSAGE_EVENT, message);
   }
 
   // Preprocessing hook for client messsages before sending to server.
@@ -230,12 +260,12 @@ export class DebuggerInstance extends DebuggerInstanceBase {
   }
 
   _handleChromeSocketError(error: Error): void {
-    this.getLogger().logError('Chrome webSocket error ' + stringifyError(error));
+    this.getLogger().error('Chrome webSocket error ' + stringifyError(error));
     this.dispose();
   }
 
   _handleChromeSocketClose(code: number): void {
-    this.getLogger().log(`Chrome webSocket closed: ${code}`);
+    this.getLogger().debug(`Chrome webSocket closed: ${code}`);
     this.dispose();
   }
 

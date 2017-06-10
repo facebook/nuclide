@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point} from 'atom';
 
-import {Deferred} from '../../commons-node/promise';
+import {Deferred} from 'nuclide-commons/promise';
 
 import AutocompleteCacher from '../AutocompleteCacher';
 
@@ -102,13 +103,18 @@ describe('AutocompleteCacher', () => {
   it('should just filter original results on the second request', () => {
     waitsForPromise(async () => {
       await autocompleteCacher.getSuggestions(mockedRequest);
-      const secondResults = await autocompleteCacher.getSuggestions(mockedRequest2);
+      const secondResults = await autocompleteCacher.getSuggestions(
+        mockedRequest2,
+      );
 
       expect(getSuggestions.callCount).toBe(2);
       expect(getSuggestions).toHaveBeenCalledWith(mockedRequest);
 
       expect(updateResults.callCount).toBe(1);
-      expect(updateResults).toHaveBeenCalledWith(mockedRequest2, await mockedSuggestions);
+      expect(updateResults).toHaveBeenCalledWith(
+        mockedRequest2,
+        await mockedSuggestions,
+      );
 
       expect(secondResults).toBe(mockedUpdateResults);
     });
@@ -120,19 +126,28 @@ describe('AutocompleteCacher', () => {
       mockedSuggestions = originalSuggestionDeferred.promise;
 
       // on purpose don't await here. the promise is not resolved until later
-      const firstResultPromise = autocompleteCacher.getSuggestions(mockedRequest);
+      const firstResultPromise = autocompleteCacher.getSuggestions(
+        mockedRequest,
+      );
 
-      const secondResultPromise = autocompleteCacher.getSuggestions(mockedRequest2);
+      const secondResultPromise = autocompleteCacher.getSuggestions(
+        mockedRequest2,
+      );
 
       expect(getSuggestions.callCount).toBe(2);
       expect(getSuggestions).toHaveBeenCalledWith(mockedRequest);
       expect(updateResults).not.toHaveBeenCalled();
 
       originalSuggestionDeferred.resolve([]);
-      expect(await firstResultPromise).toBe(await originalSuggestionDeferred.promise);
+      expect(await firstResultPromise).toBe(
+        await originalSuggestionDeferred.promise,
+      );
 
       expect(updateResults.callCount).toBe(1);
-      expect(updateResults).toHaveBeenCalledWith(mockedRequest2, await firstResultPromise);
+      expect(updateResults).toHaveBeenCalledWith(
+        mockedRequest2,
+        await firstResultPromise,
+      );
 
       expect(await secondResultPromise).toBe(mockedUpdateResults);
       expect(getSuggestions.callCount).toBe(2);
@@ -171,7 +186,9 @@ describe('AutocompleteCacher', () => {
   it('should pass a new request through if it cannot filter', () => {
     waitsForPromise(async () => {
       await autocompleteCacher.getSuggestions(mockedRequest);
-      const secondResults = await autocompleteCacher.getSuggestions(separateMockedRequest);
+      const secondResults = await autocompleteCacher.getSuggestions(
+        separateMockedRequest,
+      );
 
       expect(getSuggestions.callCount).toBe(2);
       expect(getSuggestions.calls.map(call => call.args)).toEqual([
@@ -190,7 +207,9 @@ describe('AutocompleteCacher', () => {
       await autocompleteCacher.getSuggestions(mockedRequest);
       mockedUpdateResults = null;
       mockedSuggestions = Promise.resolve(['new']);
-      const secondResults = await autocompleteCacher.getSuggestions(mockedRequest2);
+      const secondResults = await autocompleteCacher.getSuggestions(
+        mockedRequest2,
+      );
       expect(secondResults).toBe(await mockedSuggestions);
     });
   });
@@ -202,7 +221,9 @@ describe('AutocompleteCacher', () => {
 
       const secondMockedSuggestion = [];
       mockedSuggestions = Promise.resolve(secondMockedSuggestion);
-      const secondResults = await autocompleteCacher.getSuggestions(mockedRequest2);
+      const secondResults = await autocompleteCacher.getSuggestions(
+        mockedRequest2,
+      );
 
       expect(getSuggestions.calls.map(call => call.args)).toEqual([
         [mockedRequest],
@@ -218,7 +239,9 @@ describe('AutocompleteCacher', () => {
   describe('with a custom shouldFilter function', () => {
     let shouldFilterResult = false;
     beforeEach(() => {
-      shouldFilter = jasmine.createSpy('shouldFilter').andCallFake(() => shouldFilterResult);
+      shouldFilter = jasmine
+        .createSpy('shouldFilter')
+        .andCallFake(() => shouldFilterResult);
       initializeAutocompleteCacher();
     });
 
@@ -228,7 +251,11 @@ describe('AutocompleteCacher', () => {
         await autocompleteCacher.getSuggestions(mockedRequest2);
 
         expect(getSuggestions.callCount).toBe(2);
-        expect(shouldFilter).toHaveBeenCalledWith(mockedRequest, mockedRequest2, 1);
+        expect(shouldFilter).toHaveBeenCalledWith(
+          mockedRequest,
+          mockedRequest2,
+          1,
+        );
 
         expect(updateResults).not.toHaveBeenCalled();
       });
@@ -238,13 +265,18 @@ describe('AutocompleteCacher', () => {
       waitsForPromise(async () => {
         shouldFilterResult = true;
         await autocompleteCacher.getSuggestions(mockedRequest);
-        const secondResults = await autocompleteCacher.getSuggestions(mockedRequest2);
+        const secondResults = await autocompleteCacher.getSuggestions(
+          mockedRequest2,
+        );
 
         expect(getSuggestions.callCount).toBe(2);
         expect(getSuggestions).toHaveBeenCalledWith(mockedRequest);
 
         expect(updateResults.callCount).toBe(1);
-        expect(updateResults).toHaveBeenCalledWith(mockedRequest2, await mockedSuggestions);
+        expect(updateResults).toHaveBeenCalledWith(
+          mockedRequest2,
+          await mockedSuggestions,
+        );
 
         expect(secondResults).toBe(mockedUpdateResults);
       });

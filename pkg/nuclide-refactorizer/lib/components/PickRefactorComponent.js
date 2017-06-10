@@ -6,18 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  Store,
-  PickPhase,
-} from '../types';
+import type {Store, PickPhase} from '../types';
 
 import type {AvailableRefactoring} from '../..';
 
 import React from 'react';
 
-import {Button} from '../../../nuclide-ui/Button';
+import {Button} from 'nuclide-commons-ui/Button';
 
 import * as Actions from '../refactorActions';
 
@@ -33,17 +31,29 @@ export class PickRefactorComponent extends React.Component {
       return <div>No refactorings available at this location</div>;
     }
 
-    const elements = availableRefactorings
-      .map((r, i) => (
-        <div key={i} className="nuclide-refactorizer-refactor-option">
-          {this._renderRefactorOption(r)}
-        </div>
-      ));
+    const elements = availableRefactorings.map((r, i) => (
+      <div key={i} className="nuclide-refactorizer-refactor-option">
+        {this._renderRefactorOption(r)}
+      </div>
+    ));
     // Class used to identify this element in integration tests
     return <div className="nuclide-refactorizer-pick-refactor">{elements}</div>;
   }
 
   _pickRefactor(refactoring: AvailableRefactoring): void {
+    if (refactoring.kind === 'freeform' && refactoring.arguments.length === 0) {
+      this.props.store.dispatch(
+        Actions.execute(this.props.pickPhase.provider, {
+          kind: 'freeform',
+          editor: this.props.pickPhase.editor,
+          originalPoint: this.props.pickPhase.originalPoint,
+          id: refactoring.id,
+          range: refactoring.range,
+          arguments: new Map(),
+        }),
+      );
+      return;
+    }
     this.props.store.dispatch(Actions.pickedRefactor(refactoring));
   }
 
@@ -52,9 +62,11 @@ export class PickRefactorComponent extends React.Component {
       case 'rename':
         return (
           <Button
-              // Used to identify this element in integration tests
-              className="nuclide-refactorizer-pick-rename"
-              onClick={() => { this._pickRefactor(refactoring); }}>
+            // Used to identify this element in integration tests
+            className="nuclide-refactorizer-pick-rename"
+            onClick={() => {
+              this._pickRefactor(refactoring);
+            }}>
             Rename
           </Button>
         );
@@ -63,9 +75,11 @@ export class PickRefactorComponent extends React.Component {
         return (
           <div>
             <Button
-                className="nuclide-refactorizer-pick-freeform"
-                onClick={() => { this._pickRefactor(refactoring); }}
-                disabled={refactoring.disabled}>
+              className="nuclide-refactorizer-button"
+              onClick={() => {
+                this._pickRefactor(refactoring);
+              }}
+              disabled={refactoring.disabled}>
               {refactoring.name}
             </Button>
             {refactoring.description}

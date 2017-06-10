@@ -6,27 +6,30 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
   NuclideDebuggerProvider,
 } from '../../nuclide-debugger-interfaces/service';
 import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import logger from './utils';
 import {getConfig} from './utils';
 import {NodeLaunchAttachProvider} from './NodeLaunchAttachProvider';
 
 export function activate(state: mixed): void {
-  logger.setLogLevel(getConfig().clientLogLevel);
+  logger.setLevel(getConfig().clientLogLevel);
 }
 
 export function createDebuggerProvider(): NuclideDebuggerProvider {
   return {
     name: 'Node',
-    getLaunchAttachProvider(connection: NuclideUri): ?DebuggerLaunchAttachProvider {
-      return new NodeLaunchAttachProvider('NodeJS', connection);
+    getLaunchAttachProvider(
+      connection: NuclideUri,
+    ): ?DebuggerLaunchAttachProvider {
+      return new NodeLaunchAttachProvider('Node JS', connection);
     },
   };
 }

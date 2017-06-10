@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {HackCompletion, HackDiagnostic} from './rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
@@ -37,7 +38,11 @@ export type TextEdit = {
 // Inidicates that the file has been opened by the IDE.
 // Hack should get its source of truth for the file from
 // didChangeFile notifications until didCloseFile is seen.
-export function didOpenFile(filename: NuclideUri, version: number, contents: string): void {
+export function didOpenFile(
+  filename: NuclideUri,
+  version: number,
+  contents: string,
+): void {
   throw new Error('RPC stub');
 }
 
@@ -66,11 +71,7 @@ export function didCloseFile(filename: NuclideUri): void {
 //
 // Saved indicates that the IDE has saved a file. This is purely informational
 // as Hack should get the source of truth from didChangeFile.
-export type FileEventType =
-  'Created'
-  | 'Changed'
-  | 'Deleted'
-  | 'Saved';
+export type FileEventType = 'Created' | 'Changed' | 'Deleted' | 'Saved';
 
 export type FileEvent = {
   filename: NuclideUri,
@@ -98,8 +99,9 @@ export type HackDiagnosticsMessage = {
   }>,
 };
 
-export function notifyDiagnostics(
-): ConnectableObservable<HackDiagnosticsMessage> {
+export function notifyDiagnostics(): ConnectableObservable<
+  HackDiagnosticsMessage,
+> {
   throw new Error('RPC stub');
 }
 

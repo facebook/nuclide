@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import once from './once';
@@ -29,7 +30,9 @@ const getGatekeeper = once(() => {
         return Promise.resolve();
       }
       onceGkInitialized(callback: () => mixed): IDisposable {
-        process.nextTick(() => { callback(); });
+        process.nextTick(() => {
+          callback();
+        });
         return new Disposable();
       }
     };
@@ -40,7 +43,7 @@ const getGatekeeper = once(() => {
 /**
  * Check a GK. Silently return false on error.
  */
-export default async function passesGK(
+export default (async function passesGK(
   name: string,
   // timeout in ms
   timeout?: number,
@@ -50,7 +53,7 @@ export default async function passesGK(
   } catch (e) {
     return false;
   }
-}
+});
 
 /**
  * Synchronous GK check. There is no guarantee that GKs have loaded. This

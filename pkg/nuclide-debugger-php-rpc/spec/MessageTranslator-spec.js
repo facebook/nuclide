@@ -6,9 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {MessageTranslator as MessageTranslatorType} from '../lib/MessageTranslator';
+import type {
+  MessageTranslator as MessageTranslatorType,
+} from '../lib/MessageTranslator';
+import type {ClientCallback} from '../lib/ClientCallback';
 
 import {uncachedRequire, clearRequireCache} from '../../nuclide-test-helpers';
 
@@ -19,28 +23,40 @@ describe('debugger-php-rpc MessageTranslator', () => {
   let clientCallback: any;
 
   beforeEach(() => {
-    connectionMultiplexer = jasmine.createSpyObj(
-      'connectionMultiplexer',
-      ['dispose', 'onStatus', 'onNotification', 'onConnectionError'],
-    );
+    connectionMultiplexer = jasmine.createSpyObj('connectionMultiplexer', [
+      'dispose',
+      'onStatus',
+      'onNotification',
+      'onConnectionError',
+    ]);
     const disposable = {dispose: () => {}};
-    connectionMultiplexer.onStatus = jasmine.createSpy('onStatus').andReturn(disposable);
-    connectionMultiplexer.onNotification = jasmine.createSpy('onNotification')
+    connectionMultiplexer.onStatus = jasmine
+      .createSpy('onStatus')
       .andReturn(disposable);
-    ConnectionMultiplexer = spyOn(require('../lib/ConnectionMultiplexer'), 'ConnectionMultiplexer')
-      .andReturn(connectionMultiplexer);
-    clientCallback = jasmine.createSpyObj(
-      'clientCallback',
-      ['replyWithError', 'replyToCommand'],
-    );
-    const {MessageTranslator} = ((
-      uncachedRequire(require, '../lib/MessageTranslator'): any
-    ): {MessageTranslator: () => MessageTranslatorType});
-    translater = new MessageTranslator(clientCallback);
+    connectionMultiplexer.onNotification = jasmine
+      .createSpy('onNotification')
+      .andReturn(disposable);
+    ConnectionMultiplexer = spyOn(
+      require('../lib/ConnectionMultiplexer'),
+      'ConnectionMultiplexer',
+    ).andReturn(connectionMultiplexer);
+    clientCallback = jasmine.createSpyObj('clientCallback', [
+      'replyWithError',
+      'replyToCommand',
+      'sendServerMethod',
+    ]);
+    const {MessageTranslator} = ((uncachedRequire(
+      require,
+      '../lib/MessageTranslator',
+    ): any): {MessageTranslator: Class<MessageTranslatorType>});
+    translater = new MessageTranslator(((clientCallback: any): ClientCallback));
   });
 
   afterEach(() => {
-    jasmine.unspy(require('../lib/ConnectionMultiplexer'), 'ConnectionMultiplexer');
+    jasmine.unspy(
+      require('../lib/ConnectionMultiplexer'),
+      'ConnectionMultiplexer',
+    );
     clearRequireCache(require, '../lib/MessageTranslator');
   });
 
@@ -52,7 +68,11 @@ describe('debugger-php-rpc MessageTranslator', () => {
   it('handleCommand', () => {
     waitsForPromise(async () => {
       await translater.handleCommand('{"id": 1, "method": "Page.enable"}');
-      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(1, {}, undefined);
+      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(
+        1,
+        {},
+        undefined,
+      );
     });
   });
 

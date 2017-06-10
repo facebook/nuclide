@@ -1,0 +1,47 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.nuclide-datatip-marked > div:not(:last-child) {
+  border-bottom: 1px solid fade(@text-color-highlight, 10%);
+}
+
+.nuclide-datatip-marked-container {
+  color: @text-color;
+  font-family: @font-family;
+  padding: 8px;
+
+  // Avoid excess internal padding from markdown blocks.
+  :first-child {
+    margin-top: 0;
+  }
+
+  :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.nuclide-datatip-marked-text-editor-container {
+  padding: 2px 0 2px 4px;
+}
+
+.nuclide-datatip-marked-text-editor {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.nuclide-datatip-marked-text-editor atom-text-editor {
+  background-color: transparent;
+  min-width: 1em; // Hack to force the AtomTextEditor to properly size itself
+
+  .editor-contents--private {
+    cursor: inherit!important; // Let the enclosing datatip override the cursor.
+  }
+
+  // Prevent forced scroll bar in Atom 1.9.x
+  .scroll-view .horizontal-scrollbar {
+    display: none;
+  }
+  .scrollbar-corner {
+    display: none;
+  }
+}

@@ -6,12 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {LocalStorageJsonTable} from '../../commons-atom/LocalStorageJsonTable';
-import type {IconName} from '../../nuclide-ui/types';
+import type {
+  LocalStorageJsonTable,
+} from '../../commons-atom/LocalStorageJsonTable';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {Task} from '../../commons-node/tasks';
+import type {Message} from 'nuclide-commons/process';
 import type {Directory} from '../../nuclide-remote-connection';
+import type {ConsoleApi, ConsoleService} from '../../nuclide-console/lib/types';
 
 export type AppState = {
   taskRunnersReady: boolean,
@@ -26,6 +31,9 @@ export type AppState = {
   statesForTaskRunners: Map<TaskRunner, TaskRunnerState>,
 
   runningTask: ?TaskStatus,
+
+  consoleService: ?ConsoleService,
+  consolesForTaskRunners: Map<TaskRunner, ConsoleApi>,
 };
 
 export type ToolbarStatePreference = {
@@ -72,7 +80,7 @@ export type TaskRunner = {
   +setProjectRoot: (
     projectRoot: ?Directory,
     callback: (enabled: boolean, taskList: Array<TaskMetadata>) => mixed,
-    ) => IDisposable,
+  ) => IDisposable,
   // Priority to decide which task runner to select when multiple are available for a project
   // Default priority is 0, ties are resolved alphabetically.
   +getPriority?: () => number,
@@ -92,9 +100,13 @@ export type BoundActionCreators = {
   registerTaskRunner(taskRunner: TaskRunner): void,
   runTask(taskId: TaskMetadata): void,
   setProjectRoot(dir: ?Directory): void,
+  setConsoleService(service: ?ConsoleService): void,
   setToolbarVisibility(visible: boolean): void,
   stopTask(): void,
-  toggleToolbarVisibility(taskRunner?: TaskRunner): void,
+  requestToggleToolbarVisibility(
+    visible: ?boolean,
+    taskRunner: ?TaskRunner,
+  ): void,
   unregisterTaskRunner(taskRunner: TaskRunner): void,
 };
 
@@ -125,6 +137,7 @@ export type TaskCompletedAction = {
   type: 'TASK_COMPLETED',
   payload: {
     taskStatus: TaskStatus,
+    taskRunner: TaskRunner,
   },
 };
 
@@ -132,6 +145,14 @@ type TaskProgressAction = {
   type: 'TASK_PROGRESS',
   payload: {
     progress: ?number,
+  },
+};
+
+type TaskMessageAction = {
+  type: 'TASK_MESSAGE',
+  payload: {
+    message: Message,
+    taskRunner: TaskRunner,
   },
 };
 
@@ -154,6 +175,7 @@ export type TaskStoppedAction = {
   type: 'TASK_STOPPED',
   payload: {
     taskStatus: TaskStatus,
+    taskRunner: TaskRunner,
   },
 };
 
@@ -186,6 +208,43 @@ export type SetProjectRootAction = {
   },
 };
 
+export type SetConsoleServiceAction = {
+  type: 'SET_CONSOLE_SERVICE',
+  payload: {
+    service: ?ConsoleService,
+  },
+};
+
+export type SetConsolesForTaskRunnersAction = {
+  type: 'SET_CONSOLES_FOR_TASK_RUNNERS',
+  payload: {
+    consolesForTaskRunners: Map<TaskRunner, ConsoleApi>,
+  },
+};
+
+export type AddConsoleForTaskRunnerAction = {
+  type: 'ADD_CONSOLE_FOR_TASK_RUNNER',
+  payload: {
+    taskRunner: TaskRunner,
+    consoleApi: ConsoleApi,
+  },
+};
+
+export type RemoveConsoleForTaskRunnerAction = {
+  type: 'REMOVE_CONSOLE_FOR_TASK_RUNNER',
+  payload: {
+    taskRunner: TaskRunner,
+  },
+};
+
+export type RequestToggleToolbarVisibilityAction = {
+  type: 'REQUEST_TOGGLE_TOOLBAR_VISIBILITY',
+  payload: {
+    visible: ?boolean,
+    taskRunner: ?TaskRunner,
+  },
+};
+
 export type SetToolbarVisibilityAction = {
   type: 'SET_TOOLBAR_VISIBILITY',
   payload: {
@@ -201,20 +260,27 @@ export type StopTaskAction = {
 export type ToggleToolbarVisibilityAction = {
   type: 'TOGGLE_TOOLBAR_VISIBILITY',
   payload: {
+    visible: ?boolean,
     taskRunner: ?TaskRunner,
   },
 };
 
 export type Action =
-  DidActivateInitialPackagesAction
+  | DidActivateInitialPackagesAction
+  | RequestToggleToolbarVisibilityAction
   | RunTaskAction
   | SelectTaskRunnerAction
   | SetStatesForTaskRunnersAction
   | SetProjectRootAction
+  | SetConsoleServiceAction
+  | SetConsolesForTaskRunnersAction
+  | AddConsoleForTaskRunnerAction
+  | RemoveConsoleForTaskRunnerAction
   | SetToolbarVisibilityAction
   | StopTaskAction
   | TaskCompletedAction
   | TaskProgressAction
+  | TaskMessageAction
   | TaskErroredAction
   | TaskStartedAction
   | TaskStoppedAction

@@ -6,28 +6,36 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import {wordAtPositionFromBuffer} from '../../commons-node/range';
-import type {Outline} from '../../nuclide-outline-view/lib/rpc-types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import {wordAtPositionFromBuffer} from 'nuclide-commons/range';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   AutocompleteResult,
   Completion,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {
+  DefinitionQueryResult,
   DiagnosticProviderUpdate,
   FileDiagnosticUpdate,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
+  FileDiagnosticMessage,
+  Outline,
+} from 'atom-ide-ui';
 import type {
-  Definition,
-  DefinitionQueryResult,
-} from '../../nuclide-definition-service/lib/rpc-types';
-import type {SingleFileLanguageService} from '../../nuclide-language-service-rpc';
-import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
+  SingleFileLanguageService,
+} from '../../nuclide-language-service-rpc';
+import type {
+  NuclideEvaluationExpression,
+} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
-import type {FindReferencesReturn} from '../../nuclide-find-references/lib/rpc-types';
+import type {
+  FindReferencesReturn,
+} from '../../nuclide-find-references/lib/rpc-types';
+
+import type {PushDiagnosticsMessage} from './FlowIDEConnection';
 
 import type {ServerStatusType} from '..';
 import type {FlowExecInfoContainer} from './FlowExecInfoContainer';
@@ -35,6 +43,7 @@ import type {
   FlowAutocompleteOutput,
   FlowAutocompleteItem,
   TypeAtPosOutput,
+  FlowStatusOutput,
 } from './flowOutputTypes';
 
 import invariant from 'assert';
@@ -42,14 +51,14 @@ import {Range, Point} from 'simple-text-buffer';
 import {getConfig} from './config';
 import {Observable} from 'rxjs';
 
+import {setUnion, mapGetWithDefault} from 'nuclide-commons/collection';
 import {
   filterResultsByPrefix,
   getReplacementPrefix,
   JAVASCRIPT_WORD_REGEX,
-  JAVASCRIPT_IDENTIFIER_REGEX,
 } from '../../nuclide-flow-common';
-import {getLogger} from '../../nuclide-logging';
-const logger = getLogger();
+import {getLogger} from 'log4js';
+const logger = getLogger('nuclide-flow-rpc');
 
 import {flowCoordsToAtomCoords} from './FlowHelpers';
 
@@ -78,7 +87,8 @@ export class FlowSingleProjectLanguageService {
       }
       return execInfo.flowVersion;
     });
-    this._process.getServerStatusUpdates()
+    this._process
+      .getServerStatusUpdates()
       .filter(state => state === 'not running')
       .subscribe(() => this._version.invalidateVersion());
   }
@@ -111,7 +121,11 @@ export class FlowSingleProjectLanguageService {
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
   ): Promise<?DefinitionQueryResult> {
-    const match = wordAtPositionFromBuffer(buffer, position, JAVASCRIPT_WORD_REGEX);
+    const match = wordAtPositionFromBuffer(
+      buffer,
+      position,
+      JAVASCRIPT_WORD_REGEX,
+    );
     if (match == null) {
       return null;
     }
@@ -123,7 +137,7 @@ export class FlowSingleProjectLanguageService {
     // the user's editor rather than what is saved on disk. It would be annoying
     // if the user had to save before using the jump-to-definition feature to
     // ensure he or she got accurate results.
-    options.stdin = buffer.getText();
+    options.input = buffer.getText();
 
     const args = ['get-def', '--json', '--path', filePath, line, column];
     try {
@@ -135,18 +149,17 @@ export class FlowSingleProjectLanguageService {
       if (json.path) {
         const loc = {
           file: json.path,
-          point: new Point(
-            json.line - 1,
-            json.start - 1,
-          ),
+          point: new Point(json.line - 1, json.start - 1),
         };
         return {
           queryRange: [match.range],
-          definitions: [{
-            path: loc.file,
-            position: loc.point,
-            language: 'Flow',
-          }],
+          definitions: [
+            {
+              path: loc.file,
+              position: loc.point,
+              language: 'Flow',
+            },
+          ],
         };
       } else {
         return null;
@@ -154,13 +167,6 @@ export class FlowSingleProjectLanguageService {
     } catch (e) {
       return null;
     }
-  }
-
-  getDefinitionById(
-    file: NuclideUri,
-    id: string,
-  ): Promise<?Definition> {
-    throw new Error('Not Yet Implemented');
   }
 
   async highlight(
@@ -175,9 +181,14 @@ export class FlowSingleProjectLanguageService {
       return null;
     }
 
-    const options = {stdin: buffer.getText()};
+    const options = {input: buffer.getText()};
     const args = [
-      'find-refs', '--json', '--path', filePath, position.row + 1, position.column + 1,
+      'find-refs',
+      '--json',
+      '--path',
+      filePath,
+      position.row + 1,
+      position.column + 1,
     ];
     try {
       const result = await this._process.execFlow(args, options);
@@ -220,7 +231,11 @@ export class FlowSingleProjectLanguageService {
     try {
       // Don't log errors if the command returns a nonzero exit code, because status returns nonzero
       // if it is reporting any issues, even when it succeeds.
-      result = await this._process.execFlow(args, options, /* waitForServer */ true);
+      result = await this._process.execFlow(
+        args,
+        options,
+        /* waitForServer */ true,
+      );
       if (!result) {
         return null;
       }
@@ -262,55 +277,25 @@ export class FlowSingleProjectLanguageService {
     };
   }
 
-  observeDiagnostics(): Observable<FileDiagnosticUpdate> {
+  observeDiagnostics(): Observable<Array<FileDiagnosticUpdate>> {
     const ideConnections = this._process.getIDEConnections();
     return ideConnections
       .switchMap(ideConnection => {
         if (ideConnection != null) {
-          return ideConnection.observeDiagnostics()
-            .map(diagnosticsJson => {
-              const diagnostics = flowStatusOutputToDiagnostics(diagnosticsJson);
-              const filePathToMessages = new Map();
-
-              for (const diagnostic of diagnostics) {
-                const path = diagnostic.filePath;
-                let diagnosticArray = filePathToMessages.get(path);
-                if (!diagnosticArray) {
-                  diagnosticArray = [];
-                  filePathToMessages.set(path, diagnosticArray);
-                }
-                diagnosticArray.push(diagnostic);
-              }
-              return filePathToMessages;
-            });
+          return ideConnection.observeDiagnostics();
         } else {
           // if ideConnection is null, it means there is currently no connection. So, invalidate the
           // current diagnostics so we don't display stale data.
-          return Observable.of(new Map());
+          return Observable.of(null);
         }
       })
-      .scan(
-        (oldDiagnostics, newDiagnostics) => {
-          for (const [filePath, diagnostics] of oldDiagnostics) {
-            if (diagnostics.length > 0 && !newDiagnostics.has(filePath)) {
-              newDiagnostics.set(filePath, []);
-            }
-          }
-          return newDiagnostics;
-        },
-        new Map(),
-      )
-      .concatMap(filePathToMessages => {
-        const fileDiagnosticUpdates: Array<FileDiagnosticUpdate> = [...filePathToMessages.entries()]
-          .map(([filePath, messages]) => ({filePath, messages}));
-        return Observable.from(fileDiagnosticUpdates);
-      })
+      .scan(updateDiagnostics, emptyDiagnosticsState())
+      .concatMap(getDiagnosticUpdates)
       .catch(err => {
         logger.error(err);
         throw err;
       });
   }
-
 
   async getAutocompleteSuggestions(
     filePath: NuclideUri,
@@ -333,16 +318,26 @@ export class FlowSingleProjectLanguageService {
     // single alphanumeric character, autocomplete-plus no longer includes the dot in the prefix.
     const prefixHasDot = prefix.indexOf('.') !== -1;
 
-    if (!activatedManually && !prefixHasDot && replacementPrefix.length < minimumPrefixLength) {
+    if (
+      !activatedManually &&
+      !prefixHasDot &&
+      replacementPrefix.length < minimumPrefixLength
+    ) {
       return null;
     }
 
     const options = {};
 
     // Note that Atom coordinates are 0-indexed whereas Flow's are 1-indexed, so we must add 1.
-    const args = ['autocomplete', '--json', filePath, position.row + 1, position.column + 1];
+    const args = [
+      'autocomplete',
+      '--json',
+      filePath,
+      position.row + 1,
+      position.column + 1,
+    ];
 
-    options.stdin = buffer.getText();
+    options.input = buffer.getText();
     try {
       const result = await this._process.execFlow(args, options);
       if (!result) {
@@ -350,10 +345,13 @@ export class FlowSingleProjectLanguageService {
       }
       const json: FlowAutocompleteOutput = parseJSON(args, result.stdout);
       const resultsArray: Array<FlowAutocompleteItem> = json.result;
-      const completions =
-        resultsArray.map(item => processAutocompleteItem(replacementPrefix, item));
-      const items = filterResultsByPrefix(prefix, completions);
-      return {isIncomplete: false, items};
+      const completions = resultsArray.map(item =>
+        processAutocompleteItem(replacementPrefix, item),
+      );
+      return filterResultsByPrefix(prefix, {
+        isIncomplete: false,
+        items: completions,
+      });
     } catch (e) {
       return {isIncomplete: false, items: []};
     }
@@ -378,12 +376,11 @@ export class FlowSingleProjectLanguageService {
 
     const options = {};
 
-    options.stdin = buffer.getText();
+    options.input = buffer.getText();
 
     const line = position.row + 1;
     const column = position.column + 1;
-    const args =
-      ['type-at-pos', '--json', '--path', filePath, line, column];
+    const args = ['type-at-pos', '--json', '--path', filePath, line, column];
 
     let result;
     try {
@@ -516,7 +513,7 @@ export class FlowSingleProjectLanguageService {
     execInfoContainer: FlowExecInfoContainer,
   ): Promise<any> {
     const options = {
-      stdin: currentContents,
+      input: currentContents,
     };
 
     const flowRootPath = root == null ? null : root.getPathToRoot();
@@ -546,7 +543,7 @@ export class FlowSingleProjectLanguageService {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     range: atom$Range,
-  ): Promise<?string> {
+  ): Promise<?Array<TextEdit>> {
     throw new Error('Not Yet Implemented');
   }
 
@@ -561,6 +558,15 @@ export class FlowSingleProjectLanguageService {
     throw new Error('Not implemented');
   }
 
+  formatAtPosition(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    position: atom$Point,
+    triggerCharacter: string,
+  ): Promise<?Array<TextEdit>> {
+    throw new Error('Not Yet Implemented');
+  }
+
   findReferences(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
@@ -569,33 +575,12 @@ export class FlowSingleProjectLanguageService {
     throw new Error('Not Yet Implemented');
   }
 
-
   getEvaluationExpression(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
   ): Promise<?NuclideEvaluationExpression> {
-    // TODO: Replace RegExp with AST-based, more accurate approach.
-    const extractedIdentifier = wordAtPositionFromBuffer(
-      buffer,
-      position,
-      JAVASCRIPT_IDENTIFIER_REGEX,
-    );
-    if (extractedIdentifier == null) {
-      return Promise.resolve(null);
-    }
-    const {
-      range,
-      wordMatch,
-    } = extractedIdentifier;
-    const [expression] = wordMatch;
-    if (expression == null) {
-      return Promise.resolve(null);
-    }
-    return Promise.resolve({
-      expression,
-      range,
-    });
+    throw new Error('Not implemented');
   }
 
   isFileInProject(fileUri: NuclideUri): Promise<boolean> {
@@ -610,7 +595,9 @@ function parseJSON(args: Array<any>, value: string): any {
   try {
     return JSON.parse(value);
   } catch (e) {
-    logger.warn(`Invalid JSON result from flow ${args.join(' ')}. JSON:\n'${value}'.`);
+    logger.warn(
+      `Invalid JSON result from flow ${args.join(' ')}. JSON:\n'${value}'.`,
+    );
     throw e;
   }
 }
@@ -636,8 +623,9 @@ export function processAutocompleteItem(
   const funcDetails = flowItem.func_details;
   if (funcDetails) {
     // The parameters in human-readable form for use on the right label.
-    const rightParamStrings = funcDetails.params
-      .map(param => `${param.name}: ${param.type}`);
+    const rightParamStrings = funcDetails.params.map(
+      param => `${param.name}: ${param.type}`,
+    );
     let snippetArgs = `(${getSnippetString(funcDetails.params.map(param => param.name))})`;
     let leftLabel = funcDetails.return_type;
     let rightLabel = `(${rightParamStrings.join(', ')})`;
@@ -678,13 +666,15 @@ function getSnippetString(paramNames: Array<string>): string {
  * will be selected along with the last non-optional parameter and you can just type to overwrite
  * them.
  */
- // Exported for testing
-export function groupParamNames(paramNames: Array<string>): Array<Array<string>> {
+// Exported for testing
+export function groupParamNames(
+  paramNames: Array<string>,
+): Array<Array<string>> {
   // Split the parameters into two groups -- all of the trailing optional paramaters, and the rest
   // of the parameters. Trailing optional means all optional parameters that have only optional
   // parameters after them.
-  const [ordinaryParams, trailingOptional] =
-    paramNames.reduceRight(([ordinary, optional], param) => {
+  const [ordinaryParams, trailingOptional] = paramNames.reduceRight(
+    ([ordinary, optional], param) => {
       // If there have only been optional params so far, and this one is optional, add it to the
       // list of trailing optional params.
       if (isOptional(param) && ordinary.length === 0) {
@@ -712,4 +702,145 @@ function isOptional(param: string): boolean {
   invariant(param.length > 0);
   const lastChar = param[param.length - 1];
   return lastChar === '?';
+}
+
+// This should be immutable, but lacking good immutable data structure implementations, we are just
+// going to mutate it
+// Exported only for testing
+export type DiagnosticsState = {
+  isInRecheck: boolean,
+  // Stale messages from the last recheck. We still want to display these, but as soon as the
+  // recheck ends we should invalidate them.
+  // invariants: empty if we are not in a recheck, all contained messages have `stale: true`.
+  staleMessages: Map<NuclideUri, Array<FileDiagnosticMessage>>,
+  // All the currently-valid diagnostic messages. During a recheck, incoming messages get
+  // accumulated here.
+  currentMessages: Map<NuclideUri, Array<FileDiagnosticMessage>>,
+  // All the files that need to be updated immediately. May include files that do not exist in
+  // allCurrentMessages, meaning that there are no associated messages and we just need to clear the
+  // previous errors.
+  filesToUpdate: Set<NuclideUri>,
+};
+
+// Exported only for testing
+export function emptyDiagnosticsState(): DiagnosticsState {
+  return {
+    isInRecheck: false,
+    staleMessages: new Map(),
+    currentMessages: new Map(),
+    filesToUpdate: new Set(),
+  };
+}
+
+// Exported only for testing
+export function updateDiagnostics(
+  state: DiagnosticsState,
+  // null means we have received a null ide connection (meaning the previous one has gone away)
+  msg: ?PushDiagnosticsMessage,
+): DiagnosticsState {
+  if (msg == null) {
+    return {
+      isInRecheck: false,
+      staleMessages: new Map(),
+      currentMessages: new Map(),
+      filesToUpdate: setUnion(
+        new Set(state.staleMessages.keys()),
+        new Set(state.currentMessages.keys()),
+      ),
+    };
+  }
+  switch (msg.kind) {
+    case 'errors':
+      const newErrors = collateDiagnostics(msg.errors);
+      if (state.isInRecheck) {
+        // Yes we are going to mutate this :(
+        const {currentMessages} = state;
+        for (const [file, newMessages] of newErrors) {
+          let messages = currentMessages.get(file);
+          if (messages == null) {
+            messages = [];
+            currentMessages.set(file, messages);
+          }
+          messages.push(...newMessages);
+        }
+        return {
+          isInRecheck: state.isInRecheck,
+          staleMessages: state.staleMessages,
+          currentMessages,
+          filesToUpdate: new Set(newErrors.keys()),
+        };
+      } else {
+        // Update the files that now have errors, and those that had errors the last time (we need
+        // to make sure to remove errors that no longer exist).
+        const filesToUpdate = setUnion(
+          new Set(newErrors.keys()),
+          new Set(state.currentMessages.keys()),
+        );
+        return {
+          isInRecheck: state.isInRecheck,
+          staleMessages: state.staleMessages,
+          currentMessages: newErrors,
+          filesToUpdate,
+        };
+      }
+    case 'start-recheck':
+      const staleMessages = new Map();
+      for (const [file, oldMessages] of state.currentMessages.entries()) {
+        const messages = oldMessages.map(message => ({
+          ...message,
+          stale: true,
+        }));
+        staleMessages.set(file, messages);
+      }
+      return {
+        isInRecheck: true,
+        staleMessages,
+        currentMessages: new Map(),
+        filesToUpdate: new Set(state.currentMessages.keys()),
+      };
+    case 'end-recheck':
+      return {
+        isInRecheck: false,
+        staleMessages: new Map(),
+        currentMessages: state.currentMessages,
+        filesToUpdate: new Set(state.staleMessages.keys()),
+      };
+    default:
+      // Enforce exhaustiveness
+      (msg.kind: empty);
+      throw new Error(`Unknown message kind ${msg.kind}`);
+  }
+}
+
+// Exported only for testing
+export function getDiagnosticUpdates(
+  state: DiagnosticsState,
+): Observable<Array<FileDiagnosticUpdate>> {
+  const updates = [];
+  for (const file of state.filesToUpdate) {
+    const messages = [
+      ...mapGetWithDefault(state.staleMessages, file, []),
+      ...mapGetWithDefault(state.currentMessages, file, []),
+    ];
+    updates.push({filePath: file, messages});
+  }
+  return Observable.of(updates);
+}
+
+function collateDiagnostics(
+  output: FlowStatusOutput,
+): Map<NuclideUri, Array<FileDiagnosticMessage>> {
+  const diagnostics = flowStatusOutputToDiagnostics(output);
+  const filePathToMessages = new Map();
+
+  for (const diagnostic of diagnostics) {
+    const path = diagnostic.filePath;
+    let diagnosticArray = filePathToMessages.get(path);
+    if (!diagnosticArray) {
+      diagnosticArray = [];
+      filePathToMessages.set(path, diagnosticArray);
+    }
+    diagnosticArray.push(diagnostic);
+  }
+  return filePathToMessages;
 }

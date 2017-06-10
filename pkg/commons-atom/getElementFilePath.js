@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import {isValidTextEditor} from './text-editor';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 
 export default function getElementFilePath(
   element: ?HTMLElement,

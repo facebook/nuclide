@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -20,8 +21,9 @@ import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 import {ActionType, EMPTY_SHORTHEAD} from './constants';
 import {getRepoPathToEditors} from './utils';
 import invariant from 'assert';
-import {observableFromSubscribeFunction} from '../../commons-node/event';
-import {goToLocation} from '../../commons-atom/go-to-location';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {getLogger} from 'log4js';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {Observable} from 'rxjs';
 
 const HANDLED_ACTION_TYPES = [
@@ -29,7 +31,10 @@ const HANDLED_ACTION_TYPES = [
   ActionType.RESTORE_PANE_ITEM_STATE,
 ];
 
-function getActionsOfType(actions: Observable<Action>, type: ActionTypeValue): Observable<Action> {
+function getActionsOfType(
+  actions: Observable<Action>,
+  type: ActionTypeValue,
+): Observable<Action> {
   return actions.filter(action => action.type === type);
 }
 
@@ -40,13 +45,17 @@ export function applyActionMiddleware(
   const output = Observable.merge(
     // Let the unhandled ActionTypes pass through.
     actions.filter(action => HANDLED_ACTION_TYPES.indexOf(action.type) === -1),
-
-    getActionsOfType(actions, ActionType.ADD_PROJECT_REPOSITORY).flatMap(action => {
+    getActionsOfType(
+      actions,
+      ActionType.ADD_PROJECT_REPOSITORY,
+    ).flatMap(action => {
       invariant(action.type === ActionType.ADD_PROJECT_REPOSITORY);
       return watchProjectRepository(action, getState);
     }),
-
-    getActionsOfType(actions, ActionType.RESTORE_PANE_ITEM_STATE).switchMap(action => {
+    getActionsOfType(
+      actions,
+      ActionType.RESTORE_PANE_ITEM_STATE,
+    ).switchMap(action => {
       invariant(action.type === ActionType.RESTORE_PANE_ITEM_STATE);
       return restorePaneItemState(action, getState);
     }),
@@ -61,45 +70,38 @@ function watchProjectRepository(
   const {repository} = action.payload;
   const hgRepository: HgRepositoryClient = (repository: any);
   // Type was checked with `getType`. Downcast to safely access members with Flow.
-  return Observable.merge(
-    observableFromSubscribeFunction(
-      // Re-fetch when the list of bookmarks changes.
-      hgRepository.onDidChangeBookmarks.bind(hgRepository),
-    ),
-    observableFromSubscribeFunction(
-      // Re-fetch when the active bookmark changes (called "short head" to match
-      // Atom's Git API).
-      hgRepository.onDidChangeShortHead.bind(hgRepository),
-    ),
-  )
-  .startWith(null) // Kick it off the first time
-  .switchMap(() => Observable.fromPromise(hgRepository.getBookmarks()))
-  .map(bookmarks => {
-    const bookmarkNames = new Set(
-      bookmarks.map(bookmark => bookmark.bookmark).concat([EMPTY_SHORTHEAD]),
+  return hgRepository
+    .observeBookmarks()
+    .map(bookmarks => {
+      const bookmarkNames = new Set(
+        bookmarks.map(bookmark => bookmark.bookmark).concat([EMPTY_SHORTHEAD]),
+      );
+
+      const activeBookmark = bookmarks.filter(bookmark => bookmark.active)[0];
+      const activeShortHead = activeBookmark == null
+        ? EMPTY_SHORTHEAD
+        : activeBookmark.bookmark;
+
+      return {
+        payload: {
+          activeShortHead,
+          bookmarkNames,
+          repository,
+        },
+        type: ActionType.UPDATE_REPOSITORY_BOOKMARKS,
+      };
+    })
+    .takeUntil(
+      observableFromSubscribeFunction(repository.onDidDestroy.bind(repository)),
+    )
+    .concat(
+      Observable.of({
+        payload: {
+          repository,
+        },
+        type: ActionType.REMOVE_PROJECT_REPOSITORY,
+      }),
     );
-
-    const activeBookmark = bookmarks.filter(bookmark => bookmark.active)[0];
-    const activeShortHead = activeBookmark == null
-      ? EMPTY_SHORTHEAD
-      : activeBookmark.bookmark;
-
-    return {
-      payload: {
-        activeShortHead,
-        bookmarkNames,
-        repository,
-      },
-      type: ActionType.UPDATE_REPOSITORY_BOOKMARKS,
-    };
-  })
-  .takeUntil(observableFromSubscribeFunction(repository.onDidDestroy.bind(repository)))
-  .concat(Observable.of({
-    payload: {
-      repository,
-    },
-    type: ActionType.REMOVE_PROJECT_REPOSITORY,
-  }));
 }
 
 function restorePaneItemState(
@@ -116,17 +118,26 @@ function restorePaneItemState(
   }
 
   // TODO(most): refactor to a `Set` all the way.
-  const fileUris = new Set(repositoryState.shortHeadsToFileList.get(shortHead) || []);
+  const fileUris = new Set(
+    repositoryState.shortHeadsToFileList.get(shortHead) || [],
+  );
 
-  const oldOpenEditors = getRepoPathToEditors().get(repository.getWorkingDirectory()) || [];
-  const oldOpenUris = oldOpenEditors.map(textEditor => textEditor.getPath() || '');
+  const oldOpenEditors = getRepoPathToEditors().get(
+    repository.getWorkingDirectory(),
+  ) || [];
+  const oldOpenUris = oldOpenEditors.map(
+    textEditor => textEditor.getPath() || '',
+  );
 
-  const editorsToReload = oldOpenEditors
-    .filter(textEditor => fileUris.has(textEditor.getPath() || ''));
-  const editorsToClose = oldOpenEditors
-    .filter(textEditor => !fileUris.has(textEditor.getPath() || ''));
-  const urisToOpen = Array.from(fileUris)
-    .filter(fileUri => oldOpenUris.indexOf(fileUri) === -1);
+  const editorsToReload = oldOpenEditors.filter(textEditor =>
+    fileUris.has(textEditor.getPath() || ''),
+  );
+  const editorsToClose = oldOpenEditors.filter(
+    textEditor => !fileUris.has(textEditor.getPath() || ''),
+  );
+  const urisToOpen = Array.from(fileUris).filter(
+    fileUri => oldOpenUris.indexOf(fileUri) === -1,
+  );
 
   return Observable.concat(
     Observable.of({
@@ -145,6 +156,13 @@ function restorePaneItemState(
           textEditor.destroy();
         }
       })
+      .catch(error => {
+        getLogger('nuclide-bookshelf').error(
+          'bookshelf failed to close some editors',
+          error,
+        );
+        return Observable.empty();
+      })
       .ignoreElements(),
     // Note: the reloading step can be omitted if the file watchers are proven to be robust.
     // But that's not the case; hence, a reload on bookmark switch/restore doesn't hurt.
@@ -159,10 +177,24 @@ function restorePaneItemState(
           return Observable.fromPromise(textEditor.getBuffer().load());
         }
       })
+      .catch(error => {
+        getLogger('nuclide-bookshelf').error(
+          'bookshelf failed to reload some editors',
+          error,
+        );
+        return Observable.empty();
+      })
       .ignoreElements(),
     Observable.from(urisToOpen)
       .flatMap(fileUri => {
         return Observable.fromPromise(goToLocation(fileUri));
+      })
+      .catch(error => {
+        getLogger('nuclide-bookshelf').error(
+          'bookshelf failed to open some editors',
+          error,
+        );
+        return Observable.empty();
       })
       .ignoreElements(),
     Observable.of({

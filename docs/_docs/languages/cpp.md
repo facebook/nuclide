@@ -189,10 +189,11 @@ Nuclide can attach to a running C++ process (after
 [adding a C++ project](/docs/quick-start/getting-started/#adding-a-project) to Nuclide). Once you
 compile your code, run it.
 
+NOTE: C++ debugging in Nuclide is not currently supported on Windows.
+
 1. Open the Debugger Selection window by pressing `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) or by clicking on the **Toggle Debugger** button in the [Nuclide toolbar](/docs/features/toolbar/#buttons).
-2. Switch the debugging type to **C++**.
-3. Select **Attach** from the **Action** drop-down menu.
-4. Find your process in the list, and click the **Attach** button.
+2. Choose the **Native** tab.
+3. Find your process in the list, and click the **Attach** button.
 
 <img src="/static/images/docs/feature-debugger-languages-cpp-attach.png" width="545" />
 
@@ -203,16 +204,15 @@ You can then debug your code normally, [following the Debugger guide](/docs/feat
 
 Launching a process is similar to the Attach flow.
 
-1. Open the Debugger Selection window by pressing `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) or by clicking on the **Toggle Debugger** button in the [Nuclide toolbar](/docs/features/toolbar/#buttons).
-2. Switch the debugging type to **C++**.
-3. Select **Launch** from the **Action** drop-down menu
-4. Fill out the fields, and click the **Launch** button.
+1. Open the Debugger Launch dialog by pressing `Cmd-F8` (`Ctrl-F8` on Linux) or by clicking on the **Toggle Debugger** button in the [Nuclide toolbar](/docs/features/toolbar/#buttons).
+2. Choose the **Native** tab.
+3. Fill out the fields, and click the **Launch** button.
 
 <img src="/static/images/docs/feature-debugger-languages-cpp-launch.png" width="545" />
 
 ### Debugging a Buck target
 
-See the [Buck guide](/docs/features/buck#debug) for instructions on how to debug C++ Buck targets.
+See the [Buck guide](/docs/features/task-runner/#buck__debug) for instructions on how to debug C++ Buck targets.
 
 ### LLDB Commands
 

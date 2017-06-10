@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {sanitizeNuclideUri} from '../lib/utils';
@@ -19,7 +20,8 @@ describe('Utils Test Suite', () => {
     });
 
     it('returns a clean url from a normalized and path prepended url version', () => {
-      const brokenUrl = '/some_path/abosolute/atom/nuclide:/abc.fb.com/some/path';
+      const brokenUrl =
+        '/some_path/abosolute/atom/nuclide:/abc.fb.com/some/path';
       const fixedUrl = sanitizeNuclideUri(brokenUrl);
       expect(fixedUrl).toBe('nuclide://abc.fb.com/some/path');
     });

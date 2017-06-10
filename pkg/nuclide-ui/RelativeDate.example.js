@@ -6,17 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
+import {Block} from 'nuclide-commons-ui/Block';
 import RelativeDate from './RelativeDate';
 
 const RelativeDateExample = (): React.Element<any> => (
   <div>
     <Block>
-      <div>Updated every 10 seconds (default): "<RelativeDate date={new Date()} />"</div>
-      <div>Updated every 1 second: "<RelativeDate date={new Date()} delay={1000} />"</div>
+      <div>
+        Updated every 10 seconds (default): "<RelativeDate date={new Date()} />"
+      </div>
+      <div>
+        Updated every 1 second: "
+        <RelativeDate date={new Date()} delay={1000} />
+        "
+      </div>
     </Block>
   </div>
 );

@@ -6,18 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {HyperclickProvider} from '../../hyperclick/lib/types';
-import type {Outline} from '../../nuclide-outline-view/lib/rpc-types';
-import type {OutlineProvider} from '../../nuclide-outline-view';
+import type {
+  CodeFormatProvider,
+  HyperclickProvider,
+  Outline,
+  OutlineProvider,
+} from 'atom-ide-ui';
 
 import {CompositeDisposable} from 'atom';
 
 import {getOutline} from './JSONOutlineProvider';
 import {getNPMHyperclickProvider} from './NPMHyperclickProvider';
 
-import type {CodeFormatProvider} from '../../nuclide-code-format/lib/types';
 import CodeFormatHelpers from './CodeFormatHelpers';
 
 class Activation {

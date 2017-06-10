@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -44,10 +45,10 @@ export class Section extends React.Component {
   constructor(props: Props) {
     super(props);
     const initialIsCollapsed: boolean =
-      this.props.collapsable != null
-      && this.props.collapsable
-      && this.props.collapsedByDefault != null
-      && this.props.collapsedByDefault;
+      this.props.collapsable != null &&
+      this.props.collapsable &&
+      this.props.collapsedByDefault != null &&
+      this.props.collapsedByDefault;
     this.state = {
       isCollapsed: initialIsCollapsed,
     };
@@ -67,25 +68,25 @@ export class Section extends React.Component {
   }
 
   render(): React.Element<any> {
-    const collapsable: boolean = (this.props.collapsable != null)
+    const collapsable: boolean = this.props.collapsable != null
       ? this.props.collapsable
       : false;
     const collapsed = this.props.collapsed == null
       ? this.state.isCollapsed
       : this.props.collapsed;
     // Only include classes if the component is collapsable
-    const iconClass = classnames(
-      {
-        'icon': collapsable,
-        'icon-chevron-down': collapsable && !collapsed,
-        'icon-chevron-right': collapsable && collapsed,
-        'nuclide-ui-section-collapsable': collapsable,
-      },
-    );
+    const iconClass = classnames({
+      icon: collapsable,
+      'icon-chevron-down': collapsable && !collapsed,
+      'icon-chevron-right': collapsable && collapsed,
+      'nuclide-ui-section-collapsable': collapsable,
+    });
     const conditionalProps = {};
     if (collapsable) {
       conditionalProps.onClick = this._toggleCollapsed;
-      conditionalProps.title = collapsed ? 'Click to expand' : 'Click to collapse';
+      conditionalProps.title = collapsed
+        ? 'Click to expand'
+        : 'Click to collapse';
     }
     const HeadlineComponent = getHeadlineComponent(this.props.size);
     return (
@@ -93,7 +94,9 @@ export class Section extends React.Component {
         <HeadlineComponent className={iconClass} {...conditionalProps}>
           {this.props.headline}
         </HeadlineComponent>
-        <div style={(collapsed) ? {display: 'none'} : {}}>{this.props.children}</div>
+        <div style={collapsed ? {display: 'none'} : {}}>
+          {this.props.children}
+        </div>
       </div>
     );
   }
@@ -101,8 +104,11 @@ export class Section extends React.Component {
 
 function getHeadlineComponent(size?: string): 'h6' | 'h5' | 'h3' {
   switch (size) {
-    case 'small': return 'h6';
-    case 'medium': return 'h5';
-    default: return 'h3';
+    case 'small':
+      return 'h6';
+    case 'medium':
+      return 'h5';
+    default:
+      return 'h3';
   }
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /*
@@ -20,9 +21,11 @@ import type {
   RefactorProvider,
 } from '..';
 
+import type {RefactorEditResponse} from './rpc-types';
+
 export type Store = {
   // Returns unsubscribe function
-  subscribe(fn: () => mixed): (() => void),
+  subscribe(fn: () => mixed): () => void,
   dispatch(action: RefactorAction): void,
   getState(): RefactorState,
 };
@@ -80,12 +83,27 @@ export type ExecutePhase = {|
   type: 'execute',
 |};
 
+// For multi-file changes, add a confirmation step.
+export type ConfirmPhase = {|
+  type: 'confirm',
+  response: RefactorEditResponse,
+|};
+
+export type ProgressPhase = {|
+  type: 'progress',
+  message: string,
+  value: number,
+  max: number,
+|};
+
 export type Phase =
-  GetRefactoringsPhase |
-  PickPhase |
-  RenamePhase |
-  FreeformPhase |
-  ExecutePhase;
+  | GetRefactoringsPhase
+  | PickPhase
+  | RenamePhase
+  | FreeformPhase
+  | ExecutePhase
+  | ConfirmPhase
+  | ProgressPhase;
 
 export type RefactoringPhase = RenamePhase | FreeformPhase;
 
@@ -135,10 +153,36 @@ export type ExecuteAction = {|
   },
 |};
 
+export type ConfirmAction = {|
+  type: 'confirm',
+  payload: {
+    response: RefactorEditResponse,
+  },
+|};
+
+export type ApplyAction = {|
+  type: 'apply',
+  payload: {
+    response: RefactorEditResponse,
+  },
+|};
+
+export type ProgressAction = {|
+  type: 'progress',
+  payload: {
+    message: string,
+    value: number,
+    max: number,
+  },
+|};
+
 export type RefactorAction =
-  OpenAction |
-  CloseAction |
-  PickedRefactorAction |
-  GotRefactoringsAction |
-  ErrorAction |
-  ExecuteAction;
+  | OpenAction
+  | CloseAction
+  | PickedRefactorAction
+  | GotRefactoringsAction
+  | ErrorAction
+  | ExecuteAction
+  | ConfirmAction
+  | ApplyAction
+  | ProgressAction;

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export const EVENT_HANDLER_SELECTOR = '.nuclide-file-tree';

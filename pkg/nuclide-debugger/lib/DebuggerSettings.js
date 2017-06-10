@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ThreadColumn} from '../../nuclide-debugger-base/lib/types';

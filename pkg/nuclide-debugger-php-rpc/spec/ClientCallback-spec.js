@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ClientCallback as ClientCallbackType} from '../lib/ClientCallback';
@@ -23,9 +24,10 @@ describe('debugger-php-rpc ClientCallback', () => {
     ]);
     spyOn(require('rxjs'), 'Subject').andReturn(observableSpy);
     spyOn(require('rxjs'), 'ReplaySubject').andReturn(observableSpy);
-    const {ClientCallback} = ((
-      uncachedRequire(require, '../lib/ClientCallback'): any
-    ): {ClientCallback: () => ClientCallbackType});
+    const {ClientCallback} = ((uncachedRequire(
+      require,
+      '../lib/ClientCallback',
+    ): any): {ClientCallback: () => ClientCallbackType});
     clientCallback = new ClientCallback();
   });
 
@@ -40,23 +42,30 @@ describe('debugger-php-rpc ClientCallback', () => {
 
   it('sendServerMethod: args', () => {
     clientCallback.sendServerMethod('method1', {arg1: 12});
-    expect(observableSpy.next).toHaveBeenCalledWith('{"method":"method1","params":{"arg1":12}}');
+    expect(observableSpy.next).toHaveBeenCalledWith(
+      '{"method":"method1","params":{"arg1":12}}',
+    );
   });
 
   it('replyWithError', () => {
     clientCallback.replyWithError(42, 'error-msg');
-    expect(observableSpy.next).toHaveBeenCalledWith('{"id":42,"result":{},"error":"error-msg"}');
+    expect(observableSpy.next).toHaveBeenCalledWith(
+      '{"id":42,"result":{},"error":"error-msg"}',
+    );
   });
 
   it('replyToCommand: no-error', () => {
     clientCallback.replyToCommand(42, {result: 'value'});
-    expect(observableSpy.next).toHaveBeenCalledWith('{"id":42,"result":{"result":"value"}}');
+    expect(observableSpy.next).toHaveBeenCalledWith(
+      '{"id":42,"result":{"result":"value"}}',
+    );
   });
 
   it('replyToCommand: error', () => {
     clientCallback.replyToCommand(42, {result: 'value'}, 'error-msg');
     expect(observableSpy.next).toHaveBeenCalledWith(
-      '{"id":42,"result":{"result":"value"},"error":"error-msg"}');
+      '{"id":42,"result":{"result":"value"},"error":"error-msg"}',
+    );
   });
 
   it('sendUserMessage console', () => {

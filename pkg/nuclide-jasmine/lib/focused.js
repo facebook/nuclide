@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -30,7 +31,8 @@ const jasmine: {
       iit?: () => void,
     },
   },
-} = global.jasmine;
+} =
+  global.jasmine;
 
 function setGlobalFocusPriority(priority) {
   const env = jasmine.getEnv();

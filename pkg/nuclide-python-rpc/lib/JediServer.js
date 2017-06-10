@@ -6,14 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as JediService from './JediService';
-import type {ProcessMaker} from '../../nuclide-rpc/lib/RpcProcess';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {safeSpawn} from '../../commons-node/process';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {spawn} from 'nuclide-commons/process';
 import {RpcProcess} from '../../nuclide-rpc';
 import {ServiceRegistry, loadServicesConfig} from '../../nuclide-rpc';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
@@ -26,6 +26,7 @@ const OPTS = {
   stdio: 'pipe',
   detached: false, // When Atom is killed, server process should be killed.
   env: {PYTHONPATH: LIB_PATH},
+  /* TODO(T17353599) */ isExitError: () => false,
 };
 
 let serviceRegistry: ?ServiceRegistry = null;
@@ -45,7 +46,11 @@ export default class JediServer {
   _process: RpcProcess;
   _isDisposed: boolean;
 
-  constructor(src: string, pythonPath: string = PYTHON_EXECUTABLE, paths?: Array<string> = []) {
+  constructor(
+    src: string,
+    pythonPath: string = PYTHON_EXECUTABLE,
+    paths?: Array<string> = [],
+  ) {
     // Generate a name for this server using the src file name, used to namespace logs
     const name = `JediServer-${nuclideUri.basename(src)}`;
     let args = [PROCESS_PATH, '-s', src];
@@ -53,8 +58,8 @@ export default class JediServer {
       args.push('-p');
       args = args.concat(paths);
     }
-    const createProcess: ProcessMaker = () => safeSpawn(pythonPath, args, OPTS);
-    this._process = new RpcProcess(name, getServiceRegistry(), createProcess);
+    const processStream = spawn(pythonPath, args, OPTS);
+    this._process = new RpcProcess(name, getServiceRegistry(), processStream);
     this._isDisposed = false;
   }
 

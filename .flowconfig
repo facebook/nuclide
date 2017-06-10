@@ -7,6 +7,7 @@
 <PROJECT_ROOT>/node_modules/react/.*
 <PROJECT_ROOT>/node_modules/rxjs/.*
 <PROJECT_ROOT>/node_modules/semver/.*
+<PROJECT_ROOT>/node_modules/jest-validate/.*
 ; annotated with `@flow` but have errors
 <PROJECT_ROOT>/node_modules/fbjs/lib/.*
 <PROJECT_ROOT>/pkg/nuclide-node-transpiler/spec/fixtures/.*
@@ -22,6 +23,9 @@ emoji=true
 experimental.const_params=true
 experimental.strict_type_args=true
 module.use_strict=true
+module.system.node.resolve_dirname=node_modules
+; 'modules' is added to the NODE_PATH via nuclide-node-transpiler.
+module.system.node.resolve_dirname=modules
 unsafe.enable_getters_and_setters=true
 
 suppress_comment=.*\\$FlowFixMe.*
@@ -31,4 +35,4 @@ suppress_comment=.*\\$FlowIgnore.*
 ; suppress_comment=.*\\$FlowFB.*
 
 [version]
-0.42.0
+0.47.0

@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 
 import type {EvaluationResult} from '../nuclide-debugger/lib/types';
 
-export function TextRenderer(evaluationResult: EvaluationResult): ?React.Element<any> {
+export function TextRenderer(
+  evaluationResult: EvaluationResult,
+): ?React.Element<any> {
   const {type, value} = evaluationResult;
   if (type === 'text') {
     return <span>{value}</span>;

@@ -6,12 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
+import type {
+  WorkspaceViewsService,
+} from '../../nuclide-workspace-views/lib/types';
 
-import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {
+  viewableFromReactElement,
+} from '../../commons-atom/viewableFromReactElement';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ExampleGadgetA, WORKSPACE_VIEW_URI_A} from './ExampleGadgetA';
 import {ExampleGadgetB, WORKSPACE_VIEW_URI_B} from './ExampleGadgetB';
 import invariant from 'assert';
@@ -40,7 +45,9 @@ export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
     atom.commands.add(
       'atom-workspace',
       'sample-toggle-example-gadget-a:toggle',
-      event => { api.toggle(WORKSPACE_VIEW_URI_A, (event: any).detail); },
+      event => {
+        api.toggle(WORKSPACE_VIEW_URI_A, (event: any).detail);
+      },
     ),
   );
 
@@ -55,7 +62,9 @@ export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
     atom.commands.add(
       'atom-workspace',
       'sample-toggle-example-gadget-b:toggle',
-      event => { api.toggle(WORKSPACE_VIEW_URI_B, (event: any).detail); },
+      event => {
+        api.toggle(WORKSPACE_VIEW_URI_B, (event: any).detail);
+      },
     ),
   );
 }

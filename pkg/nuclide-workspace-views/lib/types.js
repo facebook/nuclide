@@ -6,67 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TrackingEvent} from '../../nuclide-analytics';
 
-/**
- * The object used as items in locations. This is based on the supported interface for items in Atom
- * panes. That way, we maintain compatibility with Atom (upstream?) and can put them in panes as-is.
- *
- * The truth is that these models can have any methods they want. Packages define ad-hoc protocols
- * and check to see if the item implements them. For example, atom-tabs will call `getIconName()` if
- * it exists. We have some of our own optional methods which, for clarity's sake, are defined here,
- * even though they're only used by some of our location packages.
- *
- * IMPORTANT: All properties and methods must be optional so that we maintain compatibility with
- * non-nuclide items.
- */
-export type Viewable = atom$PaneItem & {
-  // Used by PanelLocation to get an initial size for the panel.
-  +getPreferredInitialHeight?: () => number,
-  +getPreferredInitialWidth?: () => number,
-  +didChangeVisibility?: (visible: boolean) => void,
-  +getDefaultLocation?: () => string,
-};
+import type {
+  Viewable,
+  Opener,
+  OpenOptions,
+  Location,
+  LocationFactory,
+  ToggleOptions,
+  WorkspaceViewsService,
+} from 'nuclide-commons-atom/workspace-views-compat';
 
-export type Opener = (uri: string) => ?Viewable;
-
-export type OpenOptions = {
-  activateItem?: boolean,
-  activateLocation?: boolean,
-  searchAllPanes?: boolean,
-};
-
-export type Location = {
-  activate(): void,
-  activateItem(item: Object): void,
-  addItem(item: Object): void,
-  destroy(): void,
-  destroyItem(item: Object): void,
-  getItems(): Array<Viewable>,
-  hideItem(item: Viewable): void,
-  itemIsVisible(item: Viewable): boolean,
-  serialize(): ?Object,
-
-  onDidAddItem(cb: (item: Viewable) => void): IDisposable,
-};
-
-export type LocationFactory = {
-  id: string,
-  create(serializedState: ?Object): Location,
-};
-
-export type ToggleOptions = {
-  visible?: ?boolean,
-};
-
-export type WorkspaceViewsService = {
-  addOpener(opener: Opener): IDisposable,
-  destroyWhere(predicate: (item: Viewable) => boolean): void,
-  open(uri: string, options?: OpenOptions): void,
-  registerLocation(factory: LocationFactory): IDisposable,
-  toggle(uri: string, options?: ToggleOptions): void,
+export type {
+  Viewable,
+  Opener,
+  OpenOptions,
+  Location,
+  LocationFactory,
+  ToggleOptions,
+  WorkspaceViewsService,
 };
 
 export type AppState = {
@@ -187,7 +149,7 @@ type TrackAction = {
 };
 
 export type Action =
-  AddOpenerAction
+  | AddOpenerAction
   | DestroyWhereAction
   | DidActivateInitialPackagesAction
   | RemoveOpenerAction

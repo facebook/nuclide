@@ -6,6 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export {AtomLanguageService} from './AtomLanguageService';
+export {getHostServices} from './HostServices';

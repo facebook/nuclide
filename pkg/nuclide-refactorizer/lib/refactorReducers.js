@@ -6,16 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AvailableRefactoring} from '..';
 
 import type {
+  ConfirmAction,
   ExecuteAction,
   GotRefactoringsAction,
   OpenAction,
   PickedRefactorAction,
   PickPhase,
+  ProgressAction,
   RefactorAction,
   RefactoringPhase,
   RefactorState,
@@ -49,6 +52,10 @@ export default function refactorReducers(
       return pickedRefactor(state, action);
     case 'execute':
       return executeRefactor(state, action);
+    case 'confirm':
+      return confirmRefactor(state, action);
+    case 'progress':
+      return progress(state, action);
     default:
       return state;
   }
@@ -66,7 +73,10 @@ function open(state: RefactorState, action: OpenAction): RefactorState {
   };
 }
 
-function gotRefactorings(state: RefactorState, action: GotRefactoringsAction): RefactorState {
+function gotRefactorings(
+  state: RefactorState,
+  action: GotRefactoringsAction,
+): RefactorState {
   invariant(state.type === 'open');
   invariant(state.phase.type === 'get-refactorings');
 
@@ -92,7 +102,10 @@ function close(state: RefactorState): RefactorState {
   };
 }
 
-function pickedRefactor(state: RefactorState, action: PickedRefactorAction): RefactorState {
+function pickedRefactor(
+  state: RefactorState,
+  action: PickedRefactorAction,
+): RefactorState {
   invariant(state.type === 'open');
   invariant(state.phase.type === 'pick');
 
@@ -129,13 +142,43 @@ function getRefactoringPhase(
   }
 }
 
-function executeRefactor(state: RefactorState, action: ExecuteAction): RefactorState {
+function executeRefactor(
+  state: RefactorState,
+  action: ExecuteAction,
+): RefactorState {
   invariant(state.type === 'open');
   return {
     type: 'open',
     ui: state.ui,
     phase: {
       type: 'execute',
+    },
+  };
+}
+
+function confirmRefactor(
+  state: RefactorState,
+  action: ConfirmAction,
+): RefactorState {
+  invariant(state.type === 'open');
+  return {
+    type: 'open',
+    ui: state.ui,
+    phase: {
+      type: 'confirm',
+      response: action.payload.response,
+    },
+  };
+}
+
+function progress(state: RefactorState, action: ProgressAction): RefactorState {
+  invariant(state.type === 'open');
+  return {
+    type: 'open',
+    ui: state.ui,
+    phase: {
+      type: 'progress',
+      ...action.payload,
     },
   };
 }

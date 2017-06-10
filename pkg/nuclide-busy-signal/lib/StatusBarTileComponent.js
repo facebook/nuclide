@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -23,10 +24,9 @@ export class StatusBarTileComponent extends React.Component {
   }
 
   render(): React.Element<any> {
-    const classes = classnames(
-      'nuclide-busy-signal-status-bar',
-      {'loading-spinner-tiny': this.props.busy},
-    );
+    const classes = classnames('nuclide-busy-signal-status-bar', {
+      'loading-spinner-tiny': this.props.busy,
+    });
     return <div className={classes} />;
   }
 }

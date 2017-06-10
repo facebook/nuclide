@@ -6,17 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileLineBreakpoint} from './types';
 
 import type BreakpointStore from './BreakpointStore';
 import type DebuggerActions from './DebuggerActions';
-import {DebuggerMode} from './DebuggerStore';
 
 import invariant from 'assert';
-import {bufferPositionForMouseEvent} from '../../commons-atom/mouse-to-position';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {
+  bufferPositionForMouseEvent,
+} from 'nuclide-commons-atom/mouse-to-position';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {showMenuForEvent} from '../../commons-atom/context-menu';
 
 /**
  * A single delegate which handles events from the object.
@@ -49,6 +52,7 @@ export default class BreakpointDisplayController {
   _markerInfo: Map<number, BreakpointMarkerProperties>;
   _lastShadowBreakpointMarker: ?atom$Marker;
   _boundGlobalMouseMoveHandler: (event: MouseEvent) => void;
+  _boundCreateContextMenuHandler: (event: MouseEvent) => void;
   _debugging: boolean;
 
   constructor(
@@ -66,14 +70,10 @@ export default class BreakpointDisplayController {
     this._markerInfo = new Map();
     this._lastShadowBreakpointMarker = null;
     this._boundGlobalMouseMoveHandler = this._handleGlobalMouseLeave.bind(this);
-
-    const debuggerStore = this._breakpointStore.getDebuggerStore();
-    if (debuggerStore) {
-      const mode = debuggerStore.getDebuggerMode();
-      this._debugging = (mode !== DebuggerMode.STOPPED && mode !== DebuggerMode.STOPPING);
-    } else {
-      this._debugging = false;
-    }
+    this._boundCreateContextMenuHandler = this._handleCreateContextMenu.bind(
+      this,
+    );
+    this._debugging = this._isDebugging();
 
     // Configure the gutter.
     const gutter = editor.addGutter({
@@ -86,10 +86,32 @@ export default class BreakpointDisplayController {
     this._disposables.add(
       gutter.onDidDestroy(this._handleGutterDestroyed.bind(this)),
       editor.observeGutters(this._registerGutterMouseHandlers.bind(this)),
-      this._breakpointStore.onNeedUIUpdate(this._handleBreakpointsChanged.bind(this)),
+      this._breakpointStore.onNeedUIUpdate(
+        this._handleBreakpointsChanged.bind(this),
+      ),
       this._editor.onDidDestroy(this._handleTextEditorDestroyed.bind(this)),
+      this._registerEditorContextMenuHandler(),
     );
     this._update();
+  }
+
+  _isDebugging(): boolean {
+    const debuggerStore = this._breakpointStore.getDebuggerStore();
+    return debuggerStore != null && debuggerStore.isDebugging();
+  }
+
+  _registerEditorContextMenuHandler(): IDisposable {
+    const editorElement = atom.views.getView(this._editor);
+    editorElement.addEventListener(
+      'contextmenu',
+      this._boundCreateContextMenuHandler,
+    );
+    return new UniversalDisposable(() =>
+      editorElement.removeEventListener(
+        'contextmenu',
+        this._boundCreateContextMenuHandler,
+      ),
+    );
   }
 
   _registerGutterMouseHandlers(gutter: atom$Gutter): void {
@@ -106,13 +128,45 @@ export default class BreakpointDisplayController {
     gutterView.addEventListener('mousemove', boundMouseMoveHandler);
     gutterView.addEventListener('mouseenter', boundMouseEnterHandler);
     gutterView.addEventListener('mouseleave', boundMouseLeaveHandler);
+    gutterView.addEventListener(
+      'contextmenu',
+      this._boundCreateContextMenuHandler,
+    );
     this._disposables.add(
       () => gutterView.removeEventListener('click', boundClickHandler),
       () => gutterView.removeEventListener('mousemove', boundMouseMoveHandler),
-      () => gutterView.removeEventListener('mouseenter', boundMouseEnterHandler),
-      () => gutterView.removeEventListener('mouseleave', boundMouseLeaveHandler),
-      () => window.removeEventListener('mousemove', this._boundGlobalMouseMoveHandler),
+      () =>
+        gutterView.removeEventListener('mouseenter', boundMouseEnterHandler),
+      () =>
+        gutterView.removeEventListener('mouseleave', boundMouseLeaveHandler),
+      () =>
+        gutterView.removeEventListener(
+          'contextmenu',
+          this._boundCreateContextMenuHandler,
+        ),
+      () =>
+        window.removeEventListener(
+          'mousemove',
+          this._boundGlobalMouseMoveHandler,
+        ),
     );
+  }
+
+  _handleCreateContextMenu(event: MouseEvent): void {
+    if (event.button !== 2 || !this._isDebugging()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menuTemplate = atom.contextMenu.templateForEvent(event);
+    const debuggerGroupIndex = menuTemplate.findIndex(
+      item => item.label === 'Debugger',
+    );
+    const [debuggerGroup] = menuTemplate.splice(debuggerGroupIndex, 1);
+    menuTemplate.unshift(...debuggerGroup.submenu, {type: 'separator'});
+    showMenuForEvent(event, menuTemplate);
   }
 
   dispose() {
@@ -168,12 +222,7 @@ export default class BreakpointDisplayController {
       return;
     }
 
-    let debugging = true;
-    const debuggerStore = this._breakpointStore.getDebuggerStore();
-    if (debuggerStore) {
-      const mode = debuggerStore.getDebuggerMode();
-      debugging = mode !== DebuggerMode.STOPPED && mode !== DebuggerMode.STOPPING;
-    }
+    const debugging = this._isDebugging();
 
     const path = this._editor.getPath();
     if (path == null) {
@@ -181,16 +230,20 @@ export default class BreakpointDisplayController {
     }
     const breakpoints = this._breakpointStore.getBreakpointsForPath(path);
     // A mutable unhandled lines map.
-    const unhandledLines = this._breakpointStore.getBreakpointLinesForPath(path);
+    const unhandledLines = this._breakpointStore.getBreakpointLinesForPath(
+      path,
+    );
     const markersToKeep = [];
 
     // Destroy markers that no longer correspond to breakpoints.
     this._markers.forEach(marker => {
       const line = marker.getStartBufferPosition().row;
       const bp = this._breakpointStore.getBreakpointAtLine(path, line);
-      if (debugging === this._debugging &&
-          unhandledLines.has(line) &&
-          !this._needsUpdate(line, bp)) {
+      if (
+        debugging === this._debugging &&
+        unhandledLines.has(line) &&
+        !this._needsUpdate(line, bp)
+      ) {
         markersToKeep.push(marker);
         unhandledLines.delete(line);
       } else {
@@ -237,10 +290,21 @@ export default class BreakpointDisplayController {
       return;
     }
     if (!event.isValid) {
-      this._debuggerActions.deleteBreakpoint(path, event.newHeadBufferPosition.row);
-    } else if (event.oldHeadBufferPosition.row !== event.newHeadBufferPosition.row) {
-      this._debuggerActions.deleteBreakpoint(path, event.oldHeadBufferPosition.row);
-      this._debuggerActions.addBreakpoint(path, event.newHeadBufferPosition.row);
+      this._debuggerActions.deleteBreakpoint(
+        path,
+        event.newHeadBufferPosition.row,
+      );
+    } else if (
+      event.oldHeadBufferPosition.row !== event.newHeadBufferPosition.row
+    ) {
+      this._debuggerActions.deleteBreakpoint(
+        path,
+        event.oldHeadBufferPosition.row,
+      );
+      this._debuggerActions.addBreakpoint(
+        path,
+        event.newHeadBufferPosition.row,
+      );
     }
   }
 
@@ -261,7 +325,24 @@ export default class BreakpointDisplayController {
     if (!path) {
       return;
     }
-    this._debuggerActions.toggleBreakpoint(path, this._getCurrentMouseEventLine(event));
+
+    // Don't toggle a breakpoint if the user clicked on something in the gutter that is not
+    // the debugger, such as clicking on a line number to select the line.
+    if (
+      !target.classList.contains('nuclide-debugger-shadow-breakpoint-icon') &&
+      !target.classList.contains('nuclide-debugger-breakpoint-icon') &&
+      !target.classList.contains('nuclide-debugger-breakpoint-icon-disabled') &&
+      !target.classList.contains('nuclide-debugger-breakpoint-icon-unresolved')
+    ) {
+      return;
+    }
+
+    try {
+      const curLine = this._getCurrentMouseEventLine(event);
+      this._debuggerActions.toggleBreakpoint(path, curLine);
+    } catch (e) {
+      return;
+    }
   }
 
   _getCurrentMouseEventLine(event: Event): number {
@@ -271,14 +352,18 @@ export default class BreakpointDisplayController {
   }
 
   _handleGutterMouseMove(event: Event): void {
-    const curLine = this._getCurrentMouseEventLine(event);
-    if (this._isLineOverLastShadowBreakpoint(curLine)) {
+    try {
+      const curLine = this._getCurrentMouseEventLine(event);
+      if (this._isLineOverLastShadowBreakpoint(curLine)) {
+        return;
+      }
+      // User moves to a new line we need to delete the old shadow breakpoint
+      // and create a new one.
+      this._removeLastShadowBreakpoint();
+      this._createShadowBreakpointAtLine(this._editor, curLine);
+    } catch (e) {
       return;
     }
-    // User moves to a new line we need to delete the old shadow breakpoint
-    // and create a new one.
-    this._removeLastShadowBreakpoint();
-    this._createShadowBreakpointAtLine(this._editor, curLine);
   }
 
   _handleGutterMouseEnter(event: Event): void {
@@ -302,7 +387,10 @@ export default class BreakpointDisplayController {
       event.clientY > rect.bottom
     ) {
       this._removeLastShadowBreakpoint();
-      window.removeEventListener('mousemove', this._boundGlobalMouseMoveHandler);
+      window.removeEventListener(
+        'mousemove',
+        this._boundGlobalMouseMoveHandler,
+      );
     }
   }
 
@@ -312,8 +400,10 @@ export default class BreakpointDisplayController {
 
   _isLineOverLastShadowBreakpoint(curLine: number): boolean {
     const shadowBreakpointMarker = this._lastShadowBreakpointMarker;
-    return shadowBreakpointMarker != null &&
-      shadowBreakpointMarker.getStartBufferPosition().row === curLine;
+    return (
+      shadowBreakpointMarker != null &&
+      shadowBreakpointMarker.getStartBufferPosition().row === curLine
+    );
   }
 
   _removeLastShadowBreakpoint(): void {
@@ -324,8 +414,9 @@ export default class BreakpointDisplayController {
   }
 
   _createShadowBreakpointAtLine(editor: TextEditor, line: number): void {
-    const breakpointsAtLine = this._markers
-      .filter(marker => marker.getStartBufferPosition().row === line);
+    const breakpointsAtLine = this._markers.filter(
+      marker => marker.getStartBufferPosition().row === line,
+    );
 
     // Don't create a shadow breakpoint at a line that already has a breakpoint.
     if (breakpointsAtLine.length === 0) {
@@ -353,10 +444,13 @@ export default class BreakpointDisplayController {
     const unresolved = this._debugging && !resolved;
     const elem: HTMLElement = document.createElement('span');
     elem.dataset.line = line.toString();
-    elem.className = isShadow ? 'nuclide-debugger-shadow-breakpoint-icon' :
-      (!enabled) ? 'nuclide-debugger-breakpoint-icon-disabled' :
-      unresolved ? 'nuclide-debugger-breakpoint-icon-unresolved' :
-        'nuclide-debugger-breakpoint-icon';
+    elem.className = isShadow
+      ? 'nuclide-debugger-shadow-breakpoint-icon'
+      : !enabled
+          ? 'nuclide-debugger-breakpoint-icon-disabled'
+          : unresolved
+              ? 'nuclide-debugger-breakpoint-icon-unresolved'
+              : 'nuclide-debugger-breakpoint-icon';
 
     if (!isShadow) {
       if (!enabled) {

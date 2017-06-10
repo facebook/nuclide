@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
@@ -57,13 +58,19 @@ export class TypeHintProvider<T: LanguageService> {
         config.priority,
         config.analyticsEventName,
         connectionToLanguageService,
-      ));
+      ),
+    );
   }
 
-  async typeHint(editor: atom$TextEditor, position: atom$Point): Promise<?TypeHint> {
+  async typeHint(
+    editor: atom$TextEditor,
+    position: atom$Point,
+  ): Promise<?TypeHint> {
     return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
-      const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
+      const languageService = this._connectionToLanguageService.getForUri(
+        editor.getPath(),
+      );
       if (languageService == null || fileVersion == null) {
         return null;
       }

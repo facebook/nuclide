@@ -6,14 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import logger from './utils';
 import invariant from 'assert';
-import singleton from '../../commons-node/singleton';
 import xml2js from 'xml2js';
-
-const GLOBAL_HHVM_DEBUGGER_KEY = '_global_hhvm_debugger_key';
 
 type DbgpMessage = {
   length: number,
@@ -46,7 +44,7 @@ export class DbgpMessageHandler {
      * 2: length<NULL>xml-part1.
      * >=3: Other scenarios.
      */
-    logger.log(`Total components: ${components.length}`);
+    logger.debug(`Total components: ${components.length}`);
 
     // Merge head component with prevIncompletedMessage if needed.
     const results = [];
@@ -63,21 +61,25 @@ export class DbgpMessageHandler {
 
     // Verify that we can't get another message without completing previous one.
     if (prevIncompletedMessage && components.length !== 0) {
-      logger.logErrorAndThrow(
+      const message =
         'Error: got extra messages without completing previous message. ' +
         `Previous message was: ${JSON.stringify(prevIncompletedMessage)}. ` +
-        `Remaining components: ${JSON.stringify(components)}`,
-      );
+        `Remaining components: ${JSON.stringify(components)}`;
+      logger.error(message);
+      throw new Error(message);
     }
 
-    const isIncompleteResponse = (components.length % 2 === 0);
+    const isIncompleteResponse = components.length % 2 === 0;
 
     // Verify empty tail component for completed response.
     if (!isIncompleteResponse) {
       const lastComponent = components.pop();
       if (lastComponent.length !== 0) {
-        logger.logErrorAndThrow('The complete response should terminate with' +
-          ` zero character while got: ${lastComponent} `);
+        const message =
+          'The complete response should terminate with' +
+          ` zero character while got: ${lastComponent} `;
+        logger.error(message);
+        throw new Error(message);
       }
     }
 
@@ -89,8 +91,11 @@ export class DbgpMessageHandler {
       const length = Number(components.pop());
       const lastMessage = {length, content};
       if (!this._isIncompletedMessage(lastMessage)) {
-        logger.logErrorAndThrow('The last message should be a fragment of a full message: ' +
-          JSON.stringify(lastMessage));
+        const message =
+          'The last message should be a fragment of a full message: ' +
+          JSON.stringify(lastMessage);
+        logger.error(message);
+        throw new Error(message);
       }
       prevIncompletedMessage = lastMessage;
     }
@@ -103,11 +108,12 @@ export class DbgpMessageHandler {
         content: components.shift(),
       };
       if (!this._isCompletedMessage(message)) {
-        logger.logErrorAndThrow(
+        const errorMessage =
           `Got message length(${message.content.length}) ` +
           `not equal to expected(${message.length}). ` +
-          `Message was: ${JSON.stringify(message)}`,
-        );
+          `Message was: ${JSON.stringify(message)}`;
+        logger.error(errorMessage);
+        throw new Error(errorMessage);
       }
       results.push(this._parseXml(message));
     }
@@ -147,9 +153,13 @@ export class DbgpMessageHandler {
       resultValue = result;
     });
     if (errorValue !== null) {
-      throw new Error('Error ' + JSON.stringify(errorValue) + ' parsing xml: ' + xml);
+      throw new Error(
+        'Error ' + JSON.stringify(errorValue) + ' parsing xml: ' + xml,
+      );
     }
-    logger.log('Translating server message result json: ' + JSON.stringify(resultValue));
+    logger.debug(
+      'Translating server message result json: ' + JSON.stringify(resultValue),
+    );
     invariant(resultValue != null);
     return resultValue;
   }
@@ -158,11 +168,4 @@ export class DbgpMessageHandler {
   clearIncompletedMessage(): void {
     this._prevIncompletedMessage = null;
   }
-}
-
-export function getDbgpMessageHandlerInstance(): DbgpMessageHandler {
-  return singleton.get(
-    GLOBAL_HHVM_DEBUGGER_KEY, () => {
-      return new DbgpMessageHandler();
-    });
 }

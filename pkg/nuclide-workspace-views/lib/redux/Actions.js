@@ -6,10 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TrackingEvent} from '../../../nuclide-analytics';
-import type {Action, Location, LocationFactory, Opener, OpenOptions, Viewable} from '../types';
+import type {
+  Action,
+  Location,
+  LocationFactory,
+  Opener,
+  OpenOptions,
+  Viewable,
+} from '../types';
 
 export const ADD_OPENER = 'ADD_OPENER';
 export const DESTROY_WHERE = 'DESTROY_WHERE';
@@ -85,7 +93,9 @@ export function registerLocation(id: string, location: Location): Action {
   };
 }
 
-export function registerLocationFactory(locationFactory: LocationFactory): Action {
+export function registerLocationFactory(
+  locationFactory: LocationFactory,
+): Action {
   return {
     type: REGISTER_LOCATION_FACTORY,
     payload: {locationFactory},
@@ -118,10 +128,7 @@ export function setItemVisibility(options: SetItemVisibilityOptions): Action {
   };
 }
 
-export function toggleItemVisibility(
-  uri: string,
-  visible?: ?boolean,
-): Action {
+export function toggleItemVisibility(uri: string, visible?: ?boolean): Action {
   return {
     type: TOGGLE_ITEM_VISIBILITY,
     payload: {uri, visible},

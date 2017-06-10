@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import singleton from '../singleton';
@@ -15,7 +16,9 @@ describe('singleton', () => {
   const field = 'singleton-test-field';
 
   function get() {
-    return singleton.get(field, () => { return count++; });
+    return singleton.get(field, () => {
+      return count++;
+    });
   }
 
   function clear() {
@@ -23,7 +26,9 @@ describe('singleton', () => {
   }
 
   function reset() {
-    return singleton.reset(field, () => { return count++; });
+    return singleton.reset(field, () => {
+      return count++;
+    });
   }
 
   it('get', () => {

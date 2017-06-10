@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -24,61 +25,50 @@ export const builtinLocation: BuiltinLocation = {
 };
 
 export const voidType: VoidType = {
-  location: builtinLocation,
   kind: 'void',
 };
 
 export const anyType: AnyType = {
-  location: builtinLocation,
   kind: 'any',
 };
 
 export const mixedType: MixedType = {
-  location: builtinLocation,
   kind: 'mixed',
 };
 
 export const stringType: StringType = {
-  location: builtinLocation,
   kind: 'string',
 };
 
 export const booleanType: BooleanType = {
-  location: builtinLocation,
   kind: 'boolean',
 };
 
 export const numberType: NumberType = {
-  location: builtinLocation,
   kind: 'number',
 };
 
 export const objectType: NamedType = {
-  location: builtinLocation,
   kind: 'named',
   name: 'Object',
 };
 
 export const dateType: NamedType = {
-  location: builtinLocation,
   kind: 'named',
   name: 'Date',
 };
 
 export const regExpType: NamedType = {
-  location: builtinLocation,
   kind: 'named',
   name: 'RegExp',
 };
 
 export const bufferType: NamedType = {
-  location: builtinLocation,
   kind: 'named',
   name: 'Buffer',
 };
 
 export const fsStatsType: NamedType = {
-  location: builtinLocation,
   kind: 'named',
   name: 'fs.Stats',
 };

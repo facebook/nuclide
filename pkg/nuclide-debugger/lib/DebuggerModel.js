@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {DebuggerProviderStore} from './DebuggerProviderStore';
@@ -65,14 +66,23 @@ export default class DebuggerModel {
       this._actions,
     );
     this._bridge = new Bridge(this);
-    this._debuggerProviderStore = new DebuggerProviderStore(this._dispatcher, this._actions);
-    this._watchExpressionStore = new WatchExpressionStore(this._dispatcher, this._bridge);
+    this._debuggerProviderStore = new DebuggerProviderStore(
+      this._dispatcher,
+      this._actions,
+    );
+    this._watchExpressionStore = new WatchExpressionStore(
+      this._dispatcher,
+      this._bridge,
+    );
     this._watchExpressionListStore = new WatchExpressionListStore(
       this._watchExpressionStore,
       this._dispatcher,
     );
-    this._debuggerActionStore = new DebuggerActionsStore(this._dispatcher, this._bridge);
-    this._callstackStore = new CallstackStore(this._dispatcher);
+    this._debuggerActionStore = new DebuggerActionsStore(
+      this._dispatcher,
+      this._bridge,
+    );
+    this._callstackStore = new CallstackStore(this._dispatcher, this._store);
     this._scopesStore = new ScopesStore(this._dispatcher);
     this._threadStore = new ThreadStore(this._dispatcher);
     this._debuggerPauseController = new DebuggerPauseController(this._store);
@@ -91,11 +101,6 @@ export default class DebuggerModel {
       this._threadStore,
       this._debuggerPauseController,
     );
-  }
-
-  destroy(): void {
-    // Stop debugging when the view's destroyed.
-    this.getActions().stopDebugging();
   }
 
   dispose() {
@@ -158,7 +163,7 @@ export default class DebuggerModel {
     return WORKSPACE_VIEW_URI;
   }
 
-  getPreferredInitialWidth(): number {
+  getPreferredWidth(): number {
     return 500;
   }
 }

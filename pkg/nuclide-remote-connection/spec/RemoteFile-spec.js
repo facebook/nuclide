@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ServerConnection} from '..';
 
 import invariant from 'assert';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import crypto from 'crypto';
 import {Subject} from 'rxjs';
 import temp from 'temp';
@@ -123,11 +124,7 @@ describe('RemoteFile', () => {
       const targetFilePath = nuclideUri.join(tempDir, 'target');
       const symLinkedFilePath = nuclideUri.join(tempDir, 'linked');
       fs.writeFileSync(targetFilePath, '');
-      fs.symlinkSync(
-        targetFilePath,
-        symLinkedFilePath,
-        'file',
-      );
+      fs.symlinkSync(targetFilePath, symLinkedFilePath, 'file');
       expect(fs.lstatSync(symLinkedFilePath).isSymbolicLink()).toBe(true);
 
       const file = new RemoteFile(
@@ -200,7 +197,9 @@ describe('RemoteFile', () => {
       file = new RemoteFile(connectionMock, filePath);
       fs.writeFileSync(filePath, 'sample contents');
       // Ask watchman to watch the directory.
-      waitsForPromise(() => connectionMock.getFsService().watchDirectoryRecursive(tempDir));
+      waitsForPromise(() =>
+        connectionMock.getFsService().watchDirectoryRecursive(tempDir),
+      );
       // wait for the watchman to settle on the created directory and file.
       waits(WATCHMAN_SETTLE_TIME_MS + /* buffer */ 10);
     });
@@ -244,7 +243,9 @@ describe('RemoteFile', () => {
         waitsFor(() => renameHandler.callCount > 0);
         runs(() => {
           expect(renameHandler.callCount).toBe(1);
-          expect(renameHandler.argsForCall[0][0]).toBe(nuclideUri.basename(filePath + '_moved'));
+          expect(renameHandler.argsForCall[0][0]).toBe(
+            nuclideUri.basename(filePath + '_moved'),
+          );
         });
       });
     });
@@ -394,7 +395,9 @@ describe('RemoteFile', () => {
       const file = new RemoteFile(server, filePath);
       expect(file.getParent()).toBe(parentDirectory);
       expect(server.createDirectory).toHaveBeenCalledWith(
-          'nuclide://foo.bar.com/', null);
+        'nuclide://foo.bar.com/',
+        null,
+      );
     });
 
     it('gets the parent directory for a file in a non-root directory', () => {
@@ -405,27 +408,31 @@ describe('RemoteFile', () => {
       const file = new RemoteFile(server, filePath);
       expect(file.getParent()).toBe(parentDirectory);
       expect(server.createDirectory).toHaveBeenCalledWith(
-          'nuclide://foo.bar.com/a', null);
+        'nuclide://foo.bar.com/a',
+        null,
+      );
     });
   });
 
-  describe('RemoteFile resubscribes after a rename', () => {
-    const changeHandler = jasmine.createSpy('onDidChange');
-    const deletionHandler = jasmine.createSpy('onDidDelete');
-    const mockWatch = new Subject();
-    spyOn(connectionMock, 'getFileWatch').andReturn(mockWatch);
-    const file = new RemoteFile(connectionMock, 'test');
+  describe('RemoteFile::setPath()', () => {
+    it('resubscribes after a rename', () => {
+      const changeHandler = jasmine.createSpy('onDidChange');
+      const deletionHandler = jasmine.createSpy('onDidDelete');
+      const mockWatch = new Subject();
+      spyOn(connectionMock, 'getFileWatch').andReturn(mockWatch);
+      const file = new RemoteFile(connectionMock, 'test');
 
-    file.onDidChange(changeHandler);
-    file.onDidDelete(deletionHandler);
+      file.onDidChange(changeHandler);
+      file.onDidDelete(deletionHandler);
 
-    // The file tree sets the path before doing the rename.
-    file.setPath('test2');
+      // The file tree sets the path before doing the rename.
+      file.setPath('test2');
 
-    // Simulate a Watchman rename (delete + change)
-    mockWatch.next({type: 'delete', path: 'test'});
-    mockWatch.next({type: 'change', path: 'test2'});
-    expect(deletionHandler).not.toHaveBeenCalled();
-    expect(changeHandler).toHaveBeenCalled();
+      // Simulate a Watchman rename (delete + change)
+      mockWatch.next({type: 'delete', path: 'test'});
+      mockWatch.next({type: 'change', path: 'test2'});
+      expect(deletionHandler).not.toHaveBeenCalled();
+      expect(changeHandler).toHaveBeenCalled();
+    });
   });
 });

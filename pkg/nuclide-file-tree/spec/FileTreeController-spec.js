@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import FileTreeActions from '../lib/FileTreeActions';
@@ -14,7 +15,7 @@ import {FileTreeStore} from '../lib/FileTreeStore';
 import type {FileTreeNode} from '../lib/FileTreeNode';
 import {WorkingSet} from '../../nuclide-working-sets-common';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 
 describe('FileTreeController', () => {
@@ -302,10 +303,8 @@ describe('FileTreeController', () => {
           // Mimic the loading state where `dir1` reports itself as expanded but has no children
           // yet. Don't use `actions.expandNode` because it causes a re-render, which queues a real
           // fetch and might populate the children of `dir1`. We don't want that.
-          store._updateNodeAtRoot(
-            rootKey,
-            dir1Key,
-            node => node.set({isLoading: true, isExpanded: true}),
+          store._updateNodeAtRoot(rootKey, dir1Key, node =>
+            node.set({isLoading: true, isExpanded: true}),
           );
         });
       });
@@ -408,7 +407,6 @@ describe('FileTreeController', () => {
       expect(isSelected(rootKey, afile)).toBe(true);
       expect(numSelected()).toBe(4);
     });
-
 
     it('handles overlap ranges', () => {
       actions.setSelectedNode(rootKey, foo1);

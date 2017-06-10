@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -37,22 +38,23 @@ const UnescapedUnicodeDatatipComponent = (props: DatatipComponentProps) => {
       </div>
     );
   });
-  const result =
-      <table className="nuclide-unicode-escapes-unescaped-datatip">
-        <tr>
-          <td>Visual</td>
-          <td className="nuclide-unicode-escapes-string">
-            {text}
-          </td>
-        </tr>
-        <tr>
-          <td>Logical</td>
-          <td>
-            <div className="nuclide-unicode-escapes-string">
-              {charsWithCodePoints}
-            </div>
-          </td>
-        </tr>
-      </table>;
+  const result = (
+    <table className="nuclide-unicode-escapes-unescaped-datatip">
+      <tr>
+        <td>Visual</td>
+        <td className="nuclide-unicode-escapes-string">
+          {text}
+        </td>
+      </tr>
+      <tr>
+        <td>Logical</td>
+        <td>
+          <div className="nuclide-unicode-escapes-string">
+            {charsWithCodePoints}
+          </div>
+        </td>
+      </tr>
+    </table>
+  );
   return result;
 };

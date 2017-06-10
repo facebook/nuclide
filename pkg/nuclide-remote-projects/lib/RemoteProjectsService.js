@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {SerializableRemoteConnectionConfiguration} from '..';
@@ -15,7 +16,7 @@ import type {
 } from '../../nuclide-remote-connection/lib/RemoteConnection';
 
 import {ReplaySubject} from 'rxjs';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {RemoteConnection} from '../../nuclide-remote-connection';
 import {openConnectionDialog} from './open-connection';
 
@@ -35,7 +36,9 @@ export default class RemoteProjectsService {
     this._subject.complete();
   }
 
-  waitForRemoteProjectReload(callback: (loadedProjects: Array<string>) => mixed): IDisposable {
+  waitForRemoteProjectReload(
+    callback: (loadedProjects: Array<string>) => mixed,
+  ): IDisposable {
     return new UniversalDisposable(this._subject.subscribe(callback));
   }
 
@@ -48,7 +51,11 @@ export default class RemoteProjectsService {
       return connection;
     }
 
-    connection = await RemoteConnection.createConnectionBySavedConfig(host, cwd, displayTitle);
+    connection = await RemoteConnection.createConnectionBySavedConfig(
+      host,
+      cwd,
+      displayTitle,
+    );
     if (connection != null) {
       return connection;
     }
@@ -60,11 +67,15 @@ export default class RemoteProjectsService {
     });
   }
 
-  openConnectionDialog(options: OpenConnectionDialogOptions): Promise<?RemoteConnection> {
+  openConnectionDialog(
+    options: OpenConnectionDialogOptions,
+  ): Promise<?RemoteConnection> {
     return openConnectionDialog(options);
   }
 
-  async findOrCreate(config: RemoteConnectionConfiguration): Promise<RemoteConnection> {
+  async findOrCreate(
+    config: RemoteConnectionConfiguration,
+  ): Promise<RemoteConnection> {
     return RemoteConnection.findOrCreate(config);
   }
 }

@@ -6,29 +6,27 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import passesGK from '../commons-node/passesGK';
 
 export type AutocompleteCacherConfig<T> = {|
- // Return null here to indicate that we should fall back to `getSuggestions`.
- updateResults: (
-   request: atom$AutocompleteRequest,
-   firstResult: T,
- ) => ?T,
- // If this is provided, we will ask it whether we can filter on the given request after first
- // verifying that the cursor has only moved by one column since the last request.
- shouldFilter?: (
-   lastRequest: atom$AutocompleteRequest,
-   currentRequest: atom$AutocompleteRequest,
-   // autocomplete-plus does some debouncing so if the user types quickly enough we may not see a
-   // request for every character. This indicates how many columns the cursor has moved since the
-   // last request. Typically, within an autocomplete session this will be 1, but it may be greater
-   // if the user typed quickly. It is also possible that the cursor moved for another reason, so
-   // take care to avoid returning `true` when we are in fact not in the same autocomplete session.
-   charsSinceLastRequest: number,
- ) => boolean,
- gatekeeper?: string,
+  // Return null here to indicate that we should fall back to `getSuggestions`.
+  updateResults: (request: atom$AutocompleteRequest, firstResult: T) => ?T,
+  // If this is provided, we will ask it whether we can filter on the given request after first
+  // verifying that the cursor has only moved by one column since the last request.
+  shouldFilter?: (
+    lastRequest: atom$AutocompleteRequest,
+    currentRequest: atom$AutocompleteRequest,
+    // autocomplete-plus does some debouncing so if the user types quickly enough we may not see a
+    // request for every character. This indicates how many columns the cursor has moved since the
+    // last request. Typically, within an autocomplete session this will be 1, but it may be greater
+    // if the user typed quickly. It is also possible that the cursor moved for another reason, so
+    // take care to avoid returning `true` when we are in fact not in the same autocomplete session.
+    charsSinceLastRequest: number,
+  ) => boolean,
+  gatekeeper?: string,
 |};
 
 type AutocompleteSession<T> = {
@@ -83,7 +81,10 @@ export default class AutocompleteCacher<T> {
         resultFromLanguageService,
       );
       this._session = {
-        firstResult: getNewFirstResult(session.firstResult, resultFromLanguageService),
+        firstResult: getNewFirstResult(
+          session.firstResult,
+          resultFromLanguageService,
+        ),
         lastRequest: request,
       };
       return result;
@@ -119,14 +120,16 @@ export default class AutocompleteCacher<T> {
     currentRequest: atom$AutocompleteRequest,
   ): boolean {
     const {lastRequest} = session;
-    const shouldFilter = this._config.shouldFilter != null ?
-      this._config.shouldFilter :
-      defaultShouldFilter;
+    const shouldFilter = this._config.shouldFilter != null
+      ? this._config.shouldFilter
+      : defaultShouldFilter;
     const charsSinceLastRequest =
-        currentRequest.bufferPosition.column - lastRequest.bufferPosition.column;
-    return lastRequest.bufferPosition.row === currentRequest.bufferPosition.row &&
-        charsSinceLastRequest > 0 &&
-        shouldFilter(lastRequest, currentRequest, charsSinceLastRequest);
+      currentRequest.bufferPosition.column - lastRequest.bufferPosition.column;
+    return (
+      lastRequest.bufferPosition.row === currentRequest.bufferPosition.row &&
+      charsSinceLastRequest > 0 &&
+      shouldFilter(lastRequest, currentRequest, charsSinceLastRequest)
+    );
   }
 }
 
@@ -149,7 +152,10 @@ function defaultShouldFilter(
   currentRequest: atom$AutocompleteRequest,
   charsSinceLastRequest: number,
 ) {
-  return currentRequest.prefix.startsWith(lastRequest.prefix) &&
-    currentRequest.prefix.length === lastRequest.prefix.length + charsSinceLastRequest &&
-    IDENTIFIER_REGEX.test(currentRequest.prefix);
+  return (
+    currentRequest.prefix.startsWith(lastRequest.prefix) &&
+    currentRequest.prefix.length ===
+      lastRequest.prefix.length + charsSinceLastRequest &&
+    IDENTIFIER_REGEX.test(currentRequest.prefix)
+  );
 }

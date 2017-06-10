@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import logger from './utils';
 import {base64Decode} from './helpers';
@@ -20,6 +20,10 @@ import invariant from 'assert';
 
 import type {DbgpProperty} from './DbgpSocket';
 import type {ObjectId} from './ObjectId';
+import type {
+  RemoteObject,
+  RemoteObjectId,
+} from '../../nuclide-debugger-base/lib/protocol-types';
 
 /**
  * Converts a dbgp value to a Chrome RemoteObject.
@@ -27,7 +31,7 @@ import type {ObjectId} from './ObjectId';
 export function convertValue(
   contextId: ObjectId,
   dbgpProperty: DbgpProperty,
-): Runtime$RemoteObject {
+): RemoteObject {
   switch (dbgpProperty.$.type) {
     case 'string':
       return convertStringValue(dbgpProperty);
@@ -51,12 +55,13 @@ export function convertValue(
   }
 }
 
-function convertStringValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
+function convertStringValue(dbgpProperty: DbgpProperty): RemoteObject {
   let value;
   if (dbgpProperty.hasOwnProperty('_')) {
-    // $FlowFixMe(peterhal)
-    value = dbgpProperty.$.encoding === 'base64' ? base64Decode(dbgpProperty._) :
-      `TODO: Non-base64 encoded string: ${JSON.stringify(dbgpProperty)}`;
+    value = dbgpProperty.$.encoding === 'base64'
+      ? // $FlowFixMe(peterhal)
+        base64Decode(dbgpProperty._)
+      : `TODO: Non-base64 encoded string: ${JSON.stringify(dbgpProperty)}`;
   } else {
     // zero length strings have no dbgpProperty._ property
     value = '';
@@ -68,9 +73,9 @@ function convertStringValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
   };
 }
 
-function convertIntValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
-  const value = dbgpProperty.$.encoding === 'base64' ?
-    `TODO: Base64 encoded int: ${JSON.stringify(dbgpProperty)}`
+function convertIntValue(dbgpProperty: DbgpProperty): RemoteObject {
+  const value = dbgpProperty.$.encoding === 'base64'
+    ? `TODO: Base64 encoded int: ${JSON.stringify(dbgpProperty)}`
     : dbgpProperty._;
   return {
     type: 'number',
@@ -78,9 +83,9 @@ function convertIntValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
   };
 }
 
-function convertFloatValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
-  const value = dbgpProperty.$.encoding === 'base64' ?
-    `TODO: Base64 encoded float: ${JSON.stringify(dbgpProperty)}`
+function convertFloatValue(dbgpProperty: DbgpProperty): RemoteObject {
+  const value = dbgpProperty.$.encoding === 'base64'
+    ? `TODO: Base64 encoded float: ${JSON.stringify(dbgpProperty)}`
     : dbgpProperty._;
   return {
     type: 'number',
@@ -88,7 +93,7 @@ function convertFloatValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
   };
 }
 
-function convertBoolValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
+function convertBoolValue(dbgpProperty: DbgpProperty): RemoteObject {
   invariant(dbgpProperty._ != null);
   const value = dbgpProperty.$.encoding === 'base64'
     ? `TODO: Base64 encoded bool: ${JSON.stringify(dbgpProperty)}`
@@ -99,7 +104,7 @@ function convertBoolValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
   };
 }
 
-function getNullValue(): Runtime$RemoteObject {
+function getNullValue(): RemoteObject {
   return {
     type: 'undefined',
     subtype: 'null',
@@ -107,16 +112,21 @@ function getNullValue(): Runtime$RemoteObject {
   };
 }
 
-function getUndefinedValue(): Runtime$RemoteObject {
+function getUndefinedValue(): RemoteObject {
   return {
     type: 'undefined',
     value: undefined,
   };
 }
 
-function convertArrayValue(contextId: ObjectId, dbgpProperty: DbgpProperty): Runtime$RemoteObject {
+function convertArrayValue(
+  contextId: ObjectId,
+  dbgpProperty: DbgpProperty,
+): RemoteObject {
   const remoteId = getAggregateRemoteObjectId(contextId, dbgpProperty);
-  const numchildren = String(dbgpProperty.$.numchildren != null ? dbgpProperty.$.numchildren : 0);
+  const numchildren = String(
+    dbgpProperty.$.numchildren != null ? dbgpProperty.$.numchildren : 0,
+  );
   let description = `Array[${numchildren}]`;
   if (dbgpProperty.$.recursive != null) {
     description = '* Recursive *';
@@ -128,7 +138,10 @@ function convertArrayValue(contextId: ObjectId, dbgpProperty: DbgpProperty): Run
   };
 }
 
-function convertObjectValue(contextId: ObjectId, dbgpProperty: DbgpProperty): Runtime$RemoteObject {
+function convertObjectValue(
+  contextId: ObjectId,
+  dbgpProperty: DbgpProperty,
+): RemoteObject {
   const remoteId = getAggregateRemoteObjectId(contextId, dbgpProperty);
   let description = getObjectDescription(dbgpProperty);
   if (dbgpProperty.$.recursive != null) {
@@ -159,7 +172,7 @@ function getObjectDescription(dbgpProperty: DbgpProperty): string | void {
 function getAggregateRemoteObjectId(
   contextId: ObjectId,
   dbgpProperty: DbgpProperty,
-): Runtime$RemoteObjectId {
+): RemoteObjectId {
   // If the DbgpProperty represents an empty array or object, the `pagesize` and `numchildren`
   // will be omitted so we handle this "zero" case specially.
   const numchildren = Number(dbgpProperty.$.numchildren || 0);
@@ -168,7 +181,9 @@ function getAggregateRemoteObjectId(
   if (pagesize !== 0) {
     pageCount = Math.trunc((numchildren + pagesize - 1) / pagesize) || 0;
   }
-  logger.log(`numchildren: ${numchildren} pagesize: ${pagesize} pageCount ${pageCount}`);
+  logger.debug(
+    `numchildren: ${numchildren} pagesize: ${pagesize} pageCount ${pageCount}`,
+  );
   if (pageCount > 1) {
     const elementRange = {
       pagesize,
@@ -177,14 +192,17 @@ function getAggregateRemoteObjectId(
     };
     invariant(dbgpProperty.$.fullname != null);
     return remoteObjectIdOfObjectId(
-      pagedObjectId(contextId, dbgpProperty.$.fullname, elementRange));
+      pagedObjectId(contextId, dbgpProperty.$.fullname, elementRange),
+    );
   } else {
     invariant(dbgpProperty.$.fullname != null);
-    return remoteObjectIdOfObjectId(singlePageObjectId(contextId, dbgpProperty.$.fullname, 0));
+    return remoteObjectIdOfObjectId(
+      singlePageObjectId(contextId, dbgpProperty.$.fullname, 0),
+    );
   }
 }
 
-function convertUnknownValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
+function convertUnknownValue(dbgpProperty: DbgpProperty): RemoteObject {
   return {
     type: 'string',
     value: 'TODO: unknown: ' + JSON.stringify(dbgpProperty),
@@ -193,8 +211,11 @@ function convertUnknownValue(dbgpProperty: DbgpProperty): Runtime$RemoteObject {
 
 function toBool(value: string): mixed {
   switch (value) {
-    case '0': return false;
-    case '1': return true;
-    default: return 'Unexpected bool value: ' + value;
+    case '0':
+      return false;
+    case '1':
+      return true;
+    default:
+      return 'Unexpected bool value: ' + value;
   }
 }

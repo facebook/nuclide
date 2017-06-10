@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import Handler from './Handler';
 import type {ClientCallback} from './ClientCallback';

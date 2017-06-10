@@ -1,0 +1,21 @@
+.nuclide-ui-panel-component-scroller {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  /*
+   * Chromium on OS X with a Touchpad acts like scrolling containers have
+   * `overflow-scrolling: touch;` content, which creates large, extraneous layers in the
+   * nuclide-file-tree because of the new stacking context. Force a new stacking context and
+   * wrapping layer to prevent Chromium from creating those extraneous layers.
+   *
+   * This dramatically reduces the cost of layer tree updates ("Update Layer Tree" events in the
+   * devtools "Timeline" tab) that occur frequently while typing.
+   */
+  isolation: isolate;
+  overflow: scroll;
+}
+
+.nuclide-ui-panel-component-scroller--column {
+  flex-direction: column;
+}

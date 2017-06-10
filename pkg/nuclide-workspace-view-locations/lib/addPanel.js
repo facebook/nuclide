@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 type PanelLocation = 'top' | 'right' | 'bottom' | 'left';

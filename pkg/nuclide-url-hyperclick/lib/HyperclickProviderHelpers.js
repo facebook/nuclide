@@ -6,17 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {HyperclickSuggestion} from '../../hyperclick/lib/types';
+import type {HyperclickSuggestion} from 'atom-ide-ui';
 
 import {Range} from 'atom';
 import {shell} from 'electron';
-import urlregexp from 'urlregexp';
+import {URL_REGEX} from 'nuclide-commons/string';
 
-// urlregexp will match trailing: ' | " | '. | ', | ". | ",
-// These are most likely not part of the url, but just junk that got caught.
-const trailingJunkRe = /['"][.,]?$/;
+const TRAILING_JUNK_REGEX = /[.,]?$/;
+
+// Exported for testing.
+export function matchUrl(text: string): ?{url: string, index: number} {
+  const match = URL_REGEX.exec(text);
+  if (match == null) {
+    return null;
+  }
+  URL_REGEX.lastIndex = 0;
+  return {
+    index: match.index,
+    url: match[0].replace(TRAILING_JUNK_REGEX, ''),
+  };
+}
 
 export default class HyperclickProviderHelpers {
   static async getSuggestionForWord(
@@ -26,15 +38,12 @@ export default class HyperclickProviderHelpers {
   ): Promise<?HyperclickSuggestion> {
     // The match is an array that also has an index property, something that
     // Flow does not appear to understand.
-    const match: any = urlregexp.exec(text);
+    const match = matchUrl(text);
     if (match == null) {
       return null;
     }
 
-    urlregexp.lastIndex = 0;
-
-    const url = match[0].replace(trailingJunkRe, '');
-    const index = match.index;
+    const {index, url} = match;
     const matchLength = url.length;
 
     // Update the range to include only what was matched
@@ -46,15 +55,7 @@ export default class HyperclickProviderHelpers {
     return {
       range: urlRange,
       callback() {
-        let validUrl;
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          validUrl = url;
-        } else {
-          // Now that we match urls like 'facebook.com', we have to prepend
-          // http:// to them for them to open properly.
-          validUrl = 'http://' + url;
-        }
-        shell.openExternal(validUrl);
+        shell.openExternal(url);
       },
     };
   }

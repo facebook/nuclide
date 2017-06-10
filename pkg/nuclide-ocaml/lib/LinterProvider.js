@@ -6,23 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {MerlinError} from '../../nuclide-ocaml-rpc';
-import type {LinterMessage} from '../../nuclide-diagnostics-common';
+import type {LinterMessage} from 'atom-ide-ui';
 
 import {GRAMMARS} from './constants';
 import {trackTiming} from '../../nuclide-analytics';
 import {Range} from 'atom';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 module.exports = {
   name: 'nuclide-ocaml',
   grammarScopes: Array.from(GRAMMARS),
   scope: 'file',
   lintOnFly: false,
-  invalidateOnClose: true,
 
   lint(textEditor: atom$TextEditor): Promise<Array<LinterMessage>> {
     if (!featureConfig.get('nuclide-ocaml.enableDiagnostics')) {
@@ -40,7 +40,7 @@ module.exports = {
       }
       await instance.pushNewBuffer(filePath, textEditor.getText());
       const diagnostics = await instance.errors(filePath);
-      if (diagnostics == null) {
+      if (diagnostics == null || textEditor.isDestroyed()) {
         return [];
       }
       return diagnostics.map((diagnostic: MerlinError): LinterMessage => {

@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {IconName} from './types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import classnames from 'classnames';
 import React from 'react';
 
-import {maybeToString} from '../commons-node/string';
+import {maybeToString} from 'nuclide-commons/string';
 
 type BadgeSize = 'medium' | 'small' | 'large';
 type BadgeColor = 'info' | 'success' | 'warning' | 'error';
@@ -55,24 +56,14 @@ const BadgeColorClassNames = Object.freeze({
 });
 
 export const Badge = (props: Props) => {
-  const {
-    className,
-    color,
-    icon,
-    size,
-    value,
-  } = props;
+  const {className, color, icon, size, value} = props;
   const sizeClassName = size == null ? '' : BadgeSizeClassNames[size] || '';
   const colorClassName = color == null ? '' : BadgeColorClassNames[color] || '';
-  const newClassName = classnames(
-    className,
-    'badge',
-    {
-      [sizeClassName]: size != null,
-      [colorClassName]: color != null,
-      [`icon icon-${maybeToString(icon)}`]: icon != null,
-    },
-  );
+  const newClassName = classnames(className, 'badge', {
+    [sizeClassName]: size != null,
+    [colorClassName]: color != null,
+    [`icon icon-${maybeToString(icon)}`]: icon != null,
+  });
   return (
     <span className={newClassName}>
       {value}

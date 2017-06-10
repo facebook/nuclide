@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 function aggregateTable(
@@ -39,7 +40,10 @@ function aggregateTable(
         // Don't aggregate the key column.
         reducedRecord[column] = groupedValues[key][column][0];
       } else {
-        reducedRecord[column] = aggregator(groupedValues[key][column], decimalPlaces);
+        reducedRecord[column] = aggregator(
+          groupedValues[key][column],
+          decimalPlaces,
+        );
       }
     });
     aggregatedRecords.push(reducedRecord);
@@ -49,10 +53,14 @@ function aggregateTable(
 }
 
 function avg(values: Array<string>, decimalPlaces: number = 2): string {
-  return aggregate(values, processedValues => {
-    const sum = processedValues.reduce((i, j) => i + j);
-    return sum / processedValues.length;
-  }, decimalPlaces);
+  return aggregate(
+    values,
+    processedValues => {
+      const sum = processedValues.reduce((i, j) => i + j);
+      return sum / processedValues.length;
+    },
+    decimalPlaces,
+  );
 }
 
 function aggregate(

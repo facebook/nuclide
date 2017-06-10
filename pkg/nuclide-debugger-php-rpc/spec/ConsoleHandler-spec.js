@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ClientCallback} from '../lib/ClientCallback';
@@ -22,12 +23,12 @@ describe('debugger-php-rpc ConsoleHandler', () => {
       'onNext',
       'onCompleted',
     ]);
-    clientCallback = ((
-      jasmine.createSpyObj(
-        'clientCallback',
-        ['replyToCommand', 'replyWithError', 'sendServerMethod', 'getServerMessageObservable'],
-      ): any
-    ): ClientCallback);
+    clientCallback = ((jasmine.createSpyObj('clientCallback', [
+      'replyToCommand',
+      'replyWithError',
+      'sendServerMethod',
+      'getServerMessageObservable',
+    ]): any): ClientCallback);
     // $FlowIssue -- instance method on object.
     clientCallback.getServerMessageObservable = jasmine
       .createSpy('getServerMessageObservable')
@@ -38,14 +39,22 @@ describe('debugger-php-rpc ConsoleHandler', () => {
   it('enable', () => {
     waitsForPromise(async () => {
       await handler.handleMethod(1, 'enable');
-      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(1, {}, undefined);
+      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(
+        1,
+        {},
+        undefined,
+      );
     });
   });
 
   it('disable', () => {
     waitsForPromise(async () => {
       await handler.handleMethod(2, 'disable');
-      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(2, {}, undefined);
+      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(
+        2,
+        {},
+        undefined,
+      );
     });
   });
 
@@ -62,7 +71,10 @@ describe('debugger-php-rpc ConsoleHandler', () => {
   it('unknown', () => {
     waitsForPromise(async () => {
       await handler.handleMethod(4, 'unknown');
-      expect(clientCallback.replyWithError).toHaveBeenCalledWith(4, jasmine.any(String));
+      expect(clientCallback.replyWithError).toHaveBeenCalledWith(
+        4,
+        jasmine.any(String),
+      );
     });
   });
 });

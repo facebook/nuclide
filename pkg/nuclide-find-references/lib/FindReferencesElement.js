@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global HTMLElement */
@@ -29,10 +30,7 @@ class FindReferencesElement extends HTMLElement {
   }
 
   attachedCallback(): mixed {
-    ReactDOM.render(
-      <FindReferencesView model={this._model} />,
-      this,
-    );
+    ReactDOM.render(<FindReferencesView model={this._model} />, this);
   }
 
   detachedCallback(): mixed {

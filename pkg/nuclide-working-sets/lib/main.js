@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -24,19 +25,25 @@ class Activation {
     this._workingSetsConfig = new WorkingSetsConfig();
     this._disposables = new CompositeDisposable();
 
-    this._disposables.add(this.workingSetsStore.onSaveDefinitions(definitions => {
-      this._workingSetsConfig.setDefinitions(definitions);
-    }));
+    this._disposables.add(
+      this.workingSetsStore.onSaveDefinitions(definitions => {
+        this._workingSetsConfig.setDefinitions(definitions);
+      }),
+    );
 
-    this._disposables.add(this._workingSetsConfig.observeDefinitions(definitions => {
-      this.workingSetsStore.updateDefinitions(definitions);
-    }));
+    this._disposables.add(
+      this._workingSetsConfig.observeDefinitions(definitions => {
+        this.workingSetsStore.updateDefinitions(definitions);
+      }),
+    );
 
-    this._disposables.add(atom.commands.add(
-      'atom-workspace',
-      'working-sets:toggle-last-selected',
-      this.workingSetsStore.toggleLastSelected.bind(this.workingSetsStore),
-    ));
+    this._disposables.add(
+      atom.commands.add(
+        'atom-workspace',
+        'working-sets:toggle-last-selected',
+        this.workingSetsStore.toggleLastSelected.bind(this.workingSetsStore),
+      ),
+    );
 
     this._disposables.add(new PathsObserver(this.workingSetsStore));
   }
@@ -45,7 +52,6 @@ class Activation {
     this._disposables.dispose();
   }
 }
-
 
 let activation: ?Activation = null;
 
@@ -67,7 +73,10 @@ export function deactivate() {
 }
 
 export function provideWorkingSetsStore(): WorkingSetsStore {
-  invariant(activation, 'Was requested to provide service from a non-activated package');
+  invariant(
+    activation,
+    'Was requested to provide service from a non-activated package',
+  );
 
   return activation.workingSetsStore;
 }

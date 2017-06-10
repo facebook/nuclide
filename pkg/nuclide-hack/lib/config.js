@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
 
-import featureConfig from '../../commons-atom/featureConfig';
-import {getCategoryLogger} from '../../nuclide-logging';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {getLogger} from 'log4js';
 
 type HackConfig = {
   hhClientPath: string,
@@ -19,23 +20,22 @@ type HackConfig = {
 };
 
 export const HACK_CONFIG_PATH = 'nuclide-hack';
-export const SHOW_TYPE_COVERAGE_CONFIG_PATH = HACK_CONFIG_PATH + '.showTypeCoverage';
+export const SHOW_TYPE_COVERAGE_CONFIG_PATH =
+  HACK_CONFIG_PATH + '.showTypeCoverage';
 
 export function getConfig(): HackConfig {
-  return featureConfig.getWithDefaults(
-    HACK_CONFIG_PATH,
-    {
-      hhClientPath: '',
-      logLevel: 'INFO',
-    });
+  return featureConfig.getWithDefaults(HACK_CONFIG_PATH, {
+    hhClientPath: '',
+    logLevel: 'INFO',
+  });
 }
 
 const LOGGER_CATEGORY = 'nuclide-hack';
-export const logger = getCategoryLogger(LOGGER_CATEGORY);
+export const logger = getLogger(LOGGER_CATEGORY);
 
 function initializeLogging(): void {
   const config = getConfig();
-  logger.setLogLevel(config.logLevel);
+  logger.setLevel(config.logLevel);
 }
 
 initializeLogging();

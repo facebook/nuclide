@@ -6,28 +6,34 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  MerlinError, MerlinOutline, MerlinType, MerlinCases, MerlinPosition, MerlinOccurrences,
+  MerlinError,
+  MerlinOutline,
+  MerlinType,
+  MerlinCases,
+  MerlinPosition,
+  MerlinOccurrences,
 } from '..';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import readline from 'readline';
 
-import fsPromise from '../../commons-node/fsPromise';
-import {asyncExecute, safeSpawn, getOriginalEnvironment} from '../../commons-node/process';
+import fsPromise from 'nuclide-commons/fsPromise';
+import {
+  runCommand,
+  spawn,
+  getOriginalEnvironment,
+} from 'nuclide-commons/process';
 import {PromiseQueue} from '../../commons-node/promise-executors';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-ocaml-rpc');
 
-const ERROR_RESPONSES = new Set([
-  'failure',
-  'error',
-  'exception',
-]);
+const ERROR_RESPONSES = new Set(['failure', 'error', 'exception']);
 
 /**
  * Wraps an ocamlmerlin process; provides api access to
@@ -35,7 +41,6 @@ const ERROR_RESPONSES = new Set([
  * Derived classes spec which version of the protocol to speak.
  */
 export type MerlinProcess = {
-
   isRunning(): boolean,
 
   /**
@@ -79,16 +84,29 @@ export type MerlinProcess = {
     col: number,
   ): Promise<Array<MerlinType>>,
 
-  complete(file: NuclideUri, line: number, col: number, prefix: string): Promise<mixed>,
+  complete(
+    file: NuclideUri,
+    line: number,
+    col: number,
+    prefix: string,
+  ): Promise<mixed>,
 
   errors(file: NuclideUri): Promise<Array<MerlinError>>,
 
   outline(file: NuclideUri): Promise<Array<MerlinOutline>>,
 
-  cases(file: NuclideUri, start: MerlinPosition, end: MerlinPosition): Promise<MerlinCases>,
+  cases(
+    file: NuclideUri,
+    start: MerlinPosition,
+    end: MerlinPosition,
+  ): Promise<MerlinCases>,
 
   // This is currently unused; waiting for the refactoring front-end to finish.
-  occurrences(file: NuclideUri, line: number, col: number): Promise<MerlinOccurrences>,
+  occurrences(
+    file: NuclideUri,
+    line: number,
+    col: number,
+  ): Promise<MerlinOccurrences>,
 
   /**
    * Run a command; parse the json output, return an object. This assumes
@@ -109,7 +127,9 @@ class MerlinProcessBase {
     this._proc = proc;
     this._promiseQueue = new PromiseQueue();
     this._running = true;
-    this._proc.on('exit', (code, signal) => { this._running = false; });
+    this._proc.on('exit', (code, signal) => {
+      this._running = false;
+    });
   }
 
   isRunning(): boolean {
@@ -142,8 +162,8 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
   }
 
   async pushDotMerlinPath(file: NuclideUri): Promise<mixed> {
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['reset', 'dot_merlin', [file], 'auto'], file),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['reset', 'dot_merlin', [file], 'auto'], file),
     );
   }
 
@@ -154,7 +174,10 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
       await this.runSingleCommand(['seek', 'exact', {line: 1, col: 0}], name);
       await this.runSingleCommand(['drop'], name);
 
-      const result = await this.runSingleCommand(['tell', 'source-eof', content], name);
+      const result = await this.runSingleCommand(
+        ['tell', 'source-eof', content],
+        name,
+      );
 
       return result;
     });
@@ -192,14 +215,22 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
     col: number,
   ): Promise<Array<MerlinType>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['type', 'enclosing', 'at', {line: line + 1, col}], file),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
+        ['type', 'enclosing', 'at', {line: line + 1, col}],
+        file,
+      ),
     );
   }
 
-  async complete(file: NuclideUri, line: number, col: number, prefix: string): Promise<mixed> {
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(
+  async complete(
+    file: NuclideUri,
+    line: number,
+    col: number,
+    prefix: string,
+  ): Promise<mixed> {
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
         ['complete', 'prefix', prefix, 'at', {line: line + 1, col: col + 1}],
         file,
       ),
@@ -208,29 +239,40 @@ export class MerlinProcessV2_3_1 extends MerlinProcessBase {
 
   async errors(path: NuclideUri): Promise<Array<MerlinError>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['errors'], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['errors'], path),
     );
   }
 
   async outline(path: NuclideUri): Promise<Array<MerlinOutline>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['outline'], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['outline'], path),
     );
   }
 
-  async cases(path: NuclideUri, start: MerlinPosition, end: MerlinPosition): Promise<MerlinCases> {
+  async cases(
+    path: NuclideUri,
+    start: MerlinPosition,
+    end: MerlinPosition,
+  ): Promise<MerlinCases> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['case', 'analysis', 'from', start, 'to', end], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
+        ['case', 'analysis', 'from', start, 'to', end],
+        path,
+      ),
     );
   }
 
-  async occurrences(path: NuclideUri, line: number, col: number): Promise<MerlinOccurrences> {
+  async occurrences(
+    path: NuclideUri,
+    line: number,
+    col: number,
+  ): Promise<MerlinOccurrences> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
         ['occurrences', 'ident', 'at', {line: line + 1, col: col + 1}],
         path,
       ),
@@ -251,7 +293,11 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
     super(proc);
   }
 
-  runSingleCommand(command: mixed, file: NuclideUri, wrapForContext?: boolean): Promise<Object> {
+  runSingleCommand(
+    command: mixed,
+    file: NuclideUri,
+    wrapForContext?: boolean,
+  ): Promise<Object> {
     // contextify is important needed for Reason support.
     // https://github.com/the-lambda-church/merlin/blob/d98a08d318ca14d9c702bbd6eeadbb762d325ce7/doc/dev/PROTOCOL.md#contextual-commands
     const wrappedCommand = wrapForContext === false
@@ -261,8 +307,12 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
   }
 
   async pushDotMerlinPath(file: NuclideUri): Promise<mixed> {
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['reset', 'dot_merlin', [file], 'auto'], file, false),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
+        ['reset', 'dot_merlin', [file], 'auto'],
+        file,
+        false,
+      ),
     );
   }
 
@@ -274,8 +324,8 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
    * @return on success: a cursor position pointed at the end of the buffer
    */
   async pushNewBuffer(name: NuclideUri, content: string): Promise<mixed> {
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['tell', 'start', 'end', content], name),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['tell', 'start', 'end', content], name),
     );
   }
 
@@ -320,8 +370,8 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
     col: number,
   ): Promise<Array<MerlinType>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
         ['type', 'enclosing', 'at', {line: line + 1, col}],
         file,
       ),
@@ -334,8 +384,8 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
     col: number,
     prefix: string,
   ): Promise<mixed> {
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
         ['complete', 'prefix', prefix, 'at', {line: line + 1, col: col + 1}],
         file,
       ),
@@ -344,29 +394,40 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
 
   async errors(path: NuclideUri): Promise<Array<MerlinError>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['errors'], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['errors'], path),
     );
   }
 
   async outline(path: NuclideUri): Promise<Array<MerlinOutline>> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['outline'], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(['outline'], path),
     );
   }
 
-  async cases(path: NuclideUri, start: MerlinPosition, end: MerlinPosition): Promise<MerlinCases> {
+  async cases(
+    path: NuclideUri,
+    start: MerlinPosition,
+    end: MerlinPosition,
+  ): Promise<MerlinCases> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(['case', 'analysis', 'from', start, 'to', end], path),
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
+        ['case', 'analysis', 'from', start, 'to', end],
+        path,
+      ),
     );
   }
 
-  async occurrences(path: NuclideUri, line: number, col: number): Promise<MerlinOccurrences> {
+  async occurrences(
+    path: NuclideUri,
+    line: number,
+    col: number,
+  ): Promise<MerlinOccurrences> {
     // $FlowFixMe: runSingleCommand returns `Promise<Object>`, should me mixed.
-    return this._promiseQueue.submit(
-      () => this.runSingleCommand(
+    return this._promiseQueue.submit(() =>
+      this.runSingleCommand(
         ['occurrences', 'ident', 'at', {line: line + 1, col: col + 1}],
         path,
       ),
@@ -392,7 +453,7 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   const dotMerlinPath = await fsPromise.findNearestFile('.merlin', file);
 
   const options = {
-    cwd: (dotMerlinPath ? nuclideUri.dirname(dotMerlinPath) : '.'),
+    cwd: dotMerlinPath ? nuclideUri.dirname(dotMerlinPath) : '.',
     // Starts the process with the user's bashrc, which might contain a
     // different ocamlmerlin. See `getMerlinVersion` for the same consistent
     // logic. This also implies .nucliderc isn't considered, if there's any
@@ -402,7 +463,10 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   };
 
   logger.info('Spawning new ocamlmerlin process version ' + version);
-  const process = await safeSpawn(merlinPath, flags, options);
+  const processStream = spawn(merlinPath, flags, options).publish();
+  const processPromise = processStream.take(1).toPromise();
+  processStream.connect();
+  const process = await processPromise;
   // Turns 2.5.1 into 2.5
   const majorMinor = version.split('.').slice(0, 2).join('.');
   switch (majorMinor) {
@@ -432,16 +496,19 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
  *   return value will be stale.
  */
 function getPathToMerlin(): string {
-  return global.atom
-    && global.atom.config.get('nuclide.nuclide-ocaml.pathToMerlin') || 'ocamlmerlin';
+  return (
+    (global.atom &&
+      global.atom.config.get('nuclide.nuclide-ocaml.pathToMerlin')) ||
+    'ocamlmerlin'
+  );
 }
 
 /**
  * @return The set of arguments to pass to ocamlmerlin.
  */
 function getMerlinFlags(): Array<string> {
-  const configVal = global.atom
-    && global.atom.config.get('nuclide.nuclide-ocaml.merlinFlags');
+  const configVal =
+    global.atom && global.atom.config.get('nuclide.nuclide-ocaml.merlinFlags');
   // To split while stripping out any leading/trailing space, we match on all
   // *non*-whitespace.
   const configItems = configVal && configVal.match(/\S+/g);
@@ -451,19 +518,21 @@ function getMerlinFlags(): Array<string> {
 let merlinVersionCache: ?string;
 async function getMerlinVersion(merlinPath: string): Promise<string | null> {
   if (merlinVersionCache === undefined) {
-    const result = await asyncExecute(merlinPath, ['-version'], {
-      env: await getOriginalEnvironment(),
-    });
-    if (result.exitCode === 0) {
-      const match = result.stdout.match(/^The Merlin toolkit version (\d+(?:\.\d)*),/);
-      if (match != null && match[1] != null) {
-        merlinVersionCache = match[1];
-      } else {
-        logger.info('unable to determine ocamlmerlin version');
-        merlinVersionCache = null;
-      }
-    } else {
+    let stdout;
+    try {
+      stdout = await runCommand(merlinPath, ['-version'], {
+        env: await getOriginalEnvironment(),
+      }).toPromise();
+    } catch (err) {
       logger.info('ocamlmerlin not installed');
+      merlinVersionCache = null;
+      return merlinVersionCache;
+    }
+    const match = stdout.match(/^The Merlin toolkit version (\d+(?:\.\d)*),/);
+    if (match != null && match[1] != null) {
+      merlinVersionCache = match[1];
+    } else {
+      logger.info('unable to determine ocamlmerlin version');
       merlinVersionCache = null;
     }
   }
@@ -507,7 +576,9 @@ function runSingleCommandImpl(
       const content = response[1];
 
       if (ERROR_RESPONSES.has(status)) {
-        logger.error(`Ocamlmerlin raised an error: ${line}\n  command: ${commandString}`);
+        logger.error(
+          `Ocamlmerlin raised an error: ${line}\n  command: ${commandString}`,
+        );
         reject(Error('Ocamlmerlin returned an error'));
         return;
       }

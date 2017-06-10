@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DistractionFreeModeProvider, DistractionFreeModeState} from '..';
@@ -41,9 +42,14 @@ export class DistractionFreeMode {
     };
   }
 
-  consumeDistractionFreeModeProvider(provider: DistractionFreeModeProvider): IDisposable {
+  consumeDistractionFreeModeProvider(
+    provider: DistractionFreeModeProvider,
+  ): IDisposable {
     this._providers.add(provider);
-    if (this._deserializationState != null && this._deserializationState.has(provider.name)) {
+    if (
+      this._deserializationState != null &&
+      this._deserializationState.has(provider.name)
+    ) {
       this._addToRestoreState(provider);
     }
     return new Disposable(() => {

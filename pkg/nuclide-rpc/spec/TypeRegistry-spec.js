@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {TypeRegistry} from '../lib/TypeRegistry';
@@ -182,26 +183,34 @@ describe('TypeRegistry', () => {
 
       const expected1 = {a: 42, b: {c: 'str'}};
       const object1 = await typeRegistry.unmarshal(
-          context,
-          await typeRegistry.marshal(context, expected1, objectType), objectType);
+        context,
+        await typeRegistry.marshal(context, expected1, objectType),
+        objectType,
+      );
       expect(object1).toBe(expected1);
 
       const expected2 = new Date();
       const date2 = await typeRegistry.unmarshal(
-          context,
-          await typeRegistry.marshal(context, expected2, dateType), dateType);
+        context,
+        await typeRegistry.marshal(context, expected2, dateType),
+        dateType,
+      );
       expect(date2.getTime()).toBe(expected2.getTime());
 
-      const expected3 = /nuclide/ig;
+      const expected3 = /nuclide/gi;
       const regex3 = await typeRegistry.unmarshal(
-          context,
-          await typeRegistry.marshal(context, expected3, regExpType), regExpType);
+        context,
+        await typeRegistry.marshal(context, expected3, regExpType),
+        regExpType,
+      );
       expect(regex3.source).toBe(expected3.source);
 
       const expected4 = new Buffer('test buffer data.');
       const buf4: Buffer = await typeRegistry.unmarshal(
         context,
-        await typeRegistry.marshal(context, expected4, bufferType), bufferType);
+        await typeRegistry.marshal(context, expected4, bufferType),
+        bufferType,
+      );
       expect(expected4.equals(buf4)).toBeTruthy();
     });
   });
@@ -220,7 +229,8 @@ describe('TypeRegistry', () => {
       const result = await typeRegistry.unmarshal(
         context,
         await typeRegistry.marshal(context, expected, type),
-        type);
+        type,
+      );
       expect(result.length).toBe(2);
       expect(result[0].equals(expected[0])).toBeTruthy();
       expect(result[1].equals(expected[1])).toBeTruthy();
@@ -268,7 +278,11 @@ describe('TypeRegistry', () => {
 
       // Undefined is acceptable for nullable fields.
       const expected3 = {a: undefined, b: new Buffer('test')};
-      const marshalled = await typeRegistry.marshal(context, expected3, customObjectType);
+      const marshalled = await typeRegistry.marshal(
+        context,
+        expected3,
+        customObjectType,
+      );
       const result3 = await typeRegistry.unmarshal(
         context,
         // JSON omits undefined values, so accurately test that.
@@ -292,7 +306,10 @@ describe('TypeRegistry', () => {
         name: 'ValueTypeA',
       };
       const result = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data, type), type);
+        context,
+        await typeRegistry.marshal(context, data, type),
+        type,
+      );
       expect(result.valueA).toBe(data.valueA);
       expect(result.valueB).toBeNull();
       expect(result.hasOwnProperty('valueC')).toBeFalsy();
@@ -311,7 +328,10 @@ describe('TypeRegistry', () => {
         type: stringType,
       };
       const result = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data, type), type);
+        context,
+        await typeRegistry.marshal(context, data, type),
+        type,
+      );
       expect(result).toBe(null);
     });
   });
@@ -328,17 +348,26 @@ describe('TypeRegistry', () => {
 
       const data1 = 'bork';
       const result1 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data1, type), type);
+        context,
+        await typeRegistry.marshal(context, data1, type),
+        type,
+      );
       expect(result1).toBe(data1);
 
       const data2 = 'bork!';
       const result2 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data2, type), type);
+        context,
+        await typeRegistry.marshal(context, data2, type),
+        type,
+      );
       expect(result2).toBe(data2);
 
       const data3 = 42;
       const result3 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data3, type), type);
+        context,
+        await typeRegistry.marshal(context, data3, type),
+        type,
+      );
       expect(result3).toBe(data3);
 
       const data4 = 'not bork!';
@@ -425,23 +454,35 @@ describe('TypeRegistry', () => {
 
       const data1 = {kind: 'bork', n: 42};
       const result1 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data1, type), type);
+        context,
+        await typeRegistry.marshal(context, data1, type),
+        type,
+      );
       expect(result1).toEqual(data1);
 
       const data2 = {kind: 'bork!', s: 'hello'};
       const result2 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data2, type), type);
+        context,
+        await typeRegistry.marshal(context, data2, type),
+        type,
+      );
       expect(result2).toEqual(data2);
 
       const data3 = {kind: 42, b: true};
       const result3 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data3, type), type);
+        context,
+        await typeRegistry.marshal(context, data3, type),
+        type,
+      );
       expect(result3).toEqual(data3);
 
       // Ensure no extra fields are accidentally marshalled.
       const data4 = {kind: 'bork', n: 42, s: 'hello', b: true};
       const result4 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data4, type), type);
+        context,
+        await typeRegistry.marshal(context, data4, type),
+        type,
+      );
       expect(result4).toEqual(data1);
 
       const data5 = {kind: 'not bork!'};
@@ -506,13 +547,19 @@ describe('TypeRegistry', () => {
 
       const data1 = {x: 5, y: 6, s: 'asdf'};
       const result1 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data1, type), type);
+        context,
+        await typeRegistry.marshal(context, data1, type),
+        type,
+      );
       expect(result1).toEqual(data1);
 
       // Ensure no extra fields are accidentally marshalled.
       const data4 = {x: 5, y: 6, s: 'asdf', b: true};
       const result4 = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data4, type), type);
+        context,
+        await typeRegistry.marshal(context, data4, type),
+        type,
+      );
       expect(result4).toEqual(data1);
     });
   });
@@ -528,7 +575,10 @@ describe('TypeRegistry', () => {
         type: stringType,
       };
       const result = await typeRegistry.unmarshal(
-        context, await typeRegistry.marshal(context, data, type), type);
+        context,
+        await typeRegistry.marshal(context, data, type),
+        type,
+      );
       expect(result).toBe(undefined);
     });
   });
@@ -568,7 +618,8 @@ describe('TypeRegistry', () => {
         {
           name: 'hasOwnProperty',
           type: stringType,
-        }];
+        },
+      ];
 
       const expected = 'Hello World';
       const results = await typeRegistry.unmarshalArguments(

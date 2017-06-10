@@ -1,0 +1,5 @@
+'name': 'Test Grammar'
+'scopeName': 'text.test'
+'fileTypes': [
+  'test'
+]

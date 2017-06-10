@@ -23,11 +23,12 @@ describe('path-rules', () => {
 
       expect(includedFiles.includes(__filename)).toBe(true);
 
-      // If this file ever moves, just pick anything else that's in a VendorLib dir.
+      // If this file ever moves, just pick anything else that's a ".js" in a VendorLib dir.
       const pathToVendorLibFile =
-        require.resolve('../../nuclide-fuzzy-native/VendorLib/fuzzy-native/lib/main.js');
+        require.resolve('../../nuclide-ui/VendorLib/atom-tabs/lib/main.js');
       expect(!includedFiles.includes(pathToVendorLibFile)).toBe(true);
 
+      // If this file ever moves, just pick anything else that's a homegrown ".js" file.
       const pathToNuclideFile =
         require.resolve('../../nuclide-fuzzy-native/lib/main.js');
       expect(includedFiles.includes(pathToNuclideFile)).toBe(true);

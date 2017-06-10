@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestContext} from './remotable-tests';
@@ -16,14 +17,13 @@ import {dispatchKeyboardEvent} from '../../pkg/commons-atom/testHelpers';
 import {copyFixture} from '../../pkg/nuclide-test-helpers';
 
 function sleep(milliSeconds: number): Promise<void> {
-  return new Promise(resolve => { setTimeout(resolve, milliSeconds); });
+  return new Promise(resolve => {
+    setTimeout(resolve, milliSeconds);
+  });
 }
 
 export function runTest(context: TestContext) {
-  function providerTextExistsInDOM(
-    element: Element,
-    text: string,
-  ): boolean {
+  function providerTextExistsInDOM(element: Element, text: string): boolean {
     const providerElems = element.querySelectorAll('span.icon-gear');
     const providerElemWithText = Array.prototype.find.call(
       providerElems,
@@ -63,7 +63,9 @@ export function runTest(context: TestContext) {
     // Open and create (save) files.
     for (let i = 0; i < NUM_FILES_TO_OPEN; i++) {
       waitsForPromise(async () => {
-        const editor = await atom.workspace.open(context.getProjectRelativePath(`TEST${i}.txt`));
+        const editor = await atom.workspace.open(
+          context.getProjectRelativePath(`TEST${i}.txt`),
+        );
         invariant(editor != null);
         editor.saveAs(context.getProjectRelativePath(`TEST${i}.txt`));
       });
@@ -72,7 +74,10 @@ export function runTest(context: TestContext) {
     // Open the quick-open panel
     runs(() => {
       const quickOpenPackage = atom.packages.getActivePackage(PACKAGE_NAME);
-      invariant(quickOpenPackage, `The "${PACKAGE_NAME}" package is not active!`);
+      invariant(
+        quickOpenPackage,
+        `The "${PACKAGE_NAME}" package is not active!`,
+      );
       invariant(document.activeElement != null);
       atom.commands.dispatch(
         document.activeElement,
@@ -86,23 +91,29 @@ export function runTest(context: TestContext) {
     });
 
     waitsFor('quick-open providers to load', () => {
-      const omniSearchTreeList = document.querySelector('.omnisearch-pane .list-tree');
+      const omniSearchTreeList = document.querySelector(
+        '.omnisearch-pane .list-tree',
+      );
       invariant(omniSearchTreeList != null);
-      const omniSearchTreeNodes = omniSearchTreeList.querySelectorAll('.list-nested-item');
+      const omniSearchTreeNodes = omniSearchTreeList.querySelectorAll(
+        '.list-nested-item',
+      );
       return omniSearchTreeNodes.length > 0;
     });
 
     waitsFor('first result item is selected', () => {
-      firstActiveElement =
-        document.querySelector('.quick-open-result-item.list-item.selected:first-child');
+      firstActiveElement = document.querySelector(
+        '.quick-open-result-item.list-item.selected:first-child',
+      );
       return firstActiveElement != null;
     });
 
     // Expect that 'down arrow' selects the next item
     runs(() => {
       dispatchKeyboardEvent('down', document.activeElement);
-      const nextActiveElement =
-        document.querySelector('.quick-open-result-item.list-item.selected');
+      const nextActiveElement = document.querySelector(
+        '.quick-open-result-item.list-item.selected',
+      );
       expect(nextActiveElement).not.toBeNull();
       invariant(firstActiveElement != null);
       expect(nextActiveElement).toBe(firstActiveElement.nextElementSibling);
@@ -111,13 +122,15 @@ export function runTest(context: TestContext) {
     waitsFor('active quick-open item to scroll back to first element', () => {
       // Dispatch 'down arrow' key event to quick open modal
       dispatchKeyboardEvent('down', document.activeElement);
-      const newActiveElement = document.querySelector('.quick-open-result-item.list-item.selected');
+      const newActiveElement = document.querySelector(
+        '.quick-open-result-item.list-item.selected',
+      );
       return newActiveElement === firstActiveElement;
     });
 
     // Close the quick-open modal, making a TextEditor the active pane
     runs(() => {
-      dispatchKeyboardEvent('t', document.activeElement, {cmd: true});
+      dispatchKeyboardEvent('escape', document.activeElement, {cmd: false});
     });
 
     // Close half of the opened files in order to populate "Recent Files"
@@ -143,33 +156,41 @@ export function runTest(context: TestContext) {
     });
 
     waitsFor('open file provider to load', () => {
-      const omniSearchTreeList = document.querySelector('.omnisearch-pane .list-tree');
+      const omniSearchTreeList = document.querySelector(
+        '.omnisearch-pane .list-tree',
+      );
       invariant(omniSearchTreeList != null);
       return providerTextExistsInDOM(omniSearchTreeList, 'Open Files');
     });
 
     waitsFor('recent file provider to load', () => {
-      const omniSearchTreeList = document.querySelector('.omnisearch-pane .list-tree');
+      const omniSearchTreeList = document.querySelector(
+        '.omnisearch-pane .list-tree',
+      );
       invariant(omniSearchTreeList != null);
       return providerTextExistsInDOM(omniSearchTreeList, 'Recent Files');
     });
 
     // Recent files requires a non-empty search query
     runs(() => {
-      const omniSearchTextEditorQueryString = 'atom-workspace atom-panel-container.modal' +
-                                              ' atom-panel atom-text-editor.mini';
-      const omniSearchTextEditorElement = document.querySelector(omniSearchTextEditorQueryString);
+      const omniSearchTextEditorQueryString =
+        'atom-workspace atom-panel-container.modal' +
+        ' atom-panel atom-text-editor.mini';
+      const omniSearchTextEditorElement = document.querySelector(
+        omniSearchTextEditorQueryString,
+      );
       invariant(omniSearchTextEditorElement != null);
-       // make active element
+      // make active element
       omniSearchTextEditorElement.click();
       // upcast to `any` before downcasting to child type
-      const omniSearchTextEditor =
-        ((omniSearchTextEditorElement: any): atom$TextEditorElement).getModel();
+      const omniSearchTextEditor = ((omniSearchTextEditorElement: any): atom$TextEditorElement).getModel();
       omniSearchTextEditor.insertText('TEST');
     });
 
     waitsFor('filenames provider to load', () => {
-      const omniSearchTreeList = document.querySelector('.omnisearch-pane .list-tree');
+      const omniSearchTreeList = document.querySelector(
+        '.omnisearch-pane .list-tree',
+      );
       invariant(omniSearchTreeList != null);
       return providerTextExistsInDOM(omniSearchTreeList, 'Filenames');
     });
@@ -177,18 +198,27 @@ export function runTest(context: TestContext) {
     // Ensure that the you can scroll to at least one item from each provider
     const providerTitles = new Set(['Open Files', 'Recent Files', 'Filenames']);
     providerTitles.forEach(title => {
-      waitsFor(`active item to scroll to a file supplied by the "${title}" provider"`, () => {
-        // Dispatch 'down arrow' key event to quick open modal
-        dispatchKeyboardEvent('down', document.activeElement);
-        const newActiveElement =
-          document.querySelector('.quick-open-result-item.list-item.selected');
-        if (newActiveElement == null) {
-          return false;
-        }
-        const providerElement =
-          closestAncestorWithClassName(newActiveElement, 'list-nested-item');
-        return providerElement != null && providerTextExistsInDOM(providerElement, title);
-      });
+      waitsFor(
+        `active item to scroll to a file supplied by the "${title}" provider"`,
+        () => {
+          // Dispatch 'down arrow' key event to quick open modal
+          dispatchKeyboardEvent('down', document.activeElement);
+          const newActiveElement = document.querySelector(
+            '.quick-open-result-item.list-item.selected',
+          );
+          if (newActiveElement == null) {
+            return false;
+          }
+          const providerElement = closestAncestorWithClassName(
+            newActiveElement,
+            'list-nested-item',
+          );
+          return (
+            providerElement != null &&
+            providerTextExistsInDOM(providerElement, title)
+          );
+        },
+      );
     });
   });
 }

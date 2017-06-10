@@ -1,0 +1,51 @@
+@import "syntax-variables";
+
+atom-text-editor .lines .highlight.hyperclick > .region {
+  border-bottom: 1px solid @syntax-text-color;
+}
+
+atom-text-editor:not([mini]).hyperclick .lines {
+  /**
+   * Unfortunately, this cannot be a property of `.hyperclick .region`:
+   * https://discuss.atom.io/t/some-css-styles-not-honored-by-decorations/11662
+   */
+  cursor: pointer;
+}
+
+atom-text-editor:not([mini]).hyperclick-loading .lines {
+  cursor: wait;
+}
+
+hyperclick-suggestion-list {
+  cursor: default;
+}
+
+.hyperclick-suggestion-list-scroller.popover-list.select-list {
+  overflow-y: auto;
+  width: inherit;
+  max-width: 500px;
+}
+
+.hyperclick-result-item {
+  cursor: pointer;
+}
+
+@font-size-small: .9em;
+@item-padding: .75em;
+@item-side-padding: .6em;
+
+hyperclick-suggestion-list {
+  .right-label {
+    float: right;
+    padding-left: @item-padding;
+    padding-right: @item-side-padding;
+
+    font-size: @font-size-small;
+    color: @text-color-subtle;
+
+    &:empty {
+      width: @item-side-padding;
+      padding: 0;
+    }
+  }
+}

@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {getAtomProjectRelativePath} from '../../commons-atom/projects';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
 import {trackTiming} from '../../nuclide-analytics';
 import {getArcanistServiceByNuclideUri} from '../../nuclide-remote-connection';
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 function copyAbsolutePath(): void {
   trackOperation('copyAbsolutePath', () => {
@@ -39,7 +40,8 @@ function copyProjectRelativePath(): void {
     } else {
       copyToClipboard(
         'Path not contained in any open project.\nCopied absolute path',
-        nuclideUri.getPath(uri));
+        nuclideUri.getPath(uri),
+      );
     }
   });
 }
@@ -125,16 +127,25 @@ class Activation {
   constructor(state: ?Object) {
     this._subscriptions = new CompositeDisposable();
     this._subscriptions.add(
-      atom.commands.add('atom-workspace',
-      'nuclide-clipboard-path:copy-absolute-path', copyAbsolutePath),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-clipboard-path:copy-absolute-path',
+        copyAbsolutePath,
+      ),
     );
     this._subscriptions.add(
-      atom.commands.add('atom-workspace',
-      'nuclide-clipboard-path:copy-repository-relative-path', copyRepositoryRelativePath),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-clipboard-path:copy-repository-relative-path',
+        copyRepositoryRelativePath,
+      ),
     );
     this._subscriptions.add(
-      atom.commands.add('atom-workspace',
-      'nuclide-clipboard-path:copy-project-relative-path', copyProjectRelativePath),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-clipboard-path:copy-project-relative-path',
+        copyProjectRelativePath,
+      ),
     );
   }
 

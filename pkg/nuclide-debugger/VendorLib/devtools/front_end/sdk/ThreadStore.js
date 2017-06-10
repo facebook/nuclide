@@ -74,10 +74,15 @@ WebInspector.DebuggerModel.ThreadStore.prototype = {
         this._fetchThreadStackIfNeeded(this._selectedThreadId, callback);
     },
 
-    _fetchThreadStackIfNeeded: function(threadId, callback)
+    getRefreshedThreadStack: function(callback)
+    {
+        this._fetchThreadStackIfNeeded(this._selectedThreadId, callback, true);
+    },
+
+    _fetchThreadStackIfNeeded: function(threadId, callback, forceRefresh)
     {
         var thread = this._threadMap.get(threadId);
-        if (thread && !thread.isCallstackFetched)
+        if (forceRefresh || (thread && !thread.isCallstackFetched))
         {
             function onThreadStackFetched(error, callFrames)
             {
@@ -86,13 +91,20 @@ WebInspector.DebuggerModel.ThreadStore.prototype = {
                     callback(error);
                     return;
                 }
-                thread.stackFrames = parsedFrames;
+
+                if (thread != null) {
+                  thread.stackFrames = parsedFrames;
+                }
+
                 callback(parsedFrames);
-                thread.isCallstackFetched = true;
+
+                if (thread != null) {
+                  thread.isCallstackFetched = true;
+                }
             }
-            this._debuggerModel.getThreadStack(threadId, onThreadStackFetched.bind(this));
+            this._debuggerModel.getThreadStack(Number(threadId), onThreadStackFetched.bind(this));
         } else {
-            callback(thread.stackFrames);
+            callback(thread != null ? thread.stackFrames : []);
         }
     },
 

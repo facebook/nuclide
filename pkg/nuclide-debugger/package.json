@@ -7,7 +7,21 @@
   "atomTestRunner": "../../lib/test-runner-entry.js",
   "nuclide": {
     "packageType": "Atom",
-    "testRunner": "apm"
+    "testRunner": "apm",
+    "config": {
+      "openDevToolsOnDebuggerStart": {
+        "title": "Developer Only: Open the Dev Tools on debugger start",
+        "type": "boolean",
+        "default": false,
+        "description": "Opens the devtools on debugger start up to help debugging early events."
+      },
+      "forceNewChannel": {
+        "title": "Force to use the new debugger protocol channel",
+        "type": "boolean",
+        "default": false,
+        "description": "Force to use the new debugger protocol channel."
+      }
+    }
   },
   "providedServices": {
     "nuclide-debugger.remote": {
@@ -64,6 +78,16 @@
     "nux-trigger": {
       "versions": {
         "0.0.0": "consumeTriggerNuxService"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCurrentWorkingDirectory"
+      }
+    },
+    "nuclide-output": {
+      "versions": {
+        "0.0.0": "consumeOutputService"
       }
     }
   }

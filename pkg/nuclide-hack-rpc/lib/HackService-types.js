@@ -6,39 +6,38 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
+import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
-import type {
-  Definition,
-  DefinitionQueryResult,
-} from '../../nuclide-definition-service/lib/rpc-types';
-import type {Outline} from '../../nuclide-outline-view/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
-import type {FindReferencesReturn} from '../../nuclide-find-references/lib/rpc-types';
 import type {
+  FindReferencesReturn,
+} from '../../nuclide-find-references/lib/rpc-types';
+import type {
+  DefinitionQueryResult,
   DiagnosticProviderUpdate,
   FileDiagnosticUpdate,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
+  Outline,
+} from 'atom-ide-ui';
 import type {ConnectableObservable} from 'rxjs';
-import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {
+  NuclideEvaluationExpression,
+} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {
   AutocompleteResult,
   SymbolResult,
   LanguageService,
 } from '../../nuclide-language-service/lib/LanguageService';
 
-
 // TODO: Remove this once interface inheritance/subtyping is implemented in nuclide-rpc.
 export interface HackLanguageService extends LanguageService {
+  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
 
-  getDiagnostics(
-    fileVersion: FileVersion,
-  ): Promise<?DiagnosticProviderUpdate>,
-
-  observeDiagnostics(): ConnectableObservable<FileDiagnosticUpdate>,
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
@@ -52,23 +51,14 @@ export interface HackLanguageService extends LanguageService {
     position: atom$Point,
   ): Promise<?DefinitionQueryResult>,
 
-  getDefinitionById(
-    file: NuclideUri,
-    id: string,
-  ): Promise<?Definition>,
-
   findReferences(
     fileVersion: FileVersion,
     position: atom$Point,
   ): Promise<?FindReferencesReturn>,
 
-  getCoverage(
-    filePath: NuclideUri,
-  ): Promise<?CoverageResult>,
+  getCoverage(filePath: NuclideUri): Promise<?CoverageResult>,
 
-  getOutline(
-    fileVersion: FileVersion,
-  ): Promise<?Outline>,
+  getOutline(fileVersion: FileVersion): Promise<?Outline>,
 
   typeHint(fileVersion: FileVersion, position: atom$Point): Promise<?TypeHint>,
 
@@ -80,9 +70,12 @@ export interface HackLanguageService extends LanguageService {
   formatSource(
     fileVersion: FileVersion,
     range: atom$Range,
-  ): Promise<?string>,
+  ): Promise<?Array<TextEdit>>,
 
-  formatEntireFile(fileVersion: FileVersion, range: atom$Range): Promise<?{
+  formatEntireFile(
+    fileVersion: FileVersion,
+    range: atom$Range,
+  ): Promise<?{
     newCursor?: number,
     formatted: string,
   }>,
@@ -96,9 +89,7 @@ export interface HackLanguageService extends LanguageService {
 
   isFileInProject(fileUri: NuclideUri): Promise<boolean>,
 
-  supportsSymbolSearch(
-    directories: Array<NuclideUri>,
-  ): Promise<boolean>,
+  supportsSymbolSearch(directories: Array<NuclideUri>): Promise<boolean>,
 
   symbolSearch(
     query: string,

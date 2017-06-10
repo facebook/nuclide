@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {relativeDate} from '../commons-node/string';
-import addTooltip from './add-tooltip';
+import {relativeDate} from 'nuclide-commons/string';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
 
 type DefaultProps = {
   delay: number,
@@ -39,14 +40,11 @@ export default class RelativeDate extends React.Component {
     delay: DEFAULT_RERENDER_DELAY,
     shorten: false,
     withToolip: false,
-  }
+  };
 
   componentDidMount(): void {
     const {delay} = this.props;
-    this._interval = setInterval(
-      () => this.forceUpdate(),
-      delay,
-    );
+    this._interval = setInterval(() => this.forceUpdate(), delay);
   }
 
   componentWillUnmount(): void {
@@ -67,13 +65,14 @@ export default class RelativeDate extends React.Component {
     return (
       <span
         {...remainingProps}
-        ref={withToolip
-          ? addTooltip({
-            title: date.toLocaleString(),
-            delay: 200,
-            placement: 'top',
-          })
-          : null
+        ref={
+          withToolip
+            ? addTooltip({
+                title: date.toLocaleString(),
+                delay: 200,
+                placement: 'top',
+              })
+            : null
         }>
         {relativeDate(date, undefined, shorten)}
       </span>

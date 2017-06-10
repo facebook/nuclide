@@ -27,9 +27,14 @@
   &:hover {
     background-color: mix(@base-background-color, @background-color-highlight, 50%);
   }
+
+  &:not(:last-of-type) {
+    border-bottom: 1px solid fade(@text-color-highlight, 10%);
+  }
 }
 
 .nuclide-datatip-content {
+  background-color: @base-background-color;
   flex-grow: 1;
 
   // Allow higher-level component to override the cursor property on certain children.
@@ -49,6 +54,12 @@
   &:hover {
     background-color: rgba(255, 255, 255, 0.05);
     color: @text-color-highlight;
+  }
+}
+
+.nuclide-datatip-marked-text-editor {
+  .cursors {
+    display: none;
   }
 }
 

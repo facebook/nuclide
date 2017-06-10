@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestRunner, Message} from './types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Observable} from 'rxjs';
 
 import invariant from 'assert';
@@ -23,9 +24,9 @@ import TestSuiteModel from './TestSuiteModel';
 import os from 'os';
 import {track} from '../../nuclide-analytics';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-test-runner');
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/test-runner';
 
@@ -48,14 +49,16 @@ export class TestRunnerController {
 
   constructor(testRunners: Set<TestRunner>) {
     this._root = document.createElement('div');
-    this._root.style.display = 'flex';
+    this._root.className = 'nuclide-test-runner-root';
 
     // Bind Functions for use as callbacks;
     // TODO: Replace with property initializers when supported by Flow;
     (this: any).clearOutput = this.clearOutput.bind(this);
     (this: any).stopTests = this.stopTests.bind(this);
     (this: any)._handleClickRun = this._handleClickRun.bind(this);
-    (this: any)._onDebuggerCheckboxChanged = this._onDebuggerCheckboxChanged.bind(this);
+    (this: any)._onDebuggerCheckboxChanged = this._onDebuggerCheckboxChanged.bind(
+      this,
+    );
 
     // TODO: Use the ReadOnlyTextBuffer class from nuclide-atom-text-editor when it is exported.
     this._buffer = new TextBuffer();
@@ -101,14 +104,16 @@ export class TestRunnerController {
     // Get selected test runner when Flow knows `this._testRunnerPanel` is defined.
     const selectedTestRunner = this._testRunnerPanel.getSelectedTestRunner();
     if (!selectedTestRunner) {
-      logger.warn(`No test runner selected. Active test runners: ${this._testRunners.size}`);
+      logger.warn(
+        `No test runner selected. Active test runners: ${this._testRunners.size}`,
+      );
       return;
     }
 
     // 1. Use the `path` argument to this function
     // 2. Use `this._path` on the instance
     // 3. Let `testPath` be `undefined` so the path will be taken from the active `TextEditor`
-    let testPath = (path === undefined) ? this._path : path;
+    let testPath = path === undefined ? this._path : path;
 
     // If there's no path yet, get the path from the active `TextEditor`.
     if (testPath === undefined) {
@@ -129,8 +134,13 @@ export class TestRunnerController {
 
     // If the test runner is debuggable, and the user has checked the box, then we will launch
     // the debugger before running the tests.  We do not handle killing the debugger.
-    if (this._isSelectedTestRunnerDebuggable() && this._attachDebuggerBeforeRunning) {
-      const isAttached = await this._isDebuggerAttached(selectedTestRunner.debuggerProviderName);
+    if (
+      this._isSelectedTestRunnerDebuggable() &&
+      this._attachDebuggerBeforeRunning
+    ) {
+      const isAttached = await this._isDebuggerAttached(
+        selectedTestRunner.debuggerProviderName,
+      );
       if (!isAttached) {
         await selectedTestRunner.attachDebugger(testPath);
       }
@@ -145,7 +155,8 @@ export class TestRunnerController {
     this._runTestRunnerServiceForPath(
       selectedTestRunner.runTest(testPath),
       testPath,
-      selectedTestRunner.label);
+      selectedTestRunner.label,
+    );
     track('testrunner-run-tests', {
       path: testPath,
       testRunner: selectedTestRunner.label,
@@ -162,11 +173,15 @@ export class TestRunnerController {
       return false;
     }
     const selectedTestRunner = this._testRunnerPanel.getSelectedTestRunner();
-    return selectedTestRunner != null && selectedTestRunner.attachDebugger != null;
+    return (
+      selectedTestRunner != null && selectedTestRunner.attachDebugger != null
+    );
   }
 
   async _isDebuggerAttached(debuggerProviderName: string): Promise<boolean> {
-    const debuggerService = await consumeFirstProvider('nuclide-debugger.remote');
+    const debuggerService = await consumeFirstProvider(
+      'nuclide-debugger.remote',
+    );
     return debuggerService.isInDebuggingMode(debuggerProviderName);
   }
 
@@ -231,11 +246,13 @@ export class TestRunnerController {
             }
 
             // Append a PASS/FAIL message depending on whether the class has test failures.
-            this._appendToBuffer(TestRunModel.formatStatusMessage(
-              testInfo.name,
-              testInfo.durationSecs,
-              testInfo.status,
-            ));
+            this._appendToBuffer(
+              TestRunModel.formatStatusMessage(
+                testInfo.name,
+                testInfo.durationSecs,
+                testInfo.status,
+              ),
+            );
             this._renderPanel();
             break;
           case 'start':
@@ -250,11 +267,16 @@ export class TestRunnerController {
             }
             if (error.code === 'ENOENT') {
               this._appendToBuffer(
-                `${Ansi.YELLOW}Command '${error.path}' does not exist${Ansi.RESET}`);
-              this._appendToBuffer(`${Ansi.YELLOW}Are you trying to run remotely?${Ansi.RESET}`);
+                `${Ansi.YELLOW}Command '${error.path}' does not exist${Ansi.RESET}`,
+              );
+              this._appendToBuffer(
+                `${Ansi.YELLOW}Are you trying to run remotely?${Ansi.RESET}`,
+              );
               this._appendToBuffer(`${Ansi.YELLOW}Path: ${path}${Ansi.RESET}`);
             }
-            this._appendToBuffer(`${Ansi.RED}Original Error: ${error.message}${Ansi.RESET}`);
+            this._appendToBuffer(
+              `${Ansi.RED}Original Error: ${error.message}${Ansi.RESET}`,
+            );
             this._setExecutionState(TestRunnerPanel.ExecutionState.STOPPED);
             logger.error(`Error running tests: "${error.message}"`);
             break;
@@ -269,7 +291,10 @@ export class TestRunnerController {
         this._setExecutionState(TestRunnerPanel.ExecutionState.STOPPED);
       })
       .subscribe();
-    this._run = new TestRunModel(label, subscription.unsubscribe.bind(subscription));
+    this._run = new TestRunModel(
+      label,
+      subscription.unsubscribe.bind(subscription),
+    );
   }
 
   _setExecutionState(executionState: number): void {
@@ -279,7 +304,10 @@ export class TestRunnerController {
 
   _renderPanel() {
     let progressValue;
-    if (this._testSuiteModel && this._executionState === TestRunnerPanel.ExecutionState.RUNNING) {
+    if (
+      this._testSuiteModel &&
+      this._executionState === TestRunnerPanel.ExecutionState.RUNNING
+    ) {
       progressValue = this._testSuiteModel.progressPercent();
     } else {
       // If there is no running test suite, fill the progress bar because there is no progress to
@@ -312,7 +340,7 @@ export class TestRunnerController {
 
   _stopListening(): void {
     this._runningTest = false;
-    if (this._run && (this._run.dispose != null)) {
+    if (this._run && this._run.dispose != null) {
       try {
         const dispose = this._run.dispose;
         this._run.dispose = null;

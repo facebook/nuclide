@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -58,7 +59,10 @@ describe('Diagnostics panel integration test', () => {
 
     runs(() => {
       // Now show the panel with the keyboard shortcut
-      dispatchKeyboardEvent('D', document.activeElement, {alt: true, shift: true});
+      dispatchKeyboardEvent('D', document.activeElement, {
+        alt: true,
+        shift: true,
+      });
     });
 
     waitsFor('diagnostics panel to be shown', 10000, () => {
@@ -68,7 +72,10 @@ describe('Diagnostics panel integration test', () => {
 
     runs(() => {
       // Now hide the panel with the keyboard shortcut
-      dispatchKeyboardEvent('D', document.activeElement, {alt: true, shift: true});
+      dispatchKeyboardEvent('D', document.activeElement, {
+        alt: true,
+        shift: true,
+      });
     });
 
     waitsFor('diagnostics panel to be hidden', 10000, () => {

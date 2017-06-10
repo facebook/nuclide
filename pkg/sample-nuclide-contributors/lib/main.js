@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import createPackage from '../../commons-atom/createPackage';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
 import Module from 'module';
 import path from 'path'; // eslint-disable-line nuclide-internal/prefer-nuclide-uri
@@ -37,7 +38,6 @@ class Activation {
           ipcRenderer.send('run-package-specs', activePath);
         },
       ),
-
       /**
        * Force saving Atom state (for debugging).
        */
@@ -60,9 +60,8 @@ class Activation {
           atom.notifications.addInfo('State saved!');
         },
       ),
-
       /**
-       * Allows running `require('rxjs')` or `require('commons-node/promise');`.
+       * Allows running `require('nuclide-commons/promise');`.
        * Useful for debugging from the devtools console.
        */
       atom.commands.add(
@@ -88,7 +87,6 @@ class Activation {
           });
         },
       ),
-
       () => {
         delete global.nuclide_contributors_tryReloadingPackage;
       },
@@ -107,11 +105,23 @@ class Activation {
       // remove cache
       Object.keys(require.cache)
         .filter(p => p.indexOf(pack.path + path.sep) === 0)
-        .forEach(p => { delete require.cache[p]; });
+        .forEach(p => {
+          delete require.cache[p];
+        });
+
+      // For Atom 1.17+
+      if (global.snapshotResult && global.snapshotResult.customRequire) {
+        Object.keys(global.snapshotResult.customRequire.cache)
+          .filter(p => p.indexOf(pack.path + path.sep) !== -1)
+          .forEach(p => {
+            delete global.snapshotResult.customRequire.cache[p];
+          });
+      }
 
       const pkg = atom.packages.loadPackage(pack.path);
       invariant(pkg != null);
-      pkg.activate();
+      pkg.activateResources();
+      pkg.activateNow();
     };
   }
 

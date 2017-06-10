@@ -6,19 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {HackRange} from './rpc-types';
 import type {HackSpan} from './OutlineView';
-import type {
-  Definition,
-  DefinitionQueryResult,
-} from '../../nuclide-definition-service/lib/rpc-types';
+import type {Definition, DefinitionQueryResult} from 'atom-ide-ui';
 
 import invariant from 'assert';
-import {hackRangeToAtomRange} from './HackHelpers';
-import {Point} from 'simple-text-buffer';
+import {
+  atomPointOfHackRangeStart,
+  hackRangeToAtomRange,
+  hackSpanToAtomRange,
+} from './HackHelpers';
 
 export type HackDefinition = {
   name: string,
@@ -35,28 +36,32 @@ export function convertDefinitions(
   projectRoot: NuclideUri,
 ): ?DefinitionQueryResult {
   function convertDefinition(definition: HackDefinition): Definition {
-    invariant(definition.definition_pos != null);
+    const {definition_pos, definition_span, name} = definition;
+    invariant(definition_pos != null);
     return {
-      path: definition.definition_pos.filename || filePath,
-      position: new Point(
-        definition.definition_pos.line - 1,
-        definition.definition_pos.char_start - 1),
-      // TODO: range, definition_id
-      id: definition.name,
-      name: definition.name,
+      path: definition_pos.filename || filePath,
+      position: atomPointOfHackRangeStart(definition_pos),
+      range: definition_span == null
+        ? undefined
+        : hackSpanToAtomRange(definition_span),
+      // TODO: definition_id
+      id: name,
+      name,
       language: 'php',
       projectRoot,
     };
   }
 
-  const filteredDefinitions = hackDefinitions
-    .filter(definition => definition.definition_pos != null);
+  const filteredDefinitions = hackDefinitions.filter(
+    definition => definition.definition_pos != null,
+  );
   if (filteredDefinitions.length === 0) {
     return null;
   }
 
-  const definitions: Array<Definition> = filteredDefinitions
-    .map(convertDefinition);
+  const definitions: Array<Definition> = filteredDefinitions.map(
+    convertDefinition,
+  );
 
   return {
     queryRange: [hackRangeToAtomRange(filteredDefinitions[0].pos)],

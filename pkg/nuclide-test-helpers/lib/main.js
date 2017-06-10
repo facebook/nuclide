@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
@@ -33,11 +34,14 @@ import {addMatchers} from './matchers';
  *     `verify()` must throw an exception.
  */
 async function expectAsyncFailure(
-    promise: Promise<any>,
-    verify: (error: Error) => void): Promise<any> {
+  promise: Promise<any>,
+  verify: (error: Error) => void,
+): Promise<any> {
   try {
     await promise;
-    return Promise.reject(new Error('Promise should have failed, but did not.'));
+    return Promise.reject(
+      new Error('Promise should have failed, but did not.'),
+    );
   } catch (e) {
     verify(e);
   }
@@ -108,7 +112,10 @@ async function expectObservableToStartWith<T>(
   source: Observable<T>,
   expected: Array<T>,
 ): Promise<void> {
-  const actual: Array<T> = await source.take(expected.length).toArray().toPromise();
+  const actual: Array<T> = await source
+    .take(expected.length)
+    .toArray()
+    .toPromise();
   expect(actual).toEqual(expected);
 }
 

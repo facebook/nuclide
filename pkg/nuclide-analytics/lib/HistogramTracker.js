@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {track} from './track';
@@ -72,7 +73,10 @@ export class HistogramTracker {
   }
 
   track(value: number): HistogramTracker {
-    const bucket = Math.min(this._buckets.length - 1, Math.floor(value / this._bucketSize));
+    const bucket = Math.min(
+      this._buckets.length - 1,
+      Math.floor(value / this._bucketSize),
+    );
     this._buckets[bucket].addValue(value);
     return this;
   }

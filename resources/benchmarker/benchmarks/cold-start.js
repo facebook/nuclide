@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 const TIMEOUT = 30 * 1000;
@@ -58,16 +59,20 @@ module.exports = {
         break;
     }
 
-    const {time: realLoadTime, promiseTime: realPromiseLoadTime} = await timedAsync(
+    const {
+      time: realLoadTime,
+      promiseTime: realPromiseLoadTime,
+    } = await timedAsync(
       // $FlowFixMe: Not sure for what versions of Atom this worked
       atom.packages.loadPackages(),
     );
     const loadedPackages = atom.packages.getLoadedPackages().filter(isNotTheme);
     const loadedCount = loadedPackages.length;
 
-    const {time: realActivateTime, promiseTime: realPromiseActivateTime} = await timedAsync(
-      atom.packages.activate(),
-    );
+    const {
+      time: realActivateTime,
+      promiseTime: realPromiseActivateTime,
+    } = await timedAsync(atom.packages.activate());
     const activePackages = atom.packages.getActivePackages().filter(isNotTheme);
     const activeCount = activePackages.length;
 
@@ -86,7 +91,10 @@ module.exports = {
     let slowestClaimedActivate = '';
     activePackages.forEach(pkg => {
       summedClaimedActivateTime += pkg.activateTime;
-      maxClaimedActivateTime = Math.max(maxClaimedActivateTime, pkg.activateTime);
+      maxClaimedActivateTime = Math.max(
+        maxClaimedActivateTime,
+        pkg.activateTime,
+      );
       if (maxClaimedActivateTime === pkg.activateTime) {
         slowestClaimedActivate = pkg.name;
       }

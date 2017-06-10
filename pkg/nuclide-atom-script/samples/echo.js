@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /*
@@ -29,8 +30,10 @@
 
 import type {ExitCode} from '../lib/types';
 
-export default async function runCommand(args: Array<string>): Promise<ExitCode> {
+export default (async function runCommand(
+  args: Array<string>,
+): Promise<ExitCode> {
   const message = args.length === 0 ? 'Please pass me an arg!' : args.join(' ');
   console.log(message);
   return 0;
-}
+});

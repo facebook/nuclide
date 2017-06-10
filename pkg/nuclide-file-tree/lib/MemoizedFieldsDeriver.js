@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {StoreConfigData, NodeCheckedStatus} from './FileTreeStore';
 import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import FileTreeHelpers from './FileTreeHelpers';
 import {StatusCodeNumber} from '../../nuclide-hg-rpc/lib/hg-constants';
 
@@ -75,12 +76,16 @@ export class MemoizedFieldsDeriver {
     this._getVcsStatusCode = memoize(this._vcsStatusCodeGetter.bind(this));
     this._getIsIgnored = memoize(this._isIgnoredGetter.bind(this));
     this._getCheckedStatus = memoize(this._checkedStatusGetter.bind(this));
-    this._getContainedInWorkingSet = memoize(this._containedInWorkingSetGetter.bind(this));
+    this._getContainedInWorkingSet = memoize(
+      this._containedInWorkingSetGetter.bind(this),
+    );
     this._getContainedInOpenFilesWorkingSet = memoize(
       this._containedInOpenFilesWorkingSetGetter.bind(this),
     );
     this._getShouldBeShown = memoize(this._shouldBeShownGetter.bind(this));
-    this._getShouldBeSoftened = memoize(this._shouldBeSoftenedGetter.bind(this));
+    this._getShouldBeSoftened = memoize(
+      this._shouldBeSoftenedGetter.bind(this),
+    );
   }
 
   _repoGetter(conf: StoreConfigData, store: Object): ?atom$Repository {
@@ -93,12 +98,16 @@ export class MemoizedFieldsDeriver {
     return store.repo;
   }
 
-  _vcsStatusCodeGetter(conf: StoreConfigData, store: Object): StatusCodeNumberValue {
+  _vcsStatusCodeGetter(
+    conf: StoreConfigData,
+    store: Object,
+  ): StatusCodeNumberValue {
     if (store.vcsStatuses !== conf.vcsStatuses) {
       store.vcsStatuses = conf.vcsStatuses;
 
       const rootVcsStatuses = store.vcsStatuses.get(this._rootUri) || {};
-      store.vcsStatusCode = rootVcsStatuses[this._uri] || StatusCodeNumber.CLEAN;
+      store.vcsStatusCode =
+        rootVcsStatuses[this._uri] || StatusCodeNumber.CLEAN;
     }
 
     return store.vcsStatusCode;
@@ -109,7 +118,8 @@ export class MemoizedFieldsDeriver {
     if (store.repo !== repo) {
       store.repo = repo;
 
-      store.isIgnored = store.repo != null &&
+      store.isIgnored =
+        store.repo != null &&
         store.repo.isProjectAtRoot() &&
         store.repo.isPathIgnored(this._uri);
     }
@@ -117,7 +127,10 @@ export class MemoizedFieldsDeriver {
     return store.isIgnored;
   }
 
-  _checkedStatusGetter(conf: StoreConfigData, store: Object): NodeCheckedStatus {
+  _checkedStatusGetter(
+    conf: StoreConfigData,
+    store: Object,
+  ): NodeCheckedStatus {
     if (store.editedWorkingSet !== conf.editedWorkingSet) {
       store.editedWorkingSet = conf.editedWorkingSet;
 
@@ -127,14 +140,19 @@ export class MemoizedFieldsDeriver {
         if (this._isContainer) {
           if (store.editedWorkingSet.containsFileBySplitPath(this._splitPath)) {
             store.checkedStatus = 'checked';
-          } else if (store.editedWorkingSet.containsDirBySplitPath(this._splitPath)) {
+          } else if (
+            store.editedWorkingSet.containsDirBySplitPath(this._splitPath)
+          ) {
             store.checkedStatus = 'partial';
           } else {
             store.checkedStatus = 'clear';
           }
         } else {
-          store.checkedStatus =
-            store.editedWorkingSet.containsFileBySplitPath(this._splitPath) ? 'checked' : 'clear';
+          store.checkedStatus = store.editedWorkingSet.containsFileBySplitPath(
+            this._splitPath,
+          )
+            ? 'checked'
+            : 'clear';
         }
       }
     }
@@ -146,24 +164,27 @@ export class MemoizedFieldsDeriver {
     if (store.workingSet !== conf.workingSet) {
       store.workingSet = conf.workingSet;
 
-      store.containedInWorkingSet = this._isContainer ?
-        store.workingSet.containsDirBySplitPath(this._splitPath) :
-        store.workingSet.containsFileBySplitPath(this._splitPath);
+      store.containedInWorkingSet = this._isContainer
+        ? store.workingSet.containsDirBySplitPath(this._splitPath)
+        : store.workingSet.containsFileBySplitPath(this._splitPath);
     }
 
     return store.containedInWorkingSet;
   }
 
-  _containedInOpenFilesWorkingSetGetter(conf: StoreConfigData, store: Object): boolean {
+  _containedInOpenFilesWorkingSetGetter(
+    conf: StoreConfigData,
+    store: Object,
+  ): boolean {
     if (store.openFilesWorkingSet !== conf.openFilesWorkingSet) {
       store.openFilesWorkingSet = conf.openFilesWorkingSet;
 
       if (store.openFilesWorkingSet.isEmpty()) {
         store.containedInOpenFilesWorkingSet = false;
       } else {
-        store.containedInOpenFilesWorkingSet = this._isContainer ?
-          store.openFilesWorkingSet.containsDirBySplitPath(this._splitPath) :
-          store.openFilesWorkingSet.containsFileBySplitPath(this._splitPath);
+        store.containedInOpenFilesWorkingSet = this._isContainer
+          ? store.openFilesWorkingSet.containsDirBySplitPath(this._splitPath)
+          : store.openFilesWorkingSet.containsFileBySplitPath(this._splitPath);
       }
     }
 
@@ -173,9 +194,12 @@ export class MemoizedFieldsDeriver {
   _shouldBeShownGetter(conf: StoreConfigData, store: Object): boolean {
     const isIgnored = this._getIsIgnored(conf);
     const containedInWorkingSet = this._getContainedInWorkingSet(conf);
-    const containedInOpenFilesWorkingSet = this._getContainedInOpenFilesWorkingSet(conf);
+    const containedInOpenFilesWorkingSet = this._getContainedInOpenFilesWorkingSet(
+      conf,
+    );
 
-    if (store.isIgnored !== isIgnored ||
+    if (
+      store.isIgnored !== isIgnored ||
       store.excludeVcsIgnoredPaths !== conf.excludeVcsIgnoredPaths ||
       store.hideIgnoredNames !== conf.hideIgnoredNames ||
       store.ignoredPatterns !== conf.ignoredPatterns ||
@@ -193,12 +217,16 @@ export class MemoizedFieldsDeriver {
 
       if (store.isIgnored && store.excludeVcsIgnoredPaths) {
         store.shouldBeShown = false;
-      } else if (store.hideIgnoredNames && store.ignoredPatterns.some(p => p.match(this._uri))) {
+      } else if (
+        store.hideIgnoredNames &&
+        store.ignoredPatterns.some(p => p.match(this._uri))
+      ) {
         store.shouldBeShown = false;
       } else if (store.isEditingWorkingSet) {
         store.shouldBeShown = true;
       } else {
-        store.shouldBeShown = store.containedInWorkingSet || store.containedInOpenFilesWorkingSet;
+        store.shouldBeShown =
+          store.containedInWorkingSet || store.containedInOpenFilesWorkingSet;
       }
     }
 
@@ -207,9 +235,12 @@ export class MemoizedFieldsDeriver {
 
   _shouldBeSoftenedGetter(conf: StoreConfigData, store: Object): boolean {
     const containedInWorkingSet = this._getContainedInWorkingSet(conf);
-    const containedInOpenFilesWorkingSet = this._getContainedInOpenFilesWorkingSet(conf);
+    const containedInOpenFilesWorkingSet = this._getContainedInOpenFilesWorkingSet(
+      conf,
+    );
 
-    if (store.isEditingWorkingSet !== conf.isEditingWorkingSet ||
+    if (
+      store.isEditingWorkingSet !== conf.isEditingWorkingSet ||
       store.containedInWorkingSet !== containedInWorkingSet ||
       store.containedInOpenFilesWorkingSet !== containedInOpenFilesWorkingSet
     ) {

@@ -6,27 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 import {AttachProcessInfo} from './AttachProcessInfo';
-import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
-import {DebuggerLaunchAttachEventTypes} from '../../nuclide-debugger-base';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
 import {RemoteConnection} from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {
+  serializeDebuggerConfig,
+  deserializeDebuggerConfig,
+} from '../../nuclide-debugger-base';
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-
-import type EventEmitter from 'events';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 type PropsType = {
   targetUri: NuclideUri,
-  parentEmitter: EventEmitter,
+  configIsValidChanged: (valid: boolean) => void,
 };
 
 type StateType = {
@@ -34,31 +33,75 @@ type StateType = {
   pathMenuItems: Array<{label: string, value: number}>,
 };
 
-export class AttachUiComponent extends React.Component<void, PropsType, StateType> {
+export class AttachUiComponent
+  extends React.Component<void, PropsType, StateType> {
   props: PropsType;
   state: StateType;
+  _disposables: UniversalDisposable;
 
   constructor(props: PropsType) {
     super(props);
-    (this: any)._handleCancelButtonClick = this._handleCancelButtonClick.bind(this);
-    (this: any)._handleAttachButtonClick = this._handleAttachButtonClick.bind(this);
-    (this: any)._handlePathsDropdownChange = this._handlePathsDropdownChange.bind(this);
+    (this: any)._handleAttachButtonClick = this._handleAttachButtonClick.bind(
+      this,
+    );
+    (this: any)._handlePathsDropdownChange = this._handlePathsDropdownChange.bind(
+      this,
+    );
+    this._disposables = new UniversalDisposable();
     this.state = {
       selectedPathIndex: 0,
       pathMenuItems: this._getPathMenuItems(),
     };
   }
 
-  componentWillMount() {
-    this.props.parentEmitter.on(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleAttachButtonClick);
+  _getSerializationArgs() {
+    return [
+      nuclideUri.isRemote(this.props.targetUri)
+        ? nuclideUri.getHostname(this.props.targetUri)
+        : 'local',
+      'attach',
+      'php',
+    ];
+  }
+
+  componentDidMount(): void {
+    deserializeDebuggerConfig(
+      ...this._getSerializationArgs(),
+      (transientSettings, savedSettings) => {
+        const savedPath = this.state.pathMenuItems.find(
+          item => item.label === savedSettings.selectedPath,
+        );
+        if (savedPath != null) {
+          this.setState({
+            selectedPathIndex: this.state.pathMenuItems.indexOf(savedPath),
+          });
+        }
+      },
+    );
+
+    this.props.configIsValidChanged(this._debugButtonShouldEnable());
+    this._disposables.add(
+      atom.commands.add('atom-workspace', {
+        'core:confirm': () => {
+          if (this._debugButtonShouldEnable()) {
+            this._handleAttachButtonClick();
+          }
+        },
+      }),
+    );
   }
 
   componentWillUnmount() {
-    this.props.parentEmitter.removeListener(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleAttachButtonClick);
+    this._disposables.dispose();
+  }
+
+  setState(newState: Object): void {
+    super.setState(newState);
+    this.props.configIsValidChanged(this._debugButtonShouldEnable());
+  }
+
+  _debugButtonShouldEnable(): boolean {
+    return true;
   }
 
   render(): React.Element<any> {
@@ -72,14 +115,6 @@ export class AttachUiComponent extends React.Component<void, PropsType, StateTyp
             onChange={this._handlePathsDropdownChange}
             value={this.state.selectedPathIndex}
           />
-        </div>
-        <div className="padded text-right">
-          <Button onClick={this._handleCancelButtonClick}>Cancel</Button>
-          <Button
-            buttonType={ButtonTypes.PRIMARY}
-            onClick={this._handleAttachButtonClick}>
-            Attach
-          </Button>
         </div>
       </div>
     );
@@ -108,27 +143,17 @@ export class AttachUiComponent extends React.Component<void, PropsType, StateTyp
   _handleAttachButtonClick(): void {
     // Start a debug session with the user-supplied information.
     const {hostname} = nuclideUri.parseRemoteUri(this.props.targetUri);
-    const selectedPath = this.state.pathMenuItems[this.state.selectedPathIndex].label;
+    const selectedPath = this.state.pathMenuItems[this.state.selectedPathIndex]
+      .label;
     const processInfo = new AttachProcessInfo(
       nuclideUri.createRemoteUri(hostname, selectedPath),
     );
-    consumeFirstProvider('nuclide-debugger.remote')
-      .then(debuggerService => debuggerService.startDebugging(processInfo));
-    this._showDebuggerPanel();
-    this._handleCancelButtonClick();
-  }
-
-  _showDebuggerPanel(): void {
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-debugger:show',
+    consumeFirstProvider('nuclide-debugger.remote').then(debuggerService =>
+      debuggerService.startDebugging(processInfo),
     );
-  }
 
-  _handleCancelButtonClick(): void {
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-debugger:toggle-launch-attach',
-    );
+    serializeDebuggerConfig(...this._getSerializationArgs(), {
+      selectedPath,
+    });
   }
 }

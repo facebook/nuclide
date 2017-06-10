@@ -6,17 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {SymbolResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  SymbolResult,
+} from '../../nuclide-language-service/lib/LanguageService';
 import type {HHSearchPosition} from './types';
 
 import {findHackConfigDir} from './hack-config';
 
-import {
-  callHHClient,
-} from './HackHelpers';
+import {callHHClient} from './HackHelpers';
 
 const pendingSearchPromises: Map<string, Promise<any>> = new Map();
 
@@ -69,17 +70,17 @@ export async function executeQuery(
   let searchPromise = pendingSearchPromises.get(queryString);
   if (!searchPromise) {
     searchPromise = callHHClient(
-        /* args */ ['--search' + (searchPostfix || ''), queryString],
-        /* errorStream */ false,
-        /* processInput */ null,
-        /* file */ filePath,
+      /* args */ ['--search' + (searchPostfix || ''), queryString],
+      /* errorStream */ false,
+      /* processInput */ null,
+      /* file */ filePath,
     );
     pendingSearchPromises.set(queryString, searchPromise);
   }
 
   let searchResponse: ?Array<HHSearchPosition> = null;
   try {
-    searchResponse = ((await searchPromise): any);
+    searchResponse = (await searchPromise: any);
   } finally {
     pendingSearchPromises.delete(queryString);
   }
@@ -118,17 +119,17 @@ export function convertSearchResults(
 }
 
 const ICONS = {
-  'interface': 'puzzle',
-  'function': 'zap',
-  'method': 'zap',
-  'typedef': 'tag',
-  'class': 'code',
+  interface: 'puzzle',
+  function: 'zap',
+  method: 'zap',
+  typedef: 'tag',
+  class: 'code',
   'abstract class': 'code',
-  'constant': 'quote',
-  'trait': 'checklist',
-  'enum': 'file-binary',
-  'default': null,
-  'unknown': 'squirrel',
+  constant: 'quote',
+  trait: 'checklist',
+  enum: 'file-binary',
+  default: null,
+  unknown: 'squirrel',
 };
 
 function bestIconForDesc(desc: ?string): ?string {

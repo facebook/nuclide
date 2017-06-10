@@ -6,25 +6,25 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {CategoryLogger} from '../../nuclide-logging';
 import type {ConnectableObservable} from 'rxjs';
 import type {AtomNotification} from '../../nuclide-debugger-base/lib/types';
 
 import WS from 'ws';
 import ClientCallback from './ClientCallback';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {getCategoryLogger} from '../../nuclide-logging';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {getLogger} from 'log4js';
 
 export class DebuggerRpcServiceBase {
   _clientCallback: ClientCallback;
-  _logger: CategoryLogger;
+  _logger: log4js$Logger;
   _subscriptions: UniversalDisposable;
 
   constructor(debuggerRpcServiceName: string) {
     this._clientCallback = new ClientCallback();
-    this._logger = getCategoryLogger(`nuclide-debugger-${debuggerRpcServiceName}-rpc`);
+    this._logger = getLogger(`nuclide-debugger-${debuggerRpcServiceName}-rpc`);
     this._subscriptions = new UniversalDisposable(this._clientCallback);
   }
 
@@ -32,7 +32,7 @@ export class DebuggerRpcServiceBase {
     return this._clientCallback;
   }
 
-  getLogger(): CategoryLogger {
+  getLogger(): log4js$Logger {
     return this._logger;
   }
 
@@ -104,10 +104,12 @@ export class DebuggerRpcWebSocketService extends DebuggerRpcServiceBase {
   sendCommand(message: string): Promise<void> {
     const webSocket = this._webSocket;
     if (webSocket != null) {
-      this.getLogger().logTrace(`forward client message to server: ${message}`);
+      this.getLogger().trace(`forward client message to server: ${message}`);
       webSocket.send(message);
     } else {
-      this.getLogger().logInfo(`Nuclide sent message to server after socket closed: ${message}`);
+      this.getLogger().info(
+        `Nuclide sent message to server after socket closed: ${message}`,
+      );
     }
     return Promise.resolve();
   }

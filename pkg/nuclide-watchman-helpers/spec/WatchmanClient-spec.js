@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 import watchman from 'fb-watchman';
 import WatchmanClient from '../lib/WatchmanClient';
@@ -26,15 +27,18 @@ describe('WatchmanClient test suite', () => {
     client = new WatchmanClient();
 
     waitsForPromise(async () => {
-      dirPath = await generateFixture('watchman_helpers_test', new Map([
-        // Many people use restrict_root_files so watchman only will watch folders
-        // that have those listed files in them. watchmanconfig is always a root
-        // file.
-        ['.watchmanconfig', '{}'],
-        ['test.txt', 'abc'],
-        ['non-used-file.txt', 'def'],
-        ['nested/nested-test.txt', 'ghi'],
-      ]));
+      dirPath = await generateFixture(
+        'watchman_helpers_test',
+        new Map([
+          // Many people use restrict_root_files so watchman only will watch folders
+          // that have those listed files in them. watchmanconfig is always a root
+          // file.
+          ['.watchmanconfig', '{}'],
+          ['test.txt', 'abc'],
+          ['non-used-file.txt', 'def'],
+          ['nested/nested-test.txt', 'ghi'],
+        ]),
+      );
       // TODO(hansonw): This is a big change in Watchman behavior- figure out what
       // this means for Nuclide's use.
       dirPath = fs.realpathSync(dirPath);
@@ -47,11 +51,14 @@ describe('WatchmanClient test suite', () => {
   });
 
   describe('restore subscriptions', () => {
-    function testRestoreSubscriptions(onRestoreChange: (watchmanClient: watchman.Client) => void) {
+    function testRestoreSubscriptions(
+      onRestoreChange: (watchmanClient: watchman.Client) => void,
+    ) {
       // First watchman init can be slow and flaky.
       waitsForPromise({timeout: 15000}, async () => {
         const filePath = nuclideUri.join(dirPath, 'test.txt');
-        const watcher = await client.watchDirectoryRecursive(dirPath)
+        const watcher = await client
+          .watchDirectoryRecursive(dirPath)
           // Give it two retries.
           .catch(() => client.watchDirectoryRecursive(dirPath))
           .catch(() => client.watchDirectoryRecursive(dirPath));
@@ -62,12 +69,14 @@ describe('WatchmanClient test suite', () => {
         waitsFor(() => changeHandler.callCount > 0);
         runs(async () => {
           expect(changeHandler.callCount).toBe(1);
-          expect(changeHandler.argsForCall[0][0]).toEqual([{
-            name: 'test.txt',
-            mode: FILE_MODE,
-            new: false,
-            exists: true,
-          }]);
+          expect(changeHandler.argsForCall[0][0]).toEqual([
+            {
+              name: 'test.txt',
+              mode: FILE_MODE,
+              new: false,
+              exists: true,
+            },
+          ]);
           const internalClient = await client._clientPromise;
           onRestoreChange(internalClient);
           internalClient.end();
@@ -79,12 +88,14 @@ describe('WatchmanClient test suite', () => {
         waitsFor(() => changeHandler.callCount > 1);
         runs(() => {
           expect(changeHandler.callCount).toBe(2);
-          expect(changeHandler.argsForCall[1][0]).toEqual([{
-            name: 'test.txt',
-            mode: FILE_MODE,
-            new: false,
-            exists: false,
-          }]);
+          expect(changeHandler.argsForCall[1][0]).toEqual([
+            {
+              name: 'test.txt',
+              mode: FILE_MODE,
+              new: false,
+              exists: false,
+            },
+          ]);
         });
       });
       // Cleanup watch resources.

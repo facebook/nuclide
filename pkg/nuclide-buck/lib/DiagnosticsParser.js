@@ -6,14 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {FileDiagnosticMessage, Trace} from '../../nuclide-diagnostics-common/lib/rpc-types';
+import type {FileDiagnosticMessage, Trace} from 'atom-ide-ui';
 
 import {Point, Range} from 'atom';
-import nuclideUri from '../../commons-node/nuclideUri';
-import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import typeof * as FileSystemService
+  from '../../nuclide-server/lib/services/FileSystemService';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
 
 const DIAGNOSTIC_REGEX = /^([^\s:]+):([0-9]+):([0-9]+): (.*)$/gm;
 
@@ -38,7 +42,7 @@ type ParsedDiagnostic = {
   filePath: string,
   text: string,
   line: number,
-  column: number,
+  column: ?number,
 };
 
 function getFileSystemServiceIfNecessary(
@@ -60,22 +64,27 @@ function pushParsedDiagnostic(
   level: string,
   text: string,
   line: number,
-  column: number,
+  column: ?number,
 ) {
   if (fileSystemService != null) {
     const filePath = nuclideUri.resolve(root, file);
     const localPath = nuclideUri.getPath(filePath);
-    promises.push(fileSystemService.exists(localPath).then(
-      exists => (!exists ? null : {
-        level,
-        filePath,
-        text,
-        line,
-        column,
-      }),
-      // Silently ignore files resulting in an error.
-      () => null,
-    ));
+    promises.push(
+      fileSystemService.exists(localPath).then(
+        exists =>
+          !exists
+            ? null
+            : {
+                level,
+                filePath,
+                text,
+                line,
+                column,
+              },
+        // Silently ignore files resulting in an error.
+        () => null,
+      ),
+    );
   }
 }
 
@@ -94,7 +103,7 @@ function pushParsedTestDiagnostic(
     'error',
     text,
     parseInt(strLine, 10),
-    0,
+    null,
   );
 }
 
@@ -105,12 +114,24 @@ function makeDiagnostic(result: ParsedDiagnostic): FileDiagnosticMessage {
     type: result.level === 'error' ? 'Error' : 'Warning',
     filePath: result.filePath,
     text: result.text,
-    range: new Range([result.line - 1, 0], [result.line - 1, INDEFINITE_END_COLUMN]),
+    range: result.column == null
+      ? new Range(
+          [result.line - 1, 0],
+          [result.line - 1, INDEFINITE_END_COLUMN],
+        )
+      : // This gets expanded to the containing word at display time.
+        new Range(
+          [result.line - 1, result.column - 1],
+          [result.line - 1, result.column - 1],
+        ),
   };
 }
 
 function makeTrace(result: ParsedDiagnostic): Trace {
-  const point = new Point(result.line - 1, result.column - 1);
+  const point = new Point(
+    result.line - 1,
+    result.column == null ? 0 : result.column - 1,
+  );
   return {
     type: 'Trace',
     text: result.text,
@@ -146,25 +167,46 @@ export default class DiagnosticsParser {
     let diagnosticMatch;
     while ((diagnosticMatch = DIAGNOSTIC_REGEX.exec(message))) {
       const [, file, strLine, strCol, text] = diagnosticMatch;
-      fileSystemService = getFileSystemServiceIfNecessary(fileSystemService, root);
+      fileSystemService = getFileSystemServiceIfNecessary(
+        fileSystemService,
+        root,
+      );
       const line = parseInt(strLine, 10);
       const column = parseInt(strCol, 10);
-      pushParsedDiagnostic(fileSystemService, promises, root, file, level, text, line, column);
+      pushParsedDiagnostic(
+        fileSystemService,
+        promises,
+        root,
+        file,
+        level,
+        text,
+        line,
+        column,
+      );
     }
 
     // Collect test failure promises and check all matches at once.
     let testFailureMatch;
     // Only check for test failures if this line hasn't already matched for something else.
     if (promises.length === 0) {
-      const regexp = this.testFailuresHaveStarted ?
-        TEST_FAILURE_CONTINUED_REGEX : TEST_FAILURE_START_REGEX;
+      const regexp = this.testFailuresHaveStarted
+        ? TEST_FAILURE_CONTINUED_REGEX
+        : TEST_FAILURE_START_REGEX;
       const failuresHadStarted = this.testFailuresHaveStarted;
 
       this.testFailuresHaveStarted = false;
       while ((testFailureMatch = regexp.exec(message))) {
         this.testFailuresHaveStarted = true;
-        fileSystemService = getFileSystemServiceIfNecessary(fileSystemService, root);
-        pushParsedTestDiagnostic(fileSystemService, promises, root, testFailureMatch);
+        fileSystemService = getFileSystemServiceIfNecessary(
+          fileSystemService,
+          root,
+        );
+        pushParsedTestDiagnostic(
+          fileSystemService,
+          promises,
+          root,
+          testFailureMatch,
+        );
       }
 
       if (failuresHadStarted && promises.length === 0) {
@@ -177,8 +219,16 @@ export default class DiagnosticsParser {
         // begins doing so this function will match it correctly.
         while ((testFailureMatch = TEST_FAILURE_START_REGEX.exec(message))) {
           this.testFailuresHaveStarted = true;
-          fileSystemService = getFileSystemServiceIfNecessary(fileSystemService, root);
-          pushParsedTestDiagnostic(fileSystemService, promises, root, testFailureMatch);
+          fileSystemService = getFileSystemServiceIfNecessary(
+            fileSystemService,
+            root,
+          );
+          pushParsedTestDiagnostic(
+            fileSystemService,
+            promises,
+            root,
+            testFailureMatch,
+          );
         }
       }
     }

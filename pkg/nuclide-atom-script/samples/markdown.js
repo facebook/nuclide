@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* eslint-disable no-console */
@@ -14,25 +15,31 @@ import type {ExitCode} from '../lib/types';
 
 import fs from 'fs';
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import yargs from 'yargs';
 
-export default async function runCommand(args: Array<string>): Promise<ExitCode> {
+export default (async function runCommand(
+  args: Array<string>,
+): Promise<ExitCode> {
   const argv = await new Promise((resolve, reject) => {
-    resolve(yargs
-      .usage(`Usage: atom-script ${__dirname}/markdown.js -o <output file> <input file>`)
-      .help('h')
-      .alias('h', 'help')
-      .option('out', {
-        alias: 'o',
-        demand: false,
-        describe: 'Must specify a path to an output file.',
-        type: 'string',
-      })
-      .demand(1, 'Must specify a path to a Markdown file.')
-      .exitProcess(false)
-      .fail(reject) // This will bubble up and cause runCommand() to reject.
-      .parse(args));
+    resolve(
+      yargs
+        .usage(
+          `Usage: atom-script ${__dirname}/markdown.js -o <output file> <input file>`,
+        )
+        .help('h')
+        .alias('h', 'help')
+        .option('out', {
+          alias: 'o',
+          demand: false,
+          describe: 'Must specify a path to an output file.',
+          type: 'string',
+        })
+        .demand(1, 'Must specify a path to a Markdown file.')
+        .exitProcess(false)
+        .fail(reject) // This will bubble up and cause runCommand() to reject.
+        .parse(args),
+    );
   });
 
   // When this happens, the help text has already been printed to stdout.
@@ -48,7 +55,9 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
   await atom.packages.activatePackage('markdown-preview');
 
   // Use markdown-preview to generate the HTML.
-  const markdownPreviewPackage = atom.packages.getActivePackage('markdown-preview');
+  const markdownPreviewPackage = atom.packages.getActivePackage(
+    'markdown-preview',
+  );
   invariant(markdownPreviewPackage);
   // Apparently copyHtml() is exposed as an export of markdown-preview.
   markdownPreviewPackage.mainModule.copyHtml();
@@ -61,9 +70,10 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
 
   // We create a MarkdownPreviewView to call its getMarkdownPreviewCSS() method.
   // $FlowIssue: Need to dynamically load a path.
-  const MarkdownPreviewView = require(
-    nuclideUri.join(markdownPreviewPackage.path, 'lib/markdown-preview-view.js'),
-  );
+  const MarkdownPreviewView = require(nuclideUri.join(
+    markdownPreviewPackage.path,
+    'lib/markdown-preview-view.js',
+  ));
   const view = new MarkdownPreviewView({
     editorId: textEditor.id,
     filePath: markdownFile,
@@ -97,7 +107,7 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
   }
 
   return 0;
-}
+});
 
 // TODO(mbolin): Consider using fs-plus to ensure this handles ~ in fileName correctly.
 function resolvePath(fileName): string {

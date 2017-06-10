@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DeepLinkService} from './types';
 
-import createPackage from '../../commons-atom/createPackage';
+import createPackage from 'nuclide-commons-atom/createPackage';
 import {default as DeepLinkServiceImpl} from './DeepLinkService';
 
 class Activation {

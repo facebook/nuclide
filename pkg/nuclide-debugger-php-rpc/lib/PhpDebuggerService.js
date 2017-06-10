@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import logger from './utils';
@@ -98,21 +99,23 @@ export class PhpDebuggerService {
   }
 
   async debug(config: PhpDebuggerSessionConfig): Promise<string> {
-    logger.logInfo('Connecting config: ' + JSON.stringify(config));
+    logger.info('Connecting config: ' + JSON.stringify(config));
 
     await this._warnIfHphpdAttached();
-    if (!(await passesGK(GK_PAUSE_ONE_PAUSE_ALL))) {
+    if (!await passesGK(GK_PAUSE_ONE_PAUSE_ALL)) {
       config.stopOneStopAll = false;
     }
 
     setConfig(config);
     await setRootDirectoryUri(config.targetUri);
-    logger.setLogLevel(config.logLevel);
+    logger.setLevel(config.logLevel);
     this._setState(CONNECTING);
 
     const translator = new MessageTranslator(this._clientCallback);
     this._disposables.add(translator);
-    translator.onSessionEnd(() => { this._onEnd(); });
+    translator.onSessionEnd(() => {
+      this._onEnd();
+    });
     this._translator = translator;
 
     this._setState(CONNECTED);
@@ -121,7 +124,7 @@ export class PhpDebuggerService {
   }
 
   async sendCommand(message: string): Promise<void> {
-    logger.logInfo('Recieved command: ' + message);
+    logger.info('Recieved command: ' + message);
     if (this._translator) {
       await this._translator.handleCommand(message);
     }
@@ -132,8 +135,7 @@ export class PhpDebuggerService {
     if (mightBeAttached) {
       this._clientCallback.sendUserMessage('notification', {
         type: 'warning',
-        message:
-          'You may have an hphpd instance currently attached to your server!' +
+        message: 'You may have an hphpd instance currently attached to your server!' +
           '<br />Please kill it, or the Nuclide debugger may not work properly.',
       });
     }
@@ -144,7 +146,7 @@ export class PhpDebuggerService {
   }
 
   _setState(newState: string): void {
-    logger.log('state change from ' + this._state + ' to ' + newState);
+    logger.debug('state change from ' + this._state + ' to ' + newState);
     // TODO: Consider logging socket info: remote ip, etc.
     this._state = newState;
 
@@ -154,7 +156,7 @@ export class PhpDebuggerService {
   }
 
   dispose(): Promise<void> {
-    logger.logInfo('Proxy: Ending session');
+    logger.info('Proxy: Ending session');
     clearConfig();
     this._disposables.dispose();
     return Promise.resolve();

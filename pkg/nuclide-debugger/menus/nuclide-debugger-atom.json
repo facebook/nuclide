@@ -24,11 +24,23 @@
               "command": "nuclide-debugger:hide"
             },
             {
-              "label": "Launch/Attach...",
-              "command": "nuclide-debugger:toggle-launch-attach"
+              "label": "Reset layout",
+              "command": "nuclide-debugger:reset-layout"
             },
             {
-              "label": "Stop Debugging",
+              "label": "Attach debugger...",
+              "command": "nuclide-debugger:show-attach-dialog"
+            },
+            {
+              "label": "Launch debugger...",
+              "command": "nuclide-debugger:show-launch-dialog"
+            },
+            {
+              "label": "Restart debugger",
+              "command": "nuclide-debugger:restart-debugging"
+            },
+            {
+              "label": "Detach debugger",
               "command": "nuclide-debugger:stop-debugging"
             },
             {
@@ -46,6 +58,14 @@
             {
               "label": "Toggle Breakpoint enabled/disabled",
               "command": "nuclide-debugger:toggle-breakpoint-enabled"
+            },
+            {
+              "label": "Enable All Breakpoints",
+              "command": "nuclide-debugger:enable-all-breakpoints"
+            },
+            {
+              "label": "Disable All Breakpoints",
+              "command": "nuclide-debugger:disable-all-breakpoints"
             },
             {
               "label": "Remove Breakpoint",

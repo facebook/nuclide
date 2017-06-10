@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // Regenerates the .proxy baseline files in the spec/fixtures directory.
@@ -14,7 +15,7 @@ import {parseServiceDefinition} from './service-parser';
 import {generateProxy} from './proxy-generator';
 import {stripLocationsFileName} from './location';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 const dir = nuclideUri.join(__dirname, '../spec/fixtures');
 for (const file of fs.readdirSync(dir)) {

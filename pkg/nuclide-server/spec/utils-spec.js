@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import http from 'http';
@@ -53,7 +54,11 @@ describe('NuclideServer utils test', () => {
       // $FlowFixMe(asuarez): Use Flow builtin defs for IncomingMessage.
       utils.parseRequestBody(req).then(bodyHandler).then(() => res.end());
     };
-    utils.asyncRequest({uri: 'http://127.0.0.1:36845/abc', method: 'POST', body: 'string_abc'});
+    utils.asyncRequest({
+      uri: 'http://127.0.0.1:36845/abc',
+      method: 'POST',
+      body: 'string_abc',
+    });
     waitsFor(() => bodyHandler.callCount > 0);
     runs(() => expect(bodyHandler.argsForCall[0][0]).toBe('string_abc'));
   });
@@ -85,7 +90,8 @@ describe('NuclideServer utils test', () => {
 
   describe('deserializeArgs', () => {
     it('deserializes strings and undefined', () => {
-      const url = 'http://localhost:8090/?args=abc&args=&argTypes=string&argTypes=undefined';
+      const url =
+        'http://localhost:8090/?args=abc&args=&argTypes=string&argTypes=undefined';
       const [str, undef] = utils.deserializeArgs(url);
       expect(str).toBe('abc');
       expect(undef).not.toBeDefined();
@@ -93,7 +99,8 @@ describe('NuclideServer utils test', () => {
 
     it('deserializes objects', () => {
       const escapedObj = querystring.escape(JSON.stringify({def: 'lol'}));
-      const url = 'http://localhost:8090/?args=' + escapedObj + '&argTypes=object';
+      const url =
+        'http://localhost:8090/?args=' + escapedObj + '&argTypes=object';
       const [obj] = utils.deserializeArgs(url);
       expect(obj).toEqual({def: 'lol'});
     });
@@ -101,7 +108,9 @@ describe('NuclideServer utils test', () => {
 
   it('serializeArgs then deserializeArgs for strings with non-escaped chars', () => {
     const {args, argTypes} = utils.serializeArgs(['a d+']);
-    const [str] = utils.deserializeArgs('http://localhost:8090/?' + querystring.stringify({args, argTypes}));
+    const [str] = utils.deserializeArgs(
+      'http://localhost:8090/?' + querystring.stringify({args, argTypes}),
+    );
     expect(str).toBe('a d+');
   });
 });

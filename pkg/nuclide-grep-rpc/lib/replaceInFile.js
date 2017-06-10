@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 import temp from 'temp';
 import {Observable} from 'rxjs';
-import {attachEvent} from '../../commons-node/event';
-import fsPromise from '../../commons-node/fsPromise';
-import {observeStream} from '../../commons-node/stream';
-import {splitStream} from '../../commons-node/observable';
+import {attachEvent} from 'nuclide-commons/event';
+import fsPromise from 'nuclide-commons/fsPromise';
+import {observeStream} from 'nuclide-commons/stream';
+import {splitStream} from 'nuclide-commons/observable';
 
 // Returns the number of replacements made.
 export default function replaceInFile(
@@ -45,7 +46,6 @@ export default function replaceInFile(
           return 0;
         })
         .reduce((acc, curr) => acc + curr, 0),
-
       // Wait for the temporary file to finish.
       // We need to ensure that the event handler is attached before end().
       Observable.create(observer => {
@@ -55,20 +55,15 @@ export default function replaceInFile(
         tempStream.end();
         return () => disposable.dispose();
       }),
-
       // Copy the permissions from the orignal file.
-      Observable.defer(() => copyPermissions(path, tempPath))
-        .ignoreElements(),
-
+      Observable.defer(() => copyPermissions(path, tempPath)).ignoreElements(),
       // Overwrite the original file with the temporary file.
-      Observable.defer(() => fsPromise.rename(tempPath, path))
-        .ignoreElements(),
-    )
-      .catch(err => {
-        // Make sure we clean up the temporary file if an error occurs.
-        fsPromise.unlink(tempPath).catch(() => {});
-        return Observable.throw(err);
-      });
+      Observable.defer(() => fsPromise.rename(tempPath, path)).ignoreElements(),
+    ).catch(err => {
+      // Make sure we clean up the temporary file if an error occurs.
+      fsPromise.unlink(tempPath).catch(() => {});
+      return Observable.throw(err);
+    });
   });
 }
 

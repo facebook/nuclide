@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import electron from 'electron';
 import {DebuggerStore, DebuggerMode} from './DebuggerStore';
 import {getNotificationService} from '../../nuclide-debugger-base';
-import {CompositeDisposable, Disposable} from 'atom';
+import {CompositeDisposable} from 'atom';
 
 const {remote} = electron;
 invariant(remote != null);
@@ -36,25 +37,18 @@ export class DebuggerPauseController {
   }
 
   _scheduleNativeNotification(): void {
-    const currentWindow = remote.getCurrentWindow();
-    if (currentWindow.isFocused()) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      const raiseNativeNotification = getNotificationService();
-      if (raiseNativeNotification != null) {
-        raiseNativeNotification('Nuclide Debugger', 'Paused at a breakpoint');
+    const raiseNativeNotification = getNotificationService();
+    if (raiseNativeNotification != null) {
+      const pendingNotification = raiseNativeNotification(
+        'Nuclide Debugger',
+        'Paused at a breakpoint',
+        3000,
+        false,
+      );
+      if (pendingNotification != null) {
+        this._disposables.add(pendingNotification);
       }
-    }, 3000);
-
-    // If the user focuses the window at any time, then they are assumed to have seen the debugger
-    // pause, and we will not display a notification.
-    currentWindow.once('focus', () => {
-      clearTimeout(timeoutId);
-    });
-
-    this._disposables.add(new Disposable(() => clearTimeout(timeoutId)));
+    }
   }
 
   dispose(): void {

@@ -6,28 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  FileResult,
-  Provider,
-} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
-import {arrayCompact} from '../../commons-node/collection';
+import {arrayCompact} from 'nuclide-commons/collection';
 import {Matcher} from '../../nuclide-fuzzy-native';
 
 // Returns paths of currently opened editor tabs.
 function getOpenTabsMatching(query: string): Array<FileResult> {
-  const matcher = new Matcher(arrayCompact(
-    atom.workspace.getTextEditors()
-      .map(editor => editor.getPath()),
-  ));
-  return matcher.match(query, {recordMatchIndexes: true})
-    .map(result => ({
-      path: result.value,
-      score: result.score,
-      matchIndexes: result.matchIndexes,
-    }));
+  const matcher = new Matcher(
+    arrayCompact(
+      atom.workspace.getTextEditors().map(editor => editor.getPath()),
+    ),
+  );
+  return matcher.match(query, {recordMatchIndexes: true}).map(result => ({
+    path: result.value,
+    score: result.score,
+    matchIndexes: result.matchIndexes,
+  }));
 }
 
 const OpenFileListProvider: Provider = {
@@ -40,11 +38,16 @@ const OpenFileListProvider: Provider = {
     action: 'nuclide-open-filenames-provider:toggle-provider',
   },
 
-  isEligibleForDirectories(directories: Array<atom$Directory>): Promise<boolean> {
+  isEligibleForDirectories(
+    directories: Array<atom$Directory>,
+  ): Promise<boolean> {
     return Promise.resolve(true);
   },
 
-  executeQuery(query: string, directories: Array<atom$Directory>): Promise<Array<FileResult>> {
+  executeQuery(
+    query: string,
+    directories: Array<atom$Directory>,
+  ): Promise<Array<FileResult>> {
     return Promise.resolve(getOpenTabsMatching(query));
   },
 };

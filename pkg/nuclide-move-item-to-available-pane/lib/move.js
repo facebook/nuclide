@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -14,37 +15,39 @@ import {track} from '../../nuclide-analytics';
 
 type MoveOperation = 'up' | 'down' | 'right' | 'left';
 
-export function moveUp() {
-  doSplit('up', (pane, params) => pane.splitUp(params));
+export function moveUp(el: HTMLElement) {
+  doSplit(el, 'up', (pane, params) => pane.splitUp(params));
 }
 
-export function moveDown() {
-  doSplit('down', (pane, params) => pane.splitDown(params));
+export function moveDown(el: HTMLElement) {
+  doSplit(el, 'down', (pane, params) => pane.splitDown(params));
 }
 
-export function moveRight() {
-  doSplit('right', (pane, params) => pane.splitRight(params));
+export function moveRight(el: HTMLElement) {
+  doSplit(el, 'right', (pane, params) => pane.splitRight(params));
 }
 
-export function moveLeft() {
-  doSplit('left', (pane, params) => pane.splitLeft(params));
+export function moveLeft(el: HTMLElement) {
+  doSplit(el, 'left', (pane, params) => pane.splitLeft(params));
 }
 
 function doSplit(
-    operation: MoveOperation,
-    splitOperation: (pane: atom$Pane, params?: atom$PaneSplitParams) => atom$Pane) {
-  const activePane = atom.workspace.getActivePane();
-  if (activePane == null) {
+  el: HTMLElement,
+  operation: MoveOperation,
+  splitOperation: (pane: atom$Pane, params?: atom$PaneSplitParams) => atom$Pane,
+) {
+  const pane = findNearestPane(el) || getCenter().getActivePane();
+  if (pane == null) {
     return;
   }
 
   track('nuclide-move-item-to-available-pane');
-  const activeItem = activePane.getActiveItem();
+  const activeItem = pane.getActiveItem();
   if (activeItem != null) {
-    const targetPane = findTargetPane(activePane, operation);
+    const targetPane = findTargetPane(pane, operation);
     if (targetPane != null) {
       const index = targetPane.getItems().length;
-      activePane.moveItemToPane(activeItem, targetPane, index);
+      pane.moveItemToPane(activeItem, targetPane, index);
       targetPane.activateItemAtIndex(index);
       targetPane.activate();
       return;
@@ -55,12 +58,29 @@ function doSplit(
   // pane contains exactly zero or one items.
   // The new empty pane will be kept if the global atom setting
   // 'Destroy Empty Panes' is false, otherwise it will be removed.
-  const newPane = splitOperation(activePane, {copyActiveItem: false});
-  const item = activePane.getActiveItem();
+  const newPane = splitOperation(pane, {copyActiveItem: false});
+  const item = pane.getActiveItem();
   if (item) {
-    activePane.moveItemToPane(item, newPane, 0);
+    pane.moveItemToPane(item, newPane, 0);
   }
 }
+
+/**
+ * Find the Pane that contains the provided element.
+ */
+function findNearestPane(el_: HTMLElement): ?atom$Pane {
+  let el = el_;
+  while (el != null) {
+    if (el.tagName === 'ATOM-PANE' && typeof el.getModel === 'function') {
+      return el.getModel();
+    }
+    el = el.parentElement;
+  }
+}
+
+// TODO: Replace this once our lowest supported version is 1.17
+const getCenter = () =>
+  atom.workspace.getCenter ? atom.workspace.getCenter() : atom.workspace;
 
 /**
  * See if there is already a pane in the direction the user is trying to split.
@@ -74,7 +94,7 @@ function findTargetPane(
   const predicate = createPredicate(operation, activeRect);
 
   const paneToRect: WeakMap<atom$Pane, ClientRect> = new WeakMap();
-  const candidatePanes = atom.workspace.getPanes().filter(pane => {
+  const candidatePanes = activePane.getContainer().getPanes().filter(pane => {
     if (pane === activePane) {
       return false;
     } else {
@@ -87,11 +107,17 @@ function findTargetPane(
   if (candidatePanes.length === 1) {
     return candidatePanes[0];
   } else if (candidatePanes.length > 1) {
-    const xAxisComparator = (rect: ClientRect) => Math.abs(rect.left - activeRect.left);
-    const yAxisComparator = (rect: ClientRect) => Math.abs(rect.top - activeRect.top);
+    const xAxisComparator = (rect: ClientRect) =>
+      Math.abs(rect.left - activeRect.left);
+    const yAxisComparator = (rect: ClientRect) =>
+      Math.abs(rect.top - activeRect.top);
     const isHorizontalMove = operation === 'left' || operation === 'right';
-    const primaryComparator = isHorizontalMove ? xAxisComparator : yAxisComparator;
-    const secondaryComparator = isHorizontalMove ? yAxisComparator : xAxisComparator;
+    const primaryComparator = isHorizontalMove
+      ? xAxisComparator
+      : yAxisComparator;
+    const secondaryComparator = isHorizontalMove
+      ? yAxisComparator
+      : xAxisComparator;
     candidatePanes.sort((pane1, pane2) => {
       const rect1 = paneToRect.get(pane1);
       const rect2 = paneToRect.get(pane2);

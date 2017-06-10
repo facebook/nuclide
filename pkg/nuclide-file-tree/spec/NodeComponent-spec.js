@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import FileTreeActions from '../lib/FileTreeActions';
@@ -47,7 +48,9 @@ function renderEntryComponentIntoDocument(
   };
 
   const node = new FileTreeNode(nodeProps, nodeConf);
-  return TestUtils.renderIntoDocument(React.createElement(componentKlass, {node}));
+  return TestUtils.renderIntoDocument(
+    React.createElement(componentKlass, {node}),
+  );
 }
 
 describe('Directory FileTreeEntryComponent', () => {

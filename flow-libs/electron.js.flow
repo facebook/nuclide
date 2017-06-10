@@ -246,6 +246,7 @@ declare class electron$BrowserWindow {
   once: electron$BrowserWindowListener,
   removeAllListeners(event?: electron$BrowserWindowEvents): electron$BrowserWindow,
   removeListener(event?: electron$BrowserWindowEvents, callback: Function): electron$BrowserWindow,
+  send(channel: string, ...args: Array<any>): void,
 
   static getAllWindows(): Array<electron$BrowserWindow>,
   static getFocusedWindow(): ?electron$BrowserWindow,
@@ -355,6 +356,9 @@ declare class electron$BrowserWindow {
   setParentWindow(parent: electron$BrowserWindow): void, // Linux macOS
   getParentWindow(): ?electron$BrowserWindow,
   getChildWindows(): Array<electron$BrowserWindow>,
+
+  // Atom sets this during window setup (see: src/main-process/atom-window.coffee).
+  loadSettings?: Object,
 }
 
 /**

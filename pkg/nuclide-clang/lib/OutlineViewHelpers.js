@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {Outline, OutlineTree} from '../../nuclide-outline-view/lib/rpc-types';
+import type {Outline, OutlineTree} from 'atom-ide-ui';
 import type {ClangOutlineTree} from '../../nuclide-clang-rpc/lib/rpc-types';
-import type {TokenizedText} from '../../commons-node/tokenizedText-rpc-types';
+import type {TokenizedText} from 'nuclide-commons/tokenized-text';
 
 import {trackTiming} from '../../nuclide-analytics';
-import {sleep} from '../../commons-node/promise';
+import {sleep} from 'nuclide-commons/promise';
 import {ClangCursorTypes} from '../../nuclide-clang-rpc';
 import {
   keyword,
@@ -23,7 +24,7 @@ import {
   whitespace,
   string,
   plain,
-} from '../../commons-node/tokenizedText';
+} from 'nuclide-commons/tokenized-text';
 import {getOutline} from './libclang';
 
 // Display friendly names for all class-like types.
@@ -109,7 +110,9 @@ function tokenizeCursor(cursor: ClangOutlineTree): TokenizedText {
   return [plain(cursor.name)];
 }
 
-export function outlineFromClangOutline(outline: Array<ClangOutlineTree>): Array<OutlineTree> {
+export function outlineFromClangOutline(
+  outline: Array<ClangOutlineTree>,
+): Array<OutlineTree> {
   return outline.map(cursor => {
     return {
       tokenizedText: tokenizeCursor(cursor),

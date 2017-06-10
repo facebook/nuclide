@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {ScopeSection} from './types';
 
-import {
-  Disposable,
-  CompositeDisposable,
-} from 'atom';
+import {Disposable, CompositeDisposable} from 'atom';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {ActionTypes} from './DebuggerDispatcher';
 

@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 export const FileEventKind = Object.freeze({
   OPEN: 'open',

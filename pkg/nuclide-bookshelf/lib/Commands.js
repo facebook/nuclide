@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Action, BookShelfState} from './types';
@@ -18,7 +19,10 @@ export class Commands {
   _dispatch: (action: Action) => void;
   _getState: () => BookShelfState;
 
-  constructor(dispatch: (action: Action) => void, getState: () => BookShelfState) {
+  constructor(
+    dispatch: (action: Action) => void,
+    getState: () => BookShelfState,
+  ) {
     this._dispatch = dispatch;
     this._getState = getState;
 
@@ -45,7 +49,10 @@ export class Commands {
     });
   }
 
-  restorePaneItemState(repository: atom$Repository, newShortHead: string): void {
+  restorePaneItemState(
+    repository: atom$Repository,
+    newShortHead: string,
+  ): void {
     track('bookshelf-restore-files');
     this._dispatch({
       payload: {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -29,8 +30,9 @@ export class MessageStore {
   }
 
   consumeProvider(provider: BusySignalProvider): IDisposable {
-    const subscription =
-      provider.messages.subscribe(message => this._processUpdate(provider, message));
+    const subscription = provider.messages.subscribe(message =>
+      this._processUpdate(provider, message),
+    );
     return new Disposable(() => {
       subscription.unsubscribe();
       this._currentMessages.delete(provider);
@@ -42,7 +44,10 @@ export class MessageStore {
     return this._messageStream;
   }
 
-  _processUpdate(provider: BusySignalProvider, message: BusySignalMessage): void {
+  _processUpdate(
+    provider: BusySignalProvider,
+    message: BusySignalMessage,
+  ): void {
     let idMap = this._currentMessages.get(provider);
     if (idMap == null) {
       idMap = new Map();

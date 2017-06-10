@@ -6,13 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {IconName} from '../../nuclide-ui/types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import React from 'react';
 
-export const WORKSPACE_VIEW_URI_B = 'atom://nuclide/sample-workspace-views-example-b';
+export const WORKSPACE_VIEW_URI_B =
+  'atom://nuclide/sample-workspace-views-example-b';
 
 export class ExampleGadgetB extends React.Component {
   getTitle(): string {
@@ -34,7 +36,7 @@ export class ExampleGadgetB extends React.Component {
   render(): React.Element<any> {
     return (
       <div className="pane-item padded nuclide-example-gadget">
-          This gadget stores its state in the topmost React component.
+        This gadget stores its state in the topmost React component.
       </div>
     );
   }

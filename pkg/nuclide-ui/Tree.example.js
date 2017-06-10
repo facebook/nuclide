@@ -6,16 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
-import {Icon} from './Icon';
-import {
-  TreeList,
-  TreeItem,
-  NestedTreeItem,
-} from './Tree';
+import {Block} from 'nuclide-commons-ui/Block';
+import {Icon} from 'nuclide-commons-ui/Icon';
+import {TreeList, TreeItem, NestedTreeItem} from './Tree';
 
 const BasicTreeExample = (): React.Element<any> => (
   <div>
@@ -28,7 +25,10 @@ const BasicTreeExample = (): React.Element<any> => (
           <TreeItem>TreeItem 3</TreeItem>
           <TreeItem>TreeItem 4</TreeItem>
         </NestedTreeItem>
-        <NestedTreeItem title={<span>NestedTreeItem 2</span>} collapsed={true} />
+        <NestedTreeItem
+          title={<span>NestedTreeItem 2</span>}
+          collapsed={true}
+        />
       </TreeList>
     </Block>
   </div>
@@ -37,23 +37,26 @@ const BasicTreeExample = (): React.Element<any> => (
 const AtomStyleguideTreeExample = (): React.Element<any> => (
   <Block>
     <TreeList showArrows={true}>
-      <NestedTreeItem
-        title={<Icon icon="file-directory">A Directory</Icon>}>
-          <NestedTreeItem
-            collapsed={false}
-            title={<Icon icon="file-directory">Nested Directory</Icon>}>
-            <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
-          </NestedTreeItem>
-          <NestedTreeItem
-            collapsed={true}
-            title={<Icon icon="file-directory">Collapsed Nested Directory</Icon>}>
-            <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
-          </NestedTreeItem>
+      <NestedTreeItem title={<Icon icon="file-directory">A Directory</Icon>}>
+        <NestedTreeItem
+          collapsed={false}
+          title={<Icon icon="file-directory">Nested Directory</Icon>}>
           <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
-          <TreeItem selected={true}><Icon icon="file-text">File three .selected!</Icon></TreeItem>
+        </NestedTreeItem>
+        <NestedTreeItem
+          collapsed={true}
+          title={<Icon icon="file-directory">Collapsed Nested Directory</Icon>}>
+          <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
+        </NestedTreeItem>
+        <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
+        <TreeItem selected={true}>
+          <Icon icon="file-text">File three .selected!</Icon>
+        </TreeItem>
       </NestedTreeItem>
       <TreeItem><Icon icon="file-text">.icon-file-text</Icon></TreeItem>
-      <TreeItem><Icon icon="file-symlink-file">.icon-file-symlink-file</Icon></TreeItem>
+      <TreeItem>
+        <Icon icon="file-symlink-file">.icon-file-symlink-file</Icon>
+      </TreeItem>
     </TreeList>
   </Block>
 );

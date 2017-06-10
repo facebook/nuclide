@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 export type Reference = {
-  uri: NuclideUri,      // Nuclide URI of the file path
-  name: ?string,    // name of calling method/function/symbol
+  uri: NuclideUri, // Nuclide URI of the file path
+  name: ?string, // name of calling method/function/symbol
   range: atom$Range,
 };
 

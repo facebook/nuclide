@@ -6,7 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {DebuggerConfigAction} from '../../nuclide-debugger-base';
 
 import {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
 import React from 'react';
@@ -14,35 +17,52 @@ import {LaunchUiComponent} from './LaunchUiComponent';
 import {AttachUiComponent} from './AttachUiComponent';
 import invariant from 'assert';
 
-import type EventEmitter from 'events';
-
 export class HhvmLaunchAttachProvider extends DebuggerLaunchAttachProvider {
   constructor(debuggingTypeName: string, targetUri: string) {
     super(debuggingTypeName, targetUri);
   }
 
-  getActions(): Promise<Array<string>> {
-    return Promise.resolve(['Attach', 'Launch']);
-  }
+  getCallbacksForAction(action: DebuggerConfigAction) {
+    return {
+      /**
+       * Whether this provider is enabled or not.
+       */
+      isEnabled: () => {
+        return Promise.resolve(true);
+      },
 
-  getComponent(action: string, parentEventEmitter: EventEmitter): ?React.Element<any> {
-    if (action === 'Launch') {
-      return (
-        <LaunchUiComponent
-          targetUri={this.getTargetUri()}
-          parentEmitter={parentEventEmitter}
-        />
-      );
-    } else if (action === 'Attach') {
-      return (
-        <AttachUiComponent
-          targetUri={this.getTargetUri()}
-          parentEmitter={parentEventEmitter}
-        />
-      );
-    } else {
-      invariant(false, 'Unrecognized action for component.');
-    }
+      /**
+       * Returns a list of supported debugger types + environments for the specified action.
+       */
+      getDebuggerTypeNames: super.getCallbacksForAction(action)
+        .getDebuggerTypeNames,
+
+      /**
+       * Returns the UI component for configuring the specified debugger type and action.
+       */
+      getComponent: (
+        debuggerTypeName: string,
+        configIsValidChanged: (valid: boolean) => void,
+      ) => {
+        if (action === 'launch') {
+          return (
+            <LaunchUiComponent
+              targetUri={this.getTargetUri()}
+              configIsValidChanged={configIsValidChanged}
+            />
+          );
+        } else if (action === 'attach') {
+          return (
+            <AttachUiComponent
+              targetUri={this.getTargetUri()}
+              configIsValidChanged={configIsValidChanged}
+            />
+          );
+        } else {
+          invariant(false, 'Unrecognized action for component.');
+        }
+      },
+    };
   }
 
   dispose(): void {}

@@ -6,37 +6,42 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // TODO: Make it possible to move or split a pane with a VcsLogPaneItem.
 
-import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {VcsLogResponse} from '../../nuclide-hg-rpc/lib/HgService';
+import type FileTreeContextMenu
+  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type {
+  HgRepositoryClient,
+} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
 
 import {CompositeDisposable, Disposable} from 'atom';
-import VcsLogPaneItem from './VcsLogPaneItem';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import VcsLogComponent from './VcsLogComponent';
+import VcsLogGadget from './VcsLogGadget';
+import {Observable, BehaviorSubject} from 'rxjs';
 import invariant from 'assert';
-import {getAtomProjectRelativePath} from '../../commons-atom/projects';
-import {maybeToString} from '../../commons-node/string';
+import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {maybeToString} from 'nuclide-commons/string';
 import querystring from 'querystring';
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 import {shortNameForAuthor as shortNameForAuthorFn} from './util';
 import {track} from '../../nuclide-analytics';
 import url from 'url';
+import React from 'react';
+import {
+  viewableFromReactElement,
+} from '../../commons-atom/viewableFromReactElement';
 
 const SHOW_LOG_FILE_TREE_CONTEXT_MENU_PRIORITY = 500;
+const NUM_LOG_RESULTS = 100;
 
 const CONTEXT_MENU_LABEL = 'Show history';
-const MAX_NUM_LOG_RESULTS = 100;
 const VCS_LOG_URI_PREFIX = 'atom://nucide-vcs-log/view';
 const VCS_LOG_URI_PATHS_QUERY_PARAM = 'path';
-
-type VcsService = {
-  getType(): string,
-  log(filePaths: Array<NuclideUri>, limit?: ?number): Promise<VcsLogResponse>,
-};
 
 class Activation {
   _subscriptions: CompositeDisposable;
@@ -58,7 +63,8 @@ class Activation {
 
         // Make sure a non-zero number of paths have been specified.
         const path = query[VCS_LOG_URI_PATHS_QUERY_PARAM];
-        return createLogPaneForPath(path);
+        const component = createLogPaneForPath(path);
+        return component ? viewableFromReactElement(component) : null;
       }),
     );
 
@@ -142,7 +148,7 @@ class Activation {
   }
 }
 
-function getRepositoryWithLogMethodForPath(path: ?string): ?VcsService {
+function getRepositoryWithLogMethodForPath(path: ?string): ?HgRepositoryClient {
   if (path == null) {
     return null;
   }
@@ -151,7 +157,7 @@ function getRepositoryWithLogMethodForPath(path: ?string): ?VcsService {
   // For now, we only expect HgRepository to work. We should also find a way to
   // make this work for Git.
   if (repository != null && repository.getType() === 'hg') {
-    return ((repository: any): VcsService);
+    return ((repository: any): HgRepositoryClient);
   } else {
     return null;
   }
@@ -173,15 +179,18 @@ function getActiveTextEditorURI(): ?string {
 
 function openLogPaneForURI(uri: string) {
   track('nuclide-vcs-log:open');
-  const openerURI = VCS_LOG_URI_PREFIX + '?' + querystring.stringify({
-    [VCS_LOG_URI_PATHS_QUERY_PARAM]: uri,
-  });
+  const openerURI =
+    VCS_LOG_URI_PREFIX +
+    '?' +
+    querystring.stringify({
+      [VCS_LOG_URI_PATHS_QUERY_PARAM]: uri,
+    });
   // Not a file URI
   // eslint-disable-next-line nuclide-internal/atom-apis
   atom.workspace.open(openerURI);
 }
 
-function createLogPaneForPath(path: string): ?VcsLogPaneItem {
+function createLogPaneForPath(path: string): ?React.Element<any> {
   if (path == null) {
     return null;
   }
@@ -191,23 +200,64 @@ function createLogPaneForPath(path: string): ?VcsLogPaneItem {
     return null;
   }
 
-  const pane = new VcsLogPaneItem();
-  const {showDifferentialRevision} = ((featureConfig.get('nuclide-vcs-log')): any);
+  const {showDifferentialRevision} = (featureConfig.get(
+    'nuclide-vcs-log',
+  ): any);
   invariant(typeof showDifferentialRevision === 'boolean');
-  pane.initialize({
-    iconName: 'repo',
-    initialProps: {
-      files: [path],
-      showDifferentialRevision,
-    },
-    title: `${repository.getType()} log ${maybeToString(getAtomProjectRelativePath(path))}`,
+
+  const title = `${repository.getType()} log ${maybeToString(getAtomProjectRelativePath(path))}`;
+
+  const currentDiff = new BehaviorSubject({
+    oldId: null,
+    newId: null,
+  });
+  const onDiffClick = (oldId: ?string, newId: ?string) => {
+    currentDiff.next({
+      oldId: null,
+      newId: null,
+    });
+    currentDiff.next({
+      oldId,
+      newId,
+    });
+  };
+
+  const contentLoader = currentDiff.switchMap(ids => {
+    const {oldId, newId} = ids;
+    if (oldId == null || newId == null) {
+      return Observable.of({oldContent: null, newContent: null});
+    }
+    return Observable.forkJoin(
+      oldId !== ''
+        ? repository.fetchFileContentAtRevision(path, oldId)
+        : Observable.of(''),
+      newId !== ''
+        ? repository.fetchFileContentAtRevision(path, newId)
+        : Observable.of(''),
+    )
+      .startWith([null, null])
+      .map(([oldContent, newContent]) => ({oldContent, newContent}));
   });
 
-  repository.log([path], MAX_NUM_LOG_RESULTS).then((response: VcsLogResponse) =>
-    pane.updateWithLogEntries(response.entries),
-  );
+  const props = Observable.combineLatest(
+    Observable.fromPromise(repository.log([path], NUM_LOG_RESULTS))
+      .map(log => log.entries)
+      .startWith(null),
+    contentLoader,
+  ).map(([logEntries, content]) => {
+    return {
+      files: [path],
+      showDifferentialRevision,
+      repository,
+      onDiffClick,
+      logEntries,
+      oldContent: content.oldContent,
+      newContent: content.newContent,
+    };
+  });
 
-  return pane;
+  const component = bindObservableAsProps(props, VcsLogComponent);
+  return <VcsLogGadget iconName="repo" title={title} component={component} />;
 }
 
 let activation: ?Activation;
@@ -225,7 +275,9 @@ export function deactivate() {
   }
 }
 
-export function addItemsToFileTreeContextMenu(contextMenu: FileTreeContextMenu): IDisposable {
+export function addItemsToFileTreeContextMenu(
+  contextMenu: FileTreeContextMenu,
+): IDisposable {
   invariant(activation);
   return activation.addItemsToFileTreeContextMenu(contextMenu);
 }

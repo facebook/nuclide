@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global sessionStorage */
 /* eslint-disable no-console */
 
 declare function waitsForPromise(
-  optionsOrFunc: {shouldReject?: boolean, timeout?: number} | () => Promise<mixed>,
+  optionsOrFunc:
+    | {shouldReject?: boolean, timeout?: number}
+    | (() => Promise<mixed>),
   func?: () => Promise<mixed>,
 ): void;
 
@@ -37,7 +40,12 @@ type RunOptions = {
 
 const fs = require('fs');
 const path = require('path');
-const {sleep, sleepUntilNoRequests, yellow, green} = require('../benchmarker-utils');
+const {
+  sleep,
+  sleepUntilNoRequests,
+  yellow,
+  green,
+} = require('../benchmarker-utils');
 const {writeTsv, writeAllTsv, readAllTsv} = require('../benchmarker-tsv');
 const {aggregateTable, avg} = require('../benchmarker-data');
 
@@ -64,7 +72,8 @@ describe('Nuclide performance', () => {
 
   // Load the benchmark we need to (continue to) run.
   // $FlowIgnore -- in this case we do not want to use a string literal in require.
-  const benchmark: Benchmark = require('../benchmarks/' + allBenchmarks[benchmarkIndex]);
+  const benchmark: Benchmark = require('../benchmarks/' +
+    allBenchmarks[benchmarkIndex]);
   benchmark.index = benchmarkIndex;
   benchmark.name = allBenchmarks[benchmarkIndex];
   if (iterationsOverride != null) {
@@ -97,7 +106,9 @@ describe('Nuclide performance', () => {
       if (!resultFile) {
         resultFile = createResultFile(resultDir, benchmark, columns);
         setTestState({resultFile});
-        console.log(`Writing raw results for ${String(benchmark.name)} to ${yellow(resultFile)}`);
+        console.log(
+          `Writing raw results for ${String(benchmark.name)} to ${yellow(resultFile)}`,
+        );
       }
 
       // We are in no hurry. Give the new window 2 seconds to breathe before testing it.
@@ -105,26 +116,36 @@ describe('Nuclide performance', () => {
       await sleepUntilNoRequests();
 
       // Run the benchmark for this iteration/repetition and append the results to the result file.
-      const iterationDescription =
-        benchmark.getIterationDescription != null ?
-        `; ${benchmark.getIterationDescription(iteration)}` :
-        '';
+      const iterationDescription = benchmark.getIterationDescription != null
+        ? `; ${benchmark.getIterationDescription(iteration)}`
+        : '';
 
-      console.log(yellow(`${String(benchmark.name)}: ` +
-                          `iteration ${iteration + 1} of ${benchmark.iterations}, ` +
-                          `repetition ${repetition + 1} of ${benchmark.repetitions}` +
-                          iterationDescription));
+      console.log(
+        yellow(
+          `${String(benchmark.name)}: ` +
+            `iteration ${iteration + 1} of ${benchmark.iterations}, ` +
+            `repetition ${repetition + 1} of ${benchmark.repetitions}` +
+            iterationDescription,
+        ),
+      );
       const result = await benchmark.run(iteration);
       result.iteration = iteration;
       writeTsv(resultFile, columns, result);
 
       // Determine the next benchmark & iteration due so that when we reload Atom, it can continue.
-      const nextTestState = getNextTestState(allBenchmarks, benchmark, iteration, repetition);
+      const nextTestState = getNextTestState(
+        allBenchmarks,
+        benchmark,
+        iteration,
+        repetition,
+      );
 
       // Detect if we have reached the end of an individual benchmark or of the whole run (& exit).
       if (nextTestState.iteration === 0) {
         const processedResultFile = processResultFile(resultFile);
-        console.log(`Results for ${String(benchmark.name)} are in ${green(processedResultFile)}`);
+        console.log(
+          `Results for ${String(benchmark.name)} are in ${green(processedResultFile)}`,
+        );
       }
       if (nextTestState.benchmarkIndex === 0) {
         console.log(`All results for the run are in ${green(resultDir)}`);
@@ -146,7 +167,8 @@ function getRunOptions(): RunOptions {
     benchmarks = [process.env.BENCHMARK];
   } else {
     // Run all the benchmarks in the benchmarks folder.
-    benchmarks = fs.readdirSync(path.join(__dirname, '../benchmarks'))
+    benchmarks = fs
+      .readdirSync(path.join(__dirname, '../benchmarks'))
       .filter(filename => filename.endsWith('.js'))
       .map(filename => filename.replace(/\.js$/, ''));
   }
@@ -154,7 +176,10 @@ function getRunOptions(): RunOptions {
   let packages = [];
   if (process.env.BENCHMARK_PACKAGES) {
     // packages to be loaded have been passed in from the command line or shell.
-    packages = process.env.BENCHMARK_PACKAGES.split(',').map(p => p.trim()).filter(p => p !== '');
+    packages = process.env.BENCHMARK_PACKAGES
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p !== '');
   }
 
   const options: RunOptions = {
@@ -224,7 +249,11 @@ function processResultFile(resultFile: string): string {
   // Aggregates on the first column, averaging the other columns.
   const {columns, records} = readAllTsv(resultFile);
   const processedResultFile = resultFile.replace(/\.tsv$/, '.processed.tsv');
-  writeAllTsv(processedResultFile, columns, aggregateTable(columns, records, columns[0], avg));
+  writeAllTsv(
+    processedResultFile,
+    columns,
+    aggregateTable(columns, records, columns[0], avg),
+  );
   return processedResultFile;
 }
 
@@ -247,7 +276,10 @@ function getNextTestState(
     };
   }
 
-  if (typeof benchmark.index === 'number' && benchmark.index < benchmarks.length - 1) {
+  if (
+    typeof benchmark.index === 'number' &&
+    benchmark.index < benchmarks.length - 1
+  ) {
     // There is another benchmark of this run to do. Reset the file path.
     return {
       repetition: 0,

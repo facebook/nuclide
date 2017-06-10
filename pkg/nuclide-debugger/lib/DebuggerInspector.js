@@ -6,14 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import BreakpointStore from './BreakpointStore';
 import React from 'react';
-import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
+import {Button} from 'nuclide-commons-ui/Button';
 
 type Props = {
   breakpointStore: BreakpointStore,
@@ -35,14 +33,8 @@ export default class DebuggerInspector extends React.PureComponent {
 
   render(): React.Element<any> {
     return (
-      <div className="inspector">
+      <div className="inspector" style={{'text-align': 'right'}}>
         <div className="control-bar">
-          <Button
-            title="Detach from the current process."
-            icon="x"
-            buttonType={ButtonTypes.ERROR}
-            onClick={this._handleClickClose}
-          />
           <Button
             title="(Debug) Open Web Inspector for the debugger frame."
             icon="gear"
@@ -64,5 +56,8 @@ export default class DebuggerInspector extends React.PureComponent {
 }
 
 function hideDebuggerPane(): void {
-  atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-debugger:hide');
+  atom.commands.dispatch(
+    atom.views.getView(atom.workspace),
+    'nuclide-debugger:hide',
+  );
 }

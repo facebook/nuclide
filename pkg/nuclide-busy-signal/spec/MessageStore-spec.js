@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  BusySignalMessage,
-  BusySignalMessageBusy,
-} from '../lib/types';
+import type {BusySignalMessage, BusySignalMessageBusy} from '../lib/types';
 
 import {Subject} from 'rxjs';
 
@@ -40,7 +38,9 @@ describe('MessageStore', () => {
       messages: messagePublisher,
     };
     messageStore.consumeProvider(provider);
-    messageStore.getMessageStream().subscribe(messages => messageStreamResults.push(messages));
+    messageStore
+      .getMessageStream()
+      .subscribe(messages => messageStreamResults.push(messages));
   });
 
   it('should publish the current state as soon as it receives a subscriber', () => {

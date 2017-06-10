@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerProcessInfo} from '../../../nuclide-debugger-base';
@@ -53,7 +54,8 @@ export class DebuggingActivation {
       consumeFirstProvider('nuclide-debugger.remote'),
     );
     const processInfoLists = Observable.fromPromise(getProcessInfoList());
-    this._startDebuggingSubscription = debuggerServiceStream.combineLatest(processInfoLists)
+    this._startDebuggingSubscription = debuggerServiceStream
+      .combineLatest(processInfoLists)
       .subscribe(([debuggerService, processInfoList]) => {
         const processInfo = processInfoList[0];
         if (processInfo != null) {

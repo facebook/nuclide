@@ -6,14 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {IconName} from '../../nuclide-ui/types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import React from 'react';
-import {renderReactRoot} from '../../commons-atom/renderReactRoot';
+import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 
-export const WORKSPACE_VIEW_URI_A = 'atom://nuclide/sample-workspace-views-example-a';
+export const WORKSPACE_VIEW_URI_A =
+  'atom://nuclide/sample-workspace-views-example-a';
 
 export class ExampleGadgetA {
   getTitle(): string {

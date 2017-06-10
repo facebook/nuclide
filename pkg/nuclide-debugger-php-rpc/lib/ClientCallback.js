@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import logger from './utils';
@@ -33,9 +34,9 @@ function createMessage(method: string, params: ?Object): Object {
  * 4. Output window messages.
  */
 export class ClientCallback {
-  _serverMessages: Subject<string>;  // For server messages.
-  _notifications: ReplaySubject<NotificationMessage>;   // For atom UI notifications.
-  _outputWindowMessages: Subject<string>;   // For output window messages.
+  _serverMessages: Subject<string>; // For server messages.
+  _notifications: ReplaySubject<NotificationMessage>; // For atom UI notifications.
+  _outputWindowMessages: Subject<string>; // For output window messages.
 
   constructor() {
     this._serverMessages = new Subject();
@@ -60,7 +61,7 @@ export class ClientCallback {
   }
 
   sendUserMessage(type: UserMessageType, message: Object): void {
-    logger.log(`sendUserMessage(${type}): ${JSON.stringify(message)}`);
+    logger.debug(`sendUserMessage(${type}): ${JSON.stringify(message)}`);
     switch (type) {
       case 'notification':
         this._notifications.next({
@@ -79,13 +80,18 @@ export class ClientCallback {
         });
         break;
       default:
-        logger.logError(`Unknown UserMessageType: ${type}`);
+        logger.error(`Unknown UserMessageType: ${type}`);
     }
   }
 
-  unknownMethod(id: number, domain: string, method: string, params: ?Object): void {
+  unknownMethod(
+    id: number,
+    domain: string,
+    method: string,
+    params: ?Object,
+  ): void {
     const message = 'Unknown chrome dev tools method: ' + domain + '.' + method;
-    logger.log(message);
+    logger.debug(message);
     this.replyWithError(id, message);
   }
 
@@ -112,7 +118,7 @@ export class ClientCallback {
   }
 
   dispose(): void {
-    logger.log('Called ClientCallback dispose method.');
+    logger.debug('Called ClientCallback dispose method.');
     this._notifications.complete();
     this._serverMessages.complete();
     this._outputWindowMessages.complete();
@@ -121,6 +127,6 @@ export class ClientCallback {
 
 function sendJsonObject(subject: Subject<string>, value: Object): void {
   const message = JSON.stringify(value);
-  logger.log(`Sending JSON: ${message}`);
+  logger.debug(`Sending JSON: ${message}`);
   subject.next(message);
 }

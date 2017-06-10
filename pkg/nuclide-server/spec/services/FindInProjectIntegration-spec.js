@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 import {addMatchers} from '../../../nuclide-test-helpers';
-import nuclideUri from '../../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import ServiceTestHelper from './ServiceTestHelper';
 
 describe('GrepSearch', () => {
@@ -23,24 +24,26 @@ describe('GrepSearch', () => {
     // eslint-disable-next-line no-path-concat
     const regex = new RegExp('\\/\\/localhost/*' + __dirname, 'g');
     return JSON.parse(
-      JSON.stringify(jsonObject, null, 2)
-        .replace(regex, 'VARIABLE'),
-      );
+      JSON.stringify(jsonObject, null, 2).replace(regex, 'VARIABLE'),
+    );
   }
 
   it('can execute a basic search', () => {
     const testHelper = new ServiceTestHelper();
 
     waitsForPromise(async () => {
-      const FIND_IN_PROJECT_SERVICE_PATH =
-        require.resolve('../../../nuclide-grep-rpc');
+      const FIND_IN_PROJECT_SERVICE_PATH = require.resolve(
+        '../../../nuclide-grep-rpc',
+      );
 
       // Start the integration test helper.
-      await testHelper.start([{
-        name: 'GrepService',
-        definition: FIND_IN_PROJECT_SERVICE_PATH,
-        implementation: FIND_IN_PROJECT_SERVICE_PATH,
-      }]);
+      await testHelper.start([
+        {
+          name: 'GrepService',
+          definition: FIND_IN_PROJECT_SERVICE_PATH,
+          implementation: FIND_IN_PROJECT_SERVICE_PATH,
+        },
+      ]);
 
       const remoteService = testHelper.getRemoteService('GrepService');
 
@@ -49,8 +52,11 @@ describe('GrepSearch', () => {
       const uri = testHelper.getUriOfRemotePath(input_dir);
 
       // Do search.
-      const updates = await remoteService.grepSearch(uri,
-        /hello world/i, []).refCount().toArray().toPromise();
+      const updates = await remoteService
+        .grepSearch(uri, /hello world/i, [])
+        .refCount()
+        .toArray()
+        .toPromise();
 
       const expected = JSON.parse(
         fs.readFileSync(input_dir + '.json', {encoding: 'utf8'}),

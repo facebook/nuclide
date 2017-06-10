@@ -6,8 +6,9 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
- export type ClangCompilationDatabaseProvider = {
-   getCompilationDatabaseFile: (path: string) => Promise<?string>,
- };
+export type ClangCompilationDatabaseProvider = {
+  getCompilationDatabaseFile: (path: string) => Promise<?string>,
+};

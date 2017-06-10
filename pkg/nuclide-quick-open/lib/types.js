@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import React from 'react';
 
@@ -23,6 +24,8 @@ export type FileResult = {
   // Jump to line/column if provided.
   line?: number,
   column?: number,
+  // A custom callback to perform upon selection.
+  callback?: () => mixed,
 };
 
 export type DirectoryProviderType = {
@@ -37,7 +40,10 @@ export type DirectoryProviderType = {
   },
   priority?: number,
   isEligibleForDirectory(directory: atom$Directory): Promise<boolean>,
-  executeQuery(query: string, directory: atom$Directory): Promise<Array<FileResult>>,
+  executeQuery(
+    query: string,
+    directory: atom$Directory,
+  ): Promise<Array<FileResult>>,
   getComponentForItem?: (item: FileResult) => React.Element<any>,
 };
 
@@ -52,8 +58,13 @@ export type GlobalProviderType = {
     canOpenAll?: boolean,
   },
   priority?: number,
-  isEligibleForDirectories(directories: Array<atom$Directory>): Promise<boolean>,
-  executeQuery(query: string, directories: Array<atom$Directory>): Promise<Array<FileResult>>,
+  isEligibleForDirectories(
+    directories: Array<atom$Directory>,
+  ): Promise<boolean>,
+  executeQuery(
+    query: string,
+    directories: Array<atom$Directory>,
+  ): Promise<Array<FileResult>>,
   getComponentForItem?: (item: FileResult) => React.Element<any>,
 };
 

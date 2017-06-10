@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {
-  Directory,
-  File,
-} from 'atom';
+import {Directory, File} from 'atom';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
 
 describe('FileTreeHelpers', () => {
@@ -19,7 +17,9 @@ describe('FileTreeHelpers', () => {
     expect(FileTreeHelpers.keyToPath('/a')).toBe('/a');
     expect(FileTreeHelpers.keyToPath('/a/')).toBe('/a');
     expect(FileTreeHelpers.keyToPath('/a/b//')).toBe('/a/b');
-    expect(FileTreeHelpers.keyToPath('nuclide://host/a/b//')).toBe('nuclide://host/a/b');
+    expect(FileTreeHelpers.keyToPath('nuclide://host/a/b//')).toBe(
+      'nuclide://host/a/b',
+    );
   });
 
   it('should convert path to key', () => {
@@ -45,7 +45,9 @@ describe('FileTreeHelpers', () => {
   });
 
   it('should instantiate a local directory from a key', () => {
-    expect(FileTreeHelpers.getDirectoryByKey('/a/') instanceof Directory).toBe(true);
+    expect(FileTreeHelpers.getDirectoryByKey('/a/') instanceof Directory).toBe(
+      true,
+    );
   });
 
   it('should validate directories', () => {
@@ -67,8 +69,9 @@ describe('FileTreeHelpers', () => {
     });
 
     it('instantiates a local directory from a key', () => {
-      expect(FileTreeHelpers.getEntryByKey('/a/') instanceof Directory)
-        .toBe(true);
+      expect(FileTreeHelpers.getEntryByKey('/a/') instanceof Directory).toBe(
+        true,
+      );
     });
   });
 
@@ -99,7 +102,9 @@ describe('FileTreeHelpers', () => {
     });
 
     it('should instantiate a local directory from a key', () => {
-      expect(FileTreeHelpers.getDirectoryByKey('\\a\\') instanceof Directory).toBe(true);
+      expect(
+        FileTreeHelpers.getDirectoryByKey('\\a\\') instanceof Directory,
+      ).toBe(true);
     });
 
     it('should validate directories', () => {
@@ -109,19 +114,23 @@ describe('FileTreeHelpers', () => {
 
     describe('getFileByKey', () => {
       it('instantiates a local file from a key', () => {
-        expect(FileTreeHelpers.getFileByKey('\\a.md') instanceof File).toBe(true);
+        expect(FileTreeHelpers.getFileByKey('\\a.md') instanceof File).toBe(
+          true,
+        );
       });
     });
 
     describe('getEntryByKey', () => {
       it('instantiates a local file from a key', () => {
-        expect(FileTreeHelpers.getEntryByKey('\\a.md') instanceof File)
-          .toBe(true);
+        expect(FileTreeHelpers.getEntryByKey('\\a.md') instanceof File).toBe(
+          true,
+        );
       });
 
       it('instantiates a local directory from a key', () => {
-        expect(FileTreeHelpers.getEntryByKey('\\a\\') instanceof Directory)
-          .toBe(true);
+        expect(
+          FileTreeHelpers.getEntryByKey('\\a\\') instanceof Directory,
+        ).toBe(true);
       });
     });
   });

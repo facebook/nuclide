@@ -6,25 +6,32 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as RemoteCommandServiceType
   from '../../nuclide-remote-atom-rpc/lib/RemoteCommandService';
-import type {AtomCommands, AtomFileEvent} from '../../nuclide-remote-atom-rpc/lib/rpc-types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {
+  AtomCommands,
+  AtomFileEvent,
+} from '../../nuclide-remote-atom-rpc/lib/rpc-types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {ConnectableObservable} from 'rxjs';
 
 import {
   getServiceByConnection,
   ConnectionCache,
 } from '../../nuclide-remote-connection';
-import {goToLocation} from '../../commons-atom/go-to-location';
-import createPackage from '../../commons-atom/createPackage';
-import featureConfig from '../../commons-atom/featureConfig';
-import {observeEditorDestroy} from '../../commons-atom/text-editor';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {observeEditorDestroy} from 'nuclide-commons-atom/text-editor';
 import {Observable} from 'rxjs';
-import {RemoteConnection, ServerConnection} from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {
+  RemoteConnection,
+  ServerConnection,
+} from '../../nuclide-remote-connection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getNotifierByConnection} from '../../nuclide-open-files';
 
 const REMOTE_COMMAND_SERVICE = 'RemoteCommandService';
@@ -50,8 +57,9 @@ class Activation {
         isWaiting: boolean,
       ): ConnectableObservable<AtomFileEvent> {
         if (ServerConnection.getForUri(uri) == null) {
-          return Observable.throw(new Error(`Atom is not connected to host for ${uri}`))
-            .publish();
+          return Observable.throw(
+            new Error(`Atom is not connected to host for ${uri}`),
+          ).publish();
         }
         return openFile(uri, line, column, isWaiting);
       },
@@ -64,22 +72,32 @@ class Activation {
           if (serverConnection != null) {
             // Creating the RemoteConnection should add it to the FileTree
             await RemoteConnection.findOrCreateFromConnection(
-              serverConnection, nuclideUri.getPath(projectPath), '');
+              serverConnection,
+              nuclideUri.getPath(projectPath),
+              '',
+            );
           }
         }
       },
-      dispose(): void {
-      },
+      dispose(): void {},
     };
 
-    this._disposables = new ConnectionCache(
-        async connection => {
-          const service: RemoteCommandServiceType =
-            getServiceByConnection(REMOTE_COMMAND_SERVICE, connection);
-          const fileNotifier = await getNotifierByConnection(connection);
-          return service.RemoteCommandService.registerAtomCommands(
-            fileNotifier, this._commands);
-        });
+    this._disposables = new ConnectionCache(async connection => {
+      // Return a dummy object for the 'null' local connection.
+      // This doesn't have much utility locally.
+      if (connection == null) {
+        return {dispose: () => {}};
+      }
+      const service: RemoteCommandServiceType = getServiceByConnection(
+        REMOTE_COMMAND_SERVICE,
+        connection,
+      );
+      const fileNotifier = await getNotifierByConnection(connection);
+      return service.RemoteCommandService.registerAtomCommands(
+        fileNotifier,
+        this._commands,
+      );
+    });
   }
 
   dispose(): void {
@@ -94,20 +112,22 @@ function openFile(
   isWaiting: boolean,
 ): ConnectableObservable<AtomFileEvent> {
   return Observable.fromPromise(
-    goToLocation(uri, line, column)
-      .then(editor => {
-        atom.applicationDelegate.focusWindow();
+    goToLocation(uri, line, column).then(editor => {
+      atom.applicationDelegate.focusWindow();
 
-        if (
-          isWaiting &&
-          featureConfig.get('nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile')
-        ) {
-          const notification = atom.notifications.addInfo(
-            `The command line has opened \`${nuclideUri.getPath(uri)}\``
-             + ' and is waiting for it to be closed.',
-            {
-              dismissable: true,
-              buttons: [{
+      if (
+        isWaiting &&
+        featureConfig.get(
+          'nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile',
+        )
+      ) {
+        const notification = atom.notifications.addInfo(
+          `The command line has opened \`${nuclideUri.getPath(uri)}\`` +
+            ' and is waiting for it to be closed.',
+          {
+            dismissable: true,
+            buttons: [
+              {
                 onDidClick: () => {
                   featureConfig.set(
                     'nuclide-remote-atom.shouldNotifyWhenCommandLineIsWaitingOnFile',
@@ -115,28 +135,32 @@ function openFile(
                   );
                   notification.dismiss();
                 },
-                text: 'Don\'t show again',
-              }, {
+                text: "Don't show again",
+              },
+              {
                 onDidClick: () => {
                   editor.destroy();
                 },
                 text: 'Close file',
-              }],
-            },
-          );
-          editor.onDidDestroy(() => {
-            notification.dismiss();
-          });
-        }
+              },
+            ],
+          },
+        );
+        editor.onDidDestroy(() => {
+          notification.dismiss();
+        });
+      }
 
-        return editor;
-      }),
+      return editor;
+    }),
   )
-  .switchMap(editor =>
-    Observable.merge(
-      Observable.of('open'),
-      observeEditorDestroy(editor).map(value => 'close')))
-  .publish();
+    .switchMap(editor =>
+      Observable.merge(
+        Observable.of('open'),
+        observeEditorDestroy(editor).map(value => 'close'),
+      ),
+    )
+    .publish();
 }
 
 createPackage(module.exports, Activation);

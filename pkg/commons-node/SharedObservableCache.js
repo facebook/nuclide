@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Observable} from 'rxjs';
@@ -20,10 +21,13 @@ import {Observable} from 'rxjs';
  */
 export default class SharedObservableCache<Tk, To> {
   _factory: (key: Tk) => Observable<To>;
-  _cache: Map<Tk, {
-    refCount: number,
-    observable: Observable<To>,
-  }>;
+  _cache: Map<
+    Tk,
+    {
+      refCount: number,
+      observable: Observable<To>,
+    },
+  >;
 
   constructor(factory: (key: Tk) => Observable<To>) {
     this._factory = factory;

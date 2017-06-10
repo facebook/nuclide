@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -24,26 +25,46 @@ describe('nuclide-distraction-free-mode', () => {
 
       const commandTarget = atom.views.getView(atom.workspace);
 
-      atom.commands.dispatch(commandTarget, 'nuclide-outline-view:toggle', {visible: true});
-      expect(isOutlineViewVisible()).toBeTruthy();
+      runs(() => {
+        atom.commands.dispatch(commandTarget, 'nuclide-outline-view:toggle', {
+          visible: true,
+        });
+      });
+      waitsFor('outline view to appear for the first time', () => {
+        return isOutlineViewVisible();
+      });
 
-      atom.commands.dispatch(commandTarget, 'nuclide-distraction-free-mode:toggle');
-      expect(isOutlineViewVisible()).toBeFalsy();
+      runs(() => {
+        expect(isOutlineViewVisible()).toBeTruthy();
 
-      atom.commands.dispatch(commandTarget, 'nuclide-distraction-free-mode:toggle');
-      expect(isOutlineViewVisible()).toBeTruthy();
+        atom.commands.dispatch(
+          commandTarget,
+          'nuclide-distraction-free-mode:toggle',
+        );
+        expect(isOutlineViewVisible()).toBeFalsy();
 
-      // Deactivate nuclide packages.
-      deactivateAllPackages();
+        atom.commands.dispatch(
+          commandTarget,
+          'nuclide-distraction-free-mode:toggle',
+        );
+        expect(isOutlineViewVisible()).toBeTruthy();
+
+        // Deactivate nuclide packages.
+        deactivateAllPackages();
+      });
     });
   });
 });
 
 function isOutlineViewVisible(): boolean {
   let el = document.querySelector('.nuclide-outline-view');
-  if (el == null) { return false; }
+  if (el == null) {
+    return false;
+  }
   while (el != null) {
-    if (el.clientHeight === 0 || el.clientWidth === 0) { return false; }
+    if (el.clientHeight === 0 || el.clientWidth === 0) {
+      return false;
+    }
     el = el.parentElement;
   }
   return true;

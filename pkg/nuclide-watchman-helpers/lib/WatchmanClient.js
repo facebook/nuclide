@@ -6,17 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import watchman from 'fb-watchman';
-import {serializeAsyncCall, sleep} from '../../commons-node/promise';
-import {maybeToString} from '../../commons-node/string';
+import {serializeAsyncCall, sleep} from 'nuclide-commons/promise';
+import {maybeToString} from 'nuclide-commons/string';
 import {getWatchmanBinaryPath} from './path';
 import WatchmanSubscription from './WatchmanSubscription';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-watchman-helpers');
 const WATCHMAN_SETTLE_TIME_MS = 2500;
 
 import type {WatchmanSubscriptionOptions} from './WatchmanSubscription';
@@ -46,7 +47,9 @@ export default class WatchmanClient {
 
   constructor() {
     this._initWatchmanClient();
-    this._serializedReconnect = serializeAsyncCall(() => this._reconnectClient());
+    this._serializedReconnect = serializeAsyncCall(() =>
+      this._reconnectClient(),
+    );
     this._subscriptions = new Map();
     this._watchmanVersionPromise = this.version();
   }
@@ -97,22 +100,31 @@ export default class WatchmanClient {
 
   async _restoreSubscriptions(): Promise<void> {
     const watchSubscriptions = Array.from(this._subscriptions.values());
-    await Promise.all(watchSubscriptions.map(async (subscription: WatchmanSubscription) => {
-      await this._watchProject(subscription.path);
-      // We have already missed the change events from the disconnect time,
-      // watchman could have died, so the last clock result is not valid.
-      await sleep(WATCHMAN_SETTLE_TIME_MS);
-      // Register the subscriptions after the filesystem settles.
-      subscription.options.since = await this._clock(subscription.root);
-      await this._subscribe(subscription.root, subscription.name, subscription.options);
-    }));
+    await Promise.all(
+      watchSubscriptions.map(async (subscription: WatchmanSubscription) => {
+        await this._watchProject(subscription.path);
+        // We have already missed the change events from the disconnect time,
+        // watchman could have died, so the last clock result is not valid.
+        await sleep(WATCHMAN_SETTLE_TIME_MS);
+        // Register the subscriptions after the filesystem settles.
+        subscription.options.since = await this._clock(subscription.root);
+        await this._subscribe(
+          subscription.root,
+          subscription.name,
+          subscription.options,
+        );
+      }),
+    );
   }
 
   _getSubscription(entryPath: string): ?WatchmanSubscription {
     return this._subscriptions.get(nuclideUri.normalize(entryPath));
   }
 
-  _setSubscription(entryPath: string, subscription: WatchmanSubscription): void {
+  _setSubscription(
+    entryPath: string,
+    subscription: WatchmanSubscription,
+  ): void {
     this._subscriptions.set(nuclideUri.normalize(entryPath), subscription);
   }
 
@@ -138,8 +150,7 @@ export default class WatchmanClient {
       const stateLeave = response['state-leave'];
       const stateMessage = stateEnter != null
         ? `Entering ${stateEnter}`
-        : `Leaving ${maybeToString(stateLeave)}`
-      ;
+        : `Leaving ${maybeToString(stateLeave)}`;
       logger.info(`Subscription state: ${stateMessage}`);
       return;
     }
@@ -167,9 +178,12 @@ export default class WatchmanClient {
         since: clock,
       };
       if (relativePath && !options.expression) {
-        // Passing an 'undefined' expression causes an exception in fb-watchman.
-        options.expression = ['dirname', relativePath];
+        options.relative_root = relativePath;
       }
+      // Try this thing out where we always set empty_on_fresh_instance. Eden will be a lot happier
+      // if we never ask Watchman to do something that results in a glob(**) near the root.
+      options.empty_on_fresh_instance = true;
+
       // relativePath is undefined if watchRoot is the same as directoryPath.
       const subscription = new WatchmanSubscription(
         /* subscriptionRoot */ watchRoot,
@@ -223,7 +237,7 @@ export default class WatchmanClient {
       // Path generator will do less work unless the root path of the repository
       // is passed in as an entry path.
       path: [''],
-      fields: ['name'],          // names only
+      fields: ['name'], // names only
       relative_root: relative_path,
       ...options,
     });
@@ -235,7 +249,10 @@ export default class WatchmanClient {
     return roots;
   }
 
-  _unsubscribe(subscriptionPath: string, subscriptionName: string): Promise<any> {
+  _unsubscribe(
+    subscriptionPath: string,
+    subscriptionName: string,
+  ): Promise<any> {
     return this._command('unsubscribe', subscriptionPath, subscriptionName);
   }
 
@@ -249,7 +266,11 @@ export default class WatchmanClient {
   async _watchProject(directoryPath: string): Promise<any> {
     const watchmanVersion = await this._watchmanVersionPromise;
     if (!watchmanVersion || watchmanVersion < '3.1.0') {
-      throw new Error('Watchman version: ' + watchmanVersion + ' does not support watch-project');
+      throw new Error(
+        'Watchman version: ' +
+          watchmanVersion +
+          ' does not support watch-project',
+      );
     }
     const response = await this._command('watch-project', directoryPath);
     if (response.warning) {
@@ -281,11 +302,14 @@ export default class WatchmanClient {
    */
   _command(...args: Array<any>): Promise<any> {
     return new Promise((resolve, reject) => {
-      this._clientPromise.then(client => {
-        client.command(args, (error, response) =>
-          (error ? reject(error) : resolve(response)),
-        );
-      }).catch(reject);
+      this._clientPromise
+        .then(client => {
+          client.command(
+            args,
+            (error, response) => (error ? reject(error) : resolve(response)),
+          );
+        })
+        .catch(reject);
     });
   }
 }

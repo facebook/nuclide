@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as InfoService from '../../lib/services/InfoService';
@@ -25,8 +26,7 @@ describe('InfoService', () => {
   it('Returns the correct version number', () => {
     waitsForPromise(async () => {
       invariant(testHelper);
-      const service: InfoService =
-          testHelper.getRemoteService('InfoService');
+      const service: InfoService = testHelper.getRemoteService('InfoService');
 
       const version = await service.getServerVersion();
       expect(version).toBe(getVersion());

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {SshHandshake} from '../../nuclide-remote-connection';
@@ -16,11 +17,11 @@ import type {
 } from './connection-types';
 
 export type NuclideNewConnectionProfileValidationResult =
-  {|errorMessage: string|} |
-  {|
-    validatedProfile: NuclideRemoteConnectionProfile,
-    warningMessage?: string,
-  |};
+  | {|errorMessage: string|}
+  | {|
+      validatedProfile: NuclideRemoteConnectionProfile,
+      warningMessage?: string,
+    |};
 
 /*
  * This function checks that the required inputs to a connection profile are non-empty
@@ -75,9 +76,13 @@ export function validateFormInputs(
   } else {
     profileParams.authMethod = authMethod;
   }
-  if ((authMethod === SshHandshake.SupportedMethods.PRIVATE_KEY) &&
-      !connectionDetails.pathToPrivateKey) {
-    missingFields.push('Private Key File (required for the authentication method you selected)');
+  if (
+    authMethod === SshHandshake.SupportedMethods.PRIVATE_KEY &&
+    !connectionDetails.pathToPrivateKey
+  ) {
+    missingFields.push(
+      'Private Key File (required for the authentication method you selected)',
+    );
   } else {
     profileParams.pathToPrivateKey = connectionDetails.pathToPrivateKey;
   }
@@ -94,14 +99,20 @@ export function validateFormInputs(
   let warningMessage = '';
 
   // 1. If a password is provided, all parts of the profile will be save except the password.
-  if ((authMethod === SshHandshake.SupportedMethods.PASSWORD) && connectionDetails.password) {
-    warningMessage += '* You provided a password for this profile. ' +
-        'For security, Nuclide will save the other parts of this profile, ' +
-        'but not the password.\n';
+  if (
+    authMethod === SshHandshake.SupportedMethods.PASSWORD &&
+    connectionDetails.password
+  ) {
+    warningMessage +=
+      '* You provided a password for this profile. ' +
+      'For security, Nuclide will save the other parts of this profile, ' +
+      'but not the password.\n';
   }
   // 2. Save the remote server command only if it is changed.
-  if (connectionDetails.remoteServerCommand &&
-      connectionDetails.remoteServerCommand !== defaultRemoteServerCommand) {
+  if (
+    connectionDetails.remoteServerCommand &&
+    connectionDetails.remoteServerCommand !== defaultRemoteServerCommand
+  ) {
     profileParams.remoteServerCommand = connectionDetails.remoteServerCommand;
   } else {
     profileParams.remoteServerCommand = '';
@@ -114,9 +125,9 @@ export function validateFormInputs(
   };
   const validationResult = warningMessage.length > 0
     ? {
-      validatedProfile,
-      warningMessage,
-    }
+        validatedProfile,
+        warningMessage,
+      }
     : {validatedProfile};
   return validationResult;
 }

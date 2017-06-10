@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -15,22 +16,18 @@
  */
 
 import type {ConnectableObservable} from 'rxjs';
-import type {NuclideUri} from '../../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import mv from 'mv';
 import fs from 'fs';
-import {arrayCompact} from '../../../commons-node/collection';
-import nuclideUri from '../../../commons-node/nuclideUri';
-import fsPromise from '../../../commons-node/fsPromise';
-import {runCommand} from '../../../commons-node/process';
-import {observeRawStream} from '../../../commons-node/stream';
+import {arrayCompact} from 'nuclide-commons/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
+import {runCommand} from 'nuclide-commons/process';
+import {observeRawStream} from 'nuclide-commons/stream';
 import {Observable} from 'rxjs';
 
-export type FileWithStats = {
-  file: string,
-  stats: ?fs.Stats,
-  isSymbolicLink: boolean,
-};
+export type DirectoryEntry = [string, boolean, boolean];
 
 // Attempting to read large files just crashes node, so just fail.
 // Atom can't handle files of this scale anyway.
@@ -43,12 +40,26 @@ const READFILE_SIZE_LIMIT = 10 * 1024 * 1024;
 /**
  * Checks a certain path for existence and returns 'true'/'false' accordingly
  */
-export function exists(path: string): Promise<boolean> {
+export function exists(path: NuclideUri): Promise<boolean> {
   return fsPromise.exists(path);
 }
 
-export function findNearestFile(fileName: string, pathToDirectory: string): Promise<?string> {
-  return fsPromise.findNearestFile(fileName, pathToDirectory);
+/**
+ * Starting in the directory `pathToDirectory`, checks if it contains a file named `fileName`.
+ * If so, it returns the path to the file. If not, it successively looks for `fileName` in the
+ * parent directory. If it gets all the way to the root and still does not find the file, then it
+ * returns `null`.
+ */
+export async function findNearestAncestorNamed(
+  fileName: string,
+  pathToDirectory: NuclideUri,
+): Promise<?NuclideUri> {
+  const directory = await fsPromise.findNearestFile(fileName, pathToDirectory);
+  if (directory != null) {
+    return nuclideUri.join(directory, fileName);
+  } else {
+    return null;
+  }
 }
 
 export function findFilesInDirectories(
@@ -56,7 +67,9 @@ export function findFilesInDirectories(
   fileName: string,
 ): ConnectableObservable<Array<NuclideUri>> {
   if (searchPaths.length === 0) {
-    return Observable.throw(new Error('No directories to search in!')).publish();
+    return Observable.throw(
+      new Error('No directories to search in!'),
+    ).publish();
   }
   const findArgs = [...searchPaths, '-type', 'f', '-name', fileName];
   return runCommand('find', findArgs)
@@ -68,7 +81,7 @@ export function findFilesInDirectories(
  * The lstat endpoint is the same as the stat endpoint except it will return
  * the stat of a link instead of the file the link points to.
  */
-export function lstat(path: string): Promise<fs.Stats> {
+export function lstat(path: NuclideUri): Promise<fs.Stats> {
   return fsPromise.lstat(path);
 }
 
@@ -77,7 +90,7 @@ export function lstat(path: string): Promise<fs.Stats> {
  * Throws EEXIST error if the directory already exists.
  * Throws ENOENT if the path given is nested in a non-existing directory.
  */
-export function mkdir(path: string): Promise<void> {
+export function mkdir(path: NuclideUri): Promise<void> {
   return fsPromise.mkdir(path);
 }
 
@@ -88,14 +101,14 @@ export function mkdir(path: string): Promise<void> {
  * directories were created for some prefix of the given path.
  * @return true if the path was created; false if it already existed.
  */
-export function mkdirp(path: string): Promise<boolean> {
+export function mkdirp(path: NuclideUri): Promise<boolean> {
   return fsPromise.mkdirp(path);
 }
 
 /**
  * Changes permissions on a file.
  */
-export function chmod(path: string, mode: number): Promise<void> {
+export function chmod(path: NuclideUri, mode: number): Promise<void> {
   return fsPromise.chmod(path, mode);
 }
 
@@ -106,7 +119,7 @@ export function chmod(path: string, mode: number): Promise<void> {
  *
  * @return A boolean indicating whether the file was created.
  */
-export async function newFile(filePath: string): Promise<boolean> {
+export async function newFile(filePath: NuclideUri): Promise<boolean> {
   const isExistingFile = await fsPromise.exists(filePath);
   if (isExistingFile) {
     return false;
@@ -117,35 +130,32 @@ export async function newFile(filePath: string): Promise<boolean> {
 }
 
 /**
- * The readdir endpoint accepts the following query parameters:
- *
- *   path: path to the folder to list entries inside.
- *
- * Body contains a JSON encoded array of objects with file: and stats: entries.
- * file: has the file or directory name, stats: has the stats of the file/dir,
- * isSymbolicLink: true if the entry is a symlink to another filesystem location.
+ * Lists all children of the given directory.
  */
-export async function readdir(path: string): Promise<Array<FileWithStats>> {
+export async function readdir(
+  path: NuclideUri,
+): Promise<Array<DirectoryEntry>> {
   const files = await fsPromise.readdir(path);
-  const entries = await Promise.all(files.map(async file => {
-    const fullpath = nuclideUri.join(path, file);
-    const lstats = await fsPromise.lstat(fullpath);
-    if (!lstats.isSymbolicLink()) {
-      return {file, stats: lstats, isSymbolicLink: false};
-    } else {
-      try {
-        const stats = await fsPromise.stat(fullpath);
-        return {file, stats, isSymbolicLink: true};
-      } catch (error) {
-        return null;
+  const entries = await Promise.all(
+    files.map(async file => {
+      const fullpath = nuclideUri.join(path, file);
+      const lstats = await fsPromise.lstat(fullpath);
+      if (!lstats.isSymbolicLink()) {
+        return {file, stats: lstats, isSymbolicLink: false};
+      } else {
+        try {
+          const stats = await fsPromise.stat(fullpath);
+          return {file, stats, isSymbolicLink: true};
+        } catch (error) {
+          return null;
+        }
       }
-    }
-  }));
+    }),
+  );
   // TODO: Return entries directly and change client to handle error.
-  return arrayCompact(entries)
-    .map(entry => {
-      return {file: entry.file, stats: entry.stats, isSymbolicLink: entry.isSymbolicLink};
-    });
+  return arrayCompact(entries).map(entry => {
+    return [entry.file, entry.stats.isFile(), entry.isSymbolicLink];
+  });
 }
 
 /**
@@ -153,7 +163,7 @@ export async function readdir(path: string): Promise<Array<FileWithStats>> {
  * It could be different than the given path if the file is a symlink
  * or exists in a symlinked directory.
  */
-export function realpath(path: string): Promise<string> {
+export function realpath(path: NuclideUri): Promise<NuclideUri> {
   return fsPromise.realpath(path);
 }
 
@@ -168,25 +178,36 @@ export function resolveRealPath(path: string): Promise<string> {
 /**
  * Runs the equivalent of `mv sourcePath destinationPath`.
  */
-export function rename(sourcePath: string, destinationPath: string): Promise<void> {
+export function rename(
+  sourcePath: NuclideUri,
+  destinationPath: NuclideUri,
+): Promise<void> {
   return fsPromise.move(sourcePath, destinationPath);
 }
 
 /**
  * Moves all sourcePaths into the specified destDir, assumed to be a directory name.
  */
-export async function move(sourcePaths: Array<string>, destDir: string): Promise<void> {
-  await Promise.all(sourcePaths.map(path => {
-    const destPath = nuclideUri.join(destDir, nuclideUri.basename(path));
-    return fsPromise.move(path, destPath);
-  }));
+export async function move(
+  sourcePaths: Array<NuclideUri>,
+  destDir: NuclideUri,
+): Promise<void> {
+  await Promise.all(
+    sourcePaths.map(path => {
+      const destPath = nuclideUri.join(destDir, nuclideUri.basename(path));
+      return fsPromise.move(path, destPath);
+    }),
+  );
 }
 
 /**
  * Runs the equivalent of `cp sourcePath destinationPath`.
  * @return true if the operation was successful; false if it wasn't.
  */
-export async function copy(sourcePath: string, destinationPath: string): Promise<boolean> {
+export async function copy(
+  sourcePath: NuclideUri,
+  destinationPath: NuclideUri,
+): Promise<boolean> {
   const isExistingFile = await fsPromise.exists(destinationPath);
   if (isExistingFile) {
     return false;
@@ -199,11 +220,11 @@ export async function copy(sourcePath: string, destinationPath: string): Promise
 /**
  * Removes directories even if they are non-empty. Does not fail if the directory doesn't exist.
  */
-export function rmdir(path: string): Promise<void> {
+export function rmdir(path: NuclideUri): Promise<void> {
   return fsPromise.rmdir(path);
 }
 
-export async function rmdirAll(paths: Array<string>): Promise<void> {
+export async function rmdirAll(paths: Array<NuclideUri>): Promise<void> {
   await Promise.all(paths.map(p => fsPromise.rmdir(p)));
 }
 
@@ -231,14 +252,14 @@ export async function rmdirAll(paths: Array<string>): Promise<void> {
  * }
  *
  */
-export function stat(path: string): Promise<fs.Stats> {
+export function stat(path: NuclideUri): Promise<fs.Stats> {
   return fsPromise.stat(path);
 }
 
 /**
  * Removes files. Does not fail if the file doesn't exist.
  */
-export function unlink(path: string): Promise<void> {
+export function unlink(path: NuclideUri): Promise<void> {
   return fsPromise.unlink(path).catch(error => {
     if (error.code !== 'ENOENT') {
       throw error;
@@ -255,7 +276,7 @@ export function unlink(path: string): Promise<void> {
  *   Callers who want a string should call buffer.toString('utf8').
  */
 export async function readFile(
-  path: string,
+  path: NuclideUri,
   options?: {flag?: string},
 ): Promise<Buffer> {
   const stats = await fsPromise.stat(path);
@@ -266,7 +287,7 @@ export async function readFile(
 }
 
 export function createReadStream(
-  path: string,
+  path: NuclideUri,
   options?: {flag?: string},
 ): ConnectableObservable<Buffer> {
   return observeRawStream(fs.createReadStream(path, options)).publish();
@@ -275,7 +296,7 @@ export function createReadStream(
 /**
  * Returns true if the path being checked exists in a `NFS` mounted directory device.
  */
-export function isNfs(path: string): Promise<boolean> {
+export function isNfs(path: NuclideUri): Promise<boolean> {
   return fsPromise.isNfs(path);
 }
 
@@ -292,20 +313,29 @@ function mvPromise(sourcePath: string, destinationPath: string): Promise<void> {
   });
 }
 
-async function copyFilePermissions(sourcePath: string, destinationPath: string): Promise<void> {
-  let permissions;
+async function copyFilePermissions(
+  sourcePath: string,
+  destinationPath: string,
+): Promise<void> {
   try {
-    permissions = (await fsPromise.stat(sourcePath)).mode;
+    const {mode, uid, gid} = await fsPromise.stat(sourcePath);
+    await Promise.all([
+      // The user may not have permissions to use the uid/gid.
+      fsPromise.chown(destinationPath, uid, gid).catch(() => {}),
+      fsPromise.chmod(destinationPath, mode),
+    ]);
   } catch (e) {
     // If the file does not exist, then ENOENT will be thrown.
     if (e.code !== 'ENOENT') {
       throw e;
     }
     // For new files, use the default process file creation mask.
-    // $FlowIssue: umask argument is optional
-    permissions = 0o666 & ~process.umask(); // eslint-disable-line no-bitwise
+    await fsPromise.chmod(
+      destinationPath,
+      // $FlowIssue: umask argument is optional
+      0o666 & ~process.umask(), // eslint-disable-line no-bitwise
+    );
   }
-  await fsPromise.chmod(destinationPath, permissions);
 }
 
 /**
@@ -317,8 +347,11 @@ async function copyFilePermissions(sourcePath: string, destinationPath: string):
  *
  * TODO: move to nuclide-commons and rename to writeFileAtomic
  */
-export async function writeFile(path: string, data: string,
-    options?: {encoding?: string, mode?: number, flag?: string}): Promise<void> {
+export async function writeFile(
+  path: NuclideUri,
+  data: string,
+  options?: {encoding?: string, mode?: number, flag?: string},
+): Promise<void> {
   let complete = false;
   const tempFilePath = await fsPromise.tempfile('nuclide');
   try {

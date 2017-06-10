@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -17,10 +18,7 @@ import type {WatchExpressionStore} from './WatchExpressionStore';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {Observable} from 'rxjs';
 
-import {
-  Disposable,
-  CompositeDisposable,
-} from 'atom';
+import {Disposable, CompositeDisposable} from 'atom';
 import {BehaviorSubject} from 'rxjs';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
@@ -33,7 +31,10 @@ export class WatchExpressionListStore {
    */
   _watchExpressions: BehaviorSubject<EvaluatedExpressionList>;
 
-  constructor(watchExpressionStore: WatchExpressionStore, dispatcher: DebuggerDispatcher) {
+  constructor(
+    watchExpressionStore: WatchExpressionStore,
+    dispatcher: DebuggerDispatcher,
+  ) {
     this._watchExpressionStore = watchExpressionStore;
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
     this._disposables = new CompositeDisposable(
@@ -53,7 +54,10 @@ export class WatchExpressionListStore {
         this._removeWatchExpression(payload.data.index);
         break;
       case ActionTypes.UPDATE_WATCH_EXPRESSION:
-        this._updateWatchExpression(payload.data.index, payload.data.newExpression);
+        this._updateWatchExpression(
+          payload.data.index,
+          payload.data.newExpression,
+        );
         break;
       case ActionTypes.DEBUGGER_MODE_CHANGE:
         if (payload.data === DebuggerMode.STARTING) {

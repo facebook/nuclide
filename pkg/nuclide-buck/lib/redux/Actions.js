@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ResolvedRuleType} from '../../../nuclide-buck-rpc';
@@ -62,7 +63,9 @@ export function setBuildTarget(buildTarget: string): Action {
   return {type: SET_BUILD_TARGET, buildTarget};
 }
 
-export function setDeploymentTarget(deploymentTarget: DeploymentTarget): Action {
+export function setDeploymentTarget(
+  deploymentTarget: DeploymentTarget,
+): Action {
   return {type: SET_DEPLOYMENT_TARGET, deploymentTarget};
 }
 

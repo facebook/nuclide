@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {DebuggerStore} from '../lib/DebuggerStore';
@@ -58,7 +59,9 @@ describe('BreakpointManager', () => {
       expect(breakpointManager.getDisplayControllers().size).toBe(0);
 
       // But the store should still remember the breakpoint
-      expect(breakpointStore.getBreakpointLinesForPath(path)).toEqual(new Set([1]));
+      expect(breakpointStore.getBreakpointLinesForPath(path)).toEqual(
+        new Set([1]),
+      );
     });
   });
 });

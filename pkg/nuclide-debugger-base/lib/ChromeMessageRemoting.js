@@ -6,22 +6,30 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-
 import url from 'url';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 
-export function translateMessageFromServer(hostname: string, message: string): string {
-  return translateMessage(message, uri => translateUriFromServer(hostname, uri));
+export function translateMessageFromServer(
+  hostname: string,
+  message: string,
+): string {
+  return translateMessage(message, uri =>
+    translateUriFromServer(hostname, uri),
+  );
 }
 
 export function translateMessageToServer(message: string): string {
   return translateMessage(message, translateUriToServer);
 }
 
-function translateMessage(message: string, translateUri: (uri: string) => string): string {
+function translateMessage(
+  message: string,
+  translateUri: (uri: string) => string,
+): string {
   const obj = JSON.parse(message);
   let result;
   switch (obj.method) {
@@ -41,13 +49,21 @@ function translateMessage(message: string, translateUri: (uri: string) => string
   return JSON.stringify(result);
 }
 
-function translateField(obj: Object, field: string, translateUri: (uri: string) => string): mixed {
+function translateField(
+  obj: Object,
+  field: string,
+  translateUri: (uri: string) => string,
+): mixed {
   const fields = field.split('.');
   const fieldName = fields[0];
   if (fields.length === 1) {
     obj[fieldName] = translateUri(obj[fieldName]);
   } else {
-    obj[fieldName] = translateField(obj[fieldName], fields.slice(1).join('.'), translateUri);
+    obj[fieldName] = translateField(
+      obj[fieldName],
+      fields.slice(1).join('.'),
+      translateUri,
+    );
   }
   return obj;
 }
@@ -56,7 +72,10 @@ function translateUriFromServer(hostname: string, uri: string): string {
   const components = url.parse(uri);
   if (components.protocol === 'file:') {
     invariant(components.pathname);
-    const result = nuclideUri.createRemoteUri(hostname, decodeURI(components.pathname));
+    const result = nuclideUri.createRemoteUri(
+      hostname,
+      decodeURI(components.pathname + (components.hash || '')),
+    );
     return result;
   } else {
     return uri;

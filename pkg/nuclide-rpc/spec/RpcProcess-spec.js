@@ -6,21 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as DummyService from './fixtures/dummy-service/DummyService';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
-import {safeSpawn, observeProcessExit} from '../../commons-node/process';
+import {spawn} from 'nuclide-commons/process';
 import {RpcProcess} from '../lib/RpcProcess';
 import {ServiceRegistry} from '../../nuclide-rpc';
+import {Scheduler} from 'rxjs';
 
 describe('RpcProcess', () => {
   let server: RpcProcess;
 
   beforeEach(() => {
-    const PROCESS_PATH = nuclideUri.join(__dirname, 'fixtures/dummy-service/dummyioserver.py');
+    const PROCESS_PATH = nuclideUri.join(
+      __dirname,
+      'fixtures/dummy-service/dummyioserver.py',
+    );
     const OPTS = {
       cwd: nuclideUri.dirname(PROCESS_PATH),
       stdio: 'pipe',
@@ -29,15 +34,26 @@ describe('RpcProcess', () => {
 
     const serviceRegistry = new ServiceRegistry(
       [],
-      [{
-        name: 'dummy',
-        definition: nuclideUri.join(__dirname, 'fixtures/dummy-service/DummyService.js'),
-        implementation: nuclideUri.join(__dirname, 'fixtures/dummy-service/DummyService.js'),
-        preserveFunctionNames: true,
-      }]);
+      [
+        {
+          name: 'dummy',
+          definition: nuclideUri.join(
+            __dirname,
+            'fixtures/dummy-service/DummyService.js',
+          ),
+          implementation: nuclideUri.join(
+            __dirname,
+            'fixtures/dummy-service/DummyService.js',
+          ),
+          preserveFunctionNames: true,
+        },
+      ],
+    );
 
-    const createProcess = () => safeSpawn('python', [PROCESS_PATH], OPTS);
-    server = new RpcProcess('Dummy IO Server', serviceRegistry, createProcess);
+    const processStream = spawn('python', [PROCESS_PATH], OPTS)
+      // For the sake of our tests, simulate creating the process asynchronously.
+      .subscribeOn(Scheduler.async);
+    server = new RpcProcess('Dummy IO Server', serviceRegistry, processStream);
   });
 
   afterEach(() => {
@@ -92,13 +108,18 @@ describe('RpcProcess', () => {
 
   it('should reject pending calls upon the child process exiting', () => {
     waitsForPromise(async () => {
+      const message = server.observeExitMessage().take(1).toPromise();
       try {
         await (await getService()).kill();
         invariant(false, 'Fail - expected promise to reject');
       } catch (e) {
-        expect(e.message.startsWith('Remote Error: Connection Closed processing message'))
-          .toBeTruthy();
+        expect(
+          e.message.startsWith(
+            'Remote Error: Connection Closed processing message',
+          ),
+        ).toBeTruthy();
       }
+      expect((await message).exitCode).toBe(0);
     });
   });
 
@@ -125,9 +146,28 @@ describe('RpcProcess', () => {
       await getService();
       const process = server._process;
       invariant(process != null);
-      const exitPromise = observeProcessExit(() => process).toPromise();
+      const spy = jasmine.createSpy();
+      process.on('exit', spy);
       server.dispose();
-      expect((await exitPromise).kind).toBe('exit');
+      waitsFor(() => spy.wasCalled);
+
+      const exitSpy = jasmine.createSpy();
+      server.observeExitMessage().subscribe(() => exitSpy());
+      // Manual dispose should not trigger any side effects.
+      expect(exitSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should respond to dispose immediately if the process is created asynchronously', () => {
+    waitsForPromise(async () => {
+      const service = getService();
+      server.dispose();
+      try {
+        await service;
+      } catch (e) {
+        return;
+      }
+      throw new Error('should have thrown');
     });
   });
 });

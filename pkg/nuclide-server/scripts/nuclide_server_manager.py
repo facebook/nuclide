@@ -370,7 +370,7 @@ if __name__ == '__main__':
             _, hard_limit = resource.getrlimit(resource.RLIMIT_CORE)
             resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, hard_limit))
         except Exception as e:
-            logger.warn('Failed to enable core dump (%s)', e.message)
+            logger.warn('Failed to enable core dump (%s)' % e)
 
     # Clean up old core dumps. They're pretty large, so don't hog disk space.
     try:
@@ -384,7 +384,7 @@ if __name__ == '__main__':
             for core in cores[:len(cores) - MAX_CORE_DUMPS]:
                 os.remove(core)
     except Exception as e:
-        logger.warn('Failed to clean up old core dumps (%s)', e.message)
+        logger.warn('Failed to clean up old core dumps (%s)' % e)
         pass
 
     if options.command == 'start':
@@ -395,7 +395,7 @@ if __name__ == '__main__':
             result = server.get_server_info()
             result['success'] = True
         else:
-            result = {'succes': False, 'logs': get_buffered_logs()}
+            result = {'success': False, 'logs': get_buffered_logs()}
 
         if options.json_output_file:
             with open(options.json_output_file, 'w') as f:

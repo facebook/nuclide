@@ -6,15 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import {ConnectableObservable} from 'rxjs';
 import WS from 'ws';
 import {CompositeDisposable, Disposable} from 'event-kit';
-import {checkOutput} from '../../commons-node/process';
-import utils from './utils';
-const {logInfo} = utils;
+import {runCommand} from 'nuclide-commons/process';
+import logger from './utils';
 import {ClientCallback} from '../../nuclide-debugger-common';
 import {NodeDebuggerHost} from './NodeDebuggerHost';
 
@@ -24,14 +24,20 @@ export type NodeAttachTargetInfo = {
   commandName: string,
 };
 
-export async function getAttachTargetInfoList(): Promise<Array<NodeAttachTargetInfo>> {
+export async function getAttachTargetInfoList(): Promise<
+  Array<NodeAttachTargetInfo>,
+> {
   // Get processes list from ps utility.
   // -e: include all processes, does not require -ww argument since truncation of process names is
   //     done by the OS, not the ps utility
   // -o pid,comm: custom format the output to be two columns(pid and process name)
   const pidToName: Map<number, string> = new Map();
-  const processes = await checkOutput('ps', ['-e', '-o', 'pid,comm'], {});
-  processes.stdout.toString().split('\n').slice(1).forEach(line => {
+  const processes = await runCommand(
+    'ps',
+    ['-e', '-o', 'pid,comm'],
+    {},
+  ).toPromise();
+  processes.toString().split('\n').slice(1).forEach(line => {
     const words = line.trim().split(' ');
     const pid = Number(words[0]);
     const command = words.slice(1).join(' ');
@@ -44,8 +50,12 @@ export async function getAttachTargetInfoList(): Promise<Array<NodeAttachTargetI
   // -ww: provides unlimited width for output and prevents the truncating of command names by ps.
   // -o pid,args: custom format the output to be two columns(pid and command name)
   const pidToCommand: Map<number, string> = new Map();
-  const commands = await checkOutput('ps', ['-eww', '-o', 'pid,args'], {});
-  commands.stdout.toString().split('\n').slice(1).forEach(line => {
+  const commands = await runCommand(
+    'ps',
+    ['-eww', '-o', 'pid,args'],
+    {},
+  ).toPromise();
+  commands.toString().split('\n').slice(1).forEach(line => {
     const words = line.trim().split(' ');
     const pid = Number(words[0]);
     const command = words.slice(1).join(' ');
@@ -53,21 +63,22 @@ export async function getAttachTargetInfoList(): Promise<Array<NodeAttachTargetI
   });
   // Filter out processes that have died in between ps calls and zombiue processes.
   // Place pid, process, and command info into AttachTargetInfo objects and return in an array.
-  return Array.from(pidToName.entries()).filter((arr => {
-    const [pid, name] = arr;
-    // Filter out current process and only return node processes.
-    return pidToCommand.has(pid) && pid !== process.pid && name === 'node';
-  }))
-  .map(arr => {
-    const [pid, name] = arr;
-    const commandName = pidToCommand.get(pid);
-    invariant(commandName != null);
-    return {
-      pid,
-      name,
-      commandName,
-    };
-  });
+  return Array.from(pidToName.entries())
+    .filter(arr => {
+      const [pid, name] = arr;
+      // Filter out current process and only return node processes.
+      return pidToCommand.has(pid) && pid !== process.pid && name === 'node';
+    })
+    .map(arr => {
+      const [pid, name] = arr;
+      const commandName = pidToCommand.get(pid);
+      invariant(commandName != null);
+      return {
+        pid,
+        name,
+        commandName,
+      };
+    });
 }
 
 export class NodeDebuggerService {
@@ -93,10 +104,12 @@ export class NodeDebuggerService {
   async sendCommand(message: string): Promise<void> {
     const nodeWebSocket = this._webSocketClientToNode;
     if (nodeWebSocket != null) {
-      logInfo(`forward client message to node debugger: ${message}`);
+      logger.info(`forward client message to node debugger: ${message}`);
       nodeWebSocket.send(message);
     } else {
-      logInfo(`Nuclide sent message to node debugger after socket closed: ${message}`);
+      logger.info(
+        `Nuclide sent message to node debugger after socket closed: ${message}`,
+      );
     }
   }
 
@@ -111,7 +124,7 @@ export class NodeDebuggerService {
   }
 
   async _connectWithDebuggerHost(serverAddress: string): Promise<WS> {
-    logInfo(`Connecting debugger host with address: ${serverAddress}`);
+    logger.info(`Connecting debugger host with address: ${serverAddress}`);
     const ws = new WS(serverAddress);
     this._subscriptions.add(new Disposable(() => ws.close()));
     return new Promise((resolve, reject) => {
@@ -124,7 +137,7 @@ export class NodeDebuggerService {
   }
 
   _handleNodeDebuggerMessage(message: string): void {
-    logInfo(`Node debugger message: ${message}`);
+    logger.info(`Node debugger message: ${message}`);
     this._clientCallback.sendChromeMessage(message);
   }
 

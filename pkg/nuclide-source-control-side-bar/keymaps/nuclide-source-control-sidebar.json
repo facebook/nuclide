@@ -1,8 +1,0 @@
-{
-  ".platform-darwin atom-workspace": {
-    "ctrl-cmd-s": "nuclide-source-control-side-bar:toggle"
-  },
-  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
-    "alt-ctrl-s": "nuclide-source-control-side-bar:toggle"
-  }
-}

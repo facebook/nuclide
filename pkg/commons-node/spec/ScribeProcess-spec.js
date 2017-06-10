@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../nuclideUri';
-import fsPromise from '../fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 import ScribeProcess, {__test__} from '../ScribeProcess';
 
 describe('scribe_cat test suites', () => {
@@ -22,8 +23,10 @@ describe('scribe_cat test suites', () => {
   ): Promise<Array<string>> {
     const categoryFilePath = nuclideUri.join(tempDir, category);
     const content = await fsPromise.readFile(categoryFilePath);
-    const result = content.toString().split('\n')
-      .filter(item => (item.length > 0));
+    const result = content
+      .toString()
+      .split('\n')
+      .filter(item => item.length > 0);
     return result;
   }
 
@@ -54,11 +57,23 @@ describe('scribe_cat test suites', () => {
   });
 
   it('Saves data to scribe category', () => {
-    const localScribeProcess = scribeProcess = new ScribeProcess('test');
+    const localScribeProcess = (scribeProcess = new ScribeProcess('test'));
 
     const messages = [
-      'A', 'nuclide', 'is', 'an', 'atomic', 'species', 'characterized', 'by', 'the', 'specific',
-      'constitution', 'of', 'its', 'nucleus.',
+      'A',
+      'nuclide',
+      'is',
+      'an',
+      'atomic',
+      'species',
+      'characterized',
+      'by',
+      'the',
+      'specific',
+      'constitution',
+      'of',
+      'its',
+      'nucleus.',
     ];
     waitsForPromise(async () => {
       messages.map(message => localScribeProcess.write(message));
@@ -69,10 +84,12 @@ describe('scribe_cat test suites', () => {
   });
 
   it('Saves data to scribe category and resume from error', () => {
-    const localScribeProcess = scribeProcess = new ScribeProcess('test');
+    const localScribeProcess = (scribeProcess = new ScribeProcess('test'));
 
     const firstPart = 'A nuclide is an atomic species'.split(' ');
-    const secondPart = 'characterized by the specific constitution of its nucleus.'.split(' ');
+    const secondPart = 'characterized by the specific constitution of its nucleus.'.split(
+      ' ',
+    );
 
     waitsForPromise(async () => {
       firstPart.map(message => localScribeProcess.write(message));
@@ -81,8 +98,9 @@ describe('scribe_cat test suites', () => {
       secondPart.map(message => localScribeProcess.write(message));
       // Wait for `scribe_cat_mock` to flush data into disk.
       await localScribeProcess.join();
-      expect(firstPart.concat(secondPart))
-        .toEqual(await getContentOfScribeCategory('test'));
+      expect(firstPart.concat(secondPart)).toEqual(
+        await getContentOfScribeCategory('test'),
+      );
     });
   });
 });

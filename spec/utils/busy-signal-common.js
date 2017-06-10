@@ -6,13 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 
 function getElement(): HTMLElement {
-  const element = atom.views.getView(atom.workspace)
-      .querySelector('.nuclide-busy-signal-status-bar');
+  const element = atom.views
+    .getView(atom.workspace)
+    .querySelector('.nuclide-busy-signal-status-bar');
   invariant(element != null);
   return element;
 }

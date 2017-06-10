@@ -6,11 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // Encodes the structure of messages that can be sent from the client to the server.
-export type RequestMessage = CallMessage | NewObjectMessage |
-  CallObjectMessage | DisposeMessage | UnsubscribeMessage;
+export type RequestMessage =
+  | CallMessage
+  | NewObjectMessage
+  | CallObjectMessage
+  | DisposeMessage
+  | UnsubscribeMessage;
 
 export type CallMessage = {
   protocol: string,
@@ -51,8 +56,12 @@ export type UnsubscribeMessage = {
 };
 
 // Encodes the structure of messages that can be sent from the server to the client.
-export type ResponseMessage = PromiseResponseMessage | ErrorResponseMessage
-  | NextMessage | CompleteMessage | ErrorMessage;
+export type ResponseMessage =
+  | PromiseResponseMessage
+  | ErrorResponseMessage
+  | NextMessage
+  | CompleteMessage
+  | ErrorMessage;
 
 export type ErrorResponseMessage = {
   protocol: string,
@@ -89,12 +98,15 @@ export type ErrorMessage = {
 };
 
 // TODO: This should be a custom marshaller registered in the TypeRegistry
-export function decodeError(message: Object, encodedError: ?(Object | string)): ?(Error | string) {
+export function decodeError(
+  message: Object,
+  encodedError: ?(Object | string),
+): ?(Error | string) {
   if (encodedError != null && typeof encodedError === 'object') {
     const resultError = new Error();
     resultError.message =
-      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(message)}\n`
-      + JSON.stringify(encodedError.stack);
+      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(message)}\n` +
+      JSON.stringify(encodedError.stack);
     // $FlowIssue - some Errors (notably file operations) have a code.
     resultError.code = encodedError.code;
     resultError.stack = encodedError.stack;
@@ -164,7 +176,11 @@ export function createPromiseMessage(
   };
 }
 
-export function createNextMessage(protocol: string, id: number, value: any): NextMessage {
+export function createNextMessage(
+  protocol: string,
+  id: number,
+  value: any,
+): NextMessage {
   return {
     protocol,
     type: 'next',
@@ -173,7 +189,10 @@ export function createNextMessage(protocol: string, id: number, value: any): Nex
   };
 }
 
-export function createCompleteMessage(protocol: string, id: number): CompleteMessage {
+export function createCompleteMessage(
+  protocol: string,
+  id: number,
+): CompleteMessage {
   return {
     protocol,
     type: 'complete',
@@ -207,7 +226,10 @@ export function createDisposeMessage(
   };
 }
 
-export function createUnsubscribeMessage(protocol: string, id: number): UnsubscribeMessage {
+export function createUnsubscribeMessage(
+  protocol: string,
+  id: number,
+): UnsubscribeMessage {
   return {
     protocol,
     type: 'unsubscribe',

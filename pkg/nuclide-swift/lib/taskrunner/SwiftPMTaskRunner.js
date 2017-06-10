@@ -6,21 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Task} from '../../../commons-node/tasks';
 import type {TaskMetadata} from '../../../nuclide-task-runner/lib/types';
-import type {Level, Message} from '../../../nuclide-console/lib/types';
 import type {Directory} from '../../../nuclide-remote-connection';
 import type {SwiftPMTaskRunnerStoreState} from './SwiftPMTaskRunnerStoreState';
 
 import {Observable, Subject} from 'rxjs';
 import React from 'react';
-import UniversalDisposable from '../../../commons-node/UniversalDisposable';
-import fsPromise from '../../../commons-node/fsPromise';
-import {observeProcess, safeSpawn, exitEventToMessage} from '../../../commons-node/process';
-import {observableFromSubscribeFunction} from '../../../commons-node/event';
-import {taskFromObservable} from '../../../commons-node/tasks';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import fsPromise from 'nuclide-commons/fsPromise';
+import {observeProcess, exitEventToMessage} from 'nuclide-commons/process';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {createMessage, taskFromObservable} from '../../../commons-node/tasks';
 import SwiftPMTaskRunnerStore from './SwiftPMTaskRunnerStore';
 import SwiftPMTaskRunnerActions from './SwiftPMTaskRunnerActions';
 import SwiftPMTaskRunnerDispatcher from './SwiftPMTaskRunnerDispatcher';
@@ -31,10 +31,11 @@ import {
   SwiftPMTaskRunnerTaskMetadata,
 } from './SwiftPMTaskRunnerTaskMetadata';
 import SwiftPMTaskRunnerToolbar from './toolbar/SwiftPMTaskRunnerToolbar';
-import SwiftPMAutocompletionProvider from './providers/SwiftPMAutocompletionProvider';
-import {Icon} from '../../../nuclide-ui/Icon';
+import SwiftPMAutocompletionProvider
+  from './providers/SwiftPMAutocompletionProvider';
+import {Icon} from 'nuclide-commons-ui/Icon';
 import nullthrows from 'nullthrows';
-import nuclideUri from '../../../commons-node/nuclideUri.js';
+import nuclideUri from 'nuclide-commons/nuclideUri.js';
 
 /**
  * nuclide-swift makes use of the Flux design pattern. The SwiftPMTaskRunner is
@@ -64,18 +65,17 @@ export class SwiftPMTaskRunner {
   _initialState: ?SwiftPMTaskRunnerStoreState;
   _flux: ?SwiftPMTaskRunnerFlux;
   _autocompletionProvider: ?SwiftPMAutocompletionProvider;
-  _outputMessages: Subject<Message>;
   _projectRoot: Subject<?string>;
 
   constructor(initialState: ?SwiftPMTaskRunnerStoreState) {
     this.id = 'swiftpm';
     this.name = 'Swift';
     this._initialState = initialState;
-    this._outputMessages = new Subject();
     this._projectRoot = new Subject();
     this._disposables = new UniversalDisposable(
-      this._outputMessages,
-      this._projectRoot.subscribe(path => this._getFlux().actions.updateProjectRoot(path)),
+      this._projectRoot.subscribe(path =>
+        this._getFlux().actions.updateProjectRoot(path),
+      ),
     );
   }
 
@@ -91,18 +91,15 @@ export class SwiftPMTaskRunner {
     const {store, actions} = this._getFlux();
     return class ExtraUi extends React.Component {
       render(): React.Element<any> {
-        return (
-          <SwiftPMTaskRunnerToolbar
-            store={store}
-            actions={actions}
-          />
-        );
+        return <SwiftPMTaskRunnerToolbar store={store} actions={actions} />;
       }
     };
   }
 
   getIcon(): ReactClass<any> {
-    return () => <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />;
+    return () => (
+      <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />
+    );
   }
 
   runTask(taskName: string): Task {
@@ -135,58 +132,52 @@ export class SwiftPMTaskRunner {
       'nuclide-console:toggle',
       {visible: true},
     );
-    this._logOutput(`${command.command} ${command.args.join(' ')}`, 'log');
-
-    const observable = observeProcess(
-      () => safeSpawn(command.command, command.args),
-    ).do(message => {
-      switch (message.kind) {
-        case 'stderr':
-        case 'stdout':
-          this._logOutput(message.data, 'log');
-          break;
-        case 'exit':
-          if (message.exitCode === 0) {
-            this._logOutput(
-              `${command.command} exited successfully.`,
-              'success',
-            );
-            this._getFlux().actions.updateCompileCommands(
-              chdir,
-              configuration,
-              buildPath,
-            );
-          } else {
-            this._logOutput(
-              `${command.command} failed with ${exitEventToMessage(message)}`,
-              'error',
-            );
+    const observable = createMessage(
+      `${command.command} ${command.args.join(' ')}`,
+      'log',
+    ).concat(
+      observeProcess(command.command, command.args, {
+        /* TODO(T17353599) */ isExitError: () => false,
+      })
+        .catch(error => Observable.of({kind: 'error', error})) // TODO(T17463635)
+        .flatMap(message => {
+          switch (message.kind) {
+            case 'stderr':
+            case 'stdout':
+              return createMessage(message.data, 'log');
+            case 'exit':
+              if (message.exitCode === 0) {
+                this._getFlux().actions.updateCompileCommands(
+                  chdir,
+                  configuration,
+                  buildPath,
+                );
+                return createMessage(
+                  `${command.command} exited successfully.`,
+                  'success',
+                );
+              } else {
+                return createMessage(
+                  `${command.command} failed with ${exitEventToMessage(message)}`,
+                  'error',
+                );
+              }
+            default:
+              return Observable.empty();
           }
-          break;
-        default:
-          break;
-      }
-    }).ignoreElements();
+        }),
+    );
 
-    const task = taskFromObservable(observable);
-    return {
-      ...task,
-      cancel: () => {
-        this._logOutput('Task cancelled.', 'warning');
-        task.cancel();
-      },
-    };
+    return taskFromObservable(observable);
   }
 
   getAutocompletionProvider(): SwiftPMAutocompletionProvider {
     if (!this._autocompletionProvider) {
-      this._autocompletionProvider = new SwiftPMAutocompletionProvider(this._getFlux().store);
+      this._autocompletionProvider = new SwiftPMAutocompletionProvider(
+        this._getFlux().store,
+      );
     }
     return this._autocompletionProvider;
-  }
-
-  getOutputMessages(): Observable<Message> {
-    return this._outputMessages;
   }
 
   setProjectRoot(
@@ -196,11 +187,12 @@ export class SwiftPMTaskRunner {
     const path = projectRoot == null ? null : projectRoot.getPath();
 
     const storeReady = observableFromSubscribeFunction(
-      this._getFlux().store.subscribe.bind(this._getFlux().store))
-        .map(() => this._getFlux().store)
-        .startWith(this._getFlux().store)
-        .filter(store => store.getProjectRoot() === path)
-        .share();
+      this._getFlux().store.subscribe.bind(this._getFlux().store),
+    )
+      .map(() => this._getFlux().store)
+      .startWith(this._getFlux().store)
+      .filter(store => store.getProjectRoot() === path)
+      .share();
 
     const enabledObservable = storeReady
       .map(store => store.getProjectRoot())
@@ -213,11 +205,14 @@ export class SwiftPMTaskRunner {
       })
       .distinctUntilChanged();
 
-    const tasksObservable = storeReady
-      .map(store => SwiftPMTaskRunnerTaskMetadata);
+    const tasksObservable = storeReady.map(
+      store => SwiftPMTaskRunnerTaskMetadata,
+    );
 
-    const subscription = Observable.combineLatest(enabledObservable, tasksObservable)
-      .subscribe(([enabled, tasks]) => callback(enabled, tasks));
+    const subscription = Observable.combineLatest(
+      enabledObservable,
+      tasksObservable,
+    ).subscribe(([enabled, tasks]) => callback(enabled, tasks));
 
     this._projectRoot.next(path);
 
@@ -226,10 +221,6 @@ export class SwiftPMTaskRunner {
 
   async _packageFileExistsAtPath(path: string): Promise<boolean> {
     return fsPromise.exists(nuclideUri.join(path, 'Package.swift'));
-  }
-
-  _logOutput(text: string, level: Level) {
-    this._outputMessages.next({text, level});
   }
 
   _getFlux(): SwiftPMTaskRunnerFlux {

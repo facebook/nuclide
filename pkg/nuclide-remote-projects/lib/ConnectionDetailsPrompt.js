@@ -6,9 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import addTooltip from '../../nuclide-ui/add-tooltip';
+import type {
+  DnsLookup,
+} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
+
+import type {
+  NuclideRemoteConnectionParams,
+  NuclideRemoteConnectionParamsWithPassword,
+  NuclideRemoteConnectionProfile,
+} from './connection-types';
+
+import addTooltip from 'nuclide-commons-ui/addTooltip';
 import classnames from 'classnames';
 import ConnectionDetailsForm from './ConnectionDetailsForm';
 import {getIPsForHosts} from './connection-profile-utils';
@@ -16,12 +27,6 @@ import {getUniqueHostsForProfiles} from './connection-profile-utils';
 import {HR} from '../../nuclide-ui/HR';
 import {MutableListSelector} from '../../nuclide-ui/MutableListSelector';
 import React from 'react';
-
-import type {
-  NuclideRemoteConnectionParams,
-  NuclideRemoteConnectionParamsWithPassword,
-  NuclideRemoteConnectionProfile,
-} from './connection-types';
 
 type Props = {
   // The initial list of connection profiles that will be displayed.
@@ -47,10 +52,9 @@ type Props = {
 };
 
 type State = {
-  IPs: ?Promise<Array<string>>,
+  IPs: ?Promise<Array<DnsLookup>>,
   shouldDisplayTooltipWarning: boolean,
 };
-
 
 /**
  * This component contains the entire view in which the user inputs their
@@ -75,17 +79,25 @@ export default class ConnectionDetailsPrompt extends React.Component {
       shouldDisplayTooltipWarning: false,
     };
 
-    (this: any)._handleConnectionDetailsFormDidChange =
-      this._handleConnectionDetailsFormDidChange.bind(this);
-    (this: any)._onDefaultProfileClicked = this._onDefaultProfileClicked.bind(this);
-    (this: any)._onDeleteProfileClicked = this._onDeleteProfileClicked.bind(this);
+    (this: any)._handleConnectionDetailsFormDidChange = this._handleConnectionDetailsFormDidChange.bind(
+      this,
+    );
+    (this: any)._onDefaultProfileClicked = this._onDefaultProfileClicked.bind(
+      this,
+    );
+    (this: any)._onDeleteProfileClicked = this._onDeleteProfileClicked.bind(
+      this,
+    );
     (this: any)._onProfileClicked = this._onProfileClicked.bind(this);
   }
 
   componentDidMount() {
     if (this.props.connectionProfiles) {
-      this.setState({IPs: getIPsForHosts(
-        getUniqueHostsForProfiles(this.props.connectionProfiles))});
+      this.setState({
+        IPs: getIPsForHosts(
+          getUniqueHostsForProfiles(this.props.connectionProfiles),
+        ),
+      });
     }
     this._checkForHostCollisions();
   }
@@ -94,31 +106,40 @@ export default class ConnectionDetailsPrompt extends React.Component {
     // Manually update the contents of an existing `ConnectionDetailsForm`, because it contains
     // `AtomInput` components (which don't update their contents when their props change).
     if (
-      prevProps.indexOfSelectedConnectionProfile !== this.props.indexOfSelectedConnectionProfile
-      || (
-        // If the connection profiles changed length, the effective selected profile also changed.
-        prevProps.connectionProfiles != null
-        && this.props.connectionProfiles != null
-        && prevProps.connectionProfiles.length !== this.props.connectionProfiles.length
-      )
+      prevProps.indexOfSelectedConnectionProfile !==
+        this.props.indexOfSelectedConnectionProfile ||
+      // If the connection profiles changed length, the effective selected profile also changed.
+      (prevProps.connectionProfiles != null &&
+        this.props.connectionProfiles != null &&
+        prevProps.connectionProfiles.length !==
+          this.props.connectionProfiles.length)
     ) {
-      const existingConnectionDetailsForm = this.refs['connection-details-form'];
+      const existingConnectionDetailsForm = this.refs[
+        'connection-details-form'
+      ];
       if (existingConnectionDetailsForm) {
         // Setting values in the ConnectionDetailsForm fires change events. However, this is a
         // controlled update that should not trigger any change events. "Lock" change events until
         // synchronous updates to the form are complete.
         this._settingFormFieldsLock = true;
-        existingConnectionDetailsForm.setFormFields(this.getPrefilledConnectionParams());
+        existingConnectionDetailsForm.setFormFields(
+          this.getPrefilledConnectionParams(),
+        );
         existingConnectionDetailsForm.clearPassword();
         this._settingFormFieldsLock = false;
         existingConnectionDetailsForm.focus();
       }
     }
 
-    if (prevProps.connectionProfiles !== this.props.connectionProfiles
-      && this.props.connectionProfiles) {
-      this.setState({IPs: getIPsForHosts(
-        getUniqueHostsForProfiles(this.props.connectionProfiles))});
+    if (
+      prevProps.connectionProfiles !== this.props.connectionProfiles &&
+      this.props.connectionProfiles
+    ) {
+      this.setState({
+        IPs: getIPsForHosts(
+          getUniqueHostsForProfiles(this.props.connectionProfiles),
+        ),
+      });
     }
     this._checkForHostCollisions();
   }
@@ -134,11 +155,14 @@ export default class ConnectionDetailsPrompt extends React.Component {
   getPrefilledConnectionParams(): ?NuclideRemoteConnectionParams {
     // If there are profiles, pre-fill the form with the information from the specified selected
     // profile.
-    if (this.props.connectionProfiles != null &&
-        this.props.connectionProfiles.length > 0 &&
-        this.props.indexOfSelectedConnectionProfile != null) {
-      const selectedProfile =
-        this.props.connectionProfiles[this.props.indexOfSelectedConnectionProfile];
+    if (
+      this.props.connectionProfiles != null &&
+      this.props.connectionProfiles.length > 0 &&
+      this.props.indexOfSelectedConnectionProfile != null
+    ) {
+      const selectedProfile = this.props.connectionProfiles[
+        this.props.indexOfSelectedConnectionProfile
+      ];
       return selectedProfile.params;
     }
   }
@@ -233,9 +257,8 @@ export default class ConnectionDetailsPrompt extends React.Component {
                     this.tip.style.zIndex = 10999;
                     return 'right';
                   },
-                  title:
-                    'The settings most recently used to connect. To save settings permanently, '
-                    + 'create a profile.',
+                  title: 'The settings most recently used to connect. To save settings permanently, ' +
+                    'create a profile.',
                 })}
               />
               Most Recent
@@ -259,7 +282,7 @@ export default class ConnectionDetailsPrompt extends React.Component {
 
     // The default profile is sliced from the Array to render it separately, which means
     // decrementing the effective index into the Array passed to the `MutableListSelector`.
-    let idOfSelectedItem = (this.props.indexOfSelectedConnectionProfile == null)
+    let idOfSelectedItem = this.props.indexOfSelectedConnectionProfile == null
       ? null
       : this.props.indexOfSelectedConnectionProfile - 1;
     if (idOfSelectedItem === null || idOfSelectedItem < 0) {
@@ -270,33 +293,34 @@ export default class ConnectionDetailsPrompt extends React.Component {
 
     let toolTipWarning;
     if (this.state.shouldDisplayTooltipWarning) {
-      toolTipWarning =
-          <span
-                style={{paddingLeft: 10}}
-                className="icon icon-info pull-right nuclide-remote-projects-tooltip-warning"
-                ref={addTooltip({
-                  // Intentionally *not* an arrow function so the jQuery
-                  // Tooltip plugin can set the context to the Tooltip
-                  // instance.
-                  placement() {
-                    // Atom modals have z indices of 9999. This Tooltip needs
-                    // to stack on top of the modal; beat the modal's z-index.
-                    this.tip.style.zIndex = 10999;
-                    return 'right';
-                  },
-                  title:
-                    'Two or more of your profiles use host names that resolve '
-                    + 'to the same IP address. Consider unifying them to avoid '
-                    + 'potential collisions.',
-                })}
-          />;
+      toolTipWarning = (
+        <span
+          style={{paddingLeft: 10}}
+          className="icon icon-info pull-right nuclide-remote-projects-tooltip-warning"
+          ref={addTooltip({
+            // Intentionally *not* an arrow function so the jQuery
+            // Tooltip plugin can set the context to the Tooltip
+            // instance.
+            placement() {
+              // Atom modals have z indices of 9999. This Tooltip needs
+              // to stack on top of the modal; beat the modal's z-index.
+              this.tip.style.zIndex = 10999;
+              return 'right';
+            },
+            title: 'Two or more of your profiles use host names that resolve ' +
+              'to the same IP address. Consider unifying them to avoid ' +
+              'potential collisions.',
+          })}
+        />
+      );
     }
 
     return (
       <div className="nuclide-remote-projects-connection-dialog">
         <div className="nuclide-remote-projects-connection-profiles">
           {defaultConnectionProfileList}
-          <h6>Profiles
+          <h6>
+            Profiles
             {toolTipWarning}
           </h6>
           <MutableListSelector
@@ -312,7 +336,9 @@ export default class ConnectionDetailsPrompt extends React.Component {
           className="nuclide-remote-projects-connection-details"
           initialUsername={prefilledConnectionParams.username}
           initialServer={prefilledConnectionParams.server}
-          initialRemoteServerCommand={prefilledConnectionParams.remoteServerCommand}
+          initialRemoteServerCommand={
+            prefilledConnectionParams.remoteServerCommand
+          }
           initialCwd={prefilledConnectionParams.cwd}
           initialSshPort={prefilledConnectionParams.sshPort}
           initialPathToPrivateKey={prefilledConnectionParams.pathToPrivateKey}

@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
 
 import invariant from 'assert';
 import {Subject} from 'rxjs';
-import {getLogger} from '../../nuclide-logging';
-const logger = getLogger();
+import {getLogger} from 'log4js';
+const logger = getLogger('nuclide-server');
 import {Emitter} from 'event-kit';
 
 // An unreliable transport for sending JSON formatted messages
@@ -70,7 +71,7 @@ export class QueuedTransport {
   getState(): 'open' | 'disconnected' | 'closed' {
     return this._isClosed
       ? 'closed'
-      : (this._transport == null ? 'disconnected' : 'open');
+      : this._transport == null ? 'disconnected' : 'open';
   }
 
   getLastStateChangeTime(): number {
@@ -140,7 +141,9 @@ export class QueuedTransport {
     return this._messages;
   }
 
-  onDisconnect(callback: (transport: UnreliableTransport) => mixed): IDisposable {
+  onDisconnect(
+    callback: (transport: UnreliableTransport) => mixed,
+  ): IDisposable {
     return this._emitter.on('disconnect', callback);
   }
 
@@ -149,8 +152,10 @@ export class QueuedTransport {
   }
 
   async _send(message: string): Promise<void> {
-    invariant(!this._isClosed,
-      `Attempt to send socket message after connection closed: ${message}`);
+    invariant(
+      !this._isClosed,
+      `Attempt to send socket message after connection closed: ${message}`,
+    );
 
     this._messageQueue.push(message);
     if (this._transport == null) {
@@ -159,7 +164,11 @@ export class QueuedTransport {
 
     const sent = await this._transport.send(message);
     if (!sent) {
-      logger.warn('Failed sending socket message to client:', this.id, JSON.parse(message));
+      logger.warn(
+        'Failed sending socket message to client:',
+        this.id,
+        JSON.parse(message),
+      );
     } else {
       // This may remove a different (but equivalent) message from the Q,
       // but that's ok because we don't guarantee message ordering.

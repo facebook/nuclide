@@ -6,14 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Range} from 'atom';
 
 import {getPackageUrlForRange} from '../lib/NPMHyperclickProvider';
 
-const sampleJSON =
-`{
+const sampleJSON = `{
   "someProperty": {
     "thing": "0.0.0"
   },
@@ -114,11 +114,7 @@ describe('getPackageUrlForRange', () => {
 
   it('should not provide a URL for non-dependencies', () => {
     expect(
-      getPackageUrlForRange(
-        sampleJSON,
-        '"thing"',
-        new Range([2, 4], [2, 11]),
-      ),
+      getPackageUrlForRange(sampleJSON, '"thing"', new Range([2, 4], [2, 11])),
     ).toBeNull();
   });
 });

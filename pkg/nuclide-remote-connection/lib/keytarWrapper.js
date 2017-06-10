@@ -6,10 +6,71 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import child_process from 'child_process';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import semver from 'semver';
+
+// KeyTar<=3.x APM<1.18
+const getPasswordScriptSync = `
+  var readline = require('readline');
+  var keytar = require('keytar');
+  var rl = readline.createInterface({input: process.stdin});
+  rl.on('line', function(input) {
+    var data = JSON.parse(input);
+    var password = keytar.getPassword(data.service, data.account);
+    console.log(JSON.stringify(password));
+    rl.close();
+  });
+`;
+
+// KeyTar<=3.x APM<1.18
+const replacePasswordScriptSync = `
+  var readline = require('readline');
+  var keytar = require('keytar');
+  var rl = readline.createInterface({input: process.stdin});
+  rl.on('line', function(input) {
+    var data = JSON.parse(input);
+    var result = keytar.replacePassword(data.service, data.account, data.password);
+    console.log(JSON.stringify(result));
+    rl.close();
+  });
+`;
+
+// KeyTar>=4.x APM>=1.18
+const getPasswordScriptAsync = `
+  var readline = require('readline');
+  var keytar = require('keytar');
+  var rl = readline.createInterface({input: process.stdin});
+  rl.on('line', function(input) {
+    var data = JSON.parse(input);
+    keytar.getPassword(data.service, data.account).then(function(password) {
+      console.log(JSON.stringify(password));
+    }).then(rl.close.bind(rl), rl.close.bind(rl)));
+  });
+`;
+
+// KeyTar>=4.x APM>=1.18
+const replacePasswordScriptAsync = `
+  var readline = require('readline');
+  var keytar = require('keytar');
+  var rl = readline.createInterface({input: process.stdin});
+  rl.on('line', function(input) {
+    var data = JSON.parse(input);
+    keytar.setPassword(data.service, data.account, data.password).then(function() {
+      console.log(JSON.stringify(true));
+    }, function() {
+      console.log(JSON.stringify(false));
+    })
+    .then(rl.close.bind(rl), rl.close.bind(rl))
+  });
+`;
+
+function isAsyncKeytar(): boolean {
+  return semver.gte(atom.getVersion(), '1.18.0-beta0');
+}
 
 function getApmNodePath(): string {
   const apmDir = nuclideUri.dirname(atom.packages.getApmPath());
@@ -42,18 +103,13 @@ function runScriptInApmNode(
 
 export default {
   getPassword(service: string, account: string): ?string {
-    const script = `
-      var readline = require('readline');
-      var keytar = require('keytar');
-      var rl = readline.createInterface({input: process.stdin});
-      rl.on('line', function(input) {
-        var data = JSON.parse(input);
-        var password = keytar.getPassword(data.service, data.account);
-        console.log(JSON.stringify(password));
-        rl.close();
-      });
-    `;
-    return JSON.parse(runScriptInApmNode(script, service, account));
+    return JSON.parse(
+      runScriptInApmNode(
+        isAsyncKeytar() ? getPasswordScriptAsync : getPasswordScriptSync,
+        service,
+        account,
+      ),
+    );
   },
 
   replacePassword(
@@ -61,18 +117,16 @@ export default {
     account: string,
     password: string,
   ): ?boolean {
-    const script = `
-      var readline = require('readline');
-      var keytar = require('keytar');
-      var rl = readline.createInterface({input: process.stdin});
-      rl.on('line', function(input) {
-        var data = JSON.parse(input);
-        var result = keytar.replacePassword(data.service, data.account, data.password);
-        console.log(JSON.stringify(result));
-        rl.close();
-      });
-    `;
-    return JSON.parse(runScriptInApmNode(script, service, account, password));
+    return JSON.parse(
+      runScriptInApmNode(
+        isAsyncKeytar()
+          ? replacePasswordScriptAsync
+          : replacePasswordScriptSync,
+        service,
+        account,
+        password,
+      ),
+    );
   },
 };
 

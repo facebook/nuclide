@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {timedAsync, timedSync, makeSizedFixture} from '../benchmarker-utils';
@@ -40,8 +41,10 @@ module.exports = {
     makeSizedFixture(SAMPLE_FILE, result.bytes);
 
     // Open the file, insert text, append text, save and close.
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    const {ret: editor, time: open} = await timedAsync(atom.workspace.open(SAMPLE_FILE));
+    const {ret: editor, time: open} = await timedAsync(
+      // eslint-disable-next-line nuclide-internal/atom-apis
+      atom.workspace.open(SAMPLE_FILE),
+    );
     result.open = open;
 
     // The first insertion forces buffer tokenization and is much slower than subsequent mutations.

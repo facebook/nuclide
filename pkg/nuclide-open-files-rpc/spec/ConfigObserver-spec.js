@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {FileCache} from '../lib/FileCache';
 import {ConfigObserver} from '../lib/ConfigObserver';
@@ -16,7 +17,7 @@ import {ConfigObserver} from '../lib/ConfigObserver';
 describe('ConfigObserver', () => {
   let cache: FileCache = (null: any);
   let eventCount = 0;
-  let events : Promise<Array<Array<NuclideUri>>> = (null: any);
+  let events: Promise<Array<Array<NuclideUri>>> = (null: any);
   let findNearestFile: (path: NuclideUri) => Promise<?NuclideUri> = (null: any);
 
   const createOpen = filePath => ({
@@ -40,14 +41,19 @@ describe('ConfigObserver', () => {
 
   beforeEach(() => {
     cache = new FileCache();
-    const observer = new ConfigObserver(
-      cache, ['.php'], path => findNearestFile(path));
+    const observer = new ConfigObserver(cache, ['.php'], path =>
+      findNearestFile(path),
+    );
 
     eventCount = 0;
-    events = observer.observeConfigs()
+    events = observer
+      .observeConfigs()
       .map(config => Array.from(config))
-      .do(() => { eventCount++; })
-      .toArray().toPromise();
+      .do(() => {
+        eventCount++;
+      })
+      .toArray()
+      .toPromise();
   });
 
   it('root project', () => {
@@ -90,7 +96,10 @@ describe('ConfigObserver', () => {
       // observer.dispose();
 
       expect(await events).toEqual([
-        [], ['/some/path', '/some/path2'], ['/some/path2'], [],
+        [],
+        ['/some/path', '/some/path2'],
+        ['/some/path2'],
+        [],
       ]);
     });
   });

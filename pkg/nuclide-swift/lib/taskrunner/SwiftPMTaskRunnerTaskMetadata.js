@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TaskMetadata} from '../../../nuclide-task-runner/lib/types';
@@ -20,7 +21,7 @@ export const SwiftPMTaskRunnerBuildTaskMetadata: TaskMetadata = {
 export const SwiftPMTaskRunnerTestTaskMetadata: TaskMetadata = {
   type: 'test',
   label: 'Test',
-  description: 'Run a Swift package\'s tests',
+  description: "Run a Swift package's tests",
   icon: 'check',
 };
 

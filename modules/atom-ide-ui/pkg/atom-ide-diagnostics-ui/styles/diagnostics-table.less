@@ -1,0 +1,47 @@
+@import "ui-variables";
+.nuclide-diagnostics-ui-table-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+
+  & > div:first-child {
+    display: flex;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .nuclide-ui-table {
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+
+    td:last-child,
+    th:last-child {
+      border-right-width: 0;
+    }
+  }
+}
+
+.nuclide-ui-table-cell-text-align-right {
+  text-align: right;
+}
+
+.nuclide-diagnostics-ui-table-container-empty .nuclide-ui-table {
+  border-bottom-width: 0;
+}
+
+.nuclide-diagnostics-ui-table-message {
+  text-align: center;
+
+  &.highlight-warning,
+  &.highlight-error {
+    border-radius: 0;
+    padding: (@component-padding / 2) 0 @component-padding 0;
+  }
+}
+
+.nuclide-diagnostics-ui-empty-component {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}

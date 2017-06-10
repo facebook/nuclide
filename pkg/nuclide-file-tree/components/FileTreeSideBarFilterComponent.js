@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -24,13 +25,11 @@ export default class FileTreeSidebarFilterComponent extends React.Component {
 
     const classes = classnames({
       'nuclide-file-tree-filter': true,
-      'show': Boolean(filter && filter.length),
+      show: Boolean(filter && filter.length),
       'not-found': !found,
     });
     const text = `search for: ${filter}`;
 
-    return (
-      <div className={classes}>{text}</div>
-    );
+    return <div className={classes}>{text}</div>;
   }
 }

@@ -18,6 +18,12 @@
         "type": "boolean",
         "default": true,
         "description": "Show the home pane (by default shown on first startup)."
+      },
+      "showChangelogs": {
+        "title": "Show Changelogs",
+        "type": "boolean",
+        "default": true,
+        "description": "Open the changelog after each update."
       }
     },
     "packageType": "Atom",

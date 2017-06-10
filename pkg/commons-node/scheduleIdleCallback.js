@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global requestIdleCallback, cancelIdleCallback */
@@ -30,50 +31,51 @@ type OptionsT = {
   timeout?: number,
 };
 
-export default typeof requestIdleCallback !== 'undefined' ?
-  // Using Browser API
-  // Is guaranteed to resolve after `timeout` milliseconds.
-  function scheduleIdleCallback(
-    callback_: CallbackT,
-    options?: OptionsT = {},
-  ): IDisposable {
-    const afterRemainingTime = options.afterRemainingTime || 49;
-    const timeout = options.timeout || 500;
-    let callback = callback_;
-    let id;
-    const startTime = Date.now();
-    function fn(deadline) {
-      if (deadline.timeRemaining() >= afterRemainingTime ||
-          Date.now() - startTime >= timeout) {
-        invariant(callback != null);
-        callback();
-        id = callback = null;
-      } else {
-        id = requestIdleCallback(fn, {
-          timeout: timeout - (Date.now() - startTime),
-        });
-      }
-    }
-    id = requestIdleCallback(fn, {timeout});
-    return {
-      dispose() {
-        if (id != null) {
-          cancelIdleCallback(id);
+export default (typeof requestIdleCallback !== 'undefined'
+  ? // Using Browser API
+    // Is guaranteed to resolve after `timeout` milliseconds.
+    function scheduleIdleCallback(
+      callback_: CallbackT,
+      options?: OptionsT = {},
+    ): IDisposable {
+      const afterRemainingTime = options.afterRemainingTime || 49;
+      const timeout = options.timeout || 500;
+      let callback = callback_;
+      let id;
+      const startTime = Date.now();
+      function fn(deadline) {
+        if (
+          deadline.timeRemaining() >= afterRemainingTime ||
+          Date.now() - startTime >= timeout
+        ) {
+          invariant(callback != null);
+          callback();
           id = callback = null;
+        } else {
+          id = requestIdleCallback(fn, {
+            timeout: timeout - (Date.now() - startTime),
+          });
         }
-      },
-    };
-  } :
-
-  // Using Node API
-  function scheduleIdleCallback(
-    callback: CallbackT,
-    options?: OptionsT,
-  ): IDisposable {
-    const id = setImmediate(callback);
-    return {
-      dispose() {
-        clearImmediate(id);
-      },
-    };
-  };
+      }
+      id = requestIdleCallback(fn, {timeout});
+      return {
+        dispose() {
+          if (id != null) {
+            cancelIdleCallback(id);
+            id = callback = null;
+          }
+        },
+      };
+    }
+  : // Using Node API
+    function scheduleIdleCallback(
+      callback: CallbackT,
+      options?: OptionsT,
+    ): IDisposable {
+      const id = setImmediate(callback);
+      return {
+        dispose() {
+          clearImmediate(id);
+        },
+      };
+    });

@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {loggedCalls} from '../../../../commons-node/process';
+import {loggedCalls} from 'nuclide-commons/process';
 
 import React from 'react';
 
@@ -29,15 +30,13 @@ export default class CommandsSectionComponent extends React.Component {
           <th>Command</th>
         </thead>
         <tbody>
-          {loggedCalls
-            .map((call, i) =>
-              <tr key={i}>
-                <td>{call.time.toTimeString().replace(/ .+/, '')}</td>
-                <td>{call.duration}</td>
-                <td>{call.command}</td>
-              </tr>,
-            )
-          }
+          {loggedCalls.map((call, i) => (
+            <tr key={i}>
+              <td>{call.time.toTimeString().replace(/ .+/, '')}</td>
+              <td>{call.duration}</td>
+              <td>{call.command}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     );

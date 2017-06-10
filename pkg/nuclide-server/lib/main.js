@@ -6,23 +6,25 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import fs from 'fs';
+import fsPromise from 'nuclide-commons/fsPromise';
 import {
   flushLogsAndAbort,
   flushLogsAndExit,
-  getLogger,
   initialUpdateConfig,
 } from '../../nuclide-logging';
 import {startTracking} from '../../nuclide-analytics';
 import NuclideServer from './NuclideServer';
 import servicesConfig from './servicesConfig';
+
 import yargs from 'yargs';
+import {getLogger} from 'log4js';
 
 const DEFAULT_PORT = 9090;
 
-const logger = getLogger();
+const logger = getLogger('nuclide-server');
 
 export type AgentOptions = {
   ca?: Buffer,
@@ -31,38 +33,57 @@ export type AgentOptions = {
   family?: 4 | 6,
 };
 
+async function getServerCredentials(args) {
+  const {key, cert, ca} = args;
+  if (key && cert && ca) {
+    const [
+      serverKey,
+      serverCertificate,
+      certificateAuthorityCertificate,
+    ] = await Promise.all([
+      fsPromise.readFile(key),
+      fsPromise.readFile(cert),
+      fsPromise.readFile(ca),
+    ]);
+    return {serverKey, serverCertificate, certificateAuthorityCertificate};
+  }
+  return null;
+}
+
 async function main(args) {
   const serverStartTimer = startTracking('nuclide-server:start');
   process.on('SIGHUP', () => {});
 
   try {
-    const {port, expiration_days} = args;
-    if (expiration_days) {
+    const {port, expirationDays} = args;
+    if (expirationDays) {
       setTimeout(() => {
-        logger.warn(`NuclideServer exiting - ${expiration_days} day expiration time reached.`);
+        logger.warn(
+          `NuclideServer exiting - ${expirationDays} day expiration time reached.`,
+        );
         flushLogsAndExit(0);
-      }, expiration_days * 24 * 60 * 60 * 1000);
+      }, expirationDays * 24 * 60 * 60 * 1000);
     }
-    let {key, cert, ca} = args;
-    if (key && cert && ca) {
-      key = fs.readFileSync(key);
-      cert = fs.readFileSync(cert);
-      ca = fs.readFileSync(ca);
-    }
-    const server = new NuclideServer({
-      port,
-      serverKey: key,
-      serverCertificate: cert,
-      certificateAuthorityCertificate: ca,
-      trackEventLoop: true,
-    }, servicesConfig);
+    const [serverCredentials] = await Promise.all([
+      getServerCredentials(args),
+      // Ensure logging is configured.
+      initialUpdateConfig(),
+    ]);
+    const server = new NuclideServer(
+      {
+        port,
+        ...serverCredentials,
+        trackEventLoop: true,
+      },
+      servicesConfig,
+    );
     await server.connect();
     serverStartTimer.onSuccess();
     logger.info(`NuclideServer started on port ${port}.`);
     logger.info(`Using node ${process.version}.`);
     logger.info(`Server ready time: ${process.uptime() * 1000}ms`);
   } catch (e) {
-    // Ensure logging is configured.
+    // In case the exception occurred before logging initialization finished.
     await initialUpdateConfig();
     await serverStartTimer.onError(e);
     logger.fatal(e);
@@ -94,9 +115,7 @@ process.on('unhandledRejection', (error, promise) => {
   logger.error(`Unhandled promise rejection ${promise}. Error:`, error);
 });
 
-const argv = yargs
-    .default('port', DEFAULT_PORT)
-    .argv;
+const argv = yargs.default('port', DEFAULT_PORT).argv;
 
 main(argv);
 

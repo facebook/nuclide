@@ -6,17 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-
 import {MemoizedFieldsDeriver} from './MemoizedFieldsDeriver';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import Immutable from 'immutable';
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {StoreConfigData, NodeCheckedStatus} from './FileTreeStore';
 import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
-
 
 export type FileTreeNodeOptions = {
   uri: NuclideUri,
@@ -204,7 +203,8 @@ export class FileTreeNode {
 
     this._assignOptions(options);
 
-    this._deriver = _deriver || new MemoizedFieldsDeriver(options.uri, options.rootUri);
+    this._deriver =
+      _deriver || new MemoizedFieldsDeriver(options.uri, options.rootUri);
     const derived = this._deriver.buildDerivedFields(conf);
     this._assignDerived(derived);
 
@@ -285,16 +285,26 @@ export class FileTreeNode {
     this.isExpanded = o.isExpanded !== undefined ? o.isExpanded : D.isExpanded;
     this.isSelected = o.isSelected !== undefined ? o.isSelected : D.isSelected;
     this.isFocused = o.isFocused !== undefined ? o.isFocused : D.isFocused;
-    this.isDragHovered = o.isDragHovered !== undefined ? o.isDragHovered : D.isDragHovered;
+    this.isDragHovered = o.isDragHovered !== undefined
+      ? o.isDragHovered
+      : D.isDragHovered;
     this.isLoading = o.isLoading !== undefined ? o.isLoading : D.isLoading;
     this.wasFetched = o.wasFetched !== undefined ? o.wasFetched : D.wasFetched;
     this.isTracked = o.isTracked !== undefined ? o.isTracked : D.isTracked;
     this.isCwd = o.isCwd !== undefined ? o.isCwd : D.isCwd;
     this.children = o.children !== undefined ? o.children : D.children;
-    this.connectionTitle = o.connectionTitle !== undefined ? o.connectionTitle : D.connectionTitle;
-    this.subscription = o.subscription !== undefined ? o.subscription : D.subscription;
-    this.highlightedText = o.highlightedText !== undefined ? o.highlightedText : D.highlightedText;
-    this.matchesFilter = o.matchesFilter !== undefined ? o.matchesFilter : D.matchesFilter;
+    this.connectionTitle = o.connectionTitle !== undefined
+      ? o.connectionTitle
+      : D.connectionTitle;
+    this.subscription = o.subscription !== undefined
+      ? o.subscription
+      : D.subscription;
+    this.highlightedText = o.highlightedText !== undefined
+      ? o.highlightedText
+      : D.highlightedText;
+    this.matchesFilter = o.matchesFilter !== undefined
+      ? o.matchesFilter
+      : D.matchesFilter;
   }
 
   /**
@@ -407,8 +417,8 @@ export class FileTreeNode {
   * be the same instance as it was called with.
   */
   setRecursive(
-    prePredicate: ?((node: FileTreeNode) => ?FileTreeNode),
-    postPredicate: ((node: FileTreeNode) => FileTreeNode) = n => n,
+    prePredicate: ?(node: FileTreeNode) => ?FileTreeNode,
+    postPredicate: (node: FileTreeNode) => FileTreeNode = n => n,
   ): FileTreeNode {
     if (prePredicate != null) {
       const newNode = prePredicate(this);
@@ -417,7 +427,9 @@ export class FileTreeNode {
       }
     }
 
-    const children = this.children.map(child => child.setRecursive(prePredicate, postPredicate));
+    const children = this.children.map(child =>
+      child.setRecursive(prePredicate, postPredicate),
+    );
     return postPredicate(this.setChildren(children));
   }
 
@@ -439,7 +451,7 @@ export class FileTreeNode {
   */
   traverse(
     preCallback: (node: FileTreeNode) => boolean,
-    postCallback: (node: FileTreeNode) => void = (() => {}),
+    postCallback: (node: FileTreeNode) => void = () => {},
   ): void {
     const descend = preCallback(this);
 
@@ -599,47 +611,72 @@ export class FileTreeNode {
       index += prev.shownChildrenBelow;
       prev = prev.findPrevShownSibling();
     }
-    return index + (this.parent == null ? 0 : this.parent.calculateVisualIndex());
+    return (
+      index + (this.parent == null ? 0 : this.parent.calculateVisualIndex())
+    );
   }
 
   _propsAreTheSame(props: Object): boolean {
-    if (props.isSelected !== undefined && this.isSelected !== props.isSelected) {
+    if (
+      props.isSelected !== undefined &&
+      this.isSelected !== props.isSelected
+    ) {
       return false;
     }
     if (props.isFocused !== undefined && this.isFocused !== props.isFocused) {
       return false;
     }
-    if (props.isDragHovered !== undefined && this.isDragHovered !== props.isDragHovered) {
+    if (
+      props.isDragHovered !== undefined &&
+      this.isDragHovered !== props.isDragHovered
+    ) {
       return false;
     }
     if (props.isTracked !== undefined && this.isTracked !== props.isTracked) {
       return false;
     }
-    if (props.isExpanded !== undefined && this.isExpanded !== props.isExpanded) {
+    if (
+      props.isExpanded !== undefined &&
+      this.isExpanded !== props.isExpanded
+    ) {
       return false;
     }
     if (props.isLoading !== undefined && this.isLoading !== props.isLoading) {
       return false;
     }
-    if (props.wasFetched !== undefined && this.wasFetched !== props.wasFetched) {
+    if (
+      props.wasFetched !== undefined &&
+      this.wasFetched !== props.wasFetched
+    ) {
       return false;
     }
     if (props.isCwd !== undefined && this.isCwd !== props.isCwd) {
       return false;
     }
-    if (props.subscription !== undefined && this.subscription !== props.subscription) {
+    if (
+      props.subscription !== undefined &&
+      this.subscription !== props.subscription
+    ) {
       return false;
     }
-    if (props.highlightedText !== undefined && this.highlightedText !== props.highlightedText) {
+    if (
+      props.highlightedText !== undefined &&
+      this.highlightedText !== props.highlightedText
+    ) {
       return false;
     }
-    if (props.matchesFilter !== undefined && this.matchesFilter !== props.matchesFilter) {
+    if (
+      props.matchesFilter !== undefined &&
+      this.matchesFilter !== props.matchesFilter
+    ) {
       return false;
     }
 
-    if (props.children !== undefined &&
+    if (
+      props.children !== undefined &&
       props.children !== this.children &&
-      !Immutable.is(this.children, props.children)) {
+      !Immutable.is(this.children, props.children)
+    ) {
       return false;
     }
 
@@ -650,12 +687,13 @@ export class FileTreeNode {
     props: ImmutableNodeSettableFields,
     conf: StoreConfigData,
   ): FileTreeNode {
-    return new FileTreeNode({
-      ...this._buildOptions(),
-      ...props,
-    },
-    conf,
-    this._deriver,
+    return new FileTreeNode(
+      {
+        ...this._buildOptions(),
+        ...props,
+      },
+      conf,
+      this._deriver,
     );
   }
 

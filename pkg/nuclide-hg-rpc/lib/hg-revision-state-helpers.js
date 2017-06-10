@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RevisionFileChanges} from './HgService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {ConnectableObservable} from 'rxjs';
 
 import {hgRunCommand} from './hg-utils';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 
 const ALL_FILES_LABEL = 'files:';
@@ -21,15 +22,13 @@ const FILE_ADDS_LABEL = 'file-adds:';
 const FILE_DELETES_LABEL = 'file-dels:';
 const FILE_COPIES_LABEL = 'file-copies:';
 const FILE_MODS_LABEL = 'file-mods:';
-const REVISION_FILE_CHANGES_TEMPLATE =
-`${ALL_FILES_LABEL} {files}
+const REVISION_FILE_CHANGES_TEMPLATE = `${ALL_FILES_LABEL} {files}
 ${FILE_ADDS_LABEL} {file_adds}
 ${FILE_DELETES_LABEL} {file_dels}
 ${FILE_COPIES_LABEL} {file_copies}
 ${FILE_MODS_LABEL} {file_mods}`;
 // Regex for: "new_file (previous_file", with two capture groups, one for each file.
 const COPIED_FILE_PAIR_REGEX = /(.+) \((.+)/;
-
 
 /**
  * @param filePath An absolute path to a file.
@@ -65,9 +64,12 @@ export function fetchFilesChangedAtRevision(
 ): ConnectableObservable<RevisionFileChanges> {
   const args = [
     'log',
-    '--template', REVISION_FILE_CHANGES_TEMPLATE,
-    '--rev', revision,
-    '--limit', '1',
+    '--template',
+    REVISION_FILE_CHANGES_TEMPLATE,
+    '--rev',
+    revision,
+    '--limit',
+    '1',
   ];
   const execOptions = {
     cwd: workingDirectory,
@@ -88,18 +90,17 @@ export function fetchFilesChangedSinceRevision(
   revision: string,
   workingDirectory: string,
 ): ConnectableObservable<Array<string>> {
-  const args = [
-    'status',
-    '--rev', revision,
-    '-Tjson',
-  ];
+  const args = ['status', '--rev', revision, '-Tjson'];
   const execOptions = {
     cwd: workingDirectory,
   };
   return hgRunCommand(args, execOptions)
     .map(stdout => {
       const statuses = JSON.parse(stdout);
-      return absolutizeAll(statuses.map(status => status.path), workingDirectory);
+      return absolutizeAll(
+        statuses.map(status => status.path),
+        workingDirectory,
+      );
     })
     .publish();
 }

@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ServiceTester} from './ServiceTester';
 
 describe('CounterService', () => {
@@ -17,11 +18,18 @@ describe('CounterService', () => {
   let service;
   beforeEach(() => {
     testHelper = new ServiceTester();
-    waitsForPromise(() => testHelper.start([{
-      name: 'CounterService',
-      definition: nuclideUri.join(__dirname, 'CounterService.def'),
-      implementation: nuclideUri.join(__dirname, 'CounterService.js'),
-    }], 'counter_protocol'));
+    waitsForPromise(() =>
+      testHelper.start(
+        [
+          {
+            name: 'CounterService',
+            definition: nuclideUri.join(__dirname, 'CounterService.def'),
+            implementation: nuclideUri.join(__dirname, 'CounterService.js'),
+          },
+        ],
+        'counter_protocol',
+      ),
+    );
 
     runs(() => {
       service = testHelper.getRemoteService('CounterService');
@@ -44,13 +52,17 @@ describe('CounterService', () => {
 
       // Subscribe to events from counter1.
       let completed1 = false;
-      counter1.watchChanges().refCount().subscribe(event => {
-        expect(event.type).toBe('add');
-        expect(event.oldValue).toBe(3);
-        expect(event.newValue).toBe(4);
-      }, () => {}, () => {
-        completed1 = true;
-      });
+      counter1.watchChanges().refCount().subscribe(
+        event => {
+          expect(event.type).toBe('add');
+          expect(event.oldValue).toBe(3);
+          expect(event.newValue).toBe(4);
+        },
+        () => {},
+        () => {
+          completed1 = true;
+        },
+      );
 
       // Confirm their initial value.
       expect(await counter1.getCount()).toBe(3);
@@ -83,7 +95,10 @@ describe('CounterService', () => {
       waitsFor(() => completed1, 'The counter1 Observable to complete.');
 
       // Wait for our watch to have seen all of the Counters.
-      waitsFor(() => watchedCounters === 2, 'We have watched two counters get created.');
+      waitsFor(
+        () => watchedCounters === 2,
+        'We have watched two counters get created.',
+      );
     });
   });
 

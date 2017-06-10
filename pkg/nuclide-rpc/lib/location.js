@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Location} from './types';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 export function locationToString(location: Location): string {
   switch (location.type) {
@@ -41,18 +42,28 @@ export function locationsEqual(first: Location, second: Location): boolean {
 
 export function stripLocationsFileName(obj: any): any {
   function inspect(key: ?string, value: any): void {
-    if (key === 'location' && value !== null && typeof value.fileName === 'string') {
+    if (
+      key === 'location' &&
+      value !== null &&
+      typeof value.fileName === 'string'
+    ) {
       value.fileName = nuclideUri.basename(value.fileName);
     } else {
       stripLocationsFileName(value);
     }
   }
   if (Array.isArray(obj)) {
-    obj.forEach(value => { inspect(null, value); });
+    obj.forEach(value => {
+      inspect(null, value);
+    });
   } else if (obj instanceof Map) {
-    obj.forEach((value, key) => { inspect(key, value); });
+    obj.forEach((value, key) => {
+      inspect(key, value);
+    });
   } else if (obj != null && typeof obj === 'object') {
-    Object.keys(obj).forEach(key => { inspect(key, obj[key]); });
+    Object.keys(obj).forEach(key => {
+      inspect(key, obj[key]);
+    });
   }
   return obj;
 }

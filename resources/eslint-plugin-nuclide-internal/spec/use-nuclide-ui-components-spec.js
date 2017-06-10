@@ -26,7 +26,7 @@ ruleTester.run('use-nuclide-ui-components', rule, {
     {
       code: 'var bad = <button className="foo" />;',
       errors: [{
-        message: 'Prefer using `<Button />` from nuclide-ui over home-built `<button />`s',
+        message: 'Prefer using `<Button />` from nuclide-commons-ui over home-built `<button />`s',
         type: 'JSXIdentifier',
       }],
     },

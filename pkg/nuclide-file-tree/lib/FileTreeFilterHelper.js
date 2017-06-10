@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -28,7 +29,11 @@ export function matchesFilter(name: string, filter: string): boolean {
   return name.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
 }
 
-export function filterName(name: string, filter: string, isSelected: boolean): mixed {
+export function filterName(
+  name: string,
+  filter: string,
+  isSelected: boolean,
+): string | Array<React.Element<any>> {
   if (filter.length) {
     const classes = classnames({
       'nuclide-file-tree-entry-highlight': true,

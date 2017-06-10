@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -65,7 +66,9 @@ export function getAutocompleteDescription(): ?string {
   if (autocompleteView == null) {
     return null;
   }
-  const typeHintView = autocompleteView.querySelector('.suggestion-description-content');
+  const typeHintView = autocompleteView.querySelector(
+    '.suggestion-description-content',
+  );
   if (typeHintView == null) {
     return null;
   }

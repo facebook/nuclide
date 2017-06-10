@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
-import {Checkbox} from '../../nuclide-ui/Checkbox';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 type Options = {[key: string]: boolean};
 
@@ -63,7 +64,9 @@ export default class FileDialogComponent extends React.Component {
     this._disposables = new UniversalDisposable();
     (this: any)._close = this._close.bind(this);
     (this: any)._confirm = this._confirm.bind(this);
-    (this: any)._handleDocumentMouseDown = this._handleDocumentMouseDown.bind(this);
+    (this: any)._handleDocumentMouseDown = this._handleDocumentMouseDown.bind(
+      this,
+    );
     const options = {};
     for (const name in this.props.additionalOptions) {
       options[name] = true;
@@ -75,21 +78,25 @@ export default class FileDialogComponent extends React.Component {
 
   componentDidMount(): void {
     const input = this.refs.input;
-    this._disposables.add(atom.commands.add(
-      // $FlowFixMe
-      ReactDOM.findDOMNode(input),
-      {
-        'core:confirm': this._confirm,
-        'core:cancel': this._close,
-      },
-    ));
+    this._disposables.add(
+      atom.commands.add(
+        // $FlowFixMe
+        ReactDOM.findDOMNode(input),
+        {
+          'core:confirm': this._confirm,
+          'core:cancel': this._close,
+        },
+      ),
+    );
     const path = this.props.initialValue;
     input.focus();
     if (this.props.selectBasename && path != null) {
       const {dir, name} = nuclideUri.parsePath(path);
       const selectionStart = dir ? dir.length + 1 : 0;
       const selectionEnd = selectionStart + name.length;
-      input.getTextEditor().setSelectedBufferRange([[0, selectionStart], [0, selectionEnd]]);
+      input
+        .getTextEditor()
+        .setSelectedBufferRange([[0, selectionStart], [0, selectionEnd]]);
     }
     document.addEventListener('mousedown', this._handleDocumentMouseDown);
   }
@@ -109,13 +116,14 @@ export default class FileDialogComponent extends React.Component {
     for (const name in this.props.additionalOptions) {
       const message = this.props.additionalOptions[name];
       const checked = this.state.options[name];
-      const checkbox =
+      const checkbox = (
         <Checkbox
           key={name}
           checked={checked}
           onChange={this._handleAdditionalOptionChanged.bind(this, name)}
           label={message}
-        />;
+        />
+      );
       checkboxes.push(checkbox);
     }
 
@@ -127,10 +135,7 @@ export default class FileDialogComponent extends React.Component {
     return (
       <div className="tree-view-dialog" ref="dialog">
         <label className={labelClassName}>{this.props.message}</label>
-        <AtomInput
-          initialValue={this.props.initialValue}
-          ref="input"
-        />
+        <AtomInput initialValue={this.props.initialValue} ref="input" />
         {checkboxes}
       </div>
     );

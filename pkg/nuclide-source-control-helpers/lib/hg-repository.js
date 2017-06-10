@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import ini from 'ini';
 import fs from 'fs';
 
@@ -18,7 +19,9 @@ import type {HgRepositoryDescription} from '..';
  * This function returns HgRepositoryDescription filled with a repoPath and
  * originURL iff it finds that the given directory is within an Hg repository.
  */
-export default function findHgRepository(startDirectoryPath: string): ?HgRepositoryDescription {
+export default function findHgRepository(
+  startDirectoryPath: string,
+): ?HgRepositoryDescription {
   if (!nuclideUri.isLocal(startDirectoryPath)) {
     return null;
   }
@@ -31,7 +34,10 @@ export default function findHgRepository(startDirectoryPath: string): ?HgReposit
       const hgrc = tryReadFileSync(nuclideUri.join(repoPath, 'hgrc'));
       if (hgrc != null) {
         const config = ini.parse(hgrc);
-        if (typeof config.paths === 'object' && typeof config.paths.default === 'string') {
+        if (
+          typeof config.paths === 'object' &&
+          typeof config.paths.default === 'string'
+        ) {
           originURL = config.paths.default;
         }
       }

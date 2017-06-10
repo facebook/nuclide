@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 type Rect = {
@@ -22,9 +23,9 @@ type Point = {
 
 export default function rectContainsPoint(rect: Rect, point: Point): boolean {
   return (
-    point.x >= rect.left
-    && point.y >= rect.top
-    && point.x <= rect.right
-    && point.y <= rect.bottom
+    point.x >= rect.left &&
+    point.y >= rect.top &&
+    point.x <= rect.right &&
+    point.y <= rect.bottom
   );
 }

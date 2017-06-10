@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* eslint-disable no-unused-vars */
 
-import type {IconName} from '../../nuclide-ui/types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {Observable} from 'rxjs';
 
 export type ControlButtonSpecification = {
@@ -46,7 +47,10 @@ export type EvaluatedExpression = {
   value: Observable<?EvaluationResult>,
 };
 export type EvaluatedExpressionList = Array<EvaluatedExpression>;
-export type EvalCommand = 'runtimeEvaluate' | 'evaluateOnSelectedCallFrame' | 'getProperties';
+export type EvalCommand =
+  | 'runtimeEvaluate'
+  | 'evaluateOnSelectedCallFrame'
+  | 'getProperties';
 export type ExpressionResult = ChromeProtocolResponse & {
   expression: string,
 };
@@ -70,6 +74,11 @@ export type FileLineBreakpoint = {
   resolved: boolean,
 };
 export type FileLineBreakpoints = Array<FileLineBreakpoint>;
+
+export type IPCEvent = {
+  channel: string,
+  args: any[],
+};
 
 // TODO: handle non file line breakpoints.
 export type IPCBreakpoint = {
@@ -99,6 +108,7 @@ export type CallstackItem = {
     path: string,
     line: number,
     column?: number,
+    hasSource?: boolean,
   },
 };
 export type Callstack = Array<CallstackItem>;
@@ -125,7 +135,12 @@ export type NuclideThreadData = {
 };
 
 /* Debugger mode */
-export type DebuggerModeType = 'starting' | 'running' | 'paused' | 'stopping' | 'stopped';
+export type DebuggerModeType =
+  | 'starting'
+  | 'running'
+  | 'paused'
+  | 'stopping'
+  | 'stopped';
 
 export type ObjectGroup = 'watch-group' | 'console';
 
@@ -139,10 +154,12 @@ declare class WebInspector$Object {
 
   addEventListener(
     eventType: string,
-    callback: (event: WebInspector$Event) => void): void,
+    callback: (event: WebInspector$Event) => void,
+  ): void,
   removeEventListener(
     eventType: string,
-    callback: (event: WebInspector$Event) => void): void,
+    callback: (event: WebInspector$Event) => void,
+  ): void,
   dispatchEventToListeners(eventType: string, value?: any): void,
 }
 
@@ -210,7 +227,7 @@ declare class WebInspector$ExecutionContext {
     callback: (
       remoteObject: ?Object,
       wasThrown: boolean,
-      resultOrError: mixed
+      resultOrError: mixed,
     ) => void,
   ): void,
 }
@@ -231,6 +248,7 @@ declare class WebInspector$DebuggerModel {
 
   isPaused(): boolean,
   resume(): void,
+  pause(): void,
   stepOver(): void,
   stepInto(): void,
   stepOut(): void,
@@ -238,7 +256,7 @@ declare class WebInspector$DebuggerModel {
   createRawLocationByURL(
     sourceURL: string,
     lineNumber: number,
-    columnNumber: number
+    columnNumber: number,
   ): WebInspector$DebuggerModel$Location,
 
   selectedCallFrame(): ?WebInspector$CallFrame,
@@ -254,7 +272,7 @@ declare class WebInspector$DebuggerModel {
     callback: (
       remoteObject: ?Object,
       wasThrown: boolean,
-      resultOrError: mixed
+      resultOrError: mixed,
     ) => void,
   ): void,
   selectThread(threadId: string): void,
@@ -265,6 +283,7 @@ declare class WebInspector$DebuggerModel {
 declare class WebInspector$ThreadStore {
   getData(): ThreadData,
   getActiveThreadStack(callback: (callFrames: Array<Object>) => void): void,
+  getRefreshedThreadStack(callback: (callFrames: Array<Object>) => void): void,
 }
 
 declare class WebInspector$BreakpointManager {
@@ -278,7 +297,7 @@ declare class WebInspector$BreakpointManager {
     lineNumber: number,
     columnNumber: number,
     condition: string,
-    enabled: boolean
+    enabled: boolean,
   ): WebInspector$BreakpointManager$Breakpoint,
   findBreakpointOnLine(
     source: WebInspector$UISourceCode,
@@ -287,7 +306,7 @@ declare class WebInspector$BreakpointManager {
   addEventListener(
     eventType: string,
     listener: (event: WebInspector$Event) => void,
-    thisObject: Object
+    thisObject: Object,
   ): void,
 }
 
@@ -324,19 +343,19 @@ declare class WebInspector$TargetManager {
     modelClass: any,
     eventType: string,
     listener: (event: WebInspector$Event) => void,
-    thisObject: Object): void,
+    thisObject: Object,
+  ): void,
   removeModelListener(
     modelClass: any,
     eventType: string,
     listener: (event: WebInspector$Event) => void,
-    thisObject: Object): void,
+    thisObject: Object,
+  ): void,
   mainTarget(): ?WebInspector$Target,
 }
 
 declare class WebInspector$ActionRegistry {
-  execute(
-    actionId: string,
-  ): ?Promise<boolean>,
+  execute(actionId: string): ?Promise<boolean>,
 }
 
 declare class WebInspector$Workspace {
@@ -348,7 +367,8 @@ declare class WebInspector$Workspace {
   addEventListener(
     eventType: string,
     listener: (event: WebInspector$Event) => void,
-    thisObject: Object): void,
+    thisObject: Object,
+  ): void,
 }
 
 declare class WebInspector$SplitView {
@@ -377,8 +397,7 @@ declare class WebInspector$View extends WebInspector$Object {
   show(parentElement: HTMLElement, insertBefore?: HTMLElement): void,
 }
 
-declare class WebInspector$VBox extends WebInspector$View {
-}
+declare class WebInspector$VBox extends WebInspector$View {}
 
 declare class WebInspector$RootView extends WebInspector$VBox {
   attachToDocument(document: Document): void,
@@ -389,8 +408,7 @@ declare class WebInspector$InspectorView extends WebInspector$VBox {
   showInitialPanel(): void,
 }
 
-declare class WebInspector$Panel extends WebInspector$VBox {
-}
+declare class WebInspector$Panel extends WebInspector$VBox {}
 
 declare class WebInspector$SidebarPane extends WebInspector$View {
   bodyElement: HTMLElement,
@@ -405,7 +423,10 @@ declare class WebInspector$Settings {
 }
 
 declare class WebInspector$Setting<T> {
-  addChangeListener(callback: (event: WebInspector$Event) => void, thisObj?: Object): void,
+  addChangeListener(
+    callback: (event: WebInspector$Event) => void,
+    thisObj?: Object,
+  ): void,
   set(value: T): void,
   get(): T,
 }
@@ -416,11 +437,12 @@ declare class WebInspector$UILocation {
   toUIString(): string,
   uiSourceCode: WebInspector$UISourceCode,
   lineNumber: number,
+  columnNumber: number,
 }
 
 declare class WebInspector$DebuggerWorkspaceBinding {
   rawLocationToUILocation(
-    rawLocation: WebInspector$DebuggerModel$Location
+    rawLocation: WebInspector$DebuggerModel$Location,
   ): WebInspector$UILocation,
 }
 
@@ -432,7 +454,8 @@ declare class WebInspector$NotificationService {
   addEventListener(
     eventType: string,
     listener: (event: WebInspector$Event) => void,
-    thisObject: Object): void,
+    thisObject: Object,
+  ): void,
 }
 
 declare class WebInspector$Streams {

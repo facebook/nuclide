@@ -6,16 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AtomCommands, AtomFileEvent, ConnectionDetails} from './rpc-types';
 import type {FileCache} from '../../nuclide-open-files-rpc/lib/FileCache';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {ConnectableObservable} from 'rxjs';
 
 import invariant from 'assert';
-import {loadServicesConfig, ServiceRegistry, SocketServer} from '../../nuclide-rpc';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {
+  loadServicesConfig,
+  ServiceRegistry,
+  SocketServer,
+} from '../../nuclide-rpc';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {createNewEntry, RPC_PROTOCOL} from '../shared/ConfigDirectory';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
 import {
@@ -24,7 +29,7 @@ import {
   iterableContains,
   firstOfIterable,
   concatIterators,
-} from '../../commons-node/collection';
+} from 'nuclide-commons/collection';
 import {Observable} from 'rxjs';
 
 // Ties the AtomCommands registered via RemoteCommandService to
@@ -45,7 +50,8 @@ export class CommandServer {
     const registry = new ServiceRegistry(
       [localNuclideUriMarshalers],
       services,
-      RPC_PROTOCOL);
+      RPC_PROTOCOL,
+    );
     const result = new SocketServer(registry);
     CommandServer._server = result;
     const address = await result.getAddress();
@@ -71,14 +77,21 @@ export class CommandServer {
   }
 
   hasOpenPath(filePath: NuclideUri): boolean {
-    return !iterableIsEmpty(filterIterable(this._fileCache.getOpenDirectories(),
-      dir => nuclideUri.contains(dir, filePath)))
-      || iterableContains(this._fileCache.getOpenFiles(), filePath);
+    return (
+      !iterableIsEmpty(
+        filterIterable(this._fileCache.getOpenDirectories(), dir =>
+          nuclideUri.contains(dir, filePath),
+        ),
+      ) || iterableContains(this._fileCache.getOpenFiles(), filePath)
+    );
   }
 
   dispose(): void {
     invariant(CommandServer._connections.includes(this));
-    CommandServer._connections.splice(CommandServer._connections.indexOf(this), 1);
+    CommandServer._connections.splice(
+      CommandServer._connections.indexOf(this),
+      1,
+    );
   }
 
   static async register(
@@ -99,23 +112,29 @@ export class CommandServer {
 
   static getDefaultAtomCommands(): ?AtomCommands {
     const server = CommandServer.getCurrentServer();
-    return (server == null) ? null : server._atomCommands;
+    return server == null ? null : server._atomCommands;
   }
 
   static getServerByPath(filePath: NuclideUri): ?CommandServer {
-    return firstOfIterable(concatIterators(
-      CommandServer._connections.filter(server => server.hasOpenPath(filePath)),
-      [CommandServer.getCurrentServer()].filter(server => server != null)));
+    return firstOfIterable(
+      concatIterators(
+        CommandServer._connections.filter(server =>
+          server.hasOpenPath(filePath),
+        ),
+        [CommandServer.getCurrentServer()].filter(server => server != null),
+      ),
+    );
   }
 
   static getAtomCommandsByPath(filePath: NuclideUri): ?AtomCommands {
     const server = CommandServer.getServerByPath(filePath);
-    return (server == null) ? null : server._atomCommands;
+    return server == null ? null : server._atomCommands;
   }
 
   static getAtomCommands(): ?AtomCommands {
     return CommandServer._connections.length === 0
-      ? null : new ServiceAtomCommands();
+      ? null
+      : new ServiceAtomCommands();
   }
 }
 

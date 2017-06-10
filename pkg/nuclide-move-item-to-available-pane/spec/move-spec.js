@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {activate} from '../lib/main';
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('nuclide-move-item-to-available-pane', () => {
   it('moves items across panes and creates new ones, as appropriate', () => {

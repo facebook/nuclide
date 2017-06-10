@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {triggerAfterWait} from '../commons-node/promise';
+import {triggerAfterWait} from 'nuclide-commons/promise';
 
 /**
  * Displays a loading notification while waiting for a promise.
@@ -32,7 +33,5 @@ export default function loadingNotification<T>(
       notif.dismiss();
     }
   };
-  return triggerAfterWait(
-    promise, delayMs, timeoutFn, cleanupFn,
-  );
+  return triggerAfterWait(promise, delayMs, timeoutFn, cleanupFn);
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import WS from 'ws';
@@ -31,7 +32,9 @@ export class ShellMessageManager {
         ws.close();
       };
       ws.onerror = () => {
-        atom.notifications.addWarning('Error connecting to React Native shell.');
+        atom.notifications.addWarning(
+          'Error connecting to React Native shell.',
+        );
       };
       ws.onclose = () => {
         this._ws = null;

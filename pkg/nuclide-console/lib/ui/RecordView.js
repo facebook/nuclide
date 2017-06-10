@@ -6,19 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {Level, Record, DisplayableRecord, Executor, OutputProvider} from '../types';
+import type {
+  Level,
+  Record,
+  DisplayableRecord,
+  Executor,
+  OutputProvider,
+} from '../types';
 
 import classnames from 'classnames';
 import React from 'react';
-import {LazyNestedValueComponent} from '../../../nuclide-ui/LazyNestedValueComponent';
+import {
+  LazyNestedValueComponent,
+} from '../../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../../nuclide-ui/SimpleValueComponent';
 import shallowEqual from 'shallowequal';
 import {TextRenderer} from '../../../nuclide-ui/TextRenderer';
 import {MeasuredComponent} from '../../../nuclide-ui/MeasuredComponent';
-import debounce from '../../../commons-node/debounce';
-import {nextAnimationFrame} from '../../../commons-node/observable';
+import debounce from 'nuclide-commons/debounce';
+import {nextAnimationFrame} from 'nuclide-commons/observable';
+import {URL_REGEX} from 'nuclide-commons/string';
 
 type Props = {
   displayableRecord: DisplayableRecord,
@@ -28,7 +38,6 @@ type Props = {
   onHeightChange: (recordId: number, newHeight: number) => void,
 };
 
-const URL_REGEX = /(https?:\/\/[\S]+)/i;
 const ONE_DAY = 1000 * 60 * 60 * 24;
 export default class RecordView extends React.Component {
   props: Props;
@@ -44,7 +53,10 @@ export default class RecordView extends React.Component {
     // The MeasuredComponent can call this many times in quick succession as the
     // child components render, so we debounce it since we only want to know about
     // the height change once everything has settled down
-    (this: any)._debouncedMeasureAndNotifyHeight = debounce(this.measureAndNotifyHeight, 10);
+    (this: any)._debouncedMeasureAndNotifyHeight = debounce(
+      this.measureAndNotifyHeight,
+      10,
+    );
   }
 
   componentDidMount() {
@@ -106,12 +118,7 @@ export default class RecordView extends React.Component {
   render(): React.Element<any> {
     const {displayableRecord} = this.props;
     const {record} = displayableRecord;
-    const {
-      level,
-      kind,
-      timestamp,
-      sourceId,
-    } = record;
+    const {level, kind, timestamp, sourceId} = record;
 
     const classNames = classnames(
       'nuclide-console-record',
@@ -125,16 +132,14 @@ export default class RecordView extends React.Component {
     const iconName = getIconName(record);
     const icon = iconName ? <span className={`icon icon-${iconName}`} /> : null;
     const sourceLabel = this.props.showSourceLabel
-      ? (
-        <span
+      ? <span
           className={`nuclide-console-record-source-label ${getHighlightClassName(level)}`}>
           {sourceId}
         </span>
-      )
       : null;
     let renderedTimestamp;
     if (timestamp != null) {
-      const timestampLabel = (Date.now() - timestamp) > ONE_DAY
+      const timestampLabel = Date.now() - timestamp > ONE_DAY
         ? timestamp.toLocaleString()
         : timestamp.toLocaleTimeString();
       renderedTimestamp = (
@@ -144,10 +149,9 @@ export default class RecordView extends React.Component {
       );
     }
     return (
-      <MeasuredComponent onMeasurementsChanged={this._debouncedMeasureAndNotifyHeight}>
-        <div
-          ref={this._handleRecordWrapper}
-          className={classNames}>
+      <MeasuredComponent
+        onMeasurementsChanged={this._debouncedMeasureAndNotifyHeight}>
+        <div ref={this._handleRecordWrapper} className={classNames}>
           {icon}
           <div className="nuclide-console-record-content-wrapper">
             {this._renderContent(displayableRecord)}
@@ -187,22 +191,29 @@ export default class RecordView extends React.Component {
 
 function getComponent(type: ?string): ReactClass<any> {
   switch (type) {
-    case 'text': return props => TextRenderer(props.evaluationResult);
+    case 'text':
+      return props => TextRenderer(props.evaluationResult);
     case 'boolean':
     case 'string':
     case 'number':
     case 'object':
-    default: return SimpleValueComponent;
+    default:
+      return SimpleValueComponent;
   }
 }
 
 function getHighlightClassName(level: Level): string {
   switch (level) {
-    case 'info': return 'highlight-info';
-    case 'success': return 'highlight-success';
-    case 'warning': return 'highlight-warning';
-    case 'error': return 'highlight-error';
-    default: return 'highlight';
+    case 'info':
+      return 'highlight-info';
+    case 'success':
+      return 'highlight-success';
+    case 'warning':
+      return 'highlight-warning';
+    case 'error':
+      return 'highlight-error';
+    default:
+      return 'highlight';
   }
 }
 

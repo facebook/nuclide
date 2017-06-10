@@ -6,16 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {OutputService} from '../../../nuclide-console/lib/types';
-import type {CwdApi} from '../../../nuclide-current-working-directory/lib/CwdApi';
+import type {
+  CwdApi,
+} from '../../../nuclide-current-working-directory/lib/CwdApi';
 import type {PackagerEvent} from './types';
 
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {LogTailer} from '../../../nuclide-console/lib/LogTailer';
 import {getCommandInfo} from '../../../nuclide-react-native-base';
-import {observeProcess, safeSpawn} from '../../../commons-node/process';
+import {observeProcess} from 'nuclide-commons/process';
 import {parseMessages} from './parseMessages';
 import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
@@ -33,10 +36,9 @@ export class PackagerActivation {
   _disposables: CompositeDisposable;
 
   constructor() {
-    const packagerEvents = Observable.defer(
-      () => getPackagerObservable(this._projectRootPath),
-    )
-      .share();
+    const packagerEvents = Observable.defer(() =>
+      getPackagerObservable(this._projectRootPath),
+    ).share();
     const messages = packagerEvents
       .filter(event => event.kind === 'message')
       .map(event => {
@@ -54,18 +56,21 @@ export class PackagerActivation {
         switch (err.name) {
           case 'NoReactNativeProjectError':
             // If a React Native project hasn't been found, notify the user and complete normally.
-            atom.notifications.addError("Couldn't find a React Native project", {
-              dismissable: true,
-              description:
-                'Make sure that your current working root (or its ancestor) contains a' +
-                ' "node_modules" directory with react-native installed, or a .buckconfig file' +
-                ' with a "[react-native]" section that has a "server" key.',
-            });
+            atom.notifications.addError(
+              "Couldn't find a React Native project",
+              {
+                dismissable: true,
+                description: 'Make sure that your current working root (or its ancestor) contains a' +
+                  ' "node_modules" directory with react-native installed, or a .buckconfig file' +
+                  ' with a "[react-native]" section that has a "server" key.',
+              },
+            );
             return;
           case 'PackagerError':
             invariant(err instanceof PackagerError);
             atom.notifications.addError(
-              `Packager exited with ${err.exitMessage}`, {
+              `Packager exited with ${err.exitMessage}`,
+              {
                 dismissable: true,
                 detail: err.stderr.trim() === '' ? undefined : err.stderr,
               },
@@ -82,17 +87,20 @@ export class PackagerActivation {
     });
 
     this._disposables = new CompositeDisposable(
-      new Disposable(() => { this._logTailer.stop(); }),
+      new Disposable(() => {
+        this._logTailer.stop();
+      }),
       atom.commands.add('atom-workspace', {
         'nuclide-react-native:start-packager': event => {
-          const detail = event.detail != null && typeof event.detail === 'object'
+          const detail = event.detail != null &&
+            typeof event.detail === 'object'
             ? event.detail
             : undefined;
-          // $FlowFixMe
           this._logTailer.start(detail);
         },
         'nuclide-react-native:stop-packager': () => this._logTailer.stop(),
-        'nuclide-react-native:restart-packager': () => this._logTailer.restart(),
+        'nuclide-react-native:restart-packager': () =>
+          this._logTailer.restart(),
       }),
     );
   }
@@ -115,8 +123,12 @@ export class PackagerActivation {
         id: 'React Native Packager',
         messages: this._logTailer.getMessages(),
         observeStatus: cb => this._logTailer.observeStatus(cb),
-        start: () => { this._logTailer.start(); },
-        stop: () => { this._logTailer.stop(); },
+        start: () => {
+          this._logTailer.start();
+        },
+        stop: () => {
+          this._logTailer.stop();
+        },
       }),
     );
   }
@@ -143,13 +155,16 @@ class PackagerError extends Error {
 /**
  * Create an observable that runs the packager and and collects its output.
  */
-function getPackagerObservable(projectRootPath: ?string): Observable<PackagerEvent> {
+function getPackagerObservable(
+  projectRootPath: ?string,
+): Observable<PackagerEvent> {
   const stdout = Observable.fromPromise(getCommandInfo(projectRootPath))
-    .switchMap(commandInfo => (
-      commandInfo == null
-        ? Observable.throw(new NoReactNativeProjectError())
-        : Observable.of(commandInfo)
-    ))
+    .switchMap(
+      commandInfo =>
+        commandInfo == null
+          ? Observable.throw(new NoReactNativeProjectError())
+          : Observable.of(commandInfo),
+    )
     .switchMap(commandInfo => {
       const {command, cwd, args} = commandInfo;
       const remote = electron.remote;
@@ -159,23 +174,29 @@ function getPackagerObservable(projectRootPath: ?string): Observable<PackagerEve
       if (atom.devMode) {
         editor.push('--dev');
       }
-      return observeProcess(
-        () => safeSpawn(command, args, {cwd, env: {...process.env, REACT_EDITOR: quote(editor)}}),
-        true, // Kill all descendant processes when unsubscribing
-      );
+      return observeProcess(command, args, {
+        cwd,
+        env: {...process.env, REACT_EDITOR: quote(editor)},
+        killTreeWhenDone: true,
+        /* TODO(T17353599) */ isExitError: () => false,
+      }).catch(error => Observable.of({kind: 'error', error})); // TODO(T17463635)
     })
     // Accumulate the stderr so that we can show it to the user if something goes wrong.
     .scan(
       (acc, event) => {
         return {
-          stderr: event.kind === 'stderr' ? acc.stderr + event.data : acc.stderr,
+          stderr: event.kind === 'stderr'
+            ? acc.stderr + event.data
+            : acc.stderr,
           event,
         };
       },
       {stderr: '', event: null},
     )
     .switchMap(({stderr, event}) => {
-      if (event == null) { return Observable.empty(); }
+      if (event == null) {
+        return Observable.empty();
+      }
       switch (event.kind) {
         case 'error':
           return Observable.throw(event.error);
@@ -186,7 +207,8 @@ function getPackagerObservable(projectRootPath: ?string): Observable<PackagerEve
             // Completely ignore EADDRINUSE errors since the packager is probably already running.
             if (!stderr.includes('Error: listen EADDRINUSE :::8081')) {
               atom.notifications.addWarning(
-                'Packager failed to start - continuing anyway.', {
+                'Packager failed to start - continuing anyway.',
+                {
                   dismissable: true,
                   detail: stderr.trim() === '' ? undefined : stderr,
                 },

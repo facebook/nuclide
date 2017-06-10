@@ -179,7 +179,6 @@ nuclide-debugger-hhvm \
 nuclide-debugger-lldb \
 nuclide-diagnostics-store \
 nuclide-diagnostics-ui \
-nuclide-diff-view \
 nuclide-file-tree \
 nuclide-file-watcher \
 nuclide-find-references \

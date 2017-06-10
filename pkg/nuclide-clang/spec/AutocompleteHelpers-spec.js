@@ -6,14 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {__test__} from '../lib/AutocompleteHelpers';
 
-const {
-  getCompletionBodyInline,
-  getCompletionBodyMultiLine,
-} = __test__;
+const {getCompletionBodyInline, getCompletionBodyMultiLine} = __test__;
 
 describe('AutocompleteHelpers', () => {
   describe('@getCompletionBodyMultiLine', () => {
@@ -61,14 +59,15 @@ describe('AutocompleteHelpers', () => {
       };
 
       const body = getCompletionBodyMultiLine(
-          completion,
-          /* columnOffset */ 10,
-          /* indentation */ 2);
+        completion,
+        /* columnOffset */ 10,
+        /* indentation */ 2,
+      );
 
       expect(body).toBe(
-              'ArgumentOne:${1:arg1}\n' +
-        '             arg2:${2:argTwo}\n' +
-        '        Argument3:${3:argument3}\n',
+        'ArgumentOne:${1:arg1}\n' +
+          '             arg2:${2:argTwo}\n' +
+          '        Argument3:${3:argument3}\n',
       );
     });
 
@@ -128,15 +127,16 @@ describe('AutocompleteHelpers', () => {
       };
 
       const body = getCompletionBodyMultiLine(
-          completion,
-          /* columnOffset */ 10,
-          /* indentation */ 3);
+        completion,
+        /* columnOffset */ 10,
+        /* indentation */ 3,
+      );
 
       expect(body).toBe(
-              'Arg1:${1:argumentOne}\n' +
-        '         arg2:${2:argTwo}\n' +
-        '    Argument3:${3:argument3}\n' +
-        '      test123:${4:this_is_a_test_placeholder}\n',
+        'Arg1:${1:argumentOne}\n' +
+          '         arg2:${2:argTwo}\n' +
+          '    Argument3:${3:argument3}\n' +
+          '      test123:${4:this_is_a_test_placeholder}\n',
       );
     });
 
@@ -168,9 +168,10 @@ describe('AutocompleteHelpers', () => {
       };
 
       const body = getCompletionBodyMultiLine(
-          completion,
-          /* columnOffset */ 10,
-          /* indentation */ 3);
+        completion,
+        /* columnOffset */ 10,
+        /* indentation */ 3,
+      );
 
       expect(body).toBe(null);
     });
@@ -207,9 +208,10 @@ describe('AutocompleteHelpers', () => {
       };
 
       const body = getCompletionBodyMultiLine(
-          completion,
-          /* columnOffset */ 10,
-          /* indentation */ 3);
+        completion,
+        /* columnOffset */ 10,
+        /* indentation */ 3,
+      );
 
       expect(body).toBe(null);
     });
@@ -246,9 +248,10 @@ describe('AutocompleteHelpers', () => {
       };
 
       const body = getCompletionBodyMultiLine(
-          completion,
-          /* columnOffset */ 10,
-          /* indentation */ 3);
+        completion,
+        /* columnOffset */ 10,
+        /* indentation */ 3,
+      );
 
       expect(body).toBe(null);
     });

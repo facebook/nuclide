@@ -12,6 +12,7 @@ Nuclide including:
 - automatic code preview (via context view)
 - find references
 - code formatting
+- messages from the language service to be shown in the UI
 - debugger expression evaluation
 
 ## Overview
@@ -26,10 +27,41 @@ process contains an instance of the NuclideServer which handles local requests. 
 Atom/NuclideServer design handles both local and remote requests.
 
 The `AtomLanguageService` class implements all of the code in the Atom process for integrating a new
-language into the Atom UI. It communicates to the NuclideServer via the `LanguageService` interface.
-The `LanguageService` interface is typically implemented by the `ServerLanguageService` class.
-The `ServerLanguageService` then defers to an implementation of the `SingleFileLanguageService` interface
-which implements the language specific analysis.
+language into the Atom UI.
+
+* For places where Atom calls into the language (e.g. to obtain the go-to destination
+  for the current caret position), Atom communicates to the NuclideServer via the
+  `LanguageService` interface.
+
+  * Some languages need per-project persistent state, e.g. because they delegate to some
+    out-of-process language server. In these cases the `LanguageService` interface on the server
+    is implemented by `MultiProjectLanguageService`. It's job is to lazily create
+    subsidiary `LanguageService` instances on the server, one per project directory,
+    and delegate all requests it receives to the appropriate project.
+
+  * Other languages don't need per-project persistent state. For these, the `LanguageService`
+    interface on the server is typically implemented by the `ServerLanguageService` class.
+    The `ServerLanguageService` then defers to an implementation of the `SingleFileLanguageService`
+    interface which implements the language specific analysis.
+
+* For places where the language services call into Atom (e.g. to display a message to the console log,
+  or display busy status), Atom offers them a `HostServices` interface.
+
+  * Whenever the language service needs to multiplex (e.g. because two languages want to
+    display their busy status), it *forks* the `HostServices`. It gets its own private
+    fork of `HostServices`, which it must dispose of when done. A given `HostService`
+    instance knows how to aggregate reports from all of its children. Aggregation is done
+    locally where the fork was performed, either on the server or on the client.
+
+* Sometimes it's ambiguous which direction a call should go:
+  whether the language should into the Atom to display something
+  using `HostServices`, or Atom should call into the language to obtain an `Observable`
+  stream of things to display using `LanguageServices`. The simple answer is this:
+  if the language can hold off its work until such time as the Atom has asynchronously
+  subscribed to the observable, then `LanguageServices` and `HostServices` are equally
+  good; if the language can't hold off, then `HostServices` is best because it allows
+  the most laziness; if the language needs a response from Atom, then `HostServices`
+  is the only possibility.
 
 TODO: Add Picture
 

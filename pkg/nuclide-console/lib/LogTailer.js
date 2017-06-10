@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Message, OutputProviderStatus} from './types';
 import type {ConnectableObservable} from 'rxjs';
 
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {track} from '../../nuclide-analytics';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import {BehaviorSubject, Observable, Subscription} from 'rxjs';
 
 type TrackingEventNames = {
@@ -74,9 +75,9 @@ export class LogTailer {
     const messages = options.messages.share();
     this._ready = options.ready == null
       ? null
-      // Guard against a never-ending ready stream.
-      // $FlowFixMe: Add `materialize()` to Rx defs
-      : options.ready.takeUntil(messages.materialize().takeLast(1));
+      : // Guard against a never-ending ready stream.
+        // $FlowFixMe: Add `materialize()` to Rx defs
+        options.ready.takeUntil(messages.materialize().takeLast(1));
     this._runningCallbacks = [];
     this._startCount = 0;
     this._statuses = new BehaviorSubject('stopped');
@@ -94,7 +95,10 @@ export class LogTailer {
         },
       })
       .catch(err => {
-        getLogger().error(`Error with ${this._name} tailer.`, err);
+        getLogger('nuclide-console').error(
+          `Error with ${this._name} tailer.`,
+          err,
+        );
         const wasStarting = this._statuses.getValue() === 'starting';
         this._stop(false);
 
@@ -115,19 +119,22 @@ export class LogTailer {
 
         if (!errorWasHandled) {
           // Default error handling.
-          const message = `An unexpected error occurred while running the ${this._name} process`
-            + (err.message ? `:\n\n**${err.message}**` : '.');
+          const message =
+            `An unexpected error occurred while running the ${this._name} process` +
+            (err.message ? `:\n\n**${err.message}**` : '.');
           const notification = atom.notifications.addError(message, {
             dismissable: true,
             detail: err.stack == null ? '' : err.stack.toString(),
-            buttons: [{
-              text: `Restart ${this._name}`,
-              className: 'icon icon-sync',
-              onDidClick: () => {
-                notification.dismiss();
-                this.restart();
+            buttons: [
+              {
+                text: `Restart ${this._name}`,
+                className: 'icon icon-sync',
+                onDidClick: () => {
+                  notification.dismiss();
+                  this.restart();
+                },
               },
-            }],
+            ],
           });
         }
 
@@ -140,7 +147,9 @@ export class LogTailer {
     this._statuses
       .distinctUntilChanged()
       .filter(status => status === 'running')
-      .subscribe(() => { this._invokeRunningCallbacks(); });
+      .subscribe(() => {
+        this._invokeRunningCallbacks();
+      });
   }
 
   start(options?: StartOptions): void {
@@ -168,7 +177,9 @@ export class LogTailer {
     this._start(false);
   }
 
-  observeStatus(cb: (status: 'starting' | 'running' | 'stopped') => void): IDisposable {
+  observeStatus(
+    cb: (status: 'starting' | 'running' | 'stopped') => void,
+  ): IDisposable {
     return new UniversalDisposable(this._statuses.subscribe(cb));
   }
 
@@ -187,7 +198,8 @@ export class LogTailer {
       });
     }
 
-    const unhandledError = err != null && this._startCount !== this._runningCallbacks.length;
+    const unhandledError =
+      err != null && this._startCount !== this._runningCallbacks.length;
     this._runningCallbacks = [];
     this._startCount = 0;
     return unhandledError;
@@ -228,7 +240,9 @@ export class LogTailer {
           // Ignore errors here. We'll catch them above.
           .catch(error => Observable.empty())
           .takeUntil(this._statuses.filter(status => status !== 'starting'))
-          .subscribe(() => { this._statuses.next('running'); }),
+          .subscribe(() => {
+            this._statuses.next('running');
+          }),
       );
     }
     sub.add(this._messages.connect());

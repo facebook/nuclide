@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as BuckService from '../../nuclide-buck-rpc';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 const buckProjectDirectoryByPath: Map<string, string> = new Map();

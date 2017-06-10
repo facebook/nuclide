@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BlameProvider} from '../../nuclide-blame/lib/types';

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 let total = 0;
@@ -19,7 +20,7 @@ function getTotal(): number {
 }
 
 function product(...factors: Array<number>): number {
-  return factors.reduce((prev: number, current: number) => (prev * current), 1);
+  return factors.reduce((prev: number, current: number) => prev * current, 1);
 }
 
 function asyncFetch(): Promise<any> {

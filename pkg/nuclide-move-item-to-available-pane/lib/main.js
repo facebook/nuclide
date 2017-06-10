@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
@@ -19,16 +20,19 @@ class Activation {
   }
 
   activate() {
-    this._disposables.add(atom.commands.add(
-      'atom-text-editor',
-      {
+    this._disposables.add(
+      atom.commands.add('atom-text-editor', {
         // Pass the eta expansion of these functions to defer the loading of move.js.
-        'nuclide-move-item-to-available-pane:right': () => moveRight(),
-        'nuclide-move-item-to-available-pane:left': () => moveLeft(),
-        'nuclide-move-item-to-available-pane:up': () => moveUp(),
-        'nuclide-move-item-to-available-pane:down': () => moveDown(),
-      },
-    ));
+        'nuclide-move-item-to-available-pane:right': event =>
+          moveRight(((event.target: any): HTMLElement)),
+        'nuclide-move-item-to-available-pane:left': event =>
+          moveLeft(((event.target: any): HTMLElement)),
+        'nuclide-move-item-to-available-pane:up': event =>
+          moveUp(((event.target: any): HTMLElement)),
+        'nuclide-move-item-to-available-pane:down': event =>
+          moveDown(((event.target: any): HTMLElement)),
+      }),
+    );
   }
 
   dispose() {

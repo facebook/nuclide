@@ -6,17 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type Bridge from './Bridge';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import {
-  Disposable,
-  CompositeDisposable,
-} from 'atom';
+import {Disposable, CompositeDisposable} from 'atom';
 import {ActionTypes} from './DebuggerDispatcher';
 
 export default class DebuggerActionsStore {
@@ -38,10 +36,12 @@ export default class DebuggerActionsStore {
       case ActionTypes.SET_PROCESS_SOCKET:
         const {data} = payload;
         if (data == null) {
-          this._bridge.cleanup();
+          this._bridge.leaveDebugMode();
         } else {
+          this._bridge.enterDebugMode();
           const url = `${nuclideUri.join(__dirname, '../scripts/inspector.html')}?${data}`;
-          this._bridge.renderChromeWebview(url);
+          this._bridge.setupChromeChannel(url);
+          this._bridge.enableEventsListening();
         }
         break;
       case ActionTypes.TRIGGER_DEBUGGER_ACTION:

@@ -6,63 +6,74 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Option} from './Dropdown';
 
 import invariant from 'assert';
 import React from 'react';
-import {Button, ButtonSizes} from './Button';
-import {ButtonGroup} from './ButtonGroup';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Dropdown} from './Dropdown';
+import classnames from 'classnames';
 import electron from 'electron';
-
 const {remote} = electron;
 invariant(remote != null);
 
 type ButtonSize = 'EXTRA_SMALL' | 'SMALL' | 'LARGE';
 
 type Props = {
-  value: any,
   buttonComponent?: ReactClass<any>,
-  options: Array<Option>,
+  changeDisabled?: boolean,
+  className?: string,
+  confirmDisabled?: boolean,
   onChange?: (value: any) => mixed,
   onConfirm: (value: any) => mixed,
-  confirmDisabled?: boolean,
-  changeDisabled?: boolean,
+  options: Array<Option>,
   size?: ?ButtonSize,
+  value: any,
 };
 
 export class SplitButtonDropdown extends React.Component {
   props: Props;
 
   render(): React.Element<any> {
-    const selectedOption = this._findSelectedOption(this.props.options) || this.props.options[0];
-
+    const {
+      buttonComponent,
+      changeDisabled,
+      className,
+      confirmDisabled,
+      onChange,
+      onConfirm,
+      options,
+      size,
+      value,
+    } = this.props;
+    const selectedOption = this._findSelectedOption(options) || options[0];
     invariant(selectedOption.type !== 'separator');
-
-    const ButtonComponent = this.props.buttonComponent || Button;
-
-    const dropdownOptions = this.props.options.map(option => ({
+    const ButtonComponent = buttonComponent || Button;
+    const dropdownOptions = options.map(option => ({
       ...option,
       selectedLabel: '',
     }));
 
     return (
-      <ButtonGroup className="nuclide-ui-split-button-dropdown">
+      <ButtonGroup
+        className={classnames(className, 'nuclide-ui-split-button-dropdown')}>
         <ButtonComponent
-          size={this.props.size == null ? undefined : this.props.size}
-          disabled={this.props.confirmDisabled === true}
+          size={size == null ? undefined : size}
+          disabled={confirmDisabled === true}
           icon={selectedOption.icon || undefined}
-          onClick={this.props.onConfirm}>
+          onClick={onConfirm}>
           {selectedOption.selectedLabel || selectedOption.label || ''}
         </ButtonComponent>
         <Dropdown
-          size={this._getDropdownSize(this.props.size)}
-          disabled={this.props.changeDisabled === true}
+          size={this._getDropdownSize(size)}
+          disabled={changeDisabled === true}
           options={dropdownOptions}
-          value={this.props.value}
-          onChange={this.props.onChange}
+          value={value}
+          onChange={onChange}
         />
       </ButtonGroup>
     );
@@ -70,10 +81,14 @@ export class SplitButtonDropdown extends React.Component {
 
   _getDropdownSize(size: ?ButtonSize): 'sm' | 'xs' | 'lg' {
     switch (size) {
-      case ButtonSizes.EXTRA_SMALL: return 'xs';
-      case ButtonSizes.SMALL: return 'sm';
-      case ButtonSizes.LARGE: return 'lg';
-      default: return 'sm';
+      case ButtonSizes.EXTRA_SMALL:
+        return 'xs';
+      case ButtonSizes.SMALL:
+        return 'sm';
+      case ButtonSizes.LARGE:
+        return 'lg';
+      default:
+        return 'sm';
     }
   }
 
@@ -83,7 +98,7 @@ export class SplitButtonDropdown extends React.Component {
       if (option.type === 'separator') {
         continue;
       } else if (option.type === 'submenu') {
-        const submenu = (((option.submenu): any): Array<Option>);
+        const submenu = ((option.submenu: any): Array<Option>);
         result = this._findSelectedOption(submenu);
       } else if (option.value === this.props.value) {
         result = option;

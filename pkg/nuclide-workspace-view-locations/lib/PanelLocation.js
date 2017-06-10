@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PanelLocationId, SerializedPanelLocation} from './types';
 import type {Viewable} from '../../nuclide-workspace-views/lib/types';
 
 import createPaneContainer from '../../commons-atom/create-pane-container';
-import {observableFromSubscribeFunction} from '../../commons-node/event';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {SimpleModel} from '../../commons-node/SimpleModel';
 import TabBarView from '../../nuclide-ui/VendorLib/atom-tabs/lib/tab-bar-view';
 import addPanel from './addPanel';
@@ -47,7 +48,9 @@ export class PanelLocation extends SimpleModel<State> {
     super();
     (this: any)._handlePanelResize = this._handlePanelResize.bind(this);
     const serializedData = serializedState.data || {};
-    this._paneContainer = deserializePaneContainer(serializedData.paneContainer);
+    this._paneContainer = deserializePaneContainer(
+      serializedData.paneContainer,
+    );
     this._position = nullthrows(locationsToPosition.get(locationId));
     this._panes = new BehaviorSubject(new Set());
     this._size = serializedData.size || null;
@@ -73,35 +76,32 @@ export class PanelLocation extends SimpleModel<State> {
     const paneItemChanges = this._panes
       .map(x => Array.from(x))
       .switchMap(panes => {
-        const itemChanges: Array<Observable<mixed>> = panes.map(pane => (
+        const itemChanges: Array<Observable<mixed>> = panes.map(pane =>
           Observable.merge(
             observableFromSubscribeFunction(pane.onDidAddItem.bind(pane)),
             observableFromSubscribeFunction(pane.onDidRemoveItem.bind(pane)),
-          )
-        ));
+          ),
+        );
         return Observable.merge(...itemChanges);
       })
       .share();
 
     this._disposables = new UniversalDisposable(
       observePanes(paneContainer).subscribe(this._panes),
-
       syncPaneItemVisibility(
         this._panes,
         // $FlowFixMe: Teach Flow about Symbol.observable
-        Observable.from(this)
-          .map(state => state.active)
-          .distinctUntilChanged(),
+        Observable.from(this).map(state => state.active).distinctUntilChanged(),
       ),
-
       // Add a tab bar to any panes created in the container.
       paneContainer.observePanes(pane => {
         const tabBarView = new TabBarView(pane);
         const paneElement = atom.views.getView(pane);
         paneElement.insertBefore(tabBarView.element, paneElement.firstChild);
-        tabBarView.element.classList.add('nuclide-workspace-views-panel-location-tabs');
+        tabBarView.element.classList.add(
+          'nuclide-workspace-views-panel-location-tabs',
+        );
       }),
-
       // If you add an item to a panel (e.g. by drag & drop), make the panel active.
       paneItemChanges
         .startWith(null)
@@ -116,11 +116,10 @@ export class PanelLocation extends SimpleModel<State> {
             this.setState({active: true});
           }
         }),
-
       // Show the drop areas while dragging.
       Observable.fromEvent(document, 'dragstart')
         .filter(event => isTab(event.target))
-        .switchMap(() => (
+        .switchMap(() =>
           Observable.concat(
             Observable.of(true),
             Observable.merge(
@@ -130,19 +129,23 @@ export class PanelLocation extends SimpleModel<State> {
             )
               .take(1)
               .mapTo(false),
-          )
-        ))
+          ),
+        )
         // Manipulating the DOM in the dragstart handler will fire the dragend event so we defer it.
         // See https://groups.google.com/a/chromium.org/forum/?fromgroups=#!msg/chromium-bugs/YHs3orFC8Dc/ryT25b7J-NwJ
         .observeOn(Scheduler.async)
-        .subscribe(showDropAreas => { this.setState({showDropAreas}); }),
+        .subscribe(showDropAreas => {
+          this.setState({showDropAreas});
+        }),
     );
 
     this._disposables.add(
       // $FlowIssue: We need to teach flow about Symbol.observable.
       Observable.from(this)
         .subscribeOn(Scheduler.animationFrame)
-        .subscribe(state => { this._render(state); }),
+        .subscribe(state => {
+          this._render(state);
+        }),
     );
   }
 
@@ -164,7 +167,9 @@ export class PanelLocation extends SimpleModel<State> {
         paneContainer={this._paneContainer}
         position={this._position}
         onResize={this._handlePanelResize}
-        toggle={() => { this.toggle(); }}
+        toggle={() => {
+          this.toggle();
+        }}
       />,
       el,
     );
@@ -173,16 +178,17 @@ export class PanelLocation extends SimpleModel<State> {
   _getPanel(): atom$Panel {
     if (this._panel == null) {
       const el = document.createElement('div');
-      const panel = this._panel = addPanel(
-        this._position,
-        {
-          item: el,
-          priority: 101, // Use a value higher than the default (100).
-        },
-      );
+      const panel = (this._panel = addPanel(this._position, {
+        item: el,
+        priority: 101, // Use a value higher than the default (100).
+      }));
       this._disposables.add(
-        () => { ReactDOM.unmountComponentAtNode(el); },
-        () => { panel.destroy(); },
+        () => {
+          ReactDOM.unmountComponentAtNode(el);
+        },
+        () => {
+          panel.destroy();
+        },
       );
       this._panel = panel;
     }
@@ -253,7 +259,8 @@ export class PanelLocation extends SimpleModel<State> {
    * Hide the specified item. If the user toggles a active item, we hide the entire pane.
    */
   hideItem(item: Viewable): void {
-    const itemIsVisible = this._paneContainer.getPanes()
+    const itemIsVisible = this._paneContainer
+      .getPanes()
       .some(pane => pane.getActiveItem() === item);
 
     // If the item's already hidden, we're done.
@@ -277,7 +284,9 @@ export class PanelLocation extends SimpleModel<State> {
     return {
       deserializer: 'PanelLocation',
       data: {
-        paneContainer: this._paneContainer == null ? null : this._paneContainer.serialize(),
+        paneContainer: this._paneContainer == null
+          ? null
+          : this._paneContainer.serialize(),
         size: this._size,
         active: this.state.active,
       },
@@ -285,7 +294,9 @@ export class PanelLocation extends SimpleModel<State> {
   }
 
   onDidAddItem(cb: (item: Viewable) => void): IDisposable {
-    return new UniversalDisposable(observeAddedPaneItems(this._paneContainer).subscribe(cb));
+    return new UniversalDisposable(
+      observeAddedPaneItems(this._paneContainer).subscribe(cb),
+    );
   }
 }
 
@@ -307,7 +318,9 @@ const locationsToPosition = new Map([
 function isTab(element: HTMLElement): boolean {
   let el = element;
   while (el != null) {
-    if (el.getAttribute('is') === 'tabs-tab') { return true; }
+    if (el.getAttribute('is') === 'tabs-tab') {
+      return true;
+    }
     el = el.parentElement;
   }
   return false;

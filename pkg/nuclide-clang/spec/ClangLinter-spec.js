@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point, Range} from 'atom';
 import ClangLinter from '../lib/ClangLinter';
-import * as range from '../../commons-atom/range';
+import * as range from 'nuclide-commons-atom/range';
 
 describe('ClangDiagnosticsProvider', () => {
   const TEST_PATH = '/path/test.cpp';
@@ -34,8 +35,8 @@ describe('ClangDiagnosticsProvider', () => {
 
   describe('processDiagnostics', () => {
     it('should group diagnostics by file', () => {
-      const messages = ClangLinter
-        ._processDiagnostics({
+      const messages = ClangLinter._processDiagnostics(
+        {
           diagnostics: [
             {
               severity: 2,
@@ -115,12 +116,12 @@ describe('ClangDiagnosticsProvider', () => {
             },
           ],
           accurateFlags: true,
-        }, fakeEditor);
+        },
+        fakeEditor,
+      );
 
       expect(messages).toEqual([
         {
-          scope: 'file',
-          providerName: 'Clang',
           type: 'Warning',
           filePath: TEST_PATH,
           text: 'whole file',
@@ -129,8 +130,6 @@ describe('ClangDiagnosticsProvider', () => {
           trace: undefined,
         },
         {
-          scope: 'file',
-          providerName: 'Clang',
           type: 'Warning',
           filePath: TEST_PATH2,
           text: 'other file',
@@ -149,8 +148,6 @@ describe('ClangDiagnosticsProvider', () => {
           },
         },
         {
-          scope: 'file',
-          providerName: 'Clang',
           type: 'Warning',
           filePath: TEST_PATH,
           text: 'test error',
@@ -159,8 +156,6 @@ describe('ClangDiagnosticsProvider', () => {
           trace: undefined,
         },
         {
-          scope: 'file',
-          providerName: 'Clang',
           type: 'Error',
           filePath: TEST_PATH,
           text: 'test error 2',

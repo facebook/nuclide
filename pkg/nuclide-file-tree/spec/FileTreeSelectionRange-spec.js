@@ -6,18 +6,23 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {RangeKey, SelectionRange, RangeUtil} from '../lib/FileTreeSelectionRange';
+import {
+  RangeKey,
+  SelectionRange,
+  RangeUtil,
+} from '../lib/FileTreeSelectionRange';
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {FileTreeNode} from '../lib/FileTreeNode';
 import FileTreeActions from '../lib/FileTreeActions';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import {DEFAULT_CONF} from '../lib/FileTreeStore';
 import {WorkingSet} from '../../nuclide-working-sets-common';
 
-import {denodeify} from '../../commons-node/promise';
+import {denodeify} from 'nuclide-commons/promise';
 import {buildTempDirTree} from './helpers/BuildTempDirTree';
 import tempModule from 'temp';
 tempModule.track();
@@ -95,7 +100,8 @@ describe('FileTreeSelectionRange', () => {
         'dir/foo/foo2',
         'dir/bar/bar1',
         'dir/bar/bar2',
-        'dir/bar/bar3');
+        'dir/bar/bar3',
+      );
       const dir = map.get('dir');
       invariant(dir);
       actions.setRootKeys([dir]);

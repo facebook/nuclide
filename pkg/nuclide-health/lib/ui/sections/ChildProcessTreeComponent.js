@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ChildProcessInfo} from '../../types';
@@ -40,34 +41,47 @@ export default class ChildProcessTreeComponent extends React.Component {
           title="Process tree"
           handles={handles}
           keyed={({process, level}) => '\u00A0'.repeat(level * 3) + process.pid}
-          columns={[{
-            title: 'CPU %',
-            value: ({process, level}) => process.cpuPercentage,
-            widthPercentage: 5,
-          }, {
-            title: 'In',
-            value: ({process}) => process.ioBytesStats && process.ioBytesStats.stdin,
-            widthPercentage: 3,
-          }, {
-            title: 'Out',
-            value: ({process}) => process.ioBytesStats && process.ioBytesStats.stdout,
-            widthPercentage: 3,
-          }, {
-            title: 'Err',
-            value: ({process}) => process.ioBytesStats && process.ioBytesStats.stderr,
-            widthPercentage: 3,
-          }, {
-            title: 'Command',
-            value: ({process, level}) => process.command,
-            widthPercentage: 56,
-          }]}
+          columns={[
+            {
+              title: 'CPU %',
+              value: ({process, level}) => process.cpuPercentage,
+              widthPercentage: 5,
+            },
+            {
+              title: 'In',
+              value: ({process}) =>
+                process.ioBytesStats && process.ioBytesStats.stdin,
+              widthPercentage: 3,
+            },
+            {
+              title: 'Out',
+              value: ({process}) =>
+                process.ioBytesStats && process.ioBytesStats.stdout,
+              widthPercentage: 3,
+            },
+            {
+              title: 'Err',
+              value: ({process}) =>
+                process.ioBytesStats && process.ioBytesStats.stderr,
+              widthPercentage: 3,
+            },
+            {
+              title: 'Command',
+              value: ({process, level}) => process.command,
+              widthPercentage: 56,
+            },
+          ]}
         />
       </div>
     );
   }
 }
 
-function flatten(handles: Array<ProcessWithLevel>, process: ChildProcessInfo, level: number): void {
+function flatten(
+  handles: Array<ProcessWithLevel>,
+  process: ChildProcessInfo,
+  level: number,
+): void {
   handles.push({process, level});
   process.children.forEach(child => flatten(handles, child, level + 1));
 }

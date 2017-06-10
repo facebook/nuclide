@@ -6,15 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {Action, AppState, Location, Opener, Store, Viewable} from '../types';
+import type {
+  Action,
+  AppState,
+  Location,
+  Opener,
+  Store,
+  Viewable,
+} from '../types';
 import type {ActionsObservable} from '../../../commons-node/redux-observable';
 
-import {LocalStorageJsonTable} from '../../../commons-atom/LocalStorageJsonTable';
-import {observableFromSubscribeFunction} from '../../../commons-node/event';
-import {trackEvent} from '../../../nuclide-analytics';
+import {
+  LocalStorageJsonTable,
+} from '../../../commons-atom/LocalStorageJsonTable';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import analytics from 'nuclide-commons-atom/analytics';
 import * as Actions from './Actions';
+import getNewLocation from '../getNewLocation';
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 
@@ -23,8 +34,9 @@ type ItemAndLocation = {
   location: Location,
 };
 
-const preferredLocationStorage =
-  new LocalStorageJsonTable('nuclide:nuclide-workspace-views:preferredLocationIds');
+const preferredLocationStorage = new LocalStorageJsonTable(
+  'nuclide:nuclide-workspace-views:preferredLocationIds',
+);
 
 /**
  * Register a record provider for every executor.
@@ -52,8 +64,9 @@ export function trackItemLocationsEpic(
   return actions.ofType(Actions.REGISTER_LOCATION).mergeMap(action => {
     invariant(action.type === Actions.REGISTER_LOCATION);
     const {id, location} = action.payload;
-    const unregistered = actions
-      .filter(a => a.type === Actions.UNREGISTER_LOCATION && a.payload.id === id);
+    const unregistered = actions.filter(
+      a => a.type === Actions.UNREGISTER_LOCATION && a.payload.id === id,
+    );
     // Since items can be added via means other than the workspace views API (e.g. dragging and
     // dropping), we need to register a listener.
     return observableFromSubscribeFunction(location.onDidAddItem.bind(location))
@@ -76,18 +89,21 @@ export function trackActionsEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.ITEM_CREATED)
-    // Map to a tracking event.
-    .map(action => {
-      invariant(action.type === Actions.ITEM_CREATED);
-      const {itemType} = action.payload;
-      // TODO: Appeal to `item` for custom tracking event here. Let's wait until we need that
-      //   though.
-      return Actions.track({
-        type: 'workspace-view-created',
-        data: {itemType},
-      });
-    });
+  return (
+    actions
+      .ofType(Actions.ITEM_CREATED)
+      // Map to a tracking event.
+      .map(action => {
+        invariant(action.type === Actions.ITEM_CREATED);
+        const {itemType} = action.payload;
+        // TODO: Appeal to `item` for custom tracking event here. Let's wait until we need that
+        //   though.
+        return Actions.track({
+          type: 'workspace-view-created',
+          data: {itemType},
+        });
+      })
+  );
 }
 
 /**
@@ -97,12 +113,13 @@ export function trackEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.TRACK)
+  return actions
+    .ofType(Actions.TRACK)
     .map(action => {
       invariant(action.type === Actions.TRACK);
       return action.payload.event;
     })
-    .do(trackEvent)
+    .do(analytics.trackEvent)
     .ignoreElements();
 }
 
@@ -140,7 +157,7 @@ export function openEpic(
         // Find a location for this viewable.
         const preferredLocationId = preferredLocationStorage.getItem(uri);
         if (preferredLocationId != null) {
-          location = locations.get(preferredLocationId);
+          location = locations.get(getNewLocation(preferredLocationId));
         }
         if (location == null) {
           const defaultLocationId = item.getDefaultLocation != null
@@ -212,15 +229,17 @@ export function toggleItemVisibilityEpic(
       // won't be a true toggle, but it makes more sense.
       const makeVisible = visible != null
         ? visible
-        : !itemsAndLocations.some(({item, location}) => location.itemIsVisible(item));
+        : !itemsAndLocations.some(({item, location}) =>
+            location.itemIsVisible(item),
+          );
       return Observable.from(
-        itemsAndLocations.map(({item, location}) => (
+        itemsAndLocations.map(({item, location}) =>
           Actions.setItemVisibility({
             item,
             locationId: getLocationId(location, state),
             visible: makeVisible,
-          })
-        )),
+          }),
+        ),
       );
     });
 }
@@ -229,7 +248,8 @@ export function setItemVisibilityEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.SET_ITEM_VISIBILITY)
+  return actions
+    .ofType(Actions.SET_ITEM_VISIBILITY)
     .do(action => {
       invariant(action.type === Actions.SET_ITEM_VISIBILITY);
       const {item, locationId, visible} = action.payload;
@@ -249,7 +269,8 @@ export function unregisterLocationEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.UNREGISTER_LOCATION)
+  return actions
+    .ofType(Actions.UNREGISTER_LOCATION)
     .do(action => {
       invariant(action.type === Actions.UNREGISTER_LOCATION);
       const {id} = action.payload;
@@ -271,7 +292,8 @@ export function destroyWhereEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.DESTROY_WHERE)
+  return actions
+    .ofType(Actions.DESTROY_WHERE)
     .do(action => {
       invariant(action.type === Actions.DESTROY_WHERE);
       const {predicate} = action.payload;
@@ -342,7 +364,9 @@ function createViewable(uri: string, openers: Set<Opener>): ?Viewable {
 function bufferUntilDidActivateInitialPackages(
   actions: ActionsObservable<Action>,
 ): Observable<Action> {
-  const didActivateInitialPackages = actions.ofType(Actions.DID_ACTIVATE_INITIAL_PACKAGES).take(1);
+  const didActivateInitialPackages = actions
+    .ofType(Actions.DID_ACTIVATE_INITIAL_PACKAGES)
+    .take(1);
   const missed = actions.buffer(didActivateInitialPackages).take(1).concatAll();
   return Observable.concat(missed, actions);
 }

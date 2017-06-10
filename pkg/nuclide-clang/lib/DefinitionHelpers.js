@@ -6,18 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {
-  Definition,
-  DefinitionQueryResult,
-} from '../../nuclide-definition-service/lib/rpc-types';
+import type {Definition, DefinitionQueryResult} from 'atom-ide-ui';
 
 import {getDeclaration} from './libclang';
 import findWholeRangeOfSymbol from './findWholeRangeOfSymbol';
 import invariant from 'assert';
-import {wordAtPosition} from '../../commons-atom/range';
+import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {trackTiming} from '../../nuclide-analytics';
 import {GRAMMAR_SET, IDENTIFIER_REGEXP} from './constants';
 
@@ -26,9 +23,8 @@ export default class DefinitionHelpers {
     editor: TextEditor,
     position: atom$Point,
   ): Promise<?DefinitionQueryResult> {
-    return trackTiming(
-      'clang.get-definition',
-      () => DefinitionHelpers._getDefinition(editor, position),
+    return trackTiming('clang.get-definition', () =>
+      DefinitionHelpers._getDefinition(editor, position),
     );
   }
 
@@ -57,8 +53,13 @@ export default class DefinitionHelpers {
       return null;
     }
 
-    const wholeRange =
-      findWholeRangeOfSymbol(editor, contents, range, result.spelling, result.extent);
+    const wholeRange = findWholeRangeOfSymbol(
+      editor,
+      contents,
+      range,
+      result.spelling,
+      result.extent,
+    );
     const definition: Definition = {
       path: result.file,
       position: result.point,
@@ -76,15 +77,5 @@ export default class DefinitionHelpers {
       queryRange: wholeRange,
       definitions: [definition],
     };
-  }
-
-  static getDefinitionById(
-    filePath: NuclideUri,
-    id: string,
-  ): Promise<?Definition> {
-    return trackTiming('clang.get-definition-by-id', async () => {
-      // TODO:
-      return null;
-    });
   }
 }

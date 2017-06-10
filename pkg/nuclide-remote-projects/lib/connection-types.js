@@ -6,17 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {SshHandshake} from '../../nuclide-remote-connection';
 
 export type NuclideRemoteAuthMethods =
   // $FlowFixMe: Flow can't find the PASSWORD property on SupportedMethods.
-  SshHandshake.SupportedMethods.PASSWORD |
+  | SshHandshake.SupportedMethods.PASSWORD
   // $FlowFixMe: Flow can't find the SSL_AGENT property on SupportedMethods.
-  SshHandshake.SupportedMethods.SSL_AGENT |
+  | SshHandshake.SupportedMethods.SSL_AGENT
   // $FlowFixMe: Flow can't find the PRIVATE_KEY property on SupportedMethods.
-  SshHandshake.SupportedMethods.PRIVATE_KEY;
+  | SshHandshake.SupportedMethods.PRIVATE_KEY;
 
 export type NuclideRemoteConnectionParams = {
   username: string,

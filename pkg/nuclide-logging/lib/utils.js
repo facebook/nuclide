@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import log4js from 'log4js';
@@ -20,7 +21,9 @@ import type {LoggingEvent} from './types';
  * loggingEvent.data, so that we could get stack information which helps categorization in
  * logview.
  */
-export function patchErrorsOfLoggingEvent(loggingEvent: LoggingEvent): LoggingEvent {
+export function patchErrorsOfLoggingEvent(
+  loggingEvent: LoggingEvent,
+): LoggingEvent {
   const loggingEventCopy = {...loggingEvent};
   loggingEventCopy.data = (loggingEventCopy.data || []).slice();
 
@@ -60,7 +63,9 @@ export function serializeLoggingEvent(loggingEvent: mixed): string {
  * so we need smart deserialization that will recreate log date and level for further processing by
  * log4js internals.
  */
-export function deserializeLoggingEvent(loggingEventString: string): LoggingEvent {
+export function deserializeLoggingEvent(
+  loggingEventString: string,
+): LoggingEvent {
   let loggingEvent;
   try {
     loggingEvent = JSON.parse(loggingEventString);

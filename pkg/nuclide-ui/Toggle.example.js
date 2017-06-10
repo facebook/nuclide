@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
+import {Block} from 'nuclide-commons-ui/Block';
 import {Toggle} from './Toggle';
 
 const NOOP = () => {};

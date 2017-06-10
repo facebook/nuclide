@@ -6,11 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import UniversalDisposable from '../../../commons-node/UniversalDisposable';
-import {observableFromSubscribeFunction} from '../../../commons-node/event';
-import {DebuggerInstanceBase, DebuggerProcessInfo} from '../../../nuclide-debugger-base';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {
+  DebuggerInstanceBase,
+  DebuggerProcessInfo,
+} from '../../../nuclide-debugger-base';
 import {DebuggerProxyClient} from './DebuggerProxyClient';
 import {Observable} from 'rxjs';
 import WS from 'ws';
@@ -35,7 +39,9 @@ export class ReactNativeDebuggerInstance extends DebuggerInstanceBase {
     super(processInfo);
 
     let didConnect;
-    this._connected = new Promise(resolve => { didConnect = resolve; });
+    this._connected = new Promise(resolve => {
+      didConnect = resolve;
+    });
 
     const session$ = uiConnection$
       .combineLatest(pid$)
@@ -44,24 +50,18 @@ export class ReactNativeDebuggerInstance extends DebuggerInstanceBase {
 
     this._subscriptions = new UniversalDisposable(
       // Tell the user if we can't connect to the debugger UI.
-      uiConnection$.subscribe(
-        null,
-        err => {
-          atom.notifications.addError(
-            'Error connecting to debugger UI.',
-            {
-              detail: `Make sure that port ${PORT} is open.`,
-              stack: err.stack,
-              dismissable: true,
-            },
-          );
+      uiConnection$.subscribe(null, err => {
+        atom.notifications.addError('Error connecting to debugger UI.', {
+          detail: `Make sure that port ${PORT} is open.`,
+          stack: err.stack,
+          dismissable: true,
+        });
 
-          this.dispose();
-        },
-      ),
-
-      pid$.first().subscribe(() => { didConnect(); }),
-
+        this.dispose();
+      }),
+      pid$.first().subscribe(() => {
+        didConnect();
+      }),
       // Explicitly manage connection.
       uiConnection$.connect(),
       session$.connect(),
@@ -91,12 +91,16 @@ const pid$ = Observable.using(
     client.connect();
     return {
       client,
-      unsubscribe: () => { client.disconnect(); },
+      unsubscribe: () => {
+        client.disconnect();
+      },
     };
   },
-  ({client}) => observableFromSubscribeFunction(client.onDidEvalApplicationScript.bind(client)),
-)
-.publish();
+  ({client}) =>
+    observableFromSubscribeFunction(
+      client.onDidEvalApplicationScript.bind(client),
+    ),
+).publish();
 
 /**
  * Connections from the Chrome UI. There will only be one connection at a time. This stream won't
@@ -108,18 +112,17 @@ const uiConnection$ = Observable.using(
     const server = new WS.Server({port: PORT});
     return {
       server,
-      unsubscribe: () => { server.close(); },
+      unsubscribe: () => {
+        server.close();
+      },
     };
   },
-  ({server}) => (
+  ({server}) =>
     Observable.merge(
       Observable.fromEvent(server, 'error').flatMap(Observable.throw),
       Observable.fromEvent(server, 'connection'),
-    )
-      .takeUntil(Observable.fromEvent(server, 'close'))
-  ),
-)
-.publish();
+    ).takeUntil(Observable.fromEvent(server, 'close')),
+).publish();
 
 function createSessionStream(ws: WS, debugPort: number): Observable<Session> {
   const config = {
@@ -132,6 +135,8 @@ function createSessionStream(ws: WS, debugPort: number): Observable<Session> {
     // Creating a new Session is actually side-effecty.
     const session = new Session(config, debugPort, ws);
     observer.next(session);
-    return () => { session.close(); };
+    return () => {
+      session.close();
+    };
   });
 }

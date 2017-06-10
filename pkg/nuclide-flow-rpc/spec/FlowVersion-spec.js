@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {FlowVersion} from '../lib/FlowVersion';
@@ -16,7 +17,9 @@ describe('FlowVersion', () => {
   let fakeVersion: ?string = null;
 
   beforeEach(() => {
-    getVersionSpy = jasmine.createSpy().andCallFake(() => Promise.resolve(fakeVersion));
+    getVersionSpy = jasmine
+      .createSpy()
+      .andCallFake(() => Promise.resolve(fakeVersion));
     flowVersion = new FlowVersion(getVersionSpy);
   });
 

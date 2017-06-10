@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type DebuggerModel from './DebuggerModel';
@@ -19,172 +20,149 @@ import type {
   IPCBreakpoint,
   ExpressionResult,
   GetPropertiesResult,
+  IPCEvent,
 } from './types';
 
-import nuclideUri from '../../commons-node/nuclideUri';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import {Subject} from 'rxjs';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {DebuggerMode} from './DebuggerStore';
 import invariant from 'assert';
-import {Observable} from 'rxjs';
-
-const INJECTED_CSS = [
-  /* Force the inspector to scroll vertically on Atom ≥ 1.4.0 */
-  'body > .root-view {overflow-y: scroll;}',
-  /* Force the contents of the mini console (on the bottom) to scroll vertically */
-  '.insertion-point-sidebar#drawer-contents {overflow-y: auto;}',
-  /* imitate chrome table styles for threads window */
-  `
-  .nuclide-chrome-debugger-data-grid table {
-    border-spacing: 0;
-  }
-
-  .nuclide-chrome-debugger-data-grid thead {
-    background-color: #eee;
-  }
-
-  .nuclide-chrome-debugger-data-grid thead td {
-    border-bottom: 1px solid #aaa;
-  }
-
-  .nuclide-chrome-debugger-data-grid tbody tr:nth-child(2n+1) {
-    background: aliceblue;
-  }
-
-  .nuclide-chrome-debugger-data-grid td {
-    border-left: 1px solid #aaa;
-    padding: 2px 4px;
-  }
-
-  .nuclide-chrome-debugger-data-grid td:first-child {
-    border-left: none;
-  }
-  `,
-].join('');
+import CommandDispatcher from './CommandDispatcher';
+import ChromeActionRegistryActions from './ChromeActionRegistryActions';
+import {registerConsoleLogging} from '../../nuclide-debugger-base';
+import {getLogger} from 'log4js';
+const logger = getLogger('nuclide-debugger');
 
 export default class Bridge {
   _debuggerModel: DebuggerModel;
   _disposables: UniversalDisposable;
-  // Contains disposable items should be disposed by
-  // cleanup() method.
-  _cleanupDisposables: ?UniversalDisposable;
-  _webview: ?WebviewElement;
-  _webviewUrl: ?string;
+  // Contains disposable items that are only available during
+  // debug mode.
+  _debugModeDisposables: ?UniversalDisposable;
+  _commandDispatcher: CommandDispatcher;
   _suppressBreakpointSync: boolean;
+  _consoleEvent$: Subject<string>;
 
   constructor(debuggerModel: DebuggerModel) {
     (this: any)._handleIpcMessage = this._handleIpcMessage.bind(this);
     this._debuggerModel = debuggerModel;
     this._suppressBreakpointSync = false;
+    this._commandDispatcher = new CommandDispatcher();
+    this._consoleEvent$ = new Subject();
     this._disposables = new UniversalDisposable(
-      debuggerModel.getBreakpointStore().onUserChange(this._handleUserBreakpointChange.bind(this)),
+      debuggerModel
+        .getBreakpointStore()
+        .onUserChange(this._handleUserBreakpointChange.bind(this)),
     );
+    const subscription = registerConsoleLogging(
+      'Debugger',
+      this._consoleEvent$,
+    );
+    if (subscription != null) {
+      this._disposables.add(subscription);
+    }
   }
 
   dispose() {
-    this.cleanup();
+    this.leaveDebugMode();
     this._disposables.dispose();
   }
 
-  // Clean up any state changed after constructor.
-  cleanup() {
-    if (this._cleanupDisposables != null) {
-      this._cleanupDisposables.dispose();
-      this._cleanupDisposables = null;
+  enterDebugMode(): void {
+    if (this._debugModeDisposables == null) {
+      this._debugModeDisposables = new UniversalDisposable();
+    }
+  }
+
+  // Clean up any debug mode states.
+  leaveDebugMode() {
+    if (this._debugModeDisposables != null) {
+      this._debugModeDisposables.dispose();
+      this._debugModeDisposables = null;
     }
   }
 
   continue() {
-    if (this._webview) {
-      this._webview.send('command', 'Continue');
-    }
+    this._clearInterface();
+    this._commandDispatcher.send('Continue');
+  }
+
+  pause(): void {
+    this._commandDispatcher.send('Pause');
   }
 
   stepOver() {
-    if (this._webview) {
-      this._webview.send('command', 'StepOver');
-    }
+    this._clearInterface();
+    this._commandDispatcher.send('StepOver');
   }
 
   stepInto() {
-    if (this._webview) {
-      this._webview.send('command', 'StepInto');
-    }
+    this._clearInterface();
+    this._commandDispatcher.send('StepInto');
   }
 
   stepOut() {
-    if (this._webview) {
-      this._webview.send('command', 'StepOut');
-    }
+    this._clearInterface();
+    this._commandDispatcher.send('StepOut');
   }
 
   runToLocation(filePath: string, line: number) {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'RunToLocation',
-        filePath,
-        line,
-      );
-    }
+    this._clearInterface();
+    this._commandDispatcher.send('RunToLocation', filePath, line);
   }
 
   triggerAction(actionId: string): void {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'triggerDebuggerAction',
-        actionId,
-      );
+    this._clearInterface();
+    switch (actionId) {
+      case ChromeActionRegistryActions.RUN:
+        this.continue();
+        break;
+      case ChromeActionRegistryActions.PAUSE:
+        this.pause();
+        break;
+      case ChromeActionRegistryActions.STEP_INTO:
+        this.stepInto();
+        break;
+      case ChromeActionRegistryActions.STEP_OVER:
+        this.stepOver();
+        break;
+      case ChromeActionRegistryActions.STEP_OUT:
+        this.stepOut();
+        break;
     }
   }
 
   setSelectedCallFrameIndex(callFrameIndex: number): void {
-    if (this._webview != null) {
-      this._webview.send(
-        'command',
-        'setSelectedCallFrameIndex',
-        callFrameIndex,
-      );
-    }
+    this._commandDispatcher.send('setSelectedCallFrameIndex', callFrameIndex);
   }
 
   setPauseOnException(pauseOnExceptionEnabled: boolean): void {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'setPauseOnException',
-        pauseOnExceptionEnabled,
-      );
-    }
+    this._commandDispatcher.send(
+      'setPauseOnException',
+      pauseOnExceptionEnabled,
+    );
   }
 
   setPauseOnCaughtException(pauseOnCaughtExceptionEnabled: boolean): void {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'setPauseOnCaughtException',
-        pauseOnCaughtExceptionEnabled,
-      );
-    }
+    this._commandDispatcher.send(
+      'setPauseOnCaughtException',
+      pauseOnCaughtExceptionEnabled,
+    );
   }
 
   setSingleThreadStepping(singleThreadStepping: boolean): void {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'setSingleThreadStepping',
-        singleThreadStepping,
-      );
-    }
+    this._commandDispatcher.send(
+      'setSingleThreadStepping',
+      singleThreadStepping,
+    );
   }
 
   selectThread(threadId: string): void {
-    if (this._webview) {
-      this._webview.send(
-        'command',
-        'selectThread',
-        threadId,
-      );
+    this._commandDispatcher.send('selectThread', threadId);
+    const threadNo = parseInt(threadId, 10);
+    if (!isNaN(threadNo)) {
+      this._debuggerModel.getActions().updateSelectedThread(threadNo);
     }
   }
 
@@ -193,17 +171,23 @@ export default class Bridge {
     evalId: number,
     ...args: Array<mixed>
   ): void {
-    if (this._webview != null) {
-      this._webview.send('command', command, evalId, ...args);
-    }
+    this._commandDispatcher.send(command, evalId, ...args);
   }
 
-  _handleExpressionEvaluationResponse(response: ExpressionResult & {id: number}): void {
-    this._debuggerModel.getActions().receiveExpressionEvaluationResponse(response.id, response);
+  _handleExpressionEvaluationResponse(
+    response: ExpressionResult & {id: number},
+  ): void {
+    this._debuggerModel
+      .getActions()
+      .receiveExpressionEvaluationResponse(response.id, response);
   }
 
-  _handleGetPropertiesResponse(response: GetPropertiesResult & {id: number}): void {
-    this._debuggerModel.getActions().receiveGetPropertiesResponse(response.id, response);
+  _handleGetPropertiesResponse(
+    response: GetPropertiesResult & {id: number},
+  ): void {
+    this._debuggerModel
+      .getActions()
+      .receiveGetPropertiesResponse(response.id, response);
   }
 
   _handleCallstackUpdate(callstack: Callstack): void {
@@ -214,18 +198,19 @@ export default class Bridge {
     this._debuggerModel.getActions().updateScopes(scopeSections);
   }
 
-  _handleIpcMessage(stdEvent: Event): void {
-    // addEventListener expects its callback to take an Event. I'm not sure how to reconcile it with
-    // the type that is expected here.
-    // $FlowFixMe(jeffreytan)
-    const event: {channel: string, args: any[]} = stdEvent;
+  _handleIpcMessage(event: IPCEvent): void {
     switch (event.channel) {
       case 'notification':
         switch (event.args[0]) {
           case 'ready':
-            this._updateDebuggerSettings();
+            if (
+              atom.config.get(
+                'nuclide.nuclide-debugger.openDevToolsOnDebuggerStart',
+              )
+            ) {
+              this.openDevTools();
+            }
             this._sendAllBreakpoints();
-            this._injectCSS();
             this._syncDebuggerState();
             break;
           case 'CallFrameSelected':
@@ -233,9 +218,6 @@ export default class Bridge {
             break;
           case 'OpenSourceLocation':
             this._openSourceLocation(event.args[1]);
-            break;
-          case 'ClearInterface':
-            this._handleClearInterface();
             break;
           case 'DebuggerResumed':
             this._handleDebuggerResumed();
@@ -246,7 +228,10 @@ export default class Bridge {
           case 'BreakpointAdded':
             // BreakpointAdded from chrome side is actually
             // binding the breakpoint.
-            this._bindBreakpoint(event.args[1], (event.args[1].resolved === true));
+            this._bindBreakpoint(
+              event.args[1],
+              event.args[1].resolved === true,
+            );
             break;
           case 'BreakpointRemoved':
             this._removeBreakpoint(event.args[1]);
@@ -272,20 +257,45 @@ export default class Bridge {
           case 'ThreadUpdate':
             this._handleThreadUpdate(event.args[1]);
             break;
+          case 'ReportError':
+            this._reportEngineError(event.args[1]);
+            break;
+          case 'ReportWarning':
+            this._reportEngineWarning(event.args[1]);
+            break;
         }
         break;
     }
   }
 
+  _sendConsoleMessage(level: string, text: string): void {
+    this._consoleEvent$.next(
+      JSON.stringify({
+        level,
+        text,
+      }),
+    );
+  }
+
+  _reportEngineError(message: string): void {
+    const outputMessage = `Debugger engine reports error: ${message}`;
+    logger.error(outputMessage);
+    this._sendConsoleMessage('error', outputMessage);
+    atom.notifications.addError(outputMessage);
+  }
+
+  _reportEngineWarning(message: string): void {
+    const outputMessage = `Debugger engine reports warning: ${message}`;
+    logger.warn(outputMessage);
+    this._sendConsoleMessage('warning', outputMessage);
+    atom.notifications.addWarning(outputMessage);
+  }
+
   _updateDebuggerSettings(): void {
-    const webview = this._webview;
-    if (webview != null) {
-      webview.send(
-        'command',
-        'UpdateSettings',
-        this._debuggerModel.getStore().getSettings().getSerializedData(),
-      );
-    }
+    this._commandDispatcher.send(
+      'UpdateSettings',
+      this._debuggerModel.getStore().getSettings().getSerializedData(),
+    );
   }
 
   _syncDebuggerState(): void {
@@ -295,10 +305,16 @@ export default class Bridge {
     this.setSingleThreadStepping(store.getEnableSingleThreadStepping());
   }
 
-  _handleDebuggerPaused(options: ?{
-    stopThreadId: number,
-    threadSwitchNotification: {sourceURL: string, lineNumber: number, message: string},
-  }): void {
+  _handleDebuggerPaused(
+    options: ?{
+      stopThreadId: number,
+      threadSwitchNotification: {
+        sourceURL: string,
+        lineNumber: number,
+        message: string,
+      },
+    },
+  ): void {
     this._debuggerModel.getActions().setDebuggerMode(DebuggerMode.PAUSED);
     if (options != null) {
       if (options.stopThreadId != null) {
@@ -316,11 +332,14 @@ export default class Bridge {
     this._debuggerModel.getStore().loaderBreakpointResumed();
   }
 
-  _handleClearInterface(): void {
-    this._debuggerModel.getActions().clearInterface();
+  _clearInterface(): void {
+    // Prevent dispatcher re-entrance error.
+    process.nextTick(() => this._debuggerModel.getActions().clearInterface());
   }
 
-  _setSelectedCallFrameLine(options: ?{sourceURL: string, lineNumber: number}): void {
+  _setSelectedCallFrameLine(
+    options: ?{sourceURL: string, lineNumber: number},
+  ): void {
     this._debuggerModel.getActions().setSelectedCallFrameLine(options);
   }
 
@@ -328,21 +347,24 @@ export default class Bridge {
     if (options == null) {
       return;
     }
-    this._debuggerModel.getActions().openSourceLocation(
-      options.sourceURL,
-      options.lineNumber,
-    );
+    this._debuggerModel
+      .getActions()
+      .openSourceLocation(options.sourceURL, options.lineNumber);
   }
 
-  _handleStopThreadSwitch(options: ?{sourceURL: string, lineNumber: number, message: string}) {
+  _handleStopThreadSwitch(
+    options: ?{sourceURL: string, lineNumber: number, message: string},
+  ) {
     if (options == null) {
       return;
     }
-    this._debuggerModel.getActions().notifyThreadSwitch(
-      options.sourceURL,
-      options.lineNumber,
-      options.message,
-    );
+    this._debuggerModel
+      .getActions()
+      .notifyThreadSwitch(
+        options.sourceURL,
+        options.lineNumber,
+        options.message,
+      );
   }
 
   _bindBreakpoint(breakpoint: IPCBreakpoint, resolved: boolean) {
@@ -352,13 +374,9 @@ export default class Bridge {
     if (path) {
       try {
         this._suppressBreakpointSync = true;
-        this._debuggerModel.getActions().bindBreakpointIPC(
-          path,
-          lineNumber,
-          condition,
-          enabled,
-          resolved,
-        );
+        this._debuggerModel
+          .getActions()
+          .bindBreakpointIPC(path, lineNumber, condition, enabled, resolved);
       } finally {
         this._suppressBreakpointSync = false;
       }
@@ -380,16 +398,13 @@ export default class Bridge {
   }
 
   _handleUserBreakpointChange(params: BreakpointUserChangeArgType) {
-    const webview = this._webview;
-    if (webview != null) {
-      const {action, breakpoint} = params;
-      webview.send('command', action, {
-        sourceURL: nuclideUri.nuclideUriToUri(breakpoint.path),
-        lineNumber: breakpoint.line,
-        condition: breakpoint.condition,
-        enabled: breakpoint.enabled,
-      });
-    }
+    const {action, breakpoint} = params;
+    this._commandDispatcher.send(action, {
+      sourceURL: nuclideUri.nuclideUriToUri(breakpoint.path),
+      lineNumber: breakpoint.line,
+      condition: breakpoint.condition,
+      enabled: breakpoint.enabled,
+    });
   }
 
   _handleThreadsUpdate(threadData: NuclideThreadData): void {
@@ -406,70 +421,54 @@ export default class Bridge {
 
   _sendAllBreakpoints() {
     // Send an array of file/line objects.
-    const webview = this._webview;
-    if (webview && !this._suppressBreakpointSync) {
+    if (!this._suppressBreakpointSync) {
       const results = [];
-      this._debuggerModel.getBreakpointStore().getAllBreakpoints().forEach(breakpoint => {
-        results.push({
-          sourceURL: nuclideUri.nuclideUriToUri(breakpoint.path),
-          lineNumber: breakpoint.line,
-          condition: breakpoint.condition,
-          enabled: breakpoint.enabled,
+      this._debuggerModel
+        .getBreakpointStore()
+        .getAllBreakpoints()
+        .forEach(breakpoint => {
+          results.push({
+            sourceURL: nuclideUri.nuclideUriToUri(breakpoint.path),
+            lineNumber: breakpoint.line,
+            condition: breakpoint.condition,
+            enabled: breakpoint.enabled,
+          });
         });
-      });
-      webview.send('command', 'SyncBreakpoints', results);
+      this._commandDispatcher.send('SyncBreakpoints', results);
     }
   }
 
-  _injectCSS() {
-    if (this._webview != null) {
-      this._webview.insertCSS(INJECTED_CSS);
-    }
-  }
-
-  renderChromeWebview(url: string): void {
-    if (this._webview == null) {
-      // Cast from HTMLElement down to WebviewElement without instanceof
-      // checking, as WebviewElement constructor is not exposed.
-      const webview = ((document.createElement('webview'): any): WebviewElement);
-      webview.src = url;
-      webview.nodeintegration = true;
-      webview.disablewebsecurity = true;
-      webview.classList.add('native-key-bindings'); // required to pass through certain key events
-      webview.classList.add('nuclide-debugger-webview');
-
-      // The webview is actually only used for its state; it's really more of a model that just has
-      // to live in the DOM. We render it into the body to keep it separate from our view, which may
-      // be detached. If the webview were a child, it would cause the webview to reload when
-      // reattached, and we'd lose our state.
-      invariant(document.body != null);
-      document.body.appendChild(webview);
-
-      this._setWebviewElement(webview);
-    } else if (url !== this._webviewUrl) {
-      this._webview.src = url;
-    }
-    this._webviewUrl = url;
-  }
-
-  // Exposed for tests
-  _setWebviewElement(webview: WebviewElement): void {
-    this._webview = webview;
-    invariant(this._cleanupDisposables == null);
-    this._cleanupDisposables = new UniversalDisposable(
-      Observable.fromEvent(webview, 'ipc-message').subscribe(this._handleIpcMessage),
-      () => {
-        webview.remove();
-        this._webview = null;
-        this._webviewUrl = null;
-      },
+  enableEventsListening(): void {
+    const subscriptions = this._debugModeDisposables;
+    invariant(subscriptions != null);
+    subscriptions.add(
+      this._commandDispatcher
+        .getEventObservable()
+        .subscribe(this._handleIpcMessage),
     );
+    this._signalNewChannelReadyIfNeeded();
+    subscriptions.add(() => this._commandDispatcher.cleanupSessionState());
+  }
+
+  // This will be unnecessary after we remove 'ready' event.
+  _signalNewChannelReadyIfNeeded(): void {
+    if (this._commandDispatcher.isNewChannel()) {
+      this._handleIpcMessage({
+        channel: 'notification',
+        args: ['ready'],
+      });
+    }
+  }
+
+  setupChromeChannel(url: string): void {
+    this._commandDispatcher.setupChromeChannel(url);
+  }
+
+  setupNuclideChannel(debuggerInstance: Object): Promise<void> {
+    return this._commandDispatcher.setupNuclideChannel(debuggerInstance);
   }
 
   openDevTools(): void {
-    if (this._webview == null) {
-      return;
-    }
-    this._webview.openDevTools();
+    this._commandDispatcher.openDevTools();
   }
 }

@@ -1,0 +1,57 @@
+{
+  "name": "atom-ide-code-format",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides a code-formatting provider API",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Code Formatting"
+      ]
+    }
+  },
+  "atomConfig": {
+    "formatOnSave": {
+      "title": "Format on Save",
+      "type": "boolean",
+      "default": false,
+      "description": "Automatically format code upon saving for supported languages."
+    },
+    "formatOnType": {
+      "title": "Format on Type",
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically format code as you type it for supported languages."
+    }
+  },
+  "consumedServices": {
+    "nuclide-code-format.provider": {
+      "versions": {
+        "0.0.0": "consumeLegacyProvider"
+      }
+    },
+    "atom-ide-code-format.range": {
+      "versions": {
+        "0.1.0": "consumeRangeProvider"
+      }
+    },
+    "atom-ide-code-format.file": {
+      "versions": {
+        "0.1.0": "consumeFileProvider"
+      }
+    },
+    "atom-ide-code-format.onType": {
+      "versions": {
+        "0.1.0": "consumeOnTypeProvider"
+      }
+    },
+    "atom-ide-code-format.onSave": {
+      "versions": {
+        "0.1.0": "consumeOnSaveProvider"
+      }
+    }
+  }
+}

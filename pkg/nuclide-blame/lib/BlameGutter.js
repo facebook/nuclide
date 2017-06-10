@@ -6,15 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RevisionInfo} from '../../nuclide-hg-rpc/lib/HgService';
-import type {
-  BlameForEditor,
-  BlameProvider,
-} from './types';
+import type {BlameForEditor, BlameProvider} from './types';
 
-import addTooltip from '../../nuclide-ui/add-tooltip';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
 import hideAllTooltips from '../../nuclide-ui/hide-all-tooltips';
 import {track, trackTiming} from '../../nuclide-analytics';
 import {CompositeDisposable} from 'atom';
@@ -36,10 +34,7 @@ try {
 }
 
 function escapeHTML(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function getHash(revision: ?RevisionInfo): ?string {
@@ -66,7 +61,11 @@ export default class BlameGutter {
    * @param blameProvider The BlameProvider that provides the appropriate blame
    *   information for this BlameGutter.
    */
-  constructor(gutterName: string, editor: atom$TextEditor, blameProvider: BlameProvider) {
+  constructor(
+    gutterName: string,
+    editor: atom$TextEditor,
+    blameProvider: BlameProvider,
+  ) {
     this._isDestroyed = false;
     this._isEditorDestroyed = false;
 
@@ -79,13 +78,17 @@ export default class BlameGutter {
     const gutterView: HTMLElement = atom.views.getView(this._gutter);
     gutterView.classList.add('nuclide-blame');
 
-    this._subscriptions.add(editor.onDidDestroy(() => {
-      this._isEditorDestroyed = true;
-    }));
+    this._subscriptions.add(
+      editor.onDidDestroy(() => {
+        this._isEditorDestroyed = true;
+      }),
+    );
     const editorView = atom.views.getView(editor);
-    this._subscriptions.add(editorView.onDidChangeScrollTop(() => {
-      hideAllTooltips();
-    }));
+    this._subscriptions.add(
+      editorView.onDidChangeScrollTop(() => {
+        hideAllTooltips();
+      }),
+    );
     this._fetchAndDisplayBlame();
   }
 
@@ -95,7 +98,10 @@ export default class BlameGutter {
       return;
     }
 
-    const url = await blameProvider.getUrlForRevision(this._editor, revision.hash);
+    const url = await blameProvider.getUrlForRevision(
+      this._editor,
+      revision.hash,
+    );
     if (url) {
       // Note that 'shell' is not the public 'shell' package on npm but an Atom built-in.
       shell.openExternal(url);
@@ -119,7 +125,7 @@ export default class BlameGutter {
     } catch (error) {
       atom.notifications.addError(
         'Failed to fetch blame to display. ' +
-        'The file is empty or untracked or the repository cannot be reached.',
+          'The file is empty or untracked or the repository cannot be reached.',
         {detail: error},
       );
       atom.commands.dispatch(
@@ -174,9 +180,8 @@ export default class BlameGutter {
   }
 
   _updateBlame(blameForEditor: BlameForEditor): void {
-    return trackTiming(
-      'blame-ui.blame-gutter.updateBlame',
-      () => this.__updateBlame(blameForEditor),
+    return trackTiming('blame-ui.blame-gutter.updateBlame', () =>
+      this.__updateBlame(blameForEditor),
     );
   }
 
@@ -184,8 +189,9 @@ export default class BlameGutter {
   __updateBlame(blameForEditor: BlameForEditor): void {
     if (blameForEditor.length === 0) {
       atom.notifications.addInfo(
-          `Found no blame to display. Is this file empty or untracked?
-          If not, check for errors in the Nuclide logs local to your repo.`);
+        `Found no blame to display. Is this file empty or untracked?
+          If not, check for errors in the Nuclide logs local to your repo.`,
+      );
     }
     const allPreviousBlamedLines = new Set(this._bufferLineToDecoration.keys());
 
@@ -212,7 +218,14 @@ export default class BlameGutter {
 
       const blameInfo = blameForEditor[bufferLine];
       if (blameInfo) {
-        this._setBlameLine(bufferLine, blameInfo, isFirstLine, isLastLine, oldest, newest);
+        this._setBlameLine(
+          bufferLine,
+          blameInfo,
+          isFirstLine,
+          isLastLine,
+          oldest,
+          newest,
+        );
       }
       allPreviousBlamedLines.delete(bufferLine);
     }
@@ -231,7 +244,13 @@ export default class BlameGutter {
     oldest: number,
     newest: number,
   ): void {
-    const item = this._createGutterItem(revision, isFirstLine, isLastLine, oldest, newest);
+    const item = this._createGutterItem(
+      revision,
+      isFirstLine,
+      isLastLine,
+      oldest,
+      newest,
+    );
     const decorationProperties = {
       type: 'gutter',
       gutterName: this._gutter.name,
@@ -242,10 +261,7 @@ export default class BlameGutter {
     let decoration = this._bufferLineToDecoration.get(bufferLine);
     if (!decoration) {
       const marker = this._editor.markBufferRange(
-        [
-          [bufferLine, 0],
-          [bufferLine, 100000],
-        ],
+        [[bufferLine, 0], [bufferLine, 100000]],
         {invalidate: 'touch'},
       );
 
@@ -277,10 +293,9 @@ export default class BlameGutter {
   ): HTMLElement {
     const item = document.createElement('div');
 
-    item.addEventListener(
-      'click',
-      () => { this._onClick(blameInfo); },
-    );
+    item.addEventListener('click', () => {
+      this._onClick(blameInfo);
+    });
 
     ReactDOM.render(
       <GutterElement
@@ -311,14 +326,16 @@ class GutterElement extends React.Component {
     const {oldest, newest, revision, isLastLine, isFirstLine} = this.props;
     const date = Number(revision.date);
 
-    const alpha = (1 - (date - newest) / (oldest - newest));
+    const alpha = 1 - (date - newest) / (oldest - newest);
     const opacity = 0.2 + 0.8 * alpha;
 
     if (isFirstLine) {
       const unixname = shortNameForAuthor(revision.author);
       const tooltip = {
-        title: escapeHTML(revision.title) + '<br />' +
-          escapeHTML(unixname) + ' &middot; ' +
+        title: escapeHTML(revision.title) +
+          '<br />' +
+          escapeHTML(unixname) +
+          ' &middot; ' +
           escapeHTML(revision.date.toDateString()),
         delay: 0,
         placement: 'right',
@@ -328,17 +345,10 @@ class GutterElement extends React.Component {
         <div
           className="nuclide-blame-row nuclide-blame-content"
           ref={addTooltip(tooltip)}>
-          {!isLastLine ?
-            <div
-              className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first"
-            /> : null
-          }
-          {Avatar ?
-            <Avatar
-              size={16}
-              unixname={unixname}
-            /> : unixname + ': '
-          }
+          {!isLastLine
+            ? <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
+            : null}
+          {Avatar ? <Avatar size={16} unixname={unixname} /> : unixname + ': '}
           <span>{revision.title}</span>
           <div style={{opacity}} className="nuclide-blame-border-age" />
         </div>

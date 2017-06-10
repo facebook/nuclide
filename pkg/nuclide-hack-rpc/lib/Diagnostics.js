@@ -6,13 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {FileDiagnosticMessage} from '../../nuclide-diagnostics-common/lib/rpc-types';
-import type {
-  SingleHackMessage,
-  HackDiagnostic,
-} from './rpc-types';
+import type {FileDiagnosticMessage} from 'atom-ide-ui';
+import type {SingleHackMessage, HackDiagnostic} from './rpc-types';
 
 import {Range} from 'simple-text-buffer';
 import invariant from 'assert';
@@ -70,8 +68,7 @@ export function hackMessageToDiagnosticMessage(
   // When the message is an array with multiple elements, the second element
   // onwards comprise the trace for the error.
   if (hackMessages.length > 1) {
-    diagnosticMessage.trace =
-      hackMessages
+    diagnosticMessage.trace = hackMessages
       .slice(1)
       // Skip traces without position since they are not useful, and would crash
       // the RPC connection. See comment in HackService.

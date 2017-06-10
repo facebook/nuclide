@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HunkData, PatchData} from './types';
@@ -28,7 +29,9 @@ export function patchToString(patchData: PatchData): string {
     if (!isSpecialChange(fileDiff)) {
       lines.push(`--- a/${fileDiff.from}\n+++ b/${fileDiff.to}`);
       fileDiff.chunks.forEach(hunk => {
-        const hunkData = nullthrows(nullthrows(fileData.chunks).get(hunk.oldStart));
+        const hunkData = nullthrows(
+          nullthrows(fileData.chunks).get(hunk.oldStart),
+        );
         if (hunkData.selected === SelectedState.NONE) {
           return;
         }
@@ -60,7 +63,9 @@ export function isSpecialChange(fileDiff: diffparser$FileDiff): boolean {
 }
 
 // Special changes come with annotations that will be useful to display on the FileChanges UI
-export function parseWithAnnotations(diffContent: string): Array<diffparser$FileDiff> {
+export function parseWithAnnotations(
+  diffContent: string,
+): Array<diffparser$FileDiff> {
   const patch = parse(diffContent);
 
   const patchLines = diffContent.split('\n');
@@ -83,31 +88,43 @@ export function parseWithAnnotations(diffContent: string): Array<diffparser$File
 
 export function createPatchData(patch: Array<diffparser$FileDiff>): PatchData {
   return {
-    files: new Map(patch.map(fileDiff => {
-      const id = `${fileDiff.to}:${fileDiff.from}`;
-      return [id, {
-        chunks: isSpecialChange(fileDiff)
-          ? null
-          : new Map(fileDiff.chunks.map(chunk => [chunk.oldStart, createHunkData(chunk)])),
-        countEnabledChunks: fileDiff.chunks.length,
-        countPartialChunks: 0,
-        fileDiff,
-        id,
-        selected: SelectedState.ALL,
-      }];
-    })),
+    files: new Map(
+      patch.map(fileDiff => {
+        const id = `${fileDiff.to}:${fileDiff.from}`;
+        return [
+          id,
+          {
+            chunks: isSpecialChange(fileDiff)
+              ? null
+              : new Map(
+                  fileDiff.chunks.map(chunk => [
+                    chunk.oldStart,
+                    createHunkData(chunk),
+                  ]),
+                ),
+            countEnabledChunks: fileDiff.chunks.length,
+            countPartialChunks: 0,
+            fileDiff,
+            id,
+            selected: SelectedState.ALL,
+          },
+        ];
+      }),
+    ),
   };
 }
 
 export function createHunkData(hunk: diffparser$Hunk): HunkData {
-  const allChanges = hunk.changes.map(change => change.type !== 'normal')
+  const allChanges = hunk.changes
+    .map(change => change.type !== 'normal')
     .filter(isChange => isChange);
-  const firstChangedLineIndex = hunk.changes.findIndex(change => change.type !== 'normal');
+  const firstChangedLineIndex = hunk.changes.findIndex(
+    change => change.type !== 'normal',
+  );
   return {
     allChanges,
     countEnabledChanges: allChanges.length,
     firstChangedLineIndex,
-    hunk,
     selected: SelectedState.ALL,
   };
 }

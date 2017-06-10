@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TestClassSummary, TestRunInfo} from './types';
@@ -17,7 +18,9 @@ export default class TestSuiteModel {
   constructor(testClasses: Array<TestClassSummary>) {
     this.testClasses = new Map();
     this.testRuns = new Map();
-    testClasses.forEach(testClass => this.testClasses.set(testClass.id, testClass));
+    testClasses.forEach(testClass =>
+      this.testClasses.set(testClass.id, testClass),
+    );
   }
 
   addTestRun(testRun: TestRunInfo): void {

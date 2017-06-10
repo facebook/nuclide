@@ -4,11 +4,11 @@
       "label": "Nuclide",
       "submenu": [
         {
-          "label": "Devices",
+          "label": "Device Panel",
           "submenu": [
             {
               "label": "Toggle",
-              "command": "nuclide-devices:toggle"
+              "command": "nuclide-device-panel:toggle"
             }
           ]
         }

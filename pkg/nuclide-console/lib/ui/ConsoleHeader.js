@@ -6,27 +6,28 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Source} from '../types';
 
 import classnames from 'classnames';
 import React from 'react';
-import {AtomInput} from '../../../nuclide-ui/AtomInput';
-import {ButtonGroup} from '../../../nuclide-ui/ButtonGroup';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {FunnelIcon} from './FunnelIcon';
 import {ModalMultiSelect} from '../../../nuclide-ui/ModalMultiSelect';
-import {Toolbar} from '../../../nuclide-ui/Toolbar';
-import {ToolbarLeft} from '../../../nuclide-ui/ToolbarLeft';
-import {ToolbarRight} from '../../../nuclide-ui/ToolbarRight';
-import {
-  Button,
-  ButtonSizes,
-} from '../../../nuclide-ui/Button';
+import {Toolbar} from 'nuclide-commons-ui/Toolbar';
+import {ToolbarLeft} from 'nuclide-commons-ui/ToolbarLeft';
+import {ToolbarRight} from 'nuclide-commons-ui/ToolbarRight';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
+
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import invariant from 'assert';
 
 type Props = {
   clear: () => void,
+  createPaste: ?() => Promise<void>,
   invalidFilterInput: boolean,
   enableRegExpFilter: boolean,
   selectedSourceIds: Array<string>,
@@ -42,13 +43,26 @@ export default class ConsoleHeader extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleClearButtonClick = this._handleClearButtonClick.bind(this);
-    (this: any)._handleReToggleButtonClick = this._handleReToggleButtonClick.bind(this);
+    (this: any)._handleClearButtonClick = this._handleClearButtonClick.bind(
+      this,
+    );
+    (this: any)._handleCreatePasteButtonClick = this._handleCreatePasteButtonClick.bind(
+      this,
+    );
+    (this: any)._handleReToggleButtonClick = this._handleReToggleButtonClick.bind(
+      this,
+    );
     (this: any)._renderOption = this._renderOption.bind(this);
   }
 
   _handleClearButtonClick(event: SyntheticMouseEvent): void {
     this.props.clear();
+  }
+
+  _handleCreatePasteButtonClick(event: SyntheticMouseEvent): void {
+    if (this.props.createPaste != null) {
+      this.props.createPaste();
+    }
   }
 
   _handleReToggleButtonClick(): void {
@@ -74,23 +88,24 @@ export default class ConsoleHeader extends React.Component {
         break;
       }
     }
-    if (action == null) { return; }
+    if (action == null) {
+      return;
+    }
     const clickHandler = event => {
       event.stopPropagation();
       invariant(action != null);
       action();
     };
     return (
-      <Button
-        className="pull-right"
-        icon={icon}
-        onClick={clickHandler}>
+      <Button className="pull-right" icon={icon} onClick={clickHandler}>
         {label}
       </Button>
     );
   }
 
-  _renderOption(optionProps: {option: {label: string, value: string}}): React.Element<any> {
+  _renderOption(optionProps: {
+    option: {label: string, value: string},
+  }): React.Element<any> {
     const {option} = optionProps;
     const source = this.props.sources.find(s => s.id === option.value);
     invariant(source != null);
@@ -116,6 +131,17 @@ export default class ConsoleHeader extends React.Component {
     });
 
     const MultiSelectOption = this._renderOption;
+    const pasteButton = this.props.createPaste == null
+      ? null
+      : <Button
+          className="inline-block"
+          size={ButtonSizes.SMALL}
+          onClick={this._handleCreatePasteButtonClick}
+          ref={addTooltip({
+            title: 'Creates a Paste from the current contents of the console',
+          })}>
+          Create Paste
+        </Button>;
 
     return (
       <Toolbar location="top">
@@ -152,6 +178,7 @@ export default class ConsoleHeader extends React.Component {
           </ButtonGroup>
         </ToolbarLeft>
         <ToolbarRight>
+          {pasteButton}
           <Button
             size={ButtonSizes.SMALL}
             onClick={this._handleClearButtonClick}>

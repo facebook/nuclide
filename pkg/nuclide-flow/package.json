@@ -72,6 +72,12 @@
         "type": "boolean",
         "default": true,
         "description": "If unchecked, functions will autocomplete as only their name, and not include their calling parens and arguments."
+      },
+      "lazyServer": {
+        "title": "Start the Flow server in lazy mode",
+        "type": "boolean",
+        "default": false,
+        "description": "EXPERIMENTAL: Requires Flow >=0.49. The Flow server will start quickly, but may miss Flow errors that are already present in the project when it starts. Because the Flow server may restart unexpectedly, this can lead to strange results and missed errors."
       }
     },
     "packageType": "Atom",
@@ -82,10 +88,10 @@
     "language-javascript-jsx:grammar-used",
     "language-javascript:grammar-used"
   ],
-  "providedServices": {
-    "nuclide-busy-signal": {
+  "consumedServices": {
+    "atom-ide-busy-signal": {
       "versions": {
-        "0.1.0": "provideBusySignal"
+        "0.2.0": "consumeBusySignal"
       }
     }
   }

@@ -6,23 +6,28 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import RemoteDirectorySearcher from '../lib/RemoteDirectorySearcher';
 
 describe('RemoteDirectorySearcher.processPaths', () => {
   it('expands basename searches to the whole directory', () => {
-    expect(RemoteDirectorySearcher.processPaths('a/b/c', ['c/d', 'c']))
-      .toEqual([]);
+    expect(RemoteDirectorySearcher.processPaths('a/b/c', ['c/d', 'c'])).toEqual(
+      [],
+    );
   });
 
   it('tries subdirs for basename searches', () => {
-    expect(RemoteDirectorySearcher.processPaths('a/b/c', ['c/d', 'c/e']))
-      .toEqual(['c/d', 'd', 'c/e', 'e']);
+    expect(
+      RemoteDirectorySearcher.processPaths('a/b/c', ['c/d', 'c/e']),
+    ).toEqual(['c/d', 'd', 'c/e', 'e']);
   });
 
   it('does not expand regular searches', () => {
-    expect(RemoteDirectorySearcher.processPaths('a/b/c', ['a', 'b']))
-      .toEqual(['a', 'b']);
+    expect(RemoteDirectorySearcher.processPaths('a/b/c', ['a', 'b'])).toEqual([
+      'a',
+      'b',
+    ]);
   });
 });

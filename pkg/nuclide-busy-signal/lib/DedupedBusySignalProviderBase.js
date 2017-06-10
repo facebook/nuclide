@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {MessageDisplayOptions} from './BusySignalProviderBase';
 
 import invariant from 'assert';
 
-import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {BusySignalProviderBase} from './BusySignalProviderBase';
 
@@ -32,9 +33,12 @@ export class DedupedBusySignalProviderBase extends BusySignalProviderBase {
     this._messageRecords = new Map();
   }
 
-  displayMessage(message: string, options?: MessageDisplayOptions): IDisposable {
+  displayMessage(
+    message: string,
+    options?: MessageDisplayOptions,
+  ): UniversalDisposable {
     this._incrementCount(message, options);
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._decrementCount(message, options);
     });
   }

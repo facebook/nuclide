@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 
 import type {DOMMeasurements} from '../commons-atom/observe-element-dimensions';
 
-import {observeElementDimensions} from '../commons-atom/observe-element-dimensions';
+import {
+  observeElementDimensions,
+} from '../commons-atom/observe-element-dimensions';
 
 type Props = {
   onMeasurementsChanged: (measurements: DOMMeasurements) => void,
@@ -42,8 +45,9 @@ export class MeasuredComponent extends React.Component {
       this._mutationObserverSubscription.unsubscribe();
       return;
     }
-    this._mutationObserverSubscription = observeElementDimensions(node)
-      .subscribe(this.props.onMeasurementsChanged);
+    this._mutationObserverSubscription = observeElementDimensions(
+      node,
+    ).subscribe(this.props.onMeasurementsChanged);
     this._domNode = node;
   }
 

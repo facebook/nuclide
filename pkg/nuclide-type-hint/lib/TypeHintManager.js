@@ -6,18 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TypeHintProvider} from './types';
 import type {Datatip} from '../../nuclide-datatip/lib/types';
 
-import invariant from 'assert';
-import {arrayRemove} from '../../commons-node/collection';
-import {track, trackTiming} from '../../nuclide-analytics';
-import {makeTypeHintComponent} from './TypeHintComponent';
-import {getLogger} from '../../nuclide-logging';
+import analytics from 'nuclide-commons-atom/analytics';
+import {arrayRemove} from 'nuclide-commons/collection';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-type-hint');
 
 export default class TypeHintManager {
   _typeHintProviders: Array<TypeHintProvider>;
@@ -46,34 +45,38 @@ export default class TypeHintManager {
       name = 'unknown';
       logger.error('Type hint provider has no name', provider);
     }
-    const typeHint = await trackTiming(
-      name + '.typeHint',
-      () => provider.typeHint(editor, position),
+    const typeHint = await analytics.trackTiming(name + '.typeHint', () =>
+      provider.typeHint(editor, position),
     );
     if (!typeHint || this._marker) {
       return;
     }
-    const {hint, hintTree, range} = typeHint;
-    // For now, actual hint text is required.
-    invariant(hint != null);
+    const {hint, range} = typeHint;
     // We track the timing above, but we still want to know the number of popups that are shown.
-    track('type-hint-popup', {
+    analytics.track('type-hint-popup', {
       scope: scopeName,
       message: hint,
     });
     return {
-      component: makeTypeHintComponent(hintTree || hint, grammar),
+      markedStrings: [{type: 'snippet', value: hint, grammar}],
       range,
     };
   }
 
-  _getMatchingProvidersForScopeName(scopeName: string): Array<TypeHintProvider> {
-    return this._typeHintProviders.filter((provider: TypeHintProvider) => {
-      const providerGrammars = provider.selector.split(/, ?/);
-      return provider.inclusionPriority > 0 && providerGrammars.indexOf(scopeName) !== -1;
-    }).sort((providerA: TypeHintProvider, providerB: TypeHintProvider) => {
-      return providerA.inclusionPriority - providerB.inclusionPriority;
-    });
+  _getMatchingProvidersForScopeName(
+    scopeName: string,
+  ): Array<TypeHintProvider> {
+    return this._typeHintProviders
+      .filter((provider: TypeHintProvider) => {
+        const providerGrammars = provider.selector.split(/, ?/);
+        return (
+          provider.inclusionPriority > 0 &&
+          providerGrammars.indexOf(scopeName) !== -1
+        );
+      })
+      .sort((providerA: TypeHintProvider, providerB: TypeHintProvider) => {
+        return providerA.inclusionPriority - providerB.inclusionPriority;
+      });
   }
 
   addProvider(provider: TypeHintProvider) {

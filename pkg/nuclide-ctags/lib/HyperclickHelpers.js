@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {HyperclickSuggestion} from '../../hyperclick/lib/types';
+import type {HyperclickSuggestion} from 'atom-ide-ui';
 import type {CtagsResult, CtagsService} from '../../nuclide-ctags-rpc';
 
-import {goToLocation} from '../../commons-atom/go-to-location';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {getCtagsServiceByNuclideUri} from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {CTAGS_KIND_NAMES, getLineNumberForTag} from './utils';
 
 const LIMIT = 100;

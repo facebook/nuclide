@@ -6,8 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type {
+  DnsLookup,
+} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 import type {
   NuclideRemoteAuthMethods,
   NuclideRemoteConnectionParamsWithPassword,
@@ -15,11 +19,12 @@ import type {
 
 import {getOfficialRemoteServerCommand} from './connection-profile-utils';
 
-import addTooltip from '../../nuclide-ui/add-tooltip';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
+import addTooltip from 'nuclide-commons-ui/addTooltip';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {CompositeDisposable} from 'atom';
 import {getIPsForHosts} from './connection-profile-utils';
-import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
+import lookupPreferIpv6
+  from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 import RadioGroup from '../../nuclide-ui/RadioGroup';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -51,7 +56,7 @@ type Props = {
 type State = {
   cwd: string,
   displayTitle: string,
-  IPs: ?Promise<Array<string>>,
+  IPs: ?Promise<Array<DnsLookup>>,
   pathToPrivateKey: string,
   remoteServerCommand: string,
   selectedAuthMethodIndex: number,
@@ -86,11 +91,19 @@ export default class ConnectionDetailsForm extends React.Component {
       shouldDisplayTooltipWarning: false,
     };
 
-    (this: any)._handleAuthMethodChange = this._handleAuthMethodChange.bind(this);
+    (this: any)._handleAuthMethodChange = this._handleAuthMethodChange.bind(
+      this,
+    );
     (this: any)._handleInputDidChange = this._handleInputDidChange.bind(this);
-    (this: any)._handleInputDidChangeForServer = this._handleInputDidChangeForServer.bind(this);
-    (this: any)._handleKeyFileInputClick = this._handleKeyFileInputClick.bind(this);
-    (this: any)._handlePasswordInputClick = this._handlePasswordInputClick.bind(this);
+    (this: any)._handleInputDidChangeForServer = this._handleInputDidChangeForServer.bind(
+      this,
+    );
+    (this: any)._handleKeyFileInputClick = this._handleKeyFileInputClick.bind(
+      this,
+    );
+    (this: any)._handlePasswordInputClick = this._handlePasswordInputClick.bind(
+      this,
+    );
   }
 
   _onKeyPress(e: SyntheticKeyboardEvent): void {
@@ -125,7 +138,9 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   _handleKeyFileInputClick(event: SyntheticEvent): void {
-    const privateKeyAuthMethodIndex = authMethods.indexOf(SupportedMethods.PRIVATE_KEY);
+    const privateKeyAuthMethodIndex = authMethods.indexOf(
+      SupportedMethods.PRIVATE_KEY,
+    );
     this.setState(
       {
         selectedAuthMethodIndex: privateKeyAuthMethodIndex,
@@ -141,7 +156,9 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   _handlePasswordInputClick(event: SyntheticEvent): void {
-    const passwordAuthMethodIndex = authMethods.indexOf(SupportedMethods.PASSWORD);
+    const passwordAuthMethodIndex = authMethods.indexOf(
+      SupportedMethods.PASSWORD,
+    );
     this.setState(
       {
         selectedAuthMethodIndex: passwordAuthMethodIndex,
@@ -159,10 +176,9 @@ export default class ConnectionDetailsForm extends React.Component {
       return;
     }
     const IPs = await this.state.IPs;
-    const ip = await lookupPreferIpv6(hostName)
-      .catch(() => {
-        return;
-      });
+    const ip = await lookupPreferIpv6(hostName).catch(() => {
+      return;
+    });
     let shouldDisplayWarning = false;
     if (ip == null) {
       if (this.state.shouldDisplayTooltipWarning) {
@@ -195,7 +211,8 @@ export default class ConnectionDetailsForm extends React.Component {
         <div
           className="nuclide-auth-method-input nuclide-auth-method-password"
           onClick={this._handlePasswordInputClick}>
-          <input type="password"
+          <input
+            type="password"
             className="nuclide-password native-key-bindings"
             disabled={activeAuthMethod !== SupportedMethods.PASSWORD}
             onChange={this._handleInputDidChange}
@@ -230,26 +247,28 @@ export default class ConnectionDetailsForm extends React.Component {
     );
     let toolTipWarning;
     if (this.state.shouldDisplayTooltipWarning) {
-      toolTipWarning =
-          <span
-                style={{paddingLeft: 10}}
-                className={'icon icon-info pull-right nuclide-remote-projects-tooltip-warning'}
-                ref={addTooltip({
-                  // Intentionally *not* an arrow function so the jQuery
-                  // Tooltip plugin can set the context to the Tooltip
-                  // instance.
-                  placement() {
-                    // Atom modals have z indices of 9999. This Tooltip needs
-                    // to stack on top of the modal; beat the modal's z-index.
-                    this.tip.style.zIndex = 10999;
-                    return 'right';
-                  },
-                  title:
-                    'One of your profiles uses a host name that resolves to the'
-                    + ' same IP as this one. Consider using the uniform host '
-                    + 'name to avoid potential collisions.',
-                })}
-          />;
+      toolTipWarning = (
+        <span
+          style={{paddingLeft: 10}}
+          className={
+            'icon icon-info pull-right nuclide-remote-projects-tooltip-warning'
+          }
+          ref={addTooltip({
+            // Intentionally *not* an arrow function so the jQuery
+            // Tooltip plugin can set the context to the Tooltip
+            // instance.
+            placement() {
+              // Atom modals have z indices of 9999. This Tooltip needs
+              // to stack on top of the modal; beat the modal's z-index.
+              this.tip.style.zIndex = 10999;
+              return 'right';
+            },
+            title: 'One of your profiles uses a host name that resolves to the' +
+              ' same IP as this one. Consider using the uniform host ' +
+              'name to avoid potential collisions.',
+          })}
+        />
+      );
     }
 
     return (
@@ -265,7 +284,8 @@ export default class ConnectionDetailsForm extends React.Component {
         </div>
         <div className="form-group nuclide-auth-server-group">
           <div className="nuclide-auth-server">
-            <label>Server:
+            <label>
+              Server:
               {toolTipWarning}
             </label>
             <AtomInput
@@ -297,11 +317,7 @@ export default class ConnectionDetailsForm extends React.Component {
         <div className="form-group">
           <label>Authentication method:</label>
           <RadioGroup
-            optionLabels={[
-              passwordLabel,
-              sshAgentLabel,
-              privateKeyLabel,
-            ]}
+            optionLabels={[passwordLabel, sshAgentLabel, privateKeyLabel]}
             onSelectedChange={this._handleAuthMethodChange}
             selectedIndex={this.state.selectedAuthMethodIndex}
           />
@@ -325,19 +341,21 @@ export default class ConnectionDetailsForm extends React.Component {
     const root = ReactDOM.findDOMNode(this);
 
     // Hitting enter when this panel has focus should confirm the dialog.
-    disposables.add(atom.commands.add(
-      // $FlowFixMe
-      root,
-      'core:confirm',
-      event => this.props.onConfirm(),
-    ));
+    disposables.add(
+      atom.commands.add(
+        // $FlowFixMe
+        root,
+        'core:confirm',
+        event => this.props.onConfirm(),
+      ),
+    );
 
     // Hitting escape should cancel the dialog.
-    disposables.add(atom.commands.add(
-      'atom-workspace',
-      'core:cancel',
-      event => this.props.onCancel(),
-    ));
+    disposables.add(
+      atom.commands.add('atom-workspace', 'core:cancel', event =>
+        this.props.onCancel(),
+      ),
+    );
     if (this.props.profileHosts) {
       this.setState({IPs: getIPsForHosts(this.props.profileHosts)});
     }
@@ -355,8 +373,8 @@ export default class ConnectionDetailsForm extends React.Component {
       username: this._getText('username'),
       server: this._getText('server'),
       cwd: this._getText('cwd'),
-      remoteServerCommand: this._getText('remoteServerCommand')
-        || getOfficialRemoteServerCommand(),
+      remoteServerCommand: this._getText('remoteServerCommand') ||
+        getOfficialRemoteServerCommand(),
       sshPort: this._getText('sshPort'),
       pathToPrivateKey: this._getText('pathToPrivateKey'),
       authMethod: this._getAuthMethod(),
@@ -393,7 +411,9 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   _getText(fieldName: string): string {
-    return (this.refs[fieldName] && this.refs[fieldName].getText().trim()) || '';
+    return (
+      (this.refs[fieldName] && this.refs[fieldName].getText().trim()) || ''
+    );
   }
 
   _setText(fieldName: string, text: ?string): void {
@@ -421,8 +441,11 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   _getPassword(): string {
-    // $FlowFixMe
-    return (this.refs.password && ReactDOM.findDOMNode(this.refs.password).value) || '';
+    return (
+      // $FlowFixMe
+      (this.refs.password && ReactDOM.findDOMNode(this.refs.password).value) ||
+      ''
+    );
   }
 
   clearPassword(): void {

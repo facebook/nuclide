@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
 
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
@@ -24,11 +25,15 @@ export class LaunchAttachActionsBase {
   constructor(targetUri: NuclideUri) {
     this._targetUri = targetUri;
     this._refreshTimerId = null;
-    this._parentUIVisible = true;   // Visible by default.
+    this._parentUIVisible = true; // Visible by default.
     this._attachUIVisible = false;
     (this: any).updateAttachTargetList = this.updateAttachTargetList.bind(this);
-    (this: any).updateParentUIVisibility = this.updateParentUIVisibility.bind(this);
-    (this: any).updateAttachUIVisibility = this.updateAttachUIVisibility.bind(this);
+    (this: any).updateParentUIVisibility = this.updateParentUIVisibility.bind(
+      this,
+    );
+    (this: any).updateAttachUIVisibility = this.updateAttachUIVisibility.bind(
+      this,
+    );
   }
 
   getTargetUri(): NuclideUri {
@@ -46,14 +51,13 @@ export class LaunchAttachActionsBase {
   }
 
   _updateAutoRefresh(): void {
+    this._killAutoRefreshTimer();
     if (this._parentUIVisible && this._attachUIVisible) {
       this.updateAttachTargetList();
       this._refreshTimerId = setInterval(
         this.updateAttachTargetList,
         ATTACH_TARGET_LIST_REFRESH_INTERVAL,
       );
-    } else {
-      this._killAutoRefreshTimer();
     }
   }
 
@@ -83,7 +87,9 @@ export class LaunchAttachActionsBase {
   }
 
   async startDebugging(processInfo: DebuggerProcessInfo): Promise<void> {
-    const debuggerService = await consumeFirstProvider('nuclide-debugger.remote');
+    const debuggerService = await consumeFirstProvider(
+      'nuclide-debugger.remote',
+    );
     await debuggerService.startDebugging(processInfo);
   }
 

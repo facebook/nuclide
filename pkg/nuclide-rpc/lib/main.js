@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 import Module from 'module';
 
@@ -19,36 +20,36 @@ import {parseServiceDefinition} from './service-parser';
 // Proxy dependencies
 import {Observable} from 'rxjs';
 
-import type {
-  ReturnKind,
-  Type,
-  Parameter,
-} from './types';
+import type {ReturnKind, Type, Parameter} from './types';
 
 export type RpcContext = {
-  callRemoteFunction(functionName: string, returnType: ReturnKind, args: Object): any,
+  callRemoteFunction(
+    functionName: string,
+    returnType: ReturnKind,
+    args: Object,
+  ): any,
   callRemoteMethod(
     objectId: number,
     methodName: string,
     returnType: ReturnKind,
-    args: Object
+    args: Object,
   ): any,
   createRemoteObject(
     interfaceName: string,
     thisArg: Object,
     unmarshalledArgs: Array<any>,
-    argTypes: Array<Parameter>
+    argTypes: Array<Parameter>,
   ): void,
   disposeRemoteObject(object: Object): Promise<void>,
   marshal(value: any, type: Type): any,
   unmarshal(value: any, type: Type): any,
   marshalArguments(
     args: Array<any>,
-    argTypes: Array<Parameter>
+    argTypes: Array<Parameter>,
   ): Promise<Object>,
   unmarshalArguments(
     args: Object,
-    argTypes: Array<Parameter>
+    argTypes: Array<Parameter>,
   ): Promise<Array<any>>,
 };
 
@@ -63,7 +64,10 @@ export function proxyFilename(definitionPath: string): string {
     `"${definitionPath}" definition path must be absolute.`,
   );
   const dir = nuclideUri.dirname(definitionPath);
-  const name = nuclideUri.basename(definitionPath, nuclideUri.extname(definitionPath));
+  const name = nuclideUri.basename(
+    definitionPath,
+    nuclideUri.extname(definitionPath),
+  );
   const filename = nuclideUri.join(dir, name + 'Proxy.js');
   return filename;
 }
@@ -83,7 +87,10 @@ export function createProxyFactory(
     } else {
       const definitionSource = fs.readFileSync(definitionPath, 'utf8');
       const defs = parseServiceDefinition(
-        definitionPath, definitionSource, predefinedTypes);
+        definitionPath,
+        definitionSource,
+        predefinedTypes,
+      );
       code = generateProxy(serviceName, preserveFunctionNames, defs);
     }
 

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -39,7 +40,8 @@ export class ProviderContainer extends React.Component {
   render(): ?React.Element<any> {
     return (
       <div className="nuclide-context-view-provider-container">
-        <Section headline={this.props.title}
+        <Section
+          headline={this.props.title}
           collapsable={true}
           onChange={this._setCollapsed}
           collapsed={this.state.collapsed}>

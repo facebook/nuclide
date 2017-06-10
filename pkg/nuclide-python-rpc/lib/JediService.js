@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 // This file contains RPC definitions for jediserver.py.
 
@@ -70,7 +71,10 @@ export type JediStatementItem = {
   docblock?: string,
 };
 
-export type JediOutlineItem = JediFunctionItem | JediClassItem | JediStatementItem;
+export type JediOutlineItem =
+  | JediFunctionItem
+  | JediClassItem
+  | JediStatementItem;
 
 export async function get_completions(
   src: NuclideUri,
@@ -106,8 +110,6 @@ export function get_outline(
   throw new Error('RPC Stub');
 }
 
-export function add_paths(
-  paths: Array<string>,
-): Promise<?Array<string>> {
+export function add_paths(paths: Array<string>): Promise<?Array<string>> {
   throw new Error('RPC Stub');
 }

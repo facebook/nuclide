@@ -6,13 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
+import type {HackCompletion, HackParameterDetails} from './rpc-types';
 import type {
-  HackCompletion,
-  HackParameterDetails,
-} from './rpc-types';
-import type {Completion} from '../../nuclide-language-service/lib/LanguageService';
+  Completion,
+} from '../../nuclide-language-service/lib/LanguageService';
 
 import {Point, Range} from 'simple-text-buffer';
 import {
@@ -25,12 +25,14 @@ export function convertCompletions(
   contents: string,
   offset: number,
   prefix: string,
-  hackCompletions: ?Array<HackCompletion>,
-): ?Array<Completion> {
-  if (hackCompletions == null) {
-    return null;
-  }
-  const completions = processCompletions(hackCompletions, contents, offset, prefix);
+  hackCompletions: Array<HackCompletion>,
+): Array<Completion> {
+  const completions = processCompletions(
+    hackCompletions,
+    contents,
+    offset,
+    prefix,
+  );
   return sortAndFilterCompletions(completions, prefix);
 }
 
@@ -51,12 +53,16 @@ function paramSignature(params: Array<HackParameterDetails>): ?string {
   return `(${paramStrings.join(', ')})`;
 }
 
-function matchSnippet(name: string, params: ?Array<HackParameterDetails>): string {
+function matchSnippet(
+  name: string,
+  params: ?Array<HackParameterDetails>,
+): string {
   const escapedName = escapeName(name);
   if (params != null) {
     // Construct the snippet: e.g. myFunction(${1:$arg1}, ${2:$arg2});
-    const paramsString = params.map(
-      (param, index) => `\${${index + 1}:${param.name}}`).join(', ');
+    const paramsString = params
+      .map((param, index) => `\${${index + 1}:${param.name}}`)
+      .join(', ');
     return `${escapedName}(${paramsString})`;
   } else {
     return escapedName;
@@ -70,8 +76,9 @@ function processCompletions(
   defaultPrefix: string,
 ): Array<Completion> {
   const lineEndOrNotFound = contents.indexOf('\n', offset);
-  const lineEnd =
-    lineEndOrNotFound !== -1 ? lineEndOrNotFound : contents.length;
+  const lineEnd = lineEndOrNotFound !== -1
+    ? lineEndOrNotFound
+    : contents.length;
   const contentsRestOfLine = contents.substring(offset, lineEnd);
   const nextCharIndex = contentsRestOfLine.search(/\S/);
   const alreadyHasParams =
@@ -91,8 +98,7 @@ function processCompletions(
     // want to put the namespace in the replacement.
     const scopedName = resultPrefix === '' ? name.split('\\').pop() : name;
     if (func_details != null) {
-      const completionParams =
-        alreadyHasParams ? null : func_details.params;
+      const completionParams = alreadyHasParams ? null : func_details.params;
       return {
         ...commonResult,
         snippet: matchSnippet(scopedName, completionParams),
@@ -111,18 +117,23 @@ function processCompletions(
 }
 
 const FIELD_ACCESSORS = ['->', '::'];
-const PREFIX_LOOKBACK = Math.max.apply(null, FIELD_ACCESSORS.map(prefix => prefix.length));
+const PREFIX_LOOKBACK = Math.max.apply(
+  null,
+  FIELD_ACCESSORS.map(prefix => prefix.length),
+);
 
 /**
  * Returns true if `bufferPosition` is prefixed with any of the passed `checkPrefixes`.
  */
 export function hasPrefix(
-    buffer: simpleTextBuffer$TextBuffer,
-    bufferPosition: atom$Point,
-  ): boolean {
-  const priorChars = buffer.getTextInRange(new Range(
-    new Point(bufferPosition.row, bufferPosition.column - PREFIX_LOOKBACK),
-    bufferPosition,
-  ));
+  buffer: simpleTextBuffer$TextBuffer,
+  bufferPosition: atom$Point,
+): boolean {
+  const priorChars = buffer.getTextInRange(
+    new Range(
+      new Point(bufferPosition.row, bufferPosition.column - PREFIX_LOOKBACK),
+      bufferPosition,
+    ),
+  );
   return FIELD_ACCESSORS.some(prefix => priorChars.endsWith(prefix));
 }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
@@ -17,12 +18,8 @@ import type {
   DebuggerModeType,
 } from './types';
 
-import dedent from 'dedent';
 import invariant from 'assert';
-import {
-  Disposable,
-  CompositeDisposable,
-} from 'atom';
+import {Disposable, CompositeDisposable} from 'atom';
 import {Emitter} from 'atom';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
@@ -77,16 +74,28 @@ export default class BreakpointStore {
         this._addBreakpoint(payload.data.path, payload.data.line);
         break;
       case ActionTypes.UPDATE_BREAKPOINT_CONDITION:
-        this._updateBreakpointCondition(payload.data.breakpointId, payload.data.condition);
+        this._updateBreakpointCondition(
+          payload.data.breakpointId,
+          payload.data.condition,
+        );
         break;
       case ActionTypes.UPDATE_BREAKPOINT_ENABLED:
-        this._updateBreakpointEnabled(payload.data.breakpointId, payload.data.enabled);
+        this._updateBreakpointEnabled(
+          payload.data.breakpointId,
+          payload.data.enabled,
+        );
         break;
       case ActionTypes.DELETE_BREAKPOINT:
         this._deleteBreakpoint(payload.data.path, payload.data.line);
         break;
       case ActionTypes.DELETE_ALL_BREAKPOINTS:
         this._deleteAllBreakpoints();
+        break;
+      case ActionTypes.ENABLE_ALL_BREAKPOINTS:
+        this._enableAllBreakpoints();
+        break;
+      case ActionTypes.DISABLE_ALL_BREAKPOINTS:
+        this._disableAllBreakpoints();
         break;
       case ActionTypes.TOGGLE_BREAKPOINT:
         this._toggleBreakpoint(payload.data.path, payload.data.line);
@@ -170,14 +179,36 @@ export default class BreakpointStore {
     });
   }
 
-  _deleteAllBreakpoints(): void {
+  _forEachBreakpoint(
+    callback: (path: string, line: number, breakpointId: number) => void,
+  ) {
     for (const path of this._breakpoints.keys()) {
       const lineMap = this._breakpoints.get(path);
       invariant(lineMap != null);
       for (const line of lineMap.keys()) {
-        this._deleteBreakpoint(path, line);
+        const bp = lineMap.get(line);
+        invariant(bp != null);
+        callback(path, line, bp.id);
       }
     }
+  }
+
+  _deleteAllBreakpoints(): void {
+    this._forEachBreakpoint((path, line, breakpointId) =>
+      this._deleteBreakpoint(path, line),
+    );
+  }
+
+  _enableAllBreakpoints(): void {
+    this._forEachBreakpoint((path, line, breakpointId) =>
+      this._updateBreakpointEnabled(breakpointId, true),
+    );
+  }
+
+  _disableAllBreakpoints(): void {
+    this._forEachBreakpoint((path, line, breakpointId) =>
+      this._updateBreakpointEnabled(breakpointId, false),
+    );
   }
 
   _deleteBreakpoint(
@@ -186,15 +217,9 @@ export default class BreakpointStore {
     userAction: boolean = true,
   ): void {
     const lineMap = this._breakpoints.get(path);
-    invariant(
-      lineMap != null,
-      dedent`
-        Expected a non-null lineMap.
-        path: ${path},
-        line: ${line},
-        userAction: ${userAction}
-      `,
-    );
+    if (lineMap == null) {
+      return;
+    }
     const breakpoint = lineMap.get(line);
     if (lineMap.delete(line)) {
       invariant(breakpoint);
@@ -232,14 +257,14 @@ export default class BreakpointStore {
     // The Chrome devtools always bind a new breakpoint as enabled the first time. If this
     // breakpoint is known to be disabled in the front-end, sync the enabled state with Chrome.
     const existingBp = this.getBreakpointAtLine(path, line);
-    const updateEnabled = (existingBp != null) && (existingBp.enabled !== enabled);
+    const updateEnabled = existingBp != null && existingBp.enabled !== enabled;
 
     this._addBreakpoint(
       path,
       line,
       condition,
       resolved,
-      false,  // userAction
+      false, // userAction
       enabled,
     );
 
@@ -288,7 +313,7 @@ export default class BreakpointStore {
   getBreakpointAtLine(path: string, line: number): ?FileLineBreakpoint {
     const lineMap = this._breakpoints.get(path);
     if (lineMap == null) {
-      return;
+      return null;
     }
     return lineMap.get(line);
   }
@@ -353,7 +378,9 @@ export default class BreakpointStore {
    * Register a change handler that is invoked when a breakpoint is changed
    * by user action, like user explicitly added, deleted a breakpoint.
    */
-  onUserChange(callback: (params: BreakpointUserChangeArgType) => void): IDisposable {
+  onUserChange(
+    callback: (params: BreakpointUserChangeArgType) => void,
+  ): IDisposable {
     return this._emitter.on(BREAKPOINT_USER_CHANGED, callback);
   }
 

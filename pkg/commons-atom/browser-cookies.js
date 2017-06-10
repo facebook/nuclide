@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -34,7 +35,12 @@ export default {
     });
   },
 
-  setCookie(url: string, domain: string, name: string, value: string): Promise<void> {
+  setCookie(
+    url: string,
+    domain: string,
+    name: string,
+    value: string,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       // $FlowFixMe: Add types for electron$WebContents
       remote.getCurrentWindow().webContents.session.cookies.set({

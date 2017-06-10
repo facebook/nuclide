@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import https from 'https';
@@ -14,8 +15,12 @@ import fs from 'fs';
 import url from 'url';
 
 // Set the initial version by reading from the file.
-const json = JSON.parse(fs.readFileSync(require.resolve('./package.json'), 'utf8'));
-const version = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z0-9.-]+))?$/.exec(json.version)[2];
+const json = JSON.parse(
+  fs.readFileSync(require.resolve('./package.json'), 'utf8'),
+);
+const version = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z0-9.-]+))?$/.exec(
+  json.version,
+)[2];
 
 function processArgs() {
   const args = process.argv.slice(2);
@@ -69,7 +74,6 @@ function handleRequest(request, response) {
       break;
   }
 }
-
 
 function handleVersion(request, response) {
   response.writeHead(200);

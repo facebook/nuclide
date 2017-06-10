@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RequestOptions} from './utils';
@@ -46,7 +47,10 @@ export class XhrConnectionHeartbeat {
 
   _monitorServerHeartbeat(): void {
     this._heartbeat();
-    this._heartbeatInterval = setInterval(() => this._heartbeat(), HEARTBEAT_INTERVAL_MS);
+    this._heartbeatInterval = setInterval(
+      () => this._heartbeat(),
+      HEARTBEAT_INTERVAL_MS,
+    );
   }
 
   // Returns version
@@ -61,8 +65,10 @@ export class XhrConnectionHeartbeat {
       this._heartbeatConnectedOnce = true;
       const now = Date.now();
       this._lastHeartbeatTime = this._lastHeartbeatTime || now;
-      if (this._lastHeartbeat === 'away'
-          || ((now - this._lastHeartbeatTime) > MAX_HEARTBEAT_AWAY_RECONNECT_MS)) {
+      if (
+        this._lastHeartbeat === 'away' ||
+        now - this._lastHeartbeatTime > MAX_HEARTBEAT_AWAY_RECONNECT_MS
+      ) {
         // Trigger a websocket reconnect.
         this._emitter.emit('reconnect');
       }
@@ -118,7 +124,11 @@ export class XhrConnectionHeartbeat {
   }
 
   onHeartbeatError(
-    callback: (arg: {code: string, originalCode: string, message: string}) => mixed,
+    callback: (arg: {
+      code: string,
+      originalCode: string,
+      message: string,
+    }) => mixed,
   ): IDisposable {
     return this._emitter.on('heartbeat.error', callback);
   }

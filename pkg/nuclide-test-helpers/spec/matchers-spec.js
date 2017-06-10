@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import chalk from 'chalk';
@@ -34,11 +35,12 @@ describe('matchers', () => {
       const match = {actual: {a: 1, b: 2}};
       const isMatch = diffJson.bind(match)({b: 2, c: 3});
 
-      const expected = chalk.gray('{\n')
-          + chalk.green('  "a": 1,\n')
-          + chalk.gray('  "b": 2,\n')
-          + chalk.red('  "c": 3\n')
-          + chalk.gray('}');
+      const expected =
+        chalk.gray('{\n') +
+        chalk.green('  "a": 1,\n') +
+        chalk.gray('  "b": 2,\n') +
+        chalk.red('  "c": 3\n') +
+        chalk.gray('}');
 
       expect(isMatch).toBe(false);
       invariant(typeof match.message === 'function');
@@ -63,9 +65,8 @@ describe('matchers', () => {
       const match = {actual: 'line1\nline2\nline3'};
       const isMatch = diffLines.bind(match)('line1\nline3');
 
-      const expected = chalk.gray('line1\n')
-          + chalk.green('line2\n')
-          + chalk.gray('line3');
+      const expected =
+        chalk.gray('line1\n') + chalk.green('line2\n') + chalk.gray('line3');
 
       expect(isMatch).toBe(false);
       invariant(typeof match.message === 'function');

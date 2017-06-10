@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* eslint-disable no-console */
@@ -20,7 +21,9 @@ import path from 'path';
 const {ipcRenderer, remote} = electron;
 invariant(ipcRenderer != null && remote != null);
 
-export default async function runCommand(args: Array<string>): Promise<ExitCode> {
+export default (async function runCommand(
+  args: Array<string>,
+): Promise<ExitCode> {
   if (typeof args[0] !== 'string') {
     console.error(`Usage: atom-script ${__filename} <spec file>`);
     return 1;
@@ -34,9 +37,11 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
   // Wait for the window to load
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  const testWindow = remote.BrowserWindow.getAllWindows().find(browserWindow => {
-    return !initialWindows.includes(browserWindow);
-  });
+  const testWindow = remote.BrowserWindow
+    .getAllWindows()
+    .find(browserWindow => {
+      return !initialWindows.includes(browserWindow);
+    });
 
   if (testWindow == null) {
     console.error('Could not find spec browser window.');
@@ -52,4 +57,4 @@ export default async function runCommand(args: Array<string>): Promise<ExitCode>
   });
 
   return 0;
-}
+});

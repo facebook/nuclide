@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import typeof * as ClangProcessService from './ClangProcessService';
 import type {
   ClangCompileResult,
@@ -20,10 +21,9 @@ import type {
 } from './rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
-import {keyMirror} from '../../commons-node/collection';
+import {keyMirror} from 'nuclide-commons/collection';
 import {Observable} from 'rxjs';
-import {checkOutput} from '../../commons-node/process';
-import ClangServer from './ClangServer';
+import {runCommand} from 'nuclide-commons/process';
 import ClangServerManager from './ClangServerManager';
 
 const serverManager = new ClangServerManager();
@@ -86,16 +86,22 @@ async function getClangService(
   defaultFlags: ?Array<string>,
   blocking?: boolean,
 ): Promise<?ClangProcessService> {
-  const server = await serverManager.getClangServer(src, contents, compilationDBFile, defaultFlags);
-  if (server == null) {
-    return null;
-  }
-  if (server.getStatus() !== ClangServer.Status.READY) {
+  const server = serverManager.getClangServer(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+  );
+  if (!server.isReady()) {
     if (blocking) {
       await server.waitForReady();
     } else {
       return null;
     }
+  }
+  // It's possible that the server got disposed while waiting.
+  if (server.isDisposed()) {
+    return null;
   }
   return server.getService();
 }
@@ -113,14 +119,14 @@ export function compile(
 ): ConnectableObservable<?ClangCompileResult> {
   const doCompile = async () => {
     // Note: restarts the server if the flags changed.
-    const server = await serverManager.getClangServer(
+    const server = serverManager.getClangServer(
       src,
       contents,
       compilationDBFile,
       defaultFlags,
       true,
     );
-    if (server != null) {
+    if (!server.isDisposed()) {
       return server.compile(contents);
     }
   };
@@ -137,7 +143,12 @@ export async function getCompletions(
   compilationDBFile: ?NuclideUri,
   defaultFlags?: ?Array<string>,
 ): Promise<?Array<ClangCompletion>> {
-  const service = await getClangService(src, contents, compilationDBFile, defaultFlags);
+  const service = await getClangService(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+  );
   if (service != null) {
     return service.get_completions(
       contents,
@@ -157,13 +168,14 @@ export async function getDeclaration(
   compilationDBFile: ?NuclideUri,
   defaultFlags?: ?Array<string>,
 ): Promise<?ClangDeclaration> {
-  const service = await getClangService(src, contents, compilationDBFile, defaultFlags);
+  const service = await getClangService(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+  );
   if (service != null) {
-    return service.get_declaration(
-      contents,
-      line,
-      column,
-    );
+    return service.get_declaration(contents, line, column);
   }
 }
 
@@ -178,13 +190,14 @@ export async function getDeclarationInfo(
   compilationDBFile: ?NuclideUri,
   defaultFlags: ?Array<string>,
 ): Promise<?Array<ClangCursor>> {
-  const service = await getClangService(src, contents, compilationDBFile, defaultFlags);
+  const service = await getClangService(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+  );
   if (service != null) {
-    return service.get_declaration_info(
-      contents,
-      line,
-      column,
-    );
+    return service.get_declaration_info(contents, line, column);
   }
 }
 
@@ -192,7 +205,9 @@ export async function getRelatedSourceOrHeader(
   src: NuclideUri,
   compilationDBFile: ?NuclideUri,
 ): Promise<?NuclideUri> {
-  return serverManager.getClangFlagsManager().getRelatedSrcFileForHeader(src, compilationDBFile);
+  return serverManager
+    .getClangFlagsManager()
+    .getRelatedSrcFileForHeader(src, compilationDBFile);
 }
 
 export async function getOutline(
@@ -201,7 +216,13 @@ export async function getOutline(
   compilationDBFile: ?NuclideUri,
   defaultFlags: ?Array<string>,
 ): Promise<?Array<ClangOutlineTree>> {
-  const service = await getClangService(src, contents, compilationDBFile, defaultFlags, true);
+  const service = await getClangService(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+    true,
+  );
   if (service != null) {
     return service.get_outline(contents);
   }
@@ -215,7 +236,13 @@ export async function getLocalReferences(
   compilationDBFile: ?NuclideUri,
   defaultFlags: ?Array<string>,
 ): Promise<?ClangLocalReferences> {
-  const service = await getClangService(src, contents, compilationDBFile, defaultFlags, true);
+  const service = await getClangService(
+    src,
+    contents,
+    compilationDBFile,
+    defaultFlags,
+    true,
+  );
   if (service != null) {
     return service.get_local_references(contents, line, column);
   }
@@ -228,18 +255,16 @@ export async function formatCode(
   offset?: number,
   length?: number,
 ): Promise<{newCursor: number, formatted: string}> {
-  const args = [
-    '-style=file',
-    `-assume-filename=${src}`,
-    `-cursor=${cursor}`,
-  ];
+  const args = ['-style=file', `-assume-filename=${src}`, `-cursor=${cursor}`];
   if (offset != null) {
     args.push(`-offset=${offset}`);
   }
   if (length != null) {
     args.push(`-length=${length}`);
   }
-  const {stdout} = await checkOutput('clang-format', args, {stdin: contents});
+  const stdout = await runCommand('clang-format', args, {
+    input: contents,
+  }).toPromise();
 
   // The first line is a JSON blob indicating the new cursor position.
   const newLine = stdout.indexOf('\n');

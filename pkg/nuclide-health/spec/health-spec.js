@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 
 const openHealthPane = () => {
@@ -32,24 +33,43 @@ function findHealthPaneAndItem(): {pane: ?atom$Pane, item: ?Object} {
 
 describe('Health', () => {
   beforeEach(() => {
-    waitsForPromise({label: 'workspace views to load', timeout: 10000}, async () => {
-      jasmine.unspy(window, 'setTimeout');
-      const WORKSPACE_VIEW_DIRS = [
-        nuclideUri.dirname(require.resolve('../../nuclide-workspace-views/package.json')),
-        nuclideUri.dirname(require.resolve('../../nuclide-workspace-view-locations/package.json')),
-      ];
-      await Promise.all([
-        ...WORKSPACE_VIEW_DIRS.map(dir => atom.packages.activatePackage(dir)),
-        atom.packages.activatePackage(nuclideUri.join(__dirname, '..')),
-      ]);
-    });
+    waitsForPromise(
+      {label: 'workspace views to load', timeout: 10000},
+      async () => {
+        jasmine.unspy(window, 'setTimeout');
+        const WORKSPACE_VIEW_DIRS = [
+          nuclideUri.dirname(
+            require.resolve('../../nuclide-workspace-views/package.json'),
+          ),
+          nuclideUri.dirname(
+            require.resolve(
+              '../../nuclide-workspace-view-locations/package.json',
+            ),
+          ),
+        ];
+        await Promise.all([
+          ...WORKSPACE_VIEW_DIRS.map(dir => atom.packages.activatePackage(dir)),
+          atom.packages.activatePackage(nuclideUri.join(__dirname, '..')),
+        ]);
+      },
+    );
   });
 
   it('contains stats after its first refresh', () => {
     let element;
+    let pane;
+    let item;
     runs(() => {
       openHealthPane();
-      const {item} = findHealthPaneAndItem();
+      waits(2000);
+    });
+    waitsFor(() => {
+      const {pane: pane_, item: item_} = findHealthPaneAndItem();
+      pane = pane_;
+      item = item_;
+      return item != null && pane != null;
+    }, 500);
+    runs(() => {
       invariant(item != null);
       expect(item.getTitle()).toEqual('Health');
       element = atom.views.getView(item);
@@ -66,12 +86,24 @@ describe('Health', () => {
   });
 
   it('disappears when closed', () => {
-    openHealthPane();
-    const {pane, item} = findHealthPaneAndItem();
-    invariant(item != null);
-    invariant(pane != null);
-    pane.activateItem(item);
-    atom.commands.dispatch(atom.views.getView(atom.workspace), 'core:close');
-    expect(findHealthPaneAndItem().item).toBeFalsy();
+    runs(() => {
+      openHealthPane();
+    });
+    let pane;
+    let item;
+    waitsFor(() => {
+      const {pane: pane_, item: item_} = findHealthPaneAndItem();
+      pane = pane_;
+      item = item_;
+      return item != null && pane != null;
+    }, 500);
+    runs(() => {
+      invariant(pane != null);
+      invariant(item != null);
+      pane.activateItem(item);
+      atom.commands.dispatch(atom.views.getView(atom.workspace), 'core:close');
+      waits(500);
+      expect(findHealthPaneAndItem().item).toBeFalsy();
+    });
   });
 });

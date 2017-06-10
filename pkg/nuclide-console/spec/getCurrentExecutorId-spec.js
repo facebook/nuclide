@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Executor} from '../lib/types';
@@ -16,9 +17,7 @@ import {Observable} from 'rxjs';
 const baseAppState = {
   currentExecutorId: 'a',
   maxMessageCount: Number.POSITIVE_INFINITY,
-  executors: new Map([[
-    'a', createDummyExecutor('a'),
-  ]]),
+  executors: new Map([['a', createDummyExecutor('a')]]),
   providers: new Map(),
   providerStatuses: new Map(),
   records: [],
@@ -38,7 +37,6 @@ describe('getCurrentExecutorId', () => {
     expect(getCurrentExecutorId(appState)).toBe('a');
   });
 });
-
 
 function createDummyExecutor(id: string): Executor {
   return {

@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {getCategoryLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
 const DEBUGGER_LOGGER_CATEGORY = 'nuclide-debugger-node-rpc';
-export default getCategoryLogger(DEBUGGER_LOGGER_CATEGORY);
+export default getLogger(DEBUGGER_LOGGER_CATEGORY);

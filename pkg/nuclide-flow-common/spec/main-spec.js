@@ -6,11 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {JAVASCRIPT_WORD_REGEX, filterResultsByPrefix, shouldFilter} from '..';
 
-import type {Completion} from '../../nuclide-language-service/lib/LanguageService';
+import type {
+  Completion,
+} from '../../nuclide-language-service/lib/LanguageService';
 
 describe('JAVASCRIPT_WORD_REGEX', () => {
   // For brevity in specs.
@@ -37,7 +40,9 @@ describe('JAVASCRIPT_WORD_REGEX', () => {
       // For brevity.
       const d = delimiter;
       it('should match a simple string', () => {
-        expect(matches(`${d}asdf asdf${d} identifier ${d}another string${d}`)).toEqual([
+        expect(
+          matches(`${d}asdf asdf${d} identifier ${d}another string${d}`),
+        ).toEqual([
           `${d}asdf asdf${d}`,
           'identifier',
           `${d}another string${d}`,
@@ -81,25 +86,39 @@ describe('shouldFilter', () => {
   });
 
   it('should filter when the prefix is one character longer and a valid identifier', () => {
-    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfg'), 1)).toBe(true);
-    expect(shouldFilter(fakeRequest('_9asdf'), fakeRequest('_9asdf$'), 1)).toBe(true);
+    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfg'), 1)).toBe(
+      true,
+    );
+    expect(shouldFilter(fakeRequest('_9asdf'), fakeRequest('_9asdf$'), 1)).toBe(
+      true,
+    );
   });
 
   it("should not filter if the current prefix doesn't start with the last prefix", () => {
-    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('bsdfg'), 1)).toBe(false);
+    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('bsdfg'), 1)).toBe(
+      false,
+    );
   });
 
   it('should not filter if the prefix is not a valid identifier', () => {
-    expect(shouldFilter(fakeRequest('a-df'), fakeRequest('a-dfg'), 1)).toBe(false);
-    expect(shouldFilter(fakeRequest('9asdf'), fakeRequest('9asdfg'), 1)).toBe(false);
+    expect(shouldFilter(fakeRequest('a-df'), fakeRequest('a-dfg'), 1)).toBe(
+      false,
+    );
+    expect(shouldFilter(fakeRequest('9asdf'), fakeRequest('9asdfg'), 1)).toBe(
+      false,
+    );
   });
 
   it('should filter if the current prefix is more than one character longer', () => {
-    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfgh'), 2)).toBe(true);
+    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfgh'), 2)).toBe(
+      true,
+    );
   });
 
   it('should not filter if number of chars typed does not match prefix length difference', () => {
-    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfgh'), 3)).toBe(false);
+    expect(shouldFilter(fakeRequest('asdf'), fakeRequest('asdfgh'), 3)).toBe(
+      false,
+    );
   });
 
   // If autocomplete is activated manually (ctrl+space), you can get a blank prefix for the first
@@ -122,16 +141,24 @@ describe('updateResults', () => {
       'BigLongNameTwo',
       'BigLongNameOne',
     ];
-    resultsToUpdate = resultNames.map(name => ({displayText: name, type: 'foo'}));
+    resultsToUpdate = resultNames.map(name => ({
+      displayText: name,
+      type: 'foo',
+    }));
   });
 
   function run() {
-    return filterResultsByPrefix(prefix, resultsToUpdate);
+    return filterResultsByPrefix(prefix, {
+      isIncomplete: false,
+      items: resultsToUpdate,
+    });
   }
 
   function getNames() {
     const results = run();
-    return results == null ? null : results.map(result => result.displayText);
+    return results == null
+      ? null
+      : results.items.map(result => result.displayText);
   }
 
   it('should not filter suggestions if the prefix is a .', () => {
@@ -147,10 +174,7 @@ describe('updateResults', () => {
 
   it('should filter suggestions by the prefix', () => {
     prefix = 'bln';
-    expect(getNames()).toEqual([
-      'BigLongNameTwo',
-      'BigLongNameOne',
-    ]);
+    expect(getNames()).toEqual(['BigLongNameTwo', 'BigLongNameOne']);
   });
 
   it('should not filter suggestions if the prefix is not a valid id', () => {
@@ -166,9 +190,6 @@ describe('updateResults', () => {
 
   it('should rank better matches higher', () => {
     prefix = 'one';
-    expect(getNames()).toEqual([
-      'BigLongNameOne',
-      'BigLongNameTwo',
-    ]);
+    expect(getNames()).toEqual(['BigLongNameOne', 'BigLongNameTwo']);
   });
 });

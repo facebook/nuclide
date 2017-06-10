@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {ShellMessageManager} from './ShellMessageManager';
@@ -23,8 +24,7 @@ export class ShellActivation {
     this._shellManager = null;
   }
 
-  dispose(): void {
-  }
+  dispose(): void {}
 
   _reload(): void {
     if (this._shellManager == null) {

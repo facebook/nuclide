@@ -96,8 +96,7 @@ Under the Project Explorer's **Source Control** tab, you can see if uncommitted 
 ### Context-Aware Menu
 
 A context-aware menu appears when you *right-click* in the explorer. This menu provides
-options such as adding new projects, searching within the project, opening the current file in
-[Diff View](/docs/features/hg/#diff-view) (assuming you are working in a [Mercurial](/docs/features/hg/) repository), etc.
+options such as adding new projects, searching within the project, etc.
 
 ![](/static/images/docs/editor-basics-explorer-context-aware.png)
 

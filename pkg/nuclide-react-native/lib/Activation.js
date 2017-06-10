@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {OutputService} from '../../nuclide-console/lib/types';
@@ -23,8 +24,8 @@ export default class Activation {
 
   constructor(state: ?Object) {
     this._disposables = new CompositeDisposable(
-      this._debuggingActivation = new DebuggingActivation(),
-      this._packagerActivation = new PackagerActivation(),
+      (this._debuggingActivation = new DebuggingActivation()),
+      (this._packagerActivation = new PackagerActivation()),
       new ShellActivation(),
     );
   }

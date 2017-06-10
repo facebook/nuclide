@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Task} from '../../commons-node/tasks';
@@ -13,11 +14,11 @@ import type {Directory} from '../../nuclide-remote-connection';
 import type {TaskMetadata} from '../../nuclide-task-runner/lib/types';
 
 import {Observable} from 'rxjs';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {observableFromSubscribeFunction} from '../../commons-node/event';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {taskFromObservable} from '../../commons-node/tasks';
-import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
-import {Icon} from '../../nuclide-ui/Icon';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {Icon} from 'nuclide-commons-ui/Icon';
 
 import {debug} from './HhvmDebug';
 import HhvmToolbar from './HhvmToolbar';
@@ -47,9 +48,7 @@ export default class HhvmBuildSystem {
         projectStore.onChange.bind(projectStore),
       );
       this._extraUi = bindObservableAsProps(
-        subscription
-          .startWith(null)
-          .mapTo({projectStore}),
+        subscription.startWith(null).mapTo({projectStore}),
         HhvmToolbar,
       );
     }
@@ -61,17 +60,20 @@ export default class HhvmBuildSystem {
   }
 
   getIcon(): ReactClass<any> {
-    return () => <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />;
+    return () => (
+      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />
+    );
   }
 
   runTask(taskName: string): Task {
     return taskFromObservable(
-      Observable.fromPromise(debug(
-        this._projectStore.getDebugMode(),
-        this._projectStore.getProjectRoot(),
-        this._projectStore.getDebugTarget(),
-      ))
-        .ignoreElements(),
+      Observable.fromPromise(
+        debug(
+          this._projectStore.getDebugMode(),
+          this._projectStore.getProjectRoot(),
+          this._projectStore.getDebugTarget(),
+        ),
+      ).ignoreElements(),
     );
   }
 
@@ -81,12 +83,16 @@ export default class HhvmBuildSystem {
   ): IDisposable {
     const path = projectRoot == null ? null : projectRoot.getPath();
 
-    const enabledObservable =
-      observableFromSubscribeFunction(this._projectStore.onChange.bind(this._projectStore))
-        .map(() => this._projectStore)
-        .filter(store => store.getProjectRoot() === path && store.isHHVMProject() !== null)
-        .map(store => store.isHHVMProject() === true)
-        .distinctUntilChanged();
+    const enabledObservable = observableFromSubscribeFunction(
+      this._projectStore.onChange.bind(this._projectStore),
+    )
+      .map(() => this._projectStore)
+      .filter(
+        store =>
+          store.getProjectRoot() === path && store.isHHVMProject() !== null,
+      )
+      .map(store => store.isHHVMProject() === true)
+      .distinctUntilChanged();
 
     const tasksObservable = Observable.of([
       {
@@ -98,8 +104,10 @@ export default class HhvmBuildSystem {
       },
     ]);
 
-    const subscription = Observable.combineLatest(enabledObservable, tasksObservable)
-      .subscribe(([enabled, tasks]) => callback(enabled, tasks));
+    const subscription = Observable.combineLatest(
+      enabledObservable,
+      tasksObservable,
+    ).subscribe(([enabled, tasks]) => callback(enabled, tasks));
 
     this._projectStore.setProjectRoot(path);
 

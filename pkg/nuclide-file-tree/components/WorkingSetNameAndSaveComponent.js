@@ -6,14 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
-import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 
 type Props = {
   isEditing: boolean,
@@ -42,11 +40,9 @@ export class WorkingSetNameAndSaveComponent extends React.Component {
     (this: any)._saveWorkingSet = this._saveWorkingSet.bind(this);
   }
 
-  componentDidMount(): void {
-  }
+  componentDidMount(): void {}
 
-  componentWillUnmount(): void {
-  }
+  componentWillUnmount(): void {}
 
   render() {
     let setNameText;
@@ -88,10 +84,9 @@ export class WorkingSetNameAndSaveComponent extends React.Component {
 
   _saveWorkingSet(): void {
     if (this.state.name === '') {
-      atom.notifications.addWarning(
-        'Name is missing',
-        {detail: 'Please provide a name for the Working Set'},
-      );
+      atom.notifications.addWarning('Name is missing', {
+        detail: 'Please provide a name for the Working Set',
+      });
       return;
     }
 

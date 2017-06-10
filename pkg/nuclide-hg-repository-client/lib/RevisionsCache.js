@@ -6,16 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  HgService,
-  RevisionInfo,
-} from '../../nuclide-hg-rpc/lib/HgService';
+import type {HgService, RevisionInfo} from '../../nuclide-hg-rpc/lib/HgService';
 
-import {arrayEqual} from '../../commons-node/collection';
+import {arrayEqual} from 'nuclide-commons/collection';
 import {BehaviorSubject, Observable, Subject, TimeoutError} from 'rxjs';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
 const FETCH_REVISIONS_DEBOUNCE_MS = 100;
 // The request timeout is 60 seconds anyways.
@@ -36,16 +34,14 @@ function isEqualRevisions(
   if (revisions1 == null || revisions2 == null) {
     return false;
   }
-  return arrayEqual(
-    revisions1,
-    revisions2,
-    (revision1, revision2) => {
-      return revision1.id === revision2.id &&
-        revision1.isHead === revision2.isHead &&
-        arrayEqual(revision1.tags, revision2.tags) &&
-        arrayEqual(revision1.bookmarks, revision2.bookmarks);
-    },
-  );
+  return arrayEqual(revisions1, revisions2, (revision1, revision2) => {
+    return (
+      revision1.id === revision2.id &&
+      revision1.isHead === revision2.isHead &&
+      arrayEqual(revision1.tags, revision2.tags) &&
+      arrayEqual(revision1.bookmarks, revision2.bookmarks)
+    );
+  });
 }
 
 export default class RevisionsCache {
@@ -68,7 +64,10 @@ export default class RevisionsCache {
         Observable.defer(() => this._fetchSmartlogRevisions())
           .retry(FETCH_REVISIONS_RETRY_COUNT)
           .catch(error => {
-            getLogger().error('RevisionsCache Error:', error);
+            getLogger('nuclide-hg-repository-client').error(
+              'RevisionsCache Error:',
+              error,
+            );
             return Observable.empty();
           }),
       )
@@ -78,7 +77,8 @@ export default class RevisionsCache {
   }
 
   _fetchSmartlogRevisions(): Observable<Array<RevisionInfo>> {
-    return this._hgService.fetchSmartlogRevisions()
+    return this._hgService
+      .fetchSmartlogRevisions()
       .refCount()
       .timeout(FETCH_REVISIONS_TIMEOUT_MS)
       .catch(err => {
@@ -98,7 +98,6 @@ export default class RevisionsCache {
   }
 
   observeRevisionChanges(): Observable<Array<RevisionInfo>> {
-    return this._lazyRevisionFetcher
-      .startWith(this.getCachedRevisions());
+    return this._lazyRevisionFetcher.startWith(this.getCachedRevisions());
   }
 }

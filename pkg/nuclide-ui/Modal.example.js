@@ -6,12 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Button} from './Button';
+import {Button} from 'nuclide-commons-ui/Button';
 import {Modal} from './Modal';
-
 
 class ModalExample extends React.Component {
   state: {isModalShown: boolean};
@@ -34,12 +34,10 @@ class ModalExample extends React.Component {
   render(): React.Element<any> {
     const {isModalShown} = this.state;
     const modal = isModalShown
-      ? (
-        <Modal onDismiss={this._hideModal}>
+      ? <Modal onDismiss={this._hideModal}>
           <div>I'm a modal. You can add any content you like.</div>
           <Button onClick={this._hideModal}>hide modal</Button>
         </Modal>
-      )
       : null;
     return (
       <div>

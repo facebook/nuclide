@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -26,12 +27,17 @@ describe('Blame context menu integration test', () => {
       // Add this directory as a new project in atom.
       atom.project.setPaths([repoPath]);
       // Check that context menu has 'toggle blame'
-      const inMenu = atom.contextMenu.itemSets.some(itemSet => itemSet.items.some(
-        item => item.label === 'Source Control'
-          // $FlowFixMe properly type this
-          && item.submenu.some(submenuItem =>
-            submenuItem.command === 'nuclide-blame:toggle-blame'),
-      ));
+      const inMenu = atom.contextMenu.itemSets.some(itemSet =>
+        itemSet.items.some(
+          item =>
+            item.label === 'Source Control' &&
+            // $FlowFixMe properly type this
+            item.submenu.some(
+              submenuItem =>
+                submenuItem.command === 'nuclide-blame:toggle-blame',
+            ),
+        ),
+      );
       expect(inMenu).toBe(true);
       deactivateAllPackages();
     });

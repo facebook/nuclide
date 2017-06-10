@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LRUCache} from 'lru-cache';
@@ -13,10 +14,10 @@ import type {LRUCache} from 'lru-cache';
 import LRU from 'lru-cache';
 import {CompositeDisposable} from 'event-kit';
 
-import nuclideUri from '../../commons-node/nuclideUri';
-import which from '../../commons-node/which';
-import {checkOutput} from '../../commons-node/process';
-import {ConfigCache} from '../../commons-node/ConfigCache';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import which from 'nuclide-commons/which';
+import {runCommand} from 'nuclide-commons/process';
+import {ConfigCache} from 'nuclide-commons/ConfigCache';
 
 const FLOW_BIN_PATH = 'node_modules/.bin/flow';
 
@@ -73,6 +74,11 @@ export class FlowExecInfoContainer {
     return this._flowExecInfoCache.get(root);
   }
 
+  reallyGetFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
+    this._flowExecInfoCache.del(root);
+    return this.getFlowExecInfo(root);
+  }
+
   async _computeFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
     const flowPath = await this._getPathToFlow(root);
     if (flowPath == null) {
@@ -93,7 +99,7 @@ export class FlowExecInfoContainer {
   // found.
   async _getPathToFlow(root: string | null): Promise<?string> {
     const flowBinPath = await this._getFlowBinPath(root);
-    if (flowBinPath != null && await canFindFlow(flowBinPath)) {
+    if (flowBinPath != null && (await canFindFlow(flowBinPath))) {
       return flowBinPath;
     }
 
@@ -146,10 +152,13 @@ export class FlowExecInfoContainer {
           this._pathToFlow = path;
           this._flowExecInfoCache.reset();
         }),
-        atom.config.observe('nuclide.nuclide-flow.canUseFlowBin', canUseFlowBin => {
-          this._canUseFlowBin = canUseFlowBin;
-          this._flowExecInfoCache.reset();
-        }),
+        atom.config.observe(
+          'nuclide.nuclide-flow.canUseFlowBin',
+          canUseFlowBin => {
+            this._canUseFlowBin = canUseFlowBin;
+            this._flowExecInfoCache.reset();
+          },
+        ),
       );
     }
   }
@@ -160,12 +169,12 @@ async function getFlowVersionInformation(
   root: string | null,
 ): Promise<?{flowVersion: string, pathToFlow: string}> {
   try {
-    const result = await checkOutput(
+    const result = await runCommand(
       flowPath,
       ['version', '--json'],
       root != null ? {cwd: root} : undefined,
-    );
-    const json = JSON.parse(result.stdout);
+    ).toPromise();
+    const json = JSON.parse(result);
     return {
       flowVersion: json.semver,
       pathToFlow: json.binary,
@@ -182,11 +191,11 @@ async function canFindFlow(flowPath: string): Promise<boolean> {
     const dirPath = nuclideUri.dirname(flowPath);
     if (dirPath != null && dirPath !== '' && dirPath !== '.') {
       const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(flowPath)}`;
-      return await which(whichPath) != null;
+      return (await which(whichPath)) != null;
     }
   }
 
-  return await which(flowPath) != null;
+  return (await which(flowPath)) != null;
 }
 
 // `string | null` forces the presence of an explicit argument (`?string` allows undefined which

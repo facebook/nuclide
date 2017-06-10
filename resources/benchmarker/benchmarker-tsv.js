@@ -6,13 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 
 // For the purposes of the benchmarker, a TSV file always has a column heading row at the top.
 
-function writeTsv(location: string, columns: Array<string>, record: ?Object): void {
+function writeTsv(
+  location: string,
+  columns: Array<string>,
+  record: ?Object,
+): void {
   const file = fs.openSync(location, 'a');
   if (record) {
     // $FlowFixMe: Bad upstream definition
@@ -24,12 +29,18 @@ function writeTsv(location: string, columns: Array<string>, record: ?Object): vo
   fs.closeSync(file);
 }
 
-function writeAllTsv(location: string, columns: Array<string>, records: Array<Object>): void {
+function writeAllTsv(
+  location: string,
+  columns: Array<string>,
+  records: Array<Object>,
+): void {
   writeTsv(location, columns);
   records.forEach(record => writeTsv(location, columns, record));
 }
 
-function readAllTsv(location: string): {columns: Array<string>, records: Array<Object>} {
+function readAllTsv(
+  location: string,
+): {columns: Array<string>, records: Array<Object>} {
   let columns = [];
   const records = [];
   fs.readFileSync(location, 'utf8').split('\n').forEach((row, r) => {

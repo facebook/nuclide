@@ -18,7 +18,8 @@ const os = require('os');
 
 const eslintGlobUtil = require('eslint/lib/util/glob-util');
 
-const numWorkers = Math.max(os.cpus().length - 1, 1);
+// At least one worker, but no more than 6.
+const numWorkers = Math.max(Math.min(os.cpus().length - 1, 6), 1);
 
 const files = eslintGlobUtil
   .listFilesToProcess(['**/*.js'])
@@ -36,12 +37,36 @@ let exitCode;
 while (chunks.length) {
   const chunk = chunks.shift();
   const ps = child_process.spawn(
-    'node_modules/.bin/eslint',
+    process.execPath,
     [
+      '--eval',
+      `
+      (function retry(retries) {
+        try {
+          require('./node_modules/.bin/eslint');
+        } catch (err) {
+          if (--retries && Array.isArray(err) && err[2] instanceof Error) {
+            console.error('**ESLint flow-parser mystery v8 bug... retrying**');
+            console.error(require('util').inspect(err));
+            // Reset the module cache because ESLint is stateful
+            Object.keys(require.cache)
+              .filter(x => x.includes('/node_modules/'))
+              .forEach(x => { delete require.cache[x]; });
+            retry(retries);
+          } else {
+            throw err;
+          }
+        }
+      })(3);
+      `,
+      '--',
+      '',
+      '--format', 'codeframe',
       '--max-warnings', '0',
       '--',
       ...chunk,
-    ]
+    ],
+    {encoding: 'utf8'}
   )
   .once('exit', code => {
     stdOut += out;
@@ -58,9 +83,16 @@ while (chunks.length) {
 }
 
 process.once('beforeExit', code => {
-  if (!code && exitCode) { process.exitCode = exitCode; }
-  if (stdOut) { console.log(stdOut); }
-  if (stdErr) { console.error(stdErr); }
+  if (!code && exitCode) {
+    process.exitCode = exitCode;
+    console.error('ESLint exit code %s', exitCode);
+  }
+  if (stdOut) {
+    console.log(stdOut);
+  }
+  if (stdErr) {
+    console.error(stdErr);
+  }
 });
 
 function bucketize(arr, num) {

@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {addMatchers} from '../../nuclide-test-helpers';
 
 import ClangServer from '../lib/ClangServer';
@@ -26,16 +27,19 @@ describe('ClangServer', () => {
 
   it('can return outline data', () => {
     waitsForPromise(async () => {
-      const serverArgs = await findClangServerArgs();
-      const server = new ClangServer(TEST_FILE, serverArgs, {
-        flags: ['-x', 'c++'],
-        usesDefaultFlags: false,
-        flagsFile: null,
-      });
-      const service = await server.getService();
-      const response = await service.get_outline(
+      const serverArgs = findClangServerArgs();
+      const server = new ClangServer(
+        TEST_FILE,
         FILE_CONTENTS,
+        serverArgs,
+        Promise.resolve({
+          flags: ['-x', 'c++'],
+          usesDefaultFlags: false,
+          flagsFile: null,
+        }),
       );
+      const service = await server.getService();
+      const response = await service.get_outline(FILE_CONTENTS);
       invariant(response != null);
       expect(response).diffJson([
         {
@@ -108,12 +112,8 @@ describe('ClangServer', () => {
                       row: 6,
                     },
                   },
-                  params: [
-                    'const int',
-                    'param',
-                  ],
-                  tparams: [
-                  ],
+                  params: ['const int', 'param'],
+                  tparams: [],
                 },
                 {
                   cursor_kind: 'PRAGMA_MARK',
@@ -146,12 +146,8 @@ describe('ClangServer', () => {
               row: 14,
             },
           },
-          params: [
-            'x',
-          ],
-          tparams: [
-            'T',
-          ],
+          params: ['x'],
+          tparams: ['T'],
         },
         {
           cursor_kind: 'CLASS_DECL',
@@ -180,12 +176,8 @@ describe('ClangServer', () => {
                   row: 19,
                 },
               },
-              params: [
-                'param',
-              ],
-              tparams: [
-                'T',
-              ],
+              params: ['param'],
+              tparams: ['T'],
             },
             {
               cursor_kind: 'PRAGMA_MARK',
@@ -214,10 +206,8 @@ describe('ClangServer', () => {
                   row: 21,
                 },
               },
-              params: [
-              ],
-              tparams: [
-              ],
+              params: [],
+              tparams: [],
             },
             {
               extent: {
@@ -264,10 +254,8 @@ describe('ClangServer', () => {
               row: 28,
             },
           },
-          params: [
-          ],
-          tparams: [
-          ],
+          params: [],
+          tparams: [],
         },
         {
           cursor_kind: 'PRAGMA_MARK',
@@ -296,8 +284,7 @@ describe('ClangServer', () => {
               row: 32,
             },
           },
-          children: [
-          ],
+          children: [],
         },
         {
           cursor_kind: 'ENUM_DECL',
@@ -356,10 +343,7 @@ describe('ClangServer', () => {
             },
           },
           name: 'TEST_F',
-          params: [
-            'a',
-            'b',
-          ],
+          params: ['a', 'b'],
         },
         {
           cursor_kind: 'PRAGMA_MARK',

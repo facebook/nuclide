@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TypeHintProvider} from './types';
@@ -16,10 +17,7 @@ import type {
 import type TypeHintManagerType from './TypeHintManager';
 
 import invariant from 'assert';
-import {
-  CompositeDisposable,
-  Disposable,
-} from 'atom';
+import {CompositeDisposable, Disposable} from 'atom';
 import TypeHintManager from './TypeHintManager';
 
 const PACKAGE_NAME = 'nuclide-type-hint';
@@ -70,7 +68,9 @@ export function activate(state: ?any): void {
   activation = new Activation(state);
 }
 
-export function consumeTypehintProvider(provider: TypeHintProvider): IDisposable {
+export function consumeTypehintProvider(
+  provider: TypeHintProvider,
+): IDisposable {
   invariant(activation);
   return activation.consumeTypehintProvider(provider);
 }

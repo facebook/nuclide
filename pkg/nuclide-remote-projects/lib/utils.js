@@ -6,15 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   RemoteConnectionConfiguration,
 } from '../../nuclide-remote-connection/lib/RemoteConnection';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 const NUCLIDE_PROTOCOL_PREFIX = 'nuclide:/';
 const NUCLIDE_PROTOCOL_PREFIX_WIN = 'nuclide:\\';
@@ -41,22 +42,29 @@ export function sanitizeNuclideUri(uri_: string): string {
     uri = uri.substring(protocolIndex);
   }
   // Add the missing slash, if removed through a path.normalize() call.
-  if (uri.startsWith(NUCLIDE_PROTOCOL_PREFIX) &&
-      uri[NUCLIDE_PROTOCOL_PREFIX_LENGTH] !== '/' /* protocol missing last slash */) {
-    uri = uri.substring(0, NUCLIDE_PROTOCOL_PREFIX_LENGTH) +
-        '/' + uri.substring(NUCLIDE_PROTOCOL_PREFIX_LENGTH);
+  if (
+    uri.startsWith(NUCLIDE_PROTOCOL_PREFIX) &&
+    uri[NUCLIDE_PROTOCOL_PREFIX_LENGTH] !==
+      '/' /* protocol missing last slash */
+  ) {
+    uri =
+      uri.substring(0, NUCLIDE_PROTOCOL_PREFIX_LENGTH) +
+      '/' +
+      uri.substring(NUCLIDE_PROTOCOL_PREFIX_LENGTH);
   }
 
   // On Windows path normalization converts all of the '/' chars to '\'
   // we need to revert that
   if (uri.startsWith(NUCLIDE_PROTOCOL_PREFIX_WIN)) {
-    uri = NUCLIDE_PROTOCOL_PREFIX + '/' +
+    uri =
+      NUCLIDE_PROTOCOL_PREFIX +
+      '/' +
       uri.substring(NUCLIDE_PROTOCOL_PREFIX_LENGTH).replace(/\\/g, '/');
   }
   return uri;
 }
 
-export function *getOpenFileEditorForRemoteProject(
+export function* getOpenFileEditorForRemoteProject(
   connectionConfig: RemoteConnectionConfiguration,
 ): Iterator<OpenFileEditorInstance> {
   for (const pane of atom.workspace.getPanes()) {

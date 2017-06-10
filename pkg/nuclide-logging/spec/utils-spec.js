@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {
@@ -30,10 +31,7 @@ function createLoggingEvent(...args: Array<any>): LoggingEvent {
     logger: {
       category: 'arsenal',
       _events: {
-        log: [
-          null,
-          null,
-        ],
+        log: [null, null],
       },
     },
   };
@@ -50,33 +48,46 @@ describe('Logview Appender Utils.', () => {
     expect(loggingEventWithError.data[0] instanceof Error).toBe(true);
     expect(loggingEventWithError.data[0]).toBe(error);
 
-    const patchedLoggingEventWithError = patchErrorsOfLoggingEvent(loggingEventWithError);
+    const patchedLoggingEventWithError = patchErrorsOfLoggingEvent(
+      loggingEventWithError,
+    );
     expect(patchedLoggingEventWithError.data[0] instanceof Error).toBe(false);
     expect(typeof patchedLoggingEventWithError.data[0].stack).toBe('string');
-    expect(patchedLoggingEventWithError.data[0].stackTrace instanceof Array).toBe(true);
+    expect(
+      patchedLoggingEventWithError.data[0].stackTrace instanceof Array,
+    ).toBe(true);
   });
 
   it('addes error if no error exists in loggingEvent.data', () => {
     const loggingEventWithoutError = createLoggingEvent();
     expect(loggingEventWithoutError.data.length).toBe(0);
-    const patchedLoggingEventWithoutError = patchErrorsOfLoggingEvent(loggingEventWithoutError);
+    const patchedLoggingEventWithoutError = patchErrorsOfLoggingEvent(
+      loggingEventWithoutError,
+    );
     expect(typeof patchedLoggingEventWithoutError.data[0].stack).toBe('string');
   });
 
   it('Test serialization/deserialization utils.', () => {
-    const loggingEvent = patchErrorsOfLoggingEvent(createLoggingEvent(new Error('123')));
+    const loggingEvent = patchErrorsOfLoggingEvent(
+      createLoggingEvent(new Error('123')),
+    );
 
     const serialization = serializeLoggingEvent(loggingEvent);
     expect(typeof serialization === 'string').toBe(true);
 
     const deserialization = deserializeLoggingEvent(serialization);
-    expect(deserialization.startTime.toString()).toEqual(loggingEvent.startTime.toString());
+    expect(deserialization.startTime.toString()).toEqual(
+      loggingEvent.startTime.toString(),
+    );
     expect(deserialization.categoryName).toEqual(loggingEvent.categoryName);
-    expect(JSON.stringify(deserialization.level))
-        .toEqual(JSON.stringify(loggingEvent.level));
-    expect(JSON.stringify(deserialization.logger))
-        .toEqual(JSON.stringify(loggingEvent.logger));
-    expect(JSON.stringify(deserialization.data[0]))
-        .toEqual(JSON.stringify(loggingEvent.data[0]));
+    expect(JSON.stringify(deserialization.level)).toEqual(
+      JSON.stringify(loggingEvent.level),
+    );
+    expect(JSON.stringify(deserialization.logger)).toEqual(
+      JSON.stringify(loggingEvent.logger),
+    );
+    expect(JSON.stringify(deserialization.data[0])).toEqual(
+      JSON.stringify(loggingEvent.data[0]),
+    );
   });
 });

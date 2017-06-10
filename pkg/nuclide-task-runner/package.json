@@ -32,6 +32,11 @@
       "versions": {
         "0.0.0": "consumeCurrentWorkingDirectory"
       }
+    },
+    "nuclide-console": {
+      "versions": {
+        "0.0.0": "consumeConsole"
+      }
     }
   },
   "activationCommands": {}

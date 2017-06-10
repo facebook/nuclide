@@ -6,7 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {Message} from 'nuclide-commons/process';
 
 import {taskFromObservable, observableFromTask} from '../tasks';
 import invariant from 'assert';
@@ -70,6 +73,18 @@ describe('commons-node/tasks', () => {
       expect(task.cancel).not.toHaveBeenCalled();
     });
 
+    it('includes emitted message events', () => {
+      const task = createMockTask();
+      const observable = observableFromTask(task);
+      const handler = jasmine.createSpy();
+      observable.subscribe(handler);
+      task._message({text: 'hello', level: 'warning'});
+      expect(handler).toHaveBeenCalledWith({
+        type: 'message',
+        message: {text: 'hello', level: 'warning'},
+      });
+    });
+
     it('includes emitted progress events', () => {
       const task = createMockTask();
       const observable = observableFromTask(task);
@@ -77,6 +92,27 @@ describe('commons-node/tasks', () => {
       observable.subscribe(handler);
       task._progress(0.5);
       expect(handler).toHaveBeenCalledWith({type: 'progress', progress: 0.5});
+    });
+
+    it('includes emitted result events', () => {
+      const task = createMockTask();
+      const observable = observableFromTask(task);
+      const handler = jasmine.createSpy();
+      observable.subscribe(handler);
+      task._result(42);
+      expect(handler).toHaveBeenCalledWith({type: 'result', result: 42});
+    });
+
+    it('includes emitted status events', () => {
+      const task = createMockTask();
+      const observable = observableFromTask(task);
+      const handler = jasmine.createSpy();
+      observable.subscribe(handler);
+      task._status('fine and dandy');
+      expect(handler).toHaveBeenCalledWith({
+        type: 'status',
+        status: 'fine and dandy',
+      });
     });
   });
 
@@ -126,6 +162,21 @@ describe('commons-node/tasks', () => {
       expect(errored).toHaveBeenCalled();
     });
 
+    it('calls onMessage callbacks for message events', () => {
+      const observable = new Subject();
+      const task = taskFromObservable(observable);
+      const handler = jasmine.createSpy();
+      invariant(task.onMessage != null);
+      task.onMessage(handler);
+      task.start();
+      expect(handler).not.toHaveBeenCalled();
+      observable.next({
+        type: 'message',
+        message: {text: 'hello', level: 'warning'},
+      });
+      expect(handler).toHaveBeenCalledWith({text: 'hello', level: 'warning'});
+    });
+
     it('calls onProgress callbacks for progress events', () => {
       const observable = new Subject();
       const task = taskFromObservable(observable);
@@ -136,6 +187,30 @@ describe('commons-node/tasks', () => {
       expect(handler).not.toHaveBeenCalled();
       observable.next({type: 'progress', progress: 0.5});
       expect(handler).toHaveBeenCalledWith(0.5);
+    });
+
+    it('calls onResult callbacks for result events', () => {
+      const observable = new Subject();
+      const task = taskFromObservable(observable);
+      const handler = jasmine.createSpy();
+      invariant(task.onResult != null);
+      task.onResult(handler);
+      task.start();
+      expect(handler).not.toHaveBeenCalled();
+      observable.next({type: 'result', result: 42});
+      expect(handler).toHaveBeenCalledWith(42);
+    });
+
+    it('calls onStatusChange callbacks for status events', () => {
+      const observable = new Subject();
+      const task = taskFromObservable(observable);
+      const handler = jasmine.createSpy();
+      invariant(task.onStatusChange != null);
+      task.onStatusChange(handler);
+      task.start();
+      expect(handler).not.toHaveBeenCalled();
+      observable.next({type: 'status', status: 'fine and dandy'});
+      expect(handler).toHaveBeenCalledWith('fine and dandy');
     });
   });
 });
@@ -151,8 +226,17 @@ function createMockTask() {
     onDidError: (callback: (err: Error) => mixed): IDisposable => {
       return emitter.on('error', callback);
     },
+    onMessage: (callback: (message: Message) => mixed): IDisposable => {
+      return emitter.on('message', callback);
+    },
     onProgress: (callback: (progress: ?number) => mixed): IDisposable => {
       return emitter.on('progress', callback);
+    },
+    onResult: (callback: (result: mixed) => mixed): IDisposable => {
+      return emitter.on('result', callback);
+    },
+    onStatusChange: (callback: (status: string) => mixed): IDisposable => {
+      return emitter.on('status', callback);
     },
     _complete: (): void => {
       emitter.emit('complete');
@@ -160,8 +244,17 @@ function createMockTask() {
     _error: (err: Error): void => {
       emitter.emit('error', err);
     },
+    _message: (message: Message): void => {
+      emitter.emit('message', message);
+    },
     _progress: (progress: ?number): void => {
       emitter.emit('progress', progress);
+    },
+    _result: (result: number): void => {
+      emitter.emit('result', result);
+    },
+    _status: (status: string): void => {
+      emitter.emit('status', status);
     },
   };
   spyOn(task, 'start');

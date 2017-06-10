@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CtagsResult} from '../../nuclide-ctags-rpc';
-import type {goToLocation} from '../../commons-atom/go-to-location';
+import type {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 import invariant from 'assert';
 import {Range} from 'atom';
@@ -27,36 +28,41 @@ describe('HyperclickHelpers', () => {
 
   beforeEach(() => {
     // HACK: goToLocation is a getter. Not too easy to mock out :(
-    goToLocationSpy =
-      spyOn(require('../../commons-atom/go-to-location'), 'goToLocation')
-        .andCallThrough();
+    goToLocationSpy = spyOn(
+      require('nuclide-commons-atom/go-to-location'),
+      'goToLocation',
+    ).andCallThrough();
 
     // Mock the services we use.
-    spyOn(require('../../nuclide-remote-connection'), 'getCtagsServiceByNuclideUri')
-      .andCallFake(service => {
-        return {
-          getCtagsService() {
-            return {
-              async getTagsPath() {
-                return '/tags';
-              },
-              async findTags(path, query) {
-                return findTagsResult;
-              },
-              dispose() {},
-            };
-          },
-        };
-      });
+    spyOn(
+      require('../../nuclide-remote-connection'),
+      'getCtagsServiceByNuclideUri',
+    ).andCallFake(service => {
+      return {
+        getCtagsService() {
+          return {
+            async getTagsPath() {
+              return '/tags';
+            },
+            async findTags(path, query) {
+              return findTagsResult;
+            },
+            dispose() {},
+          };
+        },
+      };
+    });
 
-    spyOn(require('../../nuclide-remote-connection'), 'getFileSystemServiceByNuclideUri')
-      .andCallFake(service => {
-        return {
-          readFile() {
-            return new Buffer('function A\ntest\nclass A\n');
-          },
-        };
-      });
+    spyOn(
+      require('../../nuclide-remote-connection'),
+      'getFileSystemServiceByNuclideUri',
+    ).andCallFake(service => {
+      return {
+        readFile() {
+          return new Buffer('function A\ntest\nclass A\n');
+        },
+      };
+    });
   });
 
   it('works with multiple tag results', () => {
@@ -96,13 +102,19 @@ describe('HyperclickHelpers', () => {
 
       // Note the ordering (by matching path prefix).
       expect(result.callback instanceof Array).toBe(true);
-      expect(result.callback[0].title).toBe('function class.A (path1/path2/a.py)');
+      expect(result.callback[0].title).toBe(
+        'function class.A (path1/path2/a.py)',
+      );
       expect(result.callback[1].title).toBe('class A (path1/a)');
       expect(result.callback[2].title).toBe('test::A (test/a)');
 
       // Blindly use line numbers, if they're given.
       await result.callback[0].callback();
-      expect(goToLocationSpy).toHaveBeenCalledWith('/path1/path2/a.py', 1336, 0);
+      expect(goToLocationSpy).toHaveBeenCalledWith(
+        '/path1/path2/a.py',
+        1336,
+        0,
+      );
 
       // Find the line by pattern, in other cases.
       await result.callback[1].callback();

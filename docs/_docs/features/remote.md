@@ -24,20 +24,18 @@ remote projects to which Nuclide will connect.
 The remote machine must meet certain prerequisites before the
 [remote Nuclide server](#nuclide-server__setup) can be installed.
 
-<ul>
-<li>[Python](https://www.python.org/) 2.6 or later. In many cases, this will already be installed by
-default on your OS distribution.</li>
-<li id="node"></li>
-<li>`node` and `npm` must be in your `$PATH` environment variable.</li>
-<li>[Watchman](https://facebook.github.io/watchman). The Nuclide server
+- [Python](https://www.python.org/) 2.6 or later. In many cases, this will already be installed by
+default on your OS distribution.
+<ul><li class="node"></li></ul>
+- `node` and `npm` must be in your `$PATH` environment variable.
+- [Watchman](https://facebook.github.io/watchman). The Nuclide server
 requires Watchman to detect file and directory changes. Follow the Watchman
 [build or install instructions](http://facebook.github.io/watchman/docs/install.html#build-install)
-for your server's platform.</li>
-<li>SSH Daemon - The Nuclide client connects to the server via SSH, so ensure that the server exposes
-an SSH daemon that you can connect to from your client machine and that you know the required credentials. You will need to have an existing private key that can be used to connect to the server.</li>
-<li>Port 9090-9093 exposed.  *Note:* you can specify another port in the **Remote Server Command** box in
-the [Connection Dialog box](#remote-connection__connection-dialog-box).</li>
-</ul>
+for your server's platform.
+- SSH Daemon - The Nuclide client connects to the server via SSH, so ensure that the server exposes
+an SSH daemon that you can connect to from your client machine and that you know the required credentials. You will need to have an existing private key that can be used to connect to the server.
+- Port 9090-9093 exposed.  *Note:* you can specify another port in the **Remote Server Command** box in
+the [Connection Dialog box](#remote-connection__connection-dialog-box).
 
 ### Setup
 

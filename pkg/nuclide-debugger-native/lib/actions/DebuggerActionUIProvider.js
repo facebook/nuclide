@@ -6,19 +6,40 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DebuggerConfigAction} from '../../../nuclide-debugger-base';
 
 import React from 'react';
 import {LaunchAttachActions} from '../LaunchAttachActions';
 import {LaunchAttachStore} from '../LaunchAttachStore';
 
-import type EventEmitter from 'events';
+export class DebuggerActionUIProvider {
+  _targetUri: NuclideUri;
+  _name: string;
 
-export type DebuggerActionUIProvider = {
-  getComponent: (
+  constructor(name: string, targetUri: NuclideUri) {
+    this._name = name;
+    this._targetUri = targetUri;
+  }
+
+  getComponent(
     store: LaunchAttachStore,
     actions: LaunchAttachActions,
-    parentEventEmitter: EventEmitter) => React.Element<any>,
-  name: string,
-  isEnabled: () => Promise<boolean>,
-};
+    debuggerTypeName: string,
+    action: DebuggerConfigAction,
+    configIsValidChanged: (valid: boolean) => void,
+  ): React.Element<any> {
+    throw new Error('Abstract method.');
+  }
+
+  getName(): string {
+    return this._name;
+  }
+
+  isEnabled(action: DebuggerConfigAction): Promise<boolean> {
+    throw new Error('Abstract method.');
+  }
+}

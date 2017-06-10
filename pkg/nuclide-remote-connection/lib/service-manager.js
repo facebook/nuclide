@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Transport} from '../../nuclide-rpc';
 
 import {ServerConnection} from './ServerConnection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 import servicesConfig from '../../nuclide-server/lib/servicesConfig';
 import {
@@ -21,12 +22,8 @@ import {
   RpcConnection,
 } from '../../nuclide-rpc';
 import {isRunningInTest} from '../../commons-node/system-info';
-import {
-  getServerSideMarshalers,
-} from '../../nuclide-marshalers-common';
-import {
-  getAtomSideLoopbackMarshalers,
-} from '../../nuclide-marshalers-atom';
+import {getServerSideMarshalers} from '../../nuclide-marshalers-common';
+import {getAtomSideLoopbackMarshalers} from '../../nuclide-marshalers-atom';
 
 let localRpcClient: ?RpcConnection<Transport> = null;
 let knownLocalRpc = false;
@@ -37,12 +34,18 @@ function createLocalRpcClient(): RpcConnection<Transport> {
   const localTransports = new LoopbackTransports();
   const serviceRegistry = new ServiceRegistry(
     getServerSideMarshalers,
-    servicesConfig);
-  const localClientConnection
-    = RpcConnection.createServer(serviceRegistry, localTransports.serverTransport);
+    servicesConfig,
+  );
+  const localClientConnection = RpcConnection.createServer(
+    serviceRegistry,
+    localTransports.serverTransport,
+  );
   invariant(localClientConnection != null); // silence lint...
   return RpcConnection.createLocal(
-    localTransports.clientTransport, getAtomSideLoopbackMarshalers, servicesConfig);
+    localTransports.clientTransport,
+    getAtomSideLoopbackMarshalers,
+    servicesConfig,
+  );
 }
 
 export function setUseLocalRpc(value: boolean): void {
@@ -54,11 +57,16 @@ export function setUseLocalRpc(value: boolean): void {
 }
 
 export function getlocalService(serviceName: string): Object {
-  invariant(knownLocalRpc || isRunningInTest(), 'Must call setUseLocalRpc before getService');
+  invariant(
+    knownLocalRpc || isRunningInTest(),
+    'Must call setUseLocalRpc before getService',
+  );
   if (localRpcClient != null) {
     return localRpcClient.getService(serviceName);
   } else {
-    const [serviceConfig] = servicesConfig.filter(config => config.name === serviceName);
+    const [serviceConfig] = servicesConfig.filter(
+      config => config.name === serviceName,
+    );
     invariant(serviceConfig, `No config found for service ${serviceName}`);
     // $FlowIgnore
     return require(serviceConfig.implementation);
@@ -83,7 +91,10 @@ export function getServiceByNuclideUri(
  * Create or get cached service.
  * null connection implies get local service.
  */
-export function getServiceByConnection(serviceName: string, connection: ?ServerConnection): Object {
+export function getServiceByConnection(
+  serviceName: string,
+  connection: ?ServerConnection,
+): Object {
   if (connection == null) {
     return getlocalService(serviceName);
   } else {

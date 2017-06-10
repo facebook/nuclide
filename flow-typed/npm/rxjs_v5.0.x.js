@@ -1,5 +1,5 @@
-// flow-typed signature: 677aa2f2bb526291b874fc69ff0fae00
-// flow-typed version: 6194e56223/rxjs_v5.0.x/flow_>=v0.34.x
+// flow-typed signature: 57c1daa47facabc5218125d6f08c8ec7
+// flow-typed version: 59827f92f4/rxjs_v5.0.x/flow_>=v0.34.x
 
 // FIXME(samgoldman) Remove top-level interface once Babel supports
 // `declare interface` syntax.
@@ -40,6 +40,34 @@ type rxjs$EventListenerOptions = {
 } | boolean;
 
 declare class rxjs$Observable<+T> {
+  static bindCallback(callbackFunc: (callback: (_: void) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): () => rxjs$Observable<void>;
+  static bindCallback<U>(callbackFunc: (callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): () => rxjs$Observable<U>;
+  static bindCallback<T, U>(callbackFunc: (v1: T, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T) => rxjs$Observable<U>;
+  static bindCallback<T, T2, U>(callbackFunc: (v1: T, v2: T2, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, U>(callbackFunc: (v1: T, v2: T2, v3: T3, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, T5, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, T5, T6, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6, callback: (result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6) => rxjs$Observable<U>;
+  static bindCallback<U>(callbackFunc: (callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): () => rxjs$Observable<U>;
+  static bindCallback<T, U>(callbackFunc: (v1: T, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T) => rxjs$Observable<U>;
+  static bindCallback<T, T2, U>(callbackFunc: (v1: T, v2: T2, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, U>(callbackFunc: (v1: T, v2: T2, v3: T3, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, T5, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5) => rxjs$Observable<U>;
+  static bindCallback<T, T2, T3, T4, T5, T6, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6, callback: (...args: Array<any>) => any) => any, selector: (...args: Array<any>) => U, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6) => rxjs$Observable<U>;
+  static bindCallback<T>(callbackFunc: Function, selector?: void, scheduler?: rxjs$SchedulerClass): (...args: Array<any>) => rxjs$Observable<T>;
+  static bindCallback<T>(callbackFunc: Function, selector?: (...args: Array<any>) => T, scheduler?: rxjs$SchedulerClass): (...args: Array<any>) => rxjs$Observable<T>;
+
+  static bindNodeCallback<U>(callbackFunc: (callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): () => rxjs$Observable<U>;
+  static bindNodeCallback<T, U>(callbackFunc: (v1: T, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T) => rxjs$Observable<U>;
+  static bindNodeCallback<T, T2, U>(callbackFunc: (v1: T, v2: T2, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2) => rxjs$Observable<U>;
+  static bindNodeCallback<T, T2, T3, U>(callbackFunc: (v1: T, v2: T2, v3: T3, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3) => rxjs$Observable<U>;
+  static bindNodeCallback<T, T2, T3, T4, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4) => rxjs$Observable<U>;
+  static bindNodeCallback<T, T2, T3, T4, T5, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5) => rxjs$Observable<U>;
+  static bindNodeCallback<T, T2, T3, T4, T5, T6, U>(callbackFunc: (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6, callback: (err: any, result: U) => any) => any, selector?: void, scheduler?: rxjs$SchedulerClass): (v1: T, v2: T2, v3: T3, v4: T4, v5: T5, v6: T6) => rxjs$Observable<U>;
+  static bindNodeCallback<T>(callbackFunc: Function, selector?: void, scheduler?: rxjs$SchedulerClass): (...args: Array<any>) => rxjs$Observable<T>;
+  static bindNodeCallback<T>(callbackFunc: Function, selector?: (...args: Array<any>) => T, scheduler?: rxjs$SchedulerClass): (...args: Array<any>) => rxjs$Observable<T>;
+
   static concat(...sources: rxjs$Observable<T>[]): rxjs$Observable<T>;
 
   static create(
@@ -82,6 +110,8 @@ declare class rxjs$Observable<+T> {
 
   static interval(period: number): rxjs$Observable<number>;
 
+  static timer(initialDelay: (number | Date), period?: number, scheduler?: rxjs$SchedulerClass): rxjs$Observable<number>;
+
   static merge<T, U>(
     source0: rxjs$Observable<T>,
     source1: rxjs$Observable<U>,
@@ -103,6 +133,8 @@ declare class rxjs$Observable<+T> {
 
   race(other: rxjs$Observable<T>): rxjs$Observable<T>;
 
+  repeat(): rxjs$Observable<T>;
+
   buffer(bufferBoundaries: rxjs$Observable<any>): rxjs$Observable<Array<T>>;
 
   catch<U>(selector: (err: any, caught: rxjs$Observable<T>) => rxjs$Observable<U>): rxjs$Observable<U>;
@@ -115,9 +147,9 @@ declare class rxjs$Observable<+T> {
     f: (value: T) => rxjs$Observable<U> | Promise<U> | Iterable<U>
   ): rxjs$Observable<U>;
 
-  debounceTime(duration: number): rxjs$Observable<T>;
+  debounceTime(dueTime: number, scheduler?: rxjs$SchedulerClass): rxjs$Observable<T>;
 
-  delay(dueTime: number): rxjs$Observable<T>;
+  delay(dueTime: number, scheduler?: rxjs$SchedulerClass): rxjs$Observable<T>;
 
   distinctUntilChanged(compare?: (x: T, y: T) => boolean): rxjs$Observable<T>;
 
@@ -127,7 +159,7 @@ declare class rxjs$Observable<+T> {
 
   elementAt(index: number, defaultValue?: T): rxjs$Observable<T>;
 
-  filter(predicate: (value: T) => boolean): rxjs$Observable<T>;
+  filter(predicate: (value: T, index: number) => boolean, thisArg?: any): rxjs$Observable<T>;
 
   finally(f: () => mixed): rxjs$Observable<T>;
 
@@ -161,11 +193,23 @@ declare class rxjs$Observable<+T> {
 
   // Alias for `mergeMap`
   flatMap<U>(
-    project: (value: T) => rxjs$Observable<U> | Promise<U> | Iterable<U>
+    project: (value: T) => rxjs$Observable<U> | Promise<U> | Iterable<U>,
+    index?: number,
   ): rxjs$Observable<U>;
 
+  flatMapTo<U>(
+    innerObservable: rxjs$Observable<U>
+  ): rxjs$Observable<U>;
+
+  flatMapTo<U, V>(
+    innerObservable: rxjs$Observable < U >,
+    resultSelector: (outerValue: T, innerValue: U, outerIndex: number, innerIndex: number) => V,
+    concurrent ?: number
+  ): rxjs$Observable<V>;
+
   switchMap<U>(
-    project: (value: T) => rxjs$Observable<U> | Promise<U> | Iterable<U>
+    project: (value: T) => rxjs$Observable<U> | Promise<U> | Iterable<U>,
+    index?: number,
   ): rxjs$Observable<U>;
 
   switchMapTo<U>(
@@ -182,7 +226,18 @@ declare class rxjs$Observable<+T> {
 
   mergeMap<U>(
     project: (value: T, index?: number) => rxjs$Observable<U> | Promise<U> | Iterable<U>,
+    index?: number,
   ): rxjs$Observable<U>;
+
+  mergeMapTo<U>(
+    innerObservable: rxjs$Observable<U>
+  ): rxjs$Observable<U>;
+
+  mergeMapTo<U, V>(
+    innerObservable: rxjs$Observable < U >,
+    resultSelector: (outerValue: T, innerValue: U, outerIndex: number, innerIndex: number) => V,
+    concurrent ?: number
+  ): rxjs$Observable<V>;
 
   multicast(
     subjectOrSubjectFactory: rxjs$Subject<T> | () => rxjs$Subject<T>,
@@ -210,7 +265,7 @@ declare class rxjs$Observable<+T> {
 
   sampleTime(delay: number): rxjs$Observable<T>;
 
-  publishReplay(): rxjs$ConnectableObservable<T>;
+  publishReplay(bufferSize?: number, windowTime?: number, scheduler?: rxjs$SchedulerClass): rxjs$ConnectableObservable<T>;
 
   retry(retryCount: number): rxjs$Observable<T>;
 
@@ -227,7 +282,7 @@ declare class rxjs$Observable<+T> {
 
   skipUntil(other: rxjs$Observable<any> | Promise<any>): rxjs$Observable<T>;
 
-  skipWhile(predicate: (value: T) => boolean): rxjs$Observable<T>;
+  skipWhile(predicate: (value: T, index: number) => boolean): rxjs$Observable<T>;
 
   startWith(...values: Array<T>): rxjs$Observable<T>;
 
@@ -237,7 +292,7 @@ declare class rxjs$Observable<+T> {
 
   takeUntil(other: rxjs$Observable<any>): rxjs$Observable<T>;
 
-  takeWhile(f: (value: T) => boolean): rxjs$Observable<T>;
+  takeWhile(predicate: (value: T, index: number) => boolean): rxjs$Observable<T>;
 
   do(
     onNext?: (value: T) => mixed,
@@ -670,7 +725,7 @@ declare class rxjs$BehaviorSubject<T> extends rxjs$Subject<T> {
 }
 
 declare class rxjs$ReplaySubject<T> extends rxjs$Subject<T> {
-
+  constructor(bufferSize?: number, windowTime?: number, scheduler?: rxjs$SchedulerClass): void;
 }
 
 declare class rxjs$Subscription {

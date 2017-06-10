@@ -6,11 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {OutputService} from '../../nuclide-console/lib/types';
 
-import formatEnoentNotification from '../../commons-atom/format-enoent-notification';
+import formatEnoentNotification
+  from '../../commons-atom/format-enoent-notification';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {LogTailer} from '../../nuclide-console/lib/LogTailer';
 import {createMessageStream} from './createMessageStream';
@@ -25,7 +27,9 @@ export default class Activation {
   constructor(state: ?Object) {
     this._iosLogTailer = new LogTailer({
       name: 'iOS Simulator Logs',
-      messages: Observable.defer(() => createMessageStream(createProcessStream())),
+      messages: Observable.defer(() =>
+        createMessageStream(createProcessStream()),
+      ),
       handleError(err) {
         if ((err: any).code === 'ENOENT') {
           const {message, meta} = formatEnoentNotification({
@@ -46,11 +50,14 @@ export default class Activation {
     });
 
     this._disposables = new CompositeDisposable(
-      new Disposable(() => { this._iosLogTailer.stop(); }),
+      new Disposable(() => {
+        this._iosLogTailer.stop();
+      }),
       atom.commands.add('atom-workspace', {
         'nuclide-ios-simulator-logs:start': () => this._iosLogTailer.start(),
         'nuclide-ios-simulator-logs:stop': () => this._iosLogTailer.stop(),
-        'nuclide-ios-simulator-logs:restart': () => this._iosLogTailer.restart(),
+        'nuclide-ios-simulator-logs:restart': () =>
+          this._iosLogTailer.restart(),
       }),
     );
   }
@@ -61,8 +68,12 @@ export default class Activation {
         id: 'iOS Simulator Logs',
         messages: this._iosLogTailer.getMessages(),
         observeStatus: cb => this._iosLogTailer.observeStatus(cb),
-        start: () => { this._iosLogTailer.start(); },
-        stop: () => { this._iosLogTailer.stop(); },
+        start: () => {
+          this._iosLogTailer.start();
+        },
+        stop: () => {
+          this._iosLogTailer.stop();
+        },
       }),
     );
   }

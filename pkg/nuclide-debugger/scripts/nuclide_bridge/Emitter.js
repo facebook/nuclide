@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import WebInspector from '../../lib/WebInspector';
@@ -20,7 +21,10 @@ export default class Emitter {
     this._underlying = new WebInspector.Object();
   }
 
-  on(eventType: string, callback: (value?: any) => void): {dispose: () => void} {
+  on(
+    eventType: string,
+    callback: (value?: any) => void,
+  ): {dispose: () => void} {
     const listener = event => callback(event.data);
     this._underlying.addEventListener(eventType, listener);
     return {

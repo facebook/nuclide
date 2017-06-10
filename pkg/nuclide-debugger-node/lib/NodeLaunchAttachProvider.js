@@ -6,7 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {DebuggerConfigAction} from '../../nuclide-debugger-base';
 
 import {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
 import React from 'react';
@@ -14,8 +17,6 @@ import LaunchAttachDispatcher from './LaunchAttachDispatcher';
 import {LaunchAttachStore} from './LaunchAttachStore';
 import {AttachUIComponent} from './AttachUIComponent';
 import {LaunchAttachActions} from './LaunchAttachActions';
-
-import type EventEmitter from 'events';
 
 export class NodeLaunchAttachProvider extends DebuggerLaunchAttachProvider {
   _dispatcher: LaunchAttachDispatcher;
@@ -25,27 +26,50 @@ export class NodeLaunchAttachProvider extends DebuggerLaunchAttachProvider {
   constructor(debuggingTypeName: string, targetUri: string) {
     super(debuggingTypeName, targetUri);
     this._dispatcher = new LaunchAttachDispatcher();
-    this._actions = new LaunchAttachActions(this._dispatcher, this.getTargetUri());
+    this._actions = new LaunchAttachActions(
+      this._dispatcher,
+      this.getTargetUri(),
+    );
     this._store = new LaunchAttachStore(this._dispatcher);
   }
 
-  getActions(): Promise<Array<string>> {
-    return Promise.resolve(['Attach']);
-  }
+  getCallbacksForAction(action: DebuggerConfigAction) {
+    return {
+      /**
+       * Whether this provider is enabled or not.
+       */
+      isEnabled: () => {
+        return Promise.resolve(action === 'attach');
+      },
 
-  getComponent(action: string, parentEventEmitter: EventEmitter): ?React.Element<any> {
-    if (action === 'Attach') {
-      this._actions.updateAttachTargetList();
-      return (
-        <AttachUIComponent
-          store={this._store}
-          actions={this._actions}
-          parentEmitter={parentEventEmitter}
-        />
-      );
-    } else {
-      return null;
-    }
+      /**
+       * Returns a list of supported debugger types + environments for the specified action.
+       */
+      getDebuggerTypeNames: super.getCallbacksForAction(action)
+        .getDebuggerTypeNames,
+
+      /**
+       * Returns the UI component for configuring the specified debugger type and action.
+       */
+      getComponent: (
+        debuggerTypeName: string,
+        configIsValidChanged: (valid: boolean) => void,
+      ) => {
+        if (action === 'attach') {
+          this._actions.updateAttachTargetList();
+          return (
+            <AttachUIComponent
+              targetUri={this._targetUri}
+              store={this._store}
+              actions={this._actions}
+              configIsValidChanged={configIsValidChanged}
+            />
+          );
+        } else {
+          return null;
+        }
+      },
+    };
   }
 
   dispose(): void {

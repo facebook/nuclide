@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  BookShelfRepositoryState,
-  BookShelfState,
-} from '../lib/types';
+import type {BookShelfRepositoryState, BookShelfState} from '../lib/types';
 
 import Immutable from 'immutable';
 
@@ -33,6 +31,8 @@ export function getDummyRepositoryState(): BookShelfRepositoryState {
 
 export function getDummyBookShelfState(): BookShelfState {
   return Object.freeze({
-    repositoryPathToState: Immutable.Map([[REPO_PATH_1, getDummyRepositoryState()]]),
+    repositoryPathToState: Immutable.Map([
+      [REPO_PATH_1, getDummyRepositoryState()],
+    ]),
   });
 }

@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import * as BuckService from '../../nuclide-buck-rpc';
 import LinkTreeManager from '../lib/LinkTreeManager';
 import {copyBuildFixture} from '../../nuclide-test-helpers';
@@ -32,7 +33,10 @@ describe('LinkTreeManager', () => {
   it('correctly builds a link tree path given a source file path (mocked project)', () => {
     waitsForPromise(async () => {
       spyOn(BuckService, 'getOwners').andReturn(['//test', '//test2']);
-      const spy = spyOn(BuckService, 'query').andReturn(['//testbin', '//testbin2']);
+      const spy = spyOn(BuckService, 'query').andReturn([
+        '//testbin',
+        '//testbin2',
+      ]);
       const srcPath = nuclideUri.join(projectDir, 'test1/test1.py');
       const expectedPaths = [
         nuclideUri.join(projectDir, 'buck-out/gen/testbin#link-tree'),
@@ -68,7 +72,7 @@ describe('LinkTreeManager', () => {
     });
   });
 
-  it('resolves a link tree path with a buck project\'s source file', () => {
+  it("resolves a link tree path with a buck project's source file", () => {
     // Large timeout for buck to warm up.
     waitsForPromise({timeout: 30000}, async () => {
       const srcPath = nuclideUri.join(projectDir, 'test1/test1.py');

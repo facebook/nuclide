@@ -11,6 +11,11 @@ exported out to GitHub by a Facebook team member. We invite you to submit pull
 requests directly to GitHub and, after review, these can be merged into the
 project.
 
+## Getting Started
+
+Follow this guide to start developing on Nuclide:
+https://nuclide.io/docs/advanced-topics/building-from-source/
+
 ## Pull Requests
 
 1. Fork the repo and create your branch from `master` for core changes, or

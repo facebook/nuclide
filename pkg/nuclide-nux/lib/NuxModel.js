@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type NuxViewModel = {
   content: string,
   selector: ?string,
-  selectorFunction?: (() => HTMLElement),
+  selectorFunction?: () => HTMLElement,
   position: 'top' | 'bottom' | 'left' | 'right' | 'auto',
-  completionPredicate?: (() => boolean),
+  completionPredicate?: () => boolean,
 };
 
 export type NuxTourModel = {
@@ -37,7 +38,7 @@ export type NuxTourModel = {
 
 export type NuxTriggerModel = {
   triggerType: NuxTriggerType,
-  triggerCallback: ((editor: atom$TextEditor) => boolean),
+  triggerCallback: (editor: atom$TextEditor) => boolean,
 };
 
 // Add more trigger types here as use cases are developed

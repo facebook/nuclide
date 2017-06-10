@@ -6,18 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-
-import {arrayEqual} from '../../commons-node/collection';
+import {arrayEqual} from 'nuclide-commons/collection';
 import {dedupeUris} from './uri';
 import invariant from 'assert';
-import {getLogger} from '../../nuclide-logging';
-import nuclideUri from '../../commons-node/nuclideUri';
-const logger = getLogger();
+import {getLogger} from 'log4js';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+const logger = getLogger('nuclide-working-sets-common');
 
-
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 type InnerNode = {
   kind: 'inner',
@@ -57,11 +56,16 @@ export class WorkingSet {
 
   constructor(uris: Array<NuclideUri> = []) {
     try {
-      this._uris = dedupeUris(uris.filter(uri => !nuclideUri.isBrokenDeserializedUri(uri)));
+      this._uris = dedupeUris(
+        uris.filter(uri => !nuclideUri.isBrokenDeserializedUri(uri)),
+      );
       this._root = this._buildDirTree(this._uris);
     } catch (e) {
       logger.error(
-        'Failed to initialize a WorkingSet with URIs ' + uris.join(',') + '. ' + e.message,
+        'Failed to initialize a WorkingSet with URIs ' +
+          uris.join(',') +
+          '. ' +
+          e.message,
       );
       this._uris = [];
       this._root = null;
@@ -173,7 +177,8 @@ export class WorkingSet {
 
   _containsPathFor(tokens: Array<string>, mustHaveLeaf: boolean): boolean {
     let currentNode = this._root;
-    if (currentNode == null) { // Empty set actually contains everything
+    if (currentNode == null) {
+      // Empty set actually contains everything
       return true;
     }
 

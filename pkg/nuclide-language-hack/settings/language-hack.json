@@ -3089,6 +3089,17 @@
       ]
     }
   },
+  ".source.xhp": {
+    "editor": {
+      "commentStart": "<!-- ",
+      "commentEnd": " -->"
+    }
+  },
+  ".source.php.xhp": {
+    "editor": {
+      "commentStart": "// "
+    }
+  },
   ".source.hack .meta.array.php": {
     "editor": {
       "decreaseIndentPattern": "(?x)\n\t    ^ (.* \\*/)? \\s*\n\t    (\\)+)\n\t"

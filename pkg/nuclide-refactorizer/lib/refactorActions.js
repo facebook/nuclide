@@ -6,24 +6,26 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  AvailableRefactoring,
-  RefactorRequest,
-  RefactorProvider,
-} from '..';
+import type {AvailableRefactoring, RefactorRequest, RefactorProvider} from '..';
 
 import type {
+  ApplyAction,
   CloseAction,
+  ConfirmAction,
   ErrorAction,
   ErrorSource,
   ExecuteAction,
   GotRefactoringsAction,
   OpenAction,
+  ProgressAction,
   PickedRefactorAction,
   RefactorUI,
 } from './types';
+
+import type {RefactorEditResponse} from './rpc-types';
 
 export function open(ui: RefactorUI): OpenAction {
   return {
@@ -59,7 +61,9 @@ export function error(source: ErrorSource, err: Error): ErrorAction {
   };
 }
 
-export function pickedRefactor(refactoring: AvailableRefactoring): PickedRefactorAction {
+export function pickedRefactor(
+  refactoring: AvailableRefactoring,
+): PickedRefactorAction {
   return {
     type: 'picked-refactor',
     payload: {
@@ -78,6 +82,31 @@ export function execute(
       provider,
       refactoring,
     },
+  };
+}
+
+export function confirm(response: RefactorEditResponse): ConfirmAction {
+  return {
+    type: 'confirm',
+    payload: {response},
+  };
+}
+
+export function apply(response: RefactorEditResponse): ApplyAction {
+  return {
+    type: 'apply',
+    payload: {response},
+  };
+}
+
+export function progress(
+  message: string,
+  value: number,
+  max: number,
+): ProgressAction {
+  return {
+    type: 'progress',
+    payload: {message, value, max},
   };
 }
 

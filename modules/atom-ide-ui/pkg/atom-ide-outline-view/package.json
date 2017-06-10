@@ -1,0 +1,44 @@
+{
+  "name": "atom-ide-outline-view",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Extensible UI to display an outline of the current file",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "atomConfig": {
+    "nameOnly": {
+      "title": "Display only the element name in outline view",
+      "type": "boolean",
+      "default": "false",
+      "description": "For a more compact outline, display only the name of the element, ommitting, e.g., method parameters."
+    }
+  },
+  "deserializers": {
+    "nuclide.OutlineViewPanelState": "deserializeOutlineViewPanelState",
+    "atom-ide-ui.OutlineViewPanelState": "deserializeOutlineViewPanelState"
+  },
+  "consumedServices": {
+    "nuclide-outline-view": {
+      "versions": {
+        "0.0.0": "consumeOutlineProvider"
+      }
+    },
+    "atom-ide-outline-view": {
+      "versions": {
+        "0.1.0": "consumeOutlineProvider"
+      }
+    },
+    "tool-bar": {
+      "versions": {
+        "^1.0.0": "consumeToolBar"
+      }
+    }
+  },
+  "providedServices": {
+    "atom-ide-outline-view-results-stream": {
+      "versions": {
+        "0.0.0": "getOutlineViewResultsStream"
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import * as uri from '../lib/uri';
@@ -13,27 +14,20 @@ import * as uri from '../lib/uri';
 describe('uri', () => {
   describe('dedupeUris', () => {
     it('linux paths', () => {
-      expect(uri.dedupeUris([
-        '/bbb/ccc/ddd',
-        '/bbb/ccc',
-        '/aaa/bbb',
-        '/aaa/ccc',
-      ]))
-      .toEqual([
-        '/aaa/bbb',
-        '/aaa/ccc',
-        '/bbb/ccc',
-      ]);
+      expect(
+        uri.dedupeUris(['/bbb/ccc/ddd', '/bbb/ccc', '/aaa/bbb', '/aaa/ccc']),
+      ).toEqual(['/aaa/bbb', '/aaa/ccc', '/bbb/ccc']);
     });
 
     it('remote paths', () => {
-      expect(uri.dedupeUris([
-        'nuclide://host/bbb/ccc/ddd',
-        'nuclide://host/bbb/ccc',
-        'nuclide://host/aaa/bbb',
-        'nuclide://host/aaa/ccc',
-      ]))
-      .toEqual([
+      expect(
+        uri.dedupeUris([
+          'nuclide://host/bbb/ccc/ddd',
+          'nuclide://host/bbb/ccc',
+          'nuclide://host/aaa/bbb',
+          'nuclide://host/aaa/ccc',
+        ]),
+      ).toEqual([
         'nuclide://host/aaa/bbb',
         'nuclide://host/aaa/ccc',
         'nuclide://host/bbb/ccc',
@@ -41,31 +35,25 @@ describe('uri', () => {
     });
 
     it('diskless windows paths', () => {
-      expect(uri.dedupeUris([
-        '\\bbb\\ccc\\ddd',
-        '\\bbb\\ccc',
-        '\\aaa\\bbb',
-        '\\aaa\\ccc',
-      ]))
-      .toEqual([
-        '\\aaa\\bbb',
-        '\\aaa\\ccc',
-        '\\bbb\\ccc',
-      ]);
+      expect(
+        uri.dedupeUris([
+          '\\bbb\\ccc\\ddd',
+          '\\bbb\\ccc',
+          '\\aaa\\bbb',
+          '\\aaa\\ccc',
+        ]),
+      ).toEqual(['\\aaa\\bbb', '\\aaa\\ccc', '\\bbb\\ccc']);
     });
 
     it('windows paths with a disk', () => {
-      expect(uri.dedupeUris([
-        'C:\\bbb\\ccc\\ddd',
-        'C:\\bbb\\ccc',
-        'C:\\aaa\\bbb',
-        'C:\\aaa\\ccc',
-      ]))
-      .toEqual([
-        'C:\\aaa\\bbb',
-        'C:\\aaa\\ccc',
-        'C:\\bbb\\ccc',
-      ]);
+      expect(
+        uri.dedupeUris([
+          'C:\\bbb\\ccc\\ddd',
+          'C:\\bbb\\ccc',
+          'C:\\aaa\\bbb',
+          'C:\\aaa\\ccc',
+        ]),
+      ).toEqual(['C:\\aaa\\bbb', 'C:\\aaa\\ccc', 'C:\\bbb\\ccc']);
     });
   });
 });

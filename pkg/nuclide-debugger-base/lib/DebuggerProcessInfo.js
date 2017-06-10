@@ -6,11 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type DebuggerInstanceBase from './DebuggerInstance';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
-import type {ControlButtonSpecification} from '../../nuclide-debugger/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  ControlButtonSpecification,
+} from '../../nuclide-debugger/lib/types';
 import type {ThreadColumn} from '../../nuclide-debugger-base/lib/types';
 
 export default class DebuggerProcessInfo {
@@ -46,12 +49,29 @@ export default class DebuggerProcessInfo {
     return false;
   }
 
+  configureSourceFilePaths(): void {
+    // Debuggers that support this will override this routine.
+    throw new Error('Not supported');
+  }
+
+  supportsConfigureSourcePaths(): boolean {
+    return false;
+  }
+
   supportSingleThreadStepping(): boolean {
+    return false;
+  }
+
+  supportContinueToLocation(): boolean {
     return false;
   }
 
   singleThreadSteppingEnabled(): boolean {
     return false;
+  }
+
+  clone(): DebuggerProcessInfo {
+    throw new Error('abstract method');
   }
 
   customControlButtons(): Array<ControlButtonSpecification> {
@@ -62,6 +82,5 @@ export default class DebuggerProcessInfo {
     throw new Error('abstract method');
   }
 
-  dispose(): void {
-  }
+  dispose(): void {}
 }

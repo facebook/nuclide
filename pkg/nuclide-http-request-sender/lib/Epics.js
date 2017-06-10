@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ActionsObservable} from '../../commons-node/redux-observable';
@@ -21,17 +22,20 @@ export function sendHttpRequest(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.SEND_REQUEST)
-    .do(action => {
-      invariant(action.type === Actions.SEND_REQUEST);
-      const credentials = 'include'; // We always want to send cookies.
-      const {uri, method, headers, body} = store.getState();
-      const options = method === 'POST'
-        ? {method, credentials, headers, body}
-        : {method, credentials, headers};
-      track('nuclide-http-request-sender:http-request', {uri, options});
-      xfetch(uri, options);
-    })
-    // This epic is just for side-effects.
-    .ignoreElements();
+  return (
+    actions
+      .ofType(Actions.SEND_REQUEST)
+      .do(action => {
+        invariant(action.type === Actions.SEND_REQUEST);
+        const credentials = 'include'; // We always want to send cookies.
+        const {uri, method, headers, body} = store.getState();
+        const options = method === 'POST'
+          ? {method, credentials, headers, body}
+          : {method, credentials, headers};
+        track('nuclide-http-request-sender:http-request', {uri, options});
+        xfetch(uri, options);
+      })
+      // This epic is just for side-effects.
+      .ignoreElements()
+  );
 }

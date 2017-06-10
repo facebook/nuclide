@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {uncachedRequire} from '../../nuclide-test-helpers';
@@ -15,12 +16,17 @@ describe('MerlinService V 2.3.1', () => {
     const MerlinProcess: any = uncachedRequire(require, '../lib/MerlinProcess');
 
     spyOn(MerlinProcess, 'getInstance').andCallFake(() => {
-      const mockedProcess = new MerlinProcess.MerlinProcessV2_3_1({on: () => null});
+      const mockedProcess = new MerlinProcess.MerlinProcessV2_3_1({
+        on: () => null,
+      });
       spyOn(mockedProcess, 'runSingleCommand').andCallFake(callback);
       return Promise.resolve(mockedProcess);
     });
 
-    const MerlinService = (uncachedRequire(require, '../lib/MerlinService'): any);
+    const MerlinService = (uncachedRequire(
+      require,
+      '../lib/MerlinService',
+    ): any);
 
     return Promise.resolve(MerlinService);
   }
@@ -29,18 +35,17 @@ describe('MerlinService V 2.3.1', () => {
     it('correctly sets the .merlin path', () => {
       waitsForPromise(async () => {
         const filename = 'some_module.ml';
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[1] === 'dot_merlin' && command[2][0] === filename) {
-              return {cursor: {line: 1, col: 0}, marker: false};
-            }
-            return null;
-          },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          if (command[1] === 'dot_merlin' && command[2][0] === filename) {
+            return {cursor: {line: 1, col: 0}, marker: false};
+          }
+          return null;
+        });
 
         const result = await merlinService.pushDotMerlinPath(filename);
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false}');
+          '{"cursor":{"line":1,"col":0},"marker":false}',
+        );
       });
     });
   });
@@ -56,21 +61,29 @@ describe('MerlinService V 2.3.1', () => {
         const content = 'let x = 42\nlet y = x';
 
         let count = 0;
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[0] === 'reset' && command[2] === filename && count === 0) {
-              ++count;
-              return {cursor: {line: 1, col: 0}, marker: false};
-            } else if (command[0] === 'tell' && command[2] === content && count === 1) {
-              return {cursor: {line: 2, col: 0}, marker: false};
-            }
+        const merlinService = await getMockedMerlinService(async command => {
+          if (
+            command[0] === 'reset' &&
+            command[2] === filename &&
+            count === 0
+          ) {
+            ++count;
+            return {cursor: {line: 1, col: 0}, marker: false};
+          } else if (
+            command[0] === 'tell' &&
+            command[2] === content &&
+            count === 1
+          ) {
+            return {cursor: {line: 2, col: 0}, marker: false};
+          }
 
-            return null;
-          });
+          return null;
+        });
 
         const result = await merlinService.pushNewBuffer(filename, content);
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":2,"col":0},"marker":false}');
+          '{"cursor":{"line":2,"col":0},"marker":false}',
+        );
       });
     });
   });
@@ -81,57 +94,61 @@ describe('MerlinService V 2.3.1', () => {
         // Ocamlmerlin doesn't return paths for navigation results
         // within the same file; make sure we normalize this by
         // adding the path.
-        const merlinService = await getMockedMerlinService(
-          async command => { return {cursor: {line: 1, col: 0}, marker: false}; },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          return {cursor: {line: 1, col: 0}, marker: false};
+        });
 
         const result = await merlinService.locate('derp.ml', 1, 1, 'ml');
 
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false,"file":"derp.ml"}');
+          '{"cursor":{"line":1,"col":0},"marker":false,"file":"derp.ml"}',
+        );
       });
     });
     it('uses the given path if ocamlmerlin provides it', () => {
       waitsForPromise(async () => {
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            return {cursor: {line: 1, col: 0}, marker: false, file: 'notderp.ml'};
-          },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          return {cursor: {line: 1, col: 0}, marker: false, file: 'notderp.ml'};
+        });
 
         const result = await merlinService.locate('yesderp.ml', 1, 1, 'ml');
 
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false,"file":"notderp.ml"}');
+          '{"cursor":{"line":1,"col":0},"marker":false,"file":"notderp.ml"}',
+        );
       });
     });
   });
-
 
   describe('complete()', () => {
     it('sends the appropriate merlin command', () => {
       waitsForPromise(async () => {
         const expectedResult = [
-            {desc: 'unit -> int', info: '', kind: 'Value', name: 'derp'},
-            {desc: 'int', info: '', kind: 'Value', name: 'also'},
+          {desc: 'unit -> int', info: '', kind: 'Value', name: 'derp'},
+          {desc: 'int', info: '', kind: 'Value', name: 'also'},
         ];
 
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[0] === 'complete' &&
-                command[1] === 'prefix' &&
-                command[2] === 'FoodTest.' &&
-                command[3] === 'at' &&
-                command[4].line === 6 &&
-                command[4].col === 3) {
-              return expectedResult;
-            }
+        const merlinService = await getMockedMerlinService(async command => {
+          if (
+            command[0] === 'complete' &&
+            command[1] === 'prefix' &&
+            command[2] === 'FoodTest.' &&
+            command[3] === 'at' &&
+            command[4].line === 6 &&
+            command[4].col === 3
+          ) {
+            return expectedResult;
+          }
 
-            return null;
-          },
+          return null;
+        });
+
+        const result = await merlinService.complete(
+          'derp.ml',
+          5,
+          2,
+          'FoodTest.',
         );
-
-        const result = await merlinService.complete('derp.ml', 5, 2, 'FoodTest.');
 
         expect(JSON.stringify(result)).toBe(JSON.stringify(expectedResult));
       });
@@ -144,12 +161,17 @@ describe('MerlinService V 2.5', () => {
     const MerlinProcess: any = uncachedRequire(require, '../lib/MerlinProcess');
 
     spyOn(MerlinProcess, 'getInstance').andCallFake(() => {
-      const mockedProcess = new MerlinProcess.MerlinProcessV2_5({on: () => null});
+      const mockedProcess = new MerlinProcess.MerlinProcessV2_5({
+        on: () => null,
+      });
       spyOn(mockedProcess, 'runSingleCommand').andCallFake(callback);
       return Promise.resolve(mockedProcess);
     });
 
-    const MerlinService = (uncachedRequire(require, '../lib/MerlinService'): any);
+    const MerlinService = (uncachedRequire(
+      require,
+      '../lib/MerlinService',
+    ): any);
 
     return Promise.resolve(MerlinService);
   }
@@ -158,18 +180,17 @@ describe('MerlinService V 2.5', () => {
     it('correctly sets the .merlin path', () => {
       waitsForPromise(async () => {
         const filename = 'some_module.ml';
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[1] === 'dot_merlin' && command[2][0] === filename) {
-              return {cursor: {line: 1, col: 0}, marker: false};
-            }
-            return null;
-          },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          if (command[1] === 'dot_merlin' && command[2][0] === filename) {
+            return {cursor: {line: 1, col: 0}, marker: false};
+          }
+          return null;
+        });
 
         const result = await merlinService.pushDotMerlinPath(filename);
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false}');
+          '{"cursor":{"line":1,"col":0},"marker":false}',
+        );
       });
     });
   });
@@ -184,19 +205,23 @@ describe('MerlinService V 2.5', () => {
         const filename = 'some_module.ml';
         const content = 'let x = 42\nlet y = x';
 
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[0] === 'tell' && command[1] === 'start' && command[2] === 'end'
-                && command[3] === content) {
-              return {cursor: {line: 2, col: 0}, marker: false};
-            }
+        const merlinService = await getMockedMerlinService(async command => {
+          if (
+            command[0] === 'tell' &&
+            command[1] === 'start' &&
+            command[2] === 'end' &&
+            command[3] === content
+          ) {
+            return {cursor: {line: 2, col: 0}, marker: false};
+          }
 
-            return null;
-          });
+          return null;
+        });
 
         const result = await merlinService.pushNewBuffer(filename, content);
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":2,"col":0},"marker":false}');
+          '{"cursor":{"line":2,"col":0},"marker":false}',
+        );
       });
     });
   });
@@ -207,57 +232,61 @@ describe('MerlinService V 2.5', () => {
         // Ocamlmerlin doesn't return paths for navigation results
         // within the same file; make sure we normalize this by
         // adding the path.
-        const merlinService = await getMockedMerlinService(
-          async command => { return {cursor: {line: 1, col: 0}, marker: false}; },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          return {cursor: {line: 1, col: 0}, marker: false};
+        });
 
         const result = await merlinService.locate('derp.ml', 1, 1, 'ml');
 
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false,"file":"derp.ml"}');
+          '{"cursor":{"line":1,"col":0},"marker":false,"file":"derp.ml"}',
+        );
       });
     });
     it('uses the given path if ocamlmerlin provides it', () => {
       waitsForPromise(async () => {
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            return {cursor: {line: 1, col: 0}, marker: false, file: 'notderp.ml'};
-          },
-        );
+        const merlinService = await getMockedMerlinService(async command => {
+          return {cursor: {line: 1, col: 0}, marker: false, file: 'notderp.ml'};
+        });
 
         const result = await merlinService.locate('yesderp.ml', 1, 1, 'ml');
 
         expect(JSON.stringify(result)).toBe(
-          '{"cursor":{"line":1,"col":0},"marker":false,"file":"notderp.ml"}');
+          '{"cursor":{"line":1,"col":0},"marker":false,"file":"notderp.ml"}',
+        );
       });
     });
   });
-
 
   describe('complete()', () => {
     it('sends the appropriate merlin command', () => {
       waitsForPromise(async () => {
         const expectedResult = [
-            {desc: 'unit -> int', info: '', kind: 'Value', name: 'derp'},
-            {desc: 'int', info: '', kind: 'Value', name: 'also'},
+          {desc: 'unit -> int', info: '', kind: 'Value', name: 'derp'},
+          {desc: 'int', info: '', kind: 'Value', name: 'also'},
         ];
 
-        const merlinService = await getMockedMerlinService(
-          async command => {
-            if (command[0] === 'complete' &&
-                command[1] === 'prefix' &&
-                command[2] === 'FoodTest.' &&
-                command[3] === 'at' &&
-                command[4].line === 6 &&
-                command[4].col === 3) {
-              return expectedResult;
-            }
+        const merlinService = await getMockedMerlinService(async command => {
+          if (
+            command[0] === 'complete' &&
+            command[1] === 'prefix' &&
+            command[2] === 'FoodTest.' &&
+            command[3] === 'at' &&
+            command[4].line === 6 &&
+            command[4].col === 3
+          ) {
+            return expectedResult;
+          }
 
-            return null;
-          },
+          return null;
+        });
+
+        const result = await merlinService.complete(
+          'derp.ml',
+          5,
+          2,
+          'FoodTest.',
         );
-
-        const result = await merlinService.complete('derp.ml', 5, 2, 'FoodTest.');
 
         expect(JSON.stringify(result)).toBe(JSON.stringify(expectedResult));
       });

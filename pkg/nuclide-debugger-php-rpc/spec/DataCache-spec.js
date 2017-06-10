@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DataCache as DataCacheType} from '../lib/DataCache';
@@ -31,8 +32,11 @@ describe('debugger-php-rpc DataCache', () => {
 
   const contextId = createContextObjectId(1, 2, '3');
   const contextRemoteId = remoteObjectIdOfObjectId(contextId);
-  const pagedId = pagedObjectId(contextId, 'fullname-value',
-      {pagesize: 32, startIndex: 0, count: 42});
+  const pagedId = pagedObjectId(contextId, 'fullname-value', {
+    pagesize: 32,
+    startIndex: 0,
+    count: 42,
+  });
   const pagedRemoteId = remoteObjectIdOfObjectId(pagedId);
   const singlePageId = singlePageObjectId(contextId, 'fullname-value', 42);
   const singlePageRemoteId = remoteObjectIdOfObjectId(singlePageId);
@@ -46,34 +50,42 @@ describe('debugger-php-rpc DataCache', () => {
       onStatus: callback => {
         statusCallback = callback;
       },
-      getContextsForFrame: jasmine.createSpy().andReturn(Promise.resolve([
-        {
-          name: 'Locals',
-          id: '0',
-        },
-        {
-          name: 'Superglobals',
-          id: '1',
-        },
-        {
-          name: 'User defined constants',
-          id: '2',
-        },
-      ])),
-      getContextProperties: jasmine.createSpy().andReturn(Promise.resolve(PROPERTIES)),
+      getContextsForFrame: jasmine.createSpy().andReturn(
+        Promise.resolve([
+          {
+            name: 'Locals',
+            id: '0',
+          },
+          {
+            name: 'Superglobals',
+            id: '1',
+          },
+          {
+            name: 'User defined constants',
+            id: '2',
+          },
+        ]),
+      ),
+      getContextProperties: jasmine
+        .createSpy()
+        .andReturn(Promise.resolve(PROPERTIES)),
     }: any): DbgpSocketType);
     statusCallback = null;
 
     const properties = require('../lib/properties');
-    convertProperties = spyOn(properties, 'convertProperties').andReturn(CONVERTED_PROPERTIES);
-    getPagedProperties = spyOn(properties, 'getPagedProperties').andReturn(CONVERTED_PROPERTIES);
+    convertProperties = spyOn(properties, 'convertProperties').andReturn(
+      CONVERTED_PROPERTIES,
+    );
+    getPagedProperties = spyOn(properties, 'getPagedProperties').andReturn(
+      CONVERTED_PROPERTIES,
+    );
 
     const values = require('../lib/values');
     convertValue = spyOn(values, 'convertValue').andReturn(EXPRESSION);
 
-    const {DataCache} = (
-      (uncachedRequire(require, '../lib/DataCache'): any): {DataCache: () => DataCacheType}
-    );
+    const {DataCache} = ((uncachedRequire(require, '../lib/DataCache'): any): {
+      DataCache: Class<DataCacheType>,
+    });
     cache = new DataCache(socket);
   });
   function enable() {
@@ -86,19 +98,17 @@ describe('debugger-php-rpc DataCache', () => {
   }
 
   it('no enable', () => {
-    waitsForPromise(
-        {shouldReject: true, timeout: 0},
-        async () => { await cache.getScopesForFrame(4); });
+    waitsForPromise({shouldReject: true, timeout: 0}, async () => {
+      await cache.getScopesForFrame(4);
+    });
   });
 
   it('enable/disable', () => {
-    waitsForPromise(
-        {shouldReject: true, timeout: 0},
-        async () => {
-          enable();
-          disable();
-          await cache.getScopesForFrame(4);
-        });
+    waitsForPromise({shouldReject: true, timeout: 0}, async () => {
+      enable();
+      disable();
+      await cache.getScopesForFrame(4);
+    });
   });
 
   it('getScopesForFrame', () => {
@@ -158,12 +168,18 @@ describe('debugger-php-rpc DataCache', () => {
   it('getProperties - single page', () => {
     waitsForPromise(async () => {
       // $FlowFixMe override instance method.
-      socket.getPropertiesByFullname = jasmine.createSpy('getPropertiesByFullname')
+      socket.getPropertiesByFullname = jasmine
+        .createSpy('getPropertiesByFullname')
         .andReturn(Promise.resolve(PROPERTIES));
       enable();
       const result = await cache.getProperties(singlePageRemoteId);
       expect(result).toEqual(CONVERTED_PROPERTIES);
-      expect(socket.getPropertiesByFullname).toHaveBeenCalledWith(2, '3', 'fullname-value', 42);
+      expect(socket.getPropertiesByFullname).toHaveBeenCalledWith(
+        2,
+        '3',
+        'fullname-value',
+        42,
+      );
       expect(convertProperties).toHaveBeenCalledWith(singlePageId, PROPERTIES);
     });
   });
@@ -171,16 +187,20 @@ describe('debugger-php-rpc DataCache', () => {
   it('evaluateOnCallFrame', () => {
     waitsForPromise(async () => {
       // $FlowFixMe override instance method.
-      socket.evaluateOnCallFrame = jasmine.createSpy('evaluateOnCallFrame')
-          .andReturn(Promise.resolve({result: PROPERTIES, wasThrown: false}));
+      socket.evaluateOnCallFrame = jasmine
+        .createSpy('evaluateOnCallFrame')
+        .andReturn(Promise.resolve({result: PROPERTIES, wasThrown: false}));
       enable();
       const result = await cache.evaluateOnCallFrame(5, 'expression');
       expect(socket.evaluateOnCallFrame).toHaveBeenCalledWith(5, 'expression');
-      expect(convertValue).toHaveBeenCalledWith({
-        enableCount: 1,
-        frameIndex: 5,
-        contextId: 'Watch Context Id',
-      }, PROPERTIES);
+      expect(convertValue).toHaveBeenCalledWith(
+        {
+          enableCount: 1,
+          frameIndex: 5,
+          contextId: 'Watch Context Id',
+        },
+        PROPERTIES,
+      );
       expect(result).toEqual({
         result: EXPRESSION,
         wasThrown: false,

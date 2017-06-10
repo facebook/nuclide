@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {IconName} from './types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 
-import {Icon} from './Icon';
+import {Icon} from 'nuclide-commons-ui/Icon';
 import React from 'react';
 import classnames from 'classnames';
 import nullthrows from 'nullthrows';
@@ -58,11 +59,12 @@ export default class Tabs extends React.Component {
       ? <div className="close-icon" onClick={this.props.onClose} />
       : null;
     const tabs = this.props.tabs.map(tab => {
-      const icon = tab.icon == null
-        ? null
-        : <Icon icon={tab.icon} />;
+      const icon = tab.icon == null ? null : <Icon icon={tab.icon} />;
       const handler = {};
-      handler[this.props.triggeringEvent] = this._handleTabChange.bind(this, tab.name);
+      handler[this.props.triggeringEvent] = this._handleTabChange.bind(
+        this,
+        tab.name,
+      );
       return (
         <li
           className={classnames({

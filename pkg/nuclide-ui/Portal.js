@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -42,7 +43,10 @@ export class Portal extends React.Component {
   }
 
   _render(element: ?React.Element<any>, container: HTMLElement): void {
-    if (this._container != null && (container !== this._container || element == null)) {
+    if (
+      this._container != null &&
+      (container !== this._container || element == null)
+    ) {
       ReactDOM.unmountComponentAtNode(this._container);
     }
 

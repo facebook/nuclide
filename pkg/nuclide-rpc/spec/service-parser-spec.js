@@ -6,17 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 import {addMatchers} from '../../nuclide-test-helpers';
-import {parseServiceDefinition} from '../lib/service-parser';
+import {parseServiceDefinition, _clearFileParsers} from '../lib/service-parser';
 import {stripLocationsFileName} from '../lib/location';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('Nuclide service parser test suite.', () => {
   beforeEach(function() {
     addMatchers(this);
+  });
+
+  afterEach(() => {
+    _clearFileParsers();
   });
 
   for (const file of fs.readdirSync(nuclideUri.join(__dirname, 'fixtures'))) {
@@ -25,7 +30,11 @@ describe('Nuclide service parser test suite.', () => {
         const fixturePath = nuclideUri.join(__dirname, 'fixtures', file);
         const code = fs.readFileSync(fixturePath, 'utf8');
         const expected = JSON.parse(
-          fs.readFileSync(nuclideUri.join(__dirname, 'fixtures', file) + '.json', 'utf8'));
+          fs.readFileSync(
+            nuclideUri.join(__dirname, 'fixtures', file) + '.json',
+            'utf8',
+          ),
+        );
         const definitions = parseServiceDefinition(fixturePath, code, []);
         stripLocationsFileName(definitions);
         expect(definitions).diffJson(expected);
@@ -361,5 +370,67 @@ describe('Nuclide service parser test suite.', () => {
     expect(() => {
       parseServiceDefinition('fileName', code, []);
     }).not.toThrow();
+  });
+
+  it('interfaces must include a dispose', () => {
+    const code = `
+      export interface I {
+        f(): Promise<string>,
+      };
+      `;
+    expect(() => {
+      parseServiceDefinition('fileName', code, []);
+    }).toThrow();
+  });
+
+  it('allow interfaces', () => {
+    const code = `
+      export interface I {
+        f(): Promise<string>,
+        dispose(): void,
+      };
+      `;
+    expect(() => {
+      parseServiceDefinition('fileName', code, []);
+    }).not.toThrow();
+  });
+
+  it('function typed fields are not supported', () => {
+    const code = `
+      export type T = {
+        formatAtPosition?: () => Promise<string>,
+      };
+      `;
+    expect(() => {
+      parseServiceDefinition('fileName', code, []);
+    }).toThrow();
+  });
+
+  it('optional methods in classes are not supported', () => {
+    const code = `
+      export class C {
+
+          formatAtPosition?: () => Promise<string> = null,
+
+          dispose(): void {}
+      };
+      `;
+    expect(() => {
+      parseServiceDefinition('fileName', code, []);
+    }).toThrow();
+  });
+
+  it('optional methods in interfaces are not supported', () => {
+    const code = `
+      export interface I {
+
+          formatAtPosition?: () => Promise<string>,
+
+          dispose(): void,
+      };
+      `;
+    expect(() => {
+      parseServiceDefinition('fileName', code, []);
+    }).toThrow();
   });
 });

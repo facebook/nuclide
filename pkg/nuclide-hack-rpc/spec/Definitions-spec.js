@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HackDefinition} from '../lib/Definitions';
@@ -40,6 +41,13 @@ describe('convertDefinitions', () => {
       char_start: 42,
       char_end: 52,
     },
+    definition_span: {
+      filename: defPath,
+      line_start: 10,
+      char_start: 42,
+      line_end: 11,
+      char_end: 1,
+    },
     name: 'hack-name',
     pos: {
       filename: filePath,
@@ -68,58 +76,70 @@ describe('convertDefinitions', () => {
   };
 
   it('no definitions', () => {
-    expect(convertDefinitions([], filePath, projectRoot))
-      .toBe(null);
+    expect(convertDefinitions([], filePath, projectRoot)).toBe(null);
   });
 
   it('filtered definitions', () => {
-    expect(convertDefinitions([filteredDef], filePath, projectRoot))
-      .toBe(null);
+    expect(convertDefinitions([filteredDef], filePath, projectRoot)).toBe(null);
   });
 
   it('valid definition', () => {
-    expect(convertDefinitions([filteredDef, def], filePath, projectRoot))
-      .diffJson({
-        queryRange: [{
+    expect(
+      convertDefinitions([filteredDef, def], filePath, projectRoot),
+    ).diffJson({
+      queryRange: [
+        {
           start: {row: 0, column: 9},
           end: {row: 0, column: 13},
-        }],
-        definitions: [
-          {
-            path: defPath,
-            position: {
+        },
+      ],
+      definitions: [
+        {
+          path: defPath,
+          position: {
+            row: 9,
+            column: 41,
+          },
+          range: {
+            start: {
               row: 9,
               column: 41,
             },
-            id: 'hack-name',
-            name: 'hack-name',
-            language: 'php',
-            projectRoot,
+            end: {
+              row: 10,
+              column: 1,
+            },
           },
-        ],
-      });
+          id: 'hack-name',
+          name: 'hack-name',
+          language: 'php',
+          projectRoot,
+        },
+      ],
+    });
   });
 
   it('default name definition', () => {
-    expect(convertDefinitions([defaultName], filePath, projectRoot))
-      .diffJson({
-        queryRange: [{
+    expect(convertDefinitions([defaultName], filePath, projectRoot)).diffJson({
+      queryRange: [
+        {
           start: {row: 0, column: 9},
           end: {row: 0, column: 13},
-        }],
-        definitions: [
-          {
-            path: filePath,
-            position: {
-              row: 9,
-              column: 41,
-            },
-            id: 'hack-name',
-            name: 'hack-name',
-            language: 'php',
-            projectRoot,
+        },
+      ],
+      definitions: [
+        {
+          path: filePath,
+          position: {
+            row: 9,
+            column: 41,
           },
-        ],
-      });
+          id: 'hack-name',
+          name: 'hack-name',
+          language: 'php',
+          projectRoot,
+        },
+      ],
+    });
   });
 });

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -18,8 +19,7 @@ import {
 const ResizableFlexContainerExample = (): React.Element<any> => (
   <div>
     <div style={{display: 'flex', height: 100}}>
-      <ResizableFlexContainer
-          direction={FlexDirections.HORIZONTAL}>
+      <ResizableFlexContainer direction={FlexDirections.HORIZONTAL}>
         <ResizableFlexItem initialFlexScale={1}>
           HORIZONTAL Content1 (1 flex scale)
         </ResizableFlexItem>
@@ -30,8 +30,8 @@ const ResizableFlexContainerExample = (): React.Element<any> => (
     </div>
     <div style={{display: 'flex', height: 200}}>
       <ResizableFlexContainer
-          direction={FlexDirections.VERTICAL}
-          flexScales={[0.5, 1, 0.5]}>
+        direction={FlexDirections.VERTICAL}
+        flexScales={[0.5, 1, 0.5]}>
         <ResizableFlexItem initialFlexScale={0.5}>
           VERTICAL Content1 (0.5 flex scale)
         </ResizableFlexItem>

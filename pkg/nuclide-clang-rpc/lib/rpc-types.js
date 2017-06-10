@@ -6,13 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 // NOTE that the definitions in this file are shared between
 // the ClangService and ClangProcessService.
-
 
 // TODO: Support enums in rpc3 framework.
 // export type ClangCursorType = $Enum<typeof ClangCursorToDeclarationTypes>;

@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {SshConnectionConfiguration} from '../lib/SshHandshake';
 
 import EventEmitter from 'events';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {clearRequireCache, uncachedRequire} from '../../nuclide-test-helpers';
 import {SshHandshake} from '../lib/SshHandshake';
 
@@ -19,8 +20,8 @@ const pathToFakePk = nuclideUri.join(__dirname, 'fakepk');
 
 describe('SshHandshake', () => {
   class MockSshConnection extends EventEmitter {
-    connect(config) { }
-    end() { }
+    connect(config) {}
+    end() {}
   }
 
   let dns;
@@ -28,15 +29,20 @@ describe('SshHandshake', () => {
 
   beforeEach(() => {
     dns = uncachedRequire(require, 'dns');
-    spyOn(((dns: any): Object), 'lookup').andCallFake((host, family, callback) => {
+    spyOn(
+      ((dns: any): Object),
+      'lookup',
+    ).andCallFake((host, family, callback) => {
       process.nextTick(() => {
         callback(/* error */ null, /* address */ 'example.com', /* family */ 4);
       });
     });
-    handshakeDelegate = jasmine.createSpyObj(
-      'delegate',
-      ['onKeyboardInteractive', 'onWillConnect', 'onDidConnect', 'onError'],
-    );
+    handshakeDelegate = jasmine.createSpyObj('delegate', [
+      'onKeyboardInteractive',
+      'onWillConnect',
+      'onDidConnect',
+      'onError',
+    ]);
   });
 
   afterEach(() => {
@@ -58,8 +64,9 @@ describe('SshHandshake', () => {
 
       expect(handshakeDelegate.onWillConnect.callCount).toBe(1);
       expect(handshakeDelegate.onError.callCount).toBe(1);
-      expect(handshakeDelegate.onError.calls[0].args[0])
-        .toBe(SshHandshake.ErrorType.UNKNOWN);
+      expect(handshakeDelegate.onError.calls[0].args[0]).toBe(
+        SshHandshake.ErrorType.UNKNOWN,
+      );
       expect(handshakeDelegate.onError.calls[0].args[1]).toBe(mockError);
       expect(handshakeDelegate.onError.calls[0].args[2]).toBe(config);
     });
@@ -129,7 +136,9 @@ describe('SshHandshake', () => {
     it('calls SshConnection.end()', () => {
       const sshConnection = new MockSshConnection();
       const sshHandshake = new SshHandshake(handshakeDelegate, sshConnection);
-      const config: SshConnectionConfiguration = ({pathToPrivateKey: pathToFakePk}: any);
+      const config: SshConnectionConfiguration = ({
+        pathToPrivateKey: pathToFakePk,
+      }: any);
 
       spyOn(sshConnection, 'end');
 

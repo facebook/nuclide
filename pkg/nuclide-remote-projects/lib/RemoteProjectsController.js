@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -14,8 +15,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {CompositeDisposable, Disposable} from 'atom';
 import StatusBarTile from './StatusBarTile';
-import {isValidTextEditor} from '../../commons-atom/text-editor';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import ConnectionState from './ConnectionState';
 
 export default class RemoteProjectsController {
@@ -30,7 +31,9 @@ export default class RemoteProjectsController {
 
     this._statusSubscription = null;
     this._disposables.add(
-      atom.workspace.onDidChangeActivePaneItem(this._disposeSubscription.bind(this)),
+      atom.workspace.onDidChangeActivePaneItem(
+        this._disposeSubscription.bind(this),
+      ),
       atom.workspace.onDidStopChangingActivePaneItem(
         this._updateConnectionStatus.bind(this),
       ),
@@ -80,7 +83,6 @@ export default class RemoteProjectsController {
     const socket = connection.getSocket();
     updateStatus(socket.isConnected());
 
-
     this._statusSubscription = socket.onStatus(updateStatus);
     this._disposables.add(this._statusSubscription);
   }
@@ -89,27 +91,28 @@ export default class RemoteProjectsController {
     this._statusBarDiv = document.createElement('div');
     this._statusBarDiv.className = 'nuclide-remote-projects inline-block';
 
-    const tooltip = atom.tooltips.add(
-      this._statusBarDiv,
-      {title: 'Click to show details of connection.'},
-    );
+    const tooltip = atom.tooltips.add(this._statusBarDiv, {
+      title: 'Click to show details of connection.',
+    });
     invariant(this._statusBarDiv);
     const rightTile = statusBar.addLeftTile({
       item: this._statusBarDiv,
       priority: -99,
     });
 
-    this._disposables.add(new Disposable(() => {
-      invariant(this._statusBarDiv);
-      const parentNode = this._statusBarDiv.parentNode;
-      if (parentNode) {
-        parentNode.removeChild(this._statusBarDiv);
-      }
-      ReactDOM.unmountComponentAtNode(this._statusBarDiv);
-      this._statusBarDiv = null;
-      rightTile.destroy();
-      tooltip.dispose();
-    }));
+    this._disposables.add(
+      new Disposable(() => {
+        invariant(this._statusBarDiv);
+        const parentNode = this._statusBarDiv.parentNode;
+        if (parentNode) {
+          parentNode.removeChild(this._statusBarDiv);
+        }
+        ReactDOM.unmountComponentAtNode(this._statusBarDiv);
+        this._statusBarDiv = null;
+        rightTile.destroy();
+        tooltip.dispose();
+      }),
+    );
 
     const textEditor = atom.workspace.getActiveTextEditor();
     if (textEditor != null) {
@@ -123,10 +126,7 @@ export default class RemoteProjectsController {
     }
 
     const component = ReactDOM.render(
-      <StatusBarTile
-        connectionState={connectionState}
-        fileUri={fileUri}
-      />,
+      <StatusBarTile connectionState={connectionState} fileUri={fileUri} />,
       this._statusBarDiv,
     );
     invariant(component instanceof StatusBarTile);

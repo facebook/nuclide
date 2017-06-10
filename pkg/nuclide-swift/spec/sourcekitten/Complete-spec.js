@@ -6,20 +6,25 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {sourceKittenSourcetextToAtomSnippet} from '../../lib/sourcekitten/Complete';
+import {
+  sourceKittenSourcetextToAtomSnippet,
+} from '../../lib/sourcekitten/Complete';
 
 describe('sourceKittenSourcetextToAtomSnippet', () => {
   let sourcetext: string;
 
   describe('a function with three parameters', () => {
     beforeEach(() => {
-      sourcetext = 'foobar(<#T##x: Int##Int#>, y: <#T##String#>, baz: <#T##[String]#>)';
+      sourcetext =
+        'foobar(<#T##x: Int##Int#>, y: <#T##String#>, baz: <#T##[String]#>)';
     });
     it('creates a snippet', () => {
-      expect(sourceKittenSourcetextToAtomSnippet(sourcetext))
-        .toBe('foobar(${1:x: Int}, y: ${2:String}, baz: ${3:[String]})');
+      expect(sourceKittenSourcetextToAtomSnippet(sourcetext)).toBe(
+        'foobar(${1:x: Int}, y: ${2:String}, baz: ${3:[String]})',
+      );
     });
   });
 });

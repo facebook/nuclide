@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type Immutable from 'immutable';
@@ -28,10 +29,11 @@ export class LazyTreeNode {
    *     of LazyTreeNode objects.
    */
   constructor(
-      item: any,
-      parent: ?LazyTreeNode,
-      isContainer: boolean,
-      fetchChildren: (node: LazyTreeNode) => Promise<any>) {
+    item: any,
+    parent: ?LazyTreeNode,
+    isContainer: boolean,
+    fetchChildren: (node: LazyTreeNode) => Promise<any>,
+  ) {
     this.__item = item;
     this.__parent = parent;
     this.__isContainer = isContainer;

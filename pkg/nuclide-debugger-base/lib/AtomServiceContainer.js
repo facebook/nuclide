@@ -6,12 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Observable} from 'rxjs';
 import type {OutputService} from '../../nuclide-console/lib/types';
 
-type raiseNativeNotificationFunc = ?(title: string, body: string) => void;
+type raiseNativeNotificationFunc = ?(
+  title: string,
+  body: string,
+  timeout: number,
+  raiseIfAtomHasFocus: boolean,
+) => ?IDisposable;
 
 let _outputServiceApi: ?OutputService = null;
 let _raiseNativeNotification: ?raiseNativeNotificationFunc = null;
@@ -24,7 +30,9 @@ export function getOutputService(): ?OutputService {
   return _outputServiceApi;
 }
 
-export function setNotificationService(raiseNativeNotification: raiseNativeNotificationFunc): void {
+export function setNotificationService(
+  raiseNativeNotification: raiseNativeNotificationFunc,
+): void {
   _raiseNativeNotification = raiseNativeNotification;
 }
 

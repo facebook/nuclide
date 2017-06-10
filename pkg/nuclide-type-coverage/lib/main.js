@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CoverageProvider} from './types';
 import type {CoverageResult} from './rpc-types';
-import type {ObservableDiagnosticProvider} from '../../nuclide-diagnostics-common';
+import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -20,9 +21,9 @@ import {Disposable} from 'atom';
 import invariant from 'assert';
 import {Observable, Subject} from 'rxjs';
 
-import ActiveEditorRegistry from '../../commons-atom/ActiveEditorRegistry';
-import {track} from '../../nuclide-analytics';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import analytics from 'nuclide-commons-atom/analytics';
+import ActiveEditorRegistry from 'nuclide-commons-atom/ActiveEditorRegistry';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {StatusBarTile} from './StatusBarTile';
 import {diagnosticProviderForResultStream} from './coverageDiagnostics';
@@ -42,19 +43,24 @@ async function resultFunction(
 
 class Activation {
   _disposables: UniversalDisposable;
-  _activeEditorRegistry: ActiveEditorRegistry<CoverageProvider, ?CoverageResult>;
+  _activeEditorRegistry: ActiveEditorRegistry<
+    CoverageProvider,
+    ?CoverageResult,
+  >;
   _toggleEvents: Subject<void>;
   _shouldRenderDiagnostics: Observable<boolean>;
 
   constructor(state: ?Object) {
     this._toggleEvents = new Subject();
-    this._shouldRenderDiagnostics = this._toggleEvents.scan(prev => !prev, false);
+    this._shouldRenderDiagnostics = this._toggleEvents.scan(
+      prev => !prev,
+      false,
+    );
 
     this._disposables = new UniversalDisposable();
-    this._activeEditorRegistry = new ActiveEditorRegistry(
-      resultFunction,
-      {updateOnEdit: false},
-    );
+    this._activeEditorRegistry = new ActiveEditorRegistry(resultFunction, {
+      updateOnEdit: false,
+    });
 
     this._disposables.add(
       atom.commands.add(
@@ -65,7 +71,9 @@ class Activation {
     );
 
     this._disposables.add(
-      this._toggleEvents.subscribe(() => track('nuclide-type-coverage:toggle')),
+      this._toggleEvents.subscribe(() =>
+        analytics.track('nuclide-type-coverage:toggle'),
+      ),
     );
   }
 
@@ -126,7 +134,9 @@ export function deactivate() {
   }
 }
 
-export function consumeCoverageProvider(provider: CoverageProvider): IDisposable {
+export function consumeCoverageProvider(
+  provider: CoverageProvider,
+): IDisposable {
   invariant(activation != null);
   return activation.consumeCoverageProvider(provider);
 }

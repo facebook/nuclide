@@ -6,9 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {IconName} from 'nuclide-commons-ui/Icon';
+
 import type {CoverageResult} from './rpc-types';
 
 export interface CoverageProvider {
@@ -16,4 +19,5 @@ export interface CoverageProvider {
   priority: number,
   grammarScopes: Array<string>,
   displayName: string,
+  icon?: IconName,
 }

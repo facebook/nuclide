@@ -6,9 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {UpdateStateAction, SendRequestAction, PartialAppState} from './types';
+import type {
+  UpdateStateAction,
+  SendRequestAction,
+  PartialAppState,
+} from './types';
 
 export const UPDATE_STATE = 'UPDATE_STATE';
 export const SEND_REQUEST = 'SEND_REQUEST';

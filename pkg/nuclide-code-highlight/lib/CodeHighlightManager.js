@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CodeHighlightProvider} from './types';
 import {CompositeDisposable} from 'atom';
-import {observeTextEditors} from '../../commons-atom/text-editor';
-import debounce from '../../commons-node/debounce';
+import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
+import debounce from 'nuclide-commons/debounce';
 
 const HIGHLIGHT_DELAY_MS = 250;
 
@@ -23,30 +24,41 @@ export default class CodeHighlightManager {
   constructor() {
     this._providers = [];
     this._markers = [];
-    const subscriptions = this._subscriptions = new CompositeDisposable();
+    const subscriptions = (this._subscriptions = new CompositeDisposable());
     const debouncedCallback = debounce(
       this._onCursorMove.bind(this),
       HIGHLIGHT_DELAY_MS,
       false,
     );
-    subscriptions.add(observeTextEditors(editor => {
-      const editorSubscriptions = new CompositeDisposable();
-      editorSubscriptions.add(editor.onDidChangeCursorPosition(event => {
-        debouncedCallback(editor, event.newBufferPosition);
-      }));
-      editorSubscriptions.add(editor.onDidChange(event => {
-        this._destroyMarkers();
-        debouncedCallback(editor, editor.getCursorBufferPosition());
-      }));
-      editorSubscriptions.add(editor.onDidDestroy(() => {
-        editorSubscriptions.dispose();
-        subscriptions.remove(editorSubscriptions);
-      }));
-      subscriptions.add(editorSubscriptions);
-    }));
+    subscriptions.add(
+      observeTextEditors(editor => {
+        const editorSubscriptions = new CompositeDisposable();
+        editorSubscriptions.add(
+          editor.onDidChangeCursorPosition(event => {
+            debouncedCallback(editor, event.newBufferPosition);
+          }),
+        );
+        editorSubscriptions.add(
+          editor.onDidChange(event => {
+            this._destroyMarkers();
+            debouncedCallback(editor, editor.getCursorBufferPosition());
+          }),
+        );
+        editorSubscriptions.add(
+          editor.onDidDestroy(() => {
+            editorSubscriptions.dispose();
+            subscriptions.remove(editorSubscriptions);
+          }),
+        );
+        subscriptions.add(editorSubscriptions);
+      }),
+    );
   }
 
-  async _onCursorMove(editor: atom$TextEditor, position: atom$Point): Promise<void> {
+  async _onCursorMove(
+    editor: atom$TextEditor,
+    position: atom$Point,
+  ): Promise<void> {
     if (editor.isDestroyed() || this._isPositionInHighlightedRanges(position)) {
       return;
     }
@@ -55,7 +67,10 @@ export default class CodeHighlightManager {
     this._destroyMarkers();
 
     const originalChangeCount = editor.getBuffer().changeCount;
-    const highlightedRanges = await this._getHighlightedRanges(editor, position);
+    const highlightedRanges = await this._getHighlightedRanges(
+      editor,
+      position,
+    );
     if (highlightedRanges == null) {
       return;
     }
@@ -66,14 +81,14 @@ export default class CodeHighlightManager {
       return;
     }
 
-    this._markers = highlightedRanges.map(
-      range => editor.markBufferRange(range, {}),
+    this._markers = highlightedRanges.map(range =>
+      editor.markBufferRange(range, {}),
     );
     this._markers.forEach(marker => {
-      editor.decorateMarker(
-        marker,
-        {type: 'highlight', class: 'nuclide-code-highlight-marker'},
-      );
+      editor.decorateMarker(marker, {
+        type: 'highlight',
+        class: 'nuclide-code-highlight-marker',
+      });
     });
   }
 
@@ -95,8 +110,10 @@ export default class CodeHighlightManager {
     position: atom$Point,
     originalChangeCount: number,
   ): boolean {
-    return !editor.getCursorBufferPosition().isEqual(position)
-      || editor.getBuffer().changeCount !== originalChangeCount;
+    return (
+      !editor.getCursorBufferPosition().isEqual(position) ||
+      editor.getBuffer().changeCount !== originalChangeCount
+    );
   }
 
   _isPositionInHighlightedRanges(position: atom$Point): boolean {
@@ -105,10 +122,15 @@ export default class CodeHighlightManager {
       .some(range => range.containsPoint(position));
   }
 
-  _getMatchingProvidersForScopeName(scopeName: string): Array<CodeHighlightProvider> {
+  _getMatchingProvidersForScopeName(
+    scopeName: string,
+  ): Array<CodeHighlightProvider> {
     const matchingProviders = this._providers.filter(provider => {
       const providerGrammars = provider.selector.split(/, ?/);
-      return provider.inclusionPriority > 0 && providerGrammars.indexOf(scopeName) !== -1;
+      return (
+        provider.inclusionPriority > 0 &&
+        providerGrammars.indexOf(scopeName) !== -1
+      );
     });
     return matchingProviders.sort((providerA, providerB) => {
       return providerB.inclusionPriority - providerA.inclusionPriority;

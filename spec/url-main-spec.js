@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import electron from 'electron';
@@ -17,8 +18,10 @@ import temp from 'temp';
 import {__test__} from '../lib/url-main';
 import * as pkgJson from '../package.json';
 
+import {getWindowLoadSettings} from '../pkg/commons-atom/window-load-settings';
+import fsPromise from 'nuclide-commons/fsPromise';
+
 const {
-  getLoadSettings,
   getApplicationState,
   getAtomInitializerScript,
   acquireLock,
@@ -32,15 +35,22 @@ temp.track();
 
 // Simulates what Atom does when it creates a new BrowserWindow.
 function createAtomWindow(urlToOpen: string) {
-  const loadSettings = getLoadSettings();
+  const loadSettings = getWindowLoadSettings();
   // This has to be done in the main process now - there's no way to set loadSettings
   // via the proxied BrowserWindow object.
-  const {createBrowserWindow} = remote.require(require.resolve('./utils/create-browser-window'));
-  return createBrowserWindow({
-    ...loadSettings,
-    windowInitializationScript: require.resolve(path.join('..', pkgJson.urlMain)),
-    urlToOpen,
-  }, remote.getCurrentWindow());
+  const {createBrowserWindow} = remote.require(
+    require.resolve('./utils/create-browser-window'),
+  );
+  return createBrowserWindow(
+    {
+      ...loadSettings,
+      windowInitializationScript: require.resolve(
+        path.join('..', pkgJson.urlMain),
+      ),
+      urlToOpen,
+    },
+    remote.getCurrentWindow(),
+  );
 }
 
 describe('url-main', () => {
@@ -73,15 +83,19 @@ describe('getApplicationState', () => {
     const storageDir = path.join(tmpdir, 'storage');
     fs.mkdirSync(storageDir);
     const mockState = [{initialPaths: ['test']}];
-    fs.writeFileSync(path.join(storageDir, 'application.json'), JSON.stringify(mockState));
+    fs.writeFileSync(
+      path.join(storageDir, 'application.json'),
+      JSON.stringify(mockState),
+    );
     expect(getApplicationState(tmpdir)).toEqual(mockState);
   });
 });
 
 describe('getAtomInitializerScript', () => {
-  it('points to a valid and existing JS function', () => {
-    // $FlowIgnore
-    expect(typeof require(getAtomInitializerScript())).toBe('function');
+  it('points to a valid JS file', () => {
+    waitsForPromise(async () => {
+      expect(await fsPromise.exists(getAtomInitializerScript())).toBe(true);
+    });
   });
 });
 

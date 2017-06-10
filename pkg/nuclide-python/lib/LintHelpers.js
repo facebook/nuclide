@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {LinterMessage} from '../../nuclide-diagnostics-common';
+import type {LinterMessage} from 'atom-ide-ui';
 
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getPythonServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {trackTiming} from '../../nuclide-analytics';
 import {getDiagnosticRange} from './diagnostic-range';
@@ -19,14 +20,20 @@ import {getEnableLinting, getLintExtensionBlacklist} from './config';
 export default class LintHelpers {
   static lint(editor: TextEditor): Promise<Array<LinterMessage>> {
     const src = editor.getPath();
-    if (src == null || !getEnableLinting() ||
-        getLintExtensionBlacklist().includes(nuclideUri.extname(src))) {
+    if (
+      src == null ||
+      !getEnableLinting() ||
+      getLintExtensionBlacklist().includes(nuclideUri.extname(src))
+    ) {
       return Promise.resolve([]);
     }
 
     return trackTiming('nuclide-python.lint', async () => {
       const service = getPythonServiceByNuclideUri(src);
       const diagnostics = await service.getDiagnostics(src, editor.getText());
+      if (editor.isDestroyed()) {
+        return [];
+      }
       return diagnostics.map(diagnostic => ({
         name: 'flake8: ' + diagnostic.code,
         type: diagnostic.type,

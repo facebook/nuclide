@@ -60,7 +60,6 @@
 }
 
 .nuclide-debugger-section-header {
-  border-top: 1px @base-border-color solid;
   padding: 0px 5px;
 }
 
@@ -111,6 +110,7 @@ Use flexbox cross-axis stretch to fill the vertical space.
   display: flex;
   justify-content: space-between;
   margin-bottom: @component-padding;
+  padding: 5px;
 }
 
 .nuclide-debugger-section-content {
@@ -120,11 +120,27 @@ Use flexbox cross-axis stretch to fill the vertical space.
   margin-bottom: 5px;
 }
 
+.nuclide-debugger-pane-content {
+  max-height: 20em;
+  overflow-y: visible;
+  overflow-x: visible;
+  margin-bottom: 5px;
+  padding: 10px;
+}
+
 .nuclide-debugger-breakpoint {
   padding-left: 0.25em;
+
+  span {
+    -webkit-user-select: none;
+  }
 }
 
 .nuclide-debugger-breakpoint-unresolved {
+  text-decoration: line-through;
+}
+
+.nuclide-debugger-breakpoint-disabled {
   text-decoration: line-through;
 }
 
@@ -152,7 +168,8 @@ Use flexbox cross-axis stretch to fill the vertical space.
 }
 
 .nuclide-debugger-watch-expression-value-content {
-  overflow-x: auto;
+  width: 100%;
+  overflow: visible;
 }
 
 .nuclide-debugger-watch-expression-xout {
@@ -212,6 +229,11 @@ Use flexbox cross-axis stretch to fill the vertical space.
 }
 
 /* Stepping controls */
+.nuclide-debugger-stepping-button-separated {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 .nuclide-debugger-stepping-component {
   display: flex;
   flex-wrap: wrap;
@@ -253,6 +275,11 @@ Use flexbox cross-axis stretch to fill the vertical space.
   cursor: pointer;
   margin-right: 0.5em;
   margin-top: 4px;
+}
+
+.nuclide-debugger-set-source-path-button {
+  position: relative;
+  left: 10px;
 }
 
 .nuclide-debugger-exception-fragment {

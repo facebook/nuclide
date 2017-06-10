@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /*
@@ -41,10 +42,10 @@ const NON_MAC_MODIFIER_KEYMAP = {
 // Human key combos should always explicitly state the shift key. This map is a disambiguator.
 // 'shift-version': 'no-shift-version'
 const SHIFT_KEYMAP = {
-  '_': '-',
+  _: '-',
   ':': ';',
   '?': '/',
-  '"': '\'',
+  '"': "'",
   '{': '[',
   '}': ']',
   '+': '=',
@@ -79,7 +80,9 @@ function humanizeKey(key: string, platform: ?string): string | Array<string> {
   if (!key) {
     return key;
   }
-  const modifierKeyMap = platform === 'darwin' ? MAC_MODIFIER_KEYMAP : NON_MAC_MODIFIER_KEYMAP;
+  const modifierKeyMap = platform === 'darwin'
+    ? MAC_MODIFIER_KEYMAP
+    : NON_MAC_MODIFIER_KEYMAP;
   if (modifierKeyMap[key]) {
     return modifierKeyMap[key];
   }
@@ -108,7 +111,10 @@ function humanizeKey(key: string, platform: ?string): string | Array<string> {
  * @param platform An optional String platform to humanize for (default: `process.platform`).
  * @return a humanized representation of the keystroke.
  */
-export default function humanizeKeystroke(keystroke: string, platform_: ?string): string {
+export default function humanizeKeystroke(
+  keystroke: string,
+  platform_: ?string,
+): string {
   let platform = platform_;
   if (!keystroke) {
     return keystroke;

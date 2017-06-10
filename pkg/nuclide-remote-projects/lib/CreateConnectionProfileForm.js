@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -15,20 +16,15 @@ import type {
   NuclideRemoteConnectionProfile,
 } from './connection-types';
 
-import {AtomInput} from '../../nuclide-ui/AtomInput';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import invariant from 'assert';
 import {CompositeDisposable} from 'atom';
 import ConnectionDetailsForm from './ConnectionDetailsForm';
 import {validateFormInputs} from './form-validation-utils';
-import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
-import {
-  ButtonGroup,
-} from '../../nuclide-ui/ButtonGroup';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 
 type Props = {
   // A function called when the "Cancel" button is clicked.
@@ -39,7 +35,9 @@ type Props = {
   // checks that the fields are non-empty before calling this function.
   onSave: (profile: NuclideRemoteConnectionProfile) => mixed,
   // The inputs to pre-fill the form with.
-  initialFormFields: NuclideNewConnectionProfileInitialFields | NuclideRemoteConnectionParams,
+  initialFormFields:
+    | NuclideNewConnectionProfileInitialFields
+    | NuclideRemoteConnectionParams,
   profileHosts: ?Array<string>,
 };
 
@@ -51,7 +49,8 @@ const emptyFunction = () => {};
 /**
  * A form that is used to create a new connection profile.
  */
-export default class CreateConnectionProfileForm extends React.Component<void, Props, void> {
+export default class CreateConnectionProfileForm
+  extends React.Component<void, Props, void> {
   props: Props;
 
   disposables: CompositeDisposable;
@@ -92,19 +91,15 @@ export default class CreateConnectionProfileForm extends React.Component<void, P
       <div>
         <div className="form-group">
           <label>{PROFILE_NAME_LABEL}:</label>
-          <AtomInput
-            initialValue=""
-            ref="profile-name"
-            unstyled={true}
-          />
+          <AtomInput initialValue="" ref="profile-name" unstyled={true} />
         </div>
         <ConnectionDetailsForm
           initialUsername={initialFields.username}
           initialServer={initialFields.server}
           initialCwd={initialFields.cwd}
           initialRemoteServerCommand={
-            initialFields.remoteServerCommand
-            || DEFAULT_SERVER_COMMAND_PLACEHOLDER
+            initialFields.remoteServerCommand ||
+              DEFAULT_SERVER_COMMAND_PLACEHOLDER
           }
           initialSshPort={initialFields.sshPort}
           initialPathToPrivateKey={initialFields.pathToPrivateKey}
@@ -132,14 +127,17 @@ export default class CreateConnectionProfileForm extends React.Component<void, P
 
   _getProfileName(): string {
     const fieldName = 'profile-name';
-    return (this.refs[fieldName] && this.refs[fieldName].getText().trim()) || '';
+    return (
+      (this.refs[fieldName] && this.refs[fieldName].getText().trim()) || ''
+    );
   }
 
   _clickSave(): void {
     // Validate the form inputs.
     const profileName = this._getProfileName();
-    const connectionDetails: NuclideRemoteConnectionParamsWithPassword =
-        this.refs['connection-details'].getFormFields();
+    const connectionDetails: NuclideRemoteConnectionParamsWithPassword = this.refs[
+      'connection-details'
+    ].getFormFields();
     const validationResult = validateFormInputs(
       profileName,
       connectionDetails,
@@ -151,7 +149,7 @@ export default class CreateConnectionProfileForm extends React.Component<void, P
     }
     invariant(
       validationResult.validatedProfile != null &&
-      typeof validationResult.validatedProfile === 'object',
+        typeof validationResult.validatedProfile === 'object',
     );
     const newProfile = validationResult.validatedProfile;
     // Save the validated profile, and show any warning messages.

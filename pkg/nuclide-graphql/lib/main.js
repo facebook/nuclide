@@ -6,41 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
-import {CompositeDisposable} from 'atom';
 
 import {
   graphqlLanguageService,
   resetGraphQLLanguageService,
 } from './GraphQLLanguage';
 
-class Activation {
-  _disposables: CompositeDisposable;
-
-  constructor() {
-    this._disposables = new CompositeDisposable();
-    graphqlLanguageService.activate();
-    this._disposables.add(graphqlLanguageService);
-  }
-
-  dispose() {
-    resetGraphQLLanguageService();
-    this._disposables.dispose();
-  }
+export function activate() {
+  graphqlLanguageService.then(value => value.activate());
 }
 
-let activation: ?Activation = null;
-
-export function activate(state: ?Object) {
-  if (!activation) {
-    activation = new Activation();
-  }
-}
-
-export function deactivate() {
-  if (activation) {
-    activation.dispose();
-    activation = null;
-  }
+export function deactivate(): void {
+  resetGraphQLLanguageService();
 }

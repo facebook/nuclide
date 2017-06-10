@@ -6,21 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import React from 'react';
-import {Button, ButtonTypes} from '../../../nuclide-ui/Button';
-import {ButtonGroup} from '../../../nuclide-ui/ButtonGroup';
-import {Checkbox} from '../../../nuclide-ui/Checkbox';
-import {DebuggerLaunchAttachEventTypes} from '../../../nuclide-debugger-base';
-
-import type EventEmitter from 'events';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 type Props = {
   targetUri: NuclideUri,
-  parentEmitter: EventEmitter,
+  configIsValidChanged: (valid: boolean) => void,
 };
 
 // TODO: All this needs to be serialized by the package, so we're going to need to hoist it and use
@@ -34,12 +31,15 @@ type State = {
 export class DebugUiComponent extends React.Component {
   props: Props;
   state: State;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleCancelButtonClick = this._handleCancelButtonClick.bind(this);
-    (this: any)._handleDebugButtonClick = this._handleDebugButtonClick.bind(this);
+    (this: any)._handleDebugButtonClick = this._handleDebugButtonClick.bind(
+      this,
+    );
 
+    this._disposables = new UniversalDisposable();
     this.state = {
       startPackager: false,
       tailIosLogs: false,
@@ -47,16 +47,29 @@ export class DebugUiComponent extends React.Component {
     };
   }
 
-  componentWillMount() {
-    this.props.parentEmitter.on(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleDebugButtonClick);
+  componentDidMount(): void {
+    this._disposables.add(
+      atom.commands.add('atom-workspace', {
+        'core:confirm': () => {
+          if (this._debugButtonShouldEnable()) {
+            this._handleDebugButtonClick();
+          }
+        },
+      }),
+    );
   }
 
   componentWillUnmount() {
-    this.props.parentEmitter.removeListener(
-      DebuggerLaunchAttachEventTypes.ENTER_KEY_PRESSED,
-      this._handleDebugButtonClick);
+    this._disposables.dispose();
+  }
+
+  setState(newState: Object): void {
+    super.setState(newState);
+    this.props.configIsValidChanged(this._debugButtonShouldEnable());
+  }
+
+  _debugButtonShouldEnable(): boolean {
+    return true;
   }
 
   render(): React.Element<any> {
@@ -78,7 +91,7 @@ export class DebugUiComponent extends React.Component {
         </div>
         <div className="block">
           <Checkbox
-          checked={this.state.tailAdbLogs}
+            checked={this.state.tailAdbLogs}
             label="Tail adb Logcat Logs"
             onChange={tailAdbLogs => this.setState({tailAdbLogs})}
           />
@@ -86,19 +99,6 @@ export class DebugUiComponent extends React.Component {
         <div className="text-left text-smaller text-subtle">
           After starting the debugger, enable JS debugging from the developer menu of your React
           Native app
-        </div>
-        <div className="nuclide-react-native-debugging-launch-attach-actions">
-          <ButtonGroup>
-            <Button
-              onClick={this._handleCancelButtonClick}>
-              Cancel
-            </Button>
-            <Button
-              buttonType={ButtonTypes.PRIMARY}
-              onClick={this._handleDebugButtonClick}>
-              Attach
-            </Button>
-          </ButtonGroup>
         </div>
       </div>
     );
@@ -115,11 +115,6 @@ export class DebugUiComponent extends React.Component {
       callWorkspaceCommand('nuclide-adb-logcat:start');
     }
     callWorkspaceCommand('nuclide-react-native:start-debugging');
-    callWorkspaceCommand('nuclide-debugger:toggle-launch-attach');
-  }
-
-  _handleCancelButtonClick(): void {
-    callWorkspaceCommand('nuclide-debugger:toggle-launch-attach');
   }
 }
 

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // TODO @jxg export debugger typedefs from main module. (t11406963)
@@ -17,16 +18,13 @@ import type {Observable} from 'rxjs';
 
 import React from 'react';
 import invariant from 'assert';
-import {bindObservableAsProps} from './bindObservableAsProps';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {highlightOnUpdate} from './highlightOnUpdate';
 import {ValueComponentClassNames} from './ValueComponentClassNames';
-import {
-  TreeList,
-  TreeItem,
-  NestedTreeItem,
-} from './Tree';
-import {LoadingSpinner} from './LoadingSpinner';
-import ignoreTextSelectionEvents from './ignoreTextSelectionEvents';
+import {TreeList, TreeItem, NestedTreeItem} from './Tree';
+import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
+import ignoreTextSelectionEvents
+  from 'nuclide-commons-ui/ignoreTextSelectionEvents';
 import classnames from 'classnames';
 
 const SPINNER_DELAY = 100; /* ms */
@@ -37,7 +35,11 @@ function isObjectValue(result: EvaluationResult): boolean {
 }
 
 function TreeItemWithLoadingSpinner(): React.Element<any> {
-  return <TreeItem><LoadingSpinner size="EXTRA_SMALL" delay={SPINNER_DELAY} /></TreeItem>;
+  return (
+    <TreeItem className="nuclide-ui-lazy-nested-value-spinner">
+      <LoadingSpinner size="EXTRA_SMALL" delay={SPINNER_DELAY} />
+    </TreeItem>
+  );
 }
 
 type LoadableValueComponentProps = {
@@ -76,24 +78,22 @@ const LoadableValueComponent = (props: LoadableValueComponentProps) => {
   }
   return (
     <span>
-      {
-        children.map(child =>
-          <TreeItem key={child.name}>
-            <ValueComponent
-              evaluationResult={child.value}
-              fetchChildren={fetchChildren}
-              expression={child.name}
-              expandedValuePaths={expandedValuePaths}
-              onExpandedStateChange={onExpandedStateChange}
-              path={path + '.' + child.name}
-              simpleValueComponent={simpleValueComponent}
-              shouldCacheChildren={shouldCacheChildren}
-              getCachedChildren={getCachedChildren}
-              setCachedChildren={setCachedChildren}
-            />
-          </TreeItem>,
-        )
-      }
+      {children.map(child => (
+        <TreeItem key={child.name}>
+          <ValueComponent
+            evaluationResult={child.value}
+            fetchChildren={fetchChildren}
+            expression={child.name}
+            expandedValuePaths={expandedValuePaths}
+            onExpandedStateChange={onExpandedStateChange}
+            path={path + '.' + child.name}
+            simpleValueComponent={simpleValueComponent}
+            shouldCacheChildren={shouldCacheChildren}
+            getCachedChildren={getCachedChildren}
+            setCachedChildren={setCachedChildren}
+          />
+        </TreeItem>
+      ))}
     </span>
   );
 };
@@ -104,12 +104,16 @@ function renderValueLine(
   value: React.Element<any> | string,
 ): React.Element<any> {
   if (expression == null) {
-    return <div className="nuclide-ui-lazy-nested-value-container">{value}</div>;
+    return (
+      <div className="nuclide-ui-lazy-nested-value-container">{value}</div>
+    );
   } else {
     // TODO @jxg use a text editor to apply proper syntax highlighting for expressions (t11408154)
     return (
       <div className="nuclide-ui-lazy-nested-value-container">
-        <span className={ValueComponentClassNames.identifier}>{expression}</span>
+        <span className={ValueComponentClassNames.identifier}>
+          {expression}
+        </span>
         : {value}
       </div>
     );
@@ -242,13 +246,13 @@ class ValueComponent extends React.Component {
           simpleValueComponent={SimpleValueComponent}
         />
       );
-      return isRoot ? simpleValueElement : <TreeItem>{simpleValueElement}</TreeItem>;
+      return isRoot
+        ? simpleValueElement
+        : <TreeItem>{simpleValueElement}</TreeItem>;
     }
-    const description = evaluationResult.description || '<no description provided>';
-    const {
-      children,
-      isExpanded,
-    } = this.state;
+    const description =
+      evaluationResult.description || '<no description provided>';
+    const {children, isExpanded} = this.state;
     let childListElement = null;
     if (isExpanded) {
       const cachedChildren = getCachedChildren(path);
@@ -270,7 +274,9 @@ class ValueComponent extends React.Component {
         childListElement = <TreeItemWithLoadingSpinner />;
       } else {
         const ChildrenComponent = bindObservableAsProps(
-          children.map(childrenValue => ({children: childrenValue})).startWith({children: null}),
+          children
+            .map(childrenValue => ({children: childrenValue}))
+            .startWith({children: null}),
           LoadableValueComponent,
         );
         childListElement = (
@@ -289,7 +295,9 @@ class ValueComponent extends React.Component {
     }
     const title = renderValueLine(expression, description);
     return (
-      <TreeList showArrows={true} className="nuclide-ui-lazy-nested-value-treelist">
+      <TreeList
+        showArrows={true}
+        className="nuclide-ui-lazy-nested-value-treelist">
         <NestedTreeItem
           collapsed={!this.state.isExpanded}
           onClick={this._toggleExpandFiltered}
@@ -303,13 +311,17 @@ class ValueComponent extends React.Component {
 
 function shouldFetchChildren(props: LazyNestedValueComponentProps): boolean {
   const {fetchChildren, evaluationResult} = props;
-  return shouldFetchBecauseNothingIsCached(props) &&
+  return (
+    shouldFetchBecauseNothingIsCached(props) &&
     typeof fetchChildren === 'function' &&
     evaluationResult != null &&
-    evaluationResult.objectId != null;
+    evaluationResult.objectId != null
+  );
 }
 
-function shouldFetchBecauseNothingIsCached(props: LazyNestedValueComponentProps): boolean {
+function shouldFetchBecauseNothingIsCached(
+  props: LazyNestedValueComponentProps,
+): boolean {
   const {shouldCacheChildren, getCachedChildren, path} = props;
   const children = getCachedChildren(path);
   return !shouldCacheChildren || children == null;
@@ -357,12 +369,20 @@ class TopLevelLazyNestedValueComponent extends React.Component {
 
   handleExpansionChange(expandedValuePath: string, isExpanded: boolean): void {
     const expandedValuePaths = this.getExpandedValuePaths();
-    const nodeData =
-      expandedValuePaths.get(expandedValuePath) || {isExpanded, cachedChildren: null};
+    const nodeData = expandedValuePaths.get(expandedValuePath) || {
+      isExpanded,
+      cachedChildren: null,
+    };
     if (isExpanded) {
-      expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: true});
+      expandedValuePaths.set(expandedValuePath, {
+        ...nodeData,
+        isExpanded: true,
+      });
     } else {
-      expandedValuePaths.set(expandedValuePath, {...nodeData, isExpanded: false});
+      expandedValuePaths.set(expandedValuePath, {
+        ...nodeData,
+        isExpanded: false,
+      });
     }
   }
 
@@ -388,7 +408,10 @@ class TopLevelLazyNestedValueComponent extends React.Component {
   setCachedChildren(path: string, children: ExpansionResult): void {
     const nodeData = this.getExpandedValuePaths().get(path);
     if (nodeData != null) {
-      this.getExpandedValuePaths().set(path, {...nodeData, cachedChildren: children});
+      this.getExpandedValuePaths().set(path, {
+        ...nodeData,
+        cachedChildren: children,
+      });
     }
   }
 
@@ -436,6 +459,6 @@ function arePropsEqual(
 export const LazyNestedValueComponent = highlightOnUpdate(
   TopLevelLazyNestedValueComponent,
   arePropsEqual,
-  undefined, /* custom classname */
-  undefined, /* custom delay */
+  undefined /* custom classname */,
+  undefined /* custom delay */,
 );

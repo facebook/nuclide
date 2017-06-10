@@ -6,33 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {MessageType} from '../../nuclide-diagnostics-common/lib/rpc-types';
-
-// Codes that should be displayed as errors. A general guideline is that
-// style-related codes should be classified as warnings, while codes that
-// indicate likeliness to error upon interpretation should be classified as errors.
-const ERROR_CODES = new Set([
-  /* pyflakes */
-  'F821', // undefined name
-  'F822', // undefined name in __all__
-  'F823', // referenced before assignment
-  'F831', // duplicate argument in function definition
-  /* pep8 */
-  'E101', // indentation contains mixed spaces and tabs
-  'E112', // expected an indented block
-  'E113', // unexpected indentation
-  'E123', // closing bracket does not match indentation of opening bracket’s line
-  'E124', // closing bracket does not match visual indentation
-  'E129', // visually indented line with same indent as next logical line
-  'E133', // closing bracket is missing indentation
-  'E901', // SyntaxError or IndentationError
-  'E902', // IOError
-]);
+import type {MessageType} from 'atom-ide-ui';
 
 function classifyCode(code: string): MessageType {
-  return ERROR_CODES.has(code) ? 'Error' : 'Warning';
+  if (/^(B9|C|E[35]|T400|T49)/.test(code)) {
+    return 'Info';
+  } else if (/^(F|B|T484|E999)/.test(code)) {
+    return 'Error';
+  }
+  return 'Warning';
 }
 
 export function parseFlake8Output(src: string, output: string): Array<Object> {
@@ -48,7 +33,7 @@ export function parseFlake8Output(src: string, output: string): Array<Object> {
     results.push({
       file: src,
       line: parseInt(line, 10) - 1 || 0,
-      column: parseInt(column, 10) || 0,
+      column: parseInt(column, 10) - 1 || 0,
       code,
       type: classifyCode(code),
       message,

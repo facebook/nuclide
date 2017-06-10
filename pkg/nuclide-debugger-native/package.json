@@ -80,12 +80,5 @@
         "0.0.0": "createDebuggerProvider"
       }
     }
-  },
-  "consumedServices": {
-    "nuclide-output": {
-      "versions": {
-        "0.0.0": "consumeOutputService"
-      }
-    }
   }
 }

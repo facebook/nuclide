@@ -6,20 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-const {encryptString, decryptString} =
-  require('../lib/RemoteConnectionConfigurationManager').__test__;
+const {
+  encryptString,
+  decryptString,
+} = require('../lib/RemoteConnectionConfigurationManager').__test__;
 
 describe('RemoteConnectionConfigurationManager', () => {
   describe('encryptString and decryptString', () => {
     it('can encrypt and dycrypt strings', () => {
       const text = 'This little piggy went to market';
-      const {
-        password,
-        salt,
-        encryptedString,
-      } = encryptString(text);
+      const {password, salt, encryptedString} = encryptString(text);
 
       expect(encryptedString).not.toEqual(text);
       expect(decryptString(encryptedString, password, salt)).toEqual(text);

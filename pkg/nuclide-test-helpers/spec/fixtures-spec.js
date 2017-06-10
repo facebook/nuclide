@@ -6,17 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
 import glob from 'glob';
-import {
-  copyFixture,
-  copyBuildFixture,
-  generateFixture,
-} from '../lib/fixtures';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {copyFixture, copyBuildFixture, generateFixture} from '../lib/fixtures';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('copyFixture', () => {
   it('should copy a directory recursively', () => {
@@ -41,8 +38,14 @@ describe('copyFixture', () => {
 
   it('should find fixtures in parent directories', () => {
     waitsForPromise(async () => {
-      const fixtureStartDir = nuclideUri.join(__dirname, 'fixtures/deep1/deep2');
-      const copyOfFixture = await copyFixture('fixture-to-find', fixtureStartDir);
+      const fixtureStartDir = nuclideUri.join(
+        __dirname,
+        'fixtures/deep1/deep2',
+      );
+      const copyOfFixture = await copyFixture(
+        'fixture-to-find',
+        fixtureStartDir,
+      );
       expect(nuclideUri.isAbsolute(copyOfFixture)).toBe(true);
 
       expect(fs.statSync(copyOfFixture).isDirectory()).toBe(true);
@@ -60,7 +63,10 @@ describe('copyBuildFixture', () => {
       const buildFixture = await copyBuildFixture('build-fixture', __dirname);
       expect(nuclideUri.isAbsolute(buildFixture)).toBe(true);
       expect(fs.statSync(buildFixture).isDirectory()).toBe(true);
-      const renames = await fsPromise.glob('**/*', {cwd: buildFixture, nodir: true});
+      const renames = await fsPromise.glob('**/*', {
+        cwd: buildFixture,
+        nodir: true,
+      });
       expect(renames).toEqual([
         'BUCK',
         'otherdir/BUCK',
@@ -77,10 +83,7 @@ describe('generateFixture', () => {
     waitsForPromise(async () => {
       const fixturePath = await generateFixture(
         'fixture-to-generate',
-        new Map([
-          ['foo.js', undefined],
-          ['bar/baz.txt', 'some text'],
-        ]),
+        new Map([['foo.js', undefined], ['bar/baz.txt', 'some text']]),
       );
 
       expect(nuclideUri.isAbsolute(fixturePath)).toBe(true);
@@ -106,7 +109,9 @@ describe('generateFixture', () => {
         }
       }
       const fixturePath = await generateFixture('lots-of-files', files);
-      const fixtureFiles = glob.sync(nuclideUri.join(fixturePath, 'dir_*/file_*.txt'));
+      const fixtureFiles = glob.sync(
+        nuclideUri.join(fixturePath, 'dir_*/file_*.txt'),
+      );
       expect(fixtureFiles.length).toBe(10000);
     });
   });

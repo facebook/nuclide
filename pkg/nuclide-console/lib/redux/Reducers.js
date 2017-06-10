@@ -6,13 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Action, AppState} from '../types';
 
 import * as Actions from './Actions';
 
-export default function accumulateState(state: AppState, action: Action): AppState {
+export default function accumulateState(
+  state: AppState,
+  action: Action,
+): AppState {
   switch (action.type) {
     case Actions.RECORD_RECEIVED: {
       const {record} = action.payload;
@@ -32,11 +36,14 @@ export default function accumulateState(state: AppState, action: Action): AppSta
         records: state.records.slice(-maxMessageCount),
       };
     }
-    case Actions.REGISTER_RECORD_PROVIDER: {
-      const {recordProvider} = action.payload;
+    case Actions.REGISTER_SOURCE: {
+      const {source} = action.payload;
       return {
         ...state,
-        providers: new Map(state.providers).set(recordProvider.id, recordProvider),
+        providers: new Map(state.providers).set(source.id, {
+          ...source,
+          name: source.name || source.id,
+        }),
       };
     }
     case Actions.CLEAR_RECORDS: {
@@ -78,7 +85,10 @@ export default function accumulateState(state: AppState, action: Action): AppSta
       const {status, providerId} = action.payload;
       return {
         ...state,
-        providerStatuses: new Map(state.providerStatuses).set(providerId, status),
+        providerStatuses: new Map(state.providerStatuses).set(
+          providerId,
+          status,
+        ),
       };
     }
     case Actions.EXECUTE: {

@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {nextAnimationFrame} from '../../commons-node/observable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {nextAnimationFrame} from 'nuclide-commons/observable';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -58,16 +59,14 @@ export class FileTree extends React.Component {
     window.addEventListener('resize', this._measureHeights);
 
     this._disposables.add(
-      atom.themes.onDidChangeActiveThemes(
-        () => {
-          this._initialHeightMeasured = false;
-          const sub = nextAnimationFrame.subscribe(() => {
-            this._disposables.remove(sub);
-            this._measureHeights();
-          });
-          this._disposables.add(sub);
-        },
-      ),
+      atom.themes.onDidChangeActiveThemes(() => {
+        this._initialHeightMeasured = false;
+        const sub = nextAnimationFrame.subscribe(() => {
+          this._disposables.remove(sub);
+          this._measureHeights();
+        });
+        this._disposables.add(sub);
+      }),
       () => {
         window.removeEventListener('resize', this._measureHeights);
       },
@@ -92,7 +91,10 @@ export class FileTree extends React.Component {
       return;
     }
 
-    this.props.scrollToPosition(trackedIndex * this.state.elementHeight, this.state.elementHeight);
+    this.props.scrollToPosition(
+      trackedIndex * this.state.elementHeight,
+      this.state.elementHeight,
+    );
   }
 
   _measureHeights(): void {
@@ -160,7 +162,9 @@ export class FileTree extends React.Component {
     let key = firstToRender % amountToRender;
     while (node != null && visibleChildren.length < amountToRender) {
       if (!node.isRoot && !chosenMeasured) {
-        visibleChildren.push(<FileTreeEntryComponent key={key} node={node} ref="measured" />);
+        visibleChildren.push(
+          <FileTreeEntryComponent key={key} node={node} ref="measured" />,
+        );
         chosenMeasured = true;
       } else {
         visibleChildren.push(<FileTreeEntryComponent key={key} node={node} />);
@@ -170,7 +174,8 @@ export class FileTree extends React.Component {
     }
 
     const topPlaceholderSize = firstToRender * elementHeight;
-    const bottomPlaceholderCount = childrenCount - (firstToRender + visibleChildren.length);
+    const bottomPlaceholderCount =
+      childrenCount - (firstToRender + visibleChildren.length);
     const bottomPlaceholderSize = bottomPlaceholderCount * elementHeight;
 
     return (
@@ -213,7 +218,9 @@ function findFirstNodeToRender(
   return findFirstNodeToRender(node.children, firstToRender - skipped - 1);
 }
 
-function findIndexOfTheTrackedNode(nodes: OrderedMap<mixed, FileTreeNode>): number {
+function findIndexOfTheTrackedNode(
+  nodes: OrderedMap<mixed, FileTreeNode>,
+): number {
   let skipped = 0;
   const trackedNodeRoot = nodes.find(node => {
     if (node.containsTrackedNode) {

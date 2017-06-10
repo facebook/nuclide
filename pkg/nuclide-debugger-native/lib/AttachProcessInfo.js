@@ -6,11 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-
 import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   AttachTargetInfo,
   NativeDebuggerService as NativeDebuggerServiceType,
@@ -24,7 +24,7 @@ import invariant from 'assert';
 import {DebuggerInstance} from '../../nuclide-debugger-base';
 import {getConfig} from './utils';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class AttachProcessInfo extends DebuggerProcessInfo {
   _targetInfo: AttachTargetInfo;
@@ -34,7 +34,15 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
     this._targetInfo = targetInfo;
   }
 
+  clone(): AttachProcessInfo {
+    return new AttachProcessInfo(this._targetUri, this._targetInfo);
+  }
+
   supportThreads(): boolean {
+    return true;
+  }
+
+  supportContinueToLocation(): boolean {
     return true;
   }
 
@@ -71,7 +79,10 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
       lldbPythonPath: getConfig().lldbPythonPath,
       envPythonPath: '',
     };
-    const service = getServiceByNuclideUri('NativeDebuggerService', this.getTargetUri());
+    const service = getServiceByNuclideUri(
+      'NativeDebuggerService',
+      this.getTargetUri(),
+    );
     invariant(service);
     return new service.NativeDebuggerService(debuggerConfig);
   }

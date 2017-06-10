@@ -6,11 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {OutputService} from '../../nuclide-console/lib/types';
 
-import formatEnoentNotification from '../../commons-atom/format-enoent-notification';
+import formatEnoentNotification
+  from '../../commons-atom/format-enoent-notification';
 import {createProcessStream} from './createProcessStream';
 import createMessageStream from './createMessageStream';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
@@ -27,17 +29,14 @@ export default class Activation {
       createMessageStream(
         createProcessStream()
           // Retry 3 times (unless we get a ENOENT)
-          .retryWhen(errors => (
-            errors.scan(
-              (errCount, err) => {
-                if (isNoEntError(err) || errCount >= 2) {
-                  throw err;
-                }
-                return errCount + 1;
-              },
-              0,
-            )
-          )),
+          .retryWhen(errors =>
+            errors.scan((errCount, err) => {
+              if (isNoEntError(err) || errCount >= 2) {
+                throw err;
+              }
+              return errCount + 1;
+            }, 0),
+          ),
       ),
     );
 
@@ -64,7 +63,9 @@ export default class Activation {
     });
 
     this._disposables = new CompositeDisposable(
-      new Disposable(() => { this._logTailer.stop(); }),
+      new Disposable(() => {
+        this._logTailer.stop();
+      }),
       atom.commands.add('atom-workspace', {
         'nuclide-adb-logcat:start': () => this._logTailer.start(),
         'nuclide-adb-logcat:stop': () => this._logTailer.stop(),
@@ -79,8 +80,12 @@ export default class Activation {
         id: 'adb logcat',
         messages: this._logTailer.getMessages(),
         observeStatus: cb => this._logTailer.observeStatus(cb),
-        start: () => { this._logTailer.start(); },
-        stop: () => { this._logTailer.stop(); },
+        start: () => {
+          this._logTailer.start();
+        },
+        stop: () => {
+          this._logTailer.stop();
+        },
       }),
     );
   }

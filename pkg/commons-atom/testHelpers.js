@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
-import nuclideUri from '../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 /**
  * Use this function to simulate keyboard shortcuts or special keys, e.g. cmd-v,
@@ -25,7 +26,12 @@ import nuclideUri from '../commons-node/nuclideUri';
 export function dispatchKeyboardEvent(
   key: string,
   target: ?HTMLElement,
-  metaKeys: {alt?: boolean, cmd?: boolean, ctrl?: boolean, shift?: boolean} = {},
+  metaKeys: {
+    alt?: boolean,
+    cmd?: boolean,
+    ctrl?: boolean,
+    shift?: boolean,
+  } = {},
 ): void {
   const {alt, cmd, ctrl, shift} = metaKeys;
   // Atom requires `key` to be uppercase when `shift` is specified.
@@ -98,7 +104,10 @@ export function setLocalProject(projectPath: string | Array<string>): void {
  * Waits for the specified file to become the active text editor.
  * Can only be used in a Jasmine context.
  */
-export function waitsForFile(filename: string, timeoutMs: number = 10000): void {
+export function waitsForFile(
+  filename: string,
+  timeoutMs: number = 10000,
+): void {
   waitsFor(`${filename} to become active`, timeoutMs, () => {
     const editor = atom.workspace.getActiveTextEditor();
     if (editor == null) {
@@ -118,20 +127,26 @@ export function waitsForFilePosition(
   column: number,
   timeoutMs: number = 10000,
 ): void {
-  waitsFor(`${filename} to become active at ${row}:${column}`, timeoutMs, () => {
-    const editor = atom.workspace.getActiveTextEditor();
-    if (editor == null) {
-      return false;
-    }
-    const editorPath = editor.getPath();
-    if (editorPath == null) {
-      return false;
-    }
-    const pos = editor.getCursorBufferPosition();
-    return nuclideUri.basename(editorPath) === filename
-      && pos.row === row
-      && pos.column === column;
-  });
+  waitsFor(
+    `${filename} to become active at ${row}:${column}`,
+    timeoutMs,
+    () => {
+      const editor = atom.workspace.getActiveTextEditor();
+      if (editor == null) {
+        return false;
+      }
+      const editorPath = editor.getPath();
+      if (editorPath == null) {
+        return false;
+      }
+      const pos = editor.getCursorBufferPosition();
+      return (
+        nuclideUri.basename(editorPath) === filename &&
+        pos.row === row &&
+        pos.column === column
+      );
+    },
+  );
 }
 
 /**
@@ -155,13 +170,15 @@ export function waitsForFilePosition(
  *    });
  */
 export function getMountedReactRootNames(): Array<string> {
-  const ReactComponentTreeHookPath =
-    Object.keys(require.cache).find(x => x.endsWith('react/lib/ReactComponentTreeHook.js'));
+  const ReactComponentTreeHookPath = Object.keys(require.cache).find(x =>
+    x.endsWith('react/lib/ReactComponentTreeHook.js'),
+  );
   invariant(
     ReactComponentTreeHookPath != null,
     'ReactComponentTreeHook could not be found in the module cache.',
   );
-  const ReactComponentTreeHook = require.cache[ReactComponentTreeHookPath].exports;
+  const ReactComponentTreeHook =
+    require.cache[ReactComponentTreeHookPath].exports;
   const reactRootNames = ReactComponentTreeHook.getRootIDs().map(rootID => {
     return ReactComponentTreeHook.getDisplayName(rootID);
   });

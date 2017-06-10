@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {UnreliableTransport} from '../lib/QueuedTransport';
@@ -21,8 +22,9 @@ function makeUnreliableTransport(): UnreliableTransport {
     result.emit('send', data);
     return Promise.resolve(true);
   });
-  result.onClose = jasmine.createSpy('onClose').andCallFake(
-    (callback: () => mixed): IDisposable => {
+  result.onClose = jasmine
+    .createSpy('onClose')
+    .andCallFake((callback: () => mixed): IDisposable => {
       return result.on('close', callback);
     });
   result.onMessage = jasmine.createSpy('onMessage').andReturn(messages);

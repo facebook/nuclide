@@ -6,10 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {CompositeDisposable} from 'atom';
 import React from 'react';
+import {getNotificationService} from './AtomNotifications';
 
 type Props = {
   instructions: string,
@@ -18,7 +20,8 @@ type Props = {
 };
 
 /** Component to prompt the user for authentication information. */
-export default class AuthenticationPrompt extends React.Component<void, Props, void> {
+export default class AuthenticationPrompt
+  extends React.Component<void, Props, void> {
   props: Props;
 
   _disposables: CompositeDisposable;
@@ -31,20 +34,33 @@ export default class AuthenticationPrompt extends React.Component<void, Props, v
 
   componentDidMount(): void {
     // Hitting enter when this panel has focus should confirm the dialog.
-    this._disposables.add(atom.commands.add(
-      this.refs.root,
-      'core:confirm',
-      event => this.props.onConfirm()),
+    this._disposables.add(
+      atom.commands.add(this.refs.root, 'core:confirm', event =>
+        this.props.onConfirm(),
+      ),
     );
 
     // Hitting escape should cancel the dialog.
-    this._disposables.add(atom.commands.add(
-      'atom-workspace',
-      'core:cancel',
-      event => this.props.onCancel()),
+    this._disposables.add(
+      atom.commands.add('atom-workspace', 'core:cancel', event =>
+        this.props.onCancel(),
+      ),
     );
 
     this.refs.password.focus();
+
+    const raiseNativeNotification = getNotificationService();
+    if (raiseNativeNotification != null) {
+      const pendingNotification = raiseNativeNotification(
+        'Nuclide Remote Connection',
+        'Nuclide requires additional action to authenticate your remote connection',
+        2000,
+        false,
+      );
+      if (pendingNotification != null) {
+        this._disposables.add(pendingNotification);
+      }
+    }
   }
 
   componentWillUnmount(): void {

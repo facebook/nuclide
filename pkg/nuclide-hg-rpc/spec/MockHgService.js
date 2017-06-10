@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {ConnectableObservable, Subject} from 'rxjs';
 import type {DiffInfo, StatusCodeIdValue} from '../lib/HgService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 // This class is meant to be stubbed out.
 export default class MockHgService {
@@ -53,7 +54,9 @@ export default class MockHgService {
     return new Subject().publish();
   }
 
-  fetchDiffInfo(filePaths: Array<NuclideUri>): Promise<?Map<NuclideUri, DiffInfo>> {
+  fetchDiffInfo(
+    filePaths: Array<NuclideUri>,
+  ): Promise<?Map<NuclideUri, DiffInfo>> {
     return Promise.resolve(null);
   }
 

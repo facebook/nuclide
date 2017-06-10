@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-const HIGH_SURROGATE_START = 0xD800;
-const HIGH_SURROGATE_END = 0xDBFF;
-const LOW_SURROGATE_START = 0xDC00;
-const LOW_SURROGATE_END = 0xDFFF;
+const HIGH_SURROGATE_START = 0xd800;
+const HIGH_SURROGATE_END = 0xdbff;
+const LOW_SURROGATE_START = 0xdc00;
+const LOW_SURROGATE_END = 0xdfff;
 
 export function zeroPaddedHex(codePoint: number, len: number): string {
   const codePointHex = codePoint.toString(16).toUpperCase();
@@ -24,23 +25,26 @@ export function zeroPaddedHex(codePoint: number, len: number): string {
   return result;
 }
 
-export function decodeSurrogateCodePoints(codePoints: Array<number>): Array<number> {
+export function decodeSurrogateCodePoints(
+  codePoints: Array<number>,
+): Array<number> {
   let highSurrogate = -1;
   const result = [];
   for (const codePoint of codePoints) {
-    if (codePoint >= HIGH_SURROGATE_START &&
-        codePoint <= HIGH_SURROGATE_END) {
+    if (codePoint >= HIGH_SURROGATE_START && codePoint <= HIGH_SURROGATE_END) {
       if (highSurrogate !== -1) {
         // Double high surrogate
         result.push(highSurrogate);
       }
       highSurrogate = codePoint;
-    } else if (codePoint >= LOW_SURROGATE_START &&
-               codePoint <= LOW_SURROGATE_END &&
-               highSurrogate !== -1) {
+    } else if (
+      codePoint >= LOW_SURROGATE_START &&
+      codePoint <= LOW_SURROGATE_END &&
+      highSurrogate !== -1
+    ) {
       const decoded =
         0x10000 +
-        ((highSurrogate - HIGH_SURROGATE_START) * 0x400) +
+        (highSurrogate - HIGH_SURROGATE_START) * 0x400 +
         (codePoint - LOW_SURROGATE_START);
       result.push(decoded);
       highSurrogate = -1;
@@ -63,8 +67,7 @@ export function decodeSurrogateCodePoints(codePoints: Array<number>): Array<numb
 }
 
 export function extractCodePoints(word: string): Array<number> {
-  const escapeRe =
-    /(?:\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})|\\u{([0-9a-fA-F]{1,8})}|([a-zA-Z0-9_-]+))/g;
+  const escapeRe = /(?:\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})|\\u{([0-9a-fA-F]{1,8})}|([a-zA-Z0-9_-]+))/g;
   let result = [];
   let matches;
   while ((matches = escapeRe.exec(word)) !== null) {

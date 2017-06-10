@@ -6,15 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import dedent from 'dedent';
 import logger from './utils';
-import {base64Decode, base64Encode, isContinuationCommand, isEvaluationCommand} from './helpers';
+import {
+  base64Decode,
+  base64Encode,
+  isContinuationCommand,
+  isEvaluationCommand,
+} from './helpers';
 import EventEmitter from 'events';
-import {DbgpMessageHandler, getDbgpMessageHandlerInstance} from './DbgpMessageHandler';
-import {attachEvent} from '../../commons-node/event';
+import {DbgpMessageHandler} from './DbgpMessageHandler';
+import {attachEvent} from 'nuclide-commons/event';
 import invariant from 'assert';
 import type {Socket} from 'net';
 
@@ -143,7 +148,7 @@ export class DbgpSocket {
     this._calls = new Map();
     this._emitter = new EventEmitter();
     this._isClosed = false;
-    this._messageHandler = getDbgpMessageHandlerInstance();
+    this._messageHandler = new DbgpMessageHandler();
     this._pendingEvalTransactionIds = new Set();
     this._lastContinuationCommandTransactionId = null;
 
@@ -156,14 +161,16 @@ export class DbgpSocket {
     return attachEvent(this._emitter, DBGP_SOCKET_STATUS_EVENT, callback);
   }
 
-  onNotification(callback: (notifyName: string, notify: Object) => mixed): IDisposable {
+  onNotification(
+    callback: (notifyName: string, notify: Object) => mixed,
+  ): IDisposable {
     return attachEvent(this._emitter, DBGP_SOCKET_NOTIFICATION_EVENT, callback);
   }
 
   _onError(error: {code: string}): void {
     // Not sure if hhvm is alive or not
     // do not set _isClosed flag so that detach will be sent before dispose().
-    logger.logError('socket error ' + error.code);
+    logger.error('socket error ' + error.code);
     this._emitStatus(ConnectionStatus.Error, error.code);
   }
 
@@ -175,7 +182,7 @@ export class DbgpSocket {
 
   _onData(data: Buffer | string): void {
     const message = data.toString();
-    logger.log('Recieved data: ' + message);
+    logger.debug('Recieved data: ' + message);
     let responses = [];
     try {
       responses = this._messageHandler.parseMessages(message);
@@ -194,7 +201,7 @@ export class DbgpSocket {
       } else if (notify != null) {
         this._handleNotification(notify);
       } else {
-        logger.logError('Unexpected socket message: ' + message);
+        logger.error('Unexpected socket message: ' + message);
       }
     });
   }
@@ -205,7 +212,7 @@ export class DbgpSocket {
     const transactionId = Number(transaction_id);
     const call = this._calls.get(transactionId);
     if (!call) {
-      logger.logError('Missing call for response: ' + message);
+      logger.error('Missing call for response: ' + message);
       return;
     }
     // We handle evaluation commands specially since they can trigger breakpoints.
@@ -219,10 +226,13 @@ export class DbgpSocket {
         // Then send a user-friendly message to the console, and trigger a UI update by moving to
         // running status briefly, and then back to break status.
         this._emitStatus(ConnectionStatus.DummyIsViewable);
-        this._emitStatus(ConnectionStatus.Stdout, 'Hit breakpoint in evaluated code.');
+        this._emitStatus(
+          ConnectionStatus.Stdout,
+          'Hit breakpoint in evaluated code.',
+        );
         this._emitStatus(ConnectionStatus.Running);
         this._emitStatus(ConnectionStatus.Break);
-        return;  // Return early so that we don't complete any request.
+        return; // Return early so that we don't complete any request.
       }
       this._handleEvaluationCommand(transactionId, message);
     }
@@ -236,7 +246,12 @@ export class DbgpSocket {
       const xdebugMessages = response['xdebug:message'];
       if (xdebugMessages != null && xdebugMessages.length >= 1) {
         const breakDetails = xdebugMessages[0].$;
-        this._emitStatus(ConnectionStatus.Break, breakDetails.filename, breakDetails.lineno);
+        this._emitStatus(
+          ConnectionStatus.Break,
+          breakDetails.filename,
+          breakDetails.lineno,
+          breakDetails.exception,
+        );
       }
     }
 
@@ -263,7 +278,10 @@ export class DbgpSocket {
       this._emitStatus(ConnectionStatus.DummyIsHidden);
     }
     const continuationCommandCall = this._calls.get(continuationId);
-    invariant(continuationCommandCall != null, 'no pending continuation command request');
+    invariant(
+      continuationCommandCall != null,
+      'no pending continuation command request',
+    );
     this._completeRequest(
       message,
       {$: {status: ConnectionStatus.Break}},
@@ -277,8 +295,10 @@ export class DbgpSocket {
     const outputType = stream.$.type;
     // The body of the `stream` XML can be omitted, e.g. `echo null`, so we defend against this.
     const outputText = stream._ != null ? base64Decode(stream._) : '';
-    logger.log(`${outputType} message received: ${outputText}`);
-    const status = outputType === 'stdout' ? ConnectionStatus.Stdout : ConnectionStatus.Stderr;
+    logger.debug(`${outputType} message received: ${outputText}`);
+    const status = outputType === 'stdout'
+      ? ConnectionStatus.Stdout
+      : ConnectionStatus.Stderr;
     // TODO: t13439903 -- add a way to fetch the rest of the data.
     const truncatedOutputText = outputText.slice(0, STREAM_MESSAGE_MAX_SIZE);
     this._emitStatus(status, truncatedOutputText);
@@ -289,14 +309,14 @@ export class DbgpSocket {
     if (notifyName === 'breakpoint_resolved') {
       const breakpoint = notify.breakpoint[0].$;
       if (breakpoint == null) {
-        logger.logError(
+        logger.error(
           `Fail to get breakpoint from 'breakpoint_resolved' notify: ${JSON.stringify(notify)}`,
         );
         return;
       }
       this._emitNotification(BREAKPOINT_RESOLVED_NOTIFICATION, breakpoint);
     } else {
-      logger.logError(`Unknown notify: ${JSON.stringify(notify)}`);
+      logger.error(`Unknown notify: ${JSON.stringify(notify)}`);
     }
   }
 
@@ -309,15 +329,19 @@ export class DbgpSocket {
   ): void {
     this._calls.delete(transactionId);
     if (call.command !== command) {
-      logger.logError('Bad command in response. Found ' +
-        command + '. expected ' + call.command);
+      logger.error(
+        'Bad command in response. Found ' +
+          command +
+          '. expected ' +
+          call.command,
+      );
       return;
     }
     try {
-      logger.log('Completing call: ' + message);
+      logger.debug('Completing call: ' + message);
       call.complete(response);
     } catch (e) {
-      logger.logError('Exception: ' + e.toString() + ' handling call: ' + message);
+      logger.error('Exception: ' + e.toString() + ' handling call: ' + message);
     }
   }
 
@@ -326,12 +350,21 @@ export class DbgpSocket {
   }
 
   async getContextsForFrame(frameIndex: number): Promise<Array<DbgpContext>> {
-    const result = await this._callDebugger('context_names', `-d ${frameIndex}`);
+    const result = await this._callDebugger(
+      'context_names',
+      `-d ${frameIndex}`,
+    );
     return result.context.map(context => context.$);
   }
 
-  async getContextProperties(frameIndex: number, contextId: string): Promise<Array<DbgpProperty>> {
-    const result = await this._callDebugger('context_get', `-d ${frameIndex} -c ${contextId}`);
+  async getContextProperties(
+    frameIndex: number,
+    contextId: string,
+  ): Promise<Array<DbgpProperty>> {
+    const result = await this._callDebugger(
+      'context_get',
+      `-d ${frameIndex} -c ${contextId}`,
+    );
     // 0 results yields missing 'property' member
     return result.property || [];
   }
@@ -362,10 +395,18 @@ export class DbgpSocket {
     page: number,
   ): Promise<Array<DbgpProperty>> {
     // Pass zero as contextId to search all contexts.
-    return this.getPropertiesByFullname(frameIndex, /* contextId */ '0', fullname, page);
+    return this.getPropertiesByFullname(
+      frameIndex,
+      /* contextId */ '0',
+      fullname,
+      page,
+    );
   }
 
-  async evaluateOnCallFrame(frameIndex: number, expression: string): Promise<EvaluationResult> {
+  async evaluateOnCallFrame(
+    frameIndex: number,
+    expression: string,
+  ): Promise<EvaluationResult> {
     // Escape any double quote in the expression.
     const escapedExpression = expression.replace(/"/g, '\\"');
     // Quote the input expression so that we can support expression with
@@ -385,7 +426,7 @@ export class DbgpSocket {
         wasThrown: false,
       };
     } else {
-      logger.log(
+      logger.debug(
         `Received non-error evaluateOnCallFrame response with no properties: ${expression}`,
       );
       return {
@@ -439,7 +480,10 @@ export class DbgpSocket {
    * Sets a given config setting in the debugger to a given value.
    */
   async setFeature(name: string, value: string): Promise<boolean> {
-    const response = await this._callDebugger('feature_set', `-n ${name} -v ${value}`);
+    const response = await this._callDebugger(
+      'feature_set',
+      `-n ${name} -v ${value}`,
+    );
     return response.$.success !== '0';
   }
 
@@ -447,7 +491,10 @@ export class DbgpSocket {
    * Evaluate the expression in the debugger's current context.
    */
   async runtimeEvaluate(expr: string): Promise<EvaluationResult> {
-    const response = await this._callDebugger('eval', `-- ${base64Encode(expr)}`);
+    const response = await this._callDebugger(
+      'eval',
+      `-- ${base64Encode(expr)}`,
+    );
     if (response.error && response.error.length > 0) {
       return {
         error: response.error[0],
@@ -459,7 +506,9 @@ export class DbgpSocket {
         wasThrown: false,
       };
     } else {
-      logger.log(`Received non-error runtimeEvaluate response with no properties: ${expr}`);
+      logger.debug(
+        `Received non-error runtimeEvaluate response with no properties: ${expr}`,
+      );
     }
     return {
       result: DEFAULT_DBGP_PROPERTY,
@@ -471,9 +520,14 @@ export class DbgpSocket {
    * Returns the exception breakpoint id.
    */
   async setExceptionBreakpoint(exceptionName: string): Promise<string> {
-    const response = await this._callDebugger('breakpoint_set', `-t exception -x ${exceptionName}`);
+    const response = await this._callDebugger(
+      'breakpoint_set',
+      `-t exception -x ${exceptionName}`,
+    );
     if (response.error) {
-      throw new Error('Error from setPausedOnExceptions: ' + JSON.stringify(response));
+      throw new Error(
+        'Error from setPausedOnExceptions: ' + JSON.stringify(response),
+      );
     }
     // TODO: Validate that response.$.state === 'enabled'
     return response.$.id;
@@ -491,16 +545,15 @@ export class DbgpSocket {
     if (conditionExpression != null) {
       params += ` -- ${base64Encode(conditionExpression)}`;
     }
-    const response = await this._callDebugger(
-      'breakpoint_set',
-      params,
-    );
+    const response = await this._callDebugger('breakpoint_set', params);
     if (response.error) {
-      throw new Error(dedent`
+      throw new Error(
+        dedent`
         Error setting breakpoint for command: breakpoint_set ${params}
         Got response: ${JSON.stringify(response)}
         BreakpointInfo is: ${JSON.stringify(breakpointInfo)}
-      `);
+      `,
+      );
     }
     // TODO: Validate that response.$.state === 'enabled'
     return response.$.id;
@@ -514,7 +567,8 @@ export class DbgpSocket {
       'breakpoint_get',
       `-d ${breakpointId}`,
     );
-    if (response.error != null ||
+    if (
+      response.error != null ||
       response.breakpoint == null ||
       response.breakpoint[0] == null ||
       response.breakpoint[0].$ == null
@@ -525,7 +579,10 @@ export class DbgpSocket {
   }
 
   async removeBreakpoint(breakpointId: string): Promise<any> {
-    const response = await this._callDebugger('breakpoint_remove', `-d ${breakpointId}`);
+    const response = await this._callDebugger(
+      'breakpoint_remove',
+      `-d ${breakpointId}`,
+    );
     if (response.error) {
       throw new Error('Error removing breakpoint: ' + JSON.stringify(response));
     }
@@ -533,10 +590,7 @@ export class DbgpSocket {
 
   // Sends command to hhvm.
   // Returns an object containing the resulting attributes.
-  _callDebugger(
-    command: string,
-    params: ?string,
-  ): Promise<Object> {
+  _callDebugger(command: string, params: ?string): Promise<Object> {
     const transactionId = this._sendCommand(command, params);
     if (isEvaluationCommand(command)) {
       this._pendingEvalTransactionIds.add(transactionId);
@@ -572,20 +626,20 @@ export class DbgpSocket {
   _sendMessage(message: string): void {
     const socket = this._socket;
     if (socket != null) {
-      logger.log('Sending message: ' + message);
+      logger.debug('Sending message: ' + message);
       socket.write(message + '\x00');
     } else {
-      logger.logError('Attempt to send message after dispose: ' + message);
+      logger.error('Attempt to send message after dispose: ' + message);
     }
   }
 
   _emitStatus(status: string, ...args: Array<string>): void {
-    logger.log('Emitting status: ' + status);
+    logger.debug('Emitting status: ' + status);
     this._emitter.emit(DBGP_SOCKET_STATUS_EVENT, status, ...args);
   }
 
   _emitNotification(notifyName: string, notify: Object): void {
-    logger.log(`Emitting notification: ${notifyName}`);
+    logger.debug(`Emitting notification: ${notifyName}`);
     this._emitter.emit(DBGP_SOCKET_NOTIFICATION_EVENT, notifyName, notify);
   }
 

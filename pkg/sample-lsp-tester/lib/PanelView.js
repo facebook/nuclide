@@ -6,26 +6,29 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {observableFromSubscribeFunction} from '../../commons-node/event';
-import {indent} from '../../commons-node/string';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
-import {AtomTextEditor} from '../../nuclide-ui/AtomTextEditor';
-import {Button} from '../../nuclide-ui/Button';
-import {ButtonGroup} from '../../nuclide-ui/ButtonGroup';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {indent} from 'nuclide-commons/string';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
+import {Button} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import invariant from 'assert';
 import React from 'react';
 import {Observable} from 'rxjs';
 
-export type Message = {|
-  kind: 'response',
-  body: string,
-|} | {|
-  kind: 'request',
-  body: string,
-|};
+export type Message =
+  | {|
+      kind: 'response',
+      body: string,
+    |}
+  | {|
+      kind: 'request',
+      body: string,
+    |};
 
 type Props = {
   initialCommand: string,
@@ -49,7 +52,9 @@ export class PanelView extends React.Component {
   constructor(props: Props) {
     super(props);
     (this: any)._handleSendButtonClick = this._handleSendButtonClick.bind(this);
-    (this: any)._handleStartButtonClick = this._handleStartButtonClick.bind(this);
+    (this: any)._handleStartButtonClick = this._handleStartButtonClick.bind(
+      this,
+    );
     this.state = {
       grammar: null,
     };
@@ -123,13 +128,15 @@ export class PanelView extends React.Component {
     this._disposables = new UniversalDisposable(
       // Subscribe to the responses. Note that we don't handle this prop changing after mount.
       this.props.messages
-        .map(message => `${message.kind.toUpperCase()}...\n${indent(message.body)}`)
+        .map(
+          message =>
+            `${message.kind.toUpperCase()}...\n${indent(message.body)}`,
+        )
         .subscribe(data => {
           const textEditor = this.refs.outputField.getModel();
           textEditor.getBuffer().append(`${data}\n\n`);
           (atom.views.getView(textEditor): any).scrollToBottom();
         }),
-
       getGrammar('source.json').subscribe(grammar => {
         this.setState({grammar});
       }),
@@ -183,7 +190,9 @@ function getGrammar(scopeName: string): Observable<atom$Grammar> {
   if (grammar != null) {
     return Observable.of(grammar);
   }
-  return observableFromSubscribeFunction(atom.grammars.onDidAddGrammar.bind(atom.grammars))
+  return observableFromSubscribeFunction(
+    atom.grammars.onDidAddGrammar.bind(atom.grammars),
+  )
     .filter(g => g.scopeName === scopeName)
     .take(1);
 }

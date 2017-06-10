@@ -6,14 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {CheckoutSideName, MergeConflict} from '../../nuclide-hg-rpc/lib/HgService';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {
+  CheckoutSideName,
+  MergeConflict,
+} from '../../nuclide-hg-rpc/lib/HgService';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {RemoteDirectory} from '../../nuclide-remote-connection';
 
 import {MercurialConflictDetector} from './MercurialConflictDetector';
-import passesGK from '../../commons-node/passesGK';
+import {onceGkInitialized, isGkEnabled} from '../../commons-node/passesGK';
 
 let conflictDetector: ?MercurialConflictDetector;
 
@@ -42,8 +46,7 @@ export type ConflictsApi = {
   hideForContext(repositoryContext: RepositoryContext): void,
 };
 
-export function activate() {
-}
+export function activate() {}
 
 export function deactivate() {
   if (conflictDetector != null) {
@@ -53,8 +56,8 @@ export function deactivate() {
 }
 
 export function consumeMergeConflictsApi(api: ConflictsApi) {
-  passesGK('nuclide_conflict_resolver').then(enabled => {
-    if (!enabled) {
+  onceGkInitialized(() => {
+    if (!isGkEnabled('nuclide_conflict_resolver')) {
       conflictDetector = new MercurialConflictDetector();
       conflictDetector.setConflictsApi(api);
     }

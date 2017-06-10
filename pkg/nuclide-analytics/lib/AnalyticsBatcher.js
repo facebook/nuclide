@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TrackEvent} from './track';
 
-import BatchProcessedQueue from '../../commons-node/BatchProcessedQueue';
+import BatchProcessedQueue from 'nuclide-commons/BatchProcessedQueue';
 
 const REPORTING_PERIOD = 1000;
 
@@ -22,11 +23,9 @@ export class AnalyticsBatcher {
 
   constructor(track: TrackCallback) {
     this._track = track;
-    this._queue = new BatchProcessedQueue(
-      REPORTING_PERIOD,
-      events => {
-        this._handleBatch(events);
-      });
+    this._queue = new BatchProcessedQueue(REPORTING_PERIOD, events => {
+      this._handleBatch(events);
+    });
   }
 
   _handleBatch(events: Array<TrackEvent>): void {

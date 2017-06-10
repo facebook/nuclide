@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LazyTreeNode} from '../LazyTreeNode';
@@ -17,14 +18,21 @@ describe('LazyTreeNode', () => {
   it('caches the fetched children', () => {
     waitsForPromise(async () => {
       let children = null;
-      async function fetchChildren(parentNode: LazyTreeNode): Promise<Array<LazyTreeNode>> {
+      async function fetchChildren(
+        parentNode: LazyTreeNode,
+      ): Promise<Array<LazyTreeNode>> {
         children = [
           new LazyTestTreeNode({label: 'B'}, /* parent */ parentNode, false),
           new LazyTestTreeNode({label: 'C'}, /* parent */ parentNode, false),
         ];
         return children;
       }
-      const node = new LazyTestTreeNode({label: 'A'}, /* parent */ null, true, fetchChildren);
+      const node = new LazyTestTreeNode(
+        {label: 'A'},
+        /* parent */ null,
+        true,
+        fetchChildren,
+      );
 
       expect(await node.fetchChildren()).toEqual(children);
       expect(node.getCachedChildren()).toEqual(children);
@@ -35,14 +43,21 @@ describe('LazyTreeNode', () => {
     it('returns true for a root', () => {
       waitsForPromise(async () => {
         let children = null;
-        async function fetchChildren(parentNode: LazyTreeNode): Promise<Array<LazyTreeNode>> {
+        async function fetchChildren(
+          parentNode: LazyTreeNode,
+        ): Promise<Array<LazyTreeNode>> {
           children = [
             new LazyTestTreeNode({label: 'B'}, /* parent */ parentNode, false),
             new LazyTestTreeNode({label: 'C'}, /* parent */ parentNode, false),
           ];
           return children;
         }
-        const node = new LazyTestTreeNode({label: 'A'}, /* parent */ null, true, fetchChildren);
+        const node = new LazyTestTreeNode(
+          {label: 'A'},
+          /* parent */ null,
+          true,
+          fetchChildren,
+        );
         expect(await node.fetchChildren()).toEqual(children);
         expect(node.isRoot()).toBe(true);
       });
@@ -50,14 +65,21 @@ describe('LazyTreeNode', () => {
     it('returns false for a fetched, non-root node', () => {
       waitsForPromise(async () => {
         let children = null;
-        async function fetchChildren(parentNode: LazyTreeNode): Promise<Array<LazyTreeNode>> {
+        async function fetchChildren(
+          parentNode: LazyTreeNode,
+        ): Promise<Array<LazyTreeNode>> {
           children = [
             new LazyTestTreeNode({label: 'B'}, /* parent */ parentNode, false),
             new LazyTestTreeNode({label: 'C'}, /* parent */ parentNode, false),
           ];
           return children;
         }
-        const node = new LazyTestTreeNode({label: 'A'}, /* parent */ null, true, fetchChildren);
+        const node = new LazyTestTreeNode(
+          {label: 'A'},
+          /* parent */ null,
+          true,
+          fetchChildren,
+        );
         expect(await node.fetchChildren()).toEqual(children);
         const cachedChildren = node.getCachedChildren();
         invariant(cachedChildren);

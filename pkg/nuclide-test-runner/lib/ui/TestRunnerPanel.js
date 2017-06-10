@@ -6,24 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type TestSuiteModel from '../TestSuiteModel';
 import type {TestRunner} from '../types';
 
 import invariant from 'assert';
-import nuclideUri from '../../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import Console from './Console';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
-import {Toolbar} from '../../../nuclide-ui/Toolbar';
-import {ToolbarLeft} from '../../../nuclide-ui/ToolbarLeft';
-import {ToolbarRight} from '../../../nuclide-ui/ToolbarRight';
-import {Checkbox} from '../../../nuclide-ui/Checkbox';
-import {
-  Button,
-  ButtonSizes,
-  ButtonTypes,
-} from '../../../nuclide-ui/Button';
+import {Toolbar} from 'nuclide-commons-ui/Toolbar';
+import {ToolbarLeft} from 'nuclide-commons-ui/ToolbarLeft';
+import {ToolbarRight} from 'nuclide-commons-ui/ToolbarRight';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
+import {Button, ButtonSizes, ButtonTypes} from 'nuclide-commons-ui/Button';
 import createPaneContainer from '../../../commons-atom/create-pane-container';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -76,7 +73,9 @@ export default class TestRunnerPanel extends React.Component {
 
     // Bind Functions for use as callbacks;
     // TODO: Replace with property initializers when supported by Flow;
-    this.setSelectedTestRunnerIndex = this.setSelectedTestRunnerIndex.bind(this);
+    this.setSelectedTestRunnerIndex = this.setSelectedTestRunnerIndex.bind(
+      this,
+    );
   }
 
   componentDidMount() {
@@ -114,9 +113,11 @@ export default class TestRunnerPanel extends React.Component {
 
   componentWillUnmount() {
     ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._rightPane).querySelector('.item-views'));
+      atom.views.getView(this._rightPane).querySelector('.item-views'),
+    );
     ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._leftPane).querySelector('.item-views'));
+      atom.views.getView(this._leftPane).querySelector('.item-views'),
+    );
     this._paneContainer.destroy();
   }
 
@@ -167,31 +168,42 @@ export default class TestRunnerPanel extends React.Component {
 
     let runMsg;
     if (this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING) {
-      runMsg = (
-        <span className="inline-block">Running</span>
-      );
+      runMsg = <span className="inline-block">Running</span>;
     } else if (this.props.runDuration) {
       runMsg = (
-        <span className="inline-block">Done (in {this.props.runDuration / 1000}s)</span>
+        <span className="inline-block">
+          Done (in {this.props.runDuration / 1000}s)
+        </span>
       );
     }
 
     let pathMsg;
     if (this.props.path) {
-      pathMsg = <span title={this.props.path}>{nuclideUri.basename(this.props.path)}</span>;
+      pathMsg = (
+        <span title={this.props.path}>
+          {nuclideUri.basename(this.props.path)}
+        </span>
+      );
     }
 
     let dropdown;
     if (this.isDisabled()) {
-      dropdown = <span className="inline-block text-warning">No registered test runners</span>;
+      dropdown = (
+        <span className="inline-block text-warning">
+          No registered test runners
+        </span>
+      );
     } else {
       dropdown = (
         <Dropdown
           className="inline-block nuclide-test-runner__runner-dropdown"
-          disabled={this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING}
-          options={this.props.testRunners.map((testRunner, index) =>
-            ({label: testRunner.label, value: index}),
-          )}
+          disabled={
+            this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING
+          }
+          options={this.props.testRunners.map((testRunner, index) => ({
+            label: testRunner.label,
+            value: index,
+          }))}
           onChange={this.setSelectedTestRunnerIndex}
           ref="dropdown"
           value={this.state.selectedTestRunnerIndex}
@@ -213,7 +225,8 @@ export default class TestRunnerPanel extends React.Component {
       );
     }
 
-    const running = this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING;
+    const running =
+      this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING;
 
     const progressBar = running
       ? <progress
@@ -268,7 +281,9 @@ export default class TestRunnerPanel extends React.Component {
   renderTree() {
     const component = ReactDOM.render(
       <TestClassTree
-        isRunning={this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING}
+        isRunning={
+          this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING
+        }
         testSuiteModel={this.props.testSuiteModel}
       />,
       atom.views.getView(this._leftPane).querySelector('.item-views'),

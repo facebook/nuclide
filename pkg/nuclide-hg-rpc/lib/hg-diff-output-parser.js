@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -66,7 +67,9 @@ const SINGLE_UNIFIED_DIFF_BEGINNING_REGEX = /--- /;
  * @return A map of each file path in the output (relative to the root of the
  *   repo) to its parsed DiffInfo.
  */
-export function parseMultiFileHgDiffUnifiedOutput(output: string): Map<string, DiffInfo> {
+export function parseMultiFileHgDiffUnifiedOutput(
+  output: string,
+): Map<string, DiffInfo> {
   const filePathToDiffInfo = new Map();
   // Split the output by the symbols '--- '. This is specified in the Unified diff format:
   // http://www.gnu.org/software/diffutils/manual/html_node/Detailed-Unified.html#Detailed-Unified.

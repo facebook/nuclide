@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -17,14 +18,13 @@ import type {
   SshHandshakeErrorType,
   SshConnectionConfiguration,
 } from '../../nuclide-remote-connection/lib/SshHandshake';
-import type {RemoteConnection} from '../../nuclide-remote-connection/lib/RemoteConnection';
+import type {
+  RemoteConnection,
+} from '../../nuclide-remote-connection/lib/RemoteConnection';
 
 import AuthenticationPrompt from './AuthenticationPrompt';
-import {
-  Button,
-  ButtonTypes,
-} from '../../nuclide-ui/Button';
-import {ButtonGroup} from '../../nuclide-ui/ButtonGroup';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import ConnectionDetailsPrompt from './ConnectionDetailsPrompt';
 import IndeterminateProgressBar from './IndeterminateProgressBar';
 import invariant from 'assert';
@@ -36,9 +36,9 @@ import {
   decorateSshConnectionDelegateWithTracking,
 } from '../../nuclide-remote-connection';
 import {validateFormInputs} from './form-validation-utils';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-remote-projects');
 const {remote} = electron;
 invariant(remote != null);
 
@@ -59,11 +59,17 @@ type Props = {
   // ** while a profile is selected **.
   // The user's intent is to delete the currently-selected profile.
   onDeleteProfileClicked: (indexOfSelectedConnectionProfile: number) => mixed,
-  onConnect: (connection: RemoteConnection, config: SshConnectionConfiguration) => mixed,
+  onConnect: (
+    connection: RemoteConnection,
+    config: SshConnectionConfiguration,
+  ) => mixed,
   onError: (error: Error, config: SshConnectionConfiguration) => mixed,
   onCancel: () => mixed,
   onClosed: ?() => mixed,
-  onSaveProfile: (index: number, profile: NuclideRemoteConnectionProfile) => mixed,
+  onSaveProfile: (
+    index: number,
+    profile: NuclideRemoteConnectionProfile,
+  ) => mixed,
 };
 
 type State = {
@@ -94,30 +100,41 @@ export default class ConnectionDialog extends React.Component {
   constructor(props: Props) {
     super(props);
 
-    const sshHandshake = new SshHandshake(decorateSshConnectionDelegateWithTracking({
-      onKeyboardInteractive: (name, instructions, instructionsLang, prompts, finish) => {
-        // TODO: Display all prompts, not just the first one.
-        this.requestAuthentication(prompts[0], finish);
-      },
+    const sshHandshake = new SshHandshake(
+      decorateSshConnectionDelegateWithTracking({
+        onKeyboardInteractive: (
+          name,
+          instructions,
+          instructionsLang,
+          prompts,
+          finish,
+        ) => {
+          // TODO: Display all prompts, not just the first one.
+          this.requestAuthentication(prompts[0], finish);
+        },
 
-      onWillConnect: () => {},
+        onWillConnect: () => {},
 
-      onDidConnect: (connection: RemoteConnection, config: SshConnectionConfiguration) => {
-        this.close(); // Close the dialog.
-        this.props.onConnect(connection, config);
-      },
+        onDidConnect: (
+          connection: RemoteConnection,
+          config: SshConnectionConfiguration,
+        ) => {
+          this.close(); // Close the dialog.
+          this.props.onConnect(connection, config);
+        },
 
-      onError: (
-        errorType: SshHandshakeErrorType,
-        error: Error,
-        config: SshConnectionConfiguration,
-      ) => {
-        this.close(); // Close the dialog.
-        notifySshHandshakeError(errorType, error, config);
-        this.props.onError(error, config);
-        logger.debug(error);
-      },
-    }));
+        onError: (
+          errorType: SshHandshakeErrorType,
+          error: Error,
+          config: SshConnectionConfiguration,
+        ) => {
+          this.close(); // Close the dialog.
+          notifySshHandshakeError(errorType, error, config);
+          this.props.onError(error, config);
+          logger.debug(error);
+        },
+      }),
+    );
 
     this.state = {
       finish: answers => {},
@@ -140,19 +157,22 @@ export default class ConnectionDialog extends React.Component {
   }
 
   componentWillReceiveProps(nextProps: Props): void {
-    let indexOfSelectedConnectionProfile = this.state.indexOfSelectedConnectionProfile;
+    let indexOfSelectedConnectionProfile = this.state
+      .indexOfSelectedConnectionProfile;
     if (nextProps.connectionProfiles == null) {
       indexOfSelectedConnectionProfile = -1;
     } else if (
-      this.props.connectionProfiles == null
+      this.props.connectionProfiles == null ||
       // The current selection is outside the bounds of the next profiles list
-      || indexOfSelectedConnectionProfile > (nextProps.connectionProfiles.length - 1)
+      indexOfSelectedConnectionProfile >
+        nextProps.connectionProfiles.length - 1 ||
       // The next profiles list is longer than before, a new one was added
-      || nextProps.connectionProfiles.length > this.props.connectionProfiles.length
+      nextProps.connectionProfiles.length > this.props.connectionProfiles.length
     ) {
       // Select the final connection profile in the list because one of the above conditions means
       // the current selected index is outdated.
-      indexOfSelectedConnectionProfile = nextProps.connectionProfiles.length - 1;
+      indexOfSelectedConnectionProfile =
+        nextProps.connectionProfiles.length - 1;
     }
 
     this.setState({indexOfSelectedConnectionProfile});
@@ -162,11 +182,12 @@ export default class ConnectionDialog extends React.Component {
     if (this.state.mode !== prevState.mode) {
       this._focus();
     } else if (
-      this.state.mode === REQUEST_CONNECTION_DETAILS
-      && this.state.indexOfSelectedConnectionProfile === prevState.indexOfSelectedConnectionProfile
-      && !this.state.isDirty
-      && prevState.isDirty
-      && this.refs.okButton != null
+      this.state.mode === REQUEST_CONNECTION_DETAILS &&
+      this.state.indexOfSelectedConnectionProfile ===
+        prevState.indexOfSelectedConnectionProfile &&
+      !this.state.isDirty &&
+      prevState.isDirty &&
+      this.refs.okButton != null
     ) {
       // When editing a profile and clicking "Save", the Save button disappears. Focus the primary
       // button after re-rendering so focus is on a logical element.
@@ -194,10 +215,10 @@ export default class ConnectionDialog extends React.Component {
   _handleClickSave(): void {
     invariant(this.props.connectionProfiles != null);
 
-    const selectedProfile =
-      this.props.connectionProfiles[this.state.indexOfSelectedConnectionProfile];
-    const connectionDetails: NuclideRemoteConnectionParamsWithPassword =
-      this.refs.content.getFormFields();
+    const selectedProfile = this.props.connectionProfiles[
+      this.state.indexOfSelectedConnectionProfile
+    ];
+    const connectionDetails: NuclideRemoteConnectionParamsWithPassword = this.refs.content.getFormFields();
     const validationResult = validateFormInputs(
       selectedProfile.displayTitle,
       connectionDetails,
@@ -211,7 +232,7 @@ export default class ConnectionDialog extends React.Component {
 
     invariant(
       validationResult.validatedProfile != null &&
-      typeof validationResult.validatedProfile === 'object',
+        typeof validationResult.validatedProfile === 'object',
     );
     // Save the validated profile, and show any warning messages.
     const newProfile = validationResult.validatedProfile;
@@ -219,7 +240,10 @@ export default class ConnectionDialog extends React.Component {
       atom.notifications.addWarning(validationResult.warningMessage);
     }
 
-    this.props.onSaveProfile(this.state.indexOfSelectedConnectionProfile, newProfile);
+    this.props.onSaveProfile(
+      this.state.indexOfSelectedConnectionProfile,
+      newProfile,
+    );
     this.setState({isDirty: false});
   }
 
@@ -237,7 +261,9 @@ export default class ConnectionDialog extends React.Component {
       content = (
         <ConnectionDetailsPrompt
           connectionProfiles={this.props.connectionProfiles}
-          indexOfSelectedConnectionProfile={this.state.indexOfSelectedConnectionProfile}
+          indexOfSelectedConnectionProfile={
+            this.state.indexOfSelectedConnectionProfile
+          }
           onAddProfileClicked={this.props.onAddProfileClicked}
           onCancel={this.cancel}
           onConfirm={this.ok}
@@ -249,7 +275,10 @@ export default class ConnectionDialog extends React.Component {
       );
       isOkDisabled = false;
       okButtonText = 'Connect';
-    } else if (mode === WAITING_FOR_CONNECTION || mode === WAITING_FOR_AUTHENTICATION) {
+    } else if (
+      mode === WAITING_FOR_CONNECTION ||
+      mode === WAITING_FOR_AUTHENTICATION
+    ) {
       content = <IndeterminateProgressBar />;
       isOkDisabled = true;
       okButtonText = 'Connect';
@@ -268,10 +297,19 @@ export default class ConnectionDialog extends React.Component {
 
     let saveButtonGroup;
     let selectedProfile;
-    if (this.state.indexOfSelectedConnectionProfile >= 0 && this.props.connectionProfiles != null) {
-      selectedProfile = this.props.connectionProfiles[this.state.indexOfSelectedConnectionProfile];
+    if (
+      this.state.indexOfSelectedConnectionProfile >= 0 &&
+      this.props.connectionProfiles != null
+    ) {
+      selectedProfile = this.props.connectionProfiles[
+        this.state.indexOfSelectedConnectionProfile
+      ];
     }
-    if (this.state.isDirty && selectedProfile != null && selectedProfile.saveable) {
+    if (
+      this.state.isDirty &&
+      selectedProfile != null &&
+      selectedProfile.saveable
+    ) {
       saveButtonGroup = (
         <ButtonGroup className="inline-block">
           <Button onClick={this._handleClickSave}>

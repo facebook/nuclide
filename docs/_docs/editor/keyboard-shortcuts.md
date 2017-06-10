@@ -51,16 +51,14 @@ for the most common shortcuts provided by Nuclide.
 | `Cmd-\` | `Ctrl-\` | Toggle the [Project Explorer](/docs/editor/basics/#project-explorer). |
 | `Ctrl-0` | `Ctrl-0` | Toggle between the [Editing Area](/docs/editor/basics/#editing-area) and the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. |
 | `Cmd-K-<arrow>` | `Ctrl-K-<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
-| `Option-Shift-Cmd-D` | `Alt-Shift-Ctrl-D` | Open the [Diff View](/docs/features/hg/#diff-view). |
 | `Option-Shift-D` | `Alt-Shift-D` | Open the [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) window. |
 
 ## Development
 
-These shortcuts provide quick access to development features such as [Diff View](/docs/features/hg/#diff-view), [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) (e.g, linting), etc.
+These shortcuts provide quick access to development features such as [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) (e.g, linting), etc.
 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `Option-Shift-Cmd-D` | `Alt-Shift-Ctrl-D` | `nuclide-diff-view:open` | This will open the [Diff View](/docs/features/hg/#diff-view), which shows you the difference between the original version of a file and the current version of the file on which changes were made. |
 | `Option-O`| `Alt-O` | `nuclide-outline-view:toggle` | Toggles the [Outline View](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions. |
 | `Cmd-I` | `Ctrl-I` | `nuclide-context-view:toggle` | Toggles the [Context View](/docs/features/context-view/). |
 
@@ -139,14 +137,17 @@ The [Nuclide Debugger](/docs/features/debugger/) attaches to a running process. 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
 | `Option-Cmd-I` | `Alt-Ctrl-I` | `window:toggle-dev-tools` | Toggle the developer tools UI. |
-| `Shift-Cmd-A` | `Shift-Ctrl-A` | `nuclide-debugger:toggle` | Toggles the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Shift-Cmd-A` | `Shift-Ctrl-A` | `nuclide-debugger:show-attach-dialog` | Shows the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Cmd-F8` | `Ctrl-F8` | `nuclide-debugger:show-launch-dialog` | Shows the process launch UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
 | `Cmd-Alt-J` | `Ctrl-Shift-J` | `nuclide-output:toggle` | Toggle the [Console](/docs/features/debugger/#basics__evaluation) pane. |
 | `F8` | `F8` | `nuclide-debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping through code, this will enable debugging to continue to the next breakpoint or end of the process. |
+| `Shift-F8` | `Shift-F8` | `nuclide-debugger:run-to-location` | After breaking at a certain position or breakpoint, it will continue to cursor location. |
 | `F9` | `F9` | `nuclide-debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint and vice-versa. |
 | `F10` | `F10` | `nuclide-debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
 | `F11` | `F11` | `nuclide-debugger:step-into` | Step into a piece of code. For example, if you are stopped at a method call, this will go into the first line of that method. |
 | `Shift-F11` | `Shift-F11` | `nuclide-debugger:step-out` | If you have stepped into a piece of code, this will step out to the point on which you entered that piece of code. For example, if you stepped into a method, this will step out back to the method call itself. |
-| `Shift-F5` | `Shift-F5` | `nuclide-debugger:stop-debugging` | Stop the actual debugging process. |
+| `Shift-F5` | `Shift-F5` | `nuclide-debugger:stop-debugging` | Detach debugger. |
+| `Cmd-Shift-F8` | `Ctrl-Shift-F8` | `nuclide-debugger:restart-debugging` | Restart the current debugging session with the same configuration settings. |
 
 ## Editor Panes
 

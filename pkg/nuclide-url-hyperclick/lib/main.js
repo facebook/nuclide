@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {HyperclickProvider} from '../../hyperclick/lib/types';
+import type {HyperclickProvider} from 'atom-ide-ui';
 
 import HyperclickProviderHelpers from './HyperclickProviderHelpers';
 
@@ -19,7 +20,11 @@ export function getHyperclickProvider(): HyperclickProvider {
     priority: 5,
     wordRegExp: /[^\s]+/g,
     getSuggestionForWord(textEditor, text, range) {
-      return HyperclickProviderHelpers.getSuggestionForWord(textEditor, text, range);
+      return HyperclickProviderHelpers.getSuggestionForWord(
+        textEditor,
+        text,
+        range,
+      );
     },
   };
 }

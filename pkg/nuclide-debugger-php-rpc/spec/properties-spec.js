@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ObjectId} from '../lib/ObjectId';
@@ -24,9 +25,8 @@ describe('debugger-php-rpc properties', () => {
   });
 
   it('convertProperty', () => {
-    expect(convertProperty(
-      objectId,
-      {
+    expect(
+      convertProperty(objectId, {
         _: 'dGVzdC1jbGllbnQucGhw',
         $: {
           name: '0',
@@ -36,8 +36,8 @@ describe('debugger-php-rpc properties', () => {
           size: 15,
           encoding: 'base64',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       configurable: false,
       enumerable: true,
       name: '0',
@@ -49,9 +49,8 @@ describe('debugger-php-rpc properties', () => {
   });
 
   it('convertProperties', () => {
-    expect(convertProperties(
-      objectId,
-      [
+    expect(
+      convertProperties(objectId, [
         {
           _: 'dGVzdC1jbGllbnQucGhw',
           $: {
@@ -72,8 +71,8 @@ describe('debugger-php-rpc properties', () => {
             type: 'int',
           },
         },
-      ],
-    )).toEqual([
+      ]),
+    ).toEqual([
       {
         configurable: false,
         enumerable: true,
@@ -96,19 +95,21 @@ describe('debugger-php-rpc properties', () => {
   });
 
   it('getPagedProperties - single and partial pages', () => {
-    expect(getPagedProperties(
-      // $FlowFixMe - fix test type.
-      {
-        enableCount: 12,
-        frameIndex: 1,
-        contextId: 2,
-        fullname: 'fullname-value',
-        elementRange: {
-          pagesize: 32,
-          startIndex: 0,
-          count: 63,
+    expect(
+      getPagedProperties(
+        // $FlowFixMe - fix test type.
+        {
+          enableCount: 12,
+          frameIndex: 1,
+          contextId: 2,
+          fullname: 'fullname-value',
+          elementRange: {
+            pagesize: 32,
+            startIndex: 0,
+            count: 63,
+          },
         },
-      }),
+      ),
     ).toEqual([
       {
         configurable: false,
@@ -117,15 +118,13 @@ describe('debugger-php-rpc properties', () => {
         value: {
           description: '32 elements',
           type: 'object',
-          objectId: JSON.stringify(
-            {
-              enableCount: 12,
-              frameIndex: 1,
-              contextId: 2,
-              fullname: 'fullname-value',
-              page: 0,
-            },
-          ),
+          objectId: JSON.stringify({
+            enableCount: 12,
+            frameIndex: 1,
+            contextId: 2,
+            fullname: 'fullname-value',
+            page: 0,
+          }),
         },
       },
       {
@@ -135,34 +134,34 @@ describe('debugger-php-rpc properties', () => {
         value: {
           description: '31 elements',
           type: 'object',
-          objectId: JSON.stringify(
-            {
-              enableCount: 12,
-              frameIndex: 1,
-              contextId: 2,
-              fullname: 'fullname-value',
-              page: 1,
-            },
-          ),
+          objectId: JSON.stringify({
+            enableCount: 12,
+            frameIndex: 1,
+            contextId: 2,
+            fullname: 'fullname-value',
+            page: 1,
+          }),
         },
       },
     ]);
   });
 
   it('getPagedProperties - page of pages', () => {
-    expect(getPagedProperties(
-      // $FlowFixMe - fix test type.
-      {
-        enableCount: 12,
-        frameIndex: 1,
-        contextId: 2,
-        fullname: 'fullname-value',
-        elementRange: {
-          pagesize: 32,
-          startIndex: 0,
-          count: 32 * 32 * 32 + 1,
+    expect(
+      getPagedProperties(
+        // $FlowFixMe - fix test type.
+        {
+          enableCount: 12,
+          frameIndex: 1,
+          contextId: 2,
+          fullname: 'fullname-value',
+          elementRange: {
+            pagesize: 32,
+            startIndex: 0,
+            count: 32 * 32 * 32 + 1,
+          },
         },
-      }),
+      ),
     ).toEqual([
       {
         configurable: false,
@@ -171,19 +170,17 @@ describe('debugger-php-rpc properties', () => {
         value: {
           description: '32768 elements',
           type: 'object',
-          objectId: JSON.stringify(
-            {
-              enableCount: 12,
-              frameIndex: 1,
-              contextId: 2,
-              fullname: 'fullname-value',
-              elementRange: {
-                pagesize: 32,
-                startIndex: 0,
-                count: 32 * 32 * 32,
-              },
+          objectId: JSON.stringify({
+            enableCount: 12,
+            frameIndex: 1,
+            contextId: 2,
+            fullname: 'fullname-value',
+            elementRange: {
+              pagesize: 32,
+              startIndex: 0,
+              count: 32 * 32 * 32,
             },
-          ),
+          }),
         },
       },
       {
@@ -193,15 +190,13 @@ describe('debugger-php-rpc properties', () => {
         value: {
           description: '1 elements',
           type: 'object',
-          objectId: JSON.stringify(
-            {
-              enableCount: 12,
-              frameIndex: 1,
-              contextId: 2,
-              fullname: 'fullname-value',
-              page: 1024,
-            },
-          ),
+          objectId: JSON.stringify({
+            enableCount: 12,
+            frameIndex: 1,
+            contextId: 2,
+            fullname: 'fullname-value',
+            page: 1024,
+          }),
         },
       },
     ]);

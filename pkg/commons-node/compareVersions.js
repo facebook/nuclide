@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -18,8 +19,12 @@ export default function compareVersions(a: string, b: string): number {
   for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
     const aNumber = aParts[i] || 0;
     const bNumber = bParts[i] || 0;
-    if (aNumber < bNumber) { return -1; }
-    if (aNumber > bNumber) { return 1; }
+    if (aNumber < bNumber) {
+      return -1;
+    }
+    if (aNumber > bNumber) {
+      return 1;
+    }
   }
   return 0;
 }

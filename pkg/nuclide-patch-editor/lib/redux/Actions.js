@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -31,7 +32,9 @@ export function registerPatchEditor(
   };
 }
 
-export function deregisterPatchEditor(editorPath: string): DeregisterPatchEditorAction {
+export function deregisterPatchEditor(
+  editorPath: string,
+): DeregisterPatchEditorAction {
   return {
     type: ActionTypes.DEREGISTER_PATCH_EDITOR,
     payload: {

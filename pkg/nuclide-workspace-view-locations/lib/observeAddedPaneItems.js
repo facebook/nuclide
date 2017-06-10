@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Viewable} from '../../nuclide-workspace-views/lib/types';
 
-import {observableFromSubscribeFunction} from '../../commons-node/event';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {Observable} from 'rxjs';
 
 /**
@@ -19,9 +20,15 @@ import {Observable} from 'rxjs';
  *
  * [1]: https://github.com/atom/atom/blob/v1.12.7/src/pane-container.coffee#L235
  */
-export function observeAddedPaneItems(paneContainer: atom$PaneContainer): Observable<Viewable> {
-  return observableFromSubscribeFunction(paneContainer.observePanes.bind(paneContainer))
-    .mergeMap(pane => observableFromSubscribeFunction(pane.onDidAddItem.bind(pane)))
+export function observeAddedPaneItems(
+  paneContainer: atom$PaneContainer,
+): Observable<Viewable> {
+  return observableFromSubscribeFunction(
+    paneContainer.observePanes.bind(paneContainer),
+  )
+    .mergeMap(pane =>
+      observableFromSubscribeFunction(pane.onDidAddItem.bind(pane)),
+    )
     .map(event => {
       // Technically, Viewable isn't a subtype of PaneItem.
       const item = (event.item: atom$PaneItem);

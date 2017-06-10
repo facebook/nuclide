@@ -6,17 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 
 import {FlowExecInfoContainer} from '../lib/FlowExecInfoContainer';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('FlowExecInfoContainer', () => {
   const dummyFlowPath = nuclideUri.join(__dirname, 'fixtures/dummyFlow');
-  const withFlowBinProjectPath = nuclideUri.join(__dirname, 'fixtures/with-flow-bin');
-  const withoutFlowBinProjectPath = nuclideUri.join(__dirname, 'fixtures/without-flow-bin');
+  const withFlowBinProjectPath = nuclideUri.join(
+    __dirname,
+    'fixtures/with-flow-bin',
+  );
+  const withoutFlowBinProjectPath = nuclideUri.join(
+    __dirname,
+    'fixtures/without-flow-bin',
+  );
 
   let infoContainer: FlowExecInfoContainer = (null: any);
 
@@ -38,7 +45,9 @@ describe('FlowExecInfoContainer', () => {
       describe('in a directory without flow-bin', () => {
         it('should return the system Flow binary', () => {
           waitsForPromise(async () => {
-            const execInfo = await infoContainer._computeFlowExecInfo(withoutFlowBinProjectPath);
+            const execInfo = await infoContainer._computeFlowExecInfo(
+              withoutFlowBinProjectPath,
+            );
             invariant(execInfo != null);
             expect(execInfo.pathToFlow).toBe(dummyFlowPath);
           });
@@ -47,7 +56,9 @@ describe('FlowExecInfoContainer', () => {
       describe('in a directory with flow-bin', () => {
         it('should return the system Flow binary', () => {
           waitsForPromise(async () => {
-            const execInfo = await infoContainer._computeFlowExecInfo(withFlowBinProjectPath);
+            const execInfo = await infoContainer._computeFlowExecInfo(
+              withFlowBinProjectPath,
+            );
             invariant(execInfo != null);
             expect(execInfo.pathToFlow).toBe(dummyFlowPath);
           });
@@ -56,7 +67,9 @@ describe('FlowExecInfoContainer', () => {
           waitsForPromise(async () => {
             // If somebody has this on their PATH I'm going to be upset
             infoContainer._pathToFlow = 'notAValidExecutable';
-            const execInfo = await infoContainer._computeFlowExecInfo(withFlowBinProjectPath);
+            const execInfo = await infoContainer._computeFlowExecInfo(
+              withFlowBinProjectPath,
+            );
             expect(execInfo).toBeNull();
           });
         });
@@ -79,7 +92,9 @@ describe('FlowExecInfoContainer', () => {
       describe('in a directory without flow-bin', () => {
         it('should return the system Flow binary', () => {
           waitsForPromise(async () => {
-            const execInfo = await infoContainer._computeFlowExecInfo(withoutFlowBinProjectPath);
+            const execInfo = await infoContainer._computeFlowExecInfo(
+              withoutFlowBinProjectPath,
+            );
             invariant(execInfo != null);
             expect(execInfo.pathToFlow).toBe(dummyFlowPath);
           });
@@ -88,9 +103,14 @@ describe('FlowExecInfoContainer', () => {
       describe('in a directory with flow-bin', () => {
         it('should return the local flow-bin binary', () => {
           waitsForPromise(async () => {
-            const execInfo = await infoContainer._computeFlowExecInfo(withFlowBinProjectPath);
+            const execInfo = await infoContainer._computeFlowExecInfo(
+              withFlowBinProjectPath,
+            );
             invariant(execInfo != null);
-            const flowBinPath = nuclideUri.join(withFlowBinProjectPath, 'node_modules/.bin/flow');
+            const flowBinPath = nuclideUri.join(
+              withFlowBinProjectPath,
+              'node_modules/.bin/flow',
+            );
             expect(execInfo.pathToFlow).toBe(flowBinPath);
           });
         });

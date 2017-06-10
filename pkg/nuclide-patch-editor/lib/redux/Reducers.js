@@ -6,15 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  Action,
-  AppState,
-  FileData,
-  HunkData,
-  PatchData,
-} from '../types';
+import type {Action, AppState, FileData, HunkData, PatchData} from '../types';
 
 import * as ActionTypes from './ActionTypes';
 import {createEmptyAppState} from './createEmptyAppState';
@@ -23,17 +18,17 @@ import invariant from 'invariant';
 import nullthrows from 'nullthrows';
 import {SelectedState} from '../constants';
 
-export function rootReducer(
-  state?: AppState,
-  action: Action,
-): AppState {
+export function rootReducer(state?: AppState, action: Action): AppState {
   if (state == null) {
     return createEmptyAppState();
   }
   switch (action.type) {
     case ActionTypes.REGISTER_PATCH_EDITOR: {
       const patchEditors = new Map(state.patchEditors);
-      patchEditors.set(action.payload.editorPath, createPatchData(action.payload.patchData));
+      patchEditors.set(
+        action.payload.editorPath,
+        createPatchData(action.payload.patchData),
+      );
       return {
         ...state,
         patchEditors,
@@ -50,10 +45,7 @@ export function rootReducer(
     }
 
     case ActionTypes.TOGGLE_FILE_ACTION: {
-      const {
-        patchId,
-        fileId,
-      } = action.payload;
+      const {patchId, fileId} = action.payload;
 
       const patchEditors = new Map(state.patchEditors);
       const patchData = nullthrows(patchEditors.get(patchId));
@@ -65,15 +57,14 @@ export function rootReducer(
     }
 
     case ActionTypes.TOGGLE_HUNK_ACTION: {
-      const {
-        patchId,
-        fileId,
-        hunkOldStart,
-      } = action.payload;
+      const {patchId, fileId, hunkOldStart} = action.payload;
 
       const patchEditors = new Map(state.patchEditors);
       const patchData = nullthrows(patchEditors.get(patchId));
-      patchEditors.set(patchId, updatePatchData(patchData, fileId, hunkOldStart));
+      patchEditors.set(
+        patchId,
+        updatePatchData(patchData, fileId, hunkOldStart),
+      );
       return {
         ...state,
         patchEditors,
@@ -81,16 +72,14 @@ export function rootReducer(
     }
 
     case ActionTypes.TOGGLE_LINE_ACTION: {
-      const {
-        patchId,
-        fileId,
-        hunkOldStart,
-        line,
-      } = action.payload;
+      const {patchId, fileId, hunkOldStart, line} = action.payload;
 
       const patchEditors = new Map(state.patchEditors);
       const patchData = nullthrows(patchEditors.get(patchId));
-      patchEditors.set(patchId, updatePatchData(patchData, fileId, hunkOldStart, line));
+      patchEditors.set(
+        patchId,
+        updatePatchData(patchData, fileId, hunkOldStart, line),
+      );
       return {
         ...state,
         patchEditors,
@@ -119,7 +108,11 @@ function updatePatchData(
   };
 }
 
-function updateFileData(fileData: FileData, hunkOldStart: ?number, line: ?number): FileData {
+function updateFileData(
+  fileData: FileData,
+  hunkOldStart: ?number,
+  line: ?number,
+): FileData {
   let {countEnabledChunks, countPartialChunks} = fileData;
   let chunks;
   let selected;
@@ -133,22 +126,42 @@ function updateFileData(fileData: FileData, hunkOldStart: ?number, line: ?number
 
     // Update countEnabledChunks and countPartialChunks based on change in selected state
     invariant(
-      !(oldHunk.selected === SelectedState.ALL && newHunk.selected === SelectedState.ALL) &&
-      !(oldHunk.selected === SelectedState.NONE && newHunk.selected === SelectedState.NONE),
+      !(oldHunk.selected === SelectedState.ALL &&
+        newHunk.selected === SelectedState.ALL) &&
+        !(oldHunk.selected === SelectedState.NONE &&
+          newHunk.selected === SelectedState.NONE),
     );
-    if (oldHunk.selected === SelectedState.ALL && newHunk.selected === SelectedState.SOME) {
+    if (
+      oldHunk.selected === SelectedState.ALL &&
+      newHunk.selected === SelectedState.SOME
+    ) {
       countEnabledChunks--;
       countPartialChunks++;
-    } else if (oldHunk.selected === SelectedState.ALL && newHunk.selected === SelectedState.NONE) {
+    } else if (
+      oldHunk.selected === SelectedState.ALL &&
+      newHunk.selected === SelectedState.NONE
+    ) {
       countEnabledChunks--;
-    } else if (oldHunk.selected === SelectedState.SOME && newHunk.selected === SelectedState.ALL) {
+    } else if (
+      oldHunk.selected === SelectedState.SOME &&
+      newHunk.selected === SelectedState.ALL
+    ) {
       countEnabledChunks++;
       countPartialChunks--;
-    } else if (oldHunk.selected === SelectedState.SOME && newHunk.selected === SelectedState.NONE) {
+    } else if (
+      oldHunk.selected === SelectedState.SOME &&
+      newHunk.selected === SelectedState.NONE
+    ) {
       countPartialChunks--;
-    } else if (oldHunk.selected === SelectedState.NONE && newHunk.selected === SelectedState.ALL) {
+    } else if (
+      oldHunk.selected === SelectedState.NONE &&
+      newHunk.selected === SelectedState.ALL
+    ) {
       countEnabledChunks++;
-    } else if (oldHunk.selected === SelectedState.NONE && newHunk.selected === SelectedState.SOME) {
+    } else if (
+      oldHunk.selected === SelectedState.NONE &&
+      newHunk.selected === SelectedState.SOME
+    ) {
       countPartialChunks++;
     }
 
@@ -174,8 +187,8 @@ function updateFileData(fileData: FileData, hunkOldStart: ?number, line: ?number
     if (fileData.chunks != null) {
       // Set all hunks to all unselected
       chunks = new Map();
-      fileData.chunks.forEach(
-        (hunkData, oldStart) => chunks.set(oldStart, selectWholeHunk(hunkData, isEnabling)),
+      fileData.chunks.forEach((hunkData, oldStart) =>
+        chunks.set(oldStart, selectWholeHunk(hunkData, isEnabling)),
       );
       // TODO: update all children hunks to reflect change
       countEnabledChunks = isEnabling ? chunks.size : 0;
@@ -236,8 +249,8 @@ function updateHunkData(hunkData: HunkData, line: ?number): HunkData {
 
 function selectWholeHunk(hunkData: HunkData, isEnabling: boolean): HunkData {
   if (
-    isEnabling && hunkData.selected === SelectedState.ALL ||
-    !isEnabling && hunkData.selected === SelectedState.NONE
+    (isEnabling && hunkData.selected === SelectedState.ALL) ||
+    (!isEnabling && hunkData.selected === SelectedState.NONE)
   ) {
     return hunkData;
   }

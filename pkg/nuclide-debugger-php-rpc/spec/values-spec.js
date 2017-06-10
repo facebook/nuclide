@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ObjectId} from '../lib/ObjectId';
@@ -20,9 +21,8 @@ describe('debugger-php-rpc convertValue', () => {
   });
 
   it('string', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         _: 'dGVzdC1jbGllbnQucGhw',
         $: {
           name: '0',
@@ -32,17 +32,16 @@ describe('debugger-php-rpc convertValue', () => {
           size: 15,
           encoding: 'base64',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'string',
       value: 'test-client.php',
     });
   });
 
   it('int', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         _: '1',
         $: {
           name: '$argc',
@@ -50,17 +49,16 @@ describe('debugger-php-rpc convertValue', () => {
           address: '140735826684880',
           type: 'int',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'number',
       value: '1',
     });
   });
 
   it('64bit int', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         _: '-5560108255872548864',
         $: {
           name: '$bitInt',
@@ -68,17 +66,16 @@ describe('debugger-php-rpc convertValue', () => {
           address: '140735826684880',
           type: 'int',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'number',
       value: '-5560108255872548864',
     });
   });
 
   it('float', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         _: '42.5',
         $: {
           name: '$arg',
@@ -86,17 +83,16 @@ describe('debugger-php-rpc convertValue', () => {
           address: '140735826684880',
           type: 'float',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'number',
       value: '42.5',
     });
   });
 
   it('bool', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         _: '1',
         $: {
           name: '$arg',
@@ -104,25 +100,24 @@ describe('debugger-php-rpc convertValue', () => {
           address: '140735826684880',
           type: 'bool',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'boolean',
       value: true,
     });
   });
 
   it('null', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         $: {
           name: '$HTTP_RAW_POST_DATA',
           fullname: '$HTTP_RAW_POST_DATA',
           address: '140735826684880',
           type: 'null',
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       type: 'undefined',
       subtype: 'null',
       value: null,
@@ -130,9 +125,8 @@ describe('debugger-php-rpc convertValue', () => {
   });
 
   it('array', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         $: {
           name: '$argv',
           fullname: '$argv',
@@ -156,8 +150,8 @@ describe('debugger-php-rpc convertValue', () => {
             },
           },
         ],
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       description: 'Array[1]',
       type: 'object',
       objectId: '{"fullname":"$argv","page":0}',
@@ -165,9 +159,8 @@ describe('debugger-php-rpc convertValue', () => {
   });
 
   it('object', () => {
-    expect(convertValue(
-      objectId,
-      {
+    expect(
+      convertValue(objectId, {
         $: {
           name: '$arg',
           fullname: '$arg',
@@ -179,8 +172,8 @@ describe('debugger-php-rpc convertValue', () => {
           page: 0,
           pagesize: 32,
         },
-      },
-    )).toEqual({
+      }),
+    ).toEqual({
       description: 'CLS',
       type: 'object',
       objectId: '{"fullname":"$arg","page":0}',

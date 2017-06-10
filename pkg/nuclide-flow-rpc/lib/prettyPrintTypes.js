@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -94,7 +95,7 @@ function parseGroups(str) {
     currentGroup.end = i + 1;
     const parentGroup = currentGroup.parentGroup;
     if (!parentGroup) {
-      throw new Error('parentGroup shouldn\'t be null');
+      throw new Error("parentGroup shouldn't be null");
     }
     currentGroup = parentGroup;
   }
@@ -110,8 +111,10 @@ function parseGroups(str) {
       pushGroup();
     }
 
-    if (closeGroup.indexOf(str[i]) !== -1 &&
-        currentGroup.closeChar === str[i]) {
+    if (
+      closeGroup.indexOf(str[i]) !== -1 &&
+      currentGroup.closeChar === str[i]
+    ) {
       popGroup();
     }
 
@@ -150,7 +153,6 @@ function printGroups(str, rootGroup, max) {
     return output + group.closeChar;
   }
 
-
   function printSingleLineGroup(group, indent) {
     let output = group.openChar;
     group.elements.forEach(childGroup => {
@@ -185,8 +187,7 @@ function printGroups(str, rootGroup, max) {
     return getIndent(indent) + output.trimLeft() + '\n';
   }
 
-  return printMultiLineGroup(rootGroup, -1)
-    .slice('\n'.length, -'\n'.length);
+  return printMultiLineGroup(rootGroup, -1).slice('\n'.length, -'\n'.length);
 }
 
 function isGroupValid(group) {
@@ -208,7 +209,10 @@ function isGroupValid(group) {
   return true;
 }
 
-export default function prettyPrintTypes(str: string, max: number = 40): string {
+export default function prettyPrintTypes(
+  str: string,
+  max: number = 40,
+): string {
   const rootGroup = parseGroups(str);
   if (!isGroupValid(rootGroup)) {
     return str;

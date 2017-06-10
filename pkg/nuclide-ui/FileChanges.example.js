@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -67,9 +68,9 @@ index abc123..cde456 100644
 class FileChangesExample extends React.Component {
   render(): React.Element<any> {
     const diff = parse(sampleUnifiedDiff);
-    const changes = diff.map(file =>
-      <FileChanges diff={file} key={`${file.from}:${file.to}`} />,
-    );
+    const changes = diff.map(file => (
+      <FileChanges diff={file} key={`${file.from}:${file.to}`} />
+    ));
     return (
       <div>
         {changes}

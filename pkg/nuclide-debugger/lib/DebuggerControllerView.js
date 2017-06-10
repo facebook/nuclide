@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -13,8 +14,8 @@ import BreakpointStore from './BreakpointStore.js';
 import DebuggerInspector from './DebuggerInspector';
 import {DebuggerStore} from './DebuggerStore';
 import Bridge from './Bridge';
-import {Button} from '../../nuclide-ui/Button';
-import {LoadingSpinner} from '../../nuclide-ui/LoadingSpinner';
+import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
+import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
 
 type Props = {
   breakpointStore: BreakpointStore,
@@ -43,13 +44,14 @@ export default class DebuggerControllerView extends React.Component {
     super(props);
     this.state = getStateFromStore(props.store);
 
-    (this: any)._handleClickClose = this._handleClickClose.bind(this);
     (this: any)._updateStateFromStore = this._updateStateFromStore.bind(this);
   }
 
   componentWillMount() {
     this.setState({
-      debuggerStoreChangeListener: this.props.store.onChange(this._updateStateFromStore),
+      debuggerStoreChangeListener: this.props.store.onChange(
+        this._updateStateFromStore,
+      ),
     });
     this._updateStateFromStore();
   }
@@ -67,13 +69,15 @@ export default class DebuggerControllerView extends React.Component {
       listener.dispose();
     }
     this.setState({
-      debuggerStoreChangeListener: nextProps.store.onChange(this._updateStateFromStore),
+      debuggerStoreChangeListener: nextProps.store.onChange(
+        this._updateStateFromStore,
+      ),
     });
     this._updateStateFromStore(nextProps.store);
   }
 
   render(): ?React.Element<any> {
-    if (this.state.processSocket) {
+    if (this.state.processSocket && __DEV__) {
       return (
         <DebuggerInspector
           breakpointStore={this.props.breakpointStore}
@@ -89,19 +93,10 @@ export default class DebuggerControllerView extends React.Component {
             <span className="inline-block">Starting Debugger...</span>
             <LoadingSpinner className="inline-block" size="EXTRA_SMALL" />
           </div>
-          <Button
-            icon="x"
-            onClick={this._handleClickClose}
-            title="Close"
-          />
         </div>
       );
     }
     return null;
-  }
-
-  _handleClickClose() {
-    this.props.stopDebugging();
   }
 
   _updateStateFromStore(store?: DebuggerStore) {

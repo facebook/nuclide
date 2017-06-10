@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PlatformGroup} from './types';
 
 import {Disposable} from 'atom';
 import {Observable, Subject} from 'rxjs';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 
 type PlatformProvider = (
   buckRoot: string,
@@ -42,9 +43,13 @@ export class PlatformService {
     return this._providersChanged.startWith(undefined).switchMap(() => {
       const observables = this._registeredProviders.map(provider =>
         provider(buckRoot, ruleType, buildTarget).catch(error => {
-          getLogger().error(`Getting buck platform groups from ${provider.name} failed:`, error);
+          getLogger('nuclide-buck').error(
+            `Getting buck platform groups from ${provider.name} failed:`,
+            error,
+          );
           return Observable.of(null);
-        }));
+        }),
+      );
       return (
         Observable.from(observables)
           // $FlowFixMe: type combineAll
@@ -53,7 +58,8 @@ export class PlatformService {
             return platformGroups
               .filter(p => p != null)
               .sort((a, b) =>
-                a.name.toUpperCase().localeCompare(b.name.toUpperCase()));
+                a.name.toUpperCase().localeCompare(b.name.toUpperCase()),
+              );
           })
       );
     });

@@ -6,13 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 describe('Fake timer test suite', () => {
   it('test setTimeout and clearTimeout', () => {
     let firstExecuted = false;
 
-    setTimeout(() => { firstExecuted = true; }, 10);
+    setTimeout(() => {
+      firstExecuted = true;
+    }, 10);
 
     advanceClock(9);
 
@@ -23,8 +26,12 @@ describe('Fake timer test suite', () => {
     let secondExecuted = false;
     let thirdExecuted = false;
 
-    const secondId = setTimeout(() => { secondExecuted = true; }, 20);
-    setTimeout(() => { thirdExecuted = true; }, 30);
+    const secondId = setTimeout(() => {
+      secondExecuted = true;
+    }, 20);
+    setTimeout(() => {
+      thirdExecuted = true;
+    }, 30);
 
     advanceClock(19);
     clearTimeout(secondId);
@@ -43,7 +50,9 @@ describe('Fake timer test suite', () => {
 
     let firstExecuted = false;
 
-    setInterval(() => { firstExecuted = true; }, 10);
+    setInterval(() => {
+      firstExecuted = true;
+    }, 10);
 
     advanceClock(9);
 
@@ -54,8 +63,12 @@ describe('Fake timer test suite', () => {
     let secondExecuted = false;
     let thirdExecuted = false;
 
-    const secondId = setInterval(() => { secondExecuted = true; }, 20);
-    setInterval(() => { thirdExecuted = true; }, 30);
+    const secondId = setInterval(() => {
+      secondExecuted = true;
+    }, 20);
+    setInterval(() => {
+      thirdExecuted = true;
+    }, 30);
 
     advanceClock(19);
     clearInterval(secondId);

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -32,7 +33,9 @@ export const ActiveShortHeadChangeBehavior = Object.freeze({
   PROMPT_TO_RESTORE: 'Prompt to Restore',
 });
 
-(ActiveShortHeadChangeBehavior: {[key: string]: ActiveShortHeadChangeBehaviorValue});
+(ActiveShortHeadChangeBehavior: {
+  [key: string]: ActiveShortHeadChangeBehaviorValue,
+});
 
 export const ACTIVE_SHORTHEAD_CHANGE_BEHAVIOR_CONFIG =
   'nuclide-bookshelf.changeActiveBookmarkBehavior';

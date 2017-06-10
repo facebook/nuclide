@@ -6,16 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // A very basic heuristic for coloring the values.
 /* eslint-disable key-spacing */
 export const ValueComponentClassNames = {
-  boolean:            'syntax--constant syntax--language syntax--boolean',
-  identifier:         'syntax--variable',
-  nullish:            'syntax--constant syntax--language syntax--null',
-  number:             'syntax--constant syntax--numeric',
-  string:             'syntax--string syntax--quoted syntax--double',
+  boolean: 'syntax--constant syntax--language syntax--boolean',
+  identifier: 'syntax--variable',
+  nullish: 'syntax--constant syntax--language syntax--null',
+  number: 'syntax--constant syntax--numeric',
+  string: 'syntax--string syntax--quoted syntax--double',
   stringClosingQuote: 'syntax--punctuation syntax--definition syntax--string syntax--end',
   stringOpeningQuote: 'syntax--punctuation syntax--definition syntax--string syntax--begin',
 };

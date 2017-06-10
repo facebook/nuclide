@@ -6,9 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {FileSearchResult} from './rpc-types';
 
 import {
@@ -16,7 +17,8 @@ import {
   getExistingSearchDirectories,
   disposeSearchForDirectory,
 } from './FileSearchProcess';
-import fsPromise from '../../commons-node/fsPromise';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 /**
  * Performs a fuzzy file search in the specified directory.
@@ -26,8 +28,21 @@ export async function queryFuzzyFile(
   queryString: string,
   ignoredNames: Array<string>,
 ): Promise<Array<FileSearchResult>> {
-  const search = await fileSearchForDirectory(rootDirectory, ignoredNames);
-  return search.query(queryString);
+  // Note that Eden makes a "magical" .eden directory entry stat'able but not readdir'able in every
+  // directory under EdenFS to make it cheap to check whether a directory is in EdenFS.
+  const pathToDotEden = nuclideUri.join(rootDirectory, '.eden');
+  const isEden = await fsPromise.isNonNfsDirectory(pathToDotEden);
+  if (!isEden) {
+    const search = await fileSearchForDirectory(rootDirectory, ignoredNames);
+    return search.query(queryString);
+  } else {
+    const edenFsRoot = await fsPromise.readlink(
+      nuclideUri.join(pathToDotEden, 'root'),
+    );
+    // $FlowFB
+    const {doSearch} = require('./fb-EdenFileSearch');
+    return doSearch(queryString, edenFsRoot, rootDirectory);
+  }
 }
 
 export async function queryAllExistingFuzzyFile(
@@ -37,7 +52,8 @@ export async function queryAllExistingFuzzyFile(
   const directories = getExistingSearchDirectories();
   const aggregateResults = await Promise.all(
     directories.map(rootDirectory =>
-      queryFuzzyFile(rootDirectory, queryString, ignoredNames)),
+      queryFuzzyFile(rootDirectory, queryString, ignoredNames),
+    ),
   );
   // Optimize for the common case.
   if (aggregateResults.length === 1) {

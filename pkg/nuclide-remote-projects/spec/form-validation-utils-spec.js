@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {SshHandshake} from '../../nuclide-remote-connection';
@@ -50,41 +51,35 @@ describe('validateFormInputs', () => {
   /**
    * Section: Valid Profiles
    */
-  it(
-    'accepts a valid profile with the Private Key authentication method', () => {
-      const resultFromProfileWithPrivateKey: any = validateFormInputs(
-        validProfileName,
-        minimumValidParamsWithPrivateKey,
-        defaultServerCommand,
-      );
-      expect(resultFromProfileWithPrivateKey.validatedProfile).toBeDefined();
-      expect(resultFromProfileWithPrivateKey.warningMessage).not.toBeDefined();
-    },
-  );
+  it('accepts a valid profile with the Private Key authentication method', () => {
+    const resultFromProfileWithPrivateKey: any = validateFormInputs(
+      validProfileName,
+      minimumValidParamsWithPrivateKey,
+      defaultServerCommand,
+    );
+    expect(resultFromProfileWithPrivateKey.validatedProfile).toBeDefined();
+    expect(resultFromProfileWithPrivateKey.warningMessage).not.toBeDefined();
+  });
 
-  it(
-    'accepts a valid profile with the Password authentication method', () => {
-      const resultFromProfileWithPassword: any = validateFormInputs(
-        validProfileName,
-        minimumValidParamsWithPassword,
-        defaultServerCommand,
-      );
-      expect(resultFromProfileWithPassword.validatedProfile).toBeDefined();
-      expect(resultFromProfileWithPassword.warningMessage).not.toBeDefined();
-    },
-  );
+  it('accepts a valid profile with the Password authentication method', () => {
+    const resultFromProfileWithPassword: any = validateFormInputs(
+      validProfileName,
+      minimumValidParamsWithPassword,
+      defaultServerCommand,
+    );
+    expect(resultFromProfileWithPassword.validatedProfile).toBeDefined();
+    expect(resultFromProfileWithPassword.warningMessage).not.toBeDefined();
+  });
 
-  it(
-    'accepts a valid profile with the SSH Agent authentication method', () => {
-      const resultFromProfileWithSshAgent: any = validateFormInputs(
-        validProfileName,
-        minimumValidParamsWithSshAgent,
-        defaultServerCommand,
-      );
-      expect(resultFromProfileWithSshAgent.validatedProfile).toBeDefined();
-      expect(resultFromProfileWithSshAgent.warningMessage).not.toBeDefined();
-    },
-  );
+  it('accepts a valid profile with the SSH Agent authentication method', () => {
+    const resultFromProfileWithSshAgent: any = validateFormInputs(
+      validProfileName,
+      minimumValidParamsWithSshAgent,
+      defaultServerCommand,
+    );
+    expect(resultFromProfileWithSshAgent.validatedProfile).toBeDefined();
+    expect(resultFromProfileWithSshAgent.warningMessage).not.toBeDefined();
+  });
 
   /**
    * Section: Invalid Profiles
@@ -236,7 +231,9 @@ describe('validateFormInputs', () => {
       defaultServerCommand,
     );
     expect(resultFromProfileWithPassword.validatedProfile).toBeDefined();
-    expect(resultFromProfileWithPassword.validatedProfile.params.password).not.toBeDefined();
+    expect(
+      resultFromProfileWithPassword.validatedProfile.params.password,
+    ).not.toBeDefined();
     expect(resultFromProfileWithPassword.warningMessage).toBeDefined();
   });
 
@@ -247,7 +244,8 @@ describe('validateFormInputs', () => {
       defaultServerCommand,
     );
     expect(
-      resultFromProfileWithDefaultRSC.validatedProfile.params.remoteServerCommand,
+      resultFromProfileWithDefaultRSC.validatedProfile.params
+        .remoteServerCommand,
     ).toBe('');
 
     minimumValidParamsWithPassword.remoteServerCommand = 'differentCommand';
@@ -257,7 +255,8 @@ describe('validateFormInputs', () => {
       defaultServerCommand,
     );
     expect(
-      resultFromProfileWithDifferentRSC.validatedProfile.params.remoteServerCommand,
+      resultFromProfileWithDifferentRSC.validatedProfile.params
+        .remoteServerCommand,
     ).toBe('differentCommand');
   });
 });

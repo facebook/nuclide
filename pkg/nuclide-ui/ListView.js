@@ -6,12 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import classnames from 'classnames';
 import React from 'react';
 
-import ignoreTextSelectionEvents from './ignoreTextSelectionEvents';
+import ignoreTextSelectionEvents
+  from 'nuclide-commons-ui/ignoreTextSelectionEvents';
 
 type ListViewItemProps = {
   index: number,
@@ -32,19 +34,14 @@ export class ListViewItem extends React.Component {
   }
 
   render(): React.Element<any> {
-    const {
-      children,
-      index,
-      value,
-      ...remainingProps
-    } = this.props;
+    const {children, index, value, ...remainingProps} = this.props;
     return (
       <div
         className="nuclide-ui-listview-item"
         {...remainingProps}
-        onClick={
-          ignoreTextSelectionEvents(this._select.bind(this, value, index))
-        }>
+        onClick={ignoreTextSelectionEvents(
+          this._select.bind(this, value, index),
+        )}>
         {children}
       </div>
     );
@@ -76,28 +73,26 @@ export class ListView extends React.Component {
     (this: any)._handleSelect = this._handleSelect.bind(this);
   }
 
-  _handleSelect(value: ?Object, index: number, event: SyntheticMouseEvent): void {
+  _handleSelect(
+    value: ?Object,
+    index: number,
+    event: SyntheticMouseEvent,
+  ): void {
     if (this.props.selectable && this.props.onSelect != null) {
       this.props.onSelect(index, value);
     }
   }
 
   render(): React.Element<any> {
-    const {
-      children,
-      alternateBackground,
-      selectable,
-    } = this.props;
+    const {children, alternateBackground, selectable} = this.props;
     const renderedItems = React.Children.map(
       children,
       (child: React.Element<any>, index: number) =>
-        React.cloneElement(
-          child,
-          {
-            index,
-            onSelect: this._handleSelect,
-          },
-        ));
+        React.cloneElement(child, {
+          index,
+          onSelect: this._handleSelect,
+        }),
+    );
     const className = classnames({
       'native-key-bindings': true,
       'nuclide-ui-listview': true,

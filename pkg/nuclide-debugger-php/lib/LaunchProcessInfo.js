@@ -6,20 +6,22 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   PhpDebuggerService as PhpDebuggerServiceType,
 } from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
 
 import {DebuggerProcessInfo} from '../../nuclide-debugger-base';
 import {PhpDebuggerInstance} from './PhpDebuggerInstance';
-import {getPhpDebuggerServiceByNuclideUri} from '../../nuclide-remote-connection';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {
+  getPhpDebuggerServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import utils from './utils';
-const {logInfo} = utils;
+import logger from './utils';
 import {getSessionConfig} from './utils';
 
 export class LaunchProcessInfo extends DebuggerProcessInfo {
@@ -30,18 +32,25 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
     this._launchTarget = launchTarget;
   }
 
+  clone(): LaunchProcessInfo {
+    return new LaunchProcessInfo(this._targetUri, this._launchTarget);
+  }
+
   async debug(): Promise<PhpDebuggerInstance> {
     const rpcService = this._getRpcService();
-    const sessionConfig = getSessionConfig(nuclideUri.getPath(this.getTargetUri()), true);
+    const sessionConfig = getSessionConfig(
+      nuclideUri.getPath(this.getTargetUri()),
+      true,
+    );
 
     // Set config related to script launching.
     sessionConfig.endDebugWhenNoRequests = true;
     sessionConfig.launchScriptPath = this._launchTarget;
 
-    logInfo(`Connection session config: ${JSON.stringify(sessionConfig)}`);
+    logger.info(`Connection session config: ${JSON.stringify(sessionConfig)}`);
 
     const result = await rpcService.debug(sessionConfig);
-    logInfo(`Launch process result: ${result}`);
+    logger.info(`Launch process result: ${result}`);
     return new PhpDebuggerInstance(this, rpcService);
   }
 
@@ -59,6 +68,10 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
   }
 
   singleThreadSteppingEnabled(): boolean {
+    return true;
+  }
+
+  supportContinueToLocation(): boolean {
     return true;
   }
 }

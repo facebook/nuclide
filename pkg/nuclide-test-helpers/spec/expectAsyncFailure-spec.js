@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {expectAsyncFailure} from '..';
@@ -15,8 +16,9 @@ describe('expectAsyncFailure', () => {
     const verify: any = jasmine.createSpy();
     waitsForPromise({shouldReject: true}, () => {
       return expectAsyncFailure(
-          Promise.resolve('resolved, not rejected!'),
-          verify);
+        Promise.resolve('resolved, not rejected!'),
+        verify,
+      );
     });
     runs(() => {
       expect(verify.callCount).toBe(0);
@@ -34,9 +36,7 @@ describe('expectAsyncFailure', () => {
     }
 
     waitsForPromise({shouldReject: true}, () => {
-      return expectAsyncFailure(
-          Promise.reject(Error('I failed.')),
-          verify);
+      return expectAsyncFailure(Promise.reject(Error('I failed.')), verify);
     });
     runs(() => {
       expect(callCount).toBe(1);
@@ -55,8 +55,9 @@ describe('expectAsyncFailure', () => {
 
     waitsForPromise({shouldReject: false}, () => {
       return expectAsyncFailure(
-          Promise.reject(Error('I failed badly.')),
-          verify);
+        Promise.reject(Error('I failed badly.')),
+        verify,
+      );
     });
     runs(() => {
       expect(callCount).toBe(1);

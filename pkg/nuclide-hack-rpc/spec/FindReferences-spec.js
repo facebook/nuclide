@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {convertReferences} from '../lib/FindReferences';
@@ -21,22 +22,27 @@ describe('FindReferences', () => {
   });
 
   it('convertReferences', () => {
-    expect(convertReferences([
-      {
-        name: '\\TestClass::testFunction',
-        filename: file1Path,
-        line: 13,
-        char_start: 5,
-        char_end: 7,
-      },
-      {
-        name: '\\TestClass::testFunction',
-        filename: file2Path,
-        line: 11,
-        char_start: 1,
-        char_end: 3,
-      },
-    ], projectRoot)).diffJson({
+    expect(
+      convertReferences(
+        [
+          {
+            name: '\\TestClass::testFunction',
+            filename: file1Path,
+            line: 13,
+            char_start: 5,
+            char_end: 7,
+          },
+          {
+            name: '\\TestClass::testFunction',
+            filename: file2Path,
+            line: 11,
+            char_start: 1,
+            char_end: 3,
+          },
+        ],
+        projectRoot,
+      ),
+    ).diffJson({
       type: 'data',
       baseUri: '/test/',
       referencedSymbolName: 'TestClass::testFunction',

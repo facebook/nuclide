@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as GrepService from '../../nuclide-grep-rpc';
 import type {search$FileResult} from '../../nuclide-grep-rpc';
 
 import {Observable, ReplaySubject} from 'rxjs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {RemoteDirectory} from '../../nuclide-remote-connection';
 
 type RemoteDirectorySearch = {
@@ -44,12 +45,20 @@ export default class RemoteDirectorySearcher {
     // Get the remote service that corresponds to each remote directory.
     const services = directories.map(dir => this._serviceProvider(dir));
 
-    const searchStreams: Array<Observable<search$FileResult>> = directories.map((dir, index) =>
-      services[index].grepSearch(
-        dir.getPath(),
-        regex,
-        RemoteDirectorySearcher.processPaths(dir.getPath(), options.inclusions),
-      ).refCount());
+    const searchStreams: Array<
+      Observable<search$FileResult>,
+    > = directories.map((dir, index) =>
+      services[index]
+        .grepSearch(
+          dir.getPath(),
+          regex,
+          RemoteDirectorySearcher.processPaths(
+            dir.getPath(),
+            options.inclusions,
+          ),
+        )
+        .refCount(),
+    );
 
     // Start the search in each directory, and merge the resulting streams.
     const searchStream = Observable.merge(...searchStreams);
@@ -58,20 +67,24 @@ export default class RemoteDirectorySearcher {
     const searchCompletion = new ReplaySubject();
     searchCompletion.next();
 
-    const subscription = searchStream.subscribe(next => {
-      options.didMatch(next);
+    const subscription = searchStream.subscribe(
+      next => {
+        options.didMatch(next);
 
-      // Call didSearchPaths with the number of unique files we have seen matches in. This is
-      // not technically correct, as didSearchPaths is also supposed to count files for which
-      // no matches were found. However, we currently have no way of obtaining this information.
-      seenFiles.add(next.filePath);
-      options.didSearchPaths(seenFiles.size);
-    }, error => {
-      options.didError(error);
-      searchCompletion.error(error);
-    }, () => {
-      searchCompletion.complete();
-    });
+        // Call didSearchPaths with the number of unique files we have seen matches in. This is
+        // not technically correct, as didSearchPaths is also supposed to count files for which
+        // no matches were found. However, we currently have no way of obtaining this information.
+        seenFiles.add(next.filePath);
+        options.didSearchPaths(seenFiles.size);
+      },
+      error => {
+        options.didError(error);
+        searchCompletion.error(error);
+      },
+      () => {
+        searchCompletion.complete();
+      },
+    );
 
     // Return a promise that resolves on search completion.
     const completionPromise = searchCompletion.toPromise();

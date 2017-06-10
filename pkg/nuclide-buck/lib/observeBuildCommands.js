@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {AppState, Store} from './types';
 
 import {Observable} from 'rxjs';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import featureConfig from '../../commons-atom/featureConfig';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import {track} from '../../nuclide-analytics';
 import {getBuckServiceByNuclideUri} from '../../nuclide-remote-connection';
 import * as Actions from './redux/Actions';
@@ -34,27 +35,27 @@ export default function observeBuildCommands(store: Store): IDisposable {
         // We can't use Watchman because these logs are typically ignored.
         const buckService = getBuckServiceByNuclideUri(buckRoot);
         return Observable.interval(CHECK_INTERVAL).switchMap(() => {
-          return Observable.fromPromise(
-            buckService.getLastCommandInfo(buckRoot),
-          )
-            // Ignore errors.
-            .catch(() => Observable.of(null))
-            .switchMap(commandInfo => {
-              if (commandInfo == null) {
-                return Observable.empty();
-              }
-              const {timestamp, command, args} = commandInfo;
-              // Only report simple single-target build commands for now.
-              if (
-                Date.now() - timestamp > CHECK_INTERVAL ||
-                command !== 'build' ||
-                args.length !== 1 ||
-                args[0].startsWith('-')
-              ) {
-                return Observable.empty();
-              }
-              return Observable.of(commandInfo);
-            });
+          return (
+            Observable.fromPromise(buckService.getLastCommandInfo(buckRoot, 1))
+              // Ignore errors.
+              .catch(() => Observable.of(null))
+              .switchMap(commandInfo => {
+                if (commandInfo == null) {
+                  return Observable.empty();
+                }
+                const {timestamp, command, args} = commandInfo;
+                // Only report simple single-target build commands for now.
+                if (
+                  Date.now() - timestamp > CHECK_INTERVAL ||
+                  command !== 'build' ||
+                  args.length !== 1 ||
+                  args[0].startsWith('-')
+                ) {
+                  return Observable.empty();
+                }
+                return Observable.of(commandInfo);
+              })
+          );
         });
       })
       // Only show this once per session.
@@ -83,7 +84,8 @@ export default function observeBuildCommands(store: Store): IDisposable {
                   store.dispatch(Actions.setBuildTarget(args[0]));
                   atom.commands.dispatch(
                     atom.views.getView(atom.workspace),
-                    'nuclide-task-runner:Buck-build',
+                    'nuclide-task-runner:toggle-buck-toolbar',
+                    {visible: true},
                   );
                   dismiss();
                 },

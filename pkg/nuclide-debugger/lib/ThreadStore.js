@@ -6,26 +6,19 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  ThreadItem,
-  NuclideThreadData,
-  DebuggerModeType,
-} from './types';
+import type {ThreadItem, NuclideThreadData, DebuggerModeType} from './types';
 import type {
   PinnedDatatip,
   DatatipService,
 } from '../../nuclide-datatip/lib/types';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
-import {
-  Disposable,
-  CompositeDisposable,
-  Emitter,
-} from 'atom';
+import {Disposable, CompositeDisposable, Emitter} from 'atom';
 import React from 'react';
-import {Icon} from '../../nuclide-ui/Icon';
-import nuclideUri from '../../commons-node/nuclideUri';
+import {Icon} from 'nuclide-commons-ui/Icon';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ActionTypes} from './DebuggerDispatcher';
 import passesGK from '../../commons-node/passesGK';
 import {DebuggerMode} from './DebuggerStore';
@@ -86,12 +79,22 @@ export default class ThreadStore {
         this._updateStopThread(payload.data.id);
         this._emitter.emit('change');
         break;
+      case ActionTypes.UPDATE_SELECTED_THREAD:
+        this._updateSelectedThread(payload.data.id);
+        this._emitter.emit('change');
+        break;
       case ActionTypes.NOTIFY_THREAD_SWITCH:
-        this._notifyThreadSwitch(payload.data.sourceURL, payload.data.lineNumber,
-          payload.data.message);
+        this._notifyThreadSwitch(
+          payload.data.sourceURL,
+          payload.data.lineNumber,
+          payload.data.message,
+        );
         break;
       case ActionTypes.DEBUGGER_MODE_CHANGE:
-        if (this._debuggerMode === DebuggerMode.RUNNING && payload.data === DebuggerMode.PAUSED) {
+        if (
+          this._debuggerMode === DebuggerMode.RUNNING &&
+          payload.data === DebuggerMode.PAUSED
+        ) {
           // If the debugger just transitioned from running to paused, the debug server should
           // be sending updated thread stacks. This may take a moment.
           this._threadsReloading = true;
@@ -120,9 +123,11 @@ export default class ThreadStore {
 
   _updateThread(thread: ThreadItem): void {
     // TODO(jonaldislarry): add deleteThread API so that this stop reason checking is not needed.
-    if (thread.stopReason === 'end' ||
+    if (
+      thread.stopReason === 'end' ||
       thread.stopReason === 'error' ||
-      thread.stopReason === 'stopped') {
+      thread.stopReason === 'stopped'
+    ) {
       this._threadMap.delete(Number(thread.id));
     } else {
       this._threadMap.set(Number(thread.id), thread);
@@ -131,6 +136,10 @@ export default class ThreadStore {
 
   _updateStopThread(id: number) {
     this._stopThreadId = Number(id);
+    this._selectedThreadId = Number(id);
+  }
+
+  _updateSelectedThread(id: number) {
     this._selectedThreadId = Number(id);
   }
 
@@ -148,16 +157,23 @@ export default class ThreadStore {
     }
   }
 
-// TODO(dbonafilia): refactor this code along with the ui code in callstackStore to a ui controller.
-  async _notifyThreadSwitch(sourceURL: string, lineNumber: number, message: string): Promise<void> {
-    const notifyThreadSwitches = await passesGK(GK_THREAD_SWITCH_UI, GK_TIMEOUT);
+  // TODO(dbonafilia): refactor this code along with the ui code in callstackStore to a ui controller.
+  async _notifyThreadSwitch(
+    sourceURL: string,
+    lineNumber: number,
+    message: string,
+  ): Promise<void> {
+    const notifyThreadSwitches = await passesGK(
+      GK_THREAD_SWITCH_UI,
+      GK_TIMEOUT,
+    );
     if (!notifyThreadSwitches) {
       return;
     }
     const path = nuclideUri.uriToNuclideUri(sourceURL);
     // we want to put the message one line above the current line unless the selected
     // line is the top line, in which case we will put the datatip next to the line.
-    const notificationLineNumber = (lineNumber === 0) ? 0 : (lineNumber - 1);
+    const notificationLineNumber = lineNumber === 0 ? 0 : lineNumber - 1;
     // only handle real files for now
     const datatipService = this._datatipService;
     if (datatipService != null && path != null && atom.workspace != null) {
@@ -196,11 +212,12 @@ export default class ThreadStore {
   }
 
   _createAlertComponentClass(message: string): ReactClass<any> {
-    return () =>
+    return () => (
       <div className="nuclide-debugger-thread-switch-alert">
         <Icon icon="alert" />
         {message}
-      </div>;
+      </div>
+    );
   }
 
   dispose(): void {

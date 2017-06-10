@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -20,7 +21,7 @@ import typeof * as ClangService from '../../nuclide-clang-rpc';
 import type {ClangCompilationDatabaseProvider} from './types';
 
 import {Disposable} from 'atom';
-import featureConfig from '../../commons-atom/featureConfig';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import {
   getClangServiceByNuclideUri,
   getServiceByNuclideUri,
@@ -31,7 +32,9 @@ type NuclideClangConfig = {
   defaultFlags: Array<string>,
 };
 
-const compilationDatabaseProviders: Set<ClangCompilationDatabaseProvider> = new Set();
+const compilationDatabaseProviders: Set<
+  ClangCompilationDatabaseProvider,
+> = new Set();
 
 function getDefaultFlags(): ?Array<string> {
   const config: NuclideClangConfig = (featureConfig.get('nuclide-clang'): any);
@@ -43,8 +46,9 @@ function getDefaultFlags(): ?Array<string> {
 
 async function getCompilationDatabaseFile(src: string): Promise<?string> {
   const compilationDatabases = await Promise.all(
-    Array.from(compilationDatabaseProviders.values())
-      .map(provider => provider.getCompilationDatabaseFile(src)),
+    Array.from(compilationDatabaseProviders.values()).map(provider =>
+      provider.getCompilationDatabaseFile(src),
+    ),
   );
   for (const compilationDatabase of compilationDatabases) {
     if (compilationDatabase != null) {
@@ -66,14 +70,12 @@ module.exports = {
 
   getRelatedSourceOrHeader(src: string): Promise<?string> {
     const service = getClangServiceByNuclideUri(src);
-    return getCompilationDatabaseFile(src).then(
-      compilationDBFile => service.getRelatedSourceOrHeader(src, compilationDBFile),
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getRelatedSourceOrHeader(src, compilationDBFile),
     );
   },
 
-  async getDiagnostics(
-    editor: atom$TextEditor,
-  ): Promise<?ClangCompileResult> {
+  async getDiagnostics(editor: atom$TextEditor): Promise<?ClangCompileResult> {
     const src = editor.getPath();
     if (src == null) {
       return null;
@@ -91,12 +93,20 @@ module.exports = {
     }
 
     return service
-        .compile(src, contents, await getCompilationDatabaseFile(src), defaultFlags)
-        .refCount()
-        .toPromise();
+      .compile(
+        src,
+        contents,
+        await getCompilationDatabaseFile(src),
+        defaultFlags,
+      )
+      .refCount()
+      .toPromise();
   },
 
-  getCompletions(editor: atom$TextEditor, prefix: string): Promise<?Array<ClangCompletion>> {
+  getCompletions(
+    editor: atom$TextEditor,
+    prefix: string,
+  ): Promise<?Array<ClangCompletion>> {
     const src = editor.getPath();
     if (src == null) {
       return Promise.resolve();
@@ -110,16 +120,18 @@ module.exports = {
     const defaultFlags = getDefaultFlags();
     const service = getClangServiceByNuclideUri(src);
 
-    return getCompilationDatabaseFile(src).then(compilationDBFile => service.getCompletions(
-      src,
-      editor.getText(),
-      line,
-      column,
-      tokenStartColumn,
-      prefix,
-      compilationDBFile,
-      defaultFlags,
-    ));
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getCompletions(
+        src,
+        editor.getText(),
+        line,
+        column,
+        tokenStartColumn,
+        prefix,
+        compilationDBFile,
+        defaultFlags,
+      ),
+    );
   },
 
   /**
@@ -137,14 +149,16 @@ module.exports = {
     }
     const defaultFlags = getDefaultFlags();
     const service = getClangServiceByNuclideUri(src);
-    return getCompilationDatabaseFile(src).then(compilationDBFile => service.getDeclaration(
-      src,
-      editor.getText(),
-      line,
-      column,
-      compilationDBFile,
-      defaultFlags,
-    ));
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getDeclaration(
+        src,
+        editor.getText(),
+        line,
+        column,
+        compilationDBFile,
+        defaultFlags,
+      ),
+    );
   },
 
   getDeclarationInfo(
@@ -163,14 +177,16 @@ module.exports = {
       return Promise.resolve(null);
     }
 
-    return getCompilationDatabaseFile(src).then(compilationDBFile => service.getDeclarationInfo(
-      src,
-      editor.getText(),
-      line,
-      column,
-      compilationDBFile,
-      defaultFlags,
-    ));
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getDeclarationInfo(
+        src,
+        editor.getText(),
+        line,
+        column,
+        compilationDBFile,
+        defaultFlags,
+      ),
+    );
   },
 
   getOutline(editor: atom$TextEditor): Promise<?Array<ClangOutlineTree>> {
@@ -180,12 +196,14 @@ module.exports = {
     }
     const defaultFlags = getDefaultFlags();
     const service = getClangServiceByNuclideUri(src);
-    return getCompilationDatabaseFile(src).then(compilationDBFile => service.getOutline(
-      src,
-      editor.getText(),
-      compilationDBFile,
-      defaultFlags,
-    ));
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getOutline(
+        src,
+        editor.getText(),
+        compilationDBFile,
+        defaultFlags,
+      ),
+    );
   },
 
   getLocalReferences(
@@ -204,23 +222,30 @@ module.exports = {
       return Promise.resolve(null);
     }
 
-    return getCompilationDatabaseFile(src).then(compilationDBFile => service.getLocalReferences(
-      src,
-      editor.getText(),
-      line,
-      column,
-      compilationDBFile,
-      defaultFlags,
-    ));
+    return getCompilationDatabaseFile(src).then(compilationDBFile =>
+      service.getLocalReferences(
+        src,
+        editor.getText(),
+        line,
+        column,
+        compilationDBFile,
+        defaultFlags,
+      ),
+    );
   },
 
-  async formatCode(editor: atom$TextEditor, range: atom$Range): Promise<{
+  async formatCode(
+    editor: atom$TextEditor,
+    range: atom$Range,
+  ): Promise<{
     newCursor?: number,
     formatted: string,
   }> {
     const fileUri = editor.getPath();
     const buffer = editor.getBuffer();
-    const cursor = buffer.characterIndexForPosition(editor.getLastCursor().getBufferPosition());
+    const cursor = buffer.characterIndexForPosition(
+      editor.getLastCursor().getBufferPosition(),
+    );
     if (fileUri == null) {
       return {
         formatted: editor.getText(),
@@ -229,8 +254,15 @@ module.exports = {
     const startIndex = buffer.characterIndexForPosition(range.start);
     const endIndex = buffer.characterIndexForPosition(range.end);
     const service = getClangServiceByNuclideUri(fileUri);
-    return {...(await service
-        .formatCode(fileUri, editor.getText(), cursor, startIndex, endIndex - startIndex))};
+    return {
+      ...(await service.formatCode(
+        fileUri,
+        editor.getText(),
+        cursor,
+        startIndex,
+        endIndex - startIndex,
+      )),
+    };
   },
 
   reset(editor: atom$TextEditor) {
@@ -240,5 +272,4 @@ module.exports = {
       return service.reset(src);
     }
   },
-
 };

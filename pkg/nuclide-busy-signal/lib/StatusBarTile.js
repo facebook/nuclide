@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global MouseEvent */
@@ -51,7 +52,7 @@ export class StatusBarTile {
   }
 
   consumeStatusBar(statusBar: atom$StatusBar): void {
-    const item = this._item = document.createElement('div');
+    const item = (this._item = document.createElement('div'));
     item.className = 'inline-block';
     item.addEventListener('mouseenter', () => {
       this._isMouseOver = true;
@@ -67,7 +68,9 @@ export class StatusBarTile {
     this._render();
   }
 
-  consumeMessageStream(messageStream: Observable<Array<BusySignalMessageBusy>>): void {
+  consumeMessageStream(
+    messageStream: Observable<Array<BusySignalMessageBusy>>,
+  ): void {
     messageStream.subscribe(messages => {
       this._messages = messages.map(message => {
         return message.message;

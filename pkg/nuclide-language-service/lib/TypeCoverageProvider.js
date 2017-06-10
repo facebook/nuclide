@@ -6,10 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
+import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -19,13 +21,15 @@ export type TypeCoverageConfig = {|
   version: '0.0.0',
   priority: number,
   analyticsEventName: string,
+  icon?: IconName,
 |};
 
 // Provides Diagnostics for un-typed regions of Hack code.
 export class TypeCoverageProvider<T: LanguageService> {
-  displayName: string
+  displayName: string;
   priority: number;
-  grammarScopes: string
+  grammarScopes: string;
+  icon: IconName | void;
   _analyticsEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
 
@@ -34,11 +38,13 @@ export class TypeCoverageProvider<T: LanguageService> {
     selector: string,
     priority: number,
     analyticsEventName: string,
+    icon: IconName | void,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
     this.displayName = name;
     this.priority = priority;
     this.grammarScopes = selector;
+    this.icon = icon;
     this._analyticsEventName = analyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
   }
@@ -57,8 +63,10 @@ export class TypeCoverageProvider<T: LanguageService> {
         selector,
         config.priority,
         config.analyticsEventName,
+        config.icon,
         connectionToLanguageService,
-      ));
+      ),
+    );
   }
 
   async getCoverage(path: NuclideUri): Promise<?CoverageResult> {

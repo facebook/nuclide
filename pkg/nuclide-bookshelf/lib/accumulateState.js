@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -19,7 +20,7 @@ import type {
   UpdatePaneItemStateAction,
   UpdateRepositoryBookmarksAction,
 } from './types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {ActionType, EMPTY_SHORTHEAD} from './constants';
 import Immutable from 'immutable';
@@ -67,8 +68,10 @@ function accumulateAddProjectRepository(
     getEmptyRepositoryState();
   return {
     ...state,
-    repositoryPathToState: state.repositoryPathToState
-        .set(repositoryPath, newRepositoryState),
+    repositoryPathToState: state.repositoryPathToState.set(
+      repositoryPath,
+      newRepositoryState,
+    ),
   };
 }
 
@@ -85,7 +88,8 @@ function accumulateRemoveProjectRepository(
 
 function accumulateRepositoryStateAction(
   state: BookShelfState,
-  action: UpdateRepositoryBookmarksAction
+  action:
+    | UpdateRepositoryBookmarksAction
     | StartRestoringRepositoryStateAction
     | CompleteRestoringRepositoryStateAction,
 ): BookShelfState {
@@ -97,8 +101,10 @@ function accumulateRepositoryStateAction(
   );
   return {
     ...state,
-    repositoryPathToState: state.repositoryPathToState
-      .set(repositoryPath, newRepositoryState),
+    repositoryPathToState: state.repositoryPathToState.set(
+      repositoryPath,
+      newRepositoryState,
+    ),
   };
 }
 
@@ -110,13 +116,19 @@ function accumulateRepositoryState(
     case ActionType.UPDATE_REPOSITORY_BOOKMARKS:
       return accumulateRepositoryStateUpdateBookmarks(repositoryState, action);
     case ActionType.START_RESTORING_REPOSITORY_STATE:
-      invariant(repositoryState, 'repository state not found when starting to restore!');
+      invariant(
+        repositoryState,
+        'repository state not found when starting to restore!',
+      );
       return {
         ...repositoryState,
         isRestoring: true,
       };
     case ActionType.COMPLETE_RESTORING_REPOSITORY_STATE:
-      invariant(repositoryState, 'repository state not found when starting to restore!');
+      invariant(
+        repositoryState,
+        'repository state not found when starting to restore!',
+      );
       return {
         ...repositoryState,
         isRestoring: false,
@@ -158,15 +170,19 @@ function accumulateUpdatePaneItemState(
   return {
     ...state,
     repositoryPathToState: Immutable.Map(
-      Array.from(state.repositoryPathToState.entries())
-        .map(([repositoryPath, repositoryState]) => {
-          const fileList = (repositoryPathToEditors.get(repositoryPath) || [])
-            .map(textEditor => textEditor.getPath() || '');
-          return [
-            repositoryPath,
-            accumulateRepositoryStateUpdatePaneItemState(repositoryState, fileList),
-          ];
-        }),
+      Array.from(
+        state.repositoryPathToState.entries(),
+      ).map(([repositoryPath, repositoryState]) => {
+        const fileList = (repositoryPathToEditors.get(repositoryPath) || [])
+          .map(textEditor => textEditor.getPath() || '');
+        return [
+          repositoryPath,
+          accumulateRepositoryStateUpdatePaneItemState(
+            repositoryState,
+            fileList,
+          ),
+        ];
+      }),
     ),
   };
 }
@@ -180,7 +196,9 @@ function accumulateRepositoryStateUpdatePaneItemState(
   }
   return {
     ...repositoryState,
-    shortHeadsToFileList: repositoryState.shortHeadsToFileList
-      .set(repositoryState.activeShortHead, fileList),
+    shortHeadsToFileList: repositoryState.shortHeadsToFileList.set(
+      repositoryState.activeShortHead,
+      fileList,
+    ),
   };
 }

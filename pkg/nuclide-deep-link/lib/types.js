@@ -6,12 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 export type DeepLinkParams = {[key: string]: string | Array<string>};
 
 export type DeepLinkService = {
-
   /**
    * Subscribes to all links of the form atom://nuclide/path?a=x,b=y,...
    * Trailing slashes will be stripped off the path.
@@ -30,5 +30,4 @@ export type DeepLinkService = {
     path: string,
     params: DeepLinkParams,
   ): void,
-
 };

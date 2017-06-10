@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ConfigEntry} from '../../../nuclide-rpc';
@@ -13,7 +14,9 @@ import type {ConfigEntry} from '../../../nuclide-rpc';
 import NuclideServer from '../../lib/NuclideServer';
 import {NuclideSocket} from '../../lib/NuclideSocket';
 import {RpcConnection} from '../../../nuclide-rpc';
-import {getRemoteNuclideUriMarshalers} from '../../../nuclide-marshalers-common';
+import {
+  getRemoteNuclideUriMarshalers,
+} from '../../../nuclide-marshalers-common';
 
 type Services = Array<ConfigEntry>;
 
@@ -29,7 +32,8 @@ export default class ServiceTestHelper {
     this._client = RpcConnection.createRemote(
       new NuclideSocket(`http://localhost:${port}`, null),
       [getRemoteNuclideUriMarshalers('localhost')],
-      customServices);
+      customServices,
+    );
   }
 
   stop(): void {

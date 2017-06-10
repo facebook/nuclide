@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -13,9 +14,7 @@ import type {
   DatatipService,
 } from '../../nuclide-datatip/lib/types';
 
-import {
-  CompositeDisposable,
-} from 'atom';
+import {CompositeDisposable} from 'atom';
 import invariant from 'assert';
 import {datatip} from './SampleDatatip';
 

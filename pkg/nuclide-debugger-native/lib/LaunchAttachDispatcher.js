@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -14,17 +15,19 @@ import type {
 
 import Dispatcher from '../../commons-node/Dispatcher';
 
-export type LaunchAttachAction =
-  {
-    actionType: 'UPDATE_ATTACH_TARGET_LIST',
-    attachTargetInfos: Array<AttachTargetInfo>,
-  };
+export type LaunchAttachAction = {
+  actionType: 'UPDATE_ATTACH_TARGET_LIST',
+  attachTargetInfos: Array<AttachTargetInfo>,
+};
 
 export const ActionTypes = Object.freeze({
   UPDATE_ATTACH_TARGET_LIST: 'UPDATE_ATTACH_TARGET_LIST',
 });
 
 // Flow hack: Every LaunchAttachAction actionType must be in ActionTypes.
-(('': $PropertyType<LaunchAttachAction, 'actionType'>): $Keys<typeof ActionTypes>);
+(('': $PropertyType<LaunchAttachAction, 'actionType'>): $Keys<
+  typeof ActionTypes,
+>);
 
-export default class LaunchAttachDispatcher extends Dispatcher<LaunchAttachAction> {}
+export default class LaunchAttachDispatcher
+  extends Dispatcher<LaunchAttachAction> {}

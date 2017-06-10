@@ -6,204 +6,248 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {DebuggerProviderStore} from './DebuggerProviderStore';
-import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
+import type {
+  DebuggerLaunchAttachProvider,
+  DebuggerConfigAction,
+} from '../../nuclide-debugger-base';
 import type DebuggerActions from './DebuggerActions';
 
-import {Dropdown} from '../../nuclide-ui/Dropdown';
 import React from 'react';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {asyncFilter} from '../../commons-node/promise';
-
-import type EventEmitter from 'events';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {
+  getLastUsedDebugger,
+  setLastUsedDebugger,
+} from '../../nuclide-debugger-base';
+import {asyncFilter} from 'nuclide-commons/promise';
+import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
+import Tabs from '../../nuclide-ui/Tabs';
 
 type PropsType = {
+  dialogMode: DebuggerConfigAction,
   store: DebuggerProviderStore,
   debuggerActions: DebuggerActions,
-  emitter: EventEmitter,
+  connection: string,
+  providers: Array<DebuggerLaunchAttachProvider>,
+  chooseConnection: () => void,
+  dialogCloser: () => void,
 };
 
 type StateType = {
-  connectionsUpdatedDisposable: IDisposable,
-  // Current available Nuclide connections.
-  connections: Array<string>,
-  // Availble and enabled launch/attach providers for current selected connection.
-  availableProviders: Array<DebuggerLaunchAttachProvider>,
-  // Customized launch/attach actions supported by this (connection + provider) combination.
-  providerActions: Array<string>,
-  connectionsDropdownIndex: number,
-  debuggingTypeDropdownIndex: number,
-  providerActionsDropdownIndex: number,
-  element: ?React.Element<any>,
+  selectedProviderTab: ?string,
+  configIsValid: boolean,
+  enabledProviders: Array<{
+    provider: DebuggerLaunchAttachProvider,
+    debuggerName: string,
+  }>,
 };
 
-export class DebuggerLaunchAttachUI extends React.Component<void, PropsType, StateType> {
+export class DebuggerLaunchAttachUI
+  extends React.Component<void, PropsType, StateType> {
   props: PropsType;
   state: StateType;
+  _disposables: UniversalDisposable;
 
   constructor(props: PropsType) {
     super(props);
 
-    (this: any)._resetConnections = this._resetConnections.bind(this);
-    (this: any)._handleConnectionDropdownChange = this._handleConnectionDropdownChange.bind(this);
-    (this: any)._handleDebuggingTypeDropdownChange =
-      this._handleDebuggingTypeDropdownChange.bind(this);
-    (this: any)._handleProviderActionsDropdownChange =
-      this._handleProviderActionsDropdownChange.bind(this);
+    (this: any)._setConfigValid = this._setConfigValid.bind(this);
+
+    this._disposables = new UniversalDisposable();
+    this._disposables.add(
+      atom.commands.add('atom-workspace', {
+        'core:confirm': () => {
+          if (this.state.configIsValid) {
+            this._rememberTab();
+
+            // Close the dialog, but do it on the next tick so that the child
+            // component gets to handle the event first (and start the debugger).
+            process.nextTick(this.props.dialogCloser);
+          }
+        },
+      }),
+      atom.commands.add('atom-workspace', {
+        'core:cancel': () => {
+          this._rememberTab();
+          this.props.dialogCloser();
+        },
+      }),
+    );
 
     this.state = {
-      connectionsUpdatedDisposable: this.props.store.onConnectionsUpdated(this._resetConnections),
-      connections: [],
-      availableProviders: [],
-      providerActions: [],
-      connectionsDropdownIndex: 0,
-      debuggingTypeDropdownIndex: 0,
-      providerActionsDropdownIndex: 0,
-      element: null,
+      selectedProviderTab: null,
+      configIsValid: false,
+      enabledProviders: [],
     };
   }
 
+  _rememberTab(): void {
+    // Remember the last tab the user used for this connection when the "launch/attach"
+    // button is clicked.
+    const host = nuclideUri.isRemote(this.props.connection)
+      ? nuclideUri.getHostname(this.props.connection)
+      : 'local';
+    if (this.state.selectedProviderTab != null) {
+      setLastUsedDebugger(
+        host,
+        this.props.dialogMode,
+        this.state.selectedProviderTab || '',
+      );
+    }
+  }
+
   componentWillMount() {
-    this.props.debuggerActions.updateConnections();
+    const host = nuclideUri.isRemote(this.props.connection)
+      ? nuclideUri.getHostname(this.props.connection)
+      : 'local';
+
+    this._filterProviders();
+    this.setState({
+      selectedProviderTab: getLastUsedDebugger(host, this.props.dialogMode),
+    });
   }
 
   componentWillUnmount() {
-    this.state.connectionsUpdatedDisposable.dispose();
+    this._disposables.dispose();
+  }
+
+  async _filterProviders(): Promise<void> {
+    const enabled = await asyncFilter(this.props.providers, provider =>
+      provider.getCallbacksForAction(this.props.dialogMode).isEnabled(),
+    );
+
+    const enabledProviders = [].concat(
+      ...enabled.map(provider => {
+        return provider
+          .getCallbacksForAction(this.props.dialogMode)
+          .getDebuggerTypeNames()
+          .map(debuggerName => {
+            return {
+              provider,
+              debuggerName,
+            };
+          });
+      }),
+    );
+
+    this.setState({
+      enabledProviders,
+    });
+  }
+
+  _setConfigValid(valid: boolean): void {
+    this.setState({
+      configIsValid: valid,
+    });
   }
 
   render(): React.Element<any> {
-    const connectionItems = this.state.connections.map((connection, index) => ({
-      label: nuclideUri.isRemote(connection) ? nuclideUri.getHostname(connection) : connection,
-      value: index,
-    }));
+    const displayName = nuclideUri.isRemote(this.props.connection)
+      ? nuclideUri.getHostname(this.props.connection)
+      : 'localhost';
 
-    const debuggingTypeItems = this.state.availableProviders.map((provider, index) => ({
-      label: provider.getDebuggingTypeName(),
-      value: index,
-    }));
+    const tabs = this.state.enabledProviders
+      .map(debuggerType => ({
+        name: debuggerType.debuggerName,
+        tabContent: (
+          <span title={debuggerType.debuggerName}>
+            {debuggerType.debuggerName}
+          </span>
+        ),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    const providerActions = this.state.providerActions.map((action, index) => ({
-      label: action,
-      value: index,
-    }));
+    let providerContent = null;
+    if (tabs.length > 0) {
+      let selectedTab = this.state.selectedProviderTab != null
+        ? this.state.selectedProviderTab
+        : this.state.enabledProviders[0].debuggerName;
+      let provider = this.state.enabledProviders.find(
+        p => p.debuggerName === selectedTab,
+      );
+      if (provider == null) {
+        provider = this.state.enabledProviders[0];
+        selectedTab = provider.debuggerName;
+      }
+
+      const debuggerConfigPage = provider.provider
+        .getCallbacksForAction(this.props.dialogMode)
+        .getComponent(selectedTab, valid => this._setConfigValid(valid));
+
+      providerContent = (
+        <div>
+          <Tabs
+            className="nuclide-debugger-launch-attach-tabs"
+            tabs={tabs}
+            activeTabName={this.state.selectedProviderTab}
+            triggeringEvent="onClick"
+            onActiveTabChange={newTab => {
+              this._setConfigValid(false);
+              this.setState({selectedProviderTab: newTab.name});
+            }}
+          />
+          <div className="nuclide-debugger-launch-attach-tabcontent">
+            {debuggerConfigPage}
+          </div>
+        </div>
+      );
+
+      if (this.state.selectedProviderTab == null) {
+        // Select the first tab.
+        this.setState({selectedProviderTab: tabs[0].name});
+      }
+    } else {
+      // No debugging providers available.
+      providerContent = (
+        <div className="nuclide-debugger-launch-attach-tabcontent">
+          There are no debuggers available.
+        </div>
+      );
+    }
 
     return (
       <div className="padded nuclide-debugger-launch-attach-container">
-        <div className="nuclide-debugger-launch-attach-header">
-          <label className="inline-block">Connection: </label>
-          <Dropdown
-            className="inline-block"
-            options={connectionItems}
-            onChange={this._handleConnectionDropdownChange}
-            value={this.state.connectionsDropdownIndex}
-            size="sm"
-          />
-          <label className="inline-block">Type: </label>
-          <Dropdown
-            className="inline-block"
-            options={debuggingTypeItems}
-            onChange={this._handleDebuggingTypeDropdownChange}
-            value={this.state.debuggingTypeDropdownIndex}
-            size="sm"
-          />
-          <label className="inline-block">Action: </label>
-          <Dropdown
-            className="inline-block"
-            options={providerActions}
-            onChange={this._handleProviderActionsDropdownChange}
-            value={this.state.providerActionsDropdownIndex}
-            size="sm"
-          />
-        </div>
-        <div>
-          {this.state.element}
+        <h1 className="nuclide-debugger-launch-attach-header">
+          {this.props.dialogMode === 'attach'
+            ? 'Attach debugger to '
+            : 'Launch debugger on '}
+          <span
+            className="nuclide-debugger-launch-connection"
+            title="Click to change the connection to be used for debugging."
+            onClick={() => this.props.chooseConnection()}>
+            {displayName}
+          </span>
+          <span>:</span>
+        </h1>
+        {providerContent}
+        <div className="nuclide-debugger-launch-attach-actions">
+          <ButtonGroup>
+            <Button
+              onClick={() =>
+                atom.commands.dispatch(
+                  atom.views.getView(atom.workspace),
+                  'core:cancel',
+                )}>
+              Cancel
+            </Button>
+            <Button
+              buttonType={ButtonTypes.PRIMARY}
+              disabled={!this.state.configIsValid}
+              onClick={() =>
+                atom.commands.dispatch(
+                  atom.views.getView(atom.workspace),
+                  'core:confirm',
+                )}>
+              {this.props.dialogMode === 'attach' ? 'Attach' : 'Launch'}
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
     );
-  }
-
-  // Reset connections dropdown with latest connections.
-  _resetConnections(): void {
-    const connections = this.props.store.getConnections();
-    this.setState({
-      connections,
-      connectionsDropdownIndex: 0,
-    });
-    // Continue fill debugging types dropdown for new connection.
-    this._resetAvailableDebuggingTypes(connections[0]);
-  }
-
-  _handleConnectionDropdownChange(newIndex: number): void {
-    this.setState({
-      connectionsDropdownIndex: newIndex,
-    });
-    const selectedConnection = this.state.connections[newIndex];
-    // Fire and forget.
-    this._resetAvailableDebuggingTypes(selectedConnection);
-  }
-
-  // Reset debugging types dropdown for input connection.
-  async _resetAvailableDebuggingTypes(connection: string): Promise<void> {
-    this._clearPreviousProviders();
-    const availableProviders = await asyncFilter(
-      this.props.store.getLaunchAttachProvidersForConnection(connection),
-      provider => provider.isEnabled(),
-    );
-
-    this.setState({
-      availableProviders,
-      debuggingTypeDropdownIndex: 0,
-    });
-    // Continue fill actions dropdown for new provider.
-    this._resetProviderActions(availableProviders[0]);
-  }
-
-  _clearPreviousProviders(): void {
-    for (const provider of this.state.availableProviders) {
-      provider.dispose();
-    }
-  }
-
-  _handleDebuggingTypeDropdownChange(newIndex: number): void {
-    this.setState({
-      debuggingTypeDropdownIndex: newIndex,
-    });
-    this._resetProviderActions(this.state.availableProviders[newIndex]);
-  }
-
-  // Reset actions dropdown for input DebuggerLaunchAttachProvider.
-  _resetProviderActions(provider: DebuggerLaunchAttachProvider): void {
-    provider.getActions().then(providerActions => {
-      this.setState({
-        providerActions,
-        providerActionsDropdownIndex: 0,
-      });
-      this._resetElement(provider, providerActions[0]);
-    });
-  }
-
-  _handleProviderActionsDropdownChange(newIndex: number): void {
-    this.setState({
-      providerActionsDropdownIndex: newIndex,
-    });
-    const selectedProviderIndex = this.state.debuggingTypeDropdownIndex;
-    const provider = this.state.availableProviders[selectedProviderIndex];
-    const selectedAction = this.state.providerActions[newIndex];
-    // Continue use new UI element for new provider + action.
-    this._resetElement(provider, selectedAction);
-  }
-
-  // Display new customized element UI from input provider and action.
-  _resetElement(provider: DebuggerLaunchAttachProvider, action: string): void {
-    let element = provider.getComponent(action, this.props.emitter);
-    // Assign an unique key to element so that react treats it as a new element.
-    if (element != null) {
-      element = React.cloneElement(element, {key: provider.getUniqueKey()});
-    }
-    this.setState({
-      element,
-    });
   }
 }

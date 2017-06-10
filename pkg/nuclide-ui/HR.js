@@ -6,12 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
 
 export const HR = () => {
-  return (
-    <hr className="nuclide-ui-hr" />
-  );
+  return <hr className="nuclide-ui-hr" />;
 };

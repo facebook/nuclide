@@ -6,12 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {Range} from 'simple-text-buffer';
+import {Point, Range} from 'simple-text-buffer';
 
-import type {Completion} from '../../nuclide-language-service/lib/LanguageService';
-import {wordAtPositionFromBuffer} from '../../commons-node/range';
+import type {
+  Completion,
+} from '../../nuclide-language-service/lib/LanguageService';
+import {wordAtPositionFromBuffer} from 'nuclide-commons/range';
 
 import {HACK_WORD_REGEX} from './constants';
 
@@ -34,14 +37,18 @@ export function compareHackCompletions(
     invariant(completion1.replacementPrefix != null);
     invariant(completion2.replacementPrefix != null);
     const prefixComparison =
-      completion2.replacementPrefix.length - completion1.replacementPrefix.length;
+      completion2.replacementPrefix.length -
+      completion1.replacementPrefix.length;
     if (prefixComparison !== 0) {
       return prefixComparison;
     }
 
     invariant(completion1.displayText != null);
     invariant(completion2.displayText != null);
-    const texts: Array<string> = [completion1.displayText, completion2.displayText];
+    const texts: Array<string> = [
+      completion1.displayText,
+      completion2.displayText,
+    ];
     const scores = texts.map((text, i) => {
       if (text.startsWith(token)) {
         // Matches starting with the prefix gets the highest score.
@@ -97,30 +104,43 @@ export function sortAndFilterCompletions(
   const tokenLowerCase = prefix.toLowerCase();
 
   const hackCompletionsComparator = compareHackCompletions(prefix);
-  return completions
-    // The returned completions may have unrelated results, even though the offset
-    // is set on the end of the prefix.
-    .filter(completion => {
-      invariant(completion.displayText != null);
-      return completion.displayText.toLowerCase().indexOf(tokenLowerCase) >= 0;
-    })
-    // Sort the auto-completions based on a scoring function considering:
-    // case sensitivity, position in the completion, private functions and alphabetical order.
-    .sort((completion1, completion2) =>
-      hackCompletionsComparator(completion1, completion2));
+  return (
+    completions
+      // The returned completions may have unrelated results, even though the offset
+      // is set on the end of the prefix.
+      .filter(completion => {
+        invariant(completion.displayText != null);
+        return (
+          completion.displayText.toLowerCase().indexOf(tokenLowerCase) >= 0
+        );
+      })
+      // Sort the auto-completions based on a scoring function considering:
+      // case sensitivity, position in the completion, private functions and alphabetical order.
+      .sort((completion1, completion2) =>
+        hackCompletionsComparator(completion1, completion2),
+      )
+  );
 }
 
-export function getResultPrefix(contents: string, offset: number, name: string): string {
-  const contentsLine = contents.substring(
-    contents.lastIndexOf('\n', offset - 1) + 1,
-    offset).toLowerCase();
+export function getResultPrefix(
+  contents: string,
+  offset: number,
+  name: string,
+): string {
+  const contentsLine = contents
+    .substring(contents.lastIndexOf('\n', offset - 1) + 1, offset)
+    .toLowerCase();
 
   return contents.substring(
     offset - matchLength(contentsLine, name.toLowerCase()),
-    offset);
+    offset,
+  );
 }
 
-export function getReplacementPrefix(resultPrefix: string, defaultPrefix: string): string {
+export function getReplacementPrefix(
+  resultPrefix: string,
+  defaultPrefix: string,
+): string {
   return resultPrefix === '' ? defaultPrefix : resultPrefix;
 }
 
@@ -130,7 +150,10 @@ export function findHackPrefix(
 ): string {
   // We use custom wordRegex to adopt php variables starting with $.
   const currentRange = wordAtPositionFromBuffer(
-    buffer, position, HACK_WORD_REGEX);
+    buffer,
+    new Point(position.row, Math.max(0, position.column - 1)),
+    HACK_WORD_REGEX,
+  );
   if (currentRange == null) {
     return '';
   }

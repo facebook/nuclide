@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -14,15 +15,15 @@ import type {
   FileSyncEvent,
   FileEvent,
 } from '../../nuclide-open-files-rpc/lib/rpc-types';
-import type {NuclideUri} from '../../commons-node/nuclideUri';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {NotifiersByConnection} from './NotifiersByConnection';
 
 import invariant from 'assert';
 import {CompositeDisposable} from 'atom';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import {FileEventKind} from '../../nuclide-open-files-rpc';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-open-files');
 
 const RESYNC_TIMEOUT_MS = 2000;
 
@@ -58,36 +59,38 @@ export class BufferSubscription {
 
     const subscriptions = new CompositeDisposable();
 
-    subscriptions.add(buffer.onDidChange(async (event: atom$TextEditEvent) => {
-      if (this._notifier == null) {
-        return;
-      }
+    subscriptions.add(
+      buffer.onDidChange(async (event: atom$TextEditEvent) => {
+        if (this._notifier == null) {
+          return;
+        }
 
-      // Must inspect the buffer before awaiting on the notifier
-      // to avoid race conditions
-      const filePath = this._buffer.getPath();
-      invariant(filePath != null);
-      const version = this._buffer.changeCount;
+        // Must inspect the buffer before awaiting on the notifier
+        // to avoid race conditions
+        const filePath = this._buffer.getPath();
+        invariant(filePath != null);
+        const version = this._buffer.changeCount;
 
-      invariant(this._notifier != null);
-      const notifier = await this._notifier;
-      if (this._sentOpen) {
-        this.sendEvent({
-          kind: FileEventKind.EDIT,
-          fileVersion: {
-            notifier,
-            filePath,
-            version,
-          },
-          oldRange: event.oldRange,
-          newRange: event.newRange,
-          oldText: event.oldText,
-          newText: event.newText,
-        });
-      } else {
-        this._sendOpenByNotifier(notifier);
-      }
-    }));
+        invariant(this._notifier != null);
+        const notifier = await this._notifier;
+        if (this._sentOpen) {
+          this.sendEvent({
+            kind: FileEventKind.EDIT,
+            fileVersion: {
+              notifier,
+              filePath,
+              version,
+            },
+            oldRange: event.oldRange,
+            newRange: event.newRange,
+            oldText: event.oldText,
+            newText: event.newText,
+          });
+        } else {
+          this._sendOpenByNotifier(notifier);
+        }
+      }),
+    );
 
     this._subscriptions = subscriptions;
 
@@ -184,11 +187,14 @@ export class BufferSubscription {
             await notifier.onFileEvent(syncEvent);
             this.updateServerVersion(resyncVersion);
 
-            logger.error(`Successful resync event: ${eventToString(syncEvent)}`);
+            logger.error(
+              `Successful resync event: ${eventToString(syncEvent)}`,
+            );
           } catch (syncError) {
             logger.error(
               `Error sending file sync event: ${eventToString(syncEvent)}`,
-              syncError);
+              syncError,
+            );
 
             // continue trying until either the file is closed,
             // or a resync to a later edit is attempted

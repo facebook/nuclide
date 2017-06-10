@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RemoteMessage} from './bootloader';
@@ -43,7 +44,7 @@ process.on('message', (message: RemoteMessage) => {
   let output;
   let error;
   try {
-    output = service(...args || []);
+    output = service(...(args || []));
   } catch (e) {
     error = e;
   }
@@ -69,10 +70,9 @@ process.on('disconnect', () => {
 process.on('exit', () => {
   // Hack: kill all child processes.
   // $FlowIgnore: Private method.
-  process._getActiveHandles()
-    .forEach(handle => {
-      if (handle instanceof child_process.ChildProcess) {
-        handle.kill();
-      }
-    });
+  process._getActiveHandles().forEach(handle => {
+    if (handle instanceof child_process.ChildProcess) {
+      handle.kill();
+    }
+  });
 });

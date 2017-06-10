@@ -6,13 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import createPackage from '../../commons-atom/createPackage';
-import {observeProjectPaths} from '../../commons-atom/projects';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import {observeProjectPaths} from 'nuclide-commons-atom/projects';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 class Activation {
   _disposables: UniversalDisposable;
@@ -27,12 +28,12 @@ class Activation {
         if (realPath !== projectPath) {
           atom.notifications.addWarning(
             'You have mounted a non-canonical project path. ' +
-            'Nuclide only supports mounting canonical paths as local projects.<br />' +
-            '<strong>Some Nuclide features such as Flow might not work properly.</strong>',
+              'Nuclide only supports mounting canonical paths as local projects.<br />' +
+              '<strong>Some Nuclide features such as Flow might not work properly.</strong>',
             {
               dismissable: true,
               detail: `Mounted path: ${projectPath}\n \n ` +
-              `Try re-mounting the canonical project path instead:\n${realPath}`,
+                `Try re-mounting the canonical project path instead:\n${realPath}`,
             },
           );
         }

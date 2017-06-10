@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import JumpToRelatedFile from '../lib/JumpToRelatedFile';
@@ -27,8 +28,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/Test.h';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile))
-            .toEqual('dir/TestInternal.h');
+        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile)).toEqual(
+          'dir/TestInternal.h',
+        );
       });
     });
 
@@ -37,8 +39,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/Test.m';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile))
-            .toEqual('dir/Test.h');
+        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile)).toEqual(
+          'dir/Test.h',
+        );
       });
     });
 
@@ -47,8 +50,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/TestInternal.h';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile))
-            .toEqual('dir/Test.m');
+        expect(await jumpToRelatedFile.getNextRelatedFile(currentFile)).toEqual(
+          'dir/Test.m',
+        );
       });
     });
   });
@@ -59,8 +63,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/Test.h';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getPreviousRelatedFile(currentFile))
-            .toEqual('dir/Test.m');
+        expect(
+          await jumpToRelatedFile.getPreviousRelatedFile(currentFile),
+        ).toEqual('dir/Test.m');
       });
     });
 
@@ -69,8 +74,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/Test.m';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getPreviousRelatedFile(currentFile))
-            .toEqual('dir/TestInternal.h');
+        expect(
+          await jumpToRelatedFile.getPreviousRelatedFile(currentFile),
+        ).toEqual('dir/TestInternal.h');
       });
     });
 
@@ -79,8 +85,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/TestInternal.h';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getPreviousRelatedFile(currentFile))
-            .toEqual('dir/Test.h');
+        expect(
+          await jumpToRelatedFile.getPreviousRelatedFile(currentFile),
+        ).toEqual('dir/Test.h');
       });
     });
 
@@ -89,8 +96,9 @@ describe('JumpToRelatedFile', () => {
         currentFile = 'dir/Test.h~';
 
         const jumpToRelatedFile = new JumpToRelatedFile();
-        expect(await jumpToRelatedFile.getPreviousRelatedFile(currentFile))
-            .toEqual('dir/Test.h~');
+        expect(
+          await jumpToRelatedFile.getPreviousRelatedFile(currentFile),
+        ).toEqual('dir/Test.h~');
       });
     });
   });

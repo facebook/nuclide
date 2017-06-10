@@ -6,12 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import {
-  PromisePool,
-  PromiseQueue,
-} from '../promise-executors';
+import {PromisePool, PromiseQueue} from '../promise-executors';
 
 describe('PromiseQueue', () => {
   // Workarounds to enable setTimeout, as suggested by:
@@ -33,19 +31,25 @@ describe('PromiseQueue', () => {
       queue.submit(async () => {
         res1Start = Date.now();
         await new Promise(resolve => {
-          setTimeout(() => { resolve(res1End = Date.now()); }, 100);
+          setTimeout(() => {
+            resolve((res1End = Date.now()));
+          }, 100);
         });
       });
       queue.submit(async () => {
         res2Start = Date.now();
         await new Promise(resolve => {
-          setTimeout(() => { resolve(res2End = Date.now()); }, 200);
+          setTimeout(() => {
+            resolve((res2End = Date.now()));
+          }, 200);
         });
       });
       queue.submit(async () => {
         res3Start = Date.now();
         await new Promise(resolve => {
-          setTimeout(() => { resolve(res3End = Date.now()); }, 300);
+          setTimeout(() => {
+            resolve((res3End = Date.now()));
+          }, 300);
         });
       });
     });
@@ -95,7 +99,9 @@ describe('PromisePool', () => {
       const start = Date.now();
       await Promise.all(executors.map(executor => queue.submit(executor)));
       const end = Date.now();
-      expect(end - start).toBeLessThan(numDelayedExecutors * delayMs / (poolSize - 1));
+      expect(end - start).toBeLessThan(
+        numDelayedExecutors * delayMs / (poolSize - 1),
+      );
     });
   });
 });

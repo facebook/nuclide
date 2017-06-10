@@ -6,15 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
-import {Block} from './Block';
-import {
-  Badge,
-  BadgeColors,
-  BadgeSizes,
-} from './Badge';
+import {Block} from 'nuclide-commons-ui/Block';
+import {Badge, BadgeColors, BadgeSizes} from './Badge';
 
 const BadgeBasicExample = (): React.Element<any> => (
   <div>

@@ -6,14 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {AtomNotification, AtomNotificationType} from '../../nuclide-debugger-base/lib/types';
+import type {
+  AtomNotification,
+  AtomNotificationType,
+} from '../../nuclide-debugger-base/lib/types';
 import {Observable, Subject} from 'rxjs';
 
 export default class ClientCallback {
-  _serverMessageObservable: Subject<any>;  // For server messages.
-  _userOutputObservable: Subject<any>;     // For user visible output messages.
+  _serverMessageObservable: Subject<any>; // For server messages.
+  _userOutputObservable: Subject<any>; // For user visible output messages.
   _atomNotificationObservable: Subject<AtomNotification>;
 
   constructor() {

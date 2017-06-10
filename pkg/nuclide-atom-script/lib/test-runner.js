@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 // PRO-TIP: To debug this file, open it in Atom, and from the console, run:
@@ -19,14 +20,11 @@
 // process will have production options set - not test options like
 // `--user-data-dir`.
 
-import type {
-  ExitCode,
-  TestRunnerParams,
-} from './types';
+import type {ExitCode, TestRunnerParams} from './types';
 
 import invariant from 'assert';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {shellParse} from '../../commons-node/string';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {shellParse} from 'nuclide-commons/string';
 import {Console} from 'console';
 import electron from 'electron';
 
@@ -51,14 +49,16 @@ const debugConsole = global.console;
 
 // https://github.com/nodejs/node/blob/v5.1.1/lib/console.js
 const outputConsole = new Console(
-  { /* stdout */
+  {
+    /* stdout */
     write(chunk) {
       if (!STDOUT_FILTERS.some(re => re.test(chunk))) {
         ipcRenderer.send('write-to-stdout', chunk);
       }
     },
   },
-  { /* stderr */
+  {
+    /* stderr */
     write(chunk) {
       if (!STDERR_FILTERS.some(re => re.test(chunk))) {
         ipcRenderer.send('write-to-stderr', chunk);
@@ -67,7 +67,7 @@ const outputConsole = new Console(
   },
 );
 
-export default async function runTest(
+export default (async function runTest(
   params: TestRunnerParams,
 ): Promise<ExitCode> {
   let exitCode = 0;
@@ -86,7 +86,9 @@ export default async function runTest(
     const argsAtomScript = process.env.ARGS_ATOM_SCRIPT;
 
     const scriptPath = nuclideUri.resolve(fileAtomScript);
-    const scriptArgs = argsAtomScript === "''" ? [] : shellParse(argsAtomScript);
+    const scriptArgs = argsAtomScript === "''"
+      ? []
+      : shellParse(argsAtomScript);
 
     // Unfortunately we have to pollute our environment if we want to take
     // advantage of Atom's v8 cache. Ideally, we'd run the script file using
@@ -113,4 +115,4 @@ export default async function runTest(
   }
 
   return exitCode;
-}
+});

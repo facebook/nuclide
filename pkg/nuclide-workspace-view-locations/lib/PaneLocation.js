@@ -6,10 +6,11 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Viewable} from '../../nuclide-workspace-views/lib/types';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observeAddedPaneItems} from './observeAddedPaneItems';
 import {observePanes} from './observePanes';
 import {syncPaneItemVisibility} from './syncPaneItemVisibility';
@@ -20,7 +21,10 @@ export class PaneLocation {
 
   constructor() {
     this._disposables = new UniversalDisposable(
-      syncPaneItemVisibility(observePanes(atom.workspace.paneContainer), Observable.of(true)),
+      syncPaneItemVisibility(
+        observePanes((atom.workspace: any).paneContainer),
+        Observable.of(true),
+      ),
     );
   }
 
@@ -86,7 +90,7 @@ export class PaneLocation {
 
   onDidAddItem(cb: (item: Viewable) => void): IDisposable {
     return new UniversalDisposable(
-      observeAddedPaneItems(atom.workspace.paneContainer).subscribe(cb),
+      observeAddedPaneItems((atom.workspace: any).paneContainer).subscribe(cb),
     );
   }
 }

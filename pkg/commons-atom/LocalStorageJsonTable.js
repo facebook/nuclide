@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global localStorage */
 
-import {nextAnimationFrame} from '../commons-node/observable';
+import {nextAnimationFrame} from 'nuclide-commons/observable';
 
 type Entry<T> = {key: string, value: T};
 
@@ -32,8 +33,7 @@ export class LocalStorageJsonTable<T> {
       if (json != null && json !== '') {
         try {
           db = JSON.parse(json);
-        } catch (err) {
-        }
+        } catch (err) {}
       }
       this._db = Array.isArray(db) ? db : [];
       // Clear the cache after this frame. We have to do this because other windows might be

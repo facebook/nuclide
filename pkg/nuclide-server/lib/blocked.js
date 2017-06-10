@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -17,9 +18,10 @@
  * To cancel, call clearInterval on the returned interval handler.
  */
 export default function blocked(
-    fn: (ms: number) => void,
-    intervalMs: number = 100,
-    thresholdMs: number = 50): number {
+  fn: (ms: number) => void,
+  intervalMs: number = 100,
+  thresholdMs: number = 50,
+): number {
   let start = Date.now();
 
   return setInterval(() => {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {PackagerEvent} from './types';
@@ -20,7 +21,9 @@ const READY_LINE = /(packager|server) ready|<END> {3}Starting Facebook Packager 
 /**
  * Parses output from the packager into messages.
  */
-export function parseMessages(raw: Observable<string>): Observable<PackagerEvent> {
+export function parseMessages(
+  raw: Observable<string>,
+): Observable<PackagerEvent> {
   return Observable.create(observer => {
     let sawPreamble = false;
     let sawPortLine = false;
@@ -34,7 +37,8 @@ export function parseMessages(raw: Observable<string>): Observable<PackagerEvent
         // If we've seen the port and the sources, that's the preamble! Or, if we get to a line that
         // starts with a "[", we probably missed the closing of the preamble somehow. (Like the
         // packager output changed).
-        sawPreamble = sawPreamble || (sawPortLine && sawSourcesEnd) || line.startsWith('[');
+        sawPreamble =
+          sawPreamble || (sawPortLine && sawSourcesEnd) || line.startsWith('[');
         if (!sawPortLine && !sawPreamble) {
           const match = line.match(PORT_LINE);
           if (match != null) {
@@ -77,7 +81,9 @@ export function parseMessages(raw: Observable<string>): Observable<PackagerEvent
 
         if (sawPreamble) {
           // Drop all blank lines that come after the preamble.
-          if (isBlankLine(line)) { return; }
+          if (isBlankLine(line)) {
+            return;
+          }
 
           observer.next({kind: 'message', message: parseRegularLine(line)});
 

@@ -6,20 +6,20 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ContextElementProps} from '../../nuclide-context-view/lib/types';
-import type {Definition} from '../../nuclide-definition-service/lib/rpc-types';
+import type {Definition} from 'atom-ide-ui';
 
-import {Button, ButtonSizes} from '../../nuclide-ui/Button';
-import {Block} from '../../nuclide-ui/Block';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {Block} from 'nuclide-commons-ui/Block';
 import React from 'react';
-import {goToLocation} from '../../commons-atom/go-to-location';
-import {bufferForUri} from '../../commons-atom/text-buffer';
-import {AtomTextEditor} from '../../nuclide-ui/AtomTextEditor';
-import {existingEditorForBuffer} from '../../commons-atom/text-editor';
-import {track} from '../../nuclide-analytics';
-import featureConfig from '../../commons-atom/featureConfig';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import {bufferForUri} from '../../nuclide-remote-connection';
+import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
+import analytics from 'nuclide-commons-atom/analytics';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import invariant from 'assert';
 import {TextBuffer} from 'atom';
 
@@ -28,7 +28,6 @@ const EDITOR_HEIGHT_DELTA = 10;
 
 type State = {
   buffer: atom$TextBuffer,
-  oldBuffer: ?atom$TextBuffer,
   editorHeight: number, // Height in ems to render the AtomTextEditor.
 };
 
@@ -42,7 +41,9 @@ export class DefinitionPreviewView extends React.Component {
     const buffer = props.definition != null
       ? bufferForUri(props.definition.path)
       : new TextBuffer();
-    const heightSetting = ((featureConfig.get('nuclide-definition-preview.editorHeight')): any);
+    const heightSetting = (featureConfig.get(
+      'nuclide-definition-preview.editorHeight',
+    ): any);
     let height: number = 50;
     if (heightSetting != null) {
       height = heightSetting;
@@ -52,7 +53,6 @@ export class DefinitionPreviewView extends React.Component {
     }
     this.state = {
       buffer,
-      oldBuffer: null,
       editorHeight: height,
     };
     this._settingsChangeDisposable = featureConfig.observe(
@@ -60,8 +60,9 @@ export class DefinitionPreviewView extends React.Component {
       (newHeight: any) => this._setEditorHeight((newHeight: number)),
     );
 
-    (this: any)._openCurrentDefinitionInMainEditor =
-      this._openCurrentDefinitionInMainEditor.bind(this);
+    (this: any)._openCurrentDefinitionInMainEditor = this._openCurrentDefinitionInMainEditor.bind(
+      this,
+    );
     (this: any)._increaseEditorHeight = this._increaseEditorHeight.bind(this);
     (this: any)._decreaseEditorHeight = this._decreaseEditorHeight.bind(this);
   }
@@ -73,13 +74,12 @@ export class DefinitionPreviewView extends React.Component {
       // the correct path if the new definition prop has a different path than the
       // currently loaded buffer.
       if (definition.path !== this.state.buffer.getPath()) {
-        this.setState({buffer: bufferForUri(definition.path), oldBuffer: this.state.buffer});
+        this.setState({buffer: bufferForUri(definition.path)});
       }
     } else {
       // A null definition has no associated file path, so make a new TextBuffer()
       // that doesn't have an associated file path.
-      const oldBuffer = this.state.buffer;
-      this.setState({buffer: new TextBuffer(), oldBuffer});
+      this.setState({buffer: new TextBuffer()});
     }
   }
 
@@ -97,10 +97,6 @@ export class DefinitionPreviewView extends React.Component {
   }
 
   componentWillUnmount(): void {
-    this.state.buffer.destroy();
-    if (this.state.oldBuffer != null) {
-      this.state.oldBuffer.destroy();
-    }
     this._settingsChangeDisposable.dispose();
   }
 
@@ -116,24 +112,18 @@ export class DefinitionPreviewView extends React.Component {
       type: 'line',
       class: 'nuclide-current-line-highlight',
     });
-    if (this.state.oldBuffer != null) {
-      // Only destroy oldBuffer if it's not already open in a tab - otherwise it'll
-      // close the tab using oldBuffer
-      if (existingEditorForBuffer(this.state.oldBuffer) == null) {
-        invariant(this.state.oldBuffer != null);
-        this.state.oldBuffer.destroy();
-      }
-    }
   }
 
   render(): React.Element<any> {
     const {ContextViewMessage, definition} = this.props;
-    const atMinHeight = (this.state.editorHeight - EDITOR_HEIGHT_DELTA) < MINIMUM_EDITOR_HEIGHT;
+    const atMinHeight =
+      this.state.editorHeight - EDITOR_HEIGHT_DELTA < MINIMUM_EDITOR_HEIGHT;
     // Show either a "No definition" message or the definition in an editors
     return definition == null
       ? <ContextViewMessage message={ContextViewMessage.NO_DEFINITION} />
       : <div className="pane-item nuclide-definition-preview">
-          <div className="nuclide-definition-preview-editor"
+          <div
+            className="nuclide-definition-preview-editor"
             style={{height: `${this.state.editorHeight}em`}}>
             <AtomTextEditor
               ref="editor"
@@ -147,7 +137,9 @@ export class DefinitionPreviewView extends React.Component {
               syncTextContents={false}
             />
             <ButtonContainer
-              _openCurrentDefinitionInMainEditor={this._openCurrentDefinitionInMainEditor}
+              _openCurrentDefinitionInMainEditor={
+                this._openCurrentDefinitionInMainEditor
+              }
               _increaseEditorHeight={this._increaseEditorHeight}
               _decreaseEditorHeight={this._decreaseEditorHeight}
               atMinHeight={atMinHeight}
@@ -157,7 +149,7 @@ export class DefinitionPreviewView extends React.Component {
   }
 
   _openCurrentDefinitionInMainEditor(): void {
-    track('nuclide-definition-preview:openInMainEditor');
+    analytics.track('nuclide-definition-preview:openInMainEditor');
     const def = this.props.definition;
     if (def != null) {
       goToLocation(def.path, def.position.row, def.position.column, true);
@@ -202,13 +194,22 @@ const ButtonContainer = (props: ButtonContainerProps) => {
       <div className="nuclide-definition-preview-buttons">
         <div className="nuclide-definition-preview-buttons-left">
           <span style={{paddingRight: '1em'}}>Height:</span>
-          <Button onClick={props._decreaseEditorHeight}
+          <Button
+            onClick={props._decreaseEditorHeight}
             size={ButtonSizes.SMALL}
-            disabled={props.atMinHeight}>-</Button>
-          <Button onClick={props._increaseEditorHeight} size={ButtonSizes.SMALL}>+</Button>
+            disabled={props.atMinHeight}>
+            -
+          </Button>
+          <Button
+            onClick={props._increaseEditorHeight}
+            size={ButtonSizes.SMALL}>
+            +
+          </Button>
         </div>
         <div className="nuclide-definition-preview-buttons-right">
-          <Button onClick={props._openCurrentDefinitionInMainEditor} size={ButtonSizes.SMALL}>
+          <Button
+            onClick={props._openCurrentDefinitionInMainEditor}
+            size={ButtonSizes.SMALL}>
             Open in main editor
           </Button>
         </div>

@@ -6,13 +6,17 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {FileDiagnosticMessage} from '../../nuclide-diagnostics-common/lib/rpc-types';
+import type {FileDiagnosticMessage} from 'atom-ide-ui';
 
 import {Range} from 'simple-text-buffer';
 
-import {flowStatusOutputToDiagnostics, diagnosticToFix} from '../lib/diagnosticsParser';
+import {
+  flowStatusOutputToDiagnostics,
+  diagnosticToFix,
+} from '../lib/diagnosticsParser';
 import {addMatchers} from '../../nuclide-test-helpers';
 
 const flowOutput = {
@@ -97,6 +101,54 @@ const flowOutput = {
         },
       ],
     },
+    {
+      kind: 'infer',
+      level: 'error',
+      message: [
+        {
+          context: '        next.onLoad(results, count);',
+          descr: 'object type',
+          type: 'Blame',
+          loc: {
+            source: '/flow-test/src/test.js',
+            type: 'SourceFile',
+            start: {line: 83, column: 9, offset: 1992},
+            end: {line: 83, column: 12, offset: 1996},
+          },
+          path: '/flow-test/src/test.js',
+          line: 83,
+          endline: 83,
+          start: 9,
+          end: 12,
+        },
+        {
+          context: null,
+          descr: 'This type is incompatible with an argument type of',
+          type: 'Comment',
+          path: '',
+          line: 0,
+          endline: 0,
+          start: 1,
+          end: 0,
+        },
+        {
+          context: null,
+          descr: 'global object',
+          type: 'Blame',
+          loc: {
+            source: '(builtins)',
+            type: 'Builtins',
+            start: {line: 0, column: 1, offset: 0},
+            end: {line: 0, column: 0, offset: 0},
+          },
+          path: '(builtins)',
+          line: 0,
+          endline: 0,
+          start: 1,
+          end: 0,
+        },
+      ],
+    },
   ],
 };
 
@@ -134,6 +186,24 @@ const expected: Array<FileDiagnosticMessage> = [
     filePath: 'myPath',
     text: 'message',
     range: new Range([0, 2], [1, 4]),
+  },
+  {
+    type: 'Error',
+    scope: 'file',
+    providerName: 'Flow',
+    filePath: '/flow-test/src/test.js',
+    text: 'object type',
+    range: new Range([82, 8], [82, 12]),
+    trace: [
+      {
+        type: 'Trace',
+        text: 'This type is incompatible with an argument type of',
+      },
+      {
+        type: 'Trace',
+        text: 'global object',
+      },
+    ],
   },
 ];
 

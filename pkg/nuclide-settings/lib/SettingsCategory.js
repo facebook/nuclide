@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import React from 'react';
@@ -53,7 +54,9 @@ export default class SettingsCategory extends React.Component {
     return (
       <section className="section settings-panel">
         {/* Category Title */}
-        <h1 className="block section-heading icon icon-gear">{this.props.name} Settings</h1>
+        <h1 className="block section-heading icon icon-gear">
+          {this.props.name} Settings
+        </h1>
         {children}
       </section>
     );
@@ -70,11 +73,12 @@ function ControlGroup(props: {children?: React.Children}): React.Element<any> {
   );
 }
 
-function getSortedSettingsArray(settings: Object, pkgName: string): Array<string> {
+function getSortedSettingsArray(
+  settings: Object,
+  pkgName: string,
+): Array<string> {
   // Sort the package's settings by name, then by order.
   const settingsArray = Object.keys(settings);
-  settingsArray
-    .sort()
-    .sort((a, b) => settings[a].order - settings[b].order);
+  settingsArray.sort().sort((a, b) => settings[a].order - settings[b].order);
   return settingsArray;
 }

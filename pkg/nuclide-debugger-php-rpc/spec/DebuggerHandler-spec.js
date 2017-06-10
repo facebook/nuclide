@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {ClientCallback as ClientCallbackType} from '../lib/ClientCallback';
@@ -13,7 +14,7 @@ import type {
   ConnectionMultiplexer as ConnectionMultiplexerType,
 } from '../lib/ConnectionMultiplexer';
 
-
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ConnectionMultiplexerStatus} from '../lib/ConnectionMultiplexer';
 import {DebuggerHandler} from '../lib/DebuggerHandler';
 
@@ -30,33 +31,34 @@ describe('debugger-php-rpc DebuggerHandler', () => {
       'onNext',
       'onCompleted',
     ]);
-    clientCallback = ((
-      jasmine.createSpyObj(
-        'clientCallback',
-        ['replyToCommand', 'replyWithError', 'sendServerMethod', 'getServerMessageObservable'],
-      ): any
-    ): ClientCallbackType);
+    clientCallback = ((jasmine.createSpyObj('clientCallback', [
+      'replyToCommand',
+      'replyWithError',
+      'sendServerMethod',
+      'getServerMessageObservable',
+    ]): any): ClientCallbackType);
     // $FlowIssue -- instance method on object.
     clientCallback.getServerMessageObservable = jasmine
       .createSpy('getServerMessageObservable')
       .andReturn(observableSpy);
-    connectionMultiplexer = ((
-      jasmine.createSpyObj('connectionMultiplexer', [
-        'onStatus',
-        'onNotification',
-        'listen',
-        'getStatus',
-        'getStackFrames',
-        'sendContinuationCommand',
-        'getScopesForFrame',
-        'getRequestSwitchMessage',
-        'getEnabledConnectionId',
-        'resetRequestSwitchMessage',
-        'pause',
-        'resume',
-      ]): any
-    ): ConnectionMultiplexerType);
-    onStatusSubscription = jasmine.createSpyObj('onStatusSubscription', ['dispose']);
+    connectionMultiplexer = ((jasmine.createSpyObj('connectionMultiplexer', [
+      'onStatus',
+      'onNotification',
+      'listen',
+      'getStatus',
+      'getConnectionStackFrames',
+      'sendContinuationCommand',
+      'getScopesForFrame',
+      'getRequestSwitchMessage',
+      'getEnabledConnectionId',
+      'resetRequestSwitchMessage',
+      'pause',
+      'resume',
+      'dispose',
+    ]): any): ConnectionMultiplexerType);
+    onStatusSubscription = jasmine.createSpyObj('onStatusSubscription', [
+      'dispose',
+    ]);
     const onNotificationSubscription = jasmine.createSpyObj(
       'onNotificationSubscription',
       ['dispose'],
@@ -68,100 +70,125 @@ describe('debugger-php-rpc DebuggerHandler', () => {
         onStatus = callback;
         return onStatusSubscription;
       });
+    // $FlowFixMe override instance methods.
+    connectionMultiplexer.listen = jasmine
+      .createSpy('listen')
+      .andCallFake(callback => {
+        return new UniversalDisposable();
+      });
     // $FlowFixMe
     connectionMultiplexer.onNotification = jasmine
-      .createSpy('onNotification').andReturn(onNotificationSubscription);
+      .createSpy('onNotification')
+      .andReturn(onNotificationSubscription);
     handler = new DebuggerHandler(clientCallback, connectionMultiplexer);
   });
 
   it('enable', () => {
     waitsForPromise(async () => {
       await handler.handleMethod(1, 'enable');
-      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(1, {}, undefined);
+      expect(clientCallback.replyToCommand).toHaveBeenCalledWith(
+        1,
+        {},
+        undefined,
+      );
       expect(connectionMultiplexer.listen).not.toHaveBeenCalledWith();
-      expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
-        'Debugger.paused',
-        {
-          callFrames: [],
-          reason: 'breakpoint',
-          data: {},
-        });
+      expect(
+        clientCallback.sendServerMethod,
+      ).toHaveBeenCalledWith('Debugger.paused', {
+        callFrames: [],
+        reason: 'initial break',
+        data: {},
+      });
     });
   });
 
   it('stack', () => {
     waitsForPromise(async () => {
-      connectionMultiplexer.getStackFrames = jasmine.createSpy('getStackFrames').andReturn(
-        Promise.resolve({
-          stack: [
-            {
-              $: {
-                where: 'foo',
-                level: '0',
-                type: 'file',
-                filename: 'file:///usr/test.php',
-                lineno: '5',
+      connectionMultiplexer.getEnabledConnectionId = jasmine
+        .createSpy('getEnabledConnectionId')
+        .andReturn(1);
+      connectionMultiplexer.getConnectionStopReason = jasmine
+        .createSpy('getConnectionStopReason')
+        .andReturn('breakpoint');
+      connectionMultiplexer.getConnectionStackFrames = jasmine
+        .createSpy('getConnectionStackFrames')
+        .andReturn(
+          Promise.resolve({
+            stack: [
+              {
+                $: {
+                  where: 'foo',
+                  level: '0',
+                  type: 'file',
+                  filename: 'file:///usr/test.php',
+                  lineno: '5',
+                },
               },
-            },
-            {
-              $: {
-                where: 'main',
-                level: '1',
-                type: 'file',
-                filename: 'file:///usr/test.php',
-                lineno: '15',
+              {
+                $: {
+                  where: 'main',
+                  level: '1',
+                  type: 'file',
+                  filename: 'file:///usr/test.php',
+                  lineno: '15',
+                },
               },
-            },
-          ],
-        }));
+            ],
+          }),
+        );
 
       await onStatus(ConnectionMultiplexerStatus.SingleConnectionPaused);
 
-      expect(connectionMultiplexer.getStackFrames).toHaveBeenCalledWith();
+      expect(
+        connectionMultiplexer.getConnectionStackFrames,
+      ).toHaveBeenCalledWith(1);
       expect(connectionMultiplexer.getScopesForFrame).toHaveBeenCalledWith(0);
       expect(connectionMultiplexer.getScopesForFrame).toHaveBeenCalledWith(1);
-      expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
-        'Debugger.scriptParsed',
-        {
-          scriptId: '/usr/test.php',
-          url: 'file:///usr/test.php',
-          startLine: 0,
-          startColumn: 0,
-          endLine: 0,
-          endColumn: 0,
-        });
-      expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
-        'Debugger.paused',
-        {
-          callFrames: [
-            {
-              callFrameId: '0',
-              functionName: 'foo',
-              location: {
-                lineNumber: 4,
-                scriptId: '',
-              },
-              scopeChain: undefined,
+      expect(
+        clientCallback.sendServerMethod,
+      ).toHaveBeenCalledWith('Debugger.scriptParsed', {
+        scriptId: '/usr/test.php',
+        url: 'file:///usr/test.php',
+        startLine: 0,
+        startColumn: 0,
+        endLine: 0,
+        endColumn: 0,
+      });
+      expect(
+        clientCallback.sendServerMethod,
+      ).toHaveBeenCalledWith('Debugger.paused', {
+        callFrames: [
+          {
+            callFrameId: '0',
+            functionName: 'foo',
+            location: {
+              lineNumber: 4,
+              scriptId: '',
             },
-            {
-              callFrameId: '1',
-              functionName: 'main',
-              location: {
-                lineNumber: 14,
-                scriptId: '',
-              },
-              scopeChain: undefined,
+            scopeChain: undefined,
+          },
+          {
+            callFrameId: '1',
+            functionName: 'main',
+            location: {
+              lineNumber: 14,
+              scriptId: '',
             },
-          ],
-          reason: 'breakpoint',
-          data: {},
-        });
+            scopeChain: undefined,
+          },
+        ],
+        reason: 'breakpoint',
+        threadSwitchMessage: undefined,
+        data: {},
+        stopThreadId: 1,
+      });
     });
   });
 
   it('pause - success', () => {
-    connectionMultiplexer.pause =
-      jasmine.createSpy('pause').andReturn(Promise.resolve(true));
+    connectionMultiplexer.pause = jasmine
+      .createSpy('pause')
+      .andReturn(Promise.resolve(true));
     handler.handleMethod(1, 'pause');
     expect(connectionMultiplexer.pause).toHaveBeenCalledWith();
   });
@@ -169,7 +196,9 @@ describe('debugger-php-rpc DebuggerHandler', () => {
   it('continue from fake loader bp', () => {
     waitsForPromise(async () => {
       await handler.handleMethod(1, 'resume');
-      expect(connectionMultiplexer.listen).toHaveBeenCalledWith();
+      expect(connectionMultiplexer.listen).toHaveBeenCalledWith(
+        jasmine.any(Function),
+      );
       expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
         'Debugger.resumed',
         undefined,
@@ -183,20 +212,32 @@ describe('debugger-php-rpc DebuggerHandler', () => {
 
       // Fake the run from loader bp
       await handler.handleMethod(1, 'resume');
-      expect(connectionMultiplexer.listen).toHaveBeenCalledWith();
+      expect(connectionMultiplexer.listen).toHaveBeenCalledWith(
+        jasmine.any(Function),
+      );
       expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
         'Debugger.resumed',
         undefined,
       );
-      expect(connectionMultiplexer.sendContinuationCommand).not.toHaveBeenCalled();
+      expect(
+        connectionMultiplexer.sendContinuationCommand,
+      ).not.toHaveBeenCalled();
 
-      connectionMultiplexer.getStackFrames = jasmine.createSpy('getStackFrames').andReturn(
-        Promise.resolve({stack: []}),
-      );
+      connectionMultiplexer.getEnabledConnectionId = jasmine
+        .createSpy('getEnabledConnectionId')
+        .andReturn(1);
+      connectionMultiplexer.getConnectionStopReason = jasmine
+        .createSpy('getConnectionStopReason')
+        .andReturn('breakpoint');
+      connectionMultiplexer.getConnectionStackFrames = jasmine
+        .createSpy('getConnectionStackFrames')
+        .andReturn(Promise.resolve({stack: []}));
 
       await handler.handleMethod(1, chromeCommand);
 
-      expect(connectionMultiplexer.sendContinuationCommand).toHaveBeenCalledWith(dbgpCommand);
+      expect(
+        connectionMultiplexer.sendContinuationCommand,
+      ).toHaveBeenCalledWith(dbgpCommand);
 
       await onStatus(ConnectionMultiplexerStatus.Running);
       expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
@@ -205,14 +246,19 @@ describe('debugger-php-rpc DebuggerHandler', () => {
       );
 
       await onStatus(ConnectionMultiplexerStatus.SingleConnectionPaused);
-      expect(connectionMultiplexer.getStackFrames).toHaveBeenCalledWith();
-      expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
-        'Debugger.paused',
-        {
-          callFrames: [],
-          reason: 'breakpoint',
-          data: {},
-        });
+      expect(
+        connectionMultiplexer.getConnectionStackFrames,
+      ).toHaveBeenCalledWith(1);
+
+      expect(
+        clientCallback.sendServerMethod,
+      ).toHaveBeenCalledWith('Debugger.paused', {
+        callFrames: [],
+        reason: 'breakpoint',
+        data: {},
+        threadSwitchMessage: undefined,
+        stopThreadId: 1,
+      });
     };
   }
 
@@ -222,16 +268,26 @@ describe('debugger-php-rpc DebuggerHandler', () => {
 
       // Fake the run from loader bp
       await handler.handleMethod(1, 'resume');
-      expect(connectionMultiplexer.listen).toHaveBeenCalledWith();
+      expect(connectionMultiplexer.listen).toHaveBeenCalledWith(
+        jasmine.any(Function),
+      );
       expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
         'Debugger.resumed',
         undefined,
       );
       expect(connectionMultiplexer.resume).not.toHaveBeenCalled();
 
-      connectionMultiplexer.getStackFrames = jasmine.createSpy('getStackFrames').andReturn(
-        Promise.resolve({stack: []}),
-      );
+      connectionMultiplexer.getEnabledConnectionId = jasmine
+        .createSpy('getEnabledConnectionId')
+        .andReturn(1);
+
+      connectionMultiplexer.getConnectionStopReason = jasmine
+        .createSpy('getConnectionStopReason')
+        .andReturn('breakpoint');
+
+      connectionMultiplexer.getConnectionStackFrames = jasmine
+        .createSpy('getConnectionStackFrames')
+        .andReturn(Promise.resolve({stack: []}));
 
       await handler.handleMethod(1, chromeCommand);
 
@@ -244,17 +300,20 @@ describe('debugger-php-rpc DebuggerHandler', () => {
       );
 
       await onStatus(ConnectionMultiplexerStatus.SingleConnectionPaused);
-      expect(connectionMultiplexer.getStackFrames).toHaveBeenCalledWith();
-      expect(clientCallback.sendServerMethod).toHaveBeenCalledWith(
-        'Debugger.paused',
-        {
-          callFrames: [],
-          reason: 'breakpoint',
-          data: {},
-        });
+      expect(
+        connectionMultiplexer.getConnectionStackFrames,
+      ).toHaveBeenCalledWith(1);
+      expect(
+        clientCallback.sendServerMethod,
+      ).toHaveBeenCalledWith('Debugger.paused', {
+        callFrames: [],
+        reason: 'breakpoint',
+        data: {},
+        threadSwitchMessage: undefined,
+        stopThreadId: 1,
+      });
     };
   }
-
 
   it('stepInto', () => {
     waitsForPromise(testContinuationCommand('stepInto', 'step_into'));
@@ -273,7 +332,9 @@ describe('debugger-php-rpc DebuggerHandler', () => {
   });
 
   it('stopping', () => {
-    expect(connectionMultiplexer.sendContinuationCommand).not.toHaveBeenCalled();
+    expect(
+      connectionMultiplexer.sendContinuationCommand,
+    ).not.toHaveBeenCalled();
   });
 
   it('end', () => {
@@ -289,7 +350,8 @@ describe('debugger-php-rpc DebuggerHandler', () => {
 
   it('removeBreakpoint', () => {
     waitsForPromise(async () => {
-      connectionMultiplexer.removeBreakpoint = jasmine.createSpy('removeBreakpoint')
+      connectionMultiplexer.removeBreakpoint = jasmine
+        .createSpy('removeBreakpoint')
         .andCallFake(async () => {});
 
       await handler.handleMethod(1, 'removeBreakpoint', {
@@ -302,24 +364,34 @@ describe('debugger-php-rpc DebuggerHandler', () => {
         {
           id: 42,
         },
-        undefined);
+        undefined,
+      );
     });
   });
 
   it('setAsyncCallStackDepth', () => {
     handler.handleMethod(1, 'setAsyncCallStackDepth');
 
-    expect(clientCallback.replyWithError).toHaveBeenCalledWith(1, jasmine.any(String));
+    expect(clientCallback.replyWithError).toHaveBeenCalledWith(
+      1,
+      jasmine.any(String),
+    );
   });
 
   it('skipStackFrames', () => {
     handler.handleMethod(1, 'skipStackFrames');
 
-    expect(clientCallback.replyWithError).toHaveBeenCalledWith(1, jasmine.any(String));
+    expect(clientCallback.replyWithError).toHaveBeenCalledWith(
+      1,
+      jasmine.any(String),
+    );
   });
 
   it('unknown', () => {
     handler.handleMethod(4, 'unknown');
-    expect(clientCallback.replyWithError).toHaveBeenCalledWith(4, jasmine.any(String));
+    expect(clientCallback.replyWithError).toHaveBeenCalledWith(
+      4,
+      jasmine.any(String),
+    );
   });
 });

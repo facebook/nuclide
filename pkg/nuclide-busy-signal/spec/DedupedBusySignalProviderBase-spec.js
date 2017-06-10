@@ -6,11 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {BusySignalMessage} from '../lib/types';
 
-import {DedupedBusySignalProviderBase} from '../lib/DedupedBusySignalProviderBase';
+import {
+  DedupedBusySignalProviderBase,
+} from '../lib/DedupedBusySignalProviderBase';
 
 describe('DedupedBusySignalProviderBase', () => {
   let providerBase: DedupedBusySignalProviderBase = (null: any);
@@ -45,6 +48,9 @@ describe('DedupedBusySignalProviderBase', () => {
 
     dispose1.dispose();
 
-    expect(messages).toEqual([expectedFirstMessage, expectedCancellationMessage]);
+    expect(messages).toEqual([
+      expectedFirstMessage,
+      expectedCancellationMessage,
+    ]);
   });
 });

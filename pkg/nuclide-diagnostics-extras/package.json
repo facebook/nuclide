@@ -1,0 +1,24 @@
+{
+  "name": "nuclide-diagnostics-extras",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "nuclide-home provider for Diagnostics.",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "activationCommands": {
+    "atom-workspace": [
+      "nuclide-home:toggle"
+    ]
+  },
+  "providedServices": {
+    "nuclide-home.homeFragments": {
+      "versions": {
+        "0.0.0": "getHomeFragments"
+      }
+    }
+  }
+}

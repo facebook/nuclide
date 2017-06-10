@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Directory} from 'atom';
@@ -16,9 +17,9 @@ import type {FileTreeNode} from '../lib/FileTreeNode';
 
 import {copyFixture} from '../../nuclide-test-helpers';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import {denodeify} from '../../commons-node/promise';
+import {denodeify} from 'nuclide-commons/promise';
 
 import {buildTempDirTree} from './helpers/BuildTempDirTree';
 
@@ -59,7 +60,10 @@ describe('FileTreeStore', () => {
     return node;
   }
 
-  function shownChildren(rootKey: string, nodeKey: string): Array<FileTreeNode> {
+  function shownChildren(
+    rootKey: string,
+    nodeKey: string,
+  ): Array<FileTreeNode> {
     const node = getNode(rootKey, nodeKey);
     return node.children.filter(n => n.shouldBeShown).toArray();
   }
@@ -150,12 +154,18 @@ describe('FileTreeStore', () => {
       actions.addSelectedNode(dir2, dir2);
 
       // Convert the `Immutable.Set` to a native `Array` for simpler use w/ Jasmine.
-      const selectedNodes = store.getSelectedNodes().map(node => node.uri).toArray();
+      const selectedNodes = store
+        .getSelectedNodes()
+        .map(node => node.uri)
+        .toArray();
       expect(selectedNodes).toEqual([dir1, dir2]);
     });
 
     it('returns an empty Set when no nodes are selected', () => {
-      const selectedNodes = store.getSelectedNodes().map(node => node.uri).toArray();
+      const selectedNodes = store
+        .getSelectedNodes()
+        .map(node => node.uri)
+        .toArray();
       expect(selectedNodes).toEqual([]);
     });
   });
@@ -364,7 +374,9 @@ describe('FileTreeStore', () => {
         });
 
         // Return the always-fail directory when it is expanded.
-        spyOn(FileTreeHelpers, 'getDirectoryByKey').andReturn(unsubscribeableDir);
+        spyOn(FileTreeHelpers, 'getDirectoryByKey').andReturn(
+          unsubscribeableDir,
+        );
 
         actions.setRootKeys([dir1]);
         actions.expandNode(dir1, dir1);
@@ -388,7 +400,10 @@ describe('FileTreeStore', () => {
 
         // The subscription should fail again, but the children should be refetched and match the
         // changed structure (i.e. include the new 'bar.baz' file).
-        expect(shownChildren(dir1, dir1).map(n => n.uri)).toEqual([barBaz, fooTxt]);
+        expect(shownChildren(dir1, dir1).map(n => n.uri)).toEqual([
+          barBaz,
+          fooTxt,
+        ]);
       });
     });
   });
@@ -472,7 +487,7 @@ describe('FileTreeStore', () => {
       }
       arrFiles.push('dir3/dir32/bar.txt');
 
-      const map : Map<string, string> = await buildTempDirTree(...arrFiles);
+      const map: Map<string, string> = await buildTempDirTree(...arrFiles);
       const dir3 = map.get('dir3');
       const dir31 = map.get('dir3/dir31');
       const dir32 = map.get('dir3/dir32');

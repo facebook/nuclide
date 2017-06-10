@@ -1,5 +1,5 @@
-// flow-typed signature: 01cf1486a106f482123a7c6fefcd6424
-// flow-typed version: 1cae4101a9/semver_v5.1.x/flow_>=v0.27.0
+// flow-typed signature: c5f918cd3de18b19a20558e6f3bbcc84
+// flow-typed version: cdd17a64e0/semver_v5.1.x/flow_>=v0.27.0
 
 // List of members taken from here: https://www.npmjs.com/package/semver/#functions
 // TODO support the `loose` parameter
@@ -68,4 +68,14 @@ declare module 'semver' {
 
   // Not explicitly documented
   declare function parse(version: string): ?SemVer;
+
+  declare class Range {
+    set: Array<Array<{semver: SemVer}>>;
+
+    constructor(range: string, loose?: boolean): Range;
+
+    format(): string;
+    test(version: string): boolean;
+    toString(): string;
+  }
 }

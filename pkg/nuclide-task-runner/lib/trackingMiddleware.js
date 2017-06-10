@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -23,7 +24,7 @@ import invariant from 'assert';
 
 export function trackingMiddleware(
   store: Store,
-): ((action: Action) => Store) => ((action: Action) => Store) {
+): ((action: Action) => Store) => (action: Action) => Store {
   return next => action => {
     switch (action.type) {
       case Actions.TASK_STARTED:
@@ -46,16 +47,22 @@ export function trackingMiddleware(
 function trackTaskAction(
   type: string,
   store: Store,
-  action: TaskStartedAction | TaskStoppedAction | TaskCompletedAction | TaskErroredAction,
+  action:
+    | TaskStartedAction
+    | TaskStoppedAction
+    | TaskCompletedAction
+    | TaskErroredAction,
 ): void {
   const {activeTaskRunner} = store.getState();
   invariant(activeTaskRunner);
   const {taskStatus} = action.payload;
   const {task} = taskStatus;
   const taskTrackingData = typeof task.getTrackingData === 'function'
-      ? task.getTrackingData()
-      : {};
-  const error = action.type === Actions.TASK_ERRORED ? action.payload.error : null;
+    ? task.getTrackingData()
+    : {};
+  const error = action.type === Actions.TASK_ERRORED
+    ? action.payload.error
+    : null;
   trackEvent({
     type,
     data: {

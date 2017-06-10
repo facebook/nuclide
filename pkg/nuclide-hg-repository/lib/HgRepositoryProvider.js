@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Directory} from 'atom';
@@ -15,10 +16,10 @@ import {
   getHgServiceByNuclideUri,
 } from '../../nuclide-remote-connection';
 import {HgRepositoryClient} from '../../nuclide-hg-repository-client';
-import {getLogger} from '../../nuclide-logging';
+import {getLogger} from 'log4js';
 import {findHgRepository} from '../../nuclide-source-control-helpers';
 
-const logger = getLogger();
+const logger = getLogger('nuclide-hg-repository');
 
 /**
  * @param directory Either a RemoteDirectory or Directory we are interested in.
@@ -42,8 +43,9 @@ function getRepositoryDescription(
 } {
   if (directory instanceof RemoteDirectory) {
     const repositoryDescription = directory.getHgRepositoryDescription();
-    if (repositoryDescription == null
-      || repositoryDescription.repoPath == null
+    if (
+      repositoryDescription == null ||
+      repositoryDescription.repoPath == null
     ) {
       return null;
     }
@@ -52,7 +54,9 @@ function getRepositoryDescription(
     const workingDirectoryLocalPath = workingDirectoryPath;
     // These paths are all relative to the remote fs. We need to turn these into URIs.
     const repoUri = serverConnection.getUriOfRemotePath(repoPath);
-    const workingDirectoryUri = serverConnection.getUriOfRemotePath(workingDirectoryPath);
+    const workingDirectoryUri = serverConnection.getUriOfRemotePath(
+      workingDirectoryPath,
+    );
     return {
       originURL,
       repoPath: repoUri,
@@ -103,7 +107,10 @@ export default class HgRepositoryProvider {
         });
       } catch (err) {
         logger.error(
-          'Failed to create an HgRepositoryClient for ', directory.getPath(), ', error: ', err,
+          'Failed to create an HgRepositoryClient for ',
+          directory.getPath(),
+          ', error: ',
+          err,
         );
         return null;
       }

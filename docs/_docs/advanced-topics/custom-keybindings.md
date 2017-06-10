@@ -49,14 +49,17 @@ text box. Therefore, when you want to add a keyboard shortcut for an editor, add
 ### Platform Specific Bindings
 
 You can make your bindings platform specific with `.platform-xxxxx` as part of your CSS selector.
-For example the Nuclide `diff-view` CSON looks like this:
+For example the Nuclide `nuclide-quick-open` CSON looks like this:
 
 ```
-'.platform-darwin atom-workspace':
-  'alt-cmd-shift-d': 'nuclide-diff-view:open'
-
-'.platform-win32 atom-workspace, .platform-linux atom-workspace':
-  'alt-ctrl-shift-d': 'nuclide-diff-view:open'
+{
+  ".platform-darwin atom-workspace": {
+    "cmd-t": "nuclide-quick-open:find-anything-via-omni-search"
+  },
+  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
+    "ctrl-t": "nuclide-quick-open:find-anything-via-omni-search"
+  }
+}
 ```
 
 where `.platform-darwin` represents macOS, `.platform-win32` represents Windows, and `.platform-linux` represents Linux.

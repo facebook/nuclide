@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {RevisionInfo} from '../../nuclide-hg-rpc/lib/HgService';
@@ -24,5 +25,8 @@ export type BlameProvider = {
    * implementation that returns `Promise.resolve(null)`. The absence of this method indicates to
    * clients that they should not expose UI that depends on this functionality.
    */
-  getUrlForRevision?: (editor: atom$TextEditor, revision: string) => Promise<?string>,
+  getUrlForRevision?: (
+    editor: atom$TextEditor,
+    revision: string,
+  ) => Promise<?string>,
 };

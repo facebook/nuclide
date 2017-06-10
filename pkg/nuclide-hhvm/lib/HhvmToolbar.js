@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type ProjectStore from './ProjectStore';
@@ -13,22 +14,17 @@ import type {DebugMode} from './types';
 import {shell} from 'electron';
 
 import {HACK_GRAMMARS} from '../../nuclide-hack-common/lib/constants.js';
-import {AtomInput} from '../../nuclide-ui/AtomInput';
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
-import {Button} from '../../nuclide-ui/Button';
+import {Button} from 'nuclide-commons-ui/Button';
 import React from 'react';
 
 const WEB_SERVER_OPTION = {label: 'Attach to WebServer', value: 'webserver'};
 const SCRIPT_OPTION = {label: 'Launch Script', value: 'script'};
 
-const DEBUG_OPTIONS = [
-  WEB_SERVER_OPTION,
-  SCRIPT_OPTION,
-];
+const DEBUG_OPTIONS = [WEB_SERVER_OPTION, SCRIPT_OPTION];
 
-const NO_LAUNCH_DEBUG_OPTIONS = [
-  WEB_SERVER_OPTION,
-];
+const NO_LAUNCH_DEBUG_OPTIONS = [WEB_SERVER_OPTION];
 
 type Props = {
   projectStore: ProjectStore,
@@ -40,7 +36,9 @@ export default class HhvmToolbar extends React.Component {
   constructor(props: Props) {
     super(props);
     (this: any)._handleDropdownChange = this._handleDropdownChange.bind(this);
-    (this: any)._updateLastScriptCommand = this._updateLastScriptCommand.bind(this);
+    (this: any)._updateLastScriptCommand = this._updateLastScriptCommand.bind(
+      this,
+    );
   }
 
   _updateLastScriptCommand(command: string): void {
@@ -50,7 +48,9 @@ export default class HhvmToolbar extends React.Component {
   }
 
   _getMenuItems(): Array<{label: string, value: DebugMode}> {
-    return this._isTargetLaunchable(this.props.projectStore.getCurrentFilePath())
+    return this._isTargetLaunchable(
+      this.props.projectStore.getCurrentFilePath(),
+    )
       ? DEBUG_OPTIONS
       : NO_LAUNCH_DEBUG_OPTIONS;
   }
@@ -73,8 +73,10 @@ export default class HhvmToolbar extends React.Component {
     // Reset selected item to webserver if target is not launchable anymore.
     // TODO[jeffreytan]: this is ugly, refactor to make it more elegant.
     const store = this.props.projectStore;
-    if (store.getDebugMode() === 'script' &&
-        !this._isTargetLaunchable(store.getCurrentFilePath())) {
+    if (
+      store.getDebugMode() === 'script' &&
+      !this._isTargetLaunchable(store.getCurrentFilePath())
+    ) {
       store.setDebugMode('webserver');
     }
     this.refs.debugTarget.setText(store.getDebugTarget());
@@ -101,25 +103,27 @@ export default class HhvmToolbar extends React.Component {
             initialValue={value}
             // Ugly hack: prevent people changing the value without disabling so
             // that they can copy and paste.
-            onDidChange={isDisabled
-              ? () => {
-                if (this.refs.debugTarget.getText() !== value) {
-                  this.refs.debugTarget.setText(value);
-                }
-              }
-              : this._updateLastScriptCommand
+            onDidChange={
+              isDisabled
+                ? () => {
+                    if (this.refs.debugTarget.getText() !== value) {
+                      this.refs.debugTarget.setText(value);
+                    }
+                  }
+                : this._updateLastScriptCommand
             }
             size="sm"
           />
         </div>
-        {!isDebugScript ?
-          <Button
-            size="SMALL"
-            onClick={() => {
-              shell.openExternal('https://' + store.getDebugTarget());
-            }}>
-            Open
-          </Button> : null}
+        {!isDebugScript
+          ? <Button
+              size="SMALL"
+              onClick={() => {
+                shell.openExternal('https://' + store.getDebugTarget());
+              }}>
+              Open
+            </Button>
+          : null}
       </div>
     );
   }

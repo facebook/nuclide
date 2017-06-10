@@ -64,6 +64,7 @@ function spawnWorker() {
   )
   .on('exit', code => {
     if (code) {
+      console.error(`Exit code ${code} parsing ${servicesConfig.name}`);
       process.exit(code);
     } else {
       try {
@@ -76,7 +77,7 @@ function spawnWorker() {
           console.log(`${a}`);
         }
       } catch (err) {
-        console.error(`Error ${err} parsing:\n${out}`);
+        console.error(`Error ${err} parsing ${servicesConfig.name}:\n${out}`);
         process.exit(1);
       }
       spawnWorker();

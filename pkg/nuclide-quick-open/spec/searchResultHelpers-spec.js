@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {GroupedResults} from '../lib/searchResultHelpers';
@@ -32,6 +33,7 @@ const SEARCH_RESULTS_FIXTURE: GroupedResults = {
     },
     title: 'searchService',
     priority: 0,
+    totalResults: 1,
   },
   symbolService: {
     results: {
@@ -48,6 +50,7 @@ const SEARCH_RESULTS_FIXTURE: GroupedResults = {
     },
     title: 'symbolService',
     priority: 0,
+    totalResults: 1,
   },
   shouldNotAppearInOutputService: {
     results: {
@@ -64,13 +67,16 @@ const SEARCH_RESULTS_FIXTURE: GroupedResults = {
     },
     title: 'shouldNotAppearInOutputService',
     priority: 0,
+    totalResults: 0,
   },
 };
 
 describe('searchResultHelper', () => {
   describe('emptyResults', () => {
     it('does not include empty folders', () => {
-      const filteredResults: GroupedResults = filterEmptyResults(SEARCH_RESULTS_FIXTURE);
+      const filteredResults: GroupedResults = filterEmptyResults(
+        SEARCH_RESULTS_FIXTURE,
+      );
       expect(filteredResults).toEqual({
         searchService: {
           results: {
@@ -96,9 +102,10 @@ describe('searchResultHelper', () => {
 
   describe('flattenResults', () => {
     it('returns an array of flattened results', () => {
-      expect(flattenResults(SEARCH_RESULTS_FIXTURE)).toEqual(
-        [{path: 'foo'}, {path: 'bar'}],
-      );
+      expect(flattenResults(SEARCH_RESULTS_FIXTURE)).toEqual([
+        {path: 'foo'},
+        {path: 'bar'},
+      ]);
     });
   });
 

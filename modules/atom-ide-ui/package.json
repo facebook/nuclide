@@ -1,0 +1,27 @@
+{
+  "name": "atom-ide-ui",
+  "version": "0.1.5",
+  "description": "A suite of language service UIs for Atom.",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "./index-entry.js",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide",
+  "scripts": {
+    "prepublish": "../../scripts/modules-prepublish.sh",
+    "test": "scripts/test.js"
+  },
+  "engines": {
+    "atom": ">= 1.17.0"
+  },
+  "dependencies": {
+    "async-to-generator": "1.0.0",
+    "classnames": "2.2.5",
+    "log4js": "1.1.1",
+    "nuclide-commons": "0.1.5",
+    "nuclide-commons-atom": "0.1.5",
+    "nuclide-commons-ui": "0.1.5",
+    "react": "15.3.1",
+    "react-dom": "15.3.1",
+    "rxjs": "5.3.1"
+  }
+}

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /**
@@ -167,7 +168,7 @@ export default class Dispatcher<TPayload> {
         invariant(
           this._isHandled[id],
           'Dispatcher.waitFor(...): Circular dependency detected while ' +
-          'waiting for `%s`.',
+            'waiting for `%s`.',
           id,
         );
         continue;

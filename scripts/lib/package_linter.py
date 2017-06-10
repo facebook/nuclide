@@ -130,7 +130,7 @@ class PackageLinter(object):
             # stylistic only - omitting the "./" works
             self.report_error('Package %s should have a "main" file that starts with "./"', package_name)
         if not os.path.isfile(main_file):
-            self.report_error('Package %s should have a "main" file that exits', package_name)
+            self.report_error('Package %s should have a "main" file that exists', package_name)
         if not package_main.endswith('.js'):
             self.report_error(
                 'Package %s should have a "main" file with a ".js" extension',

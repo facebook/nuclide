@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -17,24 +18,18 @@ import type {
   RenameRefactoring,
   RenameRequest,
 } from '..';
-import type {
-  Store,
-  RefactorState,
-} from '../lib/types';
+import type {Store, RefactorState} from '../lib/types';
 
-import {Observable, BehaviorSubject} from 'rxjs';
+import {Observable, BehaviorSubject, Subject} from 'rxjs';
 import {Range, Point} from 'atom';
 import invariant from 'assert';
 
-import ProviderRegistry from '../../commons-atom/ProviderRegistry';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {Deferred, nextTick} from '../../commons-node/promise';
+import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {Deferred, nextTick} from 'nuclide-commons/promise';
 import {expectObservableToStartWith} from '../../nuclide-test-helpers';
 
-import {
-  getStore,
-  getErrors,
-} from '../lib/refactorStore';
+import {getStore, getErrors} from '../lib/refactorStore';
 import * as Actions from '../lib/refactorActions';
 
 // sentinel value
@@ -48,8 +43,10 @@ describe('refactorStore', () => {
   let currentState: BehaviorSubject<RefactorState>;
 
   let provider: RefactorProvider = (null: any);
-  let refactoringsAtPointReturn: Promise<Array<AvailableRefactoring>> = (null: any);
-  let refactorReturn: Promise<?RefactorResponse> = (null: any);
+  let refactoringsAtPointReturn: Promise<
+    Array<AvailableRefactoring>,
+  > = (null: any);
+  let refactorReturn: Observable<RefactorResponse> = (null: any);
 
   let lastError: mixed = null;
   function expectNoUncaughtErrors(): void {
@@ -70,15 +67,14 @@ describe('refactorStore', () => {
   };
 
   const waitForClose = () => {
-    return currentState
-      .filter(s => s.type === 'closed')
-      .first()
-      .toPromise();
+    return currentState.filter(s => s.type === 'closed').first().toPromise();
   };
 
   beforeEach(() => {
     lastError = NO_ERROR;
-    errorSubscription = getErrors().subscribe(error => { lastError = error; });
+    errorSubscription = getErrors().subscribe(error => {
+      lastError = error;
+    });
 
     provider = {
       grammarScopes: ['text.plain', 'text.plain.null-grammar'],
@@ -89,13 +85,13 @@ describe('refactorStore', () => {
       ): Promise<Array<AvailableRefactoring>> {
         return refactoringsAtPointReturn;
       },
-      refactor(request: RefactorRequest): Promise<?RefactorResponse> {
+      refactor(request: RefactorRequest): Observable<RefactorResponse> {
         return refactorReturn;
       },
     };
     // TODO spy on the provider and call through
     refactoringsAtPointReturn = Promise.resolve([]);
-    refactorReturn = Promise.resolve(null);
+    refactorReturn = Observable.empty();
 
     providers = new ProviderRegistry();
     store = getStore(providers);
@@ -165,10 +161,9 @@ describe('refactorStore', () => {
 
       it('runs the refactor', () => {
         waitsForPromise(async () => {
-          refactoringsAtPointReturn = Promise.resolve([
-            TEST_FILE_RENAME,
-          ]);
-          refactorReturn = Promise.resolve({
+          refactoringsAtPointReturn = Promise.resolve([TEST_FILE_RENAME]);
+          refactorReturn = Observable.of({
+            type: 'edit',
             edits: new Map([[TEST_FILE, TEST_FILE_EDITS]]),
           });
 
@@ -223,11 +218,9 @@ describe('refactorStore', () => {
 
       it('tolerates a provider returning refactor results after a close action', () => {
         waitsForPromise(async () => {
-          const deferred = new Deferred();
-          refactoringsAtPointReturn = Promise.resolve([
-            TEST_FILE_RENAME,
-          ]);
-          refactorReturn = deferred.promise;
+          const deferred = new Subject();
+          refactoringsAtPointReturn = Promise.resolve([TEST_FILE_RENAME]);
+          refactorReturn = deferred;
           store.dispatch(Actions.open('generic'));
           await waitForPhase('pick');
           store.dispatch(Actions.pickedRefactor(TEST_FILE_RENAME));
@@ -243,7 +236,8 @@ describe('refactorStore', () => {
           await waitForPhase('execute');
           store.dispatch(Actions.close());
           await waitForClose();
-          deferred.resolve({
+          deferred.next({
+            type: 'edit',
             edits: new Map([[TEST_FILE, TEST_FILE_EDITS]]),
           });
           await nextTick();
@@ -266,10 +260,8 @@ describe('refactorStore', () => {
       // TODO also test the method actually throwing, as well as returning a rejected promise.
       it('tolerates a provider throwing in refactor', () => {
         waitsForPromise(async () => {
-          refactoringsAtPointReturn = Promise.resolve([
-            TEST_FILE_RENAME,
-          ]);
-          refactorReturn = Promise.reject(new Error());
+          refactoringsAtPointReturn = Promise.resolve([TEST_FILE_RENAME]);
+          refactorReturn = Observable.throw(new Error());
           store.dispatch(Actions.open('generic'));
           await waitForPhase('pick');
           store.dispatch(Actions.pickedRefactor(TEST_FILE_RENAME));
@@ -288,12 +280,10 @@ describe('refactorStore', () => {
         });
       });
 
-      it('tolerates a provider returning null from refactor', () => {
+      it('tolerates a provider returning empty from refactor', () => {
         waitsForPromise(async () => {
-          refactoringsAtPointReturn = Promise.resolve([
-            TEST_FILE_RENAME,
-          ]);
-          refactorReturn = Promise.resolve(null);
+          refactoringsAtPointReturn = Promise.resolve([TEST_FILE_RENAME]);
+          refactorReturn = Observable.empty();
           store.dispatch(Actions.open('generic'));
           await waitForPhase('pick');
           store.dispatch(Actions.pickedRefactor(TEST_FILE_RENAME));
@@ -314,17 +304,18 @@ describe('refactorStore', () => {
 
       it('fails gracefully when the edits do not apply', () => {
         waitsForPromise(async () => {
-          refactoringsAtPointReturn = Promise.resolve([
-            TEST_FILE_RENAME,
-          ]);
-          const edits = [{
-            oldRange: new Range([0, 0], [0, 3]),
-            // intentionally not 'foo' in order to trigger a conflict when we attempt to apply this
-            // edit.
-            oldText: 'foz',
-            newText: 'bar',
-          }];
-          refactorReturn = Promise.resolve({
+          refactoringsAtPointReturn = Promise.resolve([TEST_FILE_RENAME]);
+          const edits = [
+            {
+              oldRange: new Range([0, 0], [0, 3]),
+              // intentionally not 'foo' in order to trigger a conflict when we attempt to apply this
+              // edit.
+              oldText: 'foz',
+              newText: 'bar',
+            },
+          ];
+          refactorReturn = Observable.of({
+            type: 'edit',
             edits: new Map([[TEST_FILE, edits]]),
           });
 
@@ -378,7 +369,7 @@ describe('refactorStore', () => {
           async refactoringsAtPoint() {
             return [refactoring];
           },
-          async refactor(request: RefactorRequest) {
+          refactor(request: RefactorRequest) {
             invariant(request.kind === 'freeform');
             const edits = [
               {
@@ -387,9 +378,10 @@ describe('refactorStore', () => {
                 newText: String(request.arguments.get('new_name')),
               },
             ];
-            return {
+            return Observable.of({
+              type: 'edit',
               edits: new Map([[TEST_FILE, edits]]),
-            };
+            });
           },
         };
         providers.addProvider(provider);
@@ -426,7 +418,11 @@ describe('refactorStore', () => {
 
 // This is all just dummy data, so I'm keeping it down here to avoid drawing attention to it over
 // the important test logic.
-const TEST_FILE = nuclideUri.join(__dirname, 'fixtures', 'refactor-fixture.txt');
+const TEST_FILE = nuclideUri.join(
+  __dirname,
+  'fixtures',
+  'refactor-fixture.txt',
+);
 const TEST_FILE_POINT = new Point(0, 1);
 const TEST_FILE_SYMBOL_AT_POINT = {
   text: 'foo',

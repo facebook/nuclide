@@ -6,12 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
+import {Observable} from 'rxjs';
+import {getLogger} from 'log4js';
 import * as BuckService from '../lib/BuckService';
 import {copyBuildFixture} from '../../nuclide-test-helpers';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import * as processJs from 'nuclide-commons/process';
 
 // Disable buckd so it doesn't linger around after the test.
 process.env.NO_BUCKD = '1';
@@ -83,7 +87,7 @@ describe('BuckService (test-project-with-failing-targets)', () => {
             commandOptions: {timeout: 1},
           });
         } catch (e) {
-          expect(e.message).toMatch('Command failed');
+          expect(e.name).toBe('ProcessTimeoutError');
           return;
         }
         throw new Error('promise should have been rejected');
@@ -106,15 +110,6 @@ describe('BuckService (test-project-with-failing-targets)', () => {
     });
   });
 
-  describe('.resolveAlias(aliasOrTarget)', () => {
-    it('resolves an alias', () => {
-      waitsForPromise(async () => {
-        const target = await BuckService.resolveAlias(buckRoot, 'good');
-        expect(target).toBe('//:good_rule');
-      });
-    });
-  });
-
   describe('.showOutput(aliasOrTarget)', () => {
     it('returns the output data for a genrule()', () => {
       waitsForPromise(async () => {
@@ -127,7 +122,7 @@ describe('BuckService (test-project-with-failing-targets)', () => {
     });
   });
 
-  describe('.buildRuleTypeFor(aliasOrTarget)', () => {
+  describe('.buildRuleTypeFor(aliasesOrTargets)', () => {
     it('returns the type of a build rule specified by alias', () => {
       waitsForPromise(async () => {
         const resolved = await BuckService.buildRuleTypeFor(buckRoot, 'good');
@@ -147,6 +142,19 @@ describe('BuckService (test-project-with-failing-targets)', () => {
         expect(resolved.buildTarget.qualifiedName).toBe('//:good_rule');
         expect(resolved.buildTarget.flavors.length).toBe(0);
       });
+    });
+
+    it('does some parsing on rule names', () => {
+      // To speed up this test, mock out the actual Buck process calls.
+      spyOn(processJs, 'runCommand').andReturn(
+        Observable.of(
+          JSON.stringify({
+            '//:good_rule': {
+              'buck.type': 'genrule',
+            },
+          }),
+        ),
+      );
 
       waitsForPromise(async () => {
         // Omitting the // is fine too.
@@ -180,8 +188,9 @@ describe('BuckService (test-project-with-failing-targets)', () => {
         expect(resolved.buildTarget.qualifiedName).toBe('//:good_rule');
         expect(resolved.buildTarget.flavors[0]).toBe('foo');
       });
+    });
 
-      // Multi-target rules.
+    it('works for multi-target rules', () => {
       waitsForPromise(async () => {
         const resolved = await BuckService.buildRuleTypeFor(buckRoot, '//:');
         expect(resolved.type).toBe(BuckService.MULTIPLE_TARGET_RULE_TYPE);
@@ -200,6 +209,18 @@ describe('BuckService (test-project-with-failing-targets)', () => {
     it('fails when passed an invalid target', () => {
       waitsForPromise({shouldReject: true}, async () => {
         await BuckService.buildRuleTypeFor(buckRoot, '//not:athing');
+      });
+    });
+
+    it('returns the type of a build rule specified by two aliases', () => {
+      waitsForPromise({timeout: 30000}, async () => {
+        const resolved = await BuckService.buildRuleTypeFor(
+          buckRoot,
+          'good good2',
+        );
+        expect(resolved.type).toBe(BuckService.MULTIPLE_TARGET_RULE_TYPE);
+        expect(resolved.buildTarget.qualifiedName).toBe('good good2');
+        expect(resolved.buildTarget.flavors.length).toBe(0);
       });
     });
   });
@@ -246,11 +267,12 @@ describe('BuckService (buck-query-project)', () => {
 
     it('errors with non-existent rule', () => {
       waitsForPromise(async () => {
-        spyOn(console, 'log');
+        const logger = getLogger('nuclide-buck-rpc');
+        spyOn(logger, 'error');
         const file = await BuckService.getBuildFile(buckRoot, '//nonexistent:');
         expect(file).toBe(null);
         // eslint-disable-next-line no-console
-        expect(console.log.argsForCall[0]).toMatch(
+        expect(logger.error.argsForCall[0]).toMatch(
           /No build file for target "\/\/nonexistent:"/,
         );
       });

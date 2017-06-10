@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Range} from 'atom';
@@ -19,7 +20,10 @@ describe('DiagnosticsProvider', () => {
   let diagnosticsParser;
   beforeEach(() => {
     diagnosticsParser = new DiagnosticsParser();
-    spyOn(nuclideRemoteConnection, 'getFileSystemServiceByNuclideUri').andReturn({
+    spyOn(
+      nuclideRemoteConnection,
+      'getFileSystemServiceByNuclideUri',
+    ).andReturn({
       exists(filename) {
         return Promise.resolve(filename.indexOf('good') !== -1);
       },
@@ -38,14 +42,16 @@ describe('DiagnosticsProvider', () => {
         'good_file2.cpp:2:3: test error2\n' +
         'good_file2.cpp:2:4: note: trace\n';
 
-      expect(await diagnosticsParser.getDiagnostics(message, 'error', '/')).toEqual([
+      expect(
+        await diagnosticsParser.getDiagnostics(message, 'error', '/'),
+      ).toEqual([
         {
           scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: '/good_file.cpp',
           text: 'test error',
-          range: new Range([0, 0], [0, INDEFINITE_END_COLUMN]),
+          range: new Range([0, 1], [0, 1]),
           trace: [
             {
               type: 'Trace',
@@ -67,7 +73,7 @@ describe('DiagnosticsProvider', () => {
           type: 'Error',
           filePath: '/good_file2.cpp',
           text: 'test error2',
-          range: new Range([1, 0], [1, INDEFINITE_END_COLUMN]),
+          range: new Range([1, 2], [1, 2]),
           trace: [
             {
               type: 'Trace',
@@ -84,14 +90,16 @@ describe('DiagnosticsProvider', () => {
   it('resolves absolute paths', () => {
     waitsForPromise(async () => {
       const message = '/a/good_file.cpp:1:2: test error';
-      expect(await diagnosticsParser.getDiagnostics(message, 'error', '/root')).toEqual([
+      expect(
+        await diagnosticsParser.getDiagnostics(message, 'error', '/root'),
+      ).toEqual([
         {
           scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: '/a/good_file.cpp',
           text: 'test error',
-          range: new Range([0, 0], [0, INDEFINITE_END_COLUMN]),
+          range: new Range([0, 1], [0, 1]),
         },
       ]);
     });
@@ -100,7 +108,9 @@ describe('DiagnosticsProvider', () => {
   it('ignores non-existent files', () => {
     waitsForPromise(async () => {
       const message = 'bad_file.cpp:1:2: test error';
-      expect(await diagnosticsParser.getDiagnostics(message, 'error', '/')).toEqual([]);
+      expect(
+        await diagnosticsParser.getDiagnostics(message, 'error', '/'),
+      ).toEqual([]);
     });
   });
 
@@ -131,23 +141,25 @@ describe('DiagnosticsProvider', () => {
       expect(await diagnostics).toEqual([
         [],
         [],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BarTests.m',
-          text: 'failure description',
-          range: {
-            start: {
-              row: 41,
-              column: 0,
-            },
-            end: {
-              row: 41,
-              column: INDEFINITE_END_COLUMN,
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BarTests.m',
+            text: 'failure description',
+            range: {
+              start: {
+                row: 41,
+                column: 0,
+              },
+              end: {
+                row: 41,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
+        ],
         [],
       ]);
     });
@@ -191,57 +203,63 @@ describe('DiagnosticsProvider', () => {
       expect(await diagnostics).toEqual([
         [],
         [],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BarTests.m',
-          text: 'failure one',
-          range: {
-            start: {
-              row: 90,
-              column: 0,
-            },
-            end: {
-              row: 90,
-              column: INDEFINITE_END_COLUMN,
-            },
-          },
-        }],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BarTests.m',
-          text: 'failure two',
-          range: {
-            start: {
-              row: 91,
-              column: 0,
-            },
-            end: {
-              row: 91,
-              column: INDEFINITE_END_COLUMN,
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BarTests.m',
+            text: 'failure one',
+            range: {
+              start: {
+                row: 90,
+                column: 0,
+              },
+              end: {
+                row: 90,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BarTests.m',
-          text: 'failure three',
-          range: {
-            start: {
-              row: 97,
-              column: 0,
-            },
-            end: {
-              row: 97,
-              column: INDEFINITE_END_COLUMN,
+        ],
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BarTests.m',
+            text: 'failure two',
+            range: {
+              start: {
+                row: 91,
+                column: 0,
+              },
+              end: {
+                row: 91,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
+        ],
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BarTests.m',
+            text: 'failure three',
+            range: {
+              start: {
+                row: 97,
+                column: 0,
+              },
+              end: {
+                row: 97,
+                column: INDEFINITE_END_COLUMN,
+              },
+            },
+          },
+        ],
         [],
       ]);
     });
@@ -290,59 +308,65 @@ describe('DiagnosticsProvider', () => {
       expect(await diagnostics).toEqual([
         [],
         [],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BarTests.m',
-          text: 'failure one',
-          range: {
-            start: {
-              row: 90,
-              column: 0,
-            },
-            end: {
-              row: 90,
-              column: INDEFINITE_END_COLUMN,
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BarTests.m',
+            text: 'failure one',
+            range: {
+              start: {
+                row: 90,
+                column: 0,
+              },
+              end: {
+                row: 90,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
+        ],
         [],
         [],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/QuxTests.m',
-          text: 'failure one',
-          range: {
-            start: {
-              row: 2,
-              column: 0,
-            },
-            end: {
-              row: 2,
-              column: INDEFINITE_END_COLUMN,
-            },
-          },
-        }],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/QuxTests.m',
-          text: 'failure two',
-          range: {
-            start: {
-              row: 24,
-              column: 0,
-            },
-            end: {
-              row: 24,
-              column: INDEFINITE_END_COLUMN,
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/QuxTests.m',
+            text: 'failure one',
+            range: {
+              start: {
+                row: 2,
+                column: 0,
+              },
+              end: {
+                row: 2,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
+        ],
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/QuxTests.m',
+            text: 'failure two',
+            range: {
+              start: {
+                row: 24,
+                column: 0,
+              },
+              end: {
+                row: 24,
+                column: INDEFINITE_END_COLUMN,
+              },
+            },
+          },
+        ],
       ]);
     });
   });
@@ -365,40 +389,44 @@ describe('DiagnosticsProvider', () => {
       ]);
 
       expect(await diagnostics).toEqual([
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/FooTests.m',
-          text: 'failure one',
-          range: {
-            start: {
-              row: 0,
-              column: 0,
-            },
-            end: {
-              row: 0,
-              column: INDEFINITE_END_COLUMN,
-            },
-          },
-        }],
-        [{
-          scope: 'file',
-          providerName: 'Buck',
-          type: 'Error',
-          filePath: '/good/path/to/BazTests.m',
-          text: 'failure two',
-          range: {
-            start: {
-              row: 1,
-              column: 0,
-            },
-            end: {
-              row: 1,
-              column: INDEFINITE_END_COLUMN,
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/FooTests.m',
+            text: 'failure one',
+            range: {
+              start: {
+                row: 0,
+                column: 0,
+              },
+              end: {
+                row: 0,
+                column: INDEFINITE_END_COLUMN,
+              },
             },
           },
-        }],
+        ],
+        [
+          {
+            scope: 'file',
+            providerName: 'Buck',
+            type: 'Error',
+            filePath: '/good/path/to/BazTests.m',
+            text: 'failure two',
+            range: {
+              start: {
+                row: 1,
+                column: 0,
+              },
+              end: {
+                row: 1,
+                column: INDEFINITE_END_COLUMN,
+              },
+            },
+          },
+        ],
       ]);
     });
   });

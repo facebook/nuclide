@@ -6,15 +6,14 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {WorkingSetsStore} from '../lib/WorkingSetsStore';
 
 describe('WorkingSetStore', () => {
   it('Aggregates all URIs of active defs', () => {
-    spyOn(atom.project, 'getDirectories').andReturn([
-      {getPath: () => '/aaa'},
-    ]);
+    spyOn(atom.project, 'getDirectories').andReturn([{getPath: () => '/aaa'}]);
 
     const store = new WorkingSetsStore();
     store.updateDefinitions([
@@ -51,7 +50,10 @@ describe('WorkingSetStore', () => {
 
     expect(store.getApplicableDefinitions()).toEqual([d1, d2]);
     expect(store.getNotApplicableDefinitions()).toEqual([d3]);
-    expect(store.getCurrent().getUris()).toEqual(['/aaa/bbb1/ccc', '/aaa/bbb2/ccc']);
+    expect(store.getCurrent().getUris()).toEqual([
+      '/aaa/bbb1/ccc',
+      '/aaa/bbb2/ccc',
+    ]);
 
     directories = ['/aaa/bbb2', '/aaa/bbb3'];
     store.updateApplicability();

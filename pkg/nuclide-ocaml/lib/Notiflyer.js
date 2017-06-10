@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 // TODO: (chenglou) See D4100961. Temporarily removed to reconsider the UI/UX.
 // The future formatting feature will use Atom's notification box instead.

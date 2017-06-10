@@ -6,18 +6,24 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {DeepLinkParams, DeepLinkService} from '../../nuclide-deep-link/lib/types';
+import type {
+  DeepLinkParams,
+  DeepLinkService,
+} from '../../nuclide-deep-link/lib/types';
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
 
 import invariant from 'assert';
 import {remote} from 'electron';
-import {getLastProjectPath} from '../../commons-atom/arcanist';
-import {goToLocation} from '../../commons-atom/go-to-location';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {asyncFilter} from '../../commons-node/promise';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {getLastProjectPath} from '../../nuclide-arcanist-base';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {asyncFilter} from 'nuclide-commons/promise';
+import {
+  getFileSystemServiceByNuclideUri,
+} from '../../nuclide-remote-connection';
 import getMatchingProjects from './getMatchingProjects';
 import tryReopenProject from './tryReopenProject';
 
@@ -28,18 +34,27 @@ function ensureArray(x: string | Array<string>): Array<string> {
 }
 
 // Check if any other open windows have the given path.
-async function searchOtherWindows(path: string): Promise<?electron$BrowserWindow> {
+async function searchOtherWindows(
+  path: string,
+): Promise<?electron$BrowserWindow> {
   const windows = await Promise.all(
     remote.BrowserWindow.getAllWindows().map(browserWindow => {
       return new Promise((resolve, reject) => {
         // In case `atom` hasn't been initialized yet.
-        browserWindow.webContents.executeJavaScript('atom && atom.project.getPaths()', result => {
-          // Guard against null returns (and also help Flow).
-          const containsPath = Array.isArray(result) && result.find(project => (
-            (typeof project === 'string') && nuclideUri.contains(path, project)
-          ));
-          resolve(containsPath ? browserWindow : null);
-        });
+        browserWindow.webContents.executeJavaScript(
+          'atom && atom.project.getPaths()',
+          result => {
+            // Guard against null returns (and also help Flow).
+            const containsPath =
+              Array.isArray(result) &&
+              result.find(
+                project =>
+                  typeof project === 'string' &&
+                  nuclideUri.contains(path, project),
+              );
+            resolve(containsPath ? browserWindow : null);
+          },
+        );
       });
     }),
   );
@@ -55,11 +70,16 @@ export async function openArcDeepLink(
   const {project, path, line, column} = params;
   try {
     invariant(typeof project === 'string', 'Must provide an Arcanist project');
-    invariant(project.match(/^[a-zA-Z0-9-_]+$/), 'Must provide a valid Arcanist project');
+    invariant(
+      project.match(/^[a-zA-Z0-9-_]+$/),
+      'Must provide a valid Arcanist project',
+    );
     invariant(path, 'Must provide a valid path');
 
     if (remoteProjectsService != null) {
-      await new Promise(resolve => remoteProjectsService.waitForRemoteProjectReload(resolve));
+      await new Promise(resolve =>
+        remoteProjectsService.waitForRemoteProjectReload(resolve),
+      );
     }
 
     let matches = await getMatchingProjects(project, atom.project.getPaths());
@@ -81,8 +101,8 @@ export async function openArcDeepLink(
     if (matches.length === 0) {
       throw new Error(
         `The file you are trying to open is in the \`${project}\` project ` +
-        'but you do not have the project open.<br />' +
-        'Please add the project manually and try again.',
+          'but you do not have the project open.<br />' +
+          'Please add the project manually and try again.',
       );
     }
 
@@ -97,7 +117,9 @@ export async function openArcDeepLink(
     if (matches.length > 1) {
       const existing = await asyncFilter(matches, async directory => {
         const fsService = getFileSystemServiceByNuclideUri(directory);
-        return fsService.exists(nuclideUri.join(nuclideUri.getPath(directory), paths[0]));
+        return fsService.exists(
+          nuclideUri.join(nuclideUri.getPath(directory), paths[0]),
+        );
       });
       if (cwd != null && existing.includes(cwd)) {
         match = cwd;
@@ -111,7 +133,9 @@ export async function openArcDeepLink(
     for (let i = 0; i < paths.length; i++) {
       const localPath = nuclideUri.join(match, paths[i]);
       const intLine = lines == null ? undefined : parseInt(lines[i], 10) - 1;
-      const intColumn = columns == null ? undefined : parseInt(columns[i], 10) - 1;
+      const intColumn = columns == null
+        ? undefined
+        : parseInt(columns[i], 10) - 1;
       goToLocation(localPath, intLine, intColumn);
     }
   } catch (err) {

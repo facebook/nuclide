@@ -6,14 +6,21 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {ExecutorResponse, ExecutorResult, ExecutorRequest, RnMessage} from './types';
+import type {
+  ExecutorResponse,
+  ExecutorResult,
+  ExecutorRequest,
+  RnMessage,
+} from './types';
 import type {ConnectableObservable} from 'rxjs';
 
-import formatEnoentNotification from '../../../commons-atom/format-enoent-notification';
-import UniversalDisposable from '../../../commons-node/UniversalDisposable';
-import {getLogger} from '../../../nuclide-logging';
+import formatEnoentNotification
+  from '../../../commons-atom/format-enoent-notification';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {getLogger} from 'log4js';
 import {executeRequests} from './executeRequests';
 import {runApp} from './runApp';
 import invariant from 'assert';
@@ -62,19 +69,27 @@ export class DebuggerProxyClient {
 
     this._rnMessages = runApp(executorResults)
       .catch(err => {
-        atom.notifications.addError('There was an unexpected error with the React Native app', {
-          stack: err.stack,
-        });
+        atom.notifications.addError(
+          'There was an unexpected error with the React Native app',
+          {
+            stack: err.stack,
+          },
+        );
         return Observable.empty();
       })
-      .finally(() => { this.disconnect(); })
+      .finally(() => {
+        this.disconnect();
+      })
       .publish();
 
     // Messages with `$close` are special instructions and messages with `replyID` are cross-talk
     // from another executor (probably Chrome), so filter both out. Otherwise, the messages from RN
     // are forwarded as-is to the executor.
-    const executorRequests: Observable<ExecutorRequest> = this._rnMessages
-      .filter(message => message.$close == null && message.replyID == null);
+    const executorRequests: Observable<
+      ExecutorRequest,
+    > = this._rnMessages.filter(
+      message => message.$close == null && message.replyID == null,
+    );
 
     this._executorResponses = executeRequests(executorRequests)
       .catch(err => {
@@ -87,10 +102,12 @@ export class DebuggerProxyClient {
           atom.notifications.addError(message, meta);
           return Observable.empty();
         }
-        getLogger().error(err);
+        getLogger('nuclide-react-native').error(err);
         return Observable.empty();
       })
-      .finally(() => { this.disconnect(); })
+      .finally(() => {
+        this.disconnect();
+      })
       .publish();
 
     this._pids = this._executorResponses
@@ -101,16 +118,16 @@ export class DebuggerProxyClient {
       });
 
     // Send the executor results to the RN app. (Close the loop.)
-    (
-      (this._executorResponses.filter(
-        response => response.kind === 'result',
-      ): any): Observable<ExecutorResult>
-    ).subscribe(executorResults);
+    ((this._executorResponses.filter(
+      response => response.kind === 'result',
+    ): any): Observable<ExecutorResult>).subscribe(executorResults);
 
     // Disconnect when the RN app tells us to (via a specially-formatted message).
     this._rnMessages
       .filter(message => Boolean(message.$close))
-      .subscribe(() => { this.disconnect(); });
+      .subscribe(() => {
+        this.disconnect();
+      });
 
     // Log executor errors.
     this._executorResponses
@@ -119,7 +136,7 @@ export class DebuggerProxyClient {
         invariant(response.kind === 'error');
         return response.message;
       })
-      .subscribe(getLogger().error);
+      .subscribe(getLogger('nuclide-react-native').error);
   }
 
   connect(): void {
@@ -136,13 +153,17 @@ export class DebuggerProxyClient {
 
     // Null our subscription reference when the observable completes/errors. We'll use this to know
     // if it's running.
-    sub.add(() => { this._subscription = null; });
+    sub.add(() => {
+      this._subscription = null;
+    });
 
     this._subscription = sub;
   }
 
   disconnect(): void {
-    if (this._subscription == null) { return; }
+    if (this._subscription == null) {
+      return;
+    }
     this._subscription.unsubscribe();
   }
 
@@ -150,8 +171,6 @@ export class DebuggerProxyClient {
    * An API for subscribing to the next worker process pid.
    */
   onDidEvalApplicationScript(callback: (pid: number) => mixed): IDisposable {
-    return new UniversalDisposable(
-      this._pids.subscribe(callback),
-    );
+    return new UniversalDisposable(this._pids.subscribe(callback));
   }
 }

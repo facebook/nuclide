@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {
@@ -16,9 +17,9 @@ import type {
 import classnames from 'classnames';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {Button} from '../../nuclide-ui/Button';
-import {ButtonGroup} from '../../nuclide-ui/ButtonGroup';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {Button} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {HR} from '../../nuclide-ui/HR';
 
 type Props = {
@@ -55,7 +56,10 @@ export class WorkingSetSelectionComponent extends React.Component {
           applicableDefinitions: definitions.applicable,
           notApplicableDefinitions: definitions.notApplicable,
         });
-        if (definitions.applicable.length + definitions.notApplicable.length === 0) {
+        if (
+          definitions.applicable.length + definitions.notApplicable.length ===
+          0
+        ) {
           this.props.onClose();
         }
       }),
@@ -71,19 +75,23 @@ export class WorkingSetSelectionComponent extends React.Component {
     const node = ReactDOM.findDOMNode(this);
     // $FlowFixMe
     node.focus();
-    this._disposables.add(atom.commands.add(
-      // $FlowFixMe
-      node,
-      {
-        'core:move-up': () => this._moveSelectionIndex(-1),
-        'core:move-down': () => this._moveSelectionIndex(1),
-        'core:confirm': () => {
-          const def = this.state.applicableDefinitions[this.state.selectionIndex];
-          this._toggleWorkingSet(def.name, def.active);
+    this._disposables.add(
+      atom.commands.add(
+        // $FlowFixMe
+        node,
+        {
+          'core:move-up': () => this._moveSelectionIndex(-1),
+          'core:move-down': () => this._moveSelectionIndex(1),
+          'core:confirm': () => {
+            const def = this.state.applicableDefinitions[
+              this.state.selectionIndex
+            ];
+            this._toggleWorkingSet(def.name, def.active);
+          },
+          'core:cancel': this.props.onClose,
         },
-        'core:cancel': this.props.onClose,
-      },
-    ));
+      ),
+    );
   }
 
   componentWillUnmount(): void {
@@ -109,37 +117,43 @@ export class WorkingSetSelectionComponent extends React.Component {
   }
 
   render(): React.Element<any> {
-    const applicableDefinitions = this.state.applicableDefinitions.map((def, index) => {
-      return (
-        <ApplicableDefinitionLine
-          key={def.name}
-          def={def}
-          index={index}
-          selected={index === this.state.selectionIndex}
-          toggleWorkingSet={this._toggleWorkingSet}
-          onSelect={this._setSelectionIndex}
-          onDeleteWorkingSet={this._deleteWorkingSet}
-          onEditWorkingSet={this.props.onEditWorkingSet}
-        />
-      );
-    });
+    const applicableDefinitions = this.state.applicableDefinitions.map(
+      (def, index) => {
+        return (
+          <ApplicableDefinitionLine
+            key={def.name}
+            def={def}
+            index={index}
+            selected={index === this.state.selectionIndex}
+            toggleWorkingSet={this._toggleWorkingSet}
+            onSelect={this._setSelectionIndex}
+            onDeleteWorkingSet={this._deleteWorkingSet}
+            onEditWorkingSet={this.props.onEditWorkingSet}
+          />
+        );
+      },
+    );
 
     let notApplicableSection;
     if (this.state.notApplicableDefinitions.length > 0) {
-      const notApplicableDefinitions = this.state.notApplicableDefinitions.map(def => {
-        return (
-          <NonApplicableDefinitionLine
-            key={def.name}
-            def={def}
-            onDeleteWorkingSet={this._deleteWorkingSet}
-          />
-        );
-      });
+      const notApplicableDefinitions = this.state.notApplicableDefinitions.map(
+        def => {
+          return (
+            <NonApplicableDefinitionLine
+              key={def.name}
+              def={def}
+              onDeleteWorkingSet={this._deleteWorkingSet}
+            />
+          );
+        },
+      );
 
       notApplicableSection = (
         <div>
           <HR />
-          <span>The working sets below are not applicable to your current project folders</span>
+          <span>
+            The working sets below are not applicable to your current project folders
+          </span>
           <ol className="list-group">
             {notApplicableDefinitions}
           </ol>
@@ -148,10 +162,7 @@ export class WorkingSetSelectionComponent extends React.Component {
     }
 
     return (
-      <div
-        className="select-list"
-        tabIndex="0"
-        onBlur={this._checkFocus}>
+      <div className="select-list" tabIndex="0" onBlur={this._checkFocus}>
         <ol className="list-group mark-active" style={{'max-height': '80vh'}}>
           {applicableDefinitions}
         </ol>

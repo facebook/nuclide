@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Point} from 'atom';
@@ -13,7 +14,7 @@ import invariant from 'assert';
 
 import busySignal from './utils/busy-signal-common';
 import {describeRemotableTest} from './utils/remotable-tests';
-import nuclideUri from '../pkg/commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {copyFixture} from '../pkg/nuclide-test-helpers';
 import {waitsForFile} from '../pkg/commons-atom/testHelpers';
 
@@ -24,7 +25,9 @@ describeRemotableTest('Clang Refactorizer Test', context => {
     waitsForPromise({timeout: 30000}, async () => {
       testDir = await copyFixture('cpp_project_2', __dirname);
       await context.setProject(testDir);
-      textEditor = await atom.workspace.open(nuclideUri.join(testDir, 'test.cpp'));
+      textEditor = await atom.workspace.open(
+        nuclideUri.join(testDir, 'test.cpp'),
+      );
     });
   });
 
@@ -84,7 +87,10 @@ function runRename(
 ): void {
   runs(() => {
     textEditor.setCursorBufferPosition(point);
-    atom.commands.dispatch(atom.views.getView(atom.workspace), 'nuclide-refactorizer:refactorize');
+    atom.commands.dispatch(
+      atom.views.getView(atom.workspace),
+      'nuclide-refactorizer:refactorize',
+    );
   });
   waitsFor('refactor modal to appear', () => {
     // Wait for the refactoring ui to open
@@ -140,9 +146,7 @@ function getExecuteElement(): ?HTMLElement {
   return document.querySelector('.nuclide-refactorizer-execute-button');
 }
 
-
-const afterRenameOne =
-`struct CustomClass {};
+const afterRenameOne = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {
@@ -161,8 +165,7 @@ int references_test(int varOne) {
 }
 `;
 
-const afterRenameTwo =
-`struct CustomClass {};
+const afterRenameTwo = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {
@@ -181,8 +184,7 @@ int references_test(int varOne) {
 }
 `;
 
-const afterRenameThree =
-`struct CustomClass {};
+const afterRenameThree = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {
@@ -201,8 +203,7 @@ int references_test(int varOne) {
 }
 `;
 
-const afterRenameFour =
-`struct CustomClass {};
+const afterRenameFour = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {
@@ -221,8 +222,7 @@ int references_test(int varOne) {
 }
 `;
 
-const afterRenameFive =
-`struct CustomClass {};
+const afterRenameFive = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {
@@ -241,8 +241,7 @@ int references_test(int varOne) {
 }
 `;
 
-const afterRenameSix =
-`struct CustomClass {};
+const afterRenameSix = `struct CustomClass {};
 
 #define RETURN(x) return x
 int references_test(int varOne) {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {Observable, ConnectableObservable} from 'rxjs';
@@ -29,11 +30,15 @@ export function promiseErrorCode(code: number): Promise<void> {
   throw createErrorCode(code);
 }
 
-export function observableError(message: string): ConnectableObservable<number> {
+export function observableError(
+  message: string,
+): ConnectableObservable<number> {
   return createErrorObservable(new Error(message));
 }
 
-export function observableErrorString(message: string): ConnectableObservable<number> {
+export function observableErrorString(
+  message: string,
+): ConnectableObservable<number> {
   return createErrorObservable(message);
 }
 
@@ -41,7 +46,9 @@ export function observableErrorUndefined(): ConnectableObservable<number> {
   return createErrorObservable(undefined);
 }
 
-export function observableErrorCode(code: number): ConnectableObservable<number> {
+export function observableErrorCode(
+  code: number,
+): ConnectableObservable<number> {
   return createErrorObservable(createErrorCode(code));
 }
 

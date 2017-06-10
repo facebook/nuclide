@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {parseMessages} from '../lib/packager/parseMessages';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Observable} from 'rxjs';
 
 describe('parseMessages', () => {
@@ -29,15 +30,22 @@ describe('parseMessages', () => {
       it('parses the preamble (skipping the ceremony)', () => {
         waitsForPromise(async () => {
           const output = await parseMessages(lines).toArray().toPromise();
-          expect((output[0]: any).message.text).toBe('Running packager on port 8081.');
+          expect((output[0]: any).message.text).toBe(
+            'Running packager on port 8081.',
+          );
         });
       });
 
       it('finds the ready line', () => {
         waitsForPromise(async () => {
           const output = await parseMessages(lines).toArray().toPromise();
-          const readyLines = output.filter(line => (line: any).kind === 'ready');
-          expect(readyLines.length).toBe(1, 'Expected exactly one ready message.');
+          const readyLines = output.filter(
+            line => (line: any).kind === 'ready',
+          );
+          expect(readyLines.length).toBe(
+            1,
+            'Expected exactly one ready message.',
+          );
         });
       });
     });
@@ -46,6 +54,7 @@ describe('parseMessages', () => {
 
 function getLines(name: string): Observable<string> {
   const pathToFile = nuclideUri.resolve(__dirname, 'fixtures', `${name}.txt`);
-  return Observable.defer(() => fsPromise.readFile(pathToFile))
-    .switchMap(contents => Observable.from(contents.toString().split('\n')));
+  return Observable.defer(() =>
+    fsPromise.readFile(pathToFile),
+  ).switchMap(contents => Observable.from(contents.toString().split('\n')));
 }

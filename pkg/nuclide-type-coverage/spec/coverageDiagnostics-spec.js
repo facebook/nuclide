@@ -6,17 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  ObservableDiagnosticProvider,
-} from '../../nuclide-diagnostics-common';
+import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 import type {
   DiagnosticProviderUpdate,
   InvalidationMessage,
   FileDiagnosticMessage,
-} from '../../nuclide-diagnostics-common/lib/rpc-types';
-import type {Result} from '../../commons-atom/ActiveEditorRegistry';
+} from 'atom-ide-ui';
+import type {Result} from 'nuclide-commons-atom/ActiveEditorRegistry';
 
 import type {CoverageProvider} from '../lib/types';
 import type {CoverageResult} from '../lib/rpc-types';
@@ -28,7 +27,9 @@ import {Subject} from 'rxjs';
 import {diagnosticProviderForResultStream} from '../lib/coverageDiagnostics';
 
 describe('diagnosticProviderForResultStream', () => {
-  let inputResults: Subject<Result<CoverageProvider, ?CoverageResult>> = (null: any);
+  let inputResults: Subject<
+    Result<CoverageProvider, ?CoverageResult>,
+  > = (null: any);
   let isEnabledStream: Subject<boolean> = (null: any);
 
   let diagnosticProvider: ObservableDiagnosticProvider = (null: any);
@@ -46,17 +47,24 @@ describe('diagnosticProviderForResultStream', () => {
     invalidations = [];
     inputResults = new Subject();
     isEnabledStream = new Subject();
-    diagnosticProvider = diagnosticProviderForResultStream(inputResults, isEnabledStream);
+    diagnosticProvider = diagnosticProviderForResultStream(
+      inputResults,
+      isEnabledStream,
+    );
 
     // For now it's easy enough to stub out the editor but in the future it may be worthwhile to use
     // an action TextEditor object. We would need an actual fixture to open, though, since we rely
     // on the path being non-null (so `atom.workspace.open()` would not be sufficient).
     editor = ({
-      getPath() { return 'foo'; },
+      getPath() {
+        return 'foo';
+      },
     }: any);
 
     provider = {
-      getCoverage() { return Promise.resolve(null); },
+      getCoverage() {
+        return Promise.resolve(null);
+      },
       priority: 1,
       grammarScopes: [],
       displayName: 'Foo',
@@ -85,7 +93,9 @@ describe('diagnosticProviderForResultStream', () => {
       const fileMessages: Array<FileDiagnosticMessage> = firstValue.value;
       updates.push(fileMessages);
     });
-    diagnosticProvider.invalidations.subscribe(invalidation => invalidations.push(invalidation));
+    diagnosticProvider.invalidations.subscribe(invalidation =>
+      invalidations.push(invalidation),
+    );
   });
 
   describe('diagnostic updates', () => {

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
@@ -53,10 +54,14 @@ function makeSizedFixture(location: string, size: number): void {
 }
 
 function sleep(milliseconds: number): Promise<void> {
-  return new Promise(resolve => { setTimeout(resolve, milliseconds); });
+  return new Promise(resolve => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
-async function sleepUntilNoRequests(pollMilliseconds: number = 1): Promise<any> {
+async function sleepUntilNoRequests(
+  pollMilliseconds: number = 1,
+): Promise<any> {
   // $FlowFixMe: use public API.
   while (process._getActiveRequests().length !== 0) {
     // eslint-disable-next-line no-await-in-loop

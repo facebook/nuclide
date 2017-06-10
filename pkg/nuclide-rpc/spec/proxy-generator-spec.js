@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import fs from 'fs';
@@ -14,7 +15,7 @@ import generate from 'babel-generator';
 import {generateProxy} from '../lib/proxy-generator';
 import {addMatchers} from '../../nuclide-test-helpers';
 import {parseServiceDefinition} from '../lib/service-parser';
-import nuclideUri from '../../commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import vm from 'vm';
 import {__test__} from '../lib/proxy-generator';
 
@@ -32,11 +33,22 @@ describe('Proxy generator test suite.', () => {
       it(`Successfully generates proxy for ${file}`, () => {
         const fixturePath = nuclideUri.join(__dirname, 'fixtures', file);
         const definitions = parseServiceDefinition(
-          file, fs.readFileSync(fixturePath, 'utf8'), []);
+          file,
+          fs.readFileSync(fixturePath, 'utf8'),
+          [],
+        );
 
-        const code = generateProxy(nuclideUri.basename(file, '.def'), false, definitions);
+        const code = generateProxy(
+          nuclideUri.basename(file, '.def'),
+          false,
+          definitions,
+        );
         const expected = fs.readFileSync(
-          nuclideUri.join(__dirname, 'fixtures', file).replace('.def', '.proxy'), 'utf8');
+          nuclideUri
+            .join(__dirname, 'fixtures', file)
+            .replace('.def', '.proxy'),
+          'utf8',
+        );
         expect(code.trim()).diffLines(expected.trim());
       });
     }
@@ -63,14 +75,24 @@ describe('generateTransformStatement helper function', () => {
   });
 
   it('Generates a marshal statement.', () => {
-    const code = generate(__test__.generateTransformStatement(t.identifier('value'),
-        ArrayOfArrayOfNuclideUri, true)).code;
+    const code = generate(
+      __test__.generateTransformStatement(
+        t.identifier('value'),
+        ArrayOfArrayOfNuclideUri,
+        true,
+      ),
+    ).code;
     expect(code).diffLines(marshalText);
   });
 
   it('Generates an unmarshal statement.', () => {
-    const code = generate(__test__.generateTransformStatement(t.identifier('value'),
-        ArrayOfArrayOfNuclideUri, false)).code;
+    const code = generate(
+      __test__.generateTransformStatement(
+        t.identifier('value'),
+        ArrayOfArrayOfNuclideUri,
+        false,
+      ),
+    ).code;
     expect(code).diffLines(unmarshalText);
   });
 });
@@ -133,15 +155,21 @@ describe('objectToLiteral helper function', () => {
   });
 
   it('works on Maps', () => {
-    expect(generate(__test__.objectToLiteral(new Map())).code).diffLines('new Map()');
+    expect(generate(__test__.objectToLiteral(new Map())).code).diffLines(
+      'new Map()',
+    );
   });
 
   it('works on objects with simple keys', () => {
-    expect(generate(__test__.objectToLiteral({a: 1})).code).diffLines('{\n  a: 1\n}');
+    expect(generate(__test__.objectToLiteral({a: 1})).code).diffLines(
+      '{\n  a: 1\n}',
+    );
   });
 
   it('works on objects with complex keys', () => {
-    expect(generate(__test__.objectToLiteral({'.': 1})).code).diffLines('{\n  ".": 1\n}');
+    expect(generate(__test__.objectToLiteral({'.': 1})).code).diffLines(
+      '{\n  ".": 1\n}',
+    );
   });
 
   it('works on null', () => {
@@ -150,7 +178,9 @@ describe('objectToLiteral helper function', () => {
 
   it('works on undefined', () => {
     expect(generate(__test__.objectToLiteral()).code).diffLines('undefined');
-    expect(generate(__test__.objectToLiteral(undefined)).code).diffLines('undefined');
+    expect(generate(__test__.objectToLiteral(undefined)).code).diffLines(
+      'undefined',
+    );
   });
 
   it('works on arrays', () => {

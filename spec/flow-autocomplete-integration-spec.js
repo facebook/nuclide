@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import busySignal from './utils/busy-signal-common';
@@ -29,7 +30,9 @@ describeRemotableTest('Flow Autocomplete', context => {
       // Add this directory as an atom project.
       await context.setProject(flowProjectPath);
       // Open a file in the flow project we copied, and get reference to the editor's HTML.
-      textEditor = await atom.workspace.open(context.getProjectRelativePath('main.js'));
+      textEditor = await atom.workspace.open(
+        context.getProjectRelativePath('main.js'),
+      );
     });
 
     waitsFor('spinner to start', 10000, () => {
@@ -62,7 +65,9 @@ describeRemotableTest('Flow Autocomplete', context => {
       // Confirm autocomplete.
       atom.commands.dispatch(textEditorView, 'autocomplete-plus:confirm');
       expect(getAutocompleteView()).not.toExist();
-      const lineText = textEditor.lineTextForBufferRow(textEditor.getCursorBufferPosition().row);
+      const lineText = textEditor.lineTextForBufferRow(
+        textEditor.getCursorBufferPosition().row,
+      );
       expect(lineText).toBe('num');
     });
   });

@@ -6,8 +6,8 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
-
 
 import logger from './utils';
 import {
@@ -22,12 +22,15 @@ import invariant from 'assert';
 
 import type {ObjectId} from './ObjectId';
 import type {DbgpProperty} from './DbgpSocket';
+import type {
+  PropertyDescriptor,
+} from '../../nuclide-debugger-base/lib/protocol-types';
 
 export function convertProperties(
   id: ObjectId,
   properties: Array<DbgpProperty>,
-): Array<Runtime$PropertyDescriptor> {
-  logger.log('Got properties: ' + JSON.stringify(properties));
+): Array<PropertyDescriptor> {
+  logger.debug('Got properties: ' + JSON.stringify(properties));
   return properties.map(property => convertProperty(id, property));
 }
 
@@ -37,8 +40,10 @@ export function convertProperties(
 export function convertProperty(
   contextId: ObjectId,
   dbgpProperty: DbgpProperty,
-): Runtime$PropertyDescriptor {
-  logger.log('Converting to Chrome property: ' + JSON.stringify(dbgpProperty));
+): PropertyDescriptor {
+  logger.debug(
+    'Converting to Chrome property: ' + JSON.stringify(dbgpProperty),
+  );
   const result = {
     configurable: false,
     enumerable: true,
@@ -52,7 +57,9 @@ export function convertProperty(
  * Given an ObjectId for a multi page object, gets PropertyDescriptors
  * for the object's children.
  */
-export function getPagedProperties(pagedId: ObjectId): Array<Runtime$PropertyDescriptor> {
+export function getPagedProperties(
+  pagedId: ObjectId,
+): Array<PropertyDescriptor> {
   invariant(pagedId.elementRange);
   const pagesize = pagedId.elementRange.pagesize;
   const endIndex = endIndexOfObjectId(pagedId);

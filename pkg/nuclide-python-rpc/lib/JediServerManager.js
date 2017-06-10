@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import typeof * as JediService from './JediService';
 
 import LRUCache from 'lru-cache';
-import fsPromise from '../../commons-node/fsPromise';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {getOriginalEnvironment} from '../../commons-node/process';
+import fsPromise from 'nuclide-commons/fsPromise';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {getOriginalEnvironment} from 'nuclide-commons/process';
 import JediServer from './JediServer';
 import LinkTreeManager from './LinkTreeManager';
 
@@ -32,7 +33,8 @@ async function getServerArgs(src: string) {
   // Append the user's PYTHONPATH if it exists.
   const {PYTHONPATH} = await getOriginalEnvironment();
   if (PYTHONPATH != null && PYTHONPATH.trim() !== '') {
-    overrides.paths = (overrides.paths || []).concat(nuclideUri.splitPathList(PYTHONPATH));
+    overrides.paths = (overrides.paths || [])
+      .concat(nuclideUri.splitPathList(PYTHONPATH));
   }
 
   return {

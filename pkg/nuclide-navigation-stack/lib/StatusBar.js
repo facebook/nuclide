@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {NavigationStackController} from './NavigationStackController';
@@ -13,10 +14,10 @@ import type {Observable} from 'rxjs';
 
 import React from 'react';
 import {Disposable} from 'atom';
-import {renderReactRoot} from '../../commons-atom/renderReactRoot';
-import {Button} from '../../nuclide-ui/Button';
-import {ButtonGroup} from '../../nuclide-ui/ButtonGroup';
-import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
+import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
+import {Button} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 
 // Since this is a button which can change the current file, place it where
 // it won't change position when the current file name changes, which means way left.
@@ -28,13 +29,14 @@ export function consumeStatusBar(
 ): IDisposable {
   const onBack = () => controller.navigateBackwards();
   const onForward = () => controller.navigateForwards();
-  const props: Observable<Props> = controller.observeStackChanges()
-    .map(stack => ({
-      enableBack: stack.hasPrevious(),
-      enableForward: stack.hasNext(),
-      onBack,
-      onForward,
-    }));
+  const props: Observable<
+    Props,
+  > = controller.observeStackChanges().map(stack => ({
+    enableBack: stack.hasPrevious(),
+    enableForward: stack.hasNext(),
+    onBack,
+    onForward,
+  }));
   const Tile = bindObservableAsProps(props, NavStackStatusBarTile);
   const item = renderReactRoot(<Tile />);
   item.className = 'nuclide-navigation-stack-tile inline-block';
@@ -44,7 +46,9 @@ export function consumeStatusBar(
     priority: STATUS_BAR_PRIORITY,
   });
 
-  return new Disposable(() => { statusBarTile.destroy(); });
+  return new Disposable(() => {
+    statusBarTile.destroy();
+  });
 }
 
 type Props = {
@@ -56,7 +60,7 @@ type Props = {
 
 function NavStackStatusBarTile(props: Props): React.Element<any> {
   return (
-    <ButtonGroup>
+    <ButtonGroup size="EXTRA_SMALL">
       <Button
         icon="chevron-left"
         onClick={props.onBack}

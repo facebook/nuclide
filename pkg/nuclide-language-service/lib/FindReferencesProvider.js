@@ -6,9 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {FindReferencesReturn} from '../../nuclide-find-references/lib/rpc-types';
+import type {
+  FindReferencesReturn,
+} from '../../nuclide-find-references/lib/rpc-types';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -53,18 +56,26 @@ export class FindReferencesProvider<T: LanguageService> {
         grammarScopes,
         config.analyticsEventName,
         connectionToLanguageService,
-      ));
+      ),
+    );
   }
 
   async isEditorSupported(textEditor: atom$TextEditor): Promise<boolean> {
-    return textEditor.getPath() != null
-      && this.grammarScopes.includes(textEditor.getGrammar().scopeName);
+    return (
+      textEditor.getPath() != null &&
+      this.grammarScopes.includes(textEditor.getGrammar().scopeName)
+    );
   }
 
-  findReferences(editor: atom$TextEditor, position: atom$Point): Promise<?FindReferencesReturn> {
+  findReferences(
+    editor: atom$TextEditor,
+    position: atom$Point,
+  ): Promise<?FindReferencesReturn> {
     return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
-      const languageService = this._connectionToLanguageService.getForUri(editor.getPath());
+      const languageService = this._connectionToLanguageService.getForUri(
+        editor.getPath(),
+      );
       if (languageService == null || fileVersion == null) {
         return null;
       }

@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import {hackMessageToDiagnosticMessage} from '../lib/Diagnostics';
@@ -67,12 +68,14 @@ describe('Diagnostics', () => {
         text: 'message',
         filePath: testPath,
         range: new Range([0, 2], [0, 4]),
-        trace: [{
-          type: 'Trace',
-          filePath: 'otherPath',
-          text: 'more message',
-          range: new Range([4, 6], [4, 8]),
-        }],
+        trace: [
+          {
+            type: 'Trace',
+            filePath: 'otherPath',
+            text: 'more message',
+            range: new Range([4, 6], [4, 8]),
+          },
+        ],
       };
 
       const output = hackMessageToDiagnosticMessage(hackMessage);

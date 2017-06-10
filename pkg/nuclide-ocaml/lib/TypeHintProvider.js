@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
@@ -30,7 +31,11 @@ export default class TypeHintProvider {
         return null;
       }
       await instance.pushNewBuffer(path, editor.getText());
-      const types = await instance.enclosingType(path, position.row, position.column);
+      const types = await instance.enclosingType(
+        path,
+        position.row,
+        position.column,
+      );
       if (types == null || types.length === 0) {
         return null;
       }

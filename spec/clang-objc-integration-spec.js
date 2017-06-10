@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 /* global HTMLElement */
@@ -29,7 +30,7 @@ import {
   waitsForFilePosition,
 } from '../pkg/commons-atom/testHelpers';
 import busySignal from './utils/busy-signal-common';
-import nuclideUri from '../pkg/commons-node/nuclideUri';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 /**
  * This is a full integration test for (local) Objective-C support in Nuclide.
@@ -50,7 +51,9 @@ describe('Clang Integration Test (objc)', () => {
       await activateAllPackages();
 
       objcPath = await copyBuildFixture('objc_project_1', __dirname);
-      textEditor = await atom.workspace.open(nuclideUri.join(objcPath, 'Hello.m'));
+      textEditor = await atom.workspace.open(
+        nuclideUri.join(objcPath, 'Hello.m'),
+      );
     });
 
     waitsForFile('Hello.m');
@@ -59,7 +62,7 @@ describe('Clang Integration Test (objc)', () => {
       return busySignal.isBusy();
     });
 
-    waitsFor('compilation to finish', 30000, () => {
+    waitsFor('compilation to finish', 60000, () => {
       return !busySignal.isBusy();
     });
 
@@ -84,7 +87,9 @@ describe('Clang Integration Test (objc)', () => {
       // Confirm autocomplete.
       dispatchKeyboardEvent('enter', document.activeElement);
       expect(getAutocompleteView()).not.toExist();
-      const lineText = textEditor.lineTextForBufferRow(textEditor.getCursorBufferPosition().row);
+      const lineText = textEditor.lineTextForBufferRow(
+        textEditor.getCursorBufferPosition().row,
+      );
       expect(lineText).toBe('{NSObject');
 
       // This is a clear syntax error, so we should get an error on save.
@@ -92,7 +97,8 @@ describe('Clang Integration Test (objc)', () => {
     });
 
     waitsFor('error to show up in diagnostics', 10000, () => {
-      const errors = atom.views.getView(atom.workspace)
+      const errors = atom.views
+        .getView(atom.workspace)
         .querySelector('.nuclide-diagnostics-status-bar-highlight');
       if (errors instanceof HTMLElement) {
         const innerText = errors.innerText;
@@ -108,7 +114,8 @@ describe('Clang Integration Test (objc)', () => {
 
     let names;
     waitsFor('outline view to load', 10000, () => {
-      names = atom.views.getView(atom.workspace)
+      names = atom.views
+        .getView(atom.workspace)
         .querySelectorAll('.nuclide-outline-view-item .syntax--name');
       return names.length > 0;
     });
@@ -128,24 +135,19 @@ describe('Clang Integration Test (objc)', () => {
       });
       expect(getData(names[1])).toEqual({
         name: 'say:',
-        classes: [
-          'syntax--entity',
-          'syntax--function',
-          'syntax--name',
-        ],
+        classes: ['syntax--entity', 'syntax--function', 'syntax--name'],
       });
       expect(getData(names[names.length - 1])).toEqual({
         name: 'main',
-        classes: [
-          'syntax--entity',
-          'syntax--function',
-          'syntax--name',
-        ],
+        classes: ['syntax--entity', 'syntax--function', 'syntax--name'],
       });
 
       // Trigger Hyperclick on NSLog(...)
       textEditor.setCursorBufferPosition([11, 5]);
-      dispatchKeyboardEvent('enter', document.activeElement, {cmd: true, alt: true});
+      dispatchKeyboardEvent('enter', document.activeElement, {
+        cmd: true,
+        alt: true,
+      });
     });
 
     waitsForFilePosition('FoundationStub.h', 45, 12);

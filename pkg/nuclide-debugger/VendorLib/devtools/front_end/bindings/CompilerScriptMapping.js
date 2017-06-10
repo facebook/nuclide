@@ -191,8 +191,6 @@ WebInspector.CompilerScriptMapping.prototype = {
         var missingSources = [];
         for (var i = 0; i < sourceURLs.length; ++i) {
             var sourceURL = sourceURLs[i];
-            if (this._sourceMapForURL.get(sourceURL))
-                continue;
             this._sourceMapForURL.set(sourceURL, sourceMap);
             if (!this._networkMapping.hasMappingForURL(sourceURL) && !this._networkMapping.uiSourceCodeForURL(sourceURL, script.target())) {
                 var contentProvider = sourceMap.sourceContentProvider(sourceURL, WebInspector.resourceTypes.Script);
@@ -291,12 +289,6 @@ WebInspector.CompilerScriptMapping.prototype = {
         var sourceMapURL = WebInspector.ParsedURL.completeURL(scriptURL, scriptSourceMapURL);
         if (!sourceMapURL) {
             callback(null);
-            return;
-        }
-
-        var sourceMap = this._sourceMapForSourceMapURL[sourceMapURL];
-        if (sourceMap) {
-            callback(sourceMap);
             return;
         }
 

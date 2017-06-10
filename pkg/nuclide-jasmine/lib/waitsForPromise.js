@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -16,7 +17,7 @@ type WaitsForPromiseOptions = {
 };
 
 export default function waitsForPromise(
-  ...args: Array<WaitsForPromiseOptions | () => Promise<mixed>>
+  ...args: Array<WaitsForPromiseOptions | (() => Promise<mixed>)>
 ): void {
   let shouldReject;
   let timeout;
@@ -35,24 +36,40 @@ export default function waitsForPromise(
     invariant(typeof fn === 'function');
     const promise = fn();
     if (shouldReject) {
-      promise.then(() => {
-        jasmine.getEnv().currentSpec.fail(
-          'Expected promise to be rejected, but it was resolved');
-      }, () => {
-        // Do nothing, it's expected.
-      }).then(() => {
-        finished = true;
-      });
+      promise
+        .then(
+          () => {
+            jasmine
+              .getEnv()
+              .currentSpec.fail(
+                'Expected promise to be rejected, but it was resolved',
+              );
+          },
+          () => {
+            // Do nothing, it's expected.
+          },
+        )
+        .then(() => {
+          finished = true;
+        });
     } else {
-      promise.then(() => {
-        // Do nothing, it's expected.
-      }, error => {
-        const text = error ? (error.stack || error.toString()) : 'undefined';
-        jasmine.getEnv().currentSpec.fail(
-          `Expected promise to be resolved, but it was rejected with ${text}`);
-      }).then(() => {
-        finished = true;
-      });
+      promise
+        .then(
+          () => {
+            // Do nothing, it's expected.
+          },
+          error => {
+            const text = error ? error.stack || error.toString() : 'undefined';
+            jasmine
+              .getEnv()
+              .currentSpec.fail(
+                `Expected promise to be resolved, but it was rejected with ${text}`,
+              );
+          },
+        )
+        .then(() => {
+          finished = true;
+        });
     }
   });
 

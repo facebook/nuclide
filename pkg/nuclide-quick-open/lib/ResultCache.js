@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {FileResult} from './types';
@@ -13,7 +14,7 @@ import type {ProviderResult} from './searchResultHelpers';
 
 import invariant from 'assert';
 
-import debounce from '../../commons-node/debounce';
+import debounce from 'nuclide-commons/debounce';
 
 // TODO use maps
 type CachedDirectoryResults = {[query: string]: ProviderResult};
@@ -43,7 +44,7 @@ export default class ResultCache {
     this._debouncedCleanCache = debounce(
       () => this._cleanCache(),
       CACHE_CLEAN_DEBOUNCE_DELAY,
-      /* immediate */false,
+      /* immediate */ false,
     );
   }
 
@@ -62,7 +63,8 @@ export default class ResultCache {
     query: string,
     results: Array<FileResult>,
     loading: boolean = false,
-    error: ?Object = null): void {
+    error: ?Object = null,
+  ): void {
     this._ensureCacheEntry(providerName, directory);
     this._cachedResults[providerName][directory][query] = {
       results,
@@ -103,6 +105,10 @@ export default class ResultCache {
 
   getLastCachedQuery(providerName: string): ?string {
     return this._lastCachedQuery.get(providerName);
+  }
+
+  setLastCachedQuery(providerName: string, query: string): void {
+    this._lastCachedQuery.set(providerName, query);
   }
 
   _ensureCacheEntry(providerName: string, directory: string): void {

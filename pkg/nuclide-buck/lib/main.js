@@ -6,32 +6,49 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
-import type {BuckBuildSystem as BuckBuildSystemType} from './BuckBuildSystem';
-import type {BuckBuilderBuildOptions} from '../../nuclide-buck/lib/types';
-import type {OutputService} from '../../nuclide-console/lib/types';
-import type {HyperclickProvider} from '../../hyperclick/lib/types';
-import type {BuckBuilder, SerializedState} from './types';
+import type {HyperclickProvider} from 'atom-ide-ui';
+import type {SerializedState} from './types';
+import type {BuckBuildSystem} from './BuckBuildSystem';
 
 import registerGrammar from '../../commons-atom/register-grammar';
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
+import {openNearestBuildFile} from './buildFiles';
 import {getSuggestion} from './HyperclickProvider';
-import {BuckBuildSystem} from './BuckBuildSystem';
+import {track} from '../../nuclide-analytics';
+import {BuckTaskRunner} from './BuckTaskRunner';
 import {PlatformService} from './PlatformService';
 
+const OPEN_NEAREST_BUILD_FILE_COMMAND = 'nuclide-buck:open-nearest-build-file';
+
 let disposables: ?CompositeDisposable = null;
-let buildSystem: ?BuckBuildSystemType = null;
+let taskRunner: ?BuckTaskRunner = null;
 let initialState: ?Object = null;
 
 export function activate(rawState: ?Object): void {
   invariant(disposables == null);
   initialState = rawState;
   disposables = new CompositeDisposable(
-    new Disposable(() => { buildSystem = null; }),
-    new Disposable(() => { initialState = null; }),
+    new Disposable(() => {
+      taskRunner = null;
+    }),
+    new Disposable(() => {
+      initialState = null;
+    }),
+    atom.commands.add(
+      'atom-workspace',
+      OPEN_NEAREST_BUILD_FILE_COMMAND,
+      event => {
+        track(OPEN_NEAREST_BUILD_FILE_COMMAND);
+        // Add feature logging.
+        const target = ((event.target: any): HTMLElement);
+        openNearestBuildFile(target); // Note this returns a Promise.
+      },
+    ),
   );
   registerGrammar('source.python', ['BUCK']);
   registerGrammar('source.json', ['BUCK.autodeps']);
@@ -46,33 +63,25 @@ export function deactivate(): void {
 
 export function consumeTaskRunnerServiceApi(api: TaskRunnerServiceApi): void {
   invariant(disposables != null);
-  disposables.add(api.register(getBuildSystem()));
+  disposables.add(api.register(getTaskRunner()));
 }
 
-function getBuildSystem(): BuckBuildSystem {
-  if (buildSystem == null) {
+function getTaskRunner(): BuckTaskRunner {
+  if (taskRunner == null) {
     invariant(disposables != null);
-    buildSystem = new BuckBuildSystem(initialState);
-    disposables.add(buildSystem);
+    taskRunner = new BuckTaskRunner(initialState);
+    disposables.add(taskRunner);
   }
-  return buildSystem;
-}
-
-export function consumeOutputService(service: OutputService): void {
-  invariant(disposables != null);
-  disposables.add(service.registerOutputProvider({
-    messages: getBuildSystem().getOutputMessages(),
-    id: 'Buck',
-  }));
+  return taskRunner;
 }
 
 export function provideObservableDiagnosticUpdates() {
-  return getBuildSystem().getDiagnosticProvider();
+  return getTaskRunner().getBuildSystem().getDiagnosticProvider();
 }
 
 export function serialize(): ?SerializedState {
-  if (buildSystem != null) {
-    return buildSystem.serialize();
+  if (taskRunner != null) {
+    return taskRunner.serialize();
   }
 }
 
@@ -86,12 +95,10 @@ export function getHyperclickProvider(): HyperclickProvider {
   };
 }
 
-export function provideBuckBuilder(): BuckBuilder {
-  return {
-    build: (options: BuckBuilderBuildOptions) => getBuildSystem().buildArtifact(options),
-  };
+export function provideBuckBuilder(): BuckBuildSystem {
+  return getTaskRunner().getBuildSystem();
 }
 
 export function providePlatformService(): PlatformService {
-  return getBuildSystem().getPlatformService();
+  return getTaskRunner().getPlatformService();
 }

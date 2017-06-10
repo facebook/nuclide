@@ -6,14 +6,15 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
 import fs from 'fs';
-import nuclideUri from '../../commons-node/nuclideUri';
-import {checkOutput} from '../../commons-node/process';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {runCommand} from 'nuclide-commons/process';
 import {generateFixture} from '../../nuclide-test-helpers';
-import {fileSearchForDirectory} from '../lib/FileSearch';
+import {fileSearchForDirectory} from '../lib/process/FileSearch';
 import * as watchmanHelpers from '../../nuclide-watchman-helpers';
 
 function aFileSearchShould(typename, dirPathFn) {
@@ -42,7 +43,9 @@ function aFileSearchShould(typename, dirPathFn) {
 
     // Correct for dirPath, which is essentially a random string.
     function indexes(results) {
-      return results.map(x => x.matchIndexes.map(idx => idx - dirPath.length - 1));
+      return results.map(x =>
+        x.matchIndexes.map(idx => idx - dirPath.length - 1),
+      );
     }
 
     describe('a FileSearch at the root of a project', () => {
@@ -58,12 +61,8 @@ function aFileSearchShould(typename, dirPathFn) {
           invariant(search);
           invariant(dirPath);
           const results = await search.query('test');
-          expect(values(results)).toEqual([
-            nuclideUri.join(dirPath, 'test'),
-          ]);
-          expect(indexes(results)).toEqual([
-            [0, 1, 2, 3],
-          ]);
+          expect(values(results)).toEqual([nuclideUri.join(dirPath, 'test')]);
+          expect(indexes(results)).toEqual([[0, 1, 2, 3]]);
         });
       });
 
@@ -75,9 +74,7 @@ function aFileSearchShould(typename, dirPathFn) {
           expect(values(results)).toEqual([
             nuclideUri.join(dirPath, 'deeper/deeper'),
           ]);
-          expect(indexes(results)).toEqual([
-            [7, 8, 9, 10, 11, 12],
-          ]);
+          expect(indexes(results)).toEqual([[7, 8, 9, 10, 11, 12]]);
         });
       });
 
@@ -98,8 +95,10 @@ function aFileSearchShould(typename, dirPathFn) {
       let deeperSearch;
       beforeEach(() => {
         waitsForPromise(async () => {
-          deeperSearch =
-            await fileSearchForDirectory(nuclideUri.join(dirPath, 'deeper'), mockPathSetUpdater);
+          deeperSearch = await fileSearchForDirectory(
+            nuclideUri.join(dirPath, 'deeper'),
+            mockPathSetUpdater,
+          );
         });
       });
 
@@ -111,9 +110,7 @@ function aFileSearchShould(typename, dirPathFn) {
           expect(values(results)).toEqual([
             nuclideUri.join(dirPath, 'deeper/deeper'),
           ]);
-          expect(indexes(results)).toEqual([
-            [7, 8, 9, 10, 11, 12],
-          ]);
+          expect(indexes(results)).toEqual([[7, 8, 9, 10, 11, 12]]);
         });
       });
 
@@ -139,9 +136,7 @@ function aFileSearchShould(typename, dirPathFn) {
       it('should not match ignored patterns', () => {
         waitsForPromise(async () => {
           const results = await search.query('');
-          expect(values(results)).toEqual([
-            nuclideUri.join(dirPath, 'test'),
-          ]);
+          expect(values(results)).toEqual([nuclideUri.join(dirPath, 'test')]);
         });
       });
     });
@@ -149,23 +144,26 @@ function aFileSearchShould(typename, dirPathFn) {
 }
 
 function createTestFolder(): Promise<string> {
-  return generateFixture('fuzzy-file-search-rpc', new Map([
-    ['test', ''],
-    ['deeper/deeper', ''],
-  ]));
+  return generateFixture(
+    'fuzzy-file-search-rpc',
+    new Map([['test', ''], ['deeper/deeper', '']]),
+  );
 }
 
 async function hgTestFolder(): Promise<string> {
   const folder = await createTestFolder();
 
-  await checkOutput('hg', ['init'], {cwd: folder});
-  await checkOutput('hg', ['addremove'], {cwd: folder});
+  await runCommand('hg', ['init'], {cwd: folder}).toPromise();
+  await runCommand('hg', ['addremove'], {cwd: folder}).toPromise();
 
   // After adding the existing files to hg, add an ignored file to
   // prove we're using hg to populate the list.
   const ignoredFile = 'ignored';
   fs.writeFileSync(nuclideUri.join(folder, ignoredFile), '');
-  fs.writeFileSync(nuclideUri.join(folder, '.hgignore'), `.hgignore\n${ignoredFile}`);
+  fs.writeFileSync(
+    nuclideUri.join(folder, '.hgignore'),
+    `.hgignore\n${ignoredFile}`,
+  );
 
   return folder;
 }
@@ -173,14 +171,17 @@ async function hgTestFolder(): Promise<string> {
 async function gitTestFolder(): Promise<string> {
   const folder = await createTestFolder();
 
-  await checkOutput('git', ['init'], {cwd: folder});
-  await checkOutput('git', ['add', '*'], {cwd: folder});
+  await runCommand('git', ['init'], {cwd: folder}).toPromise();
+  await runCommand('git', ['add', '*'], {cwd: folder}).toPromise();
 
   // After adding the existing files to git, add an ignored file to
   // prove we're using git to populate the list.
   const ignoredFile = 'ignored';
   fs.writeFileSync(nuclideUri.join(folder, ignoredFile), '');
-  fs.writeFileSync(nuclideUri.join(folder, '.gitignore'), `.gitignore\n${ignoredFile}`);
+  fs.writeFileSync(
+    nuclideUri.join(folder, '.gitignore'),
+    `.gitignore\n${ignoredFile}`,
+  );
 
   return folder;
 }

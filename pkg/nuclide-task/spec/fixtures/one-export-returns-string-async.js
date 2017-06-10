@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 module.exports = (): Promise<any> => Promise.resolve('#winning');

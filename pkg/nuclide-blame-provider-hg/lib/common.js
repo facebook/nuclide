@@ -6,11 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 
 export function hgRepositoryForEditor(editor: TextEditor): ?HgRepositoryClient {
   const repo = repositoryForPath(editor.getPath() || '');

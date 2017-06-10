@@ -22,7 +22,7 @@ if (process.send) {
 
 function runParent() {
   const argv = require('yargs')
-    .usage('Usage: $0 [options]')
+    .usage('Usage: $0 [directory] [options]')
     .option('overwrite', {
       describe: 'Overwrite original files with transpile output.',
       type: 'boolean',
@@ -47,10 +47,11 @@ function runParent() {
     transpiled: 0,
   };
 
-  const jsFiles = pathRules.getIncludedFiles();
+  const directory = argv._[0] && path.resolve(argv._[0]);
+  const jsFiles = pathRules.getIncludedFiles(directory);
 
   // Sanity checks
-  assert(jsFiles.length > 10);
+  assert(jsFiles.length > 0);
   jsFiles.forEach(filename => {
     assert(path.isAbsolute(filename));
   });
@@ -81,7 +82,7 @@ function runParent() {
 
   process.once('exit', code => {
     if (code !== 0) { return; }
-    if (argv.overwrite && fs.existsSync(developmentFilePath)) {
+    if (argv.overwrite && !directory && fs.existsSync(developmentFilePath)) {
       fs.unlinkSync(developmentFilePath);
     }
     console.log(

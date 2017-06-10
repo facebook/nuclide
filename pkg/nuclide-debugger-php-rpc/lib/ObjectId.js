@@ -6,7 +6,12 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
+
+import type {
+  RemoteObjectId,
+} from '../../nuclide-debugger-base/lib/protocol-types';
 
 import invariant from 'assert';
 
@@ -59,11 +64,14 @@ export type ObjectId = {
 
 const WATCH_CONTEXT_ID = 'Watch Context Id';
 
-export function getWatchContextObjectId(enableCount: number, frameIndex: number): ObjectId {
+export function getWatchContextObjectId(
+  enableCount: number,
+  frameIndex: number,
+): ObjectId {
   return createContextObjectId(enableCount, frameIndex, WATCH_CONTEXT_ID);
 }
 
-export function remoteObjectIdOfObjectId(id: ObjectId): Runtime$RemoteObjectId {
+export function remoteObjectIdOfObjectId(id: ObjectId): RemoteObjectId {
   return JSON.stringify(id);
 }
 
@@ -91,7 +99,11 @@ export function pagedObjectId(
   return result;
 }
 
-export function singlePageObjectId(objectId: ObjectId, fullname: string, page: number): ObjectId {
+export function singlePageObjectId(
+  objectId: ObjectId,
+  fullname: string,
+  page: number,
+): ObjectId {
   const result = copyObjectId(objectId);
   result.fullname = fullname;
   result.page = page;
@@ -142,9 +154,16 @@ export function startIndexOfObjectId(id: ObjectId, pagesize: number): number {
   }
 }
 
-export function countOfObjectId(id: ObjectId, pagesize: number, parentEndIndex: number): number {
+export function countOfObjectId(
+  id: ObjectId,
+  pagesize: number,
+  parentEndIndex: number,
+): number {
   if (isSinglePageObjectId(id)) {
-    return Math.min(pagesize, parentEndIndex - startIndexOfObjectId(id, pagesize));
+    return Math.min(
+      pagesize,
+      parentEndIndex - startIndexOfObjectId(id, pagesize),
+    );
   } else {
     invariant(id.elementRange);
     return id.elementRange.count;
@@ -161,7 +180,7 @@ export function getChildIds(id: ObjectId): Array<ObjectId> {
 
   // Handle a page of pages (... of pages)
   let childSize = pagesize;
-  while ((childSize * pagesize) < id.elementRange.count) {
+  while (childSize * pagesize < id.elementRange.count) {
     childSize *= pagesize;
   }
 
@@ -174,13 +193,17 @@ export function getChildIds(id: ObjectId): Array<ObjectId> {
     let childId;
     invariant(id.fullname != null);
     if (childCount <= pagesize) {
-      childId = singlePageObjectId(id, id.fullname, Math.trunc(childStartIndex / pagesize));
-    } else {
-      childId = pagedObjectId(
+      childId = singlePageObjectId(
         id,
         id.fullname,
-        {pagesize, startIndex: childStartIndex, count: childCount},
+        Math.trunc(childStartIndex / pagesize),
       );
+    } else {
+      childId = pagedObjectId(id, id.fullname, {
+        pagesize,
+        startIndex: childStartIndex,
+        count: childCount,
+      });
     }
 
     result.push(childId);

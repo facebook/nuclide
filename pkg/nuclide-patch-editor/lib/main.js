@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
@@ -15,22 +16,24 @@ import typeof * as BoundActionCreators from './redux/Actions';
 
 import * as Actions from './redux/Actions';
 import {bindActionCreators, createStore} from 'redux';
-import {bindObservableAsProps} from '../../nuclide-ui/bindObservableAsProps';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {createEmptyAppState} from './redux/createEmptyAppState';
-import createPackage from '../../commons-atom/createPackage';
+import createPackage from 'nuclide-commons-atom/createPackage';
 import {Disposable} from 'atom';
 import PatchEditor from './ui/PatchEditor';
-import {isValidTextEditor} from '../../commons-atom/text-editor';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import nullthrows from 'nullthrows';
 import {Observable, BehaviorSubject} from 'rxjs';
-import {observableFromSubscribeFunction} from '../../commons-node/event';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {parseWithAnnotations} from './utils';
 import React from 'react';
-import {repositoryForPath} from '../../commons-atom/vcs';
+import {repositoryForPath} from '../../nuclide-vcs-base';
 import {rootReducer} from './redux/Reducers';
 import {track} from '../../nuclide-analytics';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
-import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {
+  viewableFromReactElement,
+} from '../../commons-atom/viewableFromReactElement';
 
 class Activation {
   _store: Store;
@@ -44,56 +47,68 @@ class Activation {
     const initialState = createEmptyAppState();
 
     this._states = new BehaviorSubject(initialState);
-    this._store = createStore(
-      rootReducer,
-      initialState,
+    this._store = createStore(rootReducer, initialState);
+    const stateSubscription = Observable.from(this._store).subscribe(
+      this._states,
     );
-    const stateSubscription = Observable.from(this._store).subscribe(this._states);
     this._subscriptions.add(stateSubscription);
 
     this._actionCreators = bindActionCreators(Actions, this._store.dispatch);
   }
 
   consumeCwdApi(cwdApi: CwdApi): IDisposable {
-    const subscription = observableFromSubscribeFunction(cwdApi.observeCwd.bind(cwdApi))
-    .switchMap(directory => {
-      const repository = directory ? repositoryForPath(directory.getPath()) : null;
-      if (repository == null || repository.getType() !== 'hg') {
-        return Observable.of(false);
-      }
+    const subscription = observableFromSubscribeFunction(
+      cwdApi.observeCwd.bind(cwdApi),
+    )
+      .switchMap(directory => {
+        const repository = directory
+          ? repositoryForPath(directory.getPath())
+          : null;
+        if (repository == null || repository.getType() !== 'hg') {
+          return Observable.of(false);
+        }
 
-      const hgRepository: HgRepositoryClient = (repository: any);
+        const hgRepository: HgRepositoryClient = (repository: any);
 
-      return observableFromSubscribeFunction(
-        hgRepository.onDidChangeInteractiveMode.bind(hgRepository),
-      );
-    }).switchMap(isInteractiveMode => {
-      if (!isInteractiveMode) {
-        return Observable.empty();
-      }
-      return observableFromSubscribeFunction(
-        atom.workspace.observePanes.bind(atom.workspace),
-      ).flatMap(pane => {
-        return observableFromSubscribeFunction(pane.observeActiveItem.bind(pane))
-          .switchMap(paneItem => {
-            if (!isValidTextEditor(paneItem)) {
-              return Observable.empty();
-            }
+        return observableFromSubscribeFunction(
+          hgRepository.onDidChangeInteractiveMode.bind(hgRepository),
+        );
+      })
+      .switchMap(isInteractiveMode => {
+        if (!isInteractiveMode) {
+          return Observable.empty();
+        }
+        return observableFromSubscribeFunction(
+          atom.workspace.observePanes.bind(atom.workspace),
+        ).flatMap(pane => {
+          return observableFromSubscribeFunction(
+            pane.observeActiveItem.bind(pane),
+          )
+            .switchMap(paneItem => {
+              if (!isValidTextEditor(paneItem)) {
+                return Observable.empty();
+              }
 
-            const editor: atom$TextEditor = (paneItem: any);
+              const editor: atom$TextEditor = (paneItem: any);
 
-            return observableFromSubscribeFunction(editor.onDidChangePath.bind(editor))
-              .startWith(editor.getPath())
-              .switchMap(editorPath => {
-                if (editorPath == null || !editorPath.endsWith('.diff')) {
-                  return Observable.empty();
-                }
+              return observableFromSubscribeFunction(
+                editor.onDidChangePath.bind(editor),
+              )
+                .startWith(editor.getPath())
+                .switchMap(editorPath => {
+                  if (editorPath == null || !editorPath.endsWith('.diff')) {
+                    return Observable.empty();
+                  }
 
-                return Observable.of(editor);
-              });
-          }).takeUntil(observableFromSubscribeFunction(pane.onDidDestroy.bind(pane)));
-      });
-    }).subscribe(this._renderOverEditor.bind(this));
+                  return Observable.of(editor);
+                });
+            })
+            .takeUntil(
+              observableFromSubscribeFunction(pane.onDidDestroy.bind(pane)),
+            );
+        });
+      })
+      .subscribe(this._renderOverEditor.bind(this));
 
     this._subscriptions.add(subscription);
     return new Disposable(() => {
@@ -122,8 +137,9 @@ class Activation {
         this._states.map((state: AppState) => {
           return {
             actionCreators: this._actionCreators,
-            onConfirm: content => onConfirm(editor, content),
-            onManualEdit: () => onManualEdit(editor, diffContent, marker, editorView),
+            onConfirm: content => onConfirm(editor, content, marker),
+            onManualEdit: () =>
+              onManualEdit(editor, diffContent, marker, editorView),
             onQuit: () => onQuit(editor),
             patchId: editorPath,
             patchData: state.patchEditors.get(editorPath),
@@ -152,11 +168,16 @@ function onQuit(editor: atom$TextEditor): void {
   atom.workspace.getActivePane().destroyItem(editor);
 }
 
-function onConfirm(editor: atom$TextEditor, content: string): void {
+function onConfirm(
+  editor: atom$TextEditor,
+  content: string,
+  marker: atom$Marker,
+): void {
   track('patch-editor-confirm');
+  marker.destroy();
   editor.setText(content);
+  editor.onDidSave(() => atom.workspace.getActivePane().destroyItem(editor));
   editor.save();
-  atom.workspace.getActivePane().destroyItem(editor);
 }
 
 function onManualEdit(

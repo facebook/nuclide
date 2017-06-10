@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import invariant from 'assert';
@@ -19,9 +20,11 @@ class Activation {
   constructor(state: ?Object) {
     this._subscriptions = new CompositeDisposable();
     this._service = new RecentFilesService(state);
-    this._subscriptions.add(new Disposable(() => {
-      this._service.dispose();
-    }));
+    this._subscriptions.add(
+      new Disposable(() => {
+        this._service.dispose();
+      }),
+    );
   }
 
   getService(): RecentFilesService {

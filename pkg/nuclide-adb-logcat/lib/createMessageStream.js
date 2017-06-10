@@ -6,12 +6,13 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {Message} from '../../nuclide-console/lib/types';
 
-import featureConfig from '../../commons-atom/featureConfig';
-import UniversalDisposable from '../../commons-node/UniversalDisposable';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createMessage from './createMessage';
 import parseLogcatMetadata from './parseLogcatMetadata';
 import {Observable} from 'rxjs';
@@ -65,45 +66,41 @@ export default function createMessageStream(
             buffer.push(line);
           }
         },
-
         // onError
         error => {
           flush();
           observer.error(error);
         },
-
         // onCompleted
         () => {
           flush();
           observer.complete();
         },
       ),
-
       // We know *for certain* that we have a complete entry once we see the metadata for the next
       // one. But what if the next one takes a long time to happen? After a certain point, we need
       // to just assume we have the complete entry and move on.
       sharedLine$.debounceTime(200).subscribe(flush),
     );
-  })
-  .map(createMessage);
+  }).map(createMessage);
 
   return filter(messages).share();
 }
 
 function filter(messages: Observable<Message>): Observable<Message> {
-  const patterns =
-      (featureConfig.observeAsStream('nuclide-adb-logcat.whitelistedTags'): Observable<any>)
-    .map(source => {
-      try {
-        return new RegExp(source);
-      } catch (err) {
-        atom.notifications.addError(
-          'The nuclide-adb-logcat.whitelistedTags setting contains an invalid regular expression'
-          + ' string. Fix it in your Atom settings.',
-        );
-        return /.*/;
-      }
-    });
+  const patterns = (featureConfig.observeAsStream(
+    'nuclide-adb-logcat.whitelistedTags',
+  ): Observable<any>).map(source => {
+    try {
+      return new RegExp(source);
+    } catch (err) {
+      atom.notifications.addError(
+        'The nuclide-adb-logcat.whitelistedTags setting contains an invalid regular expression' +
+          ' string. Fix it in your Atom settings.',
+      );
+      return /.*/;
+    }
+  });
 
   return messages
     .withLatestFrom(patterns)

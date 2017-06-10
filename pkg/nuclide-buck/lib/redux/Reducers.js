@@ -6,11 +6,16 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {AppState, DeploymentTarget, PlatformGroup} from '../types';
+import type {
+  AppState,
+  DeploymentTarget,
+  PlatformGroup,
+  PlatformProviderUi,
+} from '../types';
 import type {Action} from './Actions';
-import type {Element as ReactElementType} from 'react';
 
 import * as Actions from './Actions';
 
@@ -40,7 +45,7 @@ export default function accumulateState(
         buildRuleType: null,
         platformGroups: [],
         selectedDeploymentTarget: null,
-        extraPlatformUi: null,
+        platformProviderUi: null,
         buildTarget: action.buildTarget,
         isLoadingRule: true,
         lastSessionPlatformName: preference.platformName,
@@ -65,7 +70,7 @@ export default function accumulateState(
         ...state,
         platformGroups,
         selectedDeploymentTarget,
-        extraPlatformUi: getExtraUiForDeploymentTarget(
+        platformProviderUi: getPlatformProviderUiForDeploymentTarget(
           selectedDeploymentTarget,
         ),
         isLoadingPlatforms: false,
@@ -74,7 +79,9 @@ export default function accumulateState(
       return {
         ...state,
         selectedDeploymentTarget: action.deploymentTarget,
-        extraPlatformUi: getExtraUiForDeploymentTarget(action.deploymentTarget),
+        platformProviderUi: getPlatformProviderUiForDeploymentTarget(
+          action.deploymentTarget,
+        ),
         lastSessionPlatformName: null,
         lastSessionDeviceName: null,
       };
@@ -120,7 +127,7 @@ function selectValidDeploymentTarget(
   if (preferredPlatformName) {
     for (const platformGroup of platformGroups) {
       for (const platform of platformGroup.platforms) {
-        if (platform.name === preferredPlatformName) {
+        if (platform.isMobile && platform.name === preferredPlatformName) {
           existingPlatform = platform;
           if (preferredDeviceName) {
             for (const deviceGroup of platform.deviceGroups) {
@@ -152,6 +159,7 @@ function selectValidDeploymentTarget(
 
   if (
     !existingDevice &&
+    existingPlatform.isMobile &&
     existingPlatform.deviceGroups.length &&
     existingPlatform.deviceGroups[0].devices.length
   ) {
@@ -161,11 +169,12 @@ function selectValidDeploymentTarget(
   return {platform: existingPlatform, device: existingDevice};
 }
 
-function getExtraUiForDeploymentTarget(
+function getPlatformProviderUiForDeploymentTarget(
   deploymentTarget: ?DeploymentTarget,
-): ?ReactElementType<any> {
+): ?PlatformProviderUi {
   if (
     deploymentTarget == null ||
+    !deploymentTarget.platform.isMobile ||
     deploymentTarget.platform.extraUiWhenSelected == null
   ) {
     return null;

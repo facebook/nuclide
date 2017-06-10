@@ -6,11 +6,10 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  ServerConnectionConfiguration,
-} from '../lib/ServerConnection';
+import type {ServerConnectionConfiguration} from '../lib/ServerConnection';
 
 import invariant from 'assert';
 

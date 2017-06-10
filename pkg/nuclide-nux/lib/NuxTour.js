@@ -6,20 +6,18 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
-import type {
-  NuxTriggerModel,
-  NuxTriggerType,
-} from './NuxModel';
+import type {NuxTriggerModel, NuxTriggerType} from './NuxModel';
 
 import {track} from '../../nuclide-analytics';
-import {maybeToString} from '../../commons-node/string';
+import {maybeToString} from 'nuclide-commons/string';
 import {NuxView} from './NuxView';
 
 export class NuxTour {
   _nuxList: Array<NuxView>;
-  _callback: ?(() => void);
+  _callback: ?() => void;
   _currentStep: number;
   _id: number;
   _name: string;
@@ -29,12 +27,14 @@ export class NuxTour {
   constructor(
     id: number,
     name: string,
-    nuxList: ?(Array<NuxView>),
+    nuxList: ?Array<NuxView>,
     trigger: ?NuxTriggerModel,
     gatekeeperID: ?string,
   ): void {
     if (nuxList == null || nuxList.length < 1) {
-      throw new Error('You must create a NuxTour with at least one NuxView element!');
+      throw new Error(
+        'You must create a NuxTour with at least one NuxView element!',
+      );
     }
     this._currentStep = 0;
     this._id = id;
@@ -44,7 +44,9 @@ export class NuxTour {
     this._gatekeeperID = gatekeeperID;
 
     const boundNextStep = this._nextStep.bind(this);
-    nuxList.forEach(n => { n.setNuxCompleteCallback(boundNextStep); });
+    nuxList.forEach(n => {
+      n.setNuxCompleteCallback(boundNextStep);
+    });
   }
 
   getGatekeeperID(): ?string {
@@ -66,9 +68,7 @@ export class NuxTour {
    * If marked as completed, it will not be shown again.
    * To be used when the user dismisses the NUX and doesn't want to see it again.
    */
-  forceEnd(
-    shouldMarkAsCompleted: boolean = false,
-  ): void {
+  forceEnd(shouldMarkAsCompleted: boolean = false): void {
     if (shouldMarkAsCompleted) {
       this._track(true, 'NuxTour was dismissed by the user.');
     } else {
@@ -79,9 +79,7 @@ export class NuxTour {
     this._onNuxComplete(shouldMarkAsCompleted);
   }
 
-  _nextStep(
-    stepWasSuccesful: boolean,
-  ): void {
+  _nextStep(stepWasSuccesful: boolean): void {
     if (!stepWasSuccesful) {
       // Mark the NUX as completed, since the step was exited prematurely (skipped)
       this.forceEnd(true);
@@ -97,32 +95,24 @@ export class NuxTour {
     }
   }
 
-  _onNuxComplete(
-    completionSuccesful: boolean = true,
-  ): void {
+  _onNuxComplete(completionSuccesful: boolean = true): void {
     this._track(completionSuccesful);
     if (this._callback != null) {
       this._callback();
     }
   }
 
-  _track(
-    completed: boolean = false,
-    error: ?string,
-  ): void {
-    track(
-      'nux-tour-action',
-      {
-        tourId: this._id,
-        tourName: this._name,
-        step: `${this._currentStep + 1}/${this._nuxList.length + 1}`,
-        completed: `${completed.toString()}`,
-        error: maybeToString(error),
-      },
-    );
+  _track(completed: boolean = false, error: ?string): void {
+    track('nux-tour-action', {
+      tourId: this._id,
+      tourName: this._name,
+      step: `${this._currentStep + 1}/${this._nuxList.length + 1}`,
+      completed: `${completed.toString()}`,
+      error: maybeToString(error),
+    });
   }
 
-  setNuxCompleteCallback(callback: (() => void)): void {
+  setNuxCompleteCallback(callback: () => void): void {
     this._callback = callback;
   }
 

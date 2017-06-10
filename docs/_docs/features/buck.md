@@ -59,6 +59,7 @@ and type "buck" in the text box:
 >   'cmd-b': 'nuclide-task-runner:toggle-Buck-toolbar'
 >   'f5': 'nuclide-task-runner:Buck-build'
 >   'f6': 'nuclide-task-runner:Buck-test'
+>   'shift-cmd-k': 'nuclide-buck:open-nearest-build-file'
 >   ...
 > ```
 

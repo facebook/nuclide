@@ -6,6 +6,7 @@
  * the root directory of this source tree.
  *
  * @flow
+ * @format
  */
 
 import type {LazyTreeNode} from '../LazyTreeNode';
@@ -28,11 +29,13 @@ function clickNodeWithLabel(component: TreeRootComponent, label: string): void {
  */
 function getNodeComponents(component: TreeRootComponent): any {
   const nodeComponents = {};
-  TestUtils.scryRenderedComponentsWithType(component, TreeNodeComponent)
-      .forEach(nodeComponent => {
-        const label = nodeComponent.props.node.getItem().label;
-        nodeComponents[label] = nodeComponent;
-      });
+  TestUtils.scryRenderedComponentsWithType(
+    component,
+    TreeNodeComponent,
+  ).forEach(nodeComponent => {
+    const label = nodeComponent.props.node.getItem().label;
+    nodeComponents[label] = nodeComponent;
+  });
   return nodeComponents;
 }
 
@@ -51,26 +54,44 @@ describe('TreeRootComponent', () => {
     //  / \
     // B   C
     nodes.A = new LazyTestTreeNode(
-      {label: 'A'}, /* parent */ null, true, async () => [nodes.B, nodes.C],
+      {label: 'A'},
+      /* parent */ null,
+      true,
+      async () => [nodes.B, nodes.C],
     );
     nodes.B = new LazyTestTreeNode(
-      {label: 'B'}, /* parent */ nodes.A, false, async () => null,
+      {label: 'B'},
+      /* parent */ nodes.A,
+      false,
+      async () => null,
     );
     nodes.C = new LazyTestTreeNode(
-      {label: 'C'}, /* parent */ nodes.A, false, async () => null,
+      {label: 'C'},
+      /* parent */ nodes.A,
+      false,
+      async () => null,
     );
 
     //   D
     //  / \
     // E   F
     nodes.D = new LazyTestTreeNode(
-      {label: 'D'}, /* parent */ null, true, async () => [nodes.E, nodes.F],
+      {label: 'D'},
+      /* parent */ null,
+      true,
+      async () => [nodes.E, nodes.F],
     );
     nodes.E = new LazyTestTreeNode(
-      {label: 'E'}, /* parent */ nodes.D, false, async () => null,
+      {label: 'E'},
+      /* parent */ nodes.D,
+      false,
+      async () => null,
     );
     nodes.F = new LazyTestTreeNode(
-      {label: 'F'}, /* parent */ nodes.D, false, async () => null,
+      {label: 'F'},
+      /* parent */ nodes.D,
+      false,
+      async () => null,
     );
 
     //      G
@@ -79,22 +100,40 @@ describe('TreeRootComponent', () => {
     //  /   /   \
     // J   K     H(2)
     nodes.G = new LazyTestTreeNode(
-      {label: 'G'}, /* parent */ null, true, async () => [nodes.H, nodes.I],
+      {label: 'G'},
+      /* parent */ null,
+      true,
+      async () => [nodes.H, nodes.I],
     );
     nodes.H = new LazyTestTreeNode(
-      {label: 'H'}, /* parent */ nodes.G, true, async () => [nodes.J],
+      {label: 'H'},
+      /* parent */ nodes.G,
+      true,
+      async () => [nodes.J],
     );
     nodes.I = new LazyTestTreeNode(
-      {label: 'I'}, /* parent */ nodes.G, true, async () => [nodes.K, nodes.H2],
+      {label: 'I'},
+      /* parent */ nodes.G,
+      true,
+      async () => [nodes.K, nodes.H2],
     );
     nodes.J = new LazyTestTreeNode(
-      {label: 'J'}, /* parent */ nodes.H, false, async () => null,
+      {label: 'J'},
+      /* parent */ nodes.H,
+      false,
+      async () => null,
     );
     nodes.K = new LazyTestTreeNode(
-      {label: 'K'}, /* parent */ nodes.I, false, async () => null,
+      {label: 'K'},
+      /* parent */ nodes.I,
+      false,
+      async () => null,
     );
     nodes.H2 = new LazyTestTreeNode(
-      {label: 'H'}, /* parent */ nodes.I, false, async () => null,
+      {label: 'H'},
+      /* parent */ nodes.I,
+      false,
+      async () => null,
     );
 
     hostEl = document.createElement('div');
@@ -128,7 +167,9 @@ describe('TreeRootComponent', () => {
 
         expect(component.getRootNodes()).toEqual([nodes.G, nodes.A]);
         expect(component.getSelectedNodes()).toEqual([]);
-        const expandedNodeKeys = component.getExpandedNodes().map(node => node.getKey());
+        const expandedNodeKeys = component
+          .getExpandedNodes()
+          .map(node => node.getKey());
         expect(expandedNodeKeys).toEqual([nodes.G.getKey(), nodes.A.getKey()]);
       });
     });
@@ -302,8 +343,9 @@ describe('TreeRootComponent', () => {
         const selectNodeKeyPromise2 = component.selectNodeKey(nodes.A.getKey());
         await selectNodeKeyPromise2;
         await selectNodeKeyPromise1;
-        expect(component.getSelectedNodes().map(node => node.getKey()))
-            .toEqual([nodes.A.getKey()]);
+        expect(
+          component.getSelectedNodes().map(node => node.getKey()),
+        ).toEqual([nodes.A.getKey()]);
       });
     });
 
@@ -368,12 +410,9 @@ describe('TreeRootComponent', () => {
           isRejected = true;
         }
         expect(isRejected).toBe(true);
-        expect(component.getExpandedNodes().map(node => node.getKey()))
-            .toEqual([
-              nodes.G.getKey(),
-              nodes.H.getKey(),
-              nodes.I.getKey(),
-            ]);
+        expect(
+          component.getExpandedNodes().map(node => node.getKey()),
+        ).toEqual([nodes.G.getKey(), nodes.H.getKey(), nodes.I.getKey()]);
       });
     });
   });
@@ -412,14 +451,17 @@ describe('TreeRootComponent', () => {
         await component.expandNodeKey(nodes.H.getKey());
         await component.expandNodeKey(nodes.I.getKey());
 
-        const collapseNodeKeyPromise1 = component.collapseNodeKey(nodes.H.getKey());
-        const collapseNodeKeyPromise2 = component.collapseNodeKey(nodes.I.getKey());
+        const collapseNodeKeyPromise1 = component.collapseNodeKey(
+          nodes.H.getKey(),
+        );
+        const collapseNodeKeyPromise2 = component.collapseNodeKey(
+          nodes.I.getKey(),
+        );
         await collapseNodeKeyPromise2;
         await collapseNodeKeyPromise1;
-        expect(component.getExpandedNodes().map(node => node.getKey()))
-            .toEqual([
-              nodes.G.getKey(),
-            ]);
+        expect(
+          component.getExpandedNodes().map(node => node.getKey()),
+        ).toEqual([nodes.G.getKey()]);
       });
     });
 
@@ -431,7 +473,9 @@ describe('TreeRootComponent', () => {
         await component.setRoots([nodes.G]);
 
         const expandNodeKeyPromise = component.expandNodeKey(nodes.H.getKey());
-        const collapseNodeKeyPromise = component.collapseNodeKey(nodes.H.getKey());
+        const collapseNodeKeyPromise = component.collapseNodeKey(
+          nodes.H.getKey(),
+        );
         await collapseNodeKeyPromise;
         let isRejected = false;
         try {
@@ -440,10 +484,9 @@ describe('TreeRootComponent', () => {
           isRejected = true;
         }
         expect(isRejected).toBe(true);
-        expect(component.getExpandedNodes().map(node => node.getKey()))
-            .toEqual([
-              nodes.G.getKey(),
-            ]);
+        expect(
+          component.getExpandedNodes().map(node => node.getKey()),
+        ).toEqual([nodes.G.getKey()]);
       });
     });
 
@@ -455,15 +498,15 @@ describe('TreeRootComponent', () => {
         await component.setRoots([nodes.G]);
         await component.expandNodeKey(nodes.H.getKey());
 
-        const collapseNodeKeyPromise = component.collapseNodeKey(nodes.H.getKey());
+        const collapseNodeKeyPromise = component.collapseNodeKey(
+          nodes.H.getKey(),
+        );
         const expandNodeKeyPromise = component.expandNodeKey(nodes.H.getKey());
         await expandNodeKeyPromise;
         await collapseNodeKeyPromise;
-        expect(component.getExpandedNodes().map(node => node.getKey()))
-            .toEqual([
-              nodes.G.getKey(),
-              nodes.H.getKey(),
-            ]);
+        expect(
+          component.getExpandedNodes().map(node => node.getKey()),
+        ).toEqual([nodes.G.getKey(), nodes.H.getKey()]);
       });
     });
   });
@@ -517,7 +560,9 @@ describe('TreeRootComponent', () => {
           expect(component.getExpandedNodes()).toEqual([nodes.G]);
 
           const nodeComponents = getNodeComponents(component);
-          TestUtils.Simulate.click(ReactDOM.findDOMNode(nodeComponents.G.refs.arrow));
+          TestUtils.Simulate.click(
+            ReactDOM.findDOMNode(nodeComponents.G.refs.arrow),
+          );
 
           expect(component.getExpandedNodes()).toEqual([]);
           invariant(onConfirmSelection);
@@ -534,7 +579,9 @@ describe('TreeRootComponent', () => {
           expect(component.getSelectedNodes()).toEqual([]);
 
           const nodeComponents = getNodeComponents(component);
-          TestUtils.Simulate.click(ReactDOM.findDOMNode(nodeComponents.G.refs.arrow));
+          TestUtils.Simulate.click(
+            ReactDOM.findDOMNode(nodeComponents.G.refs.arrow),
+          );
 
           expect(component.getSelectedNodes()).toEqual([]);
           invariant(onConfirmSelection);
@@ -679,17 +726,27 @@ describe('TreeRootComponent', () => {
 
           const nodeComponents = getNodeComponents(component);
 
-          TestUtils.Simulate.mouseDown(ReactDOM.findDOMNode(nodeComponents.G), {button: 2});
-          expect(component.getSelectedNodes()).toEqual([nodeComponents.G.props.node]);
+          TestUtils.Simulate.mouseDown(ReactDOM.findDOMNode(nodeComponents.G), {
+            button: 2,
+          });
+          expect(component.getSelectedNodes()).toEqual([
+            nodeComponents.G.props.node,
+          ]);
 
-          TestUtils.Simulate.mouseDown(
-            ReactDOM.findDOMNode(nodeComponents.H),
-            {button: 0, ctrlKey: true},
-          );
-          expect(component.getSelectedNodes()).toEqual([nodeComponents.H.props.node]);
+          TestUtils.Simulate.mouseDown(ReactDOM.findDOMNode(nodeComponents.H), {
+            button: 0,
+            ctrlKey: true,
+          });
+          expect(component.getSelectedNodes()).toEqual([
+            nodeComponents.H.props.node,
+          ]);
 
-          TestUtils.Simulate.mouseDown(ReactDOM.findDOMNode(nodeComponents.I), {button: 0});
-          expect(component.getSelectedNodes()).toEqual([nodeComponents.H.props.node]);
+          TestUtils.Simulate.mouseDown(ReactDOM.findDOMNode(nodeComponents.I), {
+            button: 0,
+          });
+          expect(component.getSelectedNodes()).toEqual([
+            nodeComponents.H.props.node,
+          ]);
 
           invariant(onConfirmSelection);
           expect(onConfirmSelection.callCount).toBe(0);
@@ -708,8 +765,10 @@ describe('TreeRootComponent', () => {
         await component.expandNodeKey(nodes.H.getKey());
         await component.expandNodeKey(nodes.I.getKey());
 
-        const renderedNodes =
-          TestUtils.scryRenderedComponentsWithType(component, TreeNodeComponent);
+        const renderedNodes = TestUtils.scryRenderedComponentsWithType(
+          component,
+          TreeNodeComponent,
+        );
         // 6 nodes should render: G, H, I, J, K, and H(2). The two 'H' nodes have the same label but
         // both should render and be part of the length. If duplicate labels prevent the nodes from
         // rendering, this test will fail.
