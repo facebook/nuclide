@@ -1,6 +1,6 @@
 {
   "name": "atom-ide-ui",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A suite of language service UIs for Atom.",
   "license": "SEE LICENSE IN LICENSE",
   "main": "./index-entry.js",
@@ -20,9 +20,9 @@
     "fuzzaldrin-plus": "0.4.1",
     "log4js": "1.1.1",
     "marked": "0.3.6",
-    "nuclide-commons": "0.1.5",
-    "nuclide-commons-atom": "0.1.5",
-    "nuclide-commons-ui": "0.1.5",
+    "nuclide-commons": "0.1.6",
+    "nuclide-commons-atom": "0.1.6",
+    "nuclide-commons-ui": "0.1.6",
     "react": "15.3.1",
     "react-dom": "15.3.1",
     "rxjs": "5.3.1"
