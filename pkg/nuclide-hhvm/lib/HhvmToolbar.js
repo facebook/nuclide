@@ -51,7 +51,7 @@ export default class HhvmToolbar extends React.Component {
     const additionalOptions = [];
     try {
       // $FlowFB
-      const helpers = require('./fb-hhvm');
+      const helpers = require('../lib/fb-hhvm');
       additionalOptions.push(...helpers.getAdditionalLaunchOptions());
     } catch (e) {}
 
