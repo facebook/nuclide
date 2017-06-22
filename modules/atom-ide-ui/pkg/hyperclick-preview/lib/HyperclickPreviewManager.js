@@ -21,19 +21,19 @@ import type {
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import analytics from 'nuclide-commons-atom/analytics';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 import {
   getDefinitionPreview as getLocalFileDefinitionPreview,
 } from 'nuclide-commons/symbol-definition-preview';
 
 function getPlatformKeys(platform) {
-  const rootPkg = atom.config.get('nuclide') ? 'nuclide' : 'atom-ide-ui';
   if (platform === 'darwin') {
-    return `${rootPkg}.hyperclick.darwinTriggerKeys`;
+    return 'hyperclick.darwinTriggerKeys';
   } else if (platform === 'win32') {
-    return `${rootPkg}.hyperclick.win32TriggerKeys`;
+    return 'hyperclick.win32TriggerKeys';
   }
-  return `${rootPkg}.hyperclick.linuxTriggerKeys`;
+  return 'hyperclick.linuxTriggerKeys';
 }
 
 export default class HyperclickPreviewManager {
@@ -46,9 +46,9 @@ export default class HyperclickPreviewManager {
 
   constructor() {
     this._disposables.add(
-      atom.config.observe(
+      featureConfig.observe(
         getPlatformKeys(process.platform),
-        (newValue: string) => {
+        (newValue: any) => {
           this._triggerKeys = (new Set(newValue.split(',')): Set<any>);
         },
       ),
