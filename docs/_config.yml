@@ -1,7 +1,7 @@
 # Site settings
 permalink: /blog/:year/:month/:day/:title/
 title: Nuclide
-tagline: A unified developer experience for web and mobile development
+tagline: A unified developer experience for software development
 fbappid: ""
 gacode: "UA-44373548-2"
 description: >
