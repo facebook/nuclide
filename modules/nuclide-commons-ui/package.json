@@ -1,6 +1,6 @@
 {
   "name": "nuclide-commons-ui",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Common Nuclide UI components.",
   "license": "BSD-3-Clause",
   "homepage": "https://nuclide.io/",
@@ -13,8 +13,8 @@
   "dependencies": {
     "async-to-generator": "1.1.0",
     "classnames": "2.2.5",
-    "nuclide-commons": "0.1.7",
-    "nuclide-commons-atom": "0.1.7",
+    "nuclide-commons": "0.1.8",
+    "nuclide-commons-atom": "0.1.8",
     "react": "15.3.1",
     "react-dom": "15.3.1",
     "rxjs": "5.3.1"
