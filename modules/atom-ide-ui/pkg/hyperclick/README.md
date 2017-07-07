@@ -14,6 +14,7 @@ Hyperclick is triggered by two events:
 * [hyperclick-php](https://atom.io/packages/hyperclick-php) Locate php classes with the help of composer, and open the file
 * [go-plus](https://atom.io/packages/go-plus) Jump to definition for [go](https://golang.org)
 * [hyperlink-hyperclick](https://atom.io/packages/hyperlink-hyperclick) Open URLs in your default browser
+* [flow-ide](https://atom.io/packages/flow-ide) Jump to definition for Flow
 
 ## Demo
 
