@@ -95,7 +95,7 @@ class BuckClangCompilationDatabaseHandler {
       // Even if we can't get flags, return a flagsFile to watch
       const buildFile = await guessBuildFile(src);
       if (buildFile != null) {
-        return {flagsFile: buildFile, file: null};
+        return {flagsFile: buildFile, file: null, libclangPath: null};
       }
       return null;
     }
@@ -190,7 +190,11 @@ class BuckClangCompilationDatabaseHandler {
     );
 
     const buildFile = await BuckService.getBuildFile(buckProjectRoot, target);
-    return {file: pathToCompilationDatabase, flagsFile: buildFile};
+    return {
+      file: pathToCompilationDatabase,
+      flagsFile: buildFile,
+      libclangPath: null,
+    };
   }
 }
 

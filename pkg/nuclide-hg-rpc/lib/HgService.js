@@ -1030,7 +1030,7 @@ export class HgService {
   }
 
   restack(): ConnectableObservable<LegacyProcessMessage> {
-    const args = ['rebase', '--restack'];
+    const args = ['rebase', '--restack', '--config', 'ui.merge=:merge'];
     const execOptions = {
       cwd: this._workingDirectory,
     };

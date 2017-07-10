@@ -97,7 +97,10 @@ export default class ClangServerManager {
     server = new ClangServer(
       src,
       contents,
-      findClangServerArgs(src),
+      findClangServerArgs(
+        src,
+        compilationDB == null ? null : compilationDB.libclangPath,
+      ),
       this._getFlags(src, compilationDB, defaultFlags),
     );
     server.waitForReady().then(() => this._checkMemoryUsage());

@@ -279,6 +279,7 @@ export default class ClangFlagsManager {
         dbFlags = await this._loadFlagsFromCompilationDatabase({
           file: dbFile,
           flagsFile: null,
+          libclangPath: null,
         });
       }
     }

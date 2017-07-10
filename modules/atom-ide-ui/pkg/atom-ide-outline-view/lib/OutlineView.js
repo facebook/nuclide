@@ -21,13 +21,11 @@ import classnames from 'classnames';
 
 import analytics from 'nuclide-commons-atom/analytics';
 import {goToLocationInEditor} from 'nuclide-commons-atom/go-to-location';
-import {getLogger} from 'log4js';
 import {
   LoadingSpinner,
   LoadingSpinnerSizes,
 } from 'nuclide-commons-ui/LoadingSpinner';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
-import {Message, MessageTypes} from 'nuclide-commons-ui/Message';
 import {EmptyState} from 'nuclide-commons-ui/EmptyState';
 
 import featureConfig from 'nuclide-commons-atom/feature-config';
@@ -35,7 +33,6 @@ import type {SearchResult} from './OutlineViewSearch';
 import {OutlineViewSearchComponent} from './OutlineViewSearch';
 import groupMatchIndexes from 'nuclide-commons/groupMatchIndexes';
 
-const logger = getLogger('atom-ide-outline-view');
 const SEARCH_ENABLED_DEFAULT = true;
 
 type State = {
@@ -195,14 +192,7 @@ class OutlineViewComponent extends React.Component {
           </div>
         );
       default:
-        const errorText = `Encountered unexpected outline kind ${outline.kind}`;
-        logger.error(errorText);
-        return (
-          <Message type={MessageTypes.error}>
-            Internal Error:<br />
-            {errorText}
-          </Message>
-        );
+        (outline: empty);
     }
   }
 }

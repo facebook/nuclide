@@ -16,6 +16,7 @@ import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
 import type {WorkspaceViewsService} from '../../nuclide-workspace-views/lib/types';
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 
@@ -26,7 +27,11 @@ import featureConfig from 'nuclide-commons-atom/feature-config';
 import disablePackage from '../../commons-atom/disablePackage';
 import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
-import {macrotask, nextAnimationFrame} from 'nuclide-commons/observable';
+import {
+  compact,
+  macrotask,
+  nextAnimationFrame,
+} from 'nuclide-commons/observable';
 
 import FileTreeSidebarComponent from '../components/FileTreeSidebarComponent';
 import FileTreeController from './FileTreeController';
@@ -55,7 +60,6 @@ class Activation {
   _fileTreeComponent: ?FileTreeSidebarComponent;
   _restored: boolean; // Has the package state been restored from a previous session?
   _disposables: UniversalDisposable;
-  _paneItemSubscription: ?IDisposable;
 
   constructor(rawState: ?SerializedState) {
     let state = rawState || {};
@@ -110,9 +114,19 @@ class Activation {
       featureConfig.observe(prefixKeyNavSetting, (x: any) =>
         this._setPrefixKeyNavSetting(x),
       ),
-      featureConfig.observe(REVEAL_FILE_ON_SWITCH_SETTING, (x: any) =>
-        this._setRevealOnFileSwitch(x),
-      ),
+      featureConfig
+        .observeAsStream(REVEAL_FILE_ON_SWITCH_SETTING)
+        .switchMap((shouldReveal: any) => {
+          return shouldReveal
+            ? this._currentActiveFilePath()
+            : Observable.empty();
+        })
+        .subscribe(filePath =>
+          this._fileTreeController.revealFilePath(
+            filePath,
+            /* showIfHidden */ false,
+          ),
+        ),
       atom.config.observe(ignoredNamesSetting, (x: any) =>
         this._setIgnoredNames(x),
       ),
@@ -284,27 +298,15 @@ class Activation {
     this._fileTreeController.setIgnoredNames(normalizedIgnoredNames);
   }
 
-  _setRevealOnFileSwitch(shouldReveal: boolean) {
-    if (shouldReveal) {
-      // Guard against this getting called multiple times
-      if (!this._paneItemSubscription) {
-        this._paneItemSubscription = atom.workspace.onDidStopChangingActivePaneItem(
-          this._fileTreeController.revealActiveFile.bind(
-            this._fileTreeController,
-            /* showIfHidden */ false,
-          ),
-        );
-        this._disposables.add(this._paneItemSubscription);
-      }
-    } else {
-      // Use a local so Flow can refine the type.
-      const paneItemSubscription = this._paneItemSubscription;
-      if (paneItemSubscription) {
-        this._disposables.remove(paneItemSubscription);
-        paneItemSubscription.dispose();
-        this._paneItemSubscription = null;
-      }
-    }
+  _currentActiveFilePath(): Observable<NuclideUri> {
+    const rawPathStream = observableFromSubscribeFunction(
+      atom.workspace.onDidStopChangingActivePaneItem.bind(atom.workspace),
+    ).map(() => {
+      const editor = atom.workspace.getActiveTextEditor();
+      return editor != null ? editor.getPath() : null;
+    });
+
+    return compact(rawPathStream).distinctUntilChanged();
   }
 
   _setPrefixKeyNavSetting(usePrefixNav: ?boolean): void {

@@ -12,6 +12,8 @@
 import type {Observable} from 'rxjs';
 import type {OutputService} from '../../nuclide-console/lib/types';
 
+import stripAnsi from 'strip-ansi';
+
 type raiseNativeNotificationFunc = ?(
   title: string,
   body: string,
@@ -49,7 +51,11 @@ export function registerConsoleLogging(
   if (api != null) {
     outputDisposable = api.registerOutputProvider({
       id: sourceId,
-      messages: userOutputStream.map(message => JSON.parse(message)),
+      messages: userOutputStream.map(rawMessage => {
+        const message = JSON.parse(rawMessage);
+        message.text = stripAnsi(message.text);
+        return message;
+      }),
     });
   }
   return outputDisposable;

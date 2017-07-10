@@ -27,7 +27,7 @@ type DefaultProps = {
 };
 
 type Props = DefaultProps & {
-  formatRequestOptionsErrorMessage: (error: Error) => string,
+  formatRequestOptionsErrorMessage?: (error: Error) => string,
   initialTextInput: string,
   loadingMessage?: string,
   placeholderText?: string,
@@ -98,6 +98,7 @@ export class Combobox extends React.Component {
     (this: any).receiveUpdate = this.receiveUpdate.bind(this);
     (this: any)._handleTextInputChange = this._handleTextInputChange.bind(this);
     (this: any)._handleInputBlur = this._handleInputBlur.bind(this);
+    (this: any)._handleInputClick = this._handleInputClick.bind(this);
     (this: any)._handleInputFocus = this._handleInputFocus.bind(this);
     (this: any)._handleMoveDown = this._handleMoveDown.bind(this);
     (this: any)._handleMoveUp = this._handleMoveUp.bind(this);
@@ -187,6 +188,11 @@ export class Combobox extends React.Component {
 
   getText(): string {
     return this.refs.freeformInput.getText();
+  }
+
+  focus(showOptions: boolean): void {
+    this.refs.freeformInput.focus();
+    this.setState({optionsVisible: showOptions});
   }
 
   _getFilteredOptions(
@@ -304,6 +310,10 @@ export class Combobox extends React.Component {
     }
   }
 
+  _handleInputClick(): void {
+    this.setState({optionsVisible: true});
+  }
+
   _handleItemClick(selectedValue: string, event: any) {
     this.selectValue(selectedValue, () => {
       // Focus the input again because the click will cause the input to blur. This mimics native
@@ -319,6 +329,15 @@ export class Combobox extends React.Component {
   }
 
   _handleMoveDown() {
+    // show the options but don't move the index
+    if (!this.state.optionsVisible) {
+      this.setState(
+        {optionsVisible: true},
+        this._scrollSelectedOptionIntoViewIfNeeded,
+      );
+      return;
+    }
+
     this.setState(
       {
         selectedIndex: Math.min(
@@ -463,6 +482,7 @@ export class Combobox extends React.Component {
         <AtomInput
           initialValue={initialTextInput}
           onBlur={this._handleInputBlur}
+          onClick={this._handleInputClick}
           onFocus={this._handleInputFocus}
           placeholderText={placeholderText}
           ref="freeformInput"

@@ -58,7 +58,7 @@
     "fuzzaldrin-plus": "0.4.1",
     "glob": "7.1.1",
     "graphql": "0.10.1",
-    "graphql-language-service": "0.0.33",
+    "graphql-language-service": "0.0.35",
     "heap": "0.2.6",
     "idx": "1.2.0",
     "immutable": "3.7.6",

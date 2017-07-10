@@ -24,6 +24,7 @@ describe('ClangFlagsManager', () => {
     compilationDB = {
       file: nuclideUri.join(__dirname, 'fixtures', 'compile_commands.json'),
       flagsFile: nuclideUri.join(__dirname, 'fixtures', 'BUCK'),
+      libclangPath: null,
     };
   });
 
