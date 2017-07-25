@@ -1,6 +1,6 @@
 {
   "name": "big-dig",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Secure, re-connectable channel for bidirectional communication with a remote host.",
   "license": "BSD-3-Clause",
   "repository": "https://github.com/facebook/nuclide/tree/master/modules/big-dig",
@@ -11,7 +11,7 @@
     "async-to-generator": "1.1.0",
     "event-kit": "2.2.0",
     "log4js": "1.1.1",
-    "nuclide-commons": "0.1.8",
+    "nuclide-commons": "0.1.9",
     "rimraf": "2.5.4",
     "rxjs": "5.3.1",
     "ssh2": "0.5.4",

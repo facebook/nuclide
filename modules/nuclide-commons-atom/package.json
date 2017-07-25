@@ -1,6 +1,6 @@
 {
   "name": "nuclide-commons-atom",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Common Nuclide node modules (for use with Atom only).",
   "license": "BSD-3-Clause",
   "homepage": "https://nuclide.io/",
@@ -13,7 +13,7 @@
   "dependencies": {
     "async-to-generator": "1.1.0",
     "log4js": "1.1.1",
-    "nuclide-commons": "0.1.8",
+    "nuclide-commons": "0.1.9",
     "rxjs": "5.3.1",
     "semver": "5.3.0",
     "shallowequal": "0.2.2"
