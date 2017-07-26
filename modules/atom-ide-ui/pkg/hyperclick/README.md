@@ -57,7 +57,7 @@ export function getProvider() {
         // The range(s) to underline as a visual cue for clicking.
         range,
         // The function to call when the underlined text is clicked.
-        callback() {},
+        callback(openExternal) {},
       };
     },
   };
@@ -99,6 +99,12 @@ The methods return a suggestion or a `Promise` that resolves to a suggestion:
     - `title`: A string to present in the UI for the user to select.
     - `rightLabel`(optional): An indicator denoting the "kind" of suggestion this represents
     - `callback`: The function to call when the user selects this object.
+  
+    The `callback` is passed the `atom.config.hyperclick.openExternal` setting,
+    which is either `true` or `false`, and can be implemented with [`openExternal`] or [`atom.workspace.open`] respectively.
+
+    [`openExternal`]: https://electron.atom.io/docs/api/shell/#shellopenexternalurl-options-callback
+    [`atom.workspace.open`]: https://atom.io/docs/api/v1.18.0/Workspace#instance-open
 
 Additional provider fields:
 

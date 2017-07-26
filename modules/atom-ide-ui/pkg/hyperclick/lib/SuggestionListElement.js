@@ -175,7 +175,8 @@ class SuggestionList extends React.Component {
   }
 
   _confirm() {
-    this._items[this.state.selectedIndex].callback();
+    const openExternal = atom.config.get('hyperclick.openExternal');
+    this._items[this.state.selectedIndex].callback(openExternal);
     this._close();
   }
 
