@@ -19,7 +19,7 @@ otherwise, we’d let Atom do its default behavior (add another cursor). This wa
 we only interfered with expected Atom behavior when we knew we were supposed to.
 Perfect! Right?
 
-<img src="/static/images/blog/2017-02-27/poll.png" width="400" alt="An internal poll" />
+<img src="/docs/static/images/blog/2017-02-27/poll.png" width="400" alt="An internal poll" />
 
 It turns out that, in trying to accommodate everybody, we hadn’t made command +
 click predictable to anybody. It’s true: when you command click on something,
@@ -36,7 +36,7 @@ We know that these kind of breaking changes are disruptive, so the first time
 you command + click, we’ll show you a one-time notification explaining the
 situation:
 
-<img src="/static/images/blog/2017-02-27/notification.png" alt="" width="450" />
+<img src="/docs/static/images/blog/2017-02-27/notification.png" alt="" width="450" />
 
 Don’t despair, multicursor fans!  command + option + click still works! (In
 Sublime too.) Or if you really insist on using command + click for multiple
