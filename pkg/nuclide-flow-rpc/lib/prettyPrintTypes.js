@@ -57,6 +57,8 @@ type Group = {
   elements: Array<Element>,
   openChar: string,
   closeChar: string,
+  exactChar: '|' | '',
+  isExact: boolean,
   start: number,
   end: number,
   parentGroup: ?Group,
@@ -64,7 +66,9 @@ type Group = {
 
 function parseGroups(str) {
   const rootGroup: Group = {
-    elements: [{start: 0, end: -1, groups: []}],
+    elements: [{ start: 0, end: -1, groups: [] }],
+    isExact: false,
+    exactChar: '',
     openChar: '',
     closeChar: '',
     start: 0,
@@ -81,17 +85,22 @@ function parseGroups(str) {
       end: -1,
       openChar: str[i],
       closeChar: closeGroup[openGroup.indexOf(str[i])],
-      elements: [{start: i + 1, end: -1, groups: []}],
+      exactChar: isExact ? '|' : '',
+      isExact: isExact,
+      elements: [],
       parentGroup: currentGroup,
     };
+    if (isExact) i++;
+    group.elements.push({ start: i + 1, end: -1, groups: [] });
     const currentElement = last(currentGroup.elements);
     currentElement.groups.push(group);
     currentGroup = group;
   }
 
   function popGroup() {
+    const isExact = currentGroup.isExact
     const currentElement = last(currentGroup.elements);
-    currentElement.end = i;
+    currentElement.end = isExact ? i - 1 : i;
     currentGroup.end = i + 1;
     const parentGroup = currentGroup.parentGroup;
     if (!parentGroup) {
@@ -108,7 +117,7 @@ function parseGroups(str) {
 
   for (; i < str.length; ++i) {
     if (openGroup.indexOf(str[i]) !== -1) {
-      pushGroup();
+      pushGroup(str[i] === '{' && str[i+1] === '|');
     }
 
     if (
@@ -137,28 +146,28 @@ function printGroups(str, rootGroup, max) {
   }
 
   function printMultiLineGroup(group, indent) {
-    let output = group.openChar + '\n';
+    let output = group.openChar + group.exactChar + '\n';
     group.elements.forEach(element => {
       output += printElement(element, indent + 1, /* singleLine */ false);
     });
-    output += getIndent(indent) + group.closeChar;
+    output += getIndent(indent) + group.exactChar + group.closeChar;
     return output;
   }
 
   function printSingleLineGroupWithoutEnforcingChildren(group, indent) {
-    let output = group.openChar;
+    let output = group.openChar + group.exactChar;
     group.elements.forEach(childGroup => {
       output += printElement(childGroup, indent, /* singleLine */ false).trim();
     });
-    return output + group.closeChar;
+    return output + group.exactChar + group.closeChar;
   }
 
   function printSingleLineGroup(group, indent) {
-    let output = group.openChar;
+    let output = group.openChar + group.exactChar;
     group.elements.forEach(childGroup => {
       output += printElement(childGroup, indent, /* singleLine */ true);
     });
-    return output + group.closeChar;
+    return output + group.exactChar + group.closeChar;
   }
 
   function printGroup(group, indent, singleLine) {
