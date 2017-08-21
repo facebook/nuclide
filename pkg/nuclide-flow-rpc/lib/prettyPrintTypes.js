@@ -66,11 +66,13 @@ type Group = {
 
 function parseGroups(str) {
   const rootGroup: Group = {
-    elements: [{
-      start: 0,
-      end: -1,
-      groups: []
-    }],
+    elements: [
+      {
+        start: 0,
+        end: -1,
+        groups: [],
+      },
+    ],
     isExact: false,
     exactChar: '',
     openChar: '',
@@ -90,15 +92,17 @@ function parseGroups(str) {
       openChar: str[i],
       closeChar: closeGroup[openGroup.indexOf(str[i])],
       exactChar: isExact ? '|' : '',
-      isExact: isExact,
+      isExact,
       elements: [],
       parentGroup: currentGroup,
     };
-    if (isExact) i++;
+    if (isExact) {
+      i++;
+    }
     group.elements.push({
       start: i + 1,
       end: -1,
-      groups: []
+      groups: [],
     });
     const currentElement = last(currentGroup.elements);
     currentElement.groups.push(group);
