@@ -31,8 +31,7 @@ import {
   SwiftPMTaskRunnerTaskMetadata,
 } from './SwiftPMTaskRunnerTaskMetadata';
 import SwiftPMTaskRunnerToolbar from './toolbar/SwiftPMTaskRunnerToolbar';
-import SwiftPMAutocompletionProvider
-  from './providers/SwiftPMAutocompletionProvider';
+import SwiftPMAutocompletionProvider from './providers/SwiftPMAutocompletionProvider';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import nullthrows from 'nullthrows';
 import nuclideUri from 'nuclide-commons/nuclideUri.js';
@@ -52,6 +51,9 @@ type SwiftPMTaskRunnerFlux = {
   store: SwiftPMTaskRunnerStore,
   actions: SwiftPMTaskRunnerActions,
 };
+
+// This must match URI defined in ../../../nuclide-console/lib/ui/ConsoleContainer
+const CONSOLE_VIEW_URI = 'atom://nuclide/console';
 
 /**
  * The primary controller for spawning SwiftPM tasks, such as building a
@@ -97,9 +99,8 @@ export class SwiftPMTaskRunner {
   }
 
   getIcon(): ReactClass<any> {
-    return () => (
-      <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />
-    );
+    return () =>
+      <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />;
   }
 
   runTask(taskName: string): Task {
@@ -127,11 +128,9 @@ export class SwiftPMTaskRunner {
         throw new Error(`Unknown task name: ${taskName}`);
     }
 
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-console:toggle',
-      {visible: true},
-    );
+    // eslint-disable-next-line nuclide-internal/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI);
+
     const observable = createMessage(
       `${command.command} ${command.args.join(' ')}`,
       'log',
@@ -158,7 +157,9 @@ export class SwiftPMTaskRunner {
                 );
               } else {
                 return createMessage(
-                  `${command.command} failed with ${exitEventToMessage(message)}`,
+                  `${command.command} failed with ${exitEventToMessage(
+                    message,
+                  )}`,
                   'error',
                 );
               }
@@ -198,6 +199,7 @@ export class SwiftPMTaskRunner {
       .map(store => store.getProjectRoot())
       .distinctUntilChanged()
       .switchMap(root => {
+        // flowlint-next-line sketchy-null-string:off
         if (!root || nuclideUri.isRemote(root)) {
           return Observable.of(false);
         }

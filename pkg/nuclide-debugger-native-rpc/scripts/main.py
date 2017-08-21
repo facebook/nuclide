@@ -16,7 +16,6 @@ from find_lldb import get_lldb
 from shlex import split
 from chromedebugger import ChromeDevToolsDebuggerApp
 import argparse
-import six
 import sys
 import signal
 import os
@@ -72,6 +71,8 @@ def parse_args():
     launch_group.add_argument('--stdin_filepath', '-stdin',
                               type=str,
                               help='Redirect stdin for the process to this file.')
+    launch_group.add_argument('--core_dump_path', '-core', type=str,
+                              help='Path to core dump file to debug.')
     arguments = parser.parse_args()
 
     # Prefer arguments from JSON.
@@ -132,8 +133,7 @@ def start_debugging(debugger, arguments, ipc_channel, is_attach):
     elif getattr(arguments, 'executable_path', None):
         argument_list = map(os.path.expanduser, map(str, arguments.launch_arguments)) \
             if arguments.launch_arguments else None
-        environment_variables = [six.binary_type(arg) for arg in
-                                 arguments.launch_environment_variables] \
+        environment_variables = arguments.launch_environment_variables \
             if arguments.launch_environment_variables else None
         # TODO: should we resolve symbol link?
         executable_path = os.path.expanduser(str(arguments.executable_path)) \
@@ -142,6 +142,9 @@ def start_debugging(debugger, arguments, ipc_channel, is_attach):
             if arguments.working_directory else None
         stdin_filepath = os.path.expanduser(str(arguments.stdin_filepath)) \
             if arguments.stdin_filepath else None
+        core_dump_path = os.path.expanduser(str(arguments.core_dump_path)) \
+            if arguments.core_dump_path else None
+
         target = debugger.CreateTarget(
             executable_path,    # filename
             None,               # target_triple
@@ -151,17 +154,20 @@ def start_debugging(debugger, arguments, ipc_channel, is_attach):
         if error.Fail():
             sys.exit(error.description)
 
-        target.Launch(
-            listener,
-            argument_list,
-            environment_variables,
-            stdin_filepath,
-            None,      # stdout_path
-            None,      # stderr_path
-            working_directory,
-            0,         # launch flags
-            True,      # Stop at entry
-            error)     # error
+        if core_dump_path is not None:
+            target.LoadCore(core_dump_path)
+        else:
+            target.Launch(
+                listener,
+                argument_list,
+                environment_variables,
+                stdin_filepath,
+                None,      # stdout_path
+                None,      # stderr_path
+                working_directory,
+                0,         # launch flags
+                True,      # Stop at entry
+                error)     # error
     elif getattr(arguments, 'pname', None):
         target = debugger.CreateTarget(None)
         target.AttachToProcessWithName(
@@ -183,7 +189,6 @@ def start_debugging(debugger, arguments, ipc_channel, is_attach):
         else:
             output = 'Successfully launched process.'
         ipc_channel.send_output_message_async('log', output)
-
 
 def register_signal_handler(lldb_debugger):
     def handle_stop_debugging_signal(signum, frame):

@@ -27,11 +27,10 @@ export class LaunchAttachActionsBase {
     this._refreshTimerId = null;
     this._parentUIVisible = true; // Visible by default.
     this._attachUIVisible = false;
-    (this: any).updateAttachTargetList = this.updateAttachTargetList.bind(this);
-    (this: any).updateParentUIVisibility = this.updateParentUIVisibility.bind(
+    (this: any).updateAttachUIVisibility = this.updateAttachUIVisibility.bind(
       this,
     );
-    (this: any).updateAttachUIVisibility = this.updateAttachUIVisibility.bind(
+    (this: any).updateParentUIVisibility = this.updateParentUIVisibility.bind(
       this,
     );
   }
@@ -61,7 +60,7 @@ export class LaunchAttachActionsBase {
     }
   }
 
-  updateAttachTargetList(): Promise<void> {
+  async updateAttachTargetList(): Promise<void> {
     throw Error('Not implemented');
   }
 

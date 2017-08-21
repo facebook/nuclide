@@ -23,10 +23,11 @@ import {
   getLastUsedDebugger,
   setLastUsedDebugger,
 } from '../../nuclide-debugger-base';
-import {asyncFilter} from 'nuclide-commons/promise';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import Tabs from '../../nuclide-ui/Tabs';
+import {Observable} from 'rxjs';
+import invariant from 'invariant';
 
 type PropsType = {
   dialogMode: DebuggerConfigAction,
@@ -47,16 +48,17 @@ type StateType = {
   }>,
 };
 
-export class DebuggerLaunchAttachUI
-  extends React.Component<void, PropsType, StateType> {
+export class DebuggerLaunchAttachUI extends React.Component<
+  void,
+  PropsType,
+  StateType,
+> {
   props: PropsType;
   state: StateType;
   _disposables: UniversalDisposable;
 
   constructor(props: PropsType) {
     super(props);
-
-    (this: any)._setConfigValid = this._setConfigValid.bind(this);
 
     this._disposables = new UniversalDisposable();
     this._disposables.add(
@@ -116,35 +118,51 @@ export class DebuggerLaunchAttachUI
     this._disposables.dispose();
   }
 
-  async _filterProviders(): Promise<void> {
-    const enabled = await asyncFilter(this.props.providers, provider =>
-      provider.getCallbacksForAction(this.props.dialogMode).isEnabled(),
-    );
-
-    const enabledProviders = [].concat(
-      ...enabled.map(provider => {
-        return provider
-          .getCallbacksForAction(this.props.dialogMode)
-          .getDebuggerTypeNames()
-          .map(debuggerName => {
-            return {
-              provider,
-              debuggerName,
-            };
-          });
-      }),
-    );
-
-    this.setState({
-      enabledProviders,
-    });
+  async _getProviderIfEnabled(
+    provider: DebuggerLaunchAttachProvider,
+  ): Promise<?DebuggerLaunchAttachProvider> {
+    const enabled = await provider
+      .getCallbacksForAction(this.props.dialogMode)
+      .isEnabled();
+    return enabled ? provider : null;
   }
 
-  _setConfigValid(valid: boolean): void {
+  _filterProviders(): void {
+    this.setState({
+      enabledProviders: [],
+    });
+
+    Observable.merge(
+      ...this.props.providers.map(provider =>
+        Observable.fromPromise(this._getProviderIfEnabled(provider)),
+      ),
+    )
+      .filter(provider => provider != null)
+      .subscribe(provider => {
+        invariant(provider != null);
+        const enabledProviders = this.state.enabledProviders.concat(
+          ...provider
+            .getCallbacksForAction(this.props.dialogMode)
+            .getDebuggerTypeNames()
+            .map(debuggerName => {
+              return {
+                provider,
+                debuggerName,
+              };
+            }),
+        );
+
+        this.setState({
+          enabledProviders,
+        });
+      });
+  }
+
+  _setConfigValid = (valid: boolean): void => {
     this.setState({
       configIsValid: valid,
     });
-  }
+  };
 
   render(): React.Element<any> {
     const displayName = nuclideUri.isRemote(this.props.connection)
@@ -164,9 +182,10 @@ export class DebuggerLaunchAttachUI
 
     let providerContent = null;
     if (tabs.length > 0) {
-      let selectedTab = this.state.selectedProviderTab != null
-        ? this.state.selectedProviderTab
-        : this.state.enabledProviders[0].debuggerName;
+      let selectedTab =
+        this.state.selectedProviderTab != null
+          ? this.state.selectedProviderTab
+          : this.state.enabledProviders[0].debuggerName;
       let provider = this.state.enabledProviders.find(
         p => p.debuggerName === selectedTab,
       );

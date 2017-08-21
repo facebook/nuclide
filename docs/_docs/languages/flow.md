@@ -108,8 +108,3 @@ From the [Command Palette](/docs/editor/basics/#command-palette), choose `Nuclid
 Hover over any sideways triangles that appear in the gutter to see the type check issue inline, or open the [Diagnostics Table](/docs/editor/basics/#status-bar__code-diagnostics) to see them all listed together.  Clicking on any issue in the Diagnostics Table will highlight the associated line.
 
 ![](/static/images/docs/language-flow-type-coverage-inline.png)
-
-## Debugging
-
-The debugging of Flow through Node is a cornerstone of Nuclide. It serves as the example for
-the [Debugger](/docs/features/debugger/) at large and is described in the [Debugger Basics](/docs/features/debugger/#basics).

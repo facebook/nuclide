@@ -26,6 +26,7 @@ import type {
   RemoveConsoleForTaskRunnerAction,
   SetProjectRootAction,
   SetStatesForTaskRunnersAction,
+  SetStateForTaskRunnerAction,
   SetToolbarVisibilityAction,
   StopTaskAction,
   TaskMetadata,
@@ -41,6 +42,7 @@ export const REQUEST_TOGGLE_TOOLBAR_VISIBILITY =
   'REQUEST_TOGGLE_TOOLBAR_VISIBILITY';
 export const RUN_TASK = 'RUN_TASK';
 export const SELECT_TASK_RUNNER = 'SELECT_TASK_RUNNER';
+export const SET_STATE_FOR_TASK_RUNNER = 'SET_STATE_FOR_TASK_RUNNER';
 export const SET_STATES_FOR_TASK_RUNNERS = 'SET_STATES_FOR_TASK_RUNNERS';
 export const SET_PROJECT_ROOT = 'SET_PROJECT_ROOT';
 export const SET_CONSOLE_SERVICE = 'SET_CONSOLE_SERVICE';
@@ -95,6 +97,17 @@ export function selectTaskRunner(
   };
 }
 
+export function setStateForTaskRunner(
+  taskRunner: TaskRunner,
+  taskRunnerState: TaskRunnerState,
+): SetStateForTaskRunnerAction {
+  return {
+    type: SET_STATE_FOR_TASK_RUNNER,
+    payload: {taskRunner, taskRunnerState},
+  };
+}
+
+// Only sets the states for task runners that have keys in the map
 export function setStatesForTaskRunners(
   statesForTaskRunners: Map<TaskRunner, TaskRunnerState>,
 ): SetStatesForTaskRunnersAction {

@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -43,6 +44,8 @@ import os from 'os';
 import {maybeToString} from './string';
 
 const REMOTE_PATH_URI_PREFIX = 'nuclide://';
+// TODO(ljw): following regex is incorrect. A URI scheme must start with
+// [A-Za-z] not [0-9_-]. Also, not all schemes require // after them.
 const URI_PREFIX_REGEX = /^[A-Za-z0-9_-]+:\/\/.*/;
 
 function isRemote(uri: NuclideUri): boolean {
@@ -120,9 +123,11 @@ function parseRemoteUri(remoteUri: NuclideUri): ParsedRemoteUrl {
   }
   const parsedUri = parse(remoteUri);
   invariant(
+    // flowlint-next-line sketchy-null-string:off
     parsedUri.hostname,
-    `Remote Nuclide URIs must contain hostnames, '${maybeToString(parsedUri.hostname)}' found ` +
-      `while parsing '${remoteUri}'`,
+    `Remote Nuclide URIs must contain hostnames, '${maybeToString(
+      parsedUri.hostname,
+    )}' found while parsing '${remoteUri}'`,
   );
 
   // Explicitly copying object properties appeases Flow's "maybe" type handling. Using the `...`
@@ -258,7 +263,11 @@ function _getWindowsPathFromWindowsFileUri(uri: string): ?string {
  * Returns null if not a valid file: URI.
  */
 function uriToNuclideUri(uri: string): ?string {
+  // TODO(ljw): the following check is incorrect. It's designed to support
+  // two-slash file URLs of the form "file://c:\path". But those are invalid
+  // file URLs, and indeed it fails to %-escape "file://c:\My%20Documents".
   const windowsPathFromUri = _getWindowsPathFromWindowsFileUri(uri);
+  // flowlint-next-line sketchy-null-string:off
   if (windowsPathFromUri) {
     // If the specified URI is a local file:// URI to a Windows path,
     // handle specially first. url.parse() gets confused by the "X:"
@@ -268,6 +277,7 @@ function uriToNuclideUri(uri: string): ?string {
   }
 
   const urlParts = url.parse(_escapeSpecialCharacters(uri), false);
+  // flowlint-next-line sketchy-null-string:off
   if (urlParts.protocol === 'file:' && urlParts.path) {
     // only handle real files for now.
     return urlParts.path;
@@ -372,6 +382,7 @@ function nuclideUriToDisplayString(uri: NuclideUri): string {
     let hostname = getHostname(uri);
     for (const formatter of hostFormatters) {
       const formattedHostname = formatter(hostname);
+      // flowlint-next-line sketchy-null-string:off
       if (formattedHostname) {
         hostname = formattedHostname;
         break;

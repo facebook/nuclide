@@ -9,13 +9,11 @@
  * @format
  */
 
-import type {DevicePanelServiceApi} from '../../nuclide-devices/lib/types';
+import type {DevicePanelServiceApi} from '../../nuclide-device-panel/lib/types';
 import type {Store} from './types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import {
-  ServerConnection,
-} from '../../nuclide-remote-connection/lib/ServerConnection';
+import {ServerConnection} from '../../nuclide-remote-connection/lib/ServerConnection';
 import {getAdbServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getSdbServiceByNuclideUri} from '../../nuclide-remote-connection';
 import createPackage from 'nuclide-commons-atom/createPackage';
@@ -27,8 +25,10 @@ import {applyMiddleware, createStore} from 'redux';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import {registerDevicePanelProviders} from './device-panel/Registration';
+import {AndroidBridge} from './bridges/AndroidBridge';
+import {TizenBridge} from './bridges/TizenBridge';
 
 class Activation {
   _disposables: UniversalDisposable;
@@ -83,7 +83,13 @@ class Activation {
   }
 
   consumeDevicePanelServiceApi(api: DevicePanelServiceApi): void {
-    this._disposables.add(registerDevicePanelProviders(api, this._store));
+    this._disposables.add(
+      registerDevicePanelProviders(
+        api,
+        new AndroidBridge(this._store),
+        new TizenBridge(this._store),
+      ),
+    );
   }
 }
 

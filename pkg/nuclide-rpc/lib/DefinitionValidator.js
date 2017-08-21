@@ -760,7 +760,9 @@ export function validateDefinitions(definitions: Definitions): void {
         .slice(1)
         .map(
           definition =>
-            `\n${locationToString(definition.location)}: Related definition ${definition.name}`,
+            `\n${locationToString(
+              definition.location,
+            )}: Related definition ${definition.name}`,
         ),
     );
     return new Error(fullMessage);

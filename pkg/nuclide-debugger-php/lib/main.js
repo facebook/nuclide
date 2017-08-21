@@ -10,9 +10,7 @@
  */
 
 import type {HomeFragments} from '../../nuclide-home/lib/types';
-import type {
-  NuclideDebuggerProvider,
-} from '../../nuclide-debugger-interfaces/service';
+import type {NuclideDebuggerProvider} from '../../nuclide-debugger-interfaces/service';
 import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
@@ -38,7 +36,8 @@ export function getHomeFragments(): HomeFragments {
     feature: {
       title: 'PHP Debugger',
       icon: 'nuclicon-debugger',
-      description: 'Connect to a PHP server process and debug Hack code from within Nuclide.',
+      description:
+        'Connect to a PHP server process and debug Hack code from within Nuclide.',
       command: 'nuclide-debugger:show-attach-dialog',
     },
     priority: 6,

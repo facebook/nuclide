@@ -10,12 +10,8 @@
  */
 
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
-import type {
-  SwiftPMTaskRunner as SwiftPMTaskRunnerType,
-} from './taskrunner/SwiftPMTaskRunner';
-import type {
-  SwiftPMTaskRunnerStoreState,
-} from './taskrunner/SwiftPMTaskRunnerStoreState';
+import type {SwiftPMTaskRunner as SwiftPMTaskRunnerType} from './taskrunner/SwiftPMTaskRunner';
+import type {SwiftPMTaskRunnerStoreState} from './taskrunner/SwiftPMTaskRunnerStoreState';
 
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';

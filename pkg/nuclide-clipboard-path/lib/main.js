@@ -20,6 +20,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 function copyAbsolutePath(): void {
   trackOperation('copyAbsolutePath', () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
@@ -30,11 +31,13 @@ function copyAbsolutePath(): void {
 function copyProjectRelativePath(): void {
   trackOperation('copyProjectRelativePath', () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
 
     const projectRelativePath = getAtomProjectRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (projectRelativePath) {
       copyToClipboard('Copied project relative path', projectRelativePath);
     } else {
@@ -49,12 +52,14 @@ function copyProjectRelativePath(): void {
 function copyRepositoryRelativePath(): void {
   trackOperation('copyRepositoryRelativePath', async () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
 
     // First source control relative.
     const repoRelativePath = getRepositoryRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (repoRelativePath) {
       copyToClipboard('Copied repository relative path', repoRelativePath);
       return;
@@ -62,6 +67,7 @@ function copyRepositoryRelativePath(): void {
 
     // Next try arcanist relative.
     const arcRelativePath = await getArcanistRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (arcRelativePath) {
       copyToClipboard('Copied arc project relative path', arcRelativePath);
       return;
@@ -69,6 +75,7 @@ function copyRepositoryRelativePath(): void {
 
     // Lastly, project and absolute.
     const projectRelativePath = getAtomProjectRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (projectRelativePath) {
       copyToClipboard('Copied project relative path', projectRelativePath);
     } else {
@@ -105,6 +112,7 @@ function getCurrentNuclideUri(): ?NuclideUri {
   }
 
   const path = editor.getPath();
+  // flowlint-next-line sketchy-null-string:off
   if (!path) {
     notify('Nothing copied. Current text editor is unnamed.');
     return null;

@@ -42,37 +42,5 @@
   "activationHooks": [
     "language-ocaml:grammar-used",
     "nuclide-language-reason:grammar-used"
-  ],
-  "providedServices": {
-    "autocomplete.provider": {
-      "versions": {
-        "2.0.0": "createAutocompleteProvider"
-      }
-    },
-    "hyperclick.provider": {
-      "versions": {
-        "0.0.0": "getHyperclickProvider"
-      }
-    },
-    "linter": {
-      "versions": {
-        "1.0.0": "provideLinter"
-      }
-    },
-    "nuclide-code-format.provider": {
-      "versions": {
-        "0.0.0": "createCodeFormatProvider"
-      }
-    },
-    "atom-ide-outline-view": {
-      "versions": {
-        "0.1.0": "provideOutlines"
-      }
-    },
-    "nuclide-type-hint.provider": {
-      "versions": {
-        "0.0.0": "createTypeHintProvider"
-      }
-    }
-  }
+  ]
 }

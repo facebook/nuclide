@@ -15,25 +15,23 @@ import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
-import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
+  CodeAction,
+  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {
+  AutocompleteRequest,
   AutocompleteResult,
-  SymbolResult,
+  FormatOptions,
   LanguageService,
+  SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
-import type {
-  HostServices,
-} from '../../nuclide-language-service-rpc/lib/rpc-types';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
 import {FileCache, ConfigObserver} from '../../nuclide-open-files-rpc';
@@ -65,13 +63,13 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     logger: log4js$Logger,
     fileCache: FileCache,
     host: HostServices,
-    projectFileName: string,
+    projectFileNames: Array<string>,
     fileExtensions: Array<NuclideUri>,
     languageServiceFactory: (projectDir: NuclideUri) => Promise<?T>,
   ) {
     this._logger = logger;
     this._resources = new UniversalDisposable();
-    this._configCache = new ConfigCache(projectFileName);
+    this._configCache = new ConfigCache(projectFileNames);
 
     this._processes = new Cache(languageServiceFactory, value => {
       value.then(process => {
@@ -171,7 +169,9 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
   // new LanguageServices for any paths in configPaths.
   _ensureProcesses(configPaths: Set<NuclideUri>): void {
     this._logger.info(
-      `MultiProjectLanguageService ensureProcesses. ${Array.from(configPaths).join(', ')}`,
+      `MultiProjectLanguageService ensureProcesses. ${Array.from(
+        configPaths,
+      ).join(', ')}`,
     );
     this._processes.setKeys(configPaths);
   }
@@ -211,7 +211,7 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     return this._observeDiagnosticsPromise;
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>> {
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
     this._observeDiagnosticsPromiseResolver();
 
     return this.observeLanguageServices()
@@ -231,17 +231,11 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
   async getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
-    activatedManually: boolean,
-    prefix: string,
+    request: AutocompleteRequest,
   ): Promise<?AutocompleteResult> {
     return (await this._getLanguageServiceForFile(
       fileVersion.filePath,
-    )).getAutocompleteSuggestions(
-      fileVersion,
-      position,
-      activatedManually,
-      prefix,
-    );
+    )).getAutocompleteSuggestions(fileVersion, position, request);
   }
 
   async getDefinition(
@@ -274,6 +268,16 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     )).getOutline(fileVersion);
   }
 
+  async getCodeActions(
+    fileVersion: FileVersion,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>> {
+    return (await this._getLanguageServiceForFile(
+      fileVersion.filePath,
+    )).getCodeActions(fileVersion, range, diagnostics);
+  }
+
   async typeHint(
     fileVersion: FileVersion,
     position: atom$Point,
@@ -295,32 +299,35 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
   async formatSource(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     return (await this._getLanguageServiceForFile(
       fileVersion.filePath,
-    )).formatSource(fileVersion, range);
+    )).formatSource(fileVersion, range, options);
   }
 
   async formatEntireFile(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?{
     newCursor?: number,
     formatted: string,
   }> {
     return (await this._getLanguageServiceForFile(
       fileVersion.filePath,
-    )).formatEntireFile(fileVersion, range);
+    )).formatEntireFile(fileVersion, range, options);
   }
 
   async formatAtPosition(
     fileVersion: FileVersion,
     position: atom$Point,
     triggerCharacter: string,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     return (await this._getLanguageServiceForFile(
       fileVersion.filePath,
-    )).formatAtPosition(fileVersion, position, triggerCharacter);
+    )).formatAtPosition(fileVersion, position, triggerCharacter, options);
   }
 
   async getEvaluationExpression(

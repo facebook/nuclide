@@ -64,11 +64,6 @@ export class WorkingSetSelectionComponent extends React.Component {
         }
       }),
     );
-
-    (this: any)._checkFocus = this._checkFocus.bind(this);
-    (this: any)._toggleWorkingSet = this._toggleWorkingSet.bind(this);
-    (this: any)._setSelectionIndex = this._setSelectionIndex.bind(this);
-    (this: any)._deleteWorkingSet = this._deleteWorkingSet.bind(this);
   }
 
   componentDidMount(): void {
@@ -152,7 +147,8 @@ export class WorkingSetSelectionComponent extends React.Component {
         <div>
           <HR />
           <span>
-            The working sets below are not applicable to your current project folders
+            The working sets below are not applicable to your current project
+            folders
           </span>
           <ol className="list-group">
             {notApplicableDefinitions}
@@ -175,31 +171,38 @@ export class WorkingSetSelectionComponent extends React.Component {
     this.setState({selectionIndex: this.state.selectionIndex + step});
   }
 
-  _setSelectionIndex(selectionIndex: number): void {
+  _setSelectionIndex = (selectionIndex: number): void => {
     this.setState({selectionIndex});
-  }
+  };
 
-  _checkFocus(event: SyntheticFocusEvent): void {
+  _checkFocus = (event: SyntheticFocusEvent): void => {
     const node = ReactDOM.findDOMNode(this);
     // If the next active element (`event.relatedTarget`) is not a descendant of this modal, close
-    // the modal.
+    // the modal.  In the case of a canceled _deleteWorkingSet, relatedTarget is null
+    // and we don't want to close the modal
     // $FlowFixMe
-    if (!node.contains(event.relatedTarget)) {
+    if (event.relatedTarget != null && !node.contains(event.relatedTarget)) {
       this.props.onClose();
     }
-  }
+  };
 
-  _toggleWorkingSet(name: string, active: boolean) {
+  _toggleWorkingSet = (name: string, active: boolean) => {
     if (active) {
       this.props.workingSetsStore.deactivate(name);
     } else {
       this.props.workingSetsStore.activate(name);
     }
-  }
+  };
 
-  _deleteWorkingSet(name: string): void {
-    this.props.workingSetsStore.deleteWorkingSet(name);
-  }
+  _deleteWorkingSet = (name: string): void => {
+    const result = atom.confirm({
+      message: `Please confirm: delete working set '${name}'?`,
+      buttons: ['Delete', 'Cancel'],
+    });
+    if (result === 0) {
+      this.props.workingSetsStore.deleteWorkingSet(name);
+    }
+  };
 }
 
 type ApplicableDefinitionLineProps = {
@@ -214,14 +217,6 @@ type ApplicableDefinitionLineProps = {
 
 class ApplicableDefinitionLine extends React.Component {
   props: ApplicableDefinitionLineProps;
-
-  constructor(props: ApplicableDefinitionLineProps) {
-    super(props);
-
-    (this: any)._lineOnClick = this._lineOnClick.bind(this);
-    (this: any)._deleteButtonOnClick = this._deleteButtonOnClick.bind(this);
-    (this: any)._editButtonOnClick = this._editButtonOnClick.bind(this);
-  }
 
   render(): React.Element<any> {
     const classes = {
@@ -256,19 +251,19 @@ class ApplicableDefinitionLine extends React.Component {
     );
   }
 
-  _lineOnClick(event: MouseEvent): void {
+  _lineOnClick = (event: MouseEvent): void => {
     this.props.toggleWorkingSet(this.props.def.name, this.props.def.active);
-  }
+  };
 
-  _deleteButtonOnClick(event: MouseEvent): void {
+  _deleteButtonOnClick = (event: MouseEvent): void => {
     this.props.onDeleteWorkingSet(this.props.def.name);
     event.stopPropagation();
-  }
+  };
 
-  _editButtonOnClick(event: MouseEvent): void {
+  _editButtonOnClick = (event: MouseEvent): void => {
     this.props.onEditWorkingSet(this.props.def.name, this.props.def.uris);
     event.stopPropagation();
-  }
+  };
 }
 
 type NonApplicableDefinitionLineProps = {
@@ -302,8 +297,8 @@ class NonApplicableDefinitionLine extends React.Component {
     );
   }
 
-  _deleteButtonOnClick(event: MouseEvent): void {
+  _deleteButtonOnClick = (event: MouseEvent): void => {
     this.props.onDeleteWorkingSet(this.props.def.name);
     event.stopPropagation();
-  }
+  };
 }

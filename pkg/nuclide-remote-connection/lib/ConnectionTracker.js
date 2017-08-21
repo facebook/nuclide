@@ -59,15 +59,16 @@ export default class ConnectionTracker {
       return;
     }
 
-    const preYubikeyDuration = this._promptYubikeyTime > 0
-      ? this._promptYubikeyTime - this._connectionStartTime
-      : 0;
-    const postYubikeyDuration = this._finishYubikeyTime > 0
-      ? Date.now() - this._finishYubikeyTime
-      : 0;
-    const realDuration = preYubikeyDuration > 0 && postYubikeyDuration > 0
-      ? preYubikeyDuration + postYubikeyDuration
-      : 0;
+    const preYubikeyDuration =
+      this._promptYubikeyTime > 0
+        ? this._promptYubikeyTime - this._connectionStartTime
+        : 0;
+    const postYubikeyDuration =
+      this._finishYubikeyTime > 0 ? Date.now() - this._finishYubikeyTime : 0;
+    const realDuration =
+      preYubikeyDuration > 0 && postYubikeyDuration > 0
+        ? preYubikeyDuration + postYubikeyDuration
+        : 0;
 
     track(CONNECTION_EVENT, {
       error: succeed ? '0' : '1',

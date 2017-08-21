@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -16,11 +17,11 @@ import LRU from 'lru-cache';
 import fsPromise from './fsPromise';
 
 export class ConfigCache {
-  _configFileName: string;
+  _configFileNames: Array<string>;
   _configCache: LRUCache<NuclideUri, Promise<?NuclideUri>>;
 
-  constructor(configFileName: string) {
-    this._configFileName = configFileName;
+  constructor(configFileNames: Array<string>) {
+    this._configFileNames = configFileNames;
     this._configCache = LRU({
       max: 200, // Want this to exceed the maximum expected number of open files + dirs.
       maxAge: 1000 * 30, // 30 seconds
@@ -28,12 +29,27 @@ export class ConfigCache {
   }
 
   getConfigDir(path: NuclideUri): Promise<?NuclideUri> {
-    if (!this._configCache.has(path)) {
-      const result = fsPromise.findNearestFile(this._configFileName, path);
+    let result = this._configCache.get(path);
+    if (result == null) {
+      result = this._findConfigDir(path);
       this._configCache.set(path, result);
-      return result;
     }
-    return this._configCache.get(path);
+    return result;
+  }
+
+  async _findConfigDir(path: NuclideUri): Promise<?NuclideUri> {
+    const configDirs = await Promise.all(
+      this._configFileNames.map(configFile =>
+        fsPromise.findNearestFile(configFile, path),
+      ),
+    );
+    // Find the result with the greatest length (the closest match).
+    return configDirs.filter(Boolean).reduce((previous, configDir) => {
+      if (previous == null || configDir.length > previous.length) {
+        return configDir;
+      }
+      return previous;
+    }, null);
   }
 
   dispose(): void {

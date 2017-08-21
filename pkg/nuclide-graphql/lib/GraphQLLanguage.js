@@ -10,14 +10,9 @@
  */
 
 import type {ServerConnection} from '../../nuclide-remote-connection';
-import type {
-  AtomLanguageServiceConfig,
-} from '../../nuclide-language-service/lib/AtomLanguageService';
-import type {
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
-import typeof * as GraphQLService
-  from '../../nuclide-graphql-rpc/lib/GraphQLService';
+import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
+import typeof * as GraphQLService from '../../nuclide-graphql-rpc/lib/GraphQLService';
 
 import {
   AtomLanguageService,
@@ -39,15 +34,17 @@ async function connectionToGraphQLService(
     getNotifierByConnection(connection),
     getHostServices(),
   ]);
-  const graphqlCommand = require.resolve(
-    'graphql-language-service/bin/graphql.js',
-  );
+  const graphqlCommand = 'graphql-language-service/bin/graphql.js';
+  const options = {
+    env: {...process.env, ELECTRON_RUN_AS_NODE: '1'},
+  };
 
   return graphqlService.initializeLsp(
     graphqlCommand,
     ['server', '--method', 'stream'],
-    '.graphqlconfig',
-    ['.graphql'],
+    options,
+    ['.graphqlconfig'],
+    ['.js', '.graphql'],
     'INFO',
     fileNotifier,
     host,
@@ -66,7 +63,6 @@ async function createLanguageService(): Promise<
     version: '0.1.0',
     priority: 1,
     definitionEventName: 'graphql.definition',
-    definitionByIdEventName: 'graphql.definition-by-id',
   };
 
   const autocompleteConfig = {
@@ -82,7 +78,7 @@ async function createLanguageService(): Promise<
 
   const atomConfig: AtomLanguageServiceConfig = {
     name: 'GraphQL',
-    grammars: ['source.graphql'],
+    grammars: ['source.graphql', 'source.js.jsx', 'source.js'],
     diagnostics: diagnosticsConfig,
     definition: definitionConfig,
     autocomplete: autocompleteConfig,

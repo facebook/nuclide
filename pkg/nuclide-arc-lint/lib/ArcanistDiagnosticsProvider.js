@@ -77,6 +77,7 @@ async function _lint(textEditor: TextEditor): Promise<?Array<LinterMessage>> {
       maybeProperties.fix = _getFix({...diagnostic});
     }
     return {
+      // flowlint-next-line sketchy-null-string:off
       name: 'Arc' + (diagnostic.code ? `: ${diagnostic.code}` : ''),
       type: diagnostic.type,
       text,

@@ -5,7 +5,7 @@
       "submenu": [
         {
           "label": "Toggle Outline View",
-          "command": "nuclide-outline-view:toggle"
+          "command": "outline-view:toggle"
         }
       ]
     }

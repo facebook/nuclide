@@ -12,153 +12,175 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {
+  DeviceId,
   DeviceDescription,
   AndroidJavaProcess,
   Process,
-  DBPathsInfo,
+  DebugBridgeFullConfig,
 } from './types';
 
-import {pathForDebugBridge, getStore} from './AdbSdbPathStore';
-import {ConnectableObservable, Observable} from 'rxjs';
-import {Adb} from './Adb';
-import {AdbTop} from './AdbTop';
+import {getStore} from './common/Store';
+import {ConnectableObservable} from 'rxjs';
+import {Adb} from './bridges/Adb';
+import {Processes} from './common/Processes';
+import {Devices} from './common/Devices';
 
-async function getAdb(): Promise<Adb> {
-  return new Adb((await pathForDebugBridge('adb')));
-}
-
-const adbObs = Observable.defer(() =>
-  pathForDebugBridge('adb'),
-).switchMap(adbPath => Observable.of(new Adb(adbPath)));
+const ADB = 'adb';
 
 export async function registerAdbPath(
   id: string,
   path: NuclideUri,
   priority: number = -1,
 ): Promise<void> {
-  getStore('adb').registerPath(id, {path, priority});
+  getStore(ADB).registerPath(id, {path, priority});
 }
 
-export async function getCurrentPathsInfo(): Promise<DBPathsInfo> {
-  return getStore('adb').getCurrentPathsInfo();
+export async function getFullConfig(): Promise<DebugBridgeFullConfig> {
+  return getStore(ADB).getFullConfig();
 }
 
 export async function registerCustomPath(path: ?string): Promise<void> {
-  getStore('adb').registerCustomPath(path);
+  getStore(ADB).registerCustomPath(path);
 }
 
 export function getDeviceInfo(
-  device: string,
+  device: DeviceId,
 ): ConnectableObservable<Map<string, string>> {
-  return adbObs.switchMap(adb => adb.getDeviceInfo(device)).publish();
+  return new Adb(device).getDeviceInfo().publish();
 }
 
 export function getProcesses(
-  device: string,
+  device: DeviceId,
 ): ConnectableObservable<Array<Process>> {
-  return adbObs
-    .switchMap(adb => {
-      return new AdbTop(adb, device).fetch();
-    })
-    .publish();
+  return new Processes(new Adb(device)).fetch().publish();
 }
 
 export async function stopPackage(
-  device: string,
+  device: DeviceId,
   packageName: string,
 ): Promise<void> {
-  return (await getAdb()).stopPackage(device, packageName);
+  return new Adb(device).stopPackage(packageName);
 }
 
 export function getDeviceList(): ConnectableObservable<
   Array<DeviceDescription>,
 > {
-  return adbObs.switchMap(adb => adb.getDeviceList()).publish();
+  return new Devices(Adb).getDeviceList().publish();
 }
 
 export async function getPidFromPackageName(
-  device: string,
+  device: DeviceId,
   packageName: string,
 ): Promise<number> {
-  return (await getAdb()).getPidFromPackageName(device, packageName);
+  return new Processes(new Adb(device)).getPidFromPackageName(packageName);
 }
 
 export function installPackage(
-  device: string,
+  device: DeviceId,
   packagePath: NuclideUri,
 ): ConnectableObservable<LegacyProcessMessage> {
   // TODO(T17463635)
-  return adbObs.switchMap(d => d.installPackage(device, packagePath)).publish();
+  return new Adb(device).installPackage(packagePath).publish();
 }
 
 export function uninstallPackage(
-  device: string,
+  device: DeviceId,
   packageName: string,
 ): ConnectableObservable<LegacyProcessMessage> {
   // TODO(T17463635)
-  return adbObs
-    .switchMap(d => d.uninstallPackage(device, packageName))
-    .publish();
+  return new Adb(device).uninstallPackage(packageName).publish();
 }
 
 export async function forwardJdwpPortToPid(
-  device: string,
+  device: DeviceId,
   tcpPort: number,
   pid: number,
+): Promise<?string> {
+  return new Adb(device).forwardJdwpPortToPid(tcpPort, pid);
+}
+
+export async function removeJdwpForwardSpec(
+  device: DeviceId,
+  spec: ?string,
 ): Promise<string> {
-  return (await getAdb()).forwardJdwpPortToPid(device, tcpPort, pid);
+  return new Adb(device).removeJdwpForwardSpec(spec);
 }
 
 export async function launchActivity(
-  device: string,
+  device: DeviceId,
   packageName: string,
   activity: string,
   debug: boolean,
   action: ?string,
+  parameters: ?Map<string, string>,
 ): Promise<string> {
-  return (await getAdb()).launchActivity(
-    device,
+  return new Adb(device).launchActivity(
     packageName,
     activity,
     debug,
     action,
+    parameters,
   );
 }
 
+export async function launchMainActivity(
+  device: DeviceId,
+  packageName: string,
+  debug: boolean,
+  parameters: ?Map<string, string>,
+): Promise<string> {
+  return new Adb(device).launchMainActivity(packageName, debug, parameters);
+}
+
 export async function activityExists(
-  device: string,
+  device: DeviceId,
   packageName: string,
   activity: string,
 ): Promise<boolean> {
-  return (await getAdb()).activityExists(device, packageName, activity);
+  return new Adb(device).activityExists(packageName, activity);
 }
 
 export function getJavaProcesses(
-  device: string,
+  device: DeviceId,
 ): ConnectableObservable<Array<AndroidJavaProcess>> {
-  return adbObs.switchMap(adb => adb.getJavaProcesses(device)).publish();
+  return new Adb(device).getJavaProcesses().publish();
 }
 
 export async function dumpsysPackage(
-  device: string,
+  device: DeviceId,
   identifier: string,
 ): Promise<?string> {
-  return (await getAdb()).dumpsysPackage(device, identifier);
+  return new Adb(device).dumpsysPackage(identifier);
 }
 
-export async function touchFile(device: string, path: string): Promise<string> {
-  return (await getAdb()).touchFile(device, path);
+export async function touchFile(
+  device: DeviceId,
+  path: string,
+): Promise<string> {
+  return new Adb(device).touchFile(path);
 }
 
 export async function removeFile(
-  device: string,
+  device: DeviceId,
   path: string,
 ): Promise<string> {
-  return (await getAdb()).removeFile(device, path);
+  return new Adb(device).removeFile(path);
 }
 
 export async function getInstalledPackages(
-  device: string,
+  device: DeviceId,
 ): Promise<Array<string>> {
-  return (await getAdb()).getInstalledPackages(device);
+  return new Adb(device).getInstalledPackages();
+}
+
+export function addAdbPort(port: number): void {
+  getStore('adb').addPort(port);
+}
+
+export function removeAdbPort(port: number): void {
+  getStore('adb').removePort(port);
+}
+
+export function getAdbPorts(): Promise<Array<number>> {
+  return Promise.resolve(getStore('adb').getPorts());
 }

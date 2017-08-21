@@ -11,15 +11,10 @@
 
 import {CompositeDisposable} from 'event-kit';
 import type {Socket} from 'net';
-import type {ClientCallback as ClientCallbackType} from '../lib/ClientCallback';
 import type {DbgpConnector as DbgpConnectorType} from '../lib/DbgpConnector';
 import type {Connection as ConnectionType} from '../lib/Connection';
-import type {
-  BreakpointStore as BreakpointStoreType,
-} from '../lib/BreakpointStore';
-import type {
-  ConnectionMultiplexer as ConnectionMultiplexerType,
-} from '../lib/ConnectionMultiplexer';
+import type {BreakpointStore as BreakpointStoreType} from '../lib/BreakpointStore';
+import type {ConnectionMultiplexer as ConnectionMultiplexerType} from '../lib/ConnectionMultiplexer';
 import {ConnectionMultiplexerStatus} from '../lib/ConnectionMultiplexer';
 import {uncachedRequire, clearRequireCache} from '../../nuclide-test-helpers';
 import {updateSettings} from '../lib/settings';
@@ -45,7 +40,8 @@ describe('debugger-hhvm-proxy ConnectionMultiplexer', () => {
   let isCorrectConnectionResult;
   let isDummyConnectionResult;
   let ConnectionUtils: any;
-  let clientCallback: any;
+  let sendOutputMessage: any;
+  let sendNotificationMessage: any;
 
   const config = {
     xdebugAttachPort: 9000,
@@ -137,15 +133,17 @@ describe('debugger-hhvm-proxy ConnectionMultiplexer', () => {
       failConnection,
     };
 
-    clientCallback = ((jasmine.createSpyObj('clientCallback', [
-      'sendUserMessage',
-    ]): any): ClientCallbackType);
+    sendOutputMessage = jasmine.createSpy('sendOutputMessage');
+    sendNotificationMessage = jasmine.createSpy('sendNotificationMessage');
 
     const {ConnectionMultiplexer} = ((uncachedRequire(
       require,
       '../lib/ConnectionMultiplexer',
     ): any): {ConnectionMultiplexer: Class<ConnectionMultiplexerType>});
-    connectionMultiplexer = new ConnectionMultiplexer(clientCallback);
+    connectionMultiplexer = new ConnectionMultiplexer(
+      sendOutputMessage,
+      sendNotificationMessage,
+    );
     connectionMultiplexer.onStatus(onStatus);
     connectionMultiplexer.onNotification(onNotification);
     function createConnectionSpy(isDummy: boolean) {
@@ -885,11 +883,6 @@ describe('debugger-hhvm-proxy ConnectionMultiplexer', () => {
     const errorMessage = 'error message';
     onDbgpConnectorError(errorMessage);
 
-    expect(
-      clientCallback.sendUserMessage,
-    ).toHaveBeenCalledWith('notification', {
-      type: 'error',
-      message: errorMessage,
-    });
+    expect(sendNotificationMessage).toHaveBeenCalledWith(errorMessage, 'error');
   });
 });

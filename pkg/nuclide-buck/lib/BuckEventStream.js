@@ -177,9 +177,10 @@ export function getEventsFromProcess(
             message: stripAnsi(message.data),
             // Build failure messages typically do not show up in the web socket.
             // TODO(hansonw): fix this on the Buck side
-            level: message.data.indexOf(BUILD_FAILED_MESSAGE) === -1
-              ? 'log'
-              : 'error',
+            level:
+              message.data.indexOf(BUILD_FAILED_MESSAGE) === -1
+                ? 'log'
+                : 'error',
           };
         }
       default:

@@ -50,7 +50,12 @@ async function formatImpl(
     isInterfaceF(path) ? 'true' : 'false',
     ...getRefmtFlags(),
   ];
-  return instance.format(editor.getText(), language, refmtFlags);
+  return instance.format(
+    editor.getText(),
+    nuclideUri.getPath(path),
+    language,
+    refmtFlags,
+  );
 }
 
 export async function getEntireFormatting(

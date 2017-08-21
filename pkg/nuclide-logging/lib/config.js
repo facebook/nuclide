@@ -14,8 +14,8 @@ import {
   isRunningInTest,
   isRunningInClient,
 } from '../../commons-node/system-info';
-import fsPromise from 'nuclide-commons/fsPromise';
 
+import fs from 'fs';
 import invariant from 'invariant';
 import os from 'os';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -41,13 +41,13 @@ const additionalLogFiles: Array<AdditionalLogFile> = [];
 const MAX_LOG_SIZE = 1024 * 1024;
 const MAX_LOG_BACKUPS = 10;
 
-export async function getServerLogAppenderConfig(): Promise<?Object> {
+export function getServerLogAppenderConfig(): ?log4js$Appender {
   // Skip config scribe_cat logger if
   // 1) or running in open sourced version of nuclide
   // 2) or the scribe_cat command is missing.
   if (
-    !await fsPromise.exists(scribeAppenderPath) ||
-    !await ScribeProcess.isScribeCatOnPath()
+    !fs.existsSync(scribeAppenderPath) ||
+    !ScribeProcess.isScribeCatOnPath()
   ) {
     return null;
   }
@@ -112,7 +112,7 @@ function getDefaultConfigClient(): log4js$Config {
   };
 }
 
-export async function getDefaultConfig(): Promise<log4js$Config> {
+export function getDefaultConfig(): log4js$Config {
   if (isRunningInClient() || isRunningInTest()) {
     return getDefaultConfigClient();
   }
@@ -120,7 +120,7 @@ export async function getDefaultConfig(): Promise<log4js$Config> {
   // Do not print server logs to stdout/stderr.
   // These are normally just piped to a .nohup.out file, so doing this just causes
   // the log files to be duplicated.
-  const serverLogAppenderConfig = await getServerLogAppenderConfig();
+  const serverLogAppenderConfig = getServerLogAppenderConfig();
   invariant(baseConfig.appenders);
   if (serverLogAppenderConfig) {
     return {

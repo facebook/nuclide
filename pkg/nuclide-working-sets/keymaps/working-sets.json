@@ -1,10 +1,12 @@
 {
   ".platform-darwin atom-workspace": {
     "ctrl-shift-s": "working-sets:toggle-last-selected",
-    "ctrl-s": "working-sets:select-active"
+    "ctrl-s": "working-sets:select-active",
+    "cmd-ctrl-shift-f": "working-sets:find-in-active"
   },
   ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
     "alt-shift-s": "working-sets:toggle-last-selected",
-    "alt-s": "working-sets:select-active"
+    "alt-s": "working-sets:select-active",
+    "alt-ctrl-shift-f": "working-sets:find-in-active"
   }
 }

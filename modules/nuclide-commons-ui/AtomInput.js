@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -28,6 +29,7 @@ type DefaultProps = {
   onFocus: () => mixed,
   onBlur: (blurEvent: Event) => mixed,
   unstyled: boolean,
+  style: ?Object,
 };
 
 type Props = {
@@ -50,6 +52,7 @@ type Props = {
   // If the `value` prop is specified, then the component's displayed text is controlled by this
   // prop.  Otherwise its displayed text must be imperatively set on the instance.
   value?: string,
+  style: ?Object,
 };
 
 type State = {
@@ -76,6 +79,7 @@ export class AtomInput extends React.Component {
     onFocus: () => {},
     onBlur: () => {},
     unstyled: false,
+    style: null,
   };
 
   constructor(props: Props) {
@@ -191,8 +195,8 @@ export class AtomInput extends React.Component {
   render(): React.Element<any> {
     const className = classNames(this.props.className, {
       'atom-text-editor-unstyled': this.props.unstyled,
-      [`atom-text-editor-${maybeToString(this.props.size)}`]: this.props.size !=
-        null,
+      [`atom-text-editor-${maybeToString(this.props.size)}`]:
+        this.props.size != null,
     });
 
     return (
@@ -200,15 +204,14 @@ export class AtomInput extends React.Component {
       // component class when "Use Shadow DOM" is disabled, this element should never have children.
       // If an element has no children, React guarantees it will never re-render the element (which
       // would wipe out the web component's work in this case).
-      (
-        <atom-text-editor
-          class={className}
-          mini
-          onClick={this.props.onClick}
-          onFocus={this.props.onFocus}
-          onBlur={this.props.onBlur}
-        />
-      )
+      <atom-text-editor
+        class={className}
+        mini
+        onClick={this.props.onClick}
+        onFocus={this.props.onFocus}
+        onBlur={this.props.onBlur}
+        style={this.props.style}
+      />
     );
   }
 

@@ -16,6 +16,7 @@ import type {
   RecordHeightChangeHandler,
   Source,
 } from '../types';
+import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import debounce from 'nuclide-commons/debounce';
@@ -28,6 +29,7 @@ import PromptButton from './PromptButton';
 import NewMessagesNotification from './NewMessagesNotification';
 import invariant from 'assert';
 import shallowEqual from 'shallowequal';
+import recordsChanged from '../recordsChanged';
 
 type Props = {
   displayableRecords: Array<DisplayableRecord>,
@@ -43,8 +45,7 @@ type Props = {
   selectExecutor: (executorId: string) => void,
   selectSources: (sourceIds: Array<string>) => void,
   sources: Array<Source>,
-  toggleRegExpFilter: () => void,
-  updateFilterText: (filterText: string) => void,
+  updateFilter: (change: RegExpFilterChange) => void,
   getProvider: (id: string) => ?OutputProvider,
   onDisplayableRecordHeightChange: RecordHeightChangeHandler,
   filteredRecordCount: number,
@@ -70,12 +71,7 @@ export default class Console extends React.Component {
     };
     this._disposables = new UniversalDisposable();
     this._isScrolledNearBottom = true;
-    (this: any)._getExecutor = this._getExecutor.bind(this);
-    (this: any)._getProvider = this._getProvider.bind(this);
-    (this: any)._handleOutputTable = this._handleOutputTable.bind(this);
-    (this: any)._handleScroll = this._handleScroll.bind(this);
     (this: any)._handleScrollEnd = debounce(this._handleScrollEnd, 100);
-    (this: any)._scrollToBottom = this._scrollToBottom.bind(this);
   }
 
   componentDidMount(): void {
@@ -99,7 +95,10 @@ export default class Console extends React.Component {
     // automatically scroll.
     if (
       this._isScrolledNearBottom &&
-      this.props.displayableRecords.length > prevProps.displayableRecords.length
+      recordsChanged(
+        prevProps.displayableRecords,
+        this.props.displayableRecords,
+      )
     ) {
       this._scrollToBottom();
     }
@@ -131,18 +130,20 @@ export default class Console extends React.Component {
   }
 
   componentWillReceiveProps(nextProps: Props): void {
-    if (
-      nextProps.displayableRecords.length > this.props.displayableRecords.length
-    ) {
-      // If we receive new messages after we've scrolled away from the bottom, show the
-      // "new messages" notification.
-      if (!this._isScrolledNearBottom) {
-        this.setState({unseenMessages: true});
-      }
-    }
-
+    // If the messages were cleared, hide the notification.
     if (nextProps.displayableRecords.length === 0) {
+      this._isScrolledNearBottom = true;
       this.setState({unseenMessages: false});
+    } else if (
+      // If we receive new messages after we've scrolled away from the bottom, show the "new
+      // messages" notification.
+      !this._isScrolledNearBottom &&
+      recordsChanged(
+        this.props.displayableRecords,
+        nextProps.displayableRecords,
+      )
+    ) {
+      this.setState({unseenMessages: true});
     }
   }
 
@@ -153,13 +154,13 @@ export default class Console extends React.Component {
     );
   }
 
-  _getExecutor(id: string): ?Executor {
+  _getExecutor = (id: string): ?Executor => {
     return this.props.executors.get(id);
-  }
+  };
 
-  _getProvider(id: string): ?OutputProvider {
+  _getProvider = (id: string): ?OutputProvider => {
     return this.props.getProvider(id);
-  }
+  };
 
   render(): ?React.Element<any> {
     return (
@@ -172,8 +173,7 @@ export default class Console extends React.Component {
           filterText={this.props.filterText}
           selectedSourceIds={this.props.selectedSourceIds}
           sources={this.props.sources}
-          toggleRegExpFilter={this.props.toggleRegExpFilter}
-          onFilterTextChange={this.props.updateFilterText}
+          onFilterChange={this.props.updateFilter}
           onSelectedSourcesChange={this.props.selectSources}
         />
         {/*
@@ -225,13 +225,13 @@ export default class Console extends React.Component {
     );
   }
 
-  _handleScroll(
+  _handleScroll = (
     offsetHeight: number,
     scrollHeight: number,
     scrollTop: number,
-  ): void {
+  ): void => {
     this._handleScrollEnd(offsetHeight, scrollHeight, scrollTop);
-  }
+  };
 
   _handleScrollEnd(
     offsetHeight: number,
@@ -248,15 +248,15 @@ export default class Console extends React.Component {
     });
   }
 
-  _handleOutputTable(ref: OutputTable): void {
+  _handleOutputTable = (ref: OutputTable): void => {
     this._outputTable = ref;
-  }
+  };
 
-  _scrollToBottom(): void {
+  _scrollToBottom = (): void => {
     if (!this._outputTable) {
       return;
     }
     this._outputTable.scrollToBottom();
     this.setState({unseenMessages: false});
-  }
+  };
 }

@@ -12,12 +12,5 @@
   "deserializers": {
     "ExampleGadgetA": "deserializeExampleGadgetA",
     "ExampleGadgetB": "deserializeExampleGadgetB"
-  },
-  "consumedServices": {
-    "nuclide.workspace-views": {
-      "versions": {
-        "0.0.0": "consumeWorkspaceViewsService"
-      }
-    }
   }
 }

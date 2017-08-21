@@ -10,9 +10,7 @@
  */
 
 import type {HyperclickProvider} from 'atom-ide-ui';
-import type {
-  Provider as QuickOpenProviderType,
-} from '../../nuclide-quick-open/lib/types';
+import type {Provider as QuickOpenProviderType} from '../../nuclide-quick-open/lib/types';
 
 import HyperclickHelpers from './HyperclickHelpers';
 import QuickOpenHelpers from './QuickOpenHelpers';

@@ -85,6 +85,7 @@ describe('FlowIDEConnectionWatcher', () => {
       // Additional indirection so the callbacks can be reassigned in tests after the creation of
       // this object
       Observable.defer(() => processFactory),
+      (null: any) /* File Cache */,
       (...args) => ideConnectionCallback(...args),
       (...args) => ideConnectionFactory(...args),
     );

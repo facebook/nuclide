@@ -13,19 +13,19 @@
     "language-json:grammar-used"
   ],
   "providedServices": {
-    "atom-ide-outline-view": {
+    "outline-view": {
       "versions": {
         "0.1.0": "provideOutlines"
       }
     },
-    "hyperclick.provider": {
+    "hyperclick": {
       "versions": {
-        "0.0.0": "getHyperclickProvider"
+        "0.1.0": "getHyperclickProvider"
       }
     },
-    "nuclide-code-format.provider": {
+    "code-format.file": {
       "versions": {
-        "0.0.0": "provideCodeFormat"
+        "0.1.0": "provideCodeFormat"
       }
     }
   }

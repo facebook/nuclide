@@ -10,9 +10,7 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  SymbolResult,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {SymbolResult} from '../../nuclide-language-service/lib/LanguageService';
 import type {HHSearchPosition} from './types';
 
 import {findHackConfigDir} from './hack-config';
@@ -133,6 +131,7 @@ const ICONS = {
 };
 
 function bestIconForDesc(desc: ?string): ?string {
+  // flowlint-next-line sketchy-null-string:off
   if (!desc) {
     return ICONS.default;
   }

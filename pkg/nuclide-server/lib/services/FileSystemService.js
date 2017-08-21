@@ -221,11 +221,11 @@ export async function copy(
  * Removes directories even if they are non-empty. Does not fail if the directory doesn't exist.
  */
 export function rmdir(path: NuclideUri): Promise<void> {
-  return fsPromise.rmdir(path);
+  return fsPromise.rimraf(path);
 }
 
 export async function rmdirAll(paths: Array<NuclideUri>): Promise<void> {
-  await Promise.all(paths.map(p => fsPromise.rmdir(p)));
+  await Promise.all(paths.map(p => fsPromise.rimraf(p)));
 }
 
 /**
@@ -339,17 +339,37 @@ async function copyFilePermissions(
 }
 
 /**
- * The writeFile endpoint accepts the following query parameters:
+ * A small wrapper around fs.writeFile that also implements:
  *
- *   path: path to the file to read (it must be url encoded).
- *   data: file contents to write.
- *   options: options to pass to fs.writeFile
+ * - atomic writes (by writing to a temporary file first)
+ * - uses a promise rather than a callback
  *
- * TODO: move to nuclide-commons and rename to writeFileAtomic
+ * `options` is passed directly into fs.writeFile.
  */
-export async function writeFile(
+export function writeFile(
   path: NuclideUri,
   data: string,
+  options?: {encoding?: string, mode?: number, flag?: string},
+): Promise<void> {
+  return _writeFile(path, data, options);
+}
+
+/**
+ * This is the same as writeFile but with buffers.
+ * The RPC framework can't use string | Buffer so we have to create a separate function.
+ * Note that options.encoding is ignored for raw buffers.
+ */
+export function writeFileBuffer(
+  path: NuclideUri,
+  data: Buffer,
+  options?: {encoding?: string, mode?: number, flag?: string},
+): Promise<void> {
+  return _writeFile(path, data, options);
+}
+
+async function _writeFile(
+  path: NuclideUri,
+  data: string | Buffer,
   options?: {encoding?: string, mode?: number, flag?: string},
 ): Promise<void> {
   let complete = false;
@@ -383,4 +403,24 @@ export async function writeFile(
       await fsPromise.unlink(tempFilePath);
     }
   }
+}
+
+export async function getFreeSpace(path: NuclideUri): Promise<?number> {
+  // Only supported on Linux for now.
+  if (process.platform !== 'linux') {
+    return null;
+  }
+  // The output of this command is "Avail\n12345678\n".
+  // Just return the first line that parses to an integer.
+  return runCommand('df', ['--output=avail', path])
+    .map(output => {
+      for (const line of output.split('\n')) {
+        const number = parseInt(line, 10);
+        if (Number.isInteger(number)) {
+          return number;
+        }
+      }
+    })
+    .toPromise()
+    .catch(() => null);
 }

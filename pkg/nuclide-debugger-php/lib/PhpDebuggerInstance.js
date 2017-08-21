@@ -10,14 +10,10 @@
  */
 
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
-import type {
-  PhpDebuggerService as PhpDebuggerServiceType,
-} from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
+import type {PhpDebuggerService as PhpDebuggerServiceType} from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
 
 import {DebuggerInstance} from '../../nuclide-debugger-base';
 import {ObservableManager} from './ObservableManager';
-import {translateMessageFromServer} from '../../nuclide-debugger-base';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class PhpDebuggerInstance extends DebuggerInstance {
@@ -28,13 +24,7 @@ export class PhpDebuggerInstance extends DebuggerInstance {
     const subscriptions = new UniversalDisposable(
       new ObservableManager(
         rpcService.getNotificationObservable().refCount(),
-        rpcService.getOutputWindowObservable().refCount().map(message => {
-          const serverMessage = translateMessageFromServer(
-            nuclideUri.getHostname(processInfo.getTargetUri()),
-            message,
-          );
-          return JSON.parse(serverMessage);
-        }),
+        rpcService.getOutputWindowObservable().refCount(),
       ),
     );
     super(processInfo, rpcService, subscriptions);

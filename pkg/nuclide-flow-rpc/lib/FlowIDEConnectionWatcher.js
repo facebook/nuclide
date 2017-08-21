@@ -15,7 +15,10 @@ import {sleep} from 'nuclide-commons/promise';
 import {getLogger} from 'log4js';
 import {Observable} from 'rxjs';
 
-const defaultIDEConnectionFactory = proc => new FlowIDEConnection(proc);
+import type {FileCache} from '../../nuclide-open-files-rpc';
+
+const defaultIDEConnectionFactory = (proc, fileCache) =>
+  new FlowIDEConnection(proc, fileCache);
 
 // ESLint thinks the comment at the end is whitespace and warns. Worse, the autofix removes the
 // entire comment as well as the whitespace.
@@ -32,29 +35,39 @@ const IDE_CONNECTION_HEALTHY_THRESHOLD_MS = 10 * 1000;
 // If we get this many unhealthy connections in a row, give up.
 const MAX_UNHEALTHY_CONNECTIONS = 20;
 
-type IdeConnectionFactory = child_process$ChildProcess => FlowIDEConnection;
+type IdeConnectionFactory = (
+  child_process$ChildProcess,
+  FileCache,
+) => FlowIDEConnection;
 
 // For the lifetime of this class instance, keep a FlowIDEConnection alive, assuming we do not have
 // too many failures in a row.
 export class FlowIDEConnectionWatcher {
   _processFactory: Observable<?child_process$ChildProcess>;
   _ideConnectionCallback: (?FlowIDEConnection) => mixed;
-  _ideConnectionFactory: child_process$ChildProcess => FlowIDEConnection;
+  _ideConnectionFactory: (
+    child_process$ChildProcess,
+    FileCache,
+  ) => FlowIDEConnection;
 
   _currentIDEConnection: ?FlowIDEConnection;
   _currentIDEConnectionSubscription: ?IDisposable;
   _consecutiveUnhealthyConnections: number;
+
+  _fileCache: FileCache;
 
   _isStarted: boolean;
   _isDisposed: boolean;
 
   constructor(
     processFactory: Observable<?child_process$ChildProcess>,
+    fileCache: FileCache,
     ideConnectionCallback: (?FlowIDEConnection) => mixed,
     // Can be injected for testing purposes
     ideConnectionFactory: IdeConnectionFactory = defaultIDEConnectionFactory,
   ) {
     this._processFactory = processFactory;
+    this._fileCache = fileCache;
     this._ideConnectionFactory = ideConnectionFactory;
     this._ideConnectionCallback = ideConnectionCallback;
 
@@ -125,7 +138,7 @@ export class FlowIDEConnectionWatcher {
       return;
     }
     const connectionStartTime = this._getTimeMS();
-    const ideConnection = this._ideConnectionFactory(proc);
+    const ideConnection = this._ideConnectionFactory(proc, this._fileCache);
     this._ideConnectionCallback(ideConnection);
     this._currentIDEConnectionSubscription = ideConnection.onWillDispose(() => {
       this._ideConnectionCallback(null);

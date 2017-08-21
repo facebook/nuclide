@@ -9,6 +9,8 @@
  * @format
  */
 
+/* globals Element */
+
 import invariant from 'assert';
 import {CompositeDisposable, Emitter} from 'atom';
 import {LazyTreeNode} from './LazyTreeNode';
@@ -16,6 +18,7 @@ import {TreeNodeComponent} from './TreeNodeComponent';
 import {forEachCachedNode} from './tree-node-traversals';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
 type TreeMenuItemDefinition = {
   label: string,
@@ -134,11 +137,6 @@ export class TreeRootComponent extends React.Component {
         ? new Set(this.props.initialSelectedNodeKeys)
         : new Set(rootKeys.length === 0 ? [] : [rootKeys[0]]),
     };
-
-    (this: any)._onClickNodeArrow = this._onClickNodeArrow.bind(this);
-    (this: any)._onClickNode = this._onClickNode.bind(this);
-    (this: any)._onDoubleClickNode = this._onDoubleClickNode.bind(this);
-    (this: any)._onMouseDown = this._onMouseDown.bind(this);
   }
 
   componentDidMount(): void {
@@ -156,10 +154,10 @@ export class TreeRootComponent extends React.Component {
     if (!prevState || this.state.selectedKeys !== prevState.selectedKeys) {
       const firstSelectedDescendant = this.refs[FIRST_SELECTED_DESCENDANT_REF];
       if (firstSelectedDescendant !== undefined) {
-        // $FlowFixMe
-        ReactDOM.findDOMNode(firstSelectedDescendant).scrollIntoViewIfNeeded(
-          false,
-        );
+        const el = ReactDOM.findDOMNode(firstSelectedDescendant);
+        if (el instanceof Element) {
+          scrollIntoViewIfNeeded(el, false);
+        }
       }
     }
 
@@ -210,7 +208,7 @@ export class TreeRootComponent extends React.Component {
     this.setState({selectedKeys});
   }
 
-  _onClickNode(event: SyntheticMouseEvent, node: LazyTreeNode): void {
+  _onClickNode = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
     if (event.metaKey) {
       this._toggleNodeSelected(node);
       return;
@@ -227,27 +225,30 @@ export class TreeRootComponent extends React.Component {
     }
 
     this._confirmNode(node);
-  }
+  };
 
-  _onClickNodeArrow(event: SyntheticEvent, node: LazyTreeNode): void {
+  _onClickNodeArrow = (event: SyntheticEvent, node: LazyTreeNode): void => {
     this._toggleNodeExpanded(node);
-  }
+  };
 
-  _onDoubleClickNode(event: SyntheticMouseEvent, node: LazyTreeNode): void {
+  _onDoubleClickNode = (
+    event: SyntheticMouseEvent,
+    node: LazyTreeNode,
+  ): void => {
     // Double clicking a non-directory will keep the created tab open.
     if (!node.isContainer()) {
       this.props.onKeepSelection();
     }
-  }
+  };
 
-  _onMouseDown(event: SyntheticMouseEvent, node: LazyTreeNode): void {
+  _onMouseDown = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
     // Select the node on right-click.
     if (event.button === 2 || (event.button === 0 && event.ctrlKey === true)) {
       if (!this._isNodeSelected(node)) {
         this.setState({selectedKeys: new Set([node.getKey()])});
       }
     }
-  }
+  };
 
   addContextMenuItemGroup(
     menuItemDefinitions: Array<TreeMenuItemDefinition>,
@@ -556,6 +557,7 @@ export class TreeRootComponent extends React.Component {
 
   _expandSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       this.expandNodeKey(key);
     }
@@ -633,6 +635,7 @@ export class TreeRootComponent extends React.Component {
 
   _collapseSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (!key) {
       return;
     }
@@ -658,6 +661,7 @@ export class TreeRootComponent extends React.Component {
 
     let keyIndexToSelect = allKeys.length - 1;
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       keyIndexToSelect = allKeys.indexOf(key);
       if (keyIndexToSelect > 0) {
@@ -676,6 +680,7 @@ export class TreeRootComponent extends React.Component {
 
     let keyIndexToSelect = 0;
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       keyIndexToSelect = allKeys.indexOf(key);
       if (keyIndexToSelect !== -1 && keyIndexToSelect < allKeys.length - 1) {
@@ -688,6 +693,7 @@ export class TreeRootComponent extends React.Component {
 
   _confirmSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       const node = this.getNodeForKey(key);
       if (node) {

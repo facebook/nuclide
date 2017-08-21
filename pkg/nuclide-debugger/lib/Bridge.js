@@ -21,6 +21,7 @@ import type {
   ExpressionResult,
   GetPropertiesResult,
   IPCEvent,
+  ThreadSwitchMessageData,
 } from './types';
 
 import {Subject} from 'rxjs';
@@ -45,10 +46,11 @@ export default class Bridge {
   _consoleEvent$: Subject<string>;
 
   constructor(debuggerModel: DebuggerModel) {
-    (this: any)._handleIpcMessage = this._handleIpcMessage.bind(this);
     this._debuggerModel = debuggerModel;
     this._suppressBreakpointSync = false;
-    this._commandDispatcher = new CommandDispatcher();
+    this._commandDispatcher = new CommandDispatcher(() =>
+      debuggerModel.getStore().getIsReadonlyTarget(),
+    );
     this._consoleEvent$ = new Subject();
     this._disposables = new UniversalDisposable(
       debuggerModel
@@ -84,7 +86,7 @@ export default class Bridge {
   }
 
   continue() {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     this._commandDispatcher.send('Continue');
   }
 
@@ -93,27 +95,27 @@ export default class Bridge {
   }
 
   stepOver() {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     this._commandDispatcher.send('StepOver');
   }
 
   stepInto() {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     this._commandDispatcher.send('StepInto');
   }
 
   stepOut() {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     this._commandDispatcher.send('StepOut');
   }
 
   runToLocation(filePath: string, line: number) {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     this._commandDispatcher.send('RunToLocation', filePath, line);
   }
 
   triggerAction(actionId: string): void {
-    this._clearInterface();
+    this._clearInterfaceDelayed();
     switch (actionId) {
       case ChromeActionRegistryActions.RUN:
         this.continue();
@@ -198,7 +200,7 @@ export default class Bridge {
     this._debuggerModel.getActions().updateScopes(scopeSections);
   }
 
-  _handleIpcMessage(event: IPCEvent): void {
+  _handleIpcMessage = (event: IPCEvent): void => {
     switch (event.channel) {
       case 'notification':
         switch (event.args[0]) {
@@ -236,6 +238,9 @@ export default class Bridge {
           case 'BreakpointRemoved':
             this._removeBreakpoint(event.args[1]);
             break;
+          case 'BreakpointHitCountChanged':
+            this._handleBreakpointHitCountChanged(event.args[1]);
+            break;
           case 'NonLoaderDebuggerPaused':
             this._handleDebuggerPaused(event.args[1]);
             break;
@@ -266,7 +271,7 @@ export default class Bridge {
         }
         break;
     }
-  }
+  };
 
   _sendConsoleMessage(level: string, text: string): void {
     this._consoleEvent$.next(
@@ -280,15 +285,11 @@ export default class Bridge {
   _reportEngineError(message: string): void {
     const outputMessage = `Debugger engine reports error: ${message}`;
     logger.error(outputMessage);
-    this._sendConsoleMessage('error', outputMessage);
-    atom.notifications.addError(outputMessage);
   }
 
   _reportEngineWarning(message: string): void {
     const outputMessage = `Debugger engine reports warning: ${message}`;
     logger.warn(outputMessage);
-    this._sendConsoleMessage('warning', outputMessage);
-    atom.notifications.addWarning(outputMessage);
   }
 
   _updateDebuggerSettings(): void {
@@ -308,11 +309,7 @@ export default class Bridge {
   _handleDebuggerPaused(
     options: ?{
       stopThreadId: number,
-      threadSwitchNotification: {
-        sourceURL: string,
-        lineNumber: number,
-        message: string,
-      },
+      threadSwitchNotification: ThreadSwitchMessageData,
     },
   ): void {
     this._debuggerModel.getActions().setDebuggerMode(DebuggerMode.PAUSED);
@@ -325,6 +322,7 @@ export default class Bridge {
   }
 
   _handleDebuggerResumed(): void {
+    this._clearInterface();
     this._debuggerModel.getActions().setDebuggerMode(DebuggerMode.RUNNING);
   }
 
@@ -332,9 +330,13 @@ export default class Bridge {
     this._debuggerModel.getStore().loaderBreakpointResumed();
   }
 
-  _clearInterface(): void {
+  _clearInterfaceDelayed(): void {
     // Prevent dispatcher re-entrance error.
-    process.nextTick(() => this._debuggerModel.getActions().clearInterface());
+    process.nextTick(this._clearInterface.bind(this));
+  }
+
+  _clearInterface(): void {
+    this._debuggerModel.getActions().clearInterface();
   }
 
   _setSelectedCallFrameLine(
@@ -371,6 +373,7 @@ export default class Bridge {
     const {sourceURL, lineNumber, condition, enabled} = breakpoint;
     const path = nuclideUri.uriToNuclideUri(sourceURL);
     // only handle real files for now.
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       try {
         this._suppressBreakpointSync = true;
@@ -383,10 +386,26 @@ export default class Bridge {
     }
   }
 
+  _handleBreakpointHitCountChanged(params: {
+    breakpoint: IPCBreakpoint,
+    hitCount: number,
+  }): void {
+    const {breakpoint, hitCount} = params;
+    const {sourceURL, lineNumber} = breakpoint;
+    const path = nuclideUri.uriToNuclideUri(sourceURL);
+    // flowlint-next-line sketchy-null-string:off
+    if (path) {
+      this._debuggerModel
+        .getActions()
+        .updateBreakpointHitCount(path, lineNumber, hitCount);
+    }
+  }
+
   _removeBreakpoint(breakpoint: IPCBreakpoint) {
     const {sourceURL, lineNumber} = breakpoint;
     const path = nuclideUri.uriToNuclideUri(sourceURL);
     // only handle real files for now.
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       try {
         this._suppressBreakpointSync = true;

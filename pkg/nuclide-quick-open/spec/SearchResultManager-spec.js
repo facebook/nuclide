@@ -107,9 +107,8 @@ function constructSingleProviderResult(
   result: ProviderResult,
 ): GroupedResults {
   const groupResult: GroupedResult = {
-    priority: provider.priority != null
-      ? provider.priority
-      : Number.POSITIVE_INFINITY,
+    priority:
+      provider.priority != null ? provider.priority : Number.POSITIVE_INFINITY,
     title: provider.display != null ? provider.display.title : provider.name,
     results: {
       global: {...result},
@@ -152,7 +151,6 @@ describe('SearchResultManager', () => {
   describe('provider/directory cache', () => {
     it('updates the cache when providers become (un)available', () => {
       waitsForPromise(async () => {
-        spyOn(Date, 'now').andCallFake(() => global.now); // needed to mock debounce
         let providersChangedCallCount = 0;
         const providersChanged = new Promise(resolve => {
           searchResultManager.onProvidersChanged(() => {

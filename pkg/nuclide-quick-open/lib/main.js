@@ -77,12 +77,13 @@ class Activation {
       }),
     );
 
-    (this: any)._closeSearchPanel = this._closeSearchPanel.bind(this);
-    (this: any)._handleSelection = this._handleSelection.bind(this);
     (this: any)._handleSelectionChanged = debounce(
       this._handleSelectionChanged.bind(this),
       ANALYTICS_CHANGE_SELECTION_DEBOUCE,
     );
+
+    (this: any)._handleSelection = (this: any)._handleSelection.bind(this);
+    (this: any)._closeSearchPanel = (this: any)._closeSearchPanel.bind(this);
   }
 
   _handleActions(action: QuickSelectionAction): void {
@@ -115,6 +116,7 @@ class Activation {
         'quickopen-provider': providerName,
         'quickopen-session': this._analyticsSessionId || '',
         // Because the `provider` is usually OmniSearch, also track the original provider.
+        // flowlint-next-line sketchy-null-mixed:off
         'quickopen-provider-source': selection.sourceProvider || '',
       });
     }
@@ -144,6 +146,7 @@ class Activation {
      * selection or cancellation.
      */
     this._analyticsSessionId =
+      // flowlint-next-line sketchy-null-string:off
       this._analyticsSessionId || Date.now().toString();
     track('quickopen-change-tab', {
       'quickopen-provider': newProviderName,
@@ -335,7 +338,8 @@ export function getHomeFragments(): HomeFragments {
     feature: {
       title: 'Quick Open',
       icon: 'search',
-      description: 'A powerful search box to quickly find local and remote files and content.',
+      description:
+        'A powerful search box to quickly find local and remote files and content.',
       command: 'nuclide-quick-open:find-anything-via-omni-search',
     },
     priority: 10,

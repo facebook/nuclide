@@ -13,18 +13,34 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 import {TextBuffer} from 'atom';
+import semver from 'semver';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 
 import NuclideTextBuffer from './NuclideTextBuffer';
+import {RemoteFile} from './RemoteFile';
 import {ServerConnection} from './ServerConnection';
+
+const IS_ATOM_119 = semver.gte(atom.getVersion(), '1.19.0-beta0');
+
+const TEXT_BUFFER_PARAMS = {
+  shouldDestroyOnFileDelete: () => atom.config.get('core.closeDeletedFileTabs'),
+};
 
 export async function loadBufferForUri(
   uri: NuclideUri,
 ): Promise<atom$TextBuffer> {
   let buffer = existingBufferForUri(uri);
   if (buffer == null) {
-    buffer = createBufferForUri(uri);
+    if (IS_ATOM_119) {
+      return loadBufferForUriStatic(uri).then(loadedBuffer => {
+        atom.project.addBuffer(loadedBuffer);
+        return loadedBuffer;
+      });
+    } else {
+      // TODO: (hansonw) T19829039 Remove after 1.19
+      buffer = createBufferForUri(uri);
+    }
   }
   if (buffer.loaded) {
     return buffer;
@@ -36,6 +52,19 @@ export async function loadBufferForUri(
     atom.project.removeBuffer(buffer);
     throw error;
   }
+}
+
+function loadBufferForUriStatic(uri: NuclideUri): Promise<atom$TextBuffer> {
+  if (nuclideUri.isLocal(uri)) {
+    // $FlowFixMe: Add after 1.19
+    return TextBuffer.load(uri, TEXT_BUFFER_PARAMS);
+  }
+  const connection = ServerConnection.getForUri(uri);
+  if (connection == null) {
+    throw new Error(`ServerConnection cannot be found for uri: ${uri}`);
+  }
+  // $FlowFixMe: Add after 1.19
+  return TextBuffer.load(new RemoteFile(connection, uri), TEXT_BUFFER_PARAMS);
 }
 
 /**
@@ -52,9 +81,8 @@ export function bufferForUri(uri: NuclideUri): atom$TextBuffer {
 function createBufferForUri(uri: NuclideUri): atom$TextBuffer {
   let buffer;
   const params = {
+    ...TEXT_BUFFER_PARAMS,
     filePath: uri,
-    shouldDestroyOnFileDelete: () =>
-      atom.config.get('core.closeDeletedFileTabs'),
   };
   if (nuclideUri.isLocal(uri)) {
     buffer = new TextBuffer(params);
@@ -63,7 +91,14 @@ function createBufferForUri(uri: NuclideUri): atom$TextBuffer {
     if (connection == null) {
       throw new Error(`ServerConnection cannot be found for uri: ${uri}`);
     }
-    buffer = new NuclideTextBuffer(connection, params);
+    if (IS_ATOM_119) {
+      buffer = new TextBuffer(params);
+      // $FlowIgnore: Add setFile after 1.19
+      buffer.setFile(new RemoteFile(connection, uri));
+    } else {
+      // TODO: (hansonw) T19829039 Remove after 1.19
+      buffer = new NuclideTextBuffer(connection, params);
+    }
   }
   atom.project.addBuffer(buffer);
   invariant(buffer);

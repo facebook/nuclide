@@ -8,7 +8,7 @@ aren't (currently) exposed.
 To update the code, run the following command in this directory (and update the
 version here):
 
-    curl -Lk https://github.com/atom/tabs/archive/v0.104.1.zip -o tmp-atom-tabs.zip \
+    curl -Lk https://github.com/atom/tabs/archive/v0.106.2.zip -o tmp-atom-tabs.zip \
     && rm -rf "./atom-tabs" \
     && rm -rf "./tmp-atom-tabs" \
     && mkdir ./tmp-atom-tabs \

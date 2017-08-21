@@ -10,8 +10,7 @@
  */
 
 import type {BlameProvider} from './types';
-import type FileTreeContextMenu
-  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {FileTreeNode} from '../../nuclide-file-tree/lib/FileTreeNode';
 
 import {CompositeDisposable, Disposable} from 'atom';

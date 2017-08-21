@@ -27,8 +27,11 @@ type ContentFactory = (dismiss: () => void) => React$Element<any>;
 type Options = {|
   /** Called when the modal is dismissed (just before it is destroyed). */
   onDismiss?: () => void,
-  /** Disable the default behavior of dismissing when the user clicks outside the modal. */
-  disableDismissOnClickOutsideModal?: boolean,
+  /**
+   * Called when the user clicks outside the modal, return false to prevent dismissal.
+   * If unspecified the modal will be dismissed if the user clicks outside the modal.
+   */
+  shouldDismissOnClickOutsideModal?: () => boolean,
   /** Passed to atom's underlying addModalPanel function. */
   priority?: number,
   /** Passed to atom's underlying addModalPanel function. */
@@ -52,15 +55,18 @@ export default function showModal(
     priority: options.priority,
     className: options.className,
   });
+  const shouldDismissOnClickOutsideModal =
+    options.shouldDismissOnClickOutsideModal || (() => true);
   const disposable = new UniversalDisposable(
-    options.disableDismissOnClickOutsideModal
-      ? () => undefined
-      : Observable.fromEvent(document, 'mousedown').subscribe(({target}) => {
-          invariant(target instanceof Node);
-          if (!atomPanel.getItem().contains(target)) {
-            atomPanel.hide();
-          }
-        }),
+    Observable.fromEvent(document, 'mousedown').subscribe(({target}) => {
+      if (!shouldDismissOnClickOutsideModal()) {
+        return;
+      }
+      invariant(target instanceof Node);
+      if (!atomPanel.getItem().contains(target)) {
+        atomPanel.hide();
+      }
+    }),
     atomPanel.onDidChangeVisible(visible => {
       if (!visible) {
         disposable.dispose();
@@ -103,7 +109,11 @@ class ModalContainer extends React.Component {
   props: Props;
 
   render(): React.Element<any> {
-    return <div tabIndex="-1">{this.props.children}</div>;
+    return (
+      <div tabIndex="-1">
+        {this.props.children}
+      </div>
+    );
   }
 
   componentDidMount(): void {

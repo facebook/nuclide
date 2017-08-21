@@ -19,7 +19,8 @@ type Props = {|
   type: 'adb' | 'sdb',
   setCustomPath: (path: ?string) => void,
   dismiss: () => mixed,
-  currentActivePath: ?string,
+  activePath: ?string,
+  activePort: ?number,
   currentCustomPath: ?string,
   registeredPaths: string[],
 |};
@@ -35,38 +36,42 @@ export class ATCustomDBPathModal extends React.Component {
   constructor(props: Props) {
     super(props);
     this.state = {customPath: this.props.currentCustomPath};
-
-    (this: any)._handleConfirm = this._handleConfirm.bind(this);
-    (this: any)._handleCancel = this._handleCancel.bind(this);
-    (this: any)._handleCustomPathChange = this._handleCustomPathChange.bind(
-      this,
-    );
   }
 
-  _handleConfirm(): void {
+  _handleConfirm = (): void => {
     this.props.setCustomPath(this.state.customPath);
     this.props.dismiss();
-  }
+  };
 
-  _handleCancel(): void {
+  _handleCancel = (): void => {
     this.props.dismiss();
-  }
+  };
 
-  _handleCustomPathChange(customPath: string): void {
+  _handleCustomPathChange = (customPath: string): void => {
     this.setState({customPath: customPath.length === 0 ? null : customPath});
-  }
+  };
 
-  _getCurrentActivePath(): React.Element<any> {
+  _getActiveConfig(): React.Element<any> {
     return (
-      <label>
-        Active
-        {' '}
-        {this.props.type}
-        {' '}
-        path:
-        {' '}
-        <i><strong>{this.props.currentActivePath}</strong></i>
-      </label>
+      <div>
+        <label>
+          Active {this.props.type} path:{' '}
+          <i>
+            <strong>
+              {this.props.activePath}
+            </strong>
+          </i>
+        </label>
+        <label>
+          Active {this.props.type} port:{' '}
+          <i>
+            <strong>
+              {// flowlint-next-line sketchy-null-number:off
+              this.props.activePort || 'default'}
+            </strong>
+          </i>
+        </label>
+      </div>
     );
   }
 
@@ -111,22 +116,13 @@ export class ATCustomDBPathModal extends React.Component {
     return (
       <p>
         <small>
-          A custom
-          {' '}
-          {this.props.type}
-          {' '}
-          path takes priority over any other path that nuclide knows.
-          {' '}
-          This is specially useful if you also use
-          {' '}
-          {this.props.type}
-          {' '}
-          from the command line along with nuclide.
+          A custom {this.props.type} path takes priority over any other path
+          that nuclide knows. This is specially useful if you also use{' '}
+          {this.props.type} from the command line along with nuclide.
           <br />
-          Keep in mind that using two different versions of
-          {' '}
-          {this.props.type}
-          {' '}
+          Keep in mind that using two different versions of {
+            this.props.type
+          }{' '}
           simultaneously might break both tools.
         </small>
       </p>
@@ -137,7 +133,7 @@ export class ATCustomDBPathModal extends React.Component {
     return (
       <div>
         <div className="block">
-          {this._getCurrentActivePath()}
+          {this._getActiveConfig()}
         </div>
         <div className="block">
           {this._getPathSelector()}

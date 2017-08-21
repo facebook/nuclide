@@ -10,9 +10,10 @@
  */
 
 export default function createPaneContainer(): Object {
-  const instance = typeof atom.workspace.getCenter === 'function'
-    ? atom.workspace.getCenter().paneContainer
-    : (atom.workspace: any).paneContainer;
+  const instance =
+    typeof atom.workspace.getCenter === 'function'
+      ? atom.workspace.getCenter().paneContainer
+      : (atom.workspace: any).paneContainer;
   const PaneContainer = instance.constructor;
   return new PaneContainer({
     viewRegistry: atom.views,

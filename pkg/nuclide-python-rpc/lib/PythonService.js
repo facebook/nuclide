@@ -10,29 +10,23 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
-import type {
   DefinitionQueryResult,
+  DiagnosticMessageType,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
-  MessageType,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
+  FileDiagnosticMessage,
+  CodeAction,
 } from 'atom-ide-ui';
-import type {
-  AutocompleteResult,
-} from '../../nuclide-language-service/lib/LanguageService';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
 import invariant from 'assert';
@@ -116,7 +110,7 @@ export type PythonDiagnostic = {
   file: NuclideUri,
   code: string,
   message: string,
-  type: MessageType,
+  type: DiagnosticMessageType,
   line: number,
   column: number,
 };
@@ -153,6 +147,14 @@ class PythonSingleFileLanguageService {
     this._includeOptionalArguments = config.includeOptionalArguments;
   }
 
+  async getCodeActions(
+    filePath: NuclideUri,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>> {
+    throw new Error('Not implemented');
+  }
+
   getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
@@ -160,7 +162,7 @@ class PythonSingleFileLanguageService {
     throw new Error('Not Yet Implemented');
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>> {
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
     throw new Error('Not Yet Implemented');
   }
 
@@ -346,8 +348,8 @@ class PythonSingleFileLanguageService {
 }
 
 let formatterPath;
-function getFormatterPath() {
-  if (formatterPath) {
+function getFormatterPath(): string {
+  if (formatterPath != null) {
     return formatterPath;
   }
 
@@ -357,7 +359,7 @@ function getFormatterPath() {
     // $FlowFB
     const findFormatterPath = require('./fb/find-formatter-path').default;
     const overridePath = findFormatterPath();
-    if (overridePath) {
+    if (overridePath != null) {
       formatterPath = overridePath;
     }
   } catch (e) {
@@ -414,6 +416,7 @@ async function runLinterCommand(
 ): Promise<string> {
   const dirName = nuclideUri.dirname(src);
   const configDir = await fsPromise.findNearestFile('.flake8', dirName);
+  // flowlint-next-line sketchy-null-string:off
   const configPath = configDir ? nuclideUri.join(configDir, '.flake8') : null;
 
   let result;
@@ -437,6 +440,7 @@ async function runLinterCommand(
     'flake8';
   const args = [];
 
+  // flowlint-next-line sketchy-null-string:off
   if (configPath) {
     args.push('--config');
     args.push(configPath);

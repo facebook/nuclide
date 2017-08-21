@@ -11,16 +11,21 @@
 
 import invariant from 'assert';
 import {FileCache} from '../../nuclide-open-files-rpc/lib/FileCache';
-import {getActivation, reset, getFileVersionOfBuffer} from '../lib/main';
+import {
+  reset,
+  getFileVersionOfBuffer,
+  getNotifierByConnection,
+} from '../lib/main';
 import {TextBuffer} from 'atom';
 import {getBufferAtVersion} from '../../nuclide-open-files-rpc';
 import {Subject} from 'rxjs';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 describe('nuclide-open-files', () => {
   let notifier: FileCache = (null: any);
 
   async function getFileCache(): Promise<FileCache> {
-    const cache = await getActivation().notifiers._notifiers.get(null);
+    const cache = await getNotifierByConnection(null);
     invariant(cache != null);
     return (cache: any);
   }
@@ -352,9 +357,17 @@ describe('nuclide-open-files', () => {
         const dirEvents = (await getFileCache())
           .observeDirectoryEvents()
           .takeUntil(done)
-          // apm test adds a directory with a name like:
-          // '/Applications/Atom.app/Contents/Resources/app.asar/spec'
-          .map(dirs => Array.from(dirs).filter(dir => !dir.includes('asar')))
+          .map(dirs =>
+            Array.from(dirs).filter(
+              dir =>
+                !dir.includes(
+                  // apm test adds a directory with a name like: /Applications/Atom.app/Contents/Resources/app/spec.
+                  // Exclude it by checking against Atom's `resourcePath`.
+                  // $FlowIgnore `resourcePath` is a private API.
+                  nuclideUri.join(atom.packages.resourcePath, 'spec'),
+                ),
+            ),
+          )
           .do(dirs => {
             eventCount++;
           })
@@ -414,6 +427,21 @@ describe('nuclide-open-files', () => {
         expect(serverBuffer.getText()).toEqual('contents1');
 
         buffer.destroy();
+      });
+    });
+
+    it('safely handles destroyed buffers', () => {
+      waitsForPromise(async () => {
+        const buffer = new TextBuffer({
+          notifier,
+          filePath: 'f1',
+          text: 'contents1',
+        });
+        atom.project.addBuffer(buffer);
+        atom.project.removeBuffer(buffer);
+
+        const fileVersion = await getFileVersionOfBuffer(buffer);
+        expect(fileVersion).toBe(null);
       });
     });
 

@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -29,6 +30,7 @@ type TextEditorSetup = {
 
 function setupTextEditor(props: Props): TextEditorSetup {
   const textBuffer = props.textBuffer || new TextBuffer();
+  // flowlint-next-line sketchy-null-string:off
   if (props.path) {
     textBuffer.setPath(props.path);
   }
@@ -53,6 +55,7 @@ function setupTextEditor(props: Props): TextEditorSetup {
   }
   disposables.add(enforceSoftWrap(textEditor, props.softWrapped));
 
+  // flowlint-next-line sketchy-null-string:off
   if (props.placeholderText) {
     textEditor.setPlaceholderText(props.placeholderText);
   }
@@ -151,12 +154,17 @@ export class AtomTextEditor extends React.Component {
       this._editorDisposables.add(
         textEditorElement.onDidAttach(() => {
           const correctlySizedElement = textEditorElement.querySelector(
-            '* /deep/ .lines > :first-child > :first-child',
+            '* /deep/ .lines > :first-child',
           );
           if (correctlySizedElement == null) {
             return;
           }
-          const {width} = correctlySizedElement.style;
+          let {width} = correctlySizedElement.style;
+          // For compatibility with Atom < 1.19.
+          // TODO(#19829039): Remove this after upgrading.
+          if (!width && correctlySizedElement.children.length > 0) {
+            width = correctlySizedElement.children[0].style.width;
+          }
           // $FlowFixMe
           container.style.width = width;
         }),
@@ -176,9 +184,10 @@ export class AtomTextEditor extends React.Component {
       nextProps.readOnly !== this.props.readOnly
     ) {
       const previousTextContents = this.getTextBuffer().getText();
-      const nextTextContents = nextProps.textBuffer == null
-        ? nextProps.textBuffer
-        : nextProps.textBuffer.getText();
+      const nextTextContents =
+        nextProps.textBuffer == null
+          ? nextProps.textBuffer
+          : nextProps.textBuffer.getText();
       if (nextTextContents !== previousTextContents) {
         const textEditorSetup = setupTextEditor(nextProps);
 

@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -48,9 +49,10 @@ export default class Hasher<K> {
         if (hash == null) {
           hash = `${type}:${this._objectCount}`;
           this._hashes.set(item, hash);
-          this._objectCount = this._objectCount + 1 === Number.MAX_SAFE_INTEGER
-            ? Number.MIN_SAFE_INTEGER
-            : this._objectCount + 1;
+          this._objectCount =
+            this._objectCount + 1 === Number.MAX_SAFE_INTEGER
+              ? Number.MIN_SAFE_INTEGER
+              : this._objectCount + 1;
         }
         return hash;
       }

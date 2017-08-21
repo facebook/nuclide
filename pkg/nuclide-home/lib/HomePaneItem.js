@@ -33,14 +33,12 @@ const DEFAULT_WELCOME = (
     </p>
     <ul className="text-left">
       <li>
-        <a href={NUCLIDE_DOCS_URL}>Get Started!</a>
-        {' '}
-        In-depth docs on our features.
+        <a href={NUCLIDE_DOCS_URL}>Get Started!</a> In-depth docs on our
+        features.
       </li>
       <li>
-        <a href="https://github.com/facebook/nuclide">GitHub</a>
-        {' '}
-        Pull requests, issues, and feedback.
+        <a href="https://github.com/facebook/nuclide">GitHub</a> Pull requests,
+        issues, and feedback.
       </li>
     </ul>
     <p>
@@ -66,9 +64,6 @@ export default class HomePaneItem extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleShowOnStartupChange = this._handleShowOnStartupChange.bind(
-      this,
-    );
     this.state = {
       showOnStartup: Boolean(featureConfig.get('nuclide-home.showHome')),
       allHomeFragments: Immutable.Set(),
@@ -99,7 +94,11 @@ export default class HomePaneItem extends React.Component {
     sortedHomeFragments.forEach(fragment => {
       const {welcome, feature} = fragment;
       if (welcome) {
-        welcomes.push(<div key={welcomes.length}>{welcome}</div>);
+        welcomes.push(
+          <div key={welcomes.length}>
+            {welcome}
+          </div>,
+        );
       }
       if (feature) {
         features.push(
@@ -129,23 +128,23 @@ export default class HomePaneItem extends React.Component {
 
     if (features.length > 0) {
       containers.push(
-        <div key="features" className="nuclide-home-container">{features}</div>,
+        <div key="features" className="nuclide-home-container">
+          {features}
+        </div>,
       );
     }
 
     return (
       // Re-use styles from the Atom welcome pane where possible.
-      (
-        <div className="nuclide-home pane-item padded nuclide-home-containers">
-          {containers}
-        </div>
-      )
+      <div className="nuclide-home pane-item padded nuclide-home-containers">
+        {containers}
+      </div>
     );
   }
 
-  _handleShowOnStartupChange(checked: boolean): void {
+  _handleShowOnStartupChange = (checked: boolean): void => {
     featureConfig.set('nuclide-home.showHome', checked);
-  }
+  };
 
   getTitle(): string {
     return 'Home';

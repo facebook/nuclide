@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  HgService as HgServiceType,
-} from '../../nuclide-hg-rpc/lib/HgService';
+import type {HgService as HgServiceType} from '../../nuclide-hg-rpc/lib/HgService';
 
 import {Directory, GitRepository} from 'atom';
 import {repositoryContainsPath} from '../../nuclide-vcs-base';

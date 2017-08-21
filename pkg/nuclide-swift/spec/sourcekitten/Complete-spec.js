@@ -9,9 +9,7 @@
  * @format
  */
 
-import {
-  sourceKittenSourcetextToAtomSnippet,
-} from '../../lib/sourcekitten/Complete';
+import {sourceKittenSourcetextToAtomSnippet} from '../../lib/sourcekitten/Complete';
 
 describe('sourceKittenSourcetextToAtomSnippet', () => {
   let sourcetext: string;

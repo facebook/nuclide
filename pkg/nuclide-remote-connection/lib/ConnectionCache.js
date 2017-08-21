@@ -19,8 +19,10 @@ import {Cache} from 'nuclide-commons/cache';
 // A cache of values by ServerConnection.
 // Will lazily create the values when requested for each connection.
 // Note that an entry is added for local with connection == null.
-export class ConnectionCache<T: IDisposable>
-  extends Cache<?ServerConnection, Promise<T>> {
+export class ConnectionCache<T: IDisposable> extends Cache<
+  ?ServerConnection,
+  Promise<T>,
+> {
   _subscriptions: UniversalDisposable;
 
   // If lazy is true, then entries will only be created when get() is called.

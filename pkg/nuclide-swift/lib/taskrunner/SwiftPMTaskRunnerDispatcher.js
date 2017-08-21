@@ -45,5 +45,6 @@ export const ActionTypes = Object.freeze({
   typeof ActionTypes,
 >);
 
-export default class SwiftPMTaskRunnerDispatcher
-  extends Dispatcher<SwiftPMTaskRunnerAction> {}
+export default class SwiftPMTaskRunnerDispatcher extends Dispatcher<
+  SwiftPMTaskRunnerAction,
+> {}

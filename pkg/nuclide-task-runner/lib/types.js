@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  LocalStorageJsonTable,
-} from '../../commons-atom/LocalStorageJsonTable';
+import type {LocalStorageJsonTable} from '../../commons-atom/LocalStorageJsonTable';
 import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {Task} from '../../commons-node/tasks';
 import type {Message} from 'nuclide-commons/process';
@@ -123,6 +121,14 @@ export type SelectTaskRunnerAction = {
   payload: {
     taskRunner: ?TaskRunner,
     updateUserPreferences: boolean,
+  },
+};
+
+export type SetStateForTaskRunnerAction = {
+  type: 'SET_STATE_FOR_TASK_RUNNER',
+  payload: {
+    taskRunner: TaskRunner,
+    taskRunnerState: TaskRunnerState,
   },
 };
 
@@ -271,6 +277,7 @@ export type Action =
   | RunTaskAction
   | SelectTaskRunnerAction
   | SetStatesForTaskRunnersAction
+  | SetStateForTaskRunnerAction
   | SetProjectRootAction
   | SetConsoleServiceAction
   | SetConsolesForTaskRunnersAction

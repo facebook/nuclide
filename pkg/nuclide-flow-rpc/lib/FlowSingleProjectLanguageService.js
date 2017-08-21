@@ -19,21 +19,16 @@ import type {
 import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
   FileDiagnosticMessage,
+  FindReferencesReturn,
   Outline,
+  CodeAction,
 } from 'atom-ide-ui';
-import type {
-  SingleFileLanguageService,
-} from '../../nuclide-language-service-rpc';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {SingleFileLanguageService} from '../../nuclide-language-service-rpc';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
-import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
 
 import type {PushDiagnosticsMessage} from './FlowIDEConnection';
 
@@ -60,13 +55,15 @@ import {
 import {getLogger} from 'log4js';
 const logger = getLogger('nuclide-flow-rpc');
 
-import {flowCoordsToAtomCoords} from './FlowHelpers';
+import {flowCoordsToAtomCoords} from '../../nuclide-flow-common';
 
 import {FlowProcess} from './FlowProcess';
 import {FlowVersion} from './FlowVersion';
 import prettyPrintTypes from './prettyPrintTypes';
 import {astToOutline} from './astToOutline';
 import {flowStatusOutputToDiagnostics} from './diagnosticsParser';
+
+import type {FileCache} from '../../nuclide-open-files-rpc';
 
 /** Encapsulates all of the state information we need about a specific Flow root */
 export class FlowSingleProjectLanguageService {
@@ -76,10 +73,14 @@ export class FlowSingleProjectLanguageService {
   _version: FlowVersion;
   _execInfoContainer: FlowExecInfoContainer;
 
-  constructor(root: string, execInfoContainer: FlowExecInfoContainer) {
+  constructor(
+    root: string,
+    execInfoContainer: FlowExecInfoContainer,
+    fileCache: FileCache,
+  ) {
     this._root = root;
     this._execInfoContainer = execInfoContainer;
-    this._process = new FlowProcess(root, execInfoContainer);
+    this._process = new FlowProcess(root, execInfoContainer, fileCache);
     this._version = new FlowVersion(async () => {
       const execInfo = await execInfoContainer.getFlowExecInfo(root);
       if (!execInfo) {
@@ -277,7 +278,7 @@ export class FlowSingleProjectLanguageService {
     };
   }
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticUpdate>> {
+  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>> {
     const ideConnections = this._process.getIDEConnections();
     return ideConnections
       .switchMap(ideConnection => {
@@ -316,7 +317,10 @@ export class FlowSingleProjectLanguageService {
     // Allows completions to immediately appear when we are completing off of object properties.
     // This also needs to be changed if minimumPrefixLength goes above 1, since after you type a
     // single alphanumeric character, autocomplete-plus no longer includes the dot in the prefix.
-    const prefixHasDot = prefix.indexOf('.') !== -1;
+    const prefixHasDot =
+      // charAt(index) returns an empty string if the index is out of bounds
+      buffer.lineForRow(position.row).charAt(position.column - 1) === '.' ||
+      prefix.indexOf('.') !== -1;
 
     if (
       !activatedManually &&
@@ -326,24 +330,33 @@ export class FlowSingleProjectLanguageService {
       return null;
     }
 
-    const options = {};
-
     // Note that Atom coordinates are 0-indexed whereas Flow's are 1-indexed, so we must add 1.
-    const args = [
-      'autocomplete',
-      '--json',
-      filePath,
-      position.row + 1,
-      position.column + 1,
-    ];
-
-    options.input = buffer.getText();
+    const line = position.row + 1;
+    const column = position.column + 1;
+    const contents = buffer.getText();
     try {
-      const result = await this._process.execFlow(args, options);
-      if (!result) {
-        return {isIncomplete: false, items: []};
+      let json: FlowAutocompleteOutput;
+      const ideConnection = this._process.getCurrentIDEConnection();
+      if (
+        ideConnection != null &&
+        (await this._version.satisfies('>=0.48.0'))
+      ) {
+        json = await ideConnection.getAutocompleteSuggestions(
+          filePath,
+          line,
+          column,
+          contents,
+        );
+      } else {
+        const args = ['autocomplete', '--json', filePath, line, column];
+        const options = {input: contents};
+
+        const result = await this._process.execFlow(args, options);
+        if (!result) {
+          return {isIncomplete: false, items: []};
+        }
+        json = (parseJSON(args, result.stdout): FlowAutocompleteOutput);
       }
-      const json: FlowAutocompleteOutput = parseJSON(args, result.stdout);
       const resultsArray: Array<FlowAutocompleteItem> = json.result;
       const completions = resultsArray.map(item =>
         processAutocompleteItem(replacementPrefix, item),
@@ -539,6 +552,14 @@ export class FlowSingleProjectLanguageService {
     return json;
   }
 
+  getCodeActions(
+    filePath: NuclideUri,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>> {
+    throw new Error('Not implemeneted');
+  }
+
   formatSource(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
@@ -612,9 +633,10 @@ export function processAutocompleteItem(
   flowItem: FlowAutocompleteItem,
 ): Completion {
   // Truncate long types for readability
-  const description = flowItem.type.length < 80
-    ? flowItem.type
-    : flowItem.type.substring(0, 80) + ' ...';
+  const description =
+    flowItem.type.length < 80
+      ? flowItem.type
+      : flowItem.type.substring(0, 80) + ' ...';
   let result = {
     description,
     displayText: flowItem.name,
@@ -626,7 +648,9 @@ export function processAutocompleteItem(
     const rightParamStrings = funcDetails.params.map(
       param => `${param.name}: ${param.type}`,
     );
-    let snippetArgs = `(${getSnippetString(funcDetails.params.map(param => param.name))})`;
+    let snippetArgs = `(${getSnippetString(
+      funcDetails.params.map(param => param.name),
+    )})`;
     let leftLabel = funcDetails.return_type;
     let rightLabel = `(${rightParamStrings.join(', ')})`;
     if (!getConfig('functionSnippetShouldIncludeArguments')) {
@@ -815,7 +839,7 @@ export function updateDiagnostics(
 // Exported only for testing
 export function getDiagnosticUpdates(
   state: DiagnosticsState,
-): Observable<Array<FileDiagnosticUpdate>> {
+): Observable<Array<FileDiagnosticMessages>> {
   const updates = [];
   for (const file of state.filesToUpdate) {
     const messages = [

@@ -9,22 +9,19 @@
  * @format
  */
 
-/**
- * Constants here represent enums with the same values got from hh_client.
- */
 export const HACK_GRAMMARS = ['text.html.hack', 'text.html.php'];
 
-export type SearchResultTypeValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-export const SearchResultType = Object.freeze({
-  CLASS: 0,
-  TYPEDEF: 1,
-  METHOD: 2,
-  CLASS_VAR: 3,
-  FUNCTION: 4,
-  CONSTANT: 5,
-  INTERFACE: 6,
-  ABSTRACT_CLASS: 7,
-  TRAIT: 8,
-});
+export const HACK_CONFIG_FILE_NAME = '.hhconfig';
 
+// From hack/src/utils/findUtils.ml
+export const HACK_FILE_EXTENSIONS: Array<string> = [
+  '.php', // normal php file
+  '.hh', // Hack extension some open source code is starting to use
+  '.phpt', // our php template files
+  '.hhi', // interface files only visible to the type checker
+  '.xhp', // XHP extensions
+];
+
+// Note: this regex is used only by the legacy hack service.
+// LSP doesn't use it.
 export const HACK_WORD_REGEX = /[a-zA-Z0-9_$]+/g;

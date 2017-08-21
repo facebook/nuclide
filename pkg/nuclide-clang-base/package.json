@@ -1,0 +1,12 @@
+{
+  "name": "nuclide-clang-base",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Common utilities related to clang",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "apm"
+  }
+}

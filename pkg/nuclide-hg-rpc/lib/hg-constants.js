@@ -111,6 +111,7 @@ const MergeConflictFileStatus = Object.freeze({
 
 const HEAD_REVISION_EXPRESSION = '.';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   AmendMode,
   CommitPhase,

@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -78,22 +79,40 @@ function renderRowWithLinks(
       const openUrl = () => {
         shell.openExternal(part.url);
       };
-      return <a href="#" key={index} onClick={openUrl}>{part.url}</a>;
+      return (
+        <a href="#" key={index} onClick={openUrl}>
+          {part.url}
+        </a>
+      );
     }
   });
 
-  return <div key={rowIndex}>{parts}</div>;
+  return (
+    <div key={rowIndex}>
+      {parts}
+    </div>
+  );
 }
 
 export const DiagnosticsMessageText = (props: DiagnosticsMessageTextProps) => {
   const {message} = props;
   if (message.html != null) {
-    return <span dangerouslySetInnerHTML={{__html: message.html}} />;
+    return (
+      <span
+        title={message.text}
+        dangerouslySetInnerHTML={{__html: message.html}}
+      />
+    );
   } else if (message.text != null) {
-    const rows = props.preserveNewlines !== false
-      ? message.text.split('\n')
-      : [message.text];
-    return <span>{rows.map(renderRowWithLinks)}</span>;
+    const rows =
+      props.preserveNewlines !== false
+        ? message.text.split('\n')
+        : [message.text];
+    return (
+      <span title={message.text}>
+        {rows.map(renderRowWithLinks)}
+      </span>
+    );
   } else {
     return <span>Diagnostic lacks message.</span>;
   }

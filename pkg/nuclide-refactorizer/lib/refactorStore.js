@@ -21,7 +21,7 @@ import type ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import {
   createEpicMiddleware,
   combineEpics,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import {getLogger} from 'log4js';
 
 import refactorReducers from './refactorReducers';

@@ -18,17 +18,21 @@ import {FileTreeEntryComponent} from './FileTreeEntryComponent';
 import {ProjectSelection} from './ProjectSelection';
 import classnames from 'classnames';
 
+// flowlint-next-line untyped-type-import:off
 import type {OrderedMap} from 'immutable';
 import type {FileTreeNode} from '../lib/FileTreeNode';
 
 type State = {
   elementHeight: number,
+  initialHeightMeasured: boolean,
 };
 
 type Props = {
   containerHeight: number,
   containerScrollTop: number,
-  scrollToPosition: (top: number, height: number) => void,
+  scrollToPosition: (top: number, height: number, approximate: boolean) => void,
+  onMouseEnter: (event: SyntheticMouseEvent) => mixed,
+  onMouseLeave: (event: SyntheticMouseEvent) => mixed,
 };
 
 const BUFFER_ELEMENTS = 15;
@@ -37,7 +41,6 @@ export class FileTree extends React.Component {
   state: State;
   props: Props;
   _store: FileTreeStore;
-  _initialHeightMeasured: boolean;
   _disposables: UniversalDisposable;
 
   constructor(props: Props) {
@@ -47,20 +50,23 @@ export class FileTree extends React.Component {
 
     this.state = {
       elementHeight: 22, // The minimal observed height makes a good default
+      initialHeightMeasured: false,
     };
-
-    this._initialHeightMeasured = false;
-    (this: any)._measureHeights = this._measureHeights.bind(this);
   }
 
   componentDidMount(): void {
-    this._scrollToTrackedNodeIfNeeded();
+    setImmediate(() => {
+      // Parent refs are not avalaible until _after_ children have mounted, so
+      // must wait to update the tracked node until our parent has a reference
+      // to our root DOM node.
+      this._scrollToTrackedNodeIfNeeded();
+    });
     this._measureHeights();
     window.addEventListener('resize', this._measureHeights);
 
     this._disposables.add(
       atom.themes.onDidChangeActiveThemes(() => {
-        this._initialHeightMeasured = false;
+        this.setState({initialHeightMeasured: false});
         const sub = nextAnimationFrame.subscribe(() => {
           this._disposables.remove(sub);
           this._measureHeights();
@@ -78,7 +84,7 @@ export class FileTree extends React.Component {
   }
 
   componentDidUpdate(): void {
-    if (!this._initialHeightMeasured) {
+    if (!this.state.initialHeightMeasured) {
       this._measureHeights();
     }
 
@@ -91,27 +97,32 @@ export class FileTree extends React.Component {
       return;
     }
 
+    const positionIsApproximate = !this.state.initialHeightMeasured;
+
     this.props.scrollToPosition(
       trackedIndex * this.state.elementHeight,
       this.state.elementHeight,
+      positionIsApproximate,
     );
   }
 
-  _measureHeights(): void {
+  _measureHeights = (): void => {
     const measuredComponent = this.refs.measured;
     if (measuredComponent == null) {
       return;
     }
 
-    this._initialHeightMeasured = true;
-
     const node = ReactDOM.findDOMNode(measuredComponent);
+
     // $FlowFixMe
     const elementHeight = node.clientHeight;
-    if (elementHeight !== this.state.elementHeight && elementHeight > 0) {
-      this.setState({elementHeight});
+    if (elementHeight > 0) {
+      this.setState({
+        elementHeight,
+        initialHeightMeasured: true,
+      });
     }
-  }
+  };
 
   render(): React.Element<any> {
     const classes = {
@@ -122,7 +133,11 @@ export class FileTree extends React.Component {
     };
 
     return (
-      <div className={classnames(classes)} tabIndex={0}>
+      <div
+        className={classnames(classes)}
+        tabIndex={0}
+        onMouseEnter={this.props.onMouseEnter}
+        onMouseLeave={this.props.onMouseLeave}>
         {this._renderChildren()}
       </div>
     );
@@ -198,11 +213,11 @@ function findFirstNodeToRender(
   let skipped = 0;
 
   const node = roots.find(r => {
-    if (skipped + r.shownChildrenBelow > firstToRender) {
+    if (skipped + r.shownChildrenCount > firstToRender) {
       return true;
     }
 
-    skipped += r.shownChildrenBelow;
+    skipped += r.shownChildrenCount;
     return false;
   });
 
@@ -227,7 +242,7 @@ function findIndexOfTheTrackedNode(
       return true;
     }
 
-    skipped += node.shownChildrenBelow;
+    skipped += node.shownChildrenCount;
     return false;
   });
 
@@ -243,5 +258,5 @@ function findIndexOfTheTrackedNode(
 }
 
 function countShownNodes(roots: OrderedMap<mixed, FileTreeNode>): number {
-  return roots.reduce((sum, root) => sum + root.shownChildrenBelow, 0);
+  return roots.reduce((sum, root) => sum + root.shownChildrenCount, 0);
 }

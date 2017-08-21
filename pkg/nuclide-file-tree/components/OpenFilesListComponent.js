@@ -13,10 +13,10 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import React from 'react';
 import classnames from 'classnames';
-import {
-  PanelComponentScroller,
-} from 'nuclide-commons-ui/PanelComponentScroller';
+import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
+import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
+import {TreeList, TreeItem, NestedTreeItem} from '../../nuclide-ui/Tree';
 import {track} from '../../nuclide-analytics';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
@@ -46,13 +46,15 @@ export class OpenFilesListComponent extends React.PureComponent {
     this.state = {
       hoveredUri: null,
     };
-    (this: any)._onListItemMouseLeave = this._onListItemMouseLeave.bind(this);
   }
 
   componentDidUpdate(prevProps: Props): void {
     const selectedRow = this.refs.selectedRow;
     if (selectedRow != null && prevProps.activeUri !== this.props.activeUri) {
-      selectedRow.scrollIntoViewIfNeeded();
+      // Our lint rule isn't smart enough to recognize that this is a custom method and not the one
+      // on HTMLElements, so we just have to squelch the error.
+      // eslint-disable-next-line nuclide-internal/dom-apis
+      selectedRow.scrollIntoView();
     }
   }
 
@@ -96,11 +98,11 @@ export class OpenFilesListComponent extends React.PureComponent {
     });
   }
 
-  _onListItemMouseLeave() {
+  _onListItemMouseLeave = () => {
     this.setState({
       hoveredUri: null,
     });
-  }
+  };
 
   render(): React.Element<any> {
     const sortedEntries = propsToEntries(this.props);
@@ -108,35 +110,35 @@ export class OpenFilesListComponent extends React.PureComponent {
     return (
       <div className="nuclide-file-tree-open-files">
         <PanelComponentScroller>
-          <ul className="list-tree nuclide-file-tree-open-files-list">
-            {sortedEntries.map(e => {
-              const isHoveredUri = this.state.hoveredUri === e.uri;
-              return (
-                <li
-                  className={classnames('list-item', {
-                    selected: e.isSelected,
-                    'text-highlight': isHoveredUri,
-                  })}
-                  key={e.uri}
-                  onClick={this._onClick.bind(this, e)}
-                  onMouseEnter={this._onListItemMouseEnter.bind(this, e)}
-                  onMouseLeave={this._onListItemMouseLeave}
-                  ref={e.isSelected ? 'selectedRow' : null}>
-                  <span
-                    className={classnames('icon', {
-                      'icon-primitive-dot': e.isModified && !isHoveredUri,
-                      'icon-x': isHoveredUri || !e.isModified,
-                      'text-info': e.isModified,
-                    })}
-                    onClick={this._onCloseClick.bind(this, e)}
-                  />
-                  <span className="icon icon-file-text" data-name={e.name}>
-                    {e.name}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          {/* simulate a once-nested list to share styles those with others
+            that require a single level of indentation */}
+          <TreeList showArrows className="nuclide-file-tree-open-files-list">
+            <NestedTreeItem hasFlatChildren>
+              {sortedEntries.map(e => {
+                const isHoveredUri = this.state.hoveredUri === e.uri;
+                return (
+                  <TreeItem
+                    className={classnames({'text-highlight': isHoveredUri})}
+                    selected={e.isSelected}
+                    key={e.uri}
+                    onClick={this._onClick.bind(this, e)}
+                    onMouseEnter={this._onListItemMouseEnter.bind(this, e)}
+                    onMouseLeave={this._onListItemMouseLeave}
+                    ref={e.isSelected ? 'selectedRow' : null}>
+                    <span
+                      className={classnames('icon', {
+                        'icon-primitive-dot': e.isModified && !isHoveredUri,
+                        'icon-x': isHoveredUri || !e.isModified,
+                        'text-info': e.isModified,
+                      })}
+                      onClick={this._onCloseClick.bind(this, e)}
+                    />
+                    <PathWithFileIcon path={e.name} />
+                  </TreeItem>
+                );
+              })}
+            </NestedTreeItem>
+          </TreeList>
         </PanelComponentScroller>
       </div>
     );

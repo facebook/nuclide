@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -17,6 +18,7 @@ import type Hyperclick from './Hyperclick';
 import {CompositeDisposable, Disposable, Point} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
+import {isPositionInRange} from 'nuclide-commons/range';
 import showTriggerConflictWarning from './showTriggerConflictWarning';
 import invariant from 'assert';
 
@@ -90,8 +92,8 @@ export default class HyperclickForTextEditor {
         process.platform === 'darwin'
           ? 'hyperclick.darwinTriggerKeys'
           : process.platform === 'win32'
-              ? 'hyperclick.win32TriggerKeys'
-              : 'hyperclick.linuxTriggerKeys',
+            ? 'hyperclick.win32TriggerKeys'
+            : 'hyperclick.linuxTriggerKeys',
         newValue_ => {
           const newValue = ((newValue_: any): string);
           // For all Flow knows, newValue.split could return any old strings
@@ -102,7 +104,7 @@ export default class HyperclickForTextEditor {
   }
 
   _setupMouseListeners(): void {
-    const getLinesDomNode = (): HTMLElement => {
+    const getLinesDomNode = (): ?HTMLElement => {
       const {component} = this._textEditorView;
       invariant(component);
       if (component.refs != null) {
@@ -110,17 +112,6 @@ export default class HyperclickForTextEditor {
       } else {
         return component.linesComponent.getDomNode();
       }
-    };
-    const removeMouseListeners = () => {
-      if (this._textEditorView.component == null) {
-        return;
-      }
-      const linesDomNode = getLinesDomNode();
-      if (linesDomNode == null) {
-        return;
-      }
-      linesDomNode.removeEventListener('mousedown', this._onMouseDown);
-      linesDomNode.removeEventListener('mousemove', this._onMouseMove);
     };
     const addMouseListeners = () => {
       const {component} = this._textEditorView;
@@ -131,15 +122,25 @@ export default class HyperclickForTextEditor {
       }
       linesDomNode.addEventListener('mousedown', this._onMouseDown);
       linesDomNode.addEventListener('mousemove', this._onMouseMove);
+      const removalDisposable = new Disposable(() => {
+        linesDomNode.removeEventListener('mousedown', this._onMouseDown);
+        linesDomNode.removeEventListener('mousemove', this._onMouseMove);
+      });
+      this._subscriptions.add(removalDisposable);
+      this._subscriptions.add(
+        this._textEditorView.onDidDetach(() => removalDisposable.dispose()),
+      );
     };
-    this._subscriptions.add(new Disposable(removeMouseListeners));
-    this._subscriptions.add(
-      this._textEditorView.onDidDetach(removeMouseListeners),
-    );
-    this._subscriptions.add(
-      this._textEditorView.onDidAttach(addMouseListeners),
-    );
-    addMouseListeners();
+    if (
+      this._textEditorView.component &&
+      this._textEditorView.parentNode != null
+    ) {
+      addMouseListeners();
+    } else {
+      this._subscriptions.add(
+        this._textEditorView.onDidAttach(addMouseListeners),
+      );
+    }
   }
 
   _confirmSuggestion(suggestion: HyperclickSuggestion): void {
@@ -270,7 +271,7 @@ export default class HyperclickForTextEditor {
     if (this._lastSuggestionAtMouse != null) {
       const {range} = this._lastSuggestionAtMouse;
       invariant(range, 'Hyperclick result must have a valid Range');
-      if (this._isPositionInRange(position, range)) {
+      if (isPositionInRange(position, range)) {
         return;
       }
     }
@@ -347,10 +348,7 @@ export default class HyperclickForTextEditor {
     }
     const {range} = this._lastSuggestionAtMouse;
     invariant(range, 'Hyperclick result must have a valid Range');
-    return this._isPositionInRange(
-      this._getMousePositionAsBufferPosition(),
-      range,
-    );
+    return isPositionInRange(this._getMousePositionAsBufferPosition(), range);
   }
 
   _isMouseAtLastWordRange(): boolean {
@@ -358,19 +356,10 @@ export default class HyperclickForTextEditor {
     if (lastWordRange == null) {
       return false;
     }
-    return this._isPositionInRange(
+    return isPositionInRange(
       this._getMousePositionAsBufferPosition(),
       lastWordRange,
     );
-  }
-
-  _isPositionInRange(
-    position: atom$Point,
-    range: atom$Range | Array<atom$Range>,
-  ): boolean {
-    return Array.isArray(range)
-      ? range.some(r => r.containsPoint(position))
-      : range.containsPoint(position);
   }
 
   _clearSuggestion(): void {

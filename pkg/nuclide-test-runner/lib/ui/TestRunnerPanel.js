@@ -70,12 +70,6 @@ export default class TestRunnerPanel extends React.Component {
       // later indicate there were no active test runners.
       selectedTestRunnerIndex: props.testRunners.length > 0 ? 0 : -1,
     };
-
-    // Bind Functions for use as callbacks;
-    // TODO: Replace with property initializers when supported by Flow;
-    this.setSelectedTestRunnerIndex = this.setSelectedTestRunnerIndex.bind(
-      this,
-    );
   }
 
   componentDidMount() {
@@ -155,6 +149,7 @@ export default class TestRunnerPanel extends React.Component {
     // Assign `value` only when needed so a null/undefined value will show an indeterminate
     // progress bar.
     let progressAttrs: ?{[key: string]: mixed} = undefined;
+    // flowlint-next-line sketchy-null-number:off
     if (this.props.progressValue) {
       // `key` is set to force React to treat this as a new element when the `value` attr should be
       // removed. Currently it just sets `value="0"`, which is styled differently from no `value`
@@ -169,6 +164,7 @@ export default class TestRunnerPanel extends React.Component {
     let runMsg;
     if (this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING) {
       runMsg = <span className="inline-block">Running</span>;
+      // flowlint-next-line sketchy-null-number:off
     } else if (this.props.runDuration) {
       runMsg = (
         <span className="inline-block">
@@ -178,6 +174,7 @@ export default class TestRunnerPanel extends React.Component {
     }
 
     let pathMsg;
+    // flowlint-next-line sketchy-null-string:off
     if (this.props.path) {
       pathMsg = (
         <span title={this.props.path}>
@@ -267,9 +264,9 @@ export default class TestRunnerPanel extends React.Component {
     return this.props.testRunners.length === 0;
   }
 
-  setSelectedTestRunnerIndex(selectedTestRunnerIndex: number): void {
+  setSelectedTestRunnerIndex = (selectedTestRunnerIndex: number): void => {
     this.setState({selectedTestRunnerIndex});
-  }
+  };
 
   getSelectedTestRunner(): ?Object {
     const selectedTestRunnerIndex = this.state.selectedTestRunnerIndex;

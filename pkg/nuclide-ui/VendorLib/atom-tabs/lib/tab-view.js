@@ -13,8 +13,8 @@
 
   module.exports = TabView = (function() {
     function TabView(arg) {
-      var closeIcon, didClickCloseIcon;
-      this.item = arg.item, this.pane = arg.pane, didClickCloseIcon = arg.didClickCloseIcon, this.tabs = arg.tabs;
+      var base, closeIcon, didClickCloseIcon, location;
+      this.item = arg.item, this.pane = arg.pane, didClickCloseIcon = arg.didClickCloseIcon, this.tabs = arg.tabs, location = arg.location;
       if (typeof this.item.getPath === 'function') {
         this.path = this.item.getPath();
       }
@@ -27,10 +27,12 @@
       this.itemTitle = document.createElement('div');
       this.itemTitle.classList.add('title');
       this.element.appendChild(this.itemTitle);
-      closeIcon = document.createElement('div');
-      closeIcon.classList.add('close-icon');
-      closeIcon.onclick = didClickCloseIcon;
-      this.element.appendChild(closeIcon);
+      if (location === 'center' || !(typeof (base = this.item).isPermanentDockItem === "function" ? base.isPermanentDockItem() : void 0)) {
+        closeIcon = document.createElement('div');
+        closeIcon.classList.add('close-icon');
+        closeIcon.onclick = didClickCloseIcon;
+        this.element.appendChild(closeIcon);
+      }
       this.subscriptions = new CompositeDisposable();
       this.handleEvents();
       this.updateDataAttributes();
@@ -38,6 +40,7 @@
       this.updateIcon();
       this.updateModifiedStatus();
       this.setupTooltip();
+      layout.activate();
       if (this.isItemPending()) {
         this.itemTitle.classList.add('temp');
         this.element.classList.add('pending-tab');

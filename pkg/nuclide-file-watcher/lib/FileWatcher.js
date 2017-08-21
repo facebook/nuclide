@@ -12,9 +12,7 @@
 import {CompositeDisposable} from 'atom';
 import {trackTiming, track} from '../../nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getLogger} from 'log4js';
 
 const logger = getLogger('nuclide-file-watcher');

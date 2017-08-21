@@ -11,11 +11,8 @@
 
 // TODO: Make it possible to move or split a pane with a VcsLogPaneItem.
 
-import type FileTreeContextMenu
-  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
-import type {
-  HgRepositoryClient,
-} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
+import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
 
 import {CompositeDisposable, Disposable} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
@@ -32,9 +29,7 @@ import {shortNameForAuthor as shortNameForAuthorFn} from './util';
 import {track} from '../../nuclide-analytics';
 import url from 'url';
 import React from 'react';
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 
 const SHOW_LOG_FILE_TREE_CONTEXT_MENU_PRIORITY = 500;
 const NUM_LOG_RESULTS = 100;
@@ -205,7 +200,9 @@ function createLogPaneForPath(path: string): ?React.Element<any> {
   ): any);
   invariant(typeof showDifferentialRevision === 'boolean');
 
-  const title = `${repository.getType()} log ${maybeToString(getAtomProjectRelativePath(path))}`;
+  const title = `${repository.getType()} log ${maybeToString(
+    getAtomProjectRelativePath(path),
+  )}`;
 
   const currentDiff = new BehaviorSubject({
     oldId: null,

@@ -69,7 +69,6 @@ export default class DefinitionHelpers {
     };
 
     if (result.spelling != null) {
-      definition.id = result.spelling;
       definition.name = result.spelling;
     }
 

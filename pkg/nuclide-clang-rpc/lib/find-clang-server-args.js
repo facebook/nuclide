@@ -23,6 +23,7 @@ export type ClangServerArgs = {
 
 export default (async function findClangServerArgs(
   src?: string,
+  libclangPath: ?string = null,
 ): Promise<ClangServerArgs> {
   if (fbFindClangServerArgs === undefined) {
     fbFindClangServerArgs = null;
@@ -54,20 +55,28 @@ export default (async function findClangServerArgs(
     const path = ((atom.config.get(
       'nuclide.nuclide-clang.libclangPath',
     ): any): ?string);
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       libClangLibraryFile = path.trim();
     }
   }
 
-  const clangServerArgs = {
+  let clangServerArgs = {
     libClangLibraryFile,
     pythonExecutable: 'python2.7',
     pythonPathEnv: nuclideUri.join(__dirname, '../VendorLib'),
   };
+
   if (typeof fbFindClangServerArgs === 'function') {
     const clangServerArgsOverrides = await fbFindClangServerArgs(src);
-    return {...clangServerArgs, ...clangServerArgsOverrides};
-  } else {
-    return clangServerArgs;
+    clangServerArgs = {
+      ...clangServerArgs,
+      ...clangServerArgsOverrides,
+    };
   }
+
+  if (libclangPath != null) {
+    clangServerArgs.libClangLibraryFile = libclangPath;
+  }
+  return clangServerArgs;
 });

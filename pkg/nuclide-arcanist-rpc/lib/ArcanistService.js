@@ -27,12 +27,8 @@ import {
 import {compact} from 'nuclide-commons/observable';
 import {niceObserveProcess} from 'nuclide-commons/nice';
 import fsPromise from 'nuclide-commons/fsPromise';
-import {
-  fetchFilesChangedSinceRevision,
-} from '../../nuclide-hg-rpc/lib/hg-revision-state-helpers';
-import {
-  expressionForRevisionsBeforeHead,
-} from '../../nuclide-hg-rpc/lib/hg-revision-expression-helpers';
+import {fetchFilesChangedSinceRevision} from '../../nuclide-hg-rpc/lib/hg-revision-state-helpers';
+import {expressionForRevisionsBeforeHead} from '../../nuclide-hg-rpc/lib/hg-revision-expression-helpers';
 import {findHgRepository} from '../../nuclide-source-control-helpers';
 import {getLogger} from 'log4js';
 import LRU from 'lru-cache';
@@ -73,6 +69,7 @@ export async function findArcConfigDirectory(
 
 export async function readArcConfig(fileName: NuclideUri): Promise<?any> {
   const arcConfigDirectory = await findArcConfigDirectory(fileName);
+  // flowlint-next-line sketchy-null-string:off
   if (!arcConfigDirectory) {
     return null;
   }
@@ -126,6 +123,7 @@ export async function getProjectRelativePath(
   fileName: NuclideUri,
 ): Promise<?string> {
   const arcPath = await findArcConfigDirectory(fileName);
+  // flowlint-next-line sketchy-null-string:off
   return arcPath && fileName ? nuclideUri.relative(arcPath, fileName) : null;
 }
 
@@ -327,7 +325,7 @@ export function execArcPatch(
   // TODO(T17463635)
   const args = ['patch'];
   if (differentialRevision.match(/^[0-9]+$/)) {
-    args.push('--diff');
+    args.push('--nocommit', '--diff');
   }
   args.push(differentialRevision);
   return Observable.fromPromise(getArcExecOptions(cwd))

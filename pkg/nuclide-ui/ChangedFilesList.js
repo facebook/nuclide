@@ -44,8 +44,10 @@ type Props = {
   // Call back when a file is clicked on
   onFileChosen: (filePath: NuclideUri) => void,
   onForgetFile: (filePath: NuclideUri) => void,
+  onMarkFileResolved?: (filePath: NuclideUri) => void,
   onOpenFileInDiffView: (filePath: NuclideUri) => void,
   onRevertFile: (filePath: NuclideUri) => void,
+  openInDiffViewOption: boolean,
   rootPath: NuclideUri,
   selectedFile: ?NuclideUri,
   shouldShowFolderName: boolean,
@@ -81,7 +83,9 @@ export default class ChangedFilesList extends React.Component {
       onFileChecked,
       onFileChosen,
       onForgetFile,
+      onMarkFileResolved,
       onOpenFileInDiffView,
+      openInDiffViewOption,
       onRevertFile,
       rootPath,
       selectedFile,
@@ -101,24 +105,25 @@ export default class ChangedFilesList extends React.Component {
       collapsed: this.state.isCollapsed,
     });
 
-    const showMoreFilesElement = fileStatuses.size > filesToShow
-      ? <div
-          className="icon icon-ellipsis"
-          ref={addTooltip({
-            title: 'Show more files with uncommitted changes',
-            delay: 300,
-            placement: 'bottom',
-          })}
-          onClick={() =>
-            this.setState({
-              visiblePagesCount: this.state.visiblePagesCount + 1,
+    const showMoreFilesElement =
+      fileStatuses.size > filesToShow
+        ? <div
+            className="icon icon-ellipsis"
+            ref={addTooltip({
+              title: 'Show more files with uncommitted changes',
+              delay: 300,
+              placement: 'bottom',
             })}
-        />
-      : null;
+            onClick={() =>
+              this.setState({
+                visiblePagesCount: this.state.visiblePagesCount + 1,
+              })}
+          />
+        : null;
 
     const isHgRoot = isHgPath(rootPath);
     return (
-      <ul className="list-tree has-collapsable-children">
+      <ul className="list-tree has-collapsable-children nuclide-changed-files-list">
         <li className={rootClassName}>
           {this.props.shouldShowFolderName
             ? <div
@@ -134,7 +139,7 @@ export default class ChangedFilesList extends React.Component {
               </div>
             : null}
           <ul className="list-tree has-flat-children">
-            {sizeLimitedFileChanges.map(([filePath, fileStatus]) => (
+            {sizeLimitedFileChanges.map(([filePath, fileStatus]) =>
               <ChangedFile
                 commandPrefix={commandPrefix}
                 enableFileExpansion={enableFileExpansion}
@@ -155,12 +160,16 @@ export default class ChangedFilesList extends React.Component {
                 onFileChecked={onFileChecked}
                 onFileChosen={onFileChosen}
                 onForgetFile={onForgetFile}
+                onMarkFileResolved={onMarkFileResolved}
                 onOpenFileInDiffView={onOpenFileInDiffView}
+                openInDiffViewOption={openInDiffViewOption}
                 onRevertFile={onRevertFile}
                 rootPath={rootPath}
-              />
-            ))}
-            <li>{showMoreFilesElement}</li>
+              />,
+            )}
+            <li>
+              {showMoreFilesElement}
+            </li>
           </ul>
         </li>
       </ul>

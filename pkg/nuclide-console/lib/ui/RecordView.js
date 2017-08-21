@@ -19,9 +19,7 @@ import type {
 
 import classnames from 'classnames';
 import React from 'react';
-import {
-  LazyNestedValueComponent,
-} from '../../../nuclide-ui/LazyNestedValueComponent';
+import {LazyNestedValueComponent} from '../../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../../nuclide-ui/SimpleValueComponent';
 import shallowEqual from 'shallowequal';
 import {TextRenderer} from '../../../nuclide-ui/TextRenderer';
@@ -29,6 +27,7 @@ import {MeasuredComponent} from '../../../nuclide-ui/MeasuredComponent';
 import debounce from 'nuclide-commons/debounce';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
 import {URL_REGEX} from 'nuclide-commons/string';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 type Props = {
   displayableRecord: DisplayableRecord,
@@ -47,8 +46,6 @@ export default class RecordView extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any).measureAndNotifyHeight = this.measureAndNotifyHeight.bind(this);
-    (this: any)._handleRecordWrapper = this._handleRecordWrapper.bind(this);
 
     // The MeasuredComponent can call this many times in quick succession as the
     // child components render, so we debounce it since we only want to know about
@@ -77,7 +74,11 @@ export default class RecordView extends React.Component {
       // TODO: We really want to use a text editor to render this so that we can get syntax
       // highlighting, but they're just too expensive. Figure out a less-expensive way to get syntax
       // highlighting.
-      return <pre>{record.text || ' '}</pre>;
+      return (
+        <pre>
+          {record.text || ' '}
+        </pre>
+      );
     } else if (record.kind === 'response') {
       const executor = this.props.getExecutor(record.sourceId);
       return this._renderNestedValueComponent(displayableRecord, executor);
@@ -87,7 +88,11 @@ export default class RecordView extends React.Component {
     } else {
       // If there's not text, use a space to make sure the row doesn't collapse.
       const text = record.text || ' ';
-      return <pre>{parseText(text)}</pre>;
+      return (
+        <pre>
+          {parseText(text)}
+        </pre>
+      );
     }
   }
 
@@ -130,18 +135,22 @@ export default class RecordView extends React.Component {
     );
 
     const iconName = getIconName(record);
+    // flowlint-next-line sketchy-null-string:off
     const icon = iconName ? <span className={`icon icon-${iconName}`} /> : null;
     const sourceLabel = this.props.showSourceLabel
       ? <span
-          className={`nuclide-console-record-source-label ${getHighlightClassName(level)}`}>
+          className={`nuclide-console-record-source-label ${getHighlightClassName(
+            level,
+          )}`}>
           {sourceId}
         </span>
       : null;
     let renderedTimestamp;
     if (timestamp != null) {
-      const timestampLabel = Date.now() - timestamp > ONE_DAY
-        ? timestamp.toLocaleString()
-        : timestamp.toLocaleTimeString();
+      const timestampLabel =
+        Date.now() - timestamp > ONE_DAY
+          ? timestamp.toLocaleString()
+          : timestamp.toLocaleTimeString();
       renderedTimestamp = (
         <div className="nuclide-console-record-timestamp">
           {timestampLabel}
@@ -163,7 +172,7 @@ export default class RecordView extends React.Component {
     );
   }
 
-  measureAndNotifyHeight() {
+  measureAndNotifyHeight = () => {
     // This method is called after the necessary DOM mutations have
     // already occurred, however it is possible that the updates have
     // not been flushed to the screen. So the height change update
@@ -182,11 +191,11 @@ export default class RecordView extends React.Component {
         onHeightChange(displayableRecord.id, offsetHeight);
       }
     });
-  }
+  };
 
-  _handleRecordWrapper(wrapper: HTMLElement) {
+  _handleRecordWrapper = (wrapper: HTMLElement) => {
     this._wrapper = wrapper;
-  }
+  };
 }
 
 function getComponent(type: ?string): ReactClass<any> {
@@ -236,12 +245,71 @@ function getIconName(record: Record): ?string {
   }
 }
 
+/**
+ * Parse special entities into links. In the future, it would be great to add a service so that we
+ * could add new clickable things and to allow providers to mark specific ranges as links to things
+ * that only they can know (e.g. relative paths output in BUCK messages). For now, however, we'll
+ * just use some pattern settings and hardcode the patterns we care about.
+ */
 function parseText(text: string): Array<string | React.Element<any>> {
-  return text.split(URL_REGEX).map((chunk, i) => {
-    // Since we're splitting on the URL regex, every other piece will be a URL.
-    const isURL = i % 2 !== 0;
-    return isURL
-      ? <a key={`d${i}`} href={chunk} target="_blank">{chunk}</a>
-      : chunk;
-  });
+  const chunks = [];
+  let lastIndex = 0;
+  let index = 0;
+  while (true) {
+    const match = CLICKABLE_RE.exec(text);
+    if (match == null) {
+      break;
+    }
+
+    const matchedText = match[0];
+
+    // Add all the text since our last match.
+    chunks.push(
+      text.slice(lastIndex, CLICKABLE_RE.lastIndex - matchedText.length),
+    );
+    lastIndex = CLICKABLE_RE.lastIndex;
+
+    let href;
+    if (match[1] != null) {
+      // It's a diff
+      const url = toString(featureConfig.get('nuclide-console.diffUrlPattern'));
+      if (url !== '') {
+        href = url.replace('%s', matchedText);
+      }
+    } else if (match[2] != null) {
+      // It's a task
+      const url = toString(featureConfig.get('nuclide-console.taskUrlPattern'));
+      if (url !== '') {
+        href = url.replace('%s', matchedText.slice(1));
+      }
+    } else if (match[3] != null) {
+      // It's a URL
+      href = matchedText;
+    }
+
+    chunks.push(
+      // flowlint-next-line sketchy-null-string:off
+      href
+        ? <a key={`r${index}`} href={href} target="_blank">
+            {matchedText}
+          </a>
+        : matchedText,
+    );
+
+    index++;
+  }
+
+  // Add any remaining text.
+  chunks.push(text.slice(lastIndex));
+
+  return chunks;
+}
+
+const DIFF_PATTERN = '\\b[dD][1-9][0-9]{5,}\\b';
+const TASK_PATTERN = '\\b[tT]\\d+\\b';
+const CLICKABLE_PATTERNS = `(${DIFF_PATTERN})|(${TASK_PATTERN})|${URL_REGEX.source}`;
+const CLICKABLE_RE = new RegExp(CLICKABLE_PATTERNS, 'g');
+
+function toString(value: mixed): string {
+  return typeof value === 'string' ? value : '';
 }

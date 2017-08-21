@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {ActionsObservable} from '../../../commons-node/redux-observable';
+import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 import type {Action, Store} from '../types';
 
 import {Observable} from 'rxjs';
@@ -43,6 +43,21 @@ export function setCustomSdbPathEpic(
       invariant(action.type === Actions.SET_CUSTOM_SDB_PATH);
       getSdbServiceByNuclideUri(action.payload.host).registerCustomPath(
         action.payload.path,
+      );
+    })
+    .ignoreElements();
+}
+
+export function setAdbPortEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions
+    .ofType(Actions.SET_ADB_PORT)
+    .map(action => {
+      invariant(action.type === Actions.SET_ADB_PORT);
+      getAdbServiceByNuclideUri(action.payload.host).addAdbPort(
+        action.payload.port,
       );
     })
     .ignoreElements();

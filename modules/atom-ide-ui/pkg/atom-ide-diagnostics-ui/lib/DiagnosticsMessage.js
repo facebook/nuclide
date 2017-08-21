@@ -1,17 +1,16 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
-import type {
-  FileDiagnosticMessage,
-} from '../../atom-ide-diagnostics/lib/rpc-types';
+import type {FileDiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
 
 import React from 'react';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
@@ -43,7 +42,8 @@ function diagnosticHeader(props: DiagnosticsMessageProps) {
     const buttonType = speculative ? undefined : ButtonTypes.SUCCESS;
     fixButton = (
       <Button buttonType={buttonType} size="EXTRA_SMALL" onClick={applyFix}>
-        {message.fix.title || 'Fix'}
+        {// flowlint-next-line sketchy-null-string:off
+        message.fix.title || 'Fix'}
       </Button>
     );
   }
@@ -52,7 +52,9 @@ function diagnosticHeader(props: DiagnosticsMessageProps) {
       <ButtonGroup>
         {fixButton}
       </ButtonGroup>
-      <span className={providerClassName}>{message.providerName}</span>
+      <span className={providerClassName}>
+        {message.providerName}
+      </span>
     </div>
   );
 }
@@ -60,13 +62,13 @@ function diagnosticHeader(props: DiagnosticsMessageProps) {
 function traceElements(props: DiagnosticsMessageProps) {
   const {message, goToLocation} = props;
   return message.trace
-    ? message.trace.map((traceItem, i) => (
+    ? message.trace.map((traceItem, i) =>
         <DiagnosticsTraceItem
           key={i}
           trace={traceItem}
           goToLocation={goToLocation}
-        />
-      ))
+        />,
+      )
     : null;
 }
 

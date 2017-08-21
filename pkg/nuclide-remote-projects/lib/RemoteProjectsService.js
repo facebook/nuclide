@@ -11,9 +11,7 @@
 
 import type {SerializableRemoteConnectionConfiguration} from '..';
 import type {OpenConnectionDialogOptions} from './open-connection';
-import type {
-  RemoteConnectionConfiguration,
-} from '../../nuclide-remote-connection/lib/RemoteConnection';
+import type {RemoteConnectionConfiguration} from '../../nuclide-remote-connection/lib/RemoteConnection';
 
 import {ReplaySubject} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';

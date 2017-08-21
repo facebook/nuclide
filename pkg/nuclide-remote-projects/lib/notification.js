@@ -25,13 +25,17 @@ export function notifyLocalDiskFile(fileUri: string): void {
 
 export function notifyConnectedRemoteFile(fileUri: string): void {
   atom.notifications.addInfo(
-    `The connection to the server: <code>${nuclideUri.getHostname(fileUri)}</code> is healthy.`,
+    `The connection to the server: <code>${nuclideUri.getHostname(
+      fileUri,
+    )}</code> is healthy.`,
   );
 }
 
 export function notifyDisconnectedRemoteFile(fileUri: string): void {
   atom.notifications.addError(
-    `The connection to the server: <code>${nuclideUri.getHostname(fileUri)}</code> is lost,
+    `The connection to the server: <code>${nuclideUri.getHostname(
+      fileUri,
+    )}</code> is lost,
     retrying in the background!`,
   );
 }

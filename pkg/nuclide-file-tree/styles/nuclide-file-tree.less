@@ -29,6 +29,7 @@
   }
 
   .entry {
+    position: relative;
     // This fixes https://github.com/atom/tree-view/issues/110, see that issue for more details
     &:before {
       content: '';
@@ -117,6 +118,13 @@
 }
 
 
+.nuclide-file-tree-locked-height {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+}
+
 .nuclide-file-tree-working-set-name-missing {
   visibility: hidden;
 }
@@ -126,16 +134,26 @@
   margin-left: @component-padding/2;
 }
 
+.nuclide-file-tree-open-files-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.nuclide-file-tree-open-files-section > .nuclide-ui-section-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .nuclide-file-tree-open-files {
   display: flex;
   max-height: 20vh;
 }
 
 .nuclide-file-tree-open-files-list {
-  padding-left: @component-icon-padding;
-  padding-right: @component-padding;
   position: relative;
   width: 100%;
+  min-width: min-content;
 
   .list-item:hover {
     color: @text-color-highlight;
@@ -144,8 +162,8 @@
   .icon-primitive-dot:before,
   .icon-x:before {
     font-size: 12px;
-    height: 12px;
-    width: 12px;
+    height: @component-icon-size;
+    width: @component-icon-size;
   }
 }
 
@@ -166,6 +184,11 @@
 .nuclide-file-tree-sidebar-uncommitted-changes {
   display: flex;
   max-height: 20vh;
+  width: 100%;
+}
+
+.nuclide-file-tree .list-item {
+  position: relative;
 }
 
 .nuclide-file-tree .list-item::before {

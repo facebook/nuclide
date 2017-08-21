@@ -46,6 +46,7 @@ describe('SocketServer', () => {
 
   it('connect and send message', () => {
     waitsForPromise(async () => {
+      // flowlint-next-line sketchy-null-string:off
       invariant(configPath);
       const services = loadServicesConfig(configPath);
       const registry = new ServiceRegistry(

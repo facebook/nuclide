@@ -70,7 +70,9 @@ export default function observeBuildCommands(store: Store): IDisposable {
         }
         track('buck-prompt.shown', {buildTarget: args[0]});
         const notification = atom.notifications.addInfo(
-          `You recently ran \`buck build ${args.join(' ')}\` from the command line.<br />` +
+          `You recently ran \`buck build ${args.join(
+            ' ',
+          )}\` from the command line.<br />` +
             'Would you like to try building from the Task Runner?',
           {
             dismissable: true,

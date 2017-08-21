@@ -30,7 +30,7 @@ function loopException() {
   }
 }
 
-loopException();
+// loopException();
 $fn = test_lambda();
 echo $fn('baz'); // Outputs barbaz
 

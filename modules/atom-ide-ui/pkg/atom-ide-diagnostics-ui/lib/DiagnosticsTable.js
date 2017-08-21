@@ -1,15 +1,16 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
-import type {DiagnosticMessage} from '../../atom-ide-diagnostics';
+import type {DiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
 import type {Column} from 'nuclide-commons-ui/Table';
 
 import analytics from 'nuclide-commons-atom/analytics';
@@ -42,11 +43,10 @@ export type DisplayDiagnostic = {
 // reached" message.
 const MAX_RESULTS_COUNT = 1000;
 
-const EmptyComponent = () => (
+const EmptyComponent = () =>
   <div className="nuclide-diagnostics-ui-empty-component">
     No diagnostic messages
-  </div>
-);
+  </div>;
 
 const TypeToHighlightColor = Object.freeze({
   ERROR: HighlightColors.error,
@@ -59,7 +59,11 @@ function TypeComponent(props: {
 }): React.Element<any> {
   const text = props.data;
   const highlightColor = TypeToHighlightColor[text.toUpperCase()];
-  return <Highlight color={highlightColor}>{text}</Highlight>;
+  return (
+    <Highlight color={highlightColor}>
+      {text}
+    </Highlight>
+  );
 }
 
 /** @return text and a boolean indicating whether it is plaintext or HTML. */
@@ -88,16 +92,17 @@ function getMessageContent(
   text = text.trim();
   return {
     text,
-    element: showTraces && diagnostic.scope === 'file'
-      ? DiagnosticsMessageNoHeader({
-          message: diagnostic,
-          goToLocation,
-          fixer: () => {},
-        })
-      : DiagnosticsMessageText({
-          preserveNewlines: showTraces,
-          message: {text, html: isPlainText ? undefined : text},
-        }),
+    element:
+      showTraces && diagnostic.scope === 'file'
+        ? DiagnosticsMessageNoHeader({
+            message: diagnostic,
+            goToLocation,
+            fixer: () => {},
+          })
+        : DiagnosticsMessageText({
+            preserveNewlines: showTraces,
+            message: {text, html: isPlainText ? undefined : text},
+          }),
   };
 }
 
@@ -110,7 +115,11 @@ function DescriptionComponent(props: {
   } else if (message.html != null) {
     return <span dangerouslySetInnerHTML={{__html: message.text}} />;
   } else {
-    return <span>{message.text}</span>;
+    return (
+      <span>
+        {message.text}
+      </span>
+    );
   }
 }
 
@@ -232,8 +241,8 @@ export default class DiagnosticsTable extends React.Component {
       sortedRows = sortedRows.slice(0, MAX_RESULTS_COUNT);
       maxResultsMessage = (
         <div className="highlight-warning nuclide-diagnostics-ui-table-message">
-          Max results ({MAX_RESULTS_COUNT}) reached.
-          Fix diagnostics or show only diagnostics for the current file to view more.
+          Max results ({MAX_RESULTS_COUNT}) reached. Fix diagnostics or show
+          only diagnostics for the current file to view more.
         </div>
       );
     }
@@ -241,8 +250,8 @@ export default class DiagnosticsTable extends React.Component {
       <div
         className={classnames({
           'nuclide-diagnostics-ui-table-container': true,
-          'nuclide-diagnostics-ui-table-container-empty': sortedRows.length ===
-            0,
+          'nuclide-diagnostics-ui-table-container-empty':
+            sortedRows.length === 0,
         })}>
         <Table
           collapsable={true}

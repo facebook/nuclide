@@ -9,6 +9,8 @@
  * @format
  */
 
+/* globals Element */
+
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Observable} from 'rxjs';
@@ -16,6 +18,7 @@ import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Portal} from './Portal';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
 type DefaultProps = {
   className: string,
@@ -27,7 +30,7 @@ type DefaultProps = {
 };
 
 type Props = DefaultProps & {
-  formatRequestOptionsErrorMessage: (error: Error) => string,
+  formatRequestOptionsErrorMessage?: (error: Error) => string,
   initialTextInput: string,
   loadingMessage?: string,
   placeholderText?: string,
@@ -95,17 +98,6 @@ export class Combobox extends React.Component {
       selectedIndex: -1,
       textInput: props.initialTextInput,
     };
-    (this: any).receiveUpdate = this.receiveUpdate.bind(this);
-    (this: any)._handleTextInputChange = this._handleTextInputChange.bind(this);
-    (this: any)._handleInputBlur = this._handleInputBlur.bind(this);
-    (this: any)._handleInputFocus = this._handleInputFocus.bind(this);
-    (this: any)._handleMoveDown = this._handleMoveDown.bind(this);
-    (this: any)._handleMoveUp = this._handleMoveUp.bind(this);
-    (this: any)._handleCancel = this._handleCancel.bind(this);
-    (this: any)._handleConfirm = this._handleConfirm.bind(this);
-    (this: any)._scrollSelectedOptionIntoViewIfNeeded = this._scrollSelectedOptionIntoViewIfNeeded.bind(
-      this,
-    );
   }
 
   componentDidMount() {
@@ -157,7 +149,7 @@ export class Combobox extends React.Component {
     );
   }
 
-  receiveUpdate(newOptions: Array<string>) {
+  receiveUpdate = (newOptions: Array<string>) => {
     const filteredOptions = this._getFilteredOptions(
       newOptions,
       this.state.textInput,
@@ -168,7 +160,7 @@ export class Combobox extends React.Component {
       filteredOptions,
       selectedIndex: this._getNewSelectedIndex(filteredOptions),
     });
-  }
+  };
 
   selectValue(newValue: string, didRenderCallback?: () => void) {
     this.refs.freeformInput.setText(newValue);
@@ -187,6 +179,11 @@ export class Combobox extends React.Component {
 
   getText(): string {
     return this.refs.freeformInput.getText();
+  }
+
+  focus(showOptions: boolean): void {
+    this.refs.freeformInput.focus();
+    this.setState({optionsVisible: showOptions});
   }
 
   _getFilteredOptions(
@@ -251,7 +248,7 @@ export class Combobox extends React.Component {
     return this.state.selectedIndex;
   }
 
-  _handleTextInputChange(): void {
+  _handleTextInputChange = (): void => {
     const newText = this.refs.freeformInput.getText();
     if (newText === this.state.textInput) {
       return;
@@ -268,9 +265,9 @@ export class Combobox extends React.Component {
       selectedIndex: this._getNewSelectedIndex(filteredOptions),
     });
     this.props.onChange(newText);
-  }
+  };
 
-  _handleInputFocus(): void {
+  _handleInputFocus = (): void => {
     this.requestUpdate(this.state.textInput);
     // $FlowFixMe
     const boundingRect = ReactDOM.findDOMNode(this).getBoundingClientRect();
@@ -282,9 +279,9 @@ export class Combobox extends React.Component {
         width: boundingRect.width,
       },
     });
-  }
+  };
 
-  _handleInputBlur(event: Object): void {
+  _handleInputBlur = (event: Object): void => {
     const {relatedTarget} = event;
     if (
       relatedTarget == null ||
@@ -302,7 +299,11 @@ export class Combobox extends React.Component {
     if (onBlur != null) {
       onBlur(this.getText());
     }
-  }
+  };
+
+  _handleInputClick = (): void => {
+    this.setState({optionsVisible: true});
+  };
 
   _handleItemClick(selectedValue: string, event: any) {
     this.selectValue(selectedValue, () => {
@@ -318,7 +319,16 @@ export class Combobox extends React.Component {
     });
   }
 
-  _handleMoveDown() {
+  _handleMoveDown = () => {
+    // show the options but don't move the index
+    if (!this.state.optionsVisible) {
+      this.setState(
+        {optionsVisible: true},
+        this._scrollSelectedOptionIntoViewIfNeeded,
+      );
+      return;
+    }
+
     this.setState(
       {
         selectedIndex: Math.min(
@@ -329,50 +339,52 @@ export class Combobox extends React.Component {
       },
       this._scrollSelectedOptionIntoViewIfNeeded,
     );
-  }
+  };
 
-  _handleMoveUp() {
+  _handleMoveUp = () => {
     this.setState(
       {
         selectedIndex: Math.max(0, this.state.selectedIndex - 1),
       },
       this._scrollSelectedOptionIntoViewIfNeeded,
     );
-  }
+  };
 
-  _handleCancel() {
+  _handleCancel = () => {
     this.setState({
       optionsVisible: false,
     });
-  }
+  };
 
-  _handleConfirm() {
+  _handleConfirm = () => {
     const option = this.state.filteredOptions[this.state.selectedIndex];
     if (option !== undefined) {
       this.selectValue(option);
     }
-  }
+  };
 
   _setSelectedIndex(selectedIndex: number) {
     this.setState({selectedIndex});
   }
 
-  _scrollSelectedOptionIntoViewIfNeeded(): void {
+  _scrollSelectedOptionIntoViewIfNeeded = (): void => {
     const selectedOption = ReactDOM.findDOMNode(this.refs.selectedOption);
-    if (selectedOption) {
-      // $FlowFixMe
-      selectedOption.scrollIntoViewIfNeeded();
+    if (selectedOption instanceof Element) {
+      scrollIntoViewIfNeeded(selectedOption);
     }
-  }
+  };
 
   render(): React.Element<any> {
     let optionsContainer;
     const options = [];
 
+    // flowlint-next-line sketchy-null-string:off
     if (this.props.loadingMessage && this.state.loadingOptions) {
       options.push(
         <li key="loading-text" className="loading">
-          <span className="loading-message">{this.props.loadingMessage}</span>
+          <span className="loading-message">
+            {this.props.loadingMessage}
+          </span>
         </li>,
       );
     }
@@ -416,7 +428,9 @@ export class Combobox extends React.Component {
               onMouseOver={this._setSelectedIndex.bind(this, i)}
               ref={isSelected ? 'selectedOption' : null}>
               {beforeMatch}
-              <strong className="text-highlight">{highlightedMatch}</strong>
+              <strong className="text-highlight">
+                {highlightedMatch}
+              </strong>
               {afterMatch}
             </li>
           );
@@ -459,6 +473,7 @@ export class Combobox extends React.Component {
         <AtomInput
           initialValue={initialTextInput}
           onBlur={this._handleInputBlur}
+          onClick={this._handleInputClick}
           onFocus={this._handleInputFocus}
           placeholderText={placeholderText}
           ref="freeformInput"

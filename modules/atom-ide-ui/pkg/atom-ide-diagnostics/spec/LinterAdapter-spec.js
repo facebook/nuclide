@@ -1,15 +1,16 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
-import type {LinterProvider} from '..';
+import type {LinterProvider} from '../lib/types';
 
 import {Disposable, Range} from 'atom';
 import invariant from 'assert';
@@ -20,7 +21,7 @@ import {
   linterMessageToDiagnosticMessage,
   linterMessageV2ToDiagnosticMessage,
   linterMessagesToDiagnosticUpdate,
-} from '../lib/LinterAdapter';
+} from '../lib/services/LinterAdapter';
 
 const grammar = 'testgrammar';
 
@@ -283,12 +284,13 @@ describe('message transformation functions', () => {
               },
             ],
             description: 'Description',
+            linterName: 'test2',
           },
           'test',
         ),
       ).toEqual({
         scope: 'file',
-        providerName: 'test',
+        providerName: 'test2',
         type: 'Error',
         filePath: 'file.txt',
         range: new Range([0, 0], [0, 1]),

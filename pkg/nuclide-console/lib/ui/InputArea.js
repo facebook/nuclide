@@ -38,15 +38,13 @@ export default class OutputTable extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleTextEditor = this._handleTextEditor.bind(this);
-    (this: any)._handleKeyDown = this._handleKeyDown.bind(this);
     this.state = {
       historyIndex: -1,
       draft: '',
     };
   }
 
-  _handleTextEditor(component: ?AtomTextEditor): void {
+  _handleTextEditor = (component: ?AtomTextEditor): void => {
     if (this._keySubscription) {
       this._textEditorModel = null;
       this._keySubscription.unsubscribe();
@@ -58,9 +56,9 @@ export default class OutputTable extends React.Component {
         this._handleKeyDown,
       );
     }
-  }
+  };
 
-  _handleKeyDown(event: KeyboardEvent): void {
+  _handleKeyDown = (event: KeyboardEvent): void => {
     const editor = this._textEditorModel;
     if (editor == null) {
       return;
@@ -118,12 +116,13 @@ export default class OutputTable extends React.Component {
         );
       }
     }
-  }
+  };
 
   render(): ?React.Element<any> {
-    const grammar = this.props.scopeName == null
-      ? null
-      : atom.grammars.grammarForScopeName(this.props.scopeName);
+    const grammar =
+      this.props.scopeName == null
+        ? null
+        : atom.grammars.grammarForScopeName(this.props.scopeName);
     return (
       <div className="nuclide-console-input-wrapper">
         <AtomTextEditor

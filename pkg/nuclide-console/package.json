@@ -29,6 +29,18 @@
         "type": "number",
         "default": 10,
         "minimum": 1
+      },
+      "diffUrlPattern": {
+        "title": "Diff URL Pattern",
+        "description": "The URL to link D1234567 text to. (%s will be replaced with the match.)",
+        "type": "string",
+        "default": ""
+      },
+      "taskUrlPattern": {
+        "title": "Task URL Pattern",
+        "description": "The URL to link T1234567 text to. (%s will be replaced with the match.)",
+        "type": "string",
+        "default": ""
       }
     },
     "packageType": "Atom",
@@ -36,11 +48,6 @@
   },
   "activationCommands": {},
   "consumedServices": {
-    "nuclide.workspace-views": {
-      "versions": {
-        "0.0.0": "consumeWorkspaceViewsService"
-      }
-    },
     "tool-bar": {
       "versions": {
         "^1.0.0": "consumeToolBar"

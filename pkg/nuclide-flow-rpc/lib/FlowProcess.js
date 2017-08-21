@@ -33,6 +33,8 @@ import {ServerStatus} from './FlowConstants';
 import {FlowIDEConnection} from './FlowIDEConnection';
 import {FlowIDEConnectionWatcher} from './FlowIDEConnectionWatcher';
 
+import type {FileCache} from '../../nuclide-open-files-rpc';
+
 type FlowExecResult = {
   stdout: string,
   stderr: string,
@@ -88,12 +90,19 @@ export class FlowProcess {
   _isDisposed: BehaviorSubject<boolean>;
   _subscriptions: UniversalDisposable;
 
-  constructor(root: string, execInfoContainer: FlowExecInfoContainer) {
+  _fileCache: FileCache;
+
+  constructor(
+    root: string,
+    execInfoContainer: FlowExecInfoContainer,
+    fileCache: FileCache,
+  ) {
     this._subscriptions = new UniversalDisposable();
     this._execInfoContainer = execInfoContainer;
     this._serverStatus = new BehaviorSubject(ServerStatus.UNKNOWN);
     this._root = root;
     this._isDisposed = new BehaviorSubject(false);
+    this._fileCache = fileCache;
 
     this._optionalIDEConnections = new BehaviorSubject(null);
     this._ideConnections = this._createIDEConnectionStream();
@@ -237,6 +246,7 @@ export class FlowProcess {
         invariant(connectionWatcher == null);
         connectionWatcher = new FlowIDEConnectionWatcher(
           this._tryCreateIDEProcess(),
+          this._fileCache,
           handler,
         );
         connectionWatcher.start();
@@ -321,7 +331,9 @@ export class FlowProcess {
           if (!couldRetry && !suppressErrors) {
             // not sure what happened, but we'll let the caller deal with it
             logger.error(
-              `Flow failed: flow ${args.join(' ')}. Error: ${JSON.stringify(e)}`,
+              `Flow failed: flow ${args.join(' ')}. Error: ${JSON.stringify(
+                e,
+              )}`,
             );
           }
           throw e;

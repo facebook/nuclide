@@ -21,15 +21,10 @@ type Props = SettingsPropsDefault & {
 export default class SettingsSelect extends React.Component {
   props: Props;
 
-  constructor(props: Object) {
-    super(props);
-    (this: any)._handleChange = this._handleChange.bind(this);
-  }
-
-  _handleChange(event: SyntheticEvent) {
+  _handleChange = (event: SyntheticEvent) => {
     const value = ((event.target: any): HTMLInputElement).value;
     this.props.onChange(value);
-  }
+  };
 
   render(): React.Element<any> {
     const keyPath = this.props.keyPath;
@@ -43,15 +38,23 @@ export default class SettingsSelect extends React.Component {
     const optionElements = [];
     if (options.enum) {
       options.enum.forEach((option, i) => {
-        optionElements.push(<option value={option} key={i}>{option}</option>);
+        optionElements.push(
+          <option value={option} key={i}>
+            {option}
+          </option>,
+        );
       });
     }
 
     return (
       <div>
         <label className="control-label">
-          <div className="setting-title">{title}</div>
-          <div className="setting-description">{description}</div>
+          <div className="setting-title">
+            {title}
+          </div>
+          <div className="setting-description">
+            {description}
+          </div>
         </label>
         <select
           className="form-control"

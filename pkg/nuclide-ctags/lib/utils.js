@@ -12,9 +12,7 @@
 import type {CtagsResult} from '../../nuclide-ctags-rpc';
 
 import {getLogger} from 'log4js';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 // Taken from http://ctags.sourceforge.net/FORMAT
 export const CTAGS_KIND_NAMES = {

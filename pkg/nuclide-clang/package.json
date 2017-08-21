@@ -56,16 +56,21 @@
   "consumedServices": {
     "atom-ide-busy-signal": {
       "versions": {
-        "0.2.0": "consumeBusySignal"
+        "0.1.0": "consumeBusySignal"
       }
     },
-    "nuclide.clang.compilation-database": {
+    "nuclide.clang.configuration": {
       "versions": {
-        "0.0.0": "consumeCompilationDatabase"
+        "0.0.0": "consumeClangConfigurationProvider"
       }
     }
   },
   "providedServices": {
+    "nuclide.clang.declaration-info": {
+      "versions": {
+        "0.0.0": "provideDeclarationInfo"
+      }
+    },
     "nuclide.related-files.provider": {
       "versions": {
         "0.0.0": "provideRelatedFiles"
@@ -76,12 +81,12 @@
         "2.0.0": "createAutocompleteProvider"
       }
     },
-    "nuclide-code-format.provider": {
+    "code-format.file": {
       "versions": {
-        "0.0.0": "provideCodeFormat"
+        "0.1.0": "provideCodeFormat"
       }
     },
-    "atom-ide-definitions": {
+    "definitions": {
       "versions": {
         "0.1.0": "provideDefinitions"
       }
@@ -96,7 +101,7 @@
         "0.0.0": "createTypeHintProvider"
       }
     },
-    "atom-ide-outline-view": {
+    "outline-view": {
       "versions": {
         "0.1.0": "provideOutlineView"
       }

@@ -86,9 +86,8 @@ export default (async function runTest(
     const argsAtomScript = process.env.ARGS_ATOM_SCRIPT;
 
     const scriptPath = nuclideUri.resolve(fileAtomScript);
-    const scriptArgs = argsAtomScript === "''"
-      ? []
-      : shellParse(argsAtomScript);
+    const scriptArgs =
+      argsAtomScript === "''" ? [] : shellParse(argsAtomScript);
 
     // Unfortunately we have to pollute our environment if we want to take
     // advantage of Atom's v8 cache. Ideally, we'd run the script file using

@@ -45,8 +45,7 @@ if [[ ! -z "$CI" ]]; then
   # Excerpts from https://github.com/atom/ci/blob/5587d0e/build-package.sh
   echo "Downloading latest Atom release..."
   if [ "${CIRCLECI}" = "true" ]; then
-    ATOM_CHANNEL="${ATOM_CHANNEL:=stable}"
-    curl -s -L "https://atom.io/download/deb?channel=${ATOM_CHANNEL}" \
+    curl -s -L "https://github.com/atom/atom/releases/download/v1.17.2/atom-amd64.deb" \
       -H 'Accept: application/octet-stream' \
       -o "atom-amd64.deb"
     sudo dpkg --install atom-amd64.deb || true

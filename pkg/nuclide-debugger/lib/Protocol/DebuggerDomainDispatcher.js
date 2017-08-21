@@ -15,6 +15,7 @@ import type {
   ScriptId,
   BreakpointId,
   DebuggerEvent,
+  BreakpointHitCountEvent,
   BreakpointResolvedEvent,
   ThreadsUpdatedEvent,
   ThreadUpdatedEvent,
@@ -199,13 +200,21 @@ class DebuggerDomainDispatcher {
     });
   }
 
+  breakpointHitCountChanged(params: BreakpointHitCountEvent): void {
+    this._raiseProtocolEvent({
+      method: 'Debugger.breakpointHitCountChanged',
+      params,
+    });
+  }
+
   scriptParsed(params: ScriptParsedEvent): void {
     this._parsedFiles.set(params.scriptId, params.url);
   }
 
   getFileUriFromScriptId(scriptId: ScriptId): NuclideUri {
-    // TODO: think about how to better deal with scriptId never parsed before.
-    return this._parsedFiles.get(scriptId) || 'Unknown';
+    // Fallback to treat scriptId as url. Some engines(like MobileJS) uses
+    // scriptId as file url.
+    return this._parsedFiles.get(scriptId) || scriptId;
   }
 
   _raiseProtocolEvent(event: ProtocolDebugEvent): void {
@@ -214,4 +223,4 @@ class DebuggerDomainDispatcher {
 }
 
 // Use old school export to allow legacy code to import it.
-module.exports = DebuggerDomainDispatcher;
+module.exports = DebuggerDomainDispatcher; // eslint-disable-line nuclide-internal/no-commonjs

@@ -10,9 +10,7 @@
  */
 
 import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
-import type {
-  NuclideDebuggerProvider,
-} from '../../nuclide-debugger-interfaces/service';
+import type {NuclideDebuggerProvider} from '../../nuclide-debugger-interfaces/service';
 import type DebuggerActions from './DebuggerActions';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 

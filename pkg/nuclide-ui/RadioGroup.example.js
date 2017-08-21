@@ -20,17 +20,16 @@ class RadioGroupExample extends React.Component {
 
   constructor(props: any) {
     super(props);
-    (this: any).onSelectedChange = this.onSelectedChange.bind(this);
     this.state = {
       selectedIndex: 0,
     };
   }
 
-  onSelectedChange(selectedIndex: number): void {
+  onSelectedChange = (selectedIndex: number): void => {
     this.setState({
       selectedIndex,
     });
-  }
+  };
 
   render(): React.Element<any> {
     return (

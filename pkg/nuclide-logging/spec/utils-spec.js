@@ -14,7 +14,6 @@ import {
   patchErrorsOfLoggingEvent,
   serializeLoggingEvent,
 } from '../lib/utils';
-import addPrepareStackTraceHook from '../lib/stacktrace';
 
 import type {LoggingEvent} from '../lib/types';
 
@@ -38,10 +37,6 @@ function createLoggingEvent(...args: Array<any>): LoggingEvent {
 }
 
 describe('Logview Appender Utils.', () => {
-  beforeEach(() => {
-    addPrepareStackTraceHook();
-  });
-
   it('patches error of loggingEvent', () => {
     const error = new Error('test');
     const loggingEventWithError = createLoggingEvent(error);
@@ -56,6 +51,8 @@ describe('Logview Appender Utils.', () => {
     expect(
       patchedLoggingEventWithError.data[0].stackTrace instanceof Array,
     ).toBe(true);
+    const callsite = patchedLoggingEventWithError.data[0].stackTrace[0];
+    expect(callsite.fileName).toBe(__filename);
   });
 
   it('addes error if no error exists in loggingEvent.data', () => {

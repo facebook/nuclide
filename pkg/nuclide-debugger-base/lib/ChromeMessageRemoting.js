@@ -71,6 +71,7 @@ function translateField(
 function translateUriFromServer(hostname: string, uri: string): string {
   const components = url.parse(uri);
   if (components.protocol === 'file:') {
+    // flowlint-next-line sketchy-null-string:off
     invariant(components.pathname);
     const result = nuclideUri.createRemoteUri(
       hostname,

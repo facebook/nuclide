@@ -43,39 +43,39 @@ describeRemotableTest('Clang Refactorizer Test', context => {
     });
 
     runRename(textEditor, new Point(4, 22), 'varOne');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameOne);
-      textEditor.save();
+      await textEditor.save();
     });
 
     runRename(textEditor, new Point(13, 13), 'secondVarOne');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameTwo);
-      textEditor.save();
+      await textEditor.save();
     });
 
     runRename(textEditor, new Point(7, 25), 'varFour');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameThree);
-      textEditor.save();
+      await textEditor.save();
     });
 
     runRename(textEditor, new Point(4, 9), 'varTwo');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameFour);
-      textEditor.save();
+      await textEditor.save();
     });
 
     runRename(textEditor, new Point(6, 18), 'varFive');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameFive);
-      textEditor.save();
+      await textEditor.save();
     });
 
     runRename(textEditor, new Point(7, 18), 'varSix');
-    runs(() => {
+    waitsForPromise(async () => {
       expect(textEditor.getText()).toEqual(afterRenameSix);
-      textEditor.save();
+      await textEditor.save();
     });
   });
 });

@@ -19,9 +19,7 @@ import type {
   ToolbarStatePreference,
 } from './types';
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
-import type {
-  DistractionFreeModeProvider,
-} from '../../nuclide-distraction-free-mode';
+import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
 import type {ConsoleService} from '../../nuclide-console/lib/types';
 
 import syncAtomCommands from '../../commons-atom/sync-atom-commands';
@@ -33,7 +31,7 @@ import {arrayEqual} from 'nuclide-commons/collection';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as Actions from './redux/Actions';
 import * as Epics from './redux/Epics';
@@ -221,6 +219,29 @@ class Activation {
         .subscribe(visible => {
           this._panelRenderer.render({visible});
         }),
+      // Add a "stop" command when a task is running.
+      states
+        .map(state => state.runningTask != null)
+        .distinctUntilChanged()
+        .switchMap(
+          taskIsRunning =>
+            taskIsRunning
+              ? Observable.create(
+                  () =>
+                    new UniversalDisposable(
+                      atom.commands.add(
+                        'atom-workspace',
+                        // eslint-disable-next-line nuclide-internal/atom-apis
+                        'nuclide-task-runner:stop-task',
+                        () => {
+                          this._actionCreators.stopTask();
+                        },
+                      ),
+                    ),
+                )
+              : Observable.empty(),
+        )
+        .subscribe(),
     );
   }
 
@@ -334,6 +355,7 @@ class Activation {
 createPackage(module.exports, Activation);
 
 function activateInitialPackagesObservable(): Observable<void> {
+  // flowlint-next-line sketchy-null-mixed:off
   if (atom.packages.hasActivatedInitialPackages) {
     return Observable.of(undefined);
   }

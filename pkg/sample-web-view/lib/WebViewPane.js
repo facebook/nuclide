@@ -59,6 +59,7 @@ class WebViewPane extends HTMLElement {
     // Unfortunately, page-title-set never seems to fire, so we listen for frame loads and update
     // the title based on those instead.
     webview.addEventListener('did-frame-finish-load', (event: Event) => {
+      // flowlint-next-line sketchy-null-mixed:off
       if (event.isMainFrame) {
         this._title = webview.getTitle();
         this._emitter.emit('did-change-title');

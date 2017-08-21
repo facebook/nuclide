@@ -11,11 +11,9 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {RemoteConnection} from './RemoteConnection';
-import type {
-  HgRepositoryDescription,
-} from '../../nuclide-source-control-helpers';
-import typeof * as InfoService
-  from '../../nuclide-server/lib/services/InfoService';
+import type {OnHeartbeatErrorCallback} from '../../nuclide-remote-connection/lib/ConnectionHealthNotifier.js';
+import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
+import typeof * as InfoService from '../../nuclide-server/lib/services/InfoService';
 import typeof * as FileWatcherService from '../../nuclide-filewatcher-rpc';
 import type {WatchResult} from '../../nuclide-filewatcher-rpc';
 
@@ -35,9 +33,11 @@ import {getAtomSideMarshalers} from '../../nuclide-marshalers-atom';
 
 import {Emitter} from 'atom';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {timeoutPromise} from 'nuclide-commons/promise';
 import SharedObservableCache from '../../commons-node/SharedObservableCache';
 
 import {NuclideSocket} from '../../nuclide-server/lib/NuclideSocket';
+import {getLogger} from 'log4js';
 import {getVersion} from '../../nuclide-version';
 import lookupPreferIpv6 from './lookup-prefer-ip-v6';
 
@@ -154,6 +154,11 @@ export class ServerConnection {
       this._config.host,
       this.getSocket(),
     );
+  }
+
+  setOnHeartbeatError(onHeartbeatError: OnHeartbeatErrorCallback): void {
+    invariant(this._healthNotifier != null);
+    this._healthNotifier.setOnHeartbeatError(onHeartbeatError);
   }
 
   getUriOfRemotePath(remotePath: string): string {
@@ -388,10 +393,24 @@ export class ServerConnection {
   }
 
   async _closeServerConnection(shutdown: boolean): Promise<void> {
-    await this._getInfoService().closeConnection(shutdown);
-    if (shutdown) {
-      // Clear the saved connection config so we don't try it again at startup.
-      clearConnectionConfig(this._config.host);
+    try {
+      // If the Nuclide server has already been shutdown or has crashed,
+      // the closeConnection() call will attempt to disconnect from the Nuclide
+      // server forever. This sets a 5 second timeout for it so that the rest
+      // of this function and anything calling it can complete.
+      await timeoutPromise(
+        this._getInfoService().closeConnection(shutdown),
+        5000,
+      );
+    } catch (e) {
+      getLogger('nuclide-remote-connection').error(
+        'Failed to close Nuclide server connection.',
+      );
+    } finally {
+      if (shutdown) {
+        // Clear the saved connection config so we don't try it again at startup.
+        clearConnectionConfig(this._config.host);
+      }
     }
   }
 

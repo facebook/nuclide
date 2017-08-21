@@ -12,19 +12,18 @@
 import type {ContextProvider, NuclideContextView} from './types';
 import type {DefinitionProvider} from 'atom-ide-ui';
 import type {HomeFragments} from '../../nuclide-home/lib/types';
-import type {
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ContextViewManager, WORKSPACE_VIEW_URI} from './ContextViewManager';
 import {Disposable, CompositeDisposable} from 'atom';
 import invariant from 'assert';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
 let manager: ?ContextViewManager = null;
 let disposables: CompositeDisposable;
 
 export function activate(): void {
-  disposables = new CompositeDisposable();
+  disposables = new CompositeDisposable(_registerCommandAndOpener());
 }
 
 export function deactivate(): void {
@@ -75,13 +74,11 @@ export function getHomeFragments(): HomeFragments {
     feature: {
       title: 'Context View',
       icon: 'info',
-      description: 'Easily navigate between symbols and their definitions in your code',
+      description:
+        'Easily navigate between symbols and their definitions in your code',
       command: () => {
-        atom.commands.dispatch(
-          atom.views.getView(atom.workspace),
-          'nuclide-context-view:toggle',
-          {visible: true},
-        );
+        // eslint-disable-next-line nuclide-internal/atom-apis
+        atom.workspace.open(WORKSPACE_VIEW_URI);
       },
     },
     priority: 2,
@@ -92,22 +89,16 @@ export function deserializeContextViewPanelState(): ContextViewManager {
   return getContextViewManager();
 }
 
-export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-  disposables.add(
-    api.addOpener(uri => {
+function _registerCommandAndOpener(): UniversalDisposable {
+  return new UniversalDisposable(
+    atom.workspace.addOpener(uri => {
       if (uri === WORKSPACE_VIEW_URI) {
         return getContextViewManager();
       }
     }),
-    new Disposable(() =>
-      api.destroyWhere(item => item instanceof ContextViewManager),
-    ),
-    atom.commands.add(
-      'atom-workspace',
-      'nuclide-context-view:toggle',
-      event => {
-        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
-      },
-    ),
+    () => destroyItemWhere(item => item instanceof ContextViewManager),
+    atom.commands.add('atom-workspace', 'nuclide-context-view:toggle', () => {
+      atom.workspace.toggle(WORKSPACE_VIEW_URI);
+    }),
   );
 }

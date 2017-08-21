@@ -11,23 +11,38 @@
 
 import type {TestContext} from './utils/remotable-tests';
 
+import {getFileSystemServiceByNuclideUri} from '../pkg/nuclide-remote-connection';
 import {copyFixture} from '../pkg/nuclide-test-helpers';
 import {describeRemote} from './utils/remotable-tests';
 
 describeRemote('Remote Connection', (context: TestContext) => {
   const NEW_FILE_NAME = 'NEW_FILE.txt';
 
-  it("succesfully opens a remote file that doesn't exist", () => {
+  it("succesfully opens and saves a remote file that doesn't exist", () => {
+    let editor;
+    let fileName;
+
     waitsForPromise({timeout: 10000}, async () => {
       const repoPath = await copyFixture('cpp_project', __dirname);
       await context.setProject(repoPath);
-      const editor = await atom.workspace.open(
-        context.getProjectRelativePath(NEW_FILE_NAME),
-      );
+      fileName = context.getProjectRelativePath(NEW_FILE_NAME);
+      editor = await atom.workspace.open(fileName);
       expect(editor).not.toBeNull();
-      expect(editor.isModified()).toBe(true);
-      await editor.saveAs(context.getProjectRelativePath(NEW_FILE_NAME));
-      expect(editor.isModified()).toBe(false);
+      editor.setText('test1234');
+    });
+
+    waitsFor(() => editor.isModified());
+
+    waitsForPromise(async () => {
+      await editor.save();
+    });
+
+    waitsFor(() => !editor.isModified());
+
+    waitsForPromise(async () => {
+      const fsService = getFileSystemServiceByNuclideUri(fileName);
+      const buffer = await fsService.readFile(fileName);
+      expect(buffer.toString()).toBe('test1234');
     });
   });
 });

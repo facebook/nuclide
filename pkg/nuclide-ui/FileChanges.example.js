@@ -68,9 +68,9 @@ index abc123..cde456 100644
 class FileChangesExample extends React.Component {
   render(): React.Element<any> {
     const diff = parse(sampleUnifiedDiff);
-    const changes = diff.map(file => (
-      <FileChanges diff={file} key={`${file.from}:${file.to}`} />
-    ));
+    const changes = diff.map(file =>
+      <FileChanges diff={file} key={`${file.from}:${file.to}`} />,
+    );
     return (
       <div>
         {changes}
@@ -81,7 +81,8 @@ class FileChangesExample extends React.Component {
 
 export const FileChangesExamples = {
   sectionName: 'FileChanges',
-  description: 'Displays unified diffs in separate, per-hunk TextEditor instances',
+  description:
+    'Displays unified diffs in separate, per-hunk TextEditor instances',
   examples: [
     {
       title: 'Basic example',

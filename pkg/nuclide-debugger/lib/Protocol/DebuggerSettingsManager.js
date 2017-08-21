@@ -10,9 +10,7 @@
  */
 
 import type DebuggerDomainDispatcher from './DebuggerDomainDispatcher';
-import type {
-  SetDebuggerSettingsRequest,
-} from '../../../nuclide-debugger-base/lib/protocol-types';
+import type {SetDebuggerSettingsRequest} from '../../../nuclide-debugger-base/lib/protocol-types';
 
 /**
  * Bridge between Nuclide IPC and RPC debugger settings protocols.

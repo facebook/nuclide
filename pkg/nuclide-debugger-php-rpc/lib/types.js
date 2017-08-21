@@ -10,3 +10,5 @@
  */
 
 export type DebuggerMode = 'attach' | 'launch';
+
+export type MessageSender = (message: string, level: string) => mixed;

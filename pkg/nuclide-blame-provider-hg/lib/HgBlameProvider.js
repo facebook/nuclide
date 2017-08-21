@@ -43,6 +43,7 @@ async function doGetBlameForEditor(
   editor: atom$TextEditor,
 ): Promise<BlameForEditor> {
   const path = editor.getPath();
+  // flowlint-next-line sketchy-null-string:off
   if (!path) {
     return Promise.resolve([]);
   }

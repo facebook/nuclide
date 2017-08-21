@@ -14,7 +14,7 @@ export type HhvmDebuggerSettings = {
 };
 
 const defaultSettings: HhvmDebuggerSettings = {
-  singleThreadStepping: false,
+  singleThreadStepping: true,
 };
 
 let settings: HhvmDebuggerSettings = defaultSettings;

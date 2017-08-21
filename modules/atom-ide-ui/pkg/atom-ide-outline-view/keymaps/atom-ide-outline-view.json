@@ -1,5 +1,5 @@
 {
   "atom-workspace": {
-    "alt-o": "nuclide-outline-view:toggle"
+    "alt-o": "outline-view:toggle"
   }
 }

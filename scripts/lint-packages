@@ -26,12 +26,19 @@ if verbose:
     logging.getLogger().setLevel(logging.DEBUG)
 
 # Validate package definitions
-from lib.package_manager import PackageManager
+from lib.package_manager import load_package_configs
 from lib.package_linter import PackageLinter
+from lib.modules_linter import ModulesLinter
 
-package_manager = PackageManager()
-linter = PackageLinter(package_manager.get_package_map())
+linter = PackageLinter(load_package_configs())
 
 if not linter.validate_packages():
     logging.info('Found package lint errors. Exiting...')
+    sys.exit(1)
+
+modules_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
+modules_linter = ModulesLinter(load_package_configs(modules_path))
+
+if not modules_linter.validate_packages():
+    logging.info('Found modules lint errors. Exiting...')
     sys.exit(1)

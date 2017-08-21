@@ -22,9 +22,12 @@ export default (async function tryReopenProject(
     const notification = atom.notifications.addInfo(
       `Project \`${projectId}\` not open`,
       {
-        description: `You tried to open a file in the \`${projectId}\` project, but it doesn't ` +
+        description:
+          `You tried to open a file in the \`${projectId}\` project, but it doesn't ` +
           'seem to be in your open projects.<br />' +
-          `You last had it open at \`${nuclideUri.nuclideUriToDisplayString(lastPath)}\`.<br />` +
+          `You last had it open at \`${nuclideUri.nuclideUriToDisplayString(
+            lastPath,
+          )}\`.<br />` +
           'Would you like to try re-opening it?',
         dismissable: true,
         buttons: [

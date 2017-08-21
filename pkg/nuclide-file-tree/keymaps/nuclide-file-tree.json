@@ -9,7 +9,8 @@
     "ctrl-\\": "nuclide-file-tree:toggle",
     "ctrl-k ctrl-b": "nuclide-file-tree:toggle",
     "ctrl-|": "nuclide-file-tree:reveal-active-file",
-    "alt-\\": "nuclide-file-tree:toggle-focus"
+    "alt-\\": "nuclide-file-tree:toggle-focus",
+    "f2": "nuclide-file-tree:rename-selection"
   },
   "atom-workspace": {
     "ctrl-{": "nuclide-file-tree:recursive-collapse-all"

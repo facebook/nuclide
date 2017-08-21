@@ -9,15 +9,18 @@
  * @format
  */
 
-import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
+import type {
+  DebuggerCapabilities,
+  DebuggerProperties,
+  DebuggerInstanceBase,
+} from '../../nuclide-debugger-base';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   LaunchTargetInfo,
   DebuggerConfig,
   NativeDebuggerService as NativeDebuggerServiceType,
 } from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
-import typeof * as NativeDebuggerService
-  from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
+import typeof * as NativeDebuggerService from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 
 import invariant from 'assert';
 import {
@@ -41,12 +44,21 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
     return new LaunchProcessInfo(this._targetUri, this._launchTargetInfo);
   }
 
-  supportThreads(): boolean {
-    return true;
+  getDebuggerCapabilities(): DebuggerCapabilities {
+    return {
+      ...super.getDebuggerCapabilities(),
+      conditionalBreakpoints: true,
+      continueToLocation: true,
+      readOnlyTarget:
+        this._launchTargetInfo.coreDump != null &&
+        this._launchTargetInfo.coreDump !== '',
+      singleThreadStepping: true,
+      threads: true,
+    };
   }
 
-  supportContinueToLocation(): boolean {
-    return true;
+  getDebuggerProps(): DebuggerProperties {
+    return super.getDebuggerProps();
   }
 
   async debug(): Promise<DebuggerInstanceBase> {
@@ -78,17 +90,14 @@ export class LaunchProcessInfo extends DebuggerProcessInfo {
     return debugSession;
   }
 
-  supportSingleThreadStepping(): boolean {
-    return true;
-  }
-
   getDebuggerConfig(): DebuggerConfig {
     return {
       logLevel: getConfig().serverLogLevel,
       pythonBinaryPath: getConfig().pythonBinaryPath,
       buckConfigRootFile: getConfig().buckConfigRootFile,
-      lldbPythonPath: this._launchTargetInfo.lldbPythonPath ||
-        getConfig().lldbPythonPath,
+      lldbPythonPath:
+        // flowlint-next-line sketchy-null-string:off
+        this._launchTargetInfo.lldbPythonPath || getConfig().lldbPythonPath,
       envPythonPath: '',
     };
   }

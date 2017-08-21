@@ -62,11 +62,6 @@ export default class FileDialogComponent extends React.Component {
     super(props);
     this._isClosed = false;
     this._disposables = new UniversalDisposable();
-    (this: any)._close = this._close.bind(this);
-    (this: any)._confirm = this._confirm.bind(this);
-    (this: any)._handleDocumentMouseDown = this._handleDocumentMouseDown.bind(
-      this,
-    );
     const options = {};
     for (const name in this.props.additionalOptions) {
       options[name] = true;
@@ -134,7 +129,9 @@ export default class FileDialogComponent extends React.Component {
     // [1] https://github.com/atom/tree-view/blob/v0.200.0/lib/dialog.coffee#L7
     return (
       <div className="tree-view-dialog" ref="dialog">
-        <label className={labelClassName}>{this.props.message}</label>
+        <label className={labelClassName}>
+          {this.props.message}
+        </label>
         <AtomInput initialValue={this.props.initialValue} ref="input" />
         {checkboxes}
       </div>
@@ -147,24 +144,24 @@ export default class FileDialogComponent extends React.Component {
     this.setState({options});
   }
 
-  _handleDocumentMouseDown(event: Event): void {
+  _handleDocumentMouseDown = (event: Event): void => {
     const dialog = this.refs.dialog;
     // If the click did not happen on the dialog or on any of its descendants,
     // the click was elsewhere on the document and should close the modal.
     if (event.target !== dialog && !dialog.contains(event.target)) {
       this._close();
     }
-  }
+  };
 
-  _confirm() {
+  _confirm = () => {
     this.props.onConfirm(this.refs.input.getText(), this.state.options);
     this._close();
-  }
+  };
 
-  _close() {
+  _close = () => {
     if (!this._isClosed) {
       this._isClosed = true;
       this.props.onClose();
     }
-  }
+  };
 }

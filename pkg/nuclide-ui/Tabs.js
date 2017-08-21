@@ -39,22 +39,15 @@ export default class Tabs extends React.Component {
     triggeringEvent: 'onClick',
   };
 
-  constructor(props: Props) {
-    super(props);
-
-    (this: any)._handleTabChange = this._handleTabChange.bind(this);
-    (this: any)._renderTabMenu = this._renderTabMenu.bind(this);
-  }
-
-  _handleTabChange(selectedTabName: string) {
+  _handleTabChange = (selectedTabName: string) => {
     if (typeof this.props.onActiveTabChange === 'function') {
       this.props.onActiveTabChange(
         nullthrows(this.props.tabs.find(tab => tab.name === selectedTabName)),
       );
     }
-  }
+  };
 
-  _renderTabMenu(): React.Element<any> {
+  _renderTabMenu = (): React.Element<any> => {
     const closeButton = this.props.closeable
       ? <div className="close-icon" onClick={this.props.onClose} />
       : null;
@@ -86,7 +79,7 @@ export default class Tabs extends React.Component {
         {tabs}
       </ul>
     );
-  }
+  };
 
   render(): React.Element<any> {
     return (

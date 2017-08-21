@@ -20,7 +20,6 @@ import type {AdditionalLogFile} from './config';
 
 import log4js from 'log4js';
 
-import addPrepareStackTraceHook from './stacktrace';
 import once from '../../commons-node/once';
 import {
   getDefaultConfig,
@@ -53,14 +52,10 @@ export function flushLogsAndAbort(): void {
  * Push initial default config to log4js.
  * Execute only once.
  */
-export const initialUpdateConfig = once(
-  async function initialUpdateConfig(): Promise<void> {
-    const defaultConfig = await getDefaultConfig();
-    log4js.configure(defaultConfig);
-  },
-);
+export const initialUpdateConfig = once(() => {
+  log4js.configure(getDefaultConfig());
+});
 
 export function initializeLogging() {
-  addPrepareStackTraceHook();
   initialUpdateConfig();
 }

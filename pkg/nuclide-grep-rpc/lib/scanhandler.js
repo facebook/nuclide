@@ -211,6 +211,7 @@ function getLinesFromCommand(
     // `hg grep` can sometimes have an exit code of 123, since it uses xargs.
     isExitError: ({exitCode, signal}) => {
       return (
+        // flowlint-next-line sketchy-null-string:off
         !signal && (exitCode == null || (exitCode > 1 && exitCode !== 123))
       );
     },

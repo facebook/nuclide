@@ -482,6 +482,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('src', metavar='<path>', type=str,
                         help='Full path of source file to analyze.')
+    parser.add_argument('--flags-from-pipe', type=int,
+                        help='Read the flags from a given file descriptor as JSON')
     parser.add_argument('flags', metavar='<flags>', type=str, nargs='*',
                         help='Extra flags to pass to Clang.')
     parser.add_argument('--libclang-file', help='Path to libclang dynamic library')
@@ -489,5 +491,8 @@ if __name__ == '__main__':
 
     if args.libclang_file:
         Config.set_library_file(args.libclang_file)
-    set_up_logging(args.src)
+        set_up_logging(args.src)
+    if args.flags_from_pipe:
+        with os.fdopen(args.flags_from_pipe) as pipe:
+            args.flags = json.loads(pipe.readline().rstrip())
     Server(args.src, args.flags, sys.stdin, sys.stdout).run()

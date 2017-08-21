@@ -16,6 +16,10 @@
     "name": "ClangService"
   },
   {
+    "implementation": "../nuclide-code-search-rpc/lib/CodeSearchService.js",
+    "name": "CodeSearchService"
+  },
+  {
     "implementation": "../nuclide-ctags-rpc/lib/CtagsService.js",
     "name": "CtagsService"
   },
@@ -60,6 +64,10 @@
     "name": "InfoService"
   },
   {
+    "implementation": "../nuclide-js-imports-client-rpc/lib/JsImportsService.js",
+    "name": "JSAutoImportsService"
+  },
+  {
     "implementation": "../nuclide-ocaml-rpc/lib/MerlinService.js",
     "name": "MerlinService"
   },
@@ -67,10 +75,6 @@
     "definition": "../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface.js",
     "implementation": "../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceImplementation.js",
     "name": "NativeDebuggerService"
-  },
-  {
-    "implementation": "../nuclide-debugger-node-rpc/lib/NodeDebuggerService.js",
-    "name": "NodeDebuggerService"
   },
   {
     "implementation": "../nuclide-open-files-rpc/lib/OpenFilesService.js",
@@ -97,7 +101,15 @@
     "name": "SdbService"
   },
   {
+    "implementation": "../nuclide-socket-rpc/lib/SocketService.js",
+    "name": "SocketService"
+  },
+  {
     "implementation": "./lib/services/SourceControlService.js",
     "name": "SourceControlService"
+  },
+  {
+    "implementation": "../nuclide-vscode-language-service-rpc/lib/main.js",
+    "name": "VSCodeLanguageService"
   }
 ]

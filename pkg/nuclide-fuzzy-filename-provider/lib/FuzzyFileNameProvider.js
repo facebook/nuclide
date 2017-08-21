@@ -9,14 +9,17 @@
  * @format
  */
 
-import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
+import type {
+  FileResult,
+  DirectoryProviderType,
+} from '../../nuclide-quick-open/lib/types';
 
 import {
   RemoteDirectory,
   getFuzzyFileSearchServiceByNuclideUri,
 } from '../../nuclide-remote-connection';
 
-import {getIgnoredNames} from './utils';
+import {getIgnoredNames, parseFileNameQuery} from './utils';
 
 export default ({
   providerType: 'DIRECTORY',
@@ -38,7 +41,8 @@ export default ({
     query: string,
     directory: atom$Directory,
   ): Promise<Array<FileResult>> {
-    if (query.length === 0) {
+    const {fileName, line, column} = parseFileNameQuery(query);
+    if (fileName.length === 0) {
       return [];
     }
 
@@ -46,7 +50,7 @@ export default ({
     const service = getFuzzyFileSearchServiceByNuclideUri(directoryPath);
     const results = await service.queryFuzzyFile(
       directoryPath,
-      query,
+      fileName,
       getIgnoredNames(),
     );
 
@@ -62,6 +66,12 @@ export default ({
       }
     }
 
-    return ((results: any): Array<FileResult>);
+    return results.map(result => ({
+      path: result.path,
+      score: result.score,
+      matchIndexes: result.matchIndexes,
+      line,
+      column,
+    }));
   },
-}: Provider);
+}: DirectoryProviderType);

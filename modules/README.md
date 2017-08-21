@@ -16,3 +16,7 @@ Thus, all Nuclide code is able to use `modules/xyz` via `require('xyz')`
 without excessively long relative paths (i.e. `require('../../../modules/xyz')`).
 
 The root `.flowconfig` also recognizes `modules/` as a module resolution path.
+
+## License
+
+All code in `modules/` is BSD-licensed. We also provide an additional patent grant.

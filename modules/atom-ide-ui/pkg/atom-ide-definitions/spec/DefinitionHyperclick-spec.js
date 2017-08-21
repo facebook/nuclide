@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -13,7 +14,7 @@ import type {
   HyperclickProvider,
   HyperclickSuggestion,
 } from '../../hyperclick/lib/types';
-import type {DefinitionProvider} from '..';
+import type {DefinitionProvider} from '../lib/types';
 
 import {Point, Range, TextEditor} from 'atom';
 import invariant from 'assert';
@@ -43,11 +44,11 @@ describe('DefinitionHyperclick', () => {
 
     disposables = new UniversalDisposable(
       atom.packages.serviceHub.provide(
-        'atom-ide-definitions',
+        'definitions',
         '0.1.0',
         definitionProvider,
       ),
-      atom.packages.serviceHub.consume('hyperclick.provider', '0.0.0', x => {
+      atom.packages.serviceHub.consume('hyperclick', '0.1.0', x => {
         provider = x;
       }),
     );
@@ -136,6 +137,13 @@ describe('DefinitionHyperclick', () => {
             name: 'd2',
             projectRoot: '/a',
           },
+          {
+            path: '/a/b/path3',
+            position: new Point(3, 4),
+            range: null,
+            id: 'symbol-without-name',
+            projectRoot: '/a',
+          },
         ],
       };
       const spy = spyOn(definitionProvider, 'getDefinition').andReturn(
@@ -158,14 +166,47 @@ describe('DefinitionHyperclick', () => {
         callback: () => mixed,
       }> = (result.callback: any);
 
-      expect(callbacks.length).toBe(2);
+      expect(callbacks.length).toBe(3);
       expect(callbacks[0].title).toBe('d1 (b/path1)');
       expect(typeof callbacks[0].callback).toBe('function');
       expect(callbacks[1].title).toBe('d2 (b/path2)');
       expect(typeof callbacks[1].callback).toBe('function');
+      expect(callbacks[2].title).toBe('b/path3:4');
+      expect(typeof callbacks[2].callback).toBe('function');
 
       callbacks[1].callback();
       expect(goToLocation).toHaveBeenCalledWith('/a/b/path2', 3, 4);
+    });
+  });
+
+  it('falls back to lower-priority providers', () => {
+    waitsForPromise(async () => {
+      const def = {
+        queryRange: [new Range(new Point(1, 1), new Point(1, 5))],
+        definitions: [
+          {
+            path: 'path1',
+            position: new Point(1, 2),
+            range: null,
+            id: 'symbol-name',
+            name: null,
+            projectRoot: null,
+          },
+        ],
+      };
+      const newProvider = {
+        priority: 10,
+        name: '',
+        grammarScopes: ['text.plain.null-grammar'],
+        getDefinition: () => Promise.resolve(def),
+      };
+      atom.packages.serviceHub.provide('definitions', '0.1.0', newProvider);
+      invariant(provider != null);
+      invariant(provider.getSuggestion != null);
+      const result = await provider.getSuggestion(editor, position);
+      expect(result).not.toBe(null);
+      invariant(result != null);
+      expect(result.range).toEqual(def.queryRange);
     });
   });
 });

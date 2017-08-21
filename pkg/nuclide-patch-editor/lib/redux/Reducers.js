@@ -126,10 +126,14 @@ function updateFileData(
 
     // Update countEnabledChunks and countPartialChunks based on change in selected state
     invariant(
-      !(oldHunk.selected === SelectedState.ALL &&
-        newHunk.selected === SelectedState.ALL) &&
-        !(oldHunk.selected === SelectedState.NONE &&
-          newHunk.selected === SelectedState.NONE),
+      !(
+        oldHunk.selected === SelectedState.ALL &&
+        newHunk.selected === SelectedState.ALL
+      ) &&
+        !(
+          oldHunk.selected === SelectedState.NONE &&
+          newHunk.selected === SelectedState.NONE
+        ),
     );
     if (
       oldHunk.selected === SelectedState.ALL &&

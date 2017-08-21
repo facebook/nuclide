@@ -62,6 +62,7 @@ export default class ProjectStore {
     }
 
     const fileName = activeTextEditor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!fileName) {
       return;
     }
@@ -125,7 +126,7 @@ export default class ProjectStore {
 
   getDebugTarget(): string {
     const filePath = this._currentFilePath;
-    if (this._debugMode === 'script') {
+    if (this._debugMode !== 'webserver') {
       const localPath = nuclideUri.getPath(filePath);
       const lastScriptCommand = this.getLastScriptCommand(localPath);
       return lastScriptCommand === '' ? localPath : lastScriptCommand;

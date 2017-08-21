@@ -74,16 +74,18 @@ export function getOuterResults(
 ): ?OuterResults {
   const nonEmptyResults = filterEmptyResults(resultsByService);
   const serviceNames = Object.keys(nonEmptyResults);
-  const serviceName = location === 'top'
-    ? serviceNames[0]
-    : serviceNames[serviceNames.length - 1];
+  const serviceName =
+    location === 'top'
+      ? serviceNames[0]
+      : serviceNames[serviceNames.length - 1];
   if (serviceName == null) {
     return null;
   }
   const directoryNames = Object.keys(nonEmptyResults[serviceName].results);
-  const directoryName = location === 'top'
-    ? directoryNames[0]
-    : directoryNames[directoryNames.length - 1];
+  const directoryName =
+    location === 'top'
+      ? directoryNames[0]
+      : directoryNames[directoryNames.length - 1];
   const results = nonEmptyResults[serviceName].results[directoryName].results;
   return {
     serviceName,

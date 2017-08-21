@@ -11,16 +11,7 @@
 
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {OutputService} from '../../nuclide-console/lib/types';
-import type {DebuggerLaunchAttachProvider} from '../../nuclide-debugger-base';
-import type {
-  NuclideDebuggerProvider,
-} from '../../nuclide-debugger-interfaces/service';
-import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import nuclideUri from 'nuclide-commons/nuclideUri';
-import {
-  ReactNativeLaunchAttachProvider,
-} from './debugging/ReactNativeLaunchAttachProvider';
 import invariant from 'assert';
 import Activation from './Activation';
 
@@ -35,20 +26,6 @@ export function deactivate(): void {
   invariant(activation != null);
   activation.dispose();
   activation = null;
-}
-
-export function createDebuggerProvider(): NuclideDebuggerProvider {
-  return {
-    name: 'react-native',
-    getLaunchAttachProvider(
-      connection: NuclideUri,
-    ): ?DebuggerLaunchAttachProvider {
-      if (nuclideUri.isLocal(connection)) {
-        return new ReactNativeLaunchAttachProvider('React Native', connection);
-      }
-      return null;
-    },
-  };
 }
 
 export function consumeOutputService(api: OutputService): void {

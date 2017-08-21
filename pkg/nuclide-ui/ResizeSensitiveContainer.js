@@ -41,13 +41,6 @@ class ResizeSensor extends React.Component {
   _expand: ?HTMLElement;
   _shrink: ?HTMLElement;
 
-  constructor(props: SensorProps) {
-    super(props);
-    (this: any)._handleScroll = this._handleScroll.bind(this);
-    (this: any)._handleExpandRef = this._handleExpandRef.bind(this);
-    (this: any)._handleShrinkRef = this._handleShrinkRef.bind(this);
-  }
-
   componentDidMount(): void {
     this._resetScrollbars();
   }
@@ -74,18 +67,18 @@ class ResizeSensor extends React.Component {
     this._shrink.scrollTop = this._shrink.scrollHeight;
   }
 
-  _handleScroll(): void {
+  _handleScroll = (): void => {
     this._resetScrollbars();
     this.props.onDetectedResize();
-  }
+  };
 
-  _handleExpandRef(el: HTMLElement): void {
+  _handleExpandRef = (el: HTMLElement): void => {
     this._expand = el;
-  }
+  };
 
-  _handleShrinkRef(el: HTMLElement): void {
+  _handleShrinkRef = (el: HTMLElement): void => {
     this._shrink = el;
-  }
+  };
 
   render(): React.Element<any> {
     const {targetWidth, targetHeight} = this.props;
@@ -148,9 +141,6 @@ export class ResizeSensitiveContainer extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleContainer = this._handleContainer.bind(this);
-    (this: any)._handleResize = this._handleResize.bind(this);
-    (this: any)._updateContainerSize = this._updateContainerSize.bind(this);
     this.state = {
       height: -1,
       width: -1,
@@ -167,12 +157,12 @@ export class ResizeSensitiveContainer extends React.Component {
     return this.state.height !== -1 && this.state.width !== -1;
   }
 
-  _handleContainer(el: ?HTMLElement): void {
+  _handleContainer = (el: ?HTMLElement): void => {
     this._container = el;
     this._updateContainerSize();
-  }
+  };
 
-  _updateContainerSize(): void {
+  _updateContainerSize = (): void => {
     if (this._container == null) {
       return;
     }
@@ -188,16 +178,16 @@ export class ResizeSensitiveContainer extends React.Component {
       width: offsetWidth,
     });
     this.props.onResize(offsetHeight, offsetWidth);
-  }
+  };
 
-  _handleResize(): void {
+  _handleResize = (): void => {
     if (this._rafDisposable != null) {
       this._rafDisposable.unsubscribe();
     }
     this._rafDisposable = nextAnimationFrame.subscribe(
       this._updateContainerSize,
     );
-  }
+  };
 
   render(): React.Element<any> {
     const {children, className, tabIndex} = this.props;

@@ -26,7 +26,9 @@ function renderNullish(
 ): ?React.Element<any> {
   const {type} = evaluationResult;
   return type === 'undefined' || type === 'null'
-    ? <span className={ValueComponentClassNames.nullish}>{type}</span>
+    ? <span className={ValueComponentClassNames.nullish}>
+        {type}
+      </span>
     : null;
 }
 
@@ -44,7 +46,9 @@ function renderString(evaluationResult: EvaluationResult): ?React.Element<any> {
 function renderNumber(evaluationResult: EvaluationResult): ?React.Element<any> {
   const {type, value} = evaluationResult;
   return type === 'number'
-    ? <span className={ValueComponentClassNames.number}>{String(value)}</span>
+    ? <span className={ValueComponentClassNames.number}>
+        {String(value)}
+      </span>
     : null;
 }
 
@@ -53,7 +57,9 @@ function renderBoolean(
 ): ?React.Element<any> {
   const {type, value} = evaluationResult;
   return type === 'boolean'
-    ? <span className={ValueComponentClassNames.boolean}>{String(value)}</span>
+    ? <span className={ValueComponentClassNames.boolean}>
+        {String(value)}
+      </span>
     : null;
 }
 
@@ -83,10 +89,15 @@ export default class SimpleValueComponent extends React.Component {
       }
     }
     if (displayValue == null || displayValue === '') {
+      // flowlint-next-line sketchy-null-string:off
       displayValue = evaluationResult.description || '(N/A)';
     }
     if (expression == null) {
-      return <span>{displayValue}</span>;
+      return (
+        <span>
+          {displayValue}
+        </span>
+      );
     }
     // TODO @jxg use a text editor to apply proper syntax highlighting for expressions
     // (t11408154)

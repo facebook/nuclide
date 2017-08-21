@@ -9,16 +9,14 @@
  * @format
  */
 
-import type FileTreeContextMenu
-  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {TestRunner} from './types';
-import type {
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
 import {CompositeDisposable, Disposable} from 'atom';
 import createPackage from 'nuclide-commons-atom/createPackage';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import {TestRunnerController, WORKSPACE_VIEW_URI} from './TestRunnerController';
 import {getLogger} from 'log4js';
 
@@ -36,7 +34,9 @@ const FILE_TREE_CONTEXT_MENU_PRIORITY = 200;
 function limitString(str: string, length?: number = 20): string {
   const strLength = str.length;
   return strLength > length
-    ? `${str.substring(0, length / 2)}…${str.substring(str.length - length / 2)}`
+    ? `${str.substring(0, length / 2)}…${str.substring(
+        str.length - length / 2,
+      )}`
     : str;
 }
 
@@ -91,6 +91,7 @@ class Activation {
           event.stopPropagation();
         },
       ),
+      this._registerCommandAndOpener(),
     );
   }
 
@@ -261,21 +262,19 @@ class Activation {
     return controller;
   }
 
-  consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-    this._disposables.add(
-      api.addOpener(uri => {
+  _registerCommandAndOpener(): UniversalDisposable {
+    return new UniversalDisposable(
+      atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           return this.getController();
         }
       }),
-      new Disposable(() =>
-        api.destroyWhere(item => item instanceof TestRunnerController),
-      ),
+      () => destroyItemWhere(item => item instanceof TestRunnerController),
       atom.commands.add(
         'atom-workspace',
         'nuclide-test-runner:toggle-panel',
-        event => {
-          api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+        () => {
+          atom.workspace.toggle(WORKSPACE_VIEW_URI);
         },
       ),
     );

@@ -16,4 +16,6 @@ export {
   DebuggerRpcWebSocketService,
 } from './DebuggerRpcServiceBase';
 
+export {default as VsDebugSessionTranslator} from './VsDebugSessionTranslator';
+
 export {default as FileCache} from './FileCache';

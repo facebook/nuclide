@@ -41,20 +41,19 @@ class TabExample extends React.Component {
 
   constructor(props: any) {
     super(props);
-    (this: any).handleTabChange = this.handleTabChange.bind(this);
     this.state = {
       activeTabName: 'one',
     };
   }
 
-  handleTabChange(newTabName: {
+  handleTabChange = (newTabName: {
     name: string,
     tabContent: React.Element<any>,
-  }): void {
+  }): void => {
     this.setState({
       activeTabName: newTabName.name,
     });
-  }
+  };
 
   render(): React.Element<any> {
     const {activeTabName} = this.state;

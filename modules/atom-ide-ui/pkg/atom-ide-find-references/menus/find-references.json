@@ -1,0 +1,13 @@
+{
+  "menu": [
+    {
+      "label": "Find",
+      "submenu": [
+        {
+          "label": "Find References",
+          "command": "find-references:activate"
+        }
+      ]
+    }
+  ]
+}

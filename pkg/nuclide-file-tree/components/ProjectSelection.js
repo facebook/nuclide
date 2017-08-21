@@ -48,6 +48,18 @@ export class ProjectSelection extends React.Component {
   }
 
   _processExternalUpdate(): void {
+    if (this._disposables.disposed) {
+      // If an emitted event results in the disposal of a subscription to that
+      // same emitted event, the disposal will not take effect until the next
+      // emission. This is because event-kit handler arrays are immutable.
+      //
+      // Since this method subscribes to store updates, and store updates can
+      // also cause this component to become unmounted, there is a possiblity
+      // that the subscription disposal in `componentWillUnmount` may not
+      // prevent this method from running on an unmounted instance. So, we
+      // manually check the component's mounted state.
+      return;
+    }
     this.setState({
       extraContent: this.calculateExtraContent(),
     });

@@ -9,10 +9,7 @@
  * @format
  */
 
-import type {
-  DatatipProvider,
-  DatatipService,
-} from '../../nuclide-datatip/lib/types';
+import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
 
 import {CompositeDisposable} from 'atom';
 
@@ -32,9 +29,8 @@ export default class UnicodeDatatipManager {
   consumeDatatipService(service: DatatipService): IDisposable {
     const datatipProvider: DatatipProvider = {
       datatip: (editor, position) => unescapedUnicodeDatatip(editor, position),
-      validForScope: (scope: string) => true,
       providerName: 'nuclide-unicode-escapes',
-      inclusionPriority: 1,
+      priority: 1,
     };
 
     const disposable = service.addProvider(datatipProvider);

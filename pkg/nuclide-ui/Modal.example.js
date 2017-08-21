@@ -19,17 +19,15 @@ class ModalExample extends React.Component {
   constructor(props: void) {
     super(props);
     this.state = {isModalShown: false};
-    (this: any)._showModal = this._showModal.bind(this);
-    (this: any)._hideModal = this._hideModal.bind(this);
   }
 
-  _showModal(): void {
+  _showModal = (): void => {
     this.setState({isModalShown: true});
-  }
+  };
 
-  _hideModal(): void {
+  _hideModal = (): void => {
     this.setState({isModalShown: false});
-  }
+  };
 
   render(): React.Element<any> {
     const {isModalShown} = this.state;

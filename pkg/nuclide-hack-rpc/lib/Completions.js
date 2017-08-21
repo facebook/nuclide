@@ -10,9 +10,7 @@
  */
 
 import type {HackCompletion, HackParameterDetails} from './rpc-types';
-import type {
-  Completion,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {Completion} from '../../nuclide-language-service/lib/LanguageService';
 
 import {Point, Range} from 'simple-text-buffer';
 import {
@@ -76,9 +74,8 @@ function processCompletions(
   defaultPrefix: string,
 ): Array<Completion> {
   const lineEndOrNotFound = contents.indexOf('\n', offset);
-  const lineEnd = lineEndOrNotFound !== -1
-    ? lineEndOrNotFound
-    : contents.length;
+  const lineEnd =
+    lineEndOrNotFound !== -1 ? lineEndOrNotFound : contents.length;
   const contentsRestOfLine = contents.substring(offset, lineEnd);
   const nextCharIndex = contentsRestOfLine.search(/\S/);
   const alreadyHasParams =

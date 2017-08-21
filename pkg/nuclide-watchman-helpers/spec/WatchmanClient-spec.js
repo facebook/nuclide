@@ -11,7 +11,6 @@
 
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import invariant from 'assert';
 import watchman from 'fb-watchman';
 import WatchmanClient from '../lib/WatchmanClient';
 import {generateFixture} from '../../nuclide-test-helpers';
@@ -159,15 +158,6 @@ describe('WatchmanClient test suite', () => {
     });
   });
 
-  describe('version()', () => {
-    it('We need version 3.1.0 or bigger', () => {
-      waitsForPromise(async () => {
-        const version = await client.version();
-        expect(version > '3.0.999').toBe(true);
-      });
-    });
-  });
-
   describe('watchProject()', () => {
     it('should be able to watch nested project folders, but cleanup watchRoot', () => {
       waitsForPromise(async () => {
@@ -179,21 +169,6 @@ describe('WatchmanClient test suite', () => {
         } = await client._watchProject(nestedDirPath);
         expect(watchRoot).toBe(dirRealPath);
         expect(relativePath).toBe('nested');
-      });
-    });
-
-    it('fails with meaningful error when the version is < 3.1.0', () => {
-      client._watchmanVersionPromise = Promise.resolve('1.0.0');
-      waitsForPromise(async () => {
-        let watchVersionError;
-        try {
-          await client._watchProject(dirPath);
-        } catch (error) {
-          watchVersionError = error;
-        }
-        expect(watchVersionError).toBeDefined();
-        invariant(watchVersionError);
-        expect(watchVersionError.message).toMatch(/^Watchman version/);
       });
     });
   });

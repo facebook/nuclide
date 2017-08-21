@@ -31,5 +31,6 @@ export const ActionTypes = Object.freeze({
   typeof ActionTypes,
 >);
 
-export default class QuickSelectionDispatcher
-  extends Dispatcher<QuickSelectionAction> {}
+export default class QuickSelectionDispatcher extends Dispatcher<
+  QuickSelectionAction,
+> {}

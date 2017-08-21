@@ -1,0 +1,44 @@
+{
+  "name": "atom-ide-datatip",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides a datatip service for rendering persistent overlays in the editor.",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Datatip"
+      ]
+    }
+  },
+  "atomConfig": {
+    "datatipDebounceDelay": {
+      "title": "Delay before opening a datatip after moving on an identifier",
+      "description": "Delay (in ms) between hovering over an identifier and showing a datatip",
+      "type": "number",
+      "default": 200,
+      "minimum": 1
+    },
+    "datatipInteractedWithDebounceDelay": {
+      "title": "Delay before closing a datatip after moving away from an identifier once interacted with the datatip",
+      "description": "Delay (in ms) between hovering out of an identifier and hiding a datatip after you have interacted with it",
+      "type": "number",
+      "default": 1000,
+      "minimum": 1
+    }
+  },
+  "providedServices": {
+    "nuclide-datatip.provider": {
+      "versions": {
+        "0.0.0": "provideDatatipService"
+      }
+    },
+    "datatip": {
+      "versions": {
+        "0.1.0": "provideDatatipService"
+      }
+    }
+  }
+}

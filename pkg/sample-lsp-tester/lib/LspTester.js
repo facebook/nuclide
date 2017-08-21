@@ -24,7 +24,7 @@ import React from 'react';
 import * as rpc from 'vscode-jsonrpc';
 import invariant from 'assert';
 import {Observable, ReplaySubject, Scheduler} from 'rxjs';
-import shellQuote from 'shell-quote';
+import {shellParse} from 'nuclide-commons/string';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/sample-lsp-tester';
 
@@ -45,10 +45,6 @@ export class LspTester extends SimpleModel {
 
   constructor(serialized: ?SerializedState) {
     super();
-    (this: any)._handleEvent = this._handleEvent.bind(this);
-    (this: any)._sendMessage = this._sendMessage.bind(this);
-    (this: any)._startServer = this._startServer.bind(this);
-    (this: any)._stopServer = this._stopServer.bind(this);
     this.state = {
       lastCommand: serialized && serialized.lastCommand,
       running: false,
@@ -91,6 +87,7 @@ export class LspTester extends SimpleModel {
   _getInitialMessage(): string {
     const dirs = atom.project.getDirectories();
     const rootPath = dirs.length > 0 ? dirs[0].getPath() : null;
+    // flowlint-next-line sketchy-null-string:off
     const rootUri = rootPath ? `file://${rootPath}` : 'file://path/to/root';
     const initialMessage = {
       jsonrpc: '2.0',
@@ -107,18 +104,18 @@ export class LspTester extends SimpleModel {
     return JSON.stringify(initialMessage, undefined, 2);
   }
 
-  _sendMessage(message: Object): void {
+  _sendMessage = (message: Object): void => {
     this._messages.next({
       kind: 'request',
       body: JSON.stringify(message, undefined, 2),
     });
     invariant(this._writer != null);
     this._writer.write(message);
-  }
+  };
 
-  _startServer(commandString: string): void {
+  _startServer = (commandString: string): void => {
     this._stopServer();
-    const [command, ...args] = shellQuote.parse(commandString);
+    const [command, ...args] = shellParse(commandString);
     const events = takeWhileInclusive(
       // Use the async scheduler so that `disposable.dispose()` can still be called in
       // error/complete handlers.
@@ -173,14 +170,14 @@ export class LspTester extends SimpleModel {
         this.setState({running: false});
       },
     ));
-  }
+  };
 
-  _stopServer(): void {
+  _stopServer = (): void => {
     if (this._serverDisposable != null) {
       this._serverDisposable.dispose();
       this._serverDisposable = null;
     }
-  }
+  };
 
   serialize(): Object {
     return {
@@ -191,7 +188,7 @@ export class LspTester extends SimpleModel {
     };
   }
 
-  _handleEvent(event: LegacyProcessMessage /* TODO(T17463635) */): void {
+  _handleEvent = (event: LegacyProcessMessage /* TODO(T17463635) */): void => {
     switch (event.kind) {
       case 'stderr':
         // eslint-disable-next-line no-console
@@ -206,7 +203,7 @@ export class LspTester extends SimpleModel {
         });
         break;
     }
-  }
+  };
 }
 
 function parseChunks(chunks: Array<string>): ?{header: string, body: mixed} {

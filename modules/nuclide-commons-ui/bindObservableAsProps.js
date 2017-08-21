@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -31,12 +32,17 @@ export function bindObservableAsProps<T: ReactClass<any>, U: T>(
     _subscription: ?rxjs$ISubscription;
     state: {[key: string]: any};
     _resolved: boolean;
+    _wrappedComponent: ?T;
 
     constructor(props) {
       super(props);
       this._subscription = null;
       this.state = {};
       this._resolved = false;
+    }
+
+    getWrappedComponent(): ?T {
+      return this._wrappedComponent;
     }
 
     componentDidMount(): void {
@@ -60,7 +66,12 @@ export function bindObservableAsProps<T: ReactClass<any>, U: T>(
         ...this.props,
         ...this.state,
       };
-      return <ComposedComponent {...props} />;
+      return (
+        <ComposedComponent
+          ref={component => (this._wrappedComponent = component)}
+          {...props}
+        />
+      );
     }
   };
 }

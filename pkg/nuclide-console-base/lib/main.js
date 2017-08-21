@@ -14,12 +14,22 @@ import type {LegacyProcessMessage} from 'nuclide-commons/process';
 
 import {Subject} from 'rxjs';
 
-export function dispatchConsoleToggle(visible: boolean): void {
-  atom.commands.dispatch(
-    atom.views.getView(atom.workspace),
-    'nuclide-console:toggle',
-    {visible},
-  );
+// This must match URI defined in ../../nuclide-console/lib/ui/ConsoleContainer
+const CONSOLE_VIEW_URI = 'atom://nuclide/console';
+
+export function changeConsoleVisibility(visible: boolean): void {
+  switch (visible) {
+    case true:
+      // eslint-disable-next-line nuclide-internal/atom-apis
+      atom.workspace.open(CONSOLE_VIEW_URI);
+      return;
+    case false:
+      atom.workspace.hide(CONSOLE_VIEW_URI);
+      return;
+    default:
+      atom.workspace.toggle(CONSOLE_VIEW_URI);
+      return;
+  }
 }
 
 export function pipeProcessMessagesToConsole(
@@ -51,9 +61,11 @@ export function pipeProcessMessagesToConsole(
           text: `${processName} completed successfully`,
           level: 'success',
         });
-        atom.notifications.addSuccess('Operation completed successfully', {
-          detail: `${processName} finished`,
-        });
+        if (showNotificationOnCompletion) {
+          atom.notifications.addSuccess('Operation completed successfully', {
+            detail: `${processName} finished`,
+          });
+        }
       } else {
         progressUpdates.next({
           text: `${processName} exited with non zero code`,
@@ -64,7 +76,7 @@ export function pipeProcessMessagesToConsole(
             detail: 'Check console for output',
           });
         }
-        dispatchConsoleToggle(true /* console visibility */);
+        changeConsoleVisibility(true /* console visibility */);
       }
       break;
   }

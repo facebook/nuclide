@@ -27,6 +27,7 @@ export type LaunchTargetInfo = {
   stdinFilePath?: string,
   basepath?: string,
   lldbPythonPath?: ?string, // see DebuggerConfig
+  coreDump?: string,
 };
 
 export type BootstrapDebuggerInfo = {
@@ -38,7 +39,7 @@ export type BootstrapDebuggerInfo = {
 export type DebuggerConfig = {
   // config for lldb
   logLevel: LogLevel,
-  pythonBinaryPath: string, // path of the actual python binary, e.g /usr/bin/python
+  pythonBinaryPath: ?string, // path of the actual python binary, e.g /usr/bin/python
   buckConfigRootFile: string,
   lldbPythonPath: ?string, // path of the lldb python modules
   envPythonPath: string, // sets the PYTHONPATH env var when spawning the lldb server

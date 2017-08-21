@@ -1,16 +1,22 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
-import type {OutlineForUi, OutlineTreeForUi, OutlineProvider} from '..';
-import type {Outline, OutlineTree} from './rpc-types';
+import type {
+  Outline,
+  OutlineProvider,
+  OutlineTree,
+  OutlineTreeKind,
+} from './types';
+import type {TokenizedText} from 'nuclide-commons/tokenized-text';
 import type ActiveEditorRegistry, {
   Result,
 } from 'nuclide-commons-atom/ActiveEditorRegistry';
@@ -22,6 +28,57 @@ import invariant from 'assert';
 import {getCursorPositions} from 'nuclide-commons-atom/text-editor';
 
 const LOADING_DELAY_MS = 500;
+
+export type OutlineTreeForUi = {
+  icon?: string, // from atom$Octicon, but we use string for convenience of remoting
+  kind?: OutlineTreeKind, // kind you can pass to the UI for theming
+  plainText?: string,
+  tokenizedText?: TokenizedText,
+
+  startPosition: atom$Point,
+  endPosition?: atom$Point,
+  children: Array<OutlineTreeForUi>,
+  highlighted: boolean,
+};
+
+/**
+ * Includes additional information that is useful to the UI, but redundant or nonsensical for
+ * providers to include in their responses.
+ */
+export type OutlineForUi =
+  | {
+      // The initial state at startup.
+      kind: 'empty',
+    }
+  | {
+      // The thing that currently has focus is not a text editor.
+      kind: 'not-text-editor',
+    }
+  | {
+      // Currently awaiting results from a provider (for longer than a certain delay).
+      kind: 'loading',
+    }
+  | {
+      // Indicates that no provider is registered for the given grammar.
+      kind: 'no-provider',
+      // Human-readable name for the grammar.
+      grammar: string,
+    }
+  | {
+      // Indicates that a provider is registered but that it did not return an outline.
+      kind: 'provider-no-outline',
+    }
+  | {
+      kind: 'outline',
+      outlineTrees: Array<OutlineTreeForUi>,
+      /**
+   * Use a TextEditor instead of a path so that:
+   * - If there are multiple editors for a file, we always jump to outline item
+   *   locations in the correct editor.
+   * - Jumping to outline item locations works for new, unsaved files.
+   */
+      editor: atom$TextEditor,
+    };
 
 export function createOutlines(
   editorService: ActiveEditorRegistry<OutlineProvider, ?Outline>,
@@ -47,10 +104,10 @@ function uiOutlinesForResult(
         grammar: result.grammar.name,
       });
     case 'pane-change':
-      // Render a blank outline when we change panes.
+      // Originally, we displayed a empty pane immediately, but this caused an undesireable
+      // flickering effect so we prefer stale information for the first LOADING_DELAY_MS.
       // If we haven't received anything after LOADING_DELAY_MS, display a loading indicator.
       return Observable.concat(
-        Observable.of({kind: 'empty'}),
         Observable.of({kind: 'loading'}).delay(LOADING_DELAY_MS),
       );
     case 'result':

@@ -77,35 +77,37 @@ class DeclarationLocationTestCase(unittest.TestCase):
 
     def test_get_include_paths_from_flags(self):
         # No path flags
-        self.assertFalse(
-            declarationlocation.get_include_paths_from_flags(['abc', 'cde'])
+        self.assertSequenceEqual(
+            declarationlocation.get_include_paths_from_flags(['abc', 'cde']),
+            ([], [])
         )
-        self.assertFalse(
-            declarationlocation.get_include_paths_from_flags(['abc', 'cde', '-I'])
+        self.assertSequenceEqual(
+            declarationlocation.get_include_paths_from_flags(['abc', 'cde', '-I']),
+            ([], [])
         )
 
         # -I paths
         self.assertSequenceEqual(
             declarationlocation.get_include_paths_from_flags(['-I', '/a/b']),
-            ['/a/b']
+            (['/a/b'], [])
         )
         self.assertSequenceEqual(
             declarationlocation.get_include_paths_from_flags(['-I', '/a/b.hmap']),
-            ['/a/b']
+            (['/a/b'], [])
         )
         self.assertSequenceEqual(
             declarationlocation.get_include_paths_from_flags(['-I/a/b.hmap']),
-            ['/a/b']
+            (['/a/b'], [])
         )
 
         # -isystem paths
         self.assertSequenceEqual(
             declarationlocation.get_include_paths_from_flags(['-isystem', '/a/b']),
-            ['/a/b']
+            (['/a/b'], [])
         )
         self.assertSequenceEqual(
             declarationlocation.get_include_paths_from_flags(['-isystem', '/a/b.hmap']),
-            ['/a/b']
+            (['/a/b'], [])
         )
 
         # Non-relevant flags should be skipped.
@@ -117,7 +119,7 @@ class DeclarationLocationTestCase(unittest.TestCase):
                 'dummy',
                 '-I', '/e/f'
             ]),
-            ['/a/b', '/c/d', '/e/f']
+            (['/a/b', '/c/d', '/e/f'], [])
         )
 
         # -isystem paths should be at end of search path.
@@ -131,7 +133,7 @@ class DeclarationLocationTestCase(unittest.TestCase):
                 '-I', '/e/f',
                 '-isystem', '/this/should/be/last'
             ]),
-            ['/a/b', '/c/d', '/e/f', '/this/should/be/second/last', '/this/should/be/last']
+            (['/a/b', '/c/d', '/e/f', '/this/should/be/second/last', '/this/should/be/last'], [])
         )
 
     def test_resolve_include(self):

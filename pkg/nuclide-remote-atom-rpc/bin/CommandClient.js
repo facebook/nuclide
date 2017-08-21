@@ -65,7 +65,7 @@ export async function startCommands(
     // This is usually ECONNREFUSED ...
     // ... indicating that there was a nuclide-server but it is now shutdown.
     reportConnectionErrorAndExit(
-      'Could not find a nuclide-server with a connected Atom',
+      'Could not find a nuclide-server with a connected Atom ("Nuclide/Kill Nuclide Server and Restart" will likely help)',
     );
   }
   const connection = RpcConnection.createLocal(

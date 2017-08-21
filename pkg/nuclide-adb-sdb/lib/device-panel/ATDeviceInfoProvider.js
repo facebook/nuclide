@@ -9,29 +9,27 @@
  * @format
  */
 
-import type {DeviceInfoProvider} from '../../../nuclide-devices/lib/types';
+import type {DeviceInfoProvider} from '../../../nuclide-device-panel/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {Bridge} from '../types';
+import type {Device} from '../../../nuclide-device-panel/lib/types';
 
-import typeof * as AdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/AdbService';
-import typeof * as SdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/SdbService';
 import {Observable} from 'rxjs';
 
 export class ATDeviceInfoProvider implements DeviceInfoProvider {
-  _type: string;
-  _rpcFactory: (host: NuclideUri) => AdbService | SdbService;
+  _bridge: Bridge;
 
-  constructor(
-    type: string,
-    rpcFactory: (host: NuclideUri) => AdbService | SdbService,
-  ) {
-    this._type = type;
-    this._rpcFactory = rpcFactory;
+  constructor(bridge: Bridge) {
+    this._bridge = bridge;
   }
 
-  fetch(host: NuclideUri, device: string): Observable<Map<string, string>> {
-    return this._rpcFactory(host)
+  getType(): string {
+    return this._bridge.name;
+  }
+
+  fetch(host: NuclideUri, device: Device): Observable<Map<string, string>> {
+    return this._bridge
+      .getService(host)
       .getDeviceInfo(device)
       .refCount()
       .map(props => {
@@ -49,10 +47,6 @@ export class ATDeviceInfoProvider implements DeviceInfoProvider {
 
   getTitle(): string {
     return 'Device information';
-  }
-
-  getType(): string {
-    return this._type;
   }
 
   getPriority(): number {

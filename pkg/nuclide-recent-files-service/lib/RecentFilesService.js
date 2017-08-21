@@ -32,6 +32,7 @@ export default class RecentFilesService {
     this._subscriptions.add(
       atom.workspace.onDidStopChangingActivePaneItem((item: ?mixed) => {
         // Not all `item`s are instances of TextEditor (e.g. the diff view).
+        // flowlint-next-line sketchy-null-mixed:off
         if (!item || typeof item.getPath !== 'function') {
           return;
         }

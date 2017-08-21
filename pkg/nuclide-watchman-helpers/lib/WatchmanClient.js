@@ -42,7 +42,6 @@ export type FileChange = {
 export default class WatchmanClient {
   _subscriptions: Map<string, WatchmanSubscription>;
   _clientPromise: Promise<watchman.Client>;
-  _watchmanVersionPromise: Promise<string>;
   _serializedReconnect: () => Promise<void>;
 
   constructor() {
@@ -51,7 +50,6 @@ export default class WatchmanClient {
       this._reconnectClient(),
     );
     this._subscriptions = new Map();
-    this._watchmanVersionPromise = this.version();
   }
 
   async dispose(): Promise<void> {
@@ -148,9 +146,10 @@ export default class WatchmanClient {
       // TODO(most): use state messages to decide on when to send updates.
       const stateEnter = response['state-enter'];
       const stateLeave = response['state-leave'];
-      const stateMessage = stateEnter != null
-        ? `Entering ${stateEnter}`
-        : `Leaving ${maybeToString(stateLeave)}`;
+      const stateMessage =
+        stateEnter != null
+          ? `Entering ${stateEnter}`
+          : `Leaving ${maybeToString(stateLeave)}`;
       logger.info(`Subscription state: ${stateMessage}`);
       return;
     }
@@ -264,14 +263,6 @@ export default class WatchmanClient {
   }
 
   async _watchProject(directoryPath: string): Promise<any> {
-    const watchmanVersion = await this._watchmanVersionPromise;
-    if (!watchmanVersion || watchmanVersion < '3.1.0') {
-      throw new Error(
-        'Watchman version: ' +
-          watchmanVersion +
-          ' does not support watch-project',
-      );
-    }
     const response = await this._command('watch-project', directoryPath);
     if (response.warning) {
       logger.error('watchman warning: ', response.warning);
@@ -282,11 +273,6 @@ export default class WatchmanClient {
   async _clock(directoryPath: string): Promise<string> {
     const {clock} = await this._command('clock', directoryPath);
     return clock;
-  }
-
-  async version(): Promise<string> {
-    const {version} = await this._command('version');
-    return version;
   }
 
   _subscribe(

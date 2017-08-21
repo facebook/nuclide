@@ -26,6 +26,13 @@ export function getSourceKittenPath(): string {
 }
 
 /**
+ * Returns whether SourceKitten integration is disabled.
+ */
+export function getSourceKittenDisabled(): boolean {
+  return (featureConfig.get('nuclide-swift.sourceKittenDisabled'): any);
+}
+
+/**
  * Executes a SourceKitten request asyncrhonously.
  * If an error occurs, displays an error and returns null.
  * Otherwise, returns the stdout from SourceKitten.
@@ -36,7 +43,7 @@ export async function asyncExecuteSourceKitten(
 ): Promise<?string> {
   // SourceKitten does not yet support any platform besides macOS.
   // It may soon support Linux; see: https://github.com/jpsim/SourceKitten/pull/223.
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' || getSourceKittenDisabled()) {
     return null;
   }
 
@@ -52,8 +59,12 @@ export async function asyncExecuteSourceKitten(
     atom.notifications.addError(
       `Could not invoke SourceKitten at path \`${sourceKittenPath}\``,
       {
-        description: 'Please double-check that the path you have set for the ' +
-          '`nuclide-swift.sourceKittenPath` config setting is correct.<br>' +
+        description:
+          'Please double-check that the path you have set for the ' +
+          '`nuclide-swift.sourceKittenPath` config setting is correct.' +
+          'If you do not have SourceKitten installed and do not wish to use ' +
+          'it for Swift autocompletion, check the "Disable SourceKitten" ' +
+          "setting in Nuclide's settings pane.<br>" +
           `**Error code:** \`${err.errno || ''}\`<br>` +
           `**Error message:** <pre>${err.message}</pre>`,
       },
@@ -62,7 +73,8 @@ export async function asyncExecuteSourceKitten(
   }
   if (result.exitCode !== 0 || result.stdout.length === 0) {
     atom.notifications.addError('An error occured when invoking SourceKitten', {
-      description: 'Please file a bug.<br>' +
+      description:
+        'Please file a bug.<br>' +
         `**exit code:** \`${String(result.exitCode)}\`<br>` +
         `**stdout:** <pre>${String(result.stdout)}</pre><br>` +
         `**stderr:** <pre>${String(result.stderr)}</pre><br>` +

@@ -60,9 +60,8 @@ export default class HhvmBuildSystem {
   }
 
   getIcon(): ReactClass<any> {
-    return () => (
-      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />
-    );
+    return () =>
+      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />;
   }
 
   runTask(taskName: string): Task {

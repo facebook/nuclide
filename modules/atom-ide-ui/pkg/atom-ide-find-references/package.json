@@ -1,0 +1,42 @@
+{
+  "name": "atom-ide-find-references",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides the ability to view references to a symbol.",
+  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "atomConfig": {
+    "defaultLocationForPane": {
+      "title": "Where to open the find references pane",
+      "type": "string",
+      "default": "bottom",
+      "description": "By default, where the find references pane should open.",
+      "enum": [
+        "bottom",
+        "left",
+        "right",
+        "center"
+      ]
+    }
+  },
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Find References"
+      ]
+    }
+  },
+  "consumedServices": {
+    "nuclide-find-references.provider": {
+      "versions": {
+        "0.0.0": "consumeProvider"
+      }
+    },
+    "find-references": {
+      "versions": {
+        "0.1.0": "consumeProvider"
+      }
+    }
+  }
+}

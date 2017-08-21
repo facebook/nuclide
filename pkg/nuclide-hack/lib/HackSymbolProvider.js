@@ -99,13 +99,20 @@ export const HackSymbolProvider: GlobalProviderType = {
     const filename = nuclideUri.basename(filePath);
     const name = item.name || '';
 
+    // flowlint-next-line sketchy-null-string:off
     const symbolClasses = item.icon
       ? `file icon icon-${item.icon}`
       : 'file icon no-icon';
     return (
       <div title={item.hoverText || ''}>
-        <span className={symbolClasses}><code>{name}</code></span>
-        <span className="omnisearch-symbol-result-filename">{filename}</span>
+        <span className={symbolClasses}>
+          <code>
+            {name}
+          </code>
+        </span>
+        <span className="omnisearch-symbol-result-filename">
+          {filename}
+        </span>
       </div>
     );
   },

@@ -24,8 +24,10 @@ const PACKAGES = [
 ];
 const REPETITIONS = 3;
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
-  description: 'times how long a 10k file takes to open, edit, save, close with different packages',
+  description:
+    'times how long a 10k file takes to open, edit, save, close with different packages',
   columns: [
     'packages',
     'activate',

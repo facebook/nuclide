@@ -97,6 +97,9 @@ class JsTestRunner(object):
             name = package_config['name']
             test_runner = package_config['testRunner']
 
+            if test_runner is None:
+                continue
+
             if package_config['excludeTestsFromContinuousIntegration']:
                 continue
 
@@ -255,9 +258,9 @@ def run_test(
 
 def is_retryable_error(output):
     errors = [
-        r'Atom\.app/atom:\s+line\s+\d+:\s+\d+\s+Segmentation fault: 11',
-        r'Atom\.app/atom:\s+line\s+\d+:\s+\d+\s+Abort trap: 6',
-        r'Atom\.app/atom:\s+line\s+\d+:\s+\d+\s+Illegal instruction: 4',
-        r'Atom\.app/atom:\s+line\s+\d+:\s+\d+\s+Bus error: 10',
+        r'atom(-beta)?:\s+line\s+\d+:\s+\d+\s+Segmentation fault: 11',
+        r'atom(-beta)?:\s+line\s+\d+:\s+\d+\s+Abort trap: 6',
+        r'atom(-beta)?:\s+line\s+\d+:\s+\d+\s+Illegal instruction: 4',
+        r'atom(-beta)?:\s+line\s+\d+:\s+\d+\s+Bus error: 10',
     ]
     return any(re.search(error, output) for error in errors)

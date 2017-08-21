@@ -72,6 +72,7 @@ export type FileLineBreakpoint = {
   condition: string,
   enabled: boolean,
   resolved: boolean,
+  hitCount?: number,
 };
 export type FileLineBreakpoints = Array<FileLineBreakpoint>;
 
@@ -132,6 +133,12 @@ export type NuclideThreadData = {
   owningProcessId: number,
   stopThreadId: number,
   selectedThreadId: number,
+};
+
+export type ThreadSwitchMessageData = {
+  sourceURL: string,
+  lineNumber: number,
+  message: string,
 };
 
 /* Debugger mode */

@@ -360,4 +360,4 @@ This will be language specific.
 
 Currently this occurs in `observeDiagnostics` in HackService.js.
 
-TODO: Move this to a reusable component which maps Observable<Observable<FileDiagnosticUpdate>> for each project to an Observable<FileDiagnosticUpdate> which handles the invalidations and flattening.
+TODO: Move this to a reusable component which maps Observable<Observable<FileDiagnosticMessages>> for each project to an Observable<FileDiagnosticMessages> which handles the invalidations and flattening.

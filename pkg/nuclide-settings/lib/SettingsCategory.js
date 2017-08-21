@@ -43,7 +43,9 @@ export default class SettingsCategory extends React.Component {
         <ControlGroup key={pkgName}>
           <section className="sub-section">
             {/* Package title. */}
-            <h2 className="sub-section-heading">{pkgData.title}</h2>
+            <h2 className="sub-section-heading">
+              {pkgData.title}
+            </h2>
             <div className="sub-section-body">
               {elements}
             </div>

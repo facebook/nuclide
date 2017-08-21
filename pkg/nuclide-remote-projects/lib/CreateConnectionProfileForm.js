@@ -49,16 +49,17 @@ const emptyFunction = () => {};
 /**
  * A form that is used to create a new connection profile.
  */
-export default class CreateConnectionProfileForm
-  extends React.Component<void, Props, void> {
+export default class CreateConnectionProfileForm extends React.Component<
+  void,
+  Props,
+  void,
+> {
   props: Props;
 
   disposables: CompositeDisposable;
 
   constructor(props: Props) {
     super(props);
-    (this: any)._clickSave = this._clickSave.bind(this);
-    (this: any)._clickCancel = this._clickCancel.bind(this);
     this.disposables = new CompositeDisposable();
   }
 
@@ -90,7 +91,9 @@ export default class CreateConnectionProfileForm
     return (
       <div>
         <div className="form-group">
-          <label>{PROFILE_NAME_LABEL}:</label>
+          <label>
+            {PROFILE_NAME_LABEL}:
+          </label>
           <AtomInput initialValue="" ref="profile-name" unstyled={true} />
         </div>
         <ConnectionDetailsForm
@@ -98,8 +101,9 @@ export default class CreateConnectionProfileForm
           initialServer={initialFields.server}
           initialCwd={initialFields.cwd}
           initialRemoteServerCommand={
+            // flowlint-next-line sketchy-null-string:off
             initialFields.remoteServerCommand ||
-              DEFAULT_SERVER_COMMAND_PLACEHOLDER
+            DEFAULT_SERVER_COMMAND_PLACEHOLDER
           }
           initialSshPort={initialFields.sshPort}
           initialPathToPrivateKey={initialFields.pathToPrivateKey}
@@ -113,9 +117,7 @@ export default class CreateConnectionProfileForm
         />
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           <ButtonGroup>
-            <Button onClick={this._clickCancel}>
-              Cancel
-            </Button>
+            <Button onClick={this._clickCancel}>Cancel</Button>
             <Button buttonType={ButtonTypes.PRIMARY} onClick={this._clickSave}>
               Save
             </Button>
@@ -132,7 +134,7 @@ export default class CreateConnectionProfileForm
     );
   }
 
-  _clickSave(): void {
+  _clickSave = (): void => {
     // Validate the form inputs.
     const profileName = this._getProfileName();
     const connectionDetails: NuclideRemoteConnectionParamsWithPassword = this.refs[
@@ -157,9 +159,9 @@ export default class CreateConnectionProfileForm
       atom.notifications.addWarning(validationResult.warningMessage);
     }
     this.props.onSave(newProfile);
-  }
+  };
 
-  _clickCancel(): void {
+  _clickCancel = (): void => {
     this.props.onCancel();
-  }
+  };
 }

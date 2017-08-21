@@ -4,7 +4,7 @@
 
 @age-width: 3px;
 
-.gutter.nuclide-blame {
+.gutter[gutter-name="nuclide-blame"] {
   display: flex;
   width: 170px;
   font-family: @font-family;
@@ -15,6 +15,12 @@
 
   &.nuclide-blame-loading {
     background: none;
+  }
+
+  .nuclide-ui-fb-avatar {
+    border: 1px solid;
+    margin-right: @component-padding / 2;
+    position: relative;
   }
 }
 
@@ -79,14 +85,6 @@
   bottom: 0;
   width: @age-width;
   background-color: @text-color-info;
-}
-
-.nuclide-blame {
-  .nuclide-ui-fb-avatar {
-    border: 1px solid;
-    margin-right: @component-padding / 2;
-    position: relative;
-  }
 }
 
 /*

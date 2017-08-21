@@ -9,8 +9,7 @@
  * @format
  */
 
-import type FileTreeContextMenu
-  from '../../nuclide-file-tree/lib/FileTreeContextMenu';
+import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 
 import invariant from 'assert';

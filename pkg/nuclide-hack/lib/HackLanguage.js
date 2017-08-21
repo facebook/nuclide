@@ -11,13 +11,9 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import typeof * as HackService from '../../nuclide-hack-rpc/lib/HackService';
-import type {
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 import type {ServerConnection} from '../../nuclide-remote-connection';
-import type {
-  AtomLanguageServiceConfig,
-} from '../../nuclide-language-service/lib/AtomLanguageService';
+import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
 import type {
   AutocompleteResult,
   Completion,
@@ -26,11 +22,17 @@ import type {
 import invariant from 'assert';
 
 import {getServiceByConnection} from '../../nuclide-remote-connection';
+import {
+  HACK_CONFIG_FILE_NAME,
+  HACK_FILE_EXTENSIONS,
+} from '../../nuclide-hack-common/lib/constants';
 import {getConfig, logger} from './config';
 import {getNotifierByConnection} from '../../nuclide-open-files';
 import {
   AtomLanguageService,
   getHostServices,
+  updateAutocompleteResults,
+  updateAutocompleteFirstResults,
 } from '../../nuclide-language-service';
 import {HACK_GRAMMARS} from '../../nuclide-hack-common';
 import {
@@ -39,9 +41,7 @@ import {
   getReplacementPrefix,
   findHackPrefix,
 } from '../../nuclide-hack-common/lib/autocomplete';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import passesGK from '../../commons-node/passesGK';
 import {getEvaluationExpression} from './evaluationExpression';
 
@@ -49,6 +49,10 @@ const HACK_SERVICE_NAME = 'HackService';
 
 async function getUseLspConnection(): Promise<boolean> {
   return passesGK('nuclide_hack_use_lsp_connection');
+}
+
+async function getUseFfpAutocomplete(): Promise<boolean> {
+  return passesGK('nuclide_hack_use_ffp_autocomplete');
 }
 
 async function connectionToHackService(
@@ -63,11 +67,14 @@ async function connectionToHackService(
 
   if (await getUseLspConnection()) {
     const host = await getHostServices();
+    const autocompleteArg = (await getUseFfpAutocomplete())
+      ? ['--ffp-autocomplete']
+      : [];
     return hackService.initializeLsp(
       config.hhClientPath, // command
-      ['lsp', '--from', 'nuclide'], // arguments
-      '.hhconfig', // project file
-      ['.php'], // which file-notifications should be sent to LSP
+      ['lsp', '--from', 'nuclide', ...autocompleteArg], // arguments
+      [HACK_CONFIG_FILE_NAME], // project file
+      HACK_FILE_EXTENSIONS, // which file-notifications should be sent to LSP
       config.logLevel,
       fileNotifier,
       host,
@@ -89,7 +96,7 @@ async function createLanguageService(): Promise<
     name: 'Hack',
     grammars: HACK_GRAMMARS,
     highlight: {
-      version: '0.0.0',
+      version: '0.1.0',
       priority: 1,
       analyticsEventName: 'hack.codehighlight',
     },
@@ -108,7 +115,6 @@ async function createLanguageService(): Promise<
       version: '0.1.0',
       priority: 20,
       definitionEventName: 'hack.get-definition',
-      definitionByIdEventName: 'hack.get-definition-by-id',
     },
     typeHint: {
       version: '0.0.0',
@@ -116,14 +122,14 @@ async function createLanguageService(): Promise<
       analyticsEventName: 'hack.typeHint',
     },
     codeFormat: {
-      version: '0.0.0',
+      version: '0.1.0',
       priority: 1,
       analyticsEventName: 'hack.formatCode',
       canFormatRanges: true,
       canFormatAtPosition: usingLsp,
     },
     findReferences: {
-      version: '0.0.0',
+      version: '0.1.0',
       analyticsEventName: 'hack:findReferences',
     },
     evaluationExpression: {
@@ -139,10 +145,14 @@ async function createLanguageService(): Promise<
       disableForSelector: null,
       excludeLowerPriority: false,
       analyticsEventName: 'hack.getAutocompleteSuggestions',
-      autocompleteCacherConfig: {
-        updateResults: updateAutocompleteResults,
-        gatekeeper: 'nuclide_hack_fast_autocomplete',
-      },
+      autocompleteCacherConfig: usingLsp
+        ? {
+            updateResults: updateAutocompleteResults,
+            updateFirstResults: updateAutocompleteFirstResults,
+          }
+        : {
+            updateResults: hackUpdateAutocompleteResults,
+          },
       onDidInsertSuggestionAnalyticsEventName: 'hack.autocomplete-chosen',
     },
     diagnostics: {
@@ -188,7 +198,7 @@ export async function isFileInHackProject(
   return foundDir != null;
 }
 
-function updateAutocompleteResults(
+function hackUpdateAutocompleteResults(
   request: atom$AutocompleteRequest,
   firstResult: AutocompleteResult,
 ): ?AutocompleteResult {

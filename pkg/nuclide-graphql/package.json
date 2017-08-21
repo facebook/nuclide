@@ -10,6 +10,7 @@
     "testRunner": "apm"
   },
   "activationHooks": [
-    "language-graphql:grammar-used"
+    "language-babel:grammar-used",
+    "langauge-graphql:grammar-used"
   ]
 }

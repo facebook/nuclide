@@ -8,7 +8,7 @@
           "submenu": [
             {
               "label": "Format Code",
-              "command": "nuclide-code-format:format-code"
+              "command": "code-format:format-code"
             }
           ]
         }
@@ -19,7 +19,7 @@
     "atom-text-editor": [
       {
         "label": "Format Code",
-        "command": "nuclide-code-format:format-code"
+        "command": "code-format:format-code"
       }
     ]
   }

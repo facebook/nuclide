@@ -7,11 +7,16 @@
 from __future__ import print_function
 import sys
 
+def assert_string(output):
+    if not isinstance(output, basestring):
+        raise Exception('non string types are not allowed in the logs')
 
 def log_debug(output):
-    print(output.encode('utf-8'))
+    assert_string(output)
+    print(output)
     sys.stdout.flush()
 
 def log_error(output):
-    print(output.encode('utf-8'), file=sys.stderr)
+    assert_string(output)
+    print(output, file=sys.stderr)
     sys.stderr.flush()

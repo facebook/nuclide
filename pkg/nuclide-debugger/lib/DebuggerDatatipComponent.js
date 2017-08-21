@@ -13,9 +13,7 @@ import type {WatchExpressionStore} from './WatchExpressionStore';
 import type {EvaluationResult} from './types';
 
 import React from 'react';
-import {
-  LazyNestedValueComponent,
-} from '../../nuclide-ui/LazyNestedValueComponent';
+import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 
 type DebuggerDatatipComponentProps = {

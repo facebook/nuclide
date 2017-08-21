@@ -22,6 +22,7 @@ import type {
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import readline from 'readline';
 
+import {getUseLspConnection} from './OCamlService';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {
   runCommand,
@@ -300,9 +301,10 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
   ): Promise<Object> {
     // contextify is important needed for Reason support.
     // https://github.com/the-lambda-church/merlin/blob/d98a08d318ca14d9c702bbd6eeadbb762d325ce7/doc/dev/PROTOCOL.md#contextual-commands
-    const wrappedCommand = wrapForContext === false
-      ? command
-      : {query: command, context: ['auto', file]};
+    const wrappedCommand =
+      wrapForContext === false
+        ? command
+        : {query: command, context: ['auto', file]};
     return runSingleCommandImpl(this._proc, wrappedCommand);
   }
 
@@ -438,6 +440,10 @@ export class MerlinProcessV2_5 extends MerlinProcessBase {
 let merlinProcessInstance: ?MerlinProcess;
 
 export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
+  if (await getUseLspConnection()) {
+    return null;
+  }
+
   if (merlinProcessInstance && merlinProcessInstance.isRunning()) {
     return merlinProcessInstance;
   }
@@ -453,6 +459,7 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   const dotMerlinPath = await fsPromise.findNearestFile('.merlin', file);
 
   const options = {
+    // flowlint-next-line sketchy-null-string:off
     cwd: dotMerlinPath ? nuclideUri.dirname(dotMerlinPath) : '.',
     // Starts the process with the user's bashrc, which might contain a
     // different ocamlmerlin. See `getMerlinVersion` for the same consistent
@@ -481,6 +488,7 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
       return null;
   }
 
+  // flowlint-next-line sketchy-null-string:off
   if (dotMerlinPath) {
     // TODO(pieter) add support for multiple .dotmerlin files
     await merlinProcessInstance.pushDotMerlinPath(dotMerlinPath);

@@ -52,6 +52,10 @@
               "command": "nuclide-debugger:run-to-location"
             },
             {
+              "label": "Edit Breakpoint",
+              "command": "nuclide-debugger:edit-breakpoint"
+            },
+            {
               "label": "Toggle Breakpoint",
               "command": "nuclide-debugger:toggle-breakpoint"
             },
@@ -86,6 +90,10 @@
             {
               "label": "Step Out",
               "command": "nuclide-debugger:step-out"
+            },
+            {
+              "label": "Copy Callstack",
+              "command": "nuclide-debugger:copy-debugger-callstack"
             },
             {
               "label": "Add to Watch",

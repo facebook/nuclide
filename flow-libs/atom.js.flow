@@ -49,6 +49,8 @@ type atom$Octicon = 'alert' | 'alignment-align' | 'alignment-aligned-to' | 'alig
   'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'unfold' |
   'unmute' | 'unverified' | 'verified' | 'versions' | 'watch' | 'x' | 'zap';
 
+type atom$PaneLocation = 'left' | 'right' | 'bottom' | 'center';
+
 declare class atom$Model {
   destroy(): void,
   isDestroyed(): boolean,
@@ -406,7 +408,7 @@ declare class atom$Pane {
   activateItem(item: Object): ?Object,
   activateItemAtIndex(index: number): void,
   moveItemToPane(item: Object, pane: atom$Pane, index: number): void,
-  destroyItem(item: Object, force?: boolean): boolean,
+  destroyItem(item: Object, force?: boolean): boolean | Promise<boolean>,
   itemForURI(uri: string): Object,
 
   // Event subscriptions.
@@ -477,6 +479,7 @@ declare class atom$PaneContainer {
   destroy(): void,
   getActivePane(): atom$Pane,
   getActivePaneItem(): ?Object,
+  getLocation(): atom$PaneLocation,
   getPanes(): Array<atom$Pane>,
   getPaneItems(): Array<atom$PaneItem>,
   observePanes(cb: (pane: atom$Pane) => void): IDisposable,
@@ -498,7 +501,8 @@ declare class atom$Panel {
   onDidDestroy(callback: (panel: atom$Panel) => any): IDisposable,
 
   // Panel Details
-  getItem(): HTMLElement,
+  getElement(): HTMLElement,
+  getItem(): any,
   getPriority(): number,
   isVisible(): boolean,
   hide(): void,
@@ -560,6 +564,7 @@ declare class atom$Range {
   end: atom$Point,
   isEmpty(): boolean,
   isEqual(otherRange: atom$RangeLike): boolean,
+  intersectsWith(otherRange: atom$RangeLike, exclusive?: boolean): boolean,
   containsPoint(point: atom$PointLike, exclusive?: boolean): boolean,
   containsRange(other: atom$Range, exclusive?: boolean): boolean,
   union(other: atom$Range): atom$Range,
@@ -644,21 +649,24 @@ declare class atom$ThemeManager {
 type atom$TooltipsPlacementOption = 'top' | 'bottom' | 'left' | 'right' | 'auto';
 
 type atom$TooltipsAddOptions = {
-  title: string,
+  title?: string,
+  item?: HTMLElement,
   keyBindingCommand?: string,
   keyBindingTarget?: HTMLElement,
   animation?: boolean,
   container?: string | false,
   delay?: number | {show: number, hide: number},
   placement?: atom$TooltipsPlacementOption | () => atom$TooltipsPlacementOption,
+  trigger?: string,
 };
 
 type atom$Tooltip = {
   hide(): void;
+  getTooltipElement(): HTMLElement,
 };
 
 declare class atom$TooltipManager {
-  tooltips: Map<HTMLElement, atom$Tooltip>;
+  tooltips: Map<HTMLElement, Array<atom$Tooltip>>;
   add(
     target: HTMLElement,
     options: atom$TooltipsAddOptions,
@@ -720,12 +728,10 @@ type MarkerOptions = {|
 
 declare class atom$TextEditor extends atom$Model {
   id: number,
-  firstVisibleScreenRow: number,
-  rowsPerPage: number,
 
   // Event Subscription
   onDidChange(callback: () => void): IDisposable,
-  onDidChangePath(callback: () => mixed): IDisposable,
+  onDidChangePath(callback: (newPath: string) => mixed): IDisposable,
   onDidStopChanging(callback: () => void): IDisposable,
   onDidChangeCursorPosition(callback: (event: ChangeCursorPositionEvent) => mixed):
     IDisposable,
@@ -755,6 +761,7 @@ declare class atom$TextEditor extends atom$Model {
   getEncoding(): buffer$Encoding,
   setEncoding(encoding: string): void,
   getTabLength() : number,
+  getSoftTabs(): boolean,
 
   // File Operations
   save(): void,
@@ -943,10 +950,8 @@ declare class atom$TextEditor extends atom$Model {
   isFoldedAtBufferRow(row: number): boolean,
   getLastBufferRow(): number,
 
-  // Undocumented properties
-  presenter: ?atom$TextEditorPresenter,
-
   // Undocumented Methods
+  getElement(): HTMLElement,
   getDefaultCharWidth(): number,
   getLineHeightInPixels(): number,
   moveToTop(): void,
@@ -954,6 +959,7 @@ declare class atom$TextEditor extends atom$Model {
   onDidConflict(callback: () => void): IDisposable,
   serialize: () => mixed,
   foldBufferRowRange(startRow: number, endRow: number): void,
+  getNonWordCharacters(scope?: atom$ScopeDescriptor): string,
 }
 
 /**
@@ -1031,6 +1037,7 @@ declare class atom$TextEditorElement extends HTMLElement {
   getScrollLeft(): number,
 
   getScrollHeight(): number,
+  getHeight(): number,
 
   onDidChangeScrollTop(callback: (scrollTop: number) => mixed): IDisposable,
   onDidChangeScrollLeft(callback: (scrollLeft: number) => mixed): IDisposable,
@@ -1119,6 +1126,8 @@ declare class atom$Workspace {
   ): IDisposable,
   onDidOpen(callback: (event: OnDidOpenEvent) => mixed): IDisposable,
 
+  getElement(): HTMLElement,
+
   // Opening
   open(
     uri?: string,
@@ -1148,6 +1157,12 @@ declare class atom$Workspace {
   handleGrammarUsed?: (grammar: atom$Grammar) => void,
   reopenItem(): Promise<?atom$TextEditor>,
   addOpener(callback: (uri: string) => any): IDisposable,
+  hide(uriOrItem: string | Object): void,
+  toggle(uriOrItem: string | Object): void,
+
+  // Pane Containers
+  getPaneContainers(): Array<atom$PaneContainer>,
+  paneContainerForItem(item: ?mixed): ?atom$PaneContainer,
 
   // Pane Items
   getPaneItems(): Array<Object>,
@@ -1164,6 +1179,7 @@ declare class atom$Workspace {
   paneForItem(item: mixed): ?atom$Pane,
 
   // Panels
+  panelContainers: {[location: string]: atom$PanelContainer},
   getBottomPanels(): Array<atom$Panel>,
   addBottomPanel(options: atom$WorkspaceAddPanelOptions): atom$Panel,
   getLeftPanels(): Array<atom$Panel>,
@@ -1175,13 +1191,10 @@ declare class atom$Workspace {
   getModalPanels(): Array<atom$Panel>,
   addModalPanel(options: atom$WorkspaceAddPanelOptions): atom$Panel,
 
-  // Docks. These became available in Atom 1.17.0, so uses should currently be guarded by a null
-  // check. Once we no longer want to support versions less than Atom 1.17 these typedefs can be
-  // changed to non-optional.
-  getLeftDock?: () => atom$Dock,
-  getRightDock?: () => atom$Dock,
-  getBottomDock?: () => atom$Dock,
-  getCenter?: () => atom$WorkspaceCenter,
+  getLeftDock(): atom$Dock,
+  getRightDock(): atom$Dock,
+  getBottomDock(): atom$Dock,
+  getCenter(): atom$WorkspaceCenter,
 
   // Searching and Replacing
 
@@ -1196,6 +1209,9 @@ declare class atom$AbstractPaneContainer {
   getActivePane(): atom$Pane,
   getPanes(): Array<atom$Pane>,
   onDidAddPaneItem((item: {item: Object}) => void): IDisposable,
+  state: {
+    size: number,
+  }
 }
 
 declare class atom$Dock extends atom$AbstractPaneContainer {
@@ -1206,6 +1222,12 @@ declare class atom$Dock extends atom$AbstractPaneContainer {
 
 declare class atom$WorkspaceCenter extends atom$AbstractPaneContainer {
   activate(): void;
+
+  // Pane Items
+  getPaneItems(): Array<atom$PaneItem>,
+  getActivePaneItem(): ?atom$PaneItem,
+  getTextEditors(): Array<atom$TextEditor>,
+  getActiveTextEditor(): ?atom$TextEditor,
 
   observeActivePaneItem(callback: atom$PaneItem => mixed): IDisposable;
   onDidChangeActivePaneItem(callback: (item: mixed) => mixed): IDisposable;
@@ -1381,6 +1403,16 @@ declare class atom$GrammarRegistry {
 
   // Private API
   clear(): IDisposable,
+}
+
+declare class atom$HistoryManager {
+  removeProject(paths: Array<string>): void,
+  getProjects(): Array<atom$HistoryProject>,
+}
+
+declare class atom$HistoryProject {
+  get paths(): Array<string>;
+  get lastOpened(): Date;
 }
 
 type atom$KeyBinding = Object;
@@ -1609,7 +1641,6 @@ declare class atom$TextBuffer {
   emitter: atom$Emitter,
   refcount: number,
   loaded: boolean,
-  changeCount: number,
   wasModifiedBeforeRemove: boolean,
   finishLoading(): atom$TextBuffer,
   updateCachedDiskContents(flushCache?: boolean, callback?: () => mixed): Promise<void>,
@@ -1707,6 +1738,7 @@ type AtomGlobal = {
   applicationDelegate: atom$applicationDelegate,
   deserializers: atom$DeserializerManager,
   grammars: atom$GrammarRegistry,
+  history: atom$HistoryManager,
   keymaps: atom$KeymapManager,
   menu: atom$MenuManager,
   notifications: atom$NotificationManager,
@@ -1785,6 +1817,7 @@ declare class atom$Repository {
   getWorkingDirectory: () => string,
   isProjectAtRoot: () => boolean,
   relativize: (aPath: string) => string,
+  getOriginURL: (aPath: ?string) => ?string,
 
   // Reading Status
   isPathModified: (aPath: string) => boolean,
@@ -1846,16 +1879,16 @@ type atom$AutocompleteRequest = {
 };
 
 type atom$AutocompleteProvider = {
-  selector: string,
-  getSuggestions: (
+  +selector: string,
+  +getSuggestions: (
     request: atom$AutocompleteRequest,
   ) => Promise<?Array<atom$AutocompleteSuggestion>>,
-  onDidInsertSuggestion?: (
+  +onDidInsertSuggestion?: (
     insertedSuggestion: atom$SuggestionInsertedRequest,
   ) => void,
-  disableForSelector?: string,
-  inclusionPriority?: number,
-  excludeLowerPriority?: boolean,
+  +disableForSelector?: string,
+  +inclusionPriority?: number,
+  +excludeLowerPriority?: boolean,
 };
 
 type atom$SuggestionInsertedRequest = {
@@ -1885,3 +1918,15 @@ declare class atom$Selection {
     },
   ): string,
 }
+
+declare class atom$PanelContainer {
+  dock: atom$Dock,
+  element: HTMLElement,
+  emitter: atom$Emitter,
+  location: atom$PaneLocation,
+  panels: Array<atom$Panel>,
+  subscriptions: atom$CompositeDisposable,
+  viewRegistry: atom$ViewRegistry,
+
+  getPanels(): Array<atom$Panel>,
+};

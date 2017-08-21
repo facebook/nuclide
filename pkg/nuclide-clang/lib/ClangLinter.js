@@ -111,6 +111,7 @@ export default class ClangLinter {
           range = getRangeFromPoint(editor, diagnostic.location.point);
         }
 
+        // flowlint-next-line sketchy-null-string:off
         const filePath = diagnostic.location.file || bufferPath;
 
         let trace;
@@ -119,6 +120,7 @@ export default class ClangLinter {
             return {
               type: 'Trace',
               text: child.spelling,
+              // flowlint-next-line sketchy-null-string:off
               filePath: child.location.file || bufferPath,
               range: getRangeFromPoint(editor, child.location.point),
             };

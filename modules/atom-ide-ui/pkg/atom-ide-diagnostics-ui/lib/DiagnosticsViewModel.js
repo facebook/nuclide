@@ -1,23 +1,23 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
-import type {DiagnosticMessage} from '../../atom-ide-diagnostics';
+import type {DiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import {compareMessagesByFile} from './paneUtils';
 import React from 'react';
 import DiagnosticsView from './DiagnosticsView';
 import analytics from 'nuclide-commons-atom/analytics';
-import observePaneItemVisibility
-  from 'nuclide-commons-atom/observePaneItemVisibility';
+import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
@@ -144,14 +144,22 @@ function getPropsStream(
   initialfilterByActiveTextEditor: boolean,
   onFilterByActiveTextEditorChange: (filterByActiveTextEditor: boolean) => void,
 ): Observable<PanelProps> {
+  const center = atom.workspace.getCenter();
   const activeTextEditorPaths = observableFromSubscribeFunction(
-    atom.workspace.observeActivePaneItem.bind(atom.workspace),
+    center.observeActivePaneItem.bind(center),
   )
-    .map(paneItem => {
-      if (isValidTextEditor(paneItem)) {
-        const textEditor: atom$TextEditor = (paneItem: any);
-        return textEditor ? textEditor.getPath() : null;
-      }
+    .filter(paneItem => isValidTextEditor(paneItem))
+    .switchMap(textEditor_ => {
+      const textEditor: atom$TextEditor = (textEditor_: any);
+      // An observable that emits the editor path and then, when the editor's destroyed, null.
+      return Observable.concat(
+        Observable.of(textEditor.getPath()),
+        observableFromSubscribeFunction(
+          textEditor.onDidDestroy.bind(textEditor),
+        )
+          .take(1)
+          .mapTo(null),
+      );
     })
     .distinctUntilChanged();
 

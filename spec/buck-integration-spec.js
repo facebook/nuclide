@@ -98,9 +98,8 @@ describe('Buck building via toolbar', () => {
       // It shouldn't have errored.
       invariant(listGroup != null);
       const errorMessageEl = listGroup.querySelector('.text-error');
-      const errorText = errorMessageEl == null
-        ? null
-        : errorMessageEl.innerText;
+      const errorText =
+        errorMessageEl == null ? null : errorMessageEl.innerText;
       expect(errorMessageEl).toBeNull(
         `Buck failed with the following error: ${errorText || ''}`,
       );

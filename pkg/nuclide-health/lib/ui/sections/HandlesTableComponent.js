@@ -22,8 +22,11 @@ type Props<T> = {
   }>,
 };
 
-export default class HandlesTableComponent<T: Object>
-  extends React.Component<void, Props<T>, void> {
+export default class HandlesTableComponent<T: Object> extends React.Component<
+  void,
+  Props<T>,
+  void,
+> {
   props: Props<T>;
 
   previousHandleSummaries: Object;
@@ -53,16 +56,18 @@ export default class HandlesTableComponent<T: Object>
     const handleSummaries = this.getHandleSummaries(this.props.handles);
     const component = (
       <div>
-        <h3>{this.props.title}</h3>
+        <h3>
+          {this.props.title}
+        </h3>
         <table className="table">
           <thead>
             <tr>
               <th width="10%">ID</th>
-              {this.props.columns.map((column, c) => (
+              {this.props.columns.map((column, c) =>
                 <th key={c} width={`${column.widthPercentage}%`}>
                   {column.title}
-                </th>
-              ))}
+                </th>,
+              )}
             </tr>
           </thead>
           <tbody>
@@ -73,7 +78,9 @@ export default class HandlesTableComponent<T: Object>
                 <tr
                   key={key}
                   className={previousHandle ? '' : 'nuclide-health-handle-new'}>
-                  <th>{key}</th>
+                  <th>
+                    {key}
+                  </th>
                   {this.props.columns.map((column, c) => {
                     let className = '';
                     if (
@@ -83,7 +90,9 @@ export default class HandlesTableComponent<T: Object>
                       className = 'nuclide-health-handle-updated';
                     }
                     return (
-                      <td key={c} className={className}>{handleSummary[c]}</td>
+                      <td key={c} className={className}>
+                        {handleSummary[c]}
+                      </td>
                     );
                   })}
                 </tr>

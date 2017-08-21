@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -15,23 +16,29 @@ import {ButtonGroup} from './ButtonGroup';
 import {ButtonToolbar} from './ButtonToolbar';
 import {Block} from './Block';
 
-const ButtonSizeExample = (): React.Element<any> => (
+const ButtonSizeExample = (): React.Element<any> =>
   <Block>
-    <Button className="inline-block" size="EXTRA_SMALL">extra_small</Button>
-    <Button className="inline-block" size="SMALL">small</Button>
+    <Button className="inline-block" size="EXTRA_SMALL">
+      extra_small
+    </Button>
+    <Button className="inline-block" size="SMALL">
+      small
+    </Button>
     <Button className="inline-block">regular</Button>
-    <Button className="inline-block" size="LARGE">large</Button>
-  </Block>
-);
+    <Button className="inline-block" size="LARGE">
+      large
+    </Button>
+  </Block>;
 
-const ButtonDisabledExample = (): React.Element<any> => (
+const ButtonDisabledExample = (): React.Element<any> =>
   <Block>
     <Button className="inline-block">enabled</Button>
-    <Button className="inline-block" disabled={true}>disabled</Button>
-  </Block>
-);
+    <Button className="inline-block" disabled={true}>
+      disabled
+    </Button>
+  </Block>;
 
-const ButtonColorExample = (): React.Element<any> => (
+const ButtonColorExample = (): React.Element<any> =>
   <div>
     <Block>
       <ButtonGroup>
@@ -45,17 +52,26 @@ const ButtonColorExample = (): React.Element<any> => (
     <Block>
       <p>selected:</p>
       <ButtonGroup>
-        <Button selected={true} buttonType="PRIMARY">primary</Button>
-        <Button selected={true} buttonType="INFO">info</Button>
-        <Button selected={true} buttonType="SUCCESS">success</Button>
-        <Button selected={true} buttonType="WARNING">warning</Button>
-        <Button selected={true} buttonType="ERROR">error</Button>
+        <Button selected={true} buttonType="PRIMARY">
+          primary
+        </Button>
+        <Button selected={true} buttonType="INFO">
+          info
+        </Button>
+        <Button selected={true} buttonType="SUCCESS">
+          success
+        </Button>
+        <Button selected={true} buttonType="WARNING">
+          warning
+        </Button>
+        <Button selected={true} buttonType="ERROR">
+          error
+        </Button>
       </ButtonGroup>
     </Block>
-  </div>
-);
+  </div>;
 
-const ButtonIconExample = (): React.Element<any> => (
+const ButtonIconExample = (): React.Element<any> =>
   <Block>
     <ButtonGroup>
       <Button icon="gear" />
@@ -65,10 +81,9 @@ const ButtonIconExample = (): React.Element<any> => (
       <Button icon="device-mobile" />
       <Button icon="alert" />
     </ButtonGroup>
-  </Block>
-);
+  </Block>;
 
-const ButtonGroupExample = (): React.Element<any> => (
+const ButtonGroupExample = (): React.Element<any> =>
   <div>
     <Block>
       <ButtonGroup size="EXTRA_SMALL">
@@ -98,10 +113,9 @@ const ButtonGroupExample = (): React.Element<any> => (
         <Button>group</Button>
       </ButtonGroup>
     </Block>
-  </div>
-);
+  </div>;
 
-const ButtonToolbarExample = (): React.Element<any> => (
+const ButtonToolbarExample = (): React.Element<any> =>
   <div>
     <Block>
       <ButtonToolbar>
@@ -114,8 +128,7 @@ const ButtonToolbarExample = (): React.Element<any> => (
         <Button>in toolbar</Button>
       </ButtonToolbar>
     </Block>
-  </div>
-);
+  </div>;
 
 export const ButtonExamples = {
   sectionName: 'Buttons',

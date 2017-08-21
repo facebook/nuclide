@@ -17,7 +17,9 @@ export const ValueComponentClassNames = {
   nullish: 'syntax--constant syntax--language syntax--null',
   number: 'syntax--constant syntax--numeric',
   string: 'syntax--string syntax--quoted syntax--double',
-  stringClosingQuote: 'syntax--punctuation syntax--definition syntax--string syntax--end',
-  stringOpeningQuote: 'syntax--punctuation syntax--definition syntax--string syntax--begin',
+  stringClosingQuote:
+    'syntax--punctuation syntax--definition syntax--string syntax--end',
+  stringOpeningQuote:
+    'syntax--punctuation syntax--definition syntax--string syntax--begin',
 };
 /* eslint-enable key-spacing */

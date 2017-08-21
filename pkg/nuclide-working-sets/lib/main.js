@@ -11,9 +11,12 @@
 
 import invariant from 'assert';
 import {CompositeDisposable} from 'atom';
+import {track} from '../../nuclide-analytics';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {WorkingSetsStore} from './WorkingSetsStore';
 import {WorkingSetsConfig} from './WorkingSetsConfig';
 import {PathsObserver} from './PathsObserver';
+import {WORKING_SET_PATH_MARKER} from '../../nuclide-working-sets-common/lib/constants';
 
 class Activation {
   workingSetsStore: WorkingSetsStore;
@@ -42,6 +45,14 @@ class Activation {
         'atom-workspace',
         'working-sets:toggle-last-selected',
         this.workingSetsStore.toggleLastSelected.bind(this.workingSetsStore),
+      ),
+    );
+
+    this._disposables.add(
+      atom.commands.add(
+        'atom-workspace',
+        'working-sets:find-in-active',
+        findInActive,
       ),
     );
 
@@ -79,4 +90,34 @@ export function provideWorkingSetsStore(): WorkingSetsStore {
   );
 
   return activation.workingSetsStore;
+}
+
+async function findInActive(): Promise<void> {
+  const activePane = atom.workspace.getActivePane().element;
+  atom.commands.dispatch(activePane, 'project-find:show');
+
+  const allProjectsRemote = atom.project
+    .getDirectories()
+    .every(dir => nuclideUri.isRemote(dir.getPath()));
+
+  track('find-in-working-set:hotkey', {allProjectsRemote});
+  if (!allProjectsRemote) {
+    atom.notifications.addWarning(
+      "Working set searches don't yet work in local projects",
+      {dismissable: true},
+    );
+    return;
+  }
+
+  if (!atom.packages.isPackageActive('find-and-replace')) {
+    await atom.packages.activatePackage('find-and-replace');
+  }
+  const findPackage = atom.packages.getActivePackage('find-and-replace');
+  invariant(findPackage, 'find-and-replace package is not active');
+  const view = findPackage.mainModule.projectFindView;
+  invariant(
+    view && view.pathsEditor && view.pathsEditor.setText,
+    'find-and-replace internals have changed - please update this code',
+  );
+  view.pathsEditor.setText(WORKING_SET_PATH_MARKER);
 }

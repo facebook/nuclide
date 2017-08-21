@@ -10,12 +10,14 @@
  */
 
 import type {ServerStatusUpdate} from '../../nuclide-flow-rpc';
+import type {
+  BusySignalService,
+  BusySignalOptions,
+  BusyMessage,
+} from '../../../modules/atom-ide-ui/pkg/atom-ide-busy-signal/lib/types.js';
 
 import {Observable} from 'rxjs';
-
-import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {addMatchers} from '../../nuclide-test-helpers';
-
 import {serverStatusUpdatesToBusyMessages} from '..';
 
 describe('serverStatusUpdatesToBusyMessages', () => {
@@ -57,14 +59,16 @@ describe('serverStatusUpdatesToBusyMessages', () => {
           message: 'Flow server is busy (/local/root)',
         },
         {
-          message: 'Flow server is initializing (host.example.com:/remote/root)',
+          message:
+            'Flow server is initializing (host.example.com:/remote/root)',
         },
         {
           message: 'Flow server is busy (/local/root)',
           dispose: true,
         },
         {
-          message: 'Flow server is initializing (host.example.com:/remote/root)',
+          message:
+            'Flow server is initializing (host.example.com:/remote/root)',
           dispose: true,
         },
         {
@@ -77,15 +81,23 @@ describe('serverStatusUpdatesToBusyMessages', () => {
       ];
 
       const messages = [];
-      const mockBusySignal = {
+      const mockBusySignal: BusySignalService = {
         reportBusyWhile() {
           throw new Error('stub');
         },
-        reportBusy(message) {
-          messages.push({message});
-          return new UniversalDisposable(() => {
-            messages.push({message, dispose: true});
-          });
+        reportBusy(title?: string, options?: BusySignalOptions) {
+          let currentTitle = title;
+          messages.push({message: currentTitle});
+          const busyMessage: BusyMessage = {
+            setTitle: title2 => {
+              currentTitle = title2;
+              messages.push({message: currentTitle});
+            },
+            dispose: () => {
+              messages.push({message: currentTitle, dispose: true});
+            },
+          };
+          return busyMessage;
         },
         dispose() {},
       };

@@ -25,15 +25,14 @@ import toplevelASTOld from './fixtures/toplevel-ast-old.json';
 import toplevelAST34 from './fixtures/toplevel-ast-v0.34.json';
 import exportsASTOld from './fixtures/exports-ast-old.json';
 import exportsAST34 from './fixtures/exports-ast-v0.34.json';
-import exportDefaultArrowFuncAST34
-  from './fixtures/export-default-arrow-func-v0.34.json';
-import exportDefaultAnonymousFuncAST34
-  from './fixtures/export-default-anonymous-func-v0.34.json';
+import exportDefaultArrowFuncAST34 from './fixtures/export-default-arrow-func-v0.34.json';
+import exportDefaultAnonymousFuncAST34 from './fixtures/export-default-anonymous-func-v0.34.json';
 import typesASTOld from './fixtures/types-ast-old.json';
 import typesAST34 from './fixtures/types-ast-v0.34.json';
 
 const expectedClassOutline: Array<OutlineTree> = [
   {
+    kind: 'class',
     tokenizedText: [
       {value: 'export', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -46,6 +45,7 @@ const expectedClassOutline: Array<OutlineTree> = [
     endPosition: new Point(22, 1),
     children: [
       {
+        kind: 'property',
         tokenizedText: [
           {value: 'field', kind: 'method'},
           {value: '=', kind: 'plain'},
@@ -56,6 +56,7 @@ const expectedClassOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'bar', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -68,6 +69,7 @@ const expectedClassOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'property',
         tokenizedText: [
           {value: 'baz', kind: 'method'},
           {value: '=', kind: 'plain'},
@@ -81,6 +83,7 @@ const expectedClassOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'foo', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -98,6 +101,7 @@ const expectedClassOutline: Array<OutlineTree> = [
 
 const expectedToplevelOutline: Array<OutlineTree> = [
   {
+    kind: 'function',
     tokenizedText: [
       {value: 'function', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -115,6 +119,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'function',
     tokenizedText: [
       {value: 'function', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -143,6 +148,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'function',
     tokenizedText: [
       {kind: 'keyword', value: 'function'},
       {kind: 'whitespace', value: ' '},
@@ -157,6 +163,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'function',
     tokenizedText: [
       {kind: 'keyword', value: 'function'},
       {kind: 'whitespace', value: ' '},
@@ -174,6 +181,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'constant',
     tokenizedText: [
       {kind: 'keyword', value: 'const'},
       {kind: 'whitespace', value: ' '},
@@ -185,6 +193,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'variable',
     tokenizedText: [
       {kind: 'keyword', value: 'var'},
       {kind: 'whitespace', value: ' '},
@@ -196,6 +205,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'variable',
     tokenizedText: [
       {kind: 'keyword', value: 'let'},
       {kind: 'whitespace', value: ' '},
@@ -207,6 +217,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'constant',
     tokenizedText: [
       {kind: 'keyword', value: 'const'},
       {kind: 'whitespace', value: ' '},
@@ -222,6 +233,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'constant',
     tokenizedText: [
       {kind: 'keyword', value: 'const'},
       {kind: 'whitespace', value: ' '},
@@ -237,6 +249,7 @@ const expectedToplevelOutline: Array<OutlineTree> = [
 
 const expectedJasmineOutline: Array<OutlineTree> = [
   {
+    kind: 'function',
     tokenizedText: [
       {value: 'describe', kind: 'method'},
       {value: ' ', kind: 'whitespace'},
@@ -247,6 +260,7 @@ const expectedJasmineOutline: Array<OutlineTree> = [
     endPosition: new Point(17, 3),
     children: [
       {
+        kind: 'function',
         tokenizedText: [
           {value: 'it', kind: 'method'},
           {value: ' ', kind: 'whitespace'},
@@ -260,6 +274,7 @@ const expectedJasmineOutline: Array<OutlineTree> = [
     ],
   },
   {
+    kind: 'function',
     tokenizedText: [
       {value: 'describe', kind: 'method'},
       {value: ' ', kind: 'whitespace'},
@@ -270,6 +285,7 @@ const expectedJasmineOutline: Array<OutlineTree> = [
     endPosition: new Point(22, 3),
     children: [
       {
+        kind: 'function',
         tokenizedText: [
           {value: 'it', kind: 'method'},
           {value: ' ', kind: 'whitespace'},
@@ -286,11 +302,13 @@ const expectedJasmineOutline: Array<OutlineTree> = [
 
 const expectedExportsOutline: Array<OutlineTree> = [
   {
+    kind: 'module',
     tokenizedText: [{value: 'module.exports', kind: 'plain'}],
     startPosition: new Point(12, 0),
     endPosition: new Point(23, 1),
     children: [
       {
+        kind: 'field',
         tokenizedText: [
           {value: 'foo', kind: 'string'},
           {value: ':', kind: 'plain'},
@@ -301,6 +319,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'bar', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -313,6 +332,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'baz', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -325,6 +345,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'asdf', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -337,6 +358,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'jkl', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -349,6 +371,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [
           {value: 'asdfjkl', kind: 'method'},
           {value: '(', kind: 'plain'},
@@ -361,6 +384,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'method',
         tokenizedText: [{value: 'thing', kind: 'string'}],
         representativeName: 'thing',
         startPosition: new Point(21, 2),
@@ -368,6 +392,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
         children: [],
       },
       {
+        kind: 'field',
         tokenizedText: [
           {value: 'stuff', kind: 'string'},
           {value: ':', kind: 'plain'},
@@ -380,6 +405,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
     ],
   },
   {
+    kind: 'class',
     tokenizedText: [
       {value: 'export', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -396,6 +422,7 @@ const expectedExportsOutline: Array<OutlineTree> = [
 
 const expectedTypesOutline: Array<OutlineTree> = [
   {
+    kind: 'interface',
     tokenizedText: [
       {value: 'type', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -407,6 +434,7 @@ const expectedTypesOutline: Array<OutlineTree> = [
     children: [],
   },
   {
+    kind: 'interface',
     tokenizedText: [
       {value: 'export', kind: 'keyword'},
       {value: ' ', kind: 'whitespace'},
@@ -424,6 +452,7 @@ const expectedTypesOutline: Array<OutlineTree> = [
 const expectedExportDefaultArrowFuncOutline: Array<OutlineTree> = [
   {
     children: [],
+    kind: 'function',
     endPosition: new Point(10, 24),
     representativeName: '',
     startPosition: new Point(10, 0),
@@ -444,6 +473,7 @@ const expectedExportDefaultArrowFuncOutline: Array<OutlineTree> = [
 const expectedExportDefaultAnonymousFuncOutline: Array<OutlineTree> = [
   {
     children: [],
+    kind: 'function',
     endPosition: new Point(10, 28),
     representativeName: '',
     startPosition: new Point(10, 0),

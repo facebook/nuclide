@@ -14,9 +14,9 @@ PACKAGES_PATH = os.path.join(NUCLIDE_PATH, 'pkg')
 
 
 class PackageManager(object):
-    def __init__(self):
+    def __init__(self, package_dir=PACKAGES_PATH):
         # Keys are names of packages and values are the corresponding configs.
-        self._package_map = load_package_configs()
+        self._package_map = load_package_configs(package_dir)
 
     def get_configs(self):
         sorted_packages = sorted(self._package_map.items(),
@@ -35,12 +35,12 @@ class PackageManager(object):
         return self._package_map
 
 
-def load_package_configs():
+def load_package_configs(package_dir=PACKAGES_PATH):
     '''Returns a map where keys are names of packages and values are package configs.'''
     package_map = {}
 
     # Performs a depth-first search of the project root for package.json files.
-    for (path, dirs, files) in os.walk(PACKAGES_PATH):
+    for (path, dirs, files) in os.walk(package_dir):
         if 'package.json' in files:
             # No need to explore subdirectories once package.json is found.
             del dirs[:]
@@ -66,11 +66,7 @@ def create_config_for_package(path):
     rather than a raw package.json.
     '''
     pkg = utils.json_load(path)
-    nuclide_config = pkg.get('nuclide')
-
-    # Skip if not a nuclide package.
-    if nuclide_config is None:
-        return None
+    nuclide_config = pkg.get('nuclide', {})
 
     config = {}
 
@@ -79,6 +75,7 @@ def create_config_for_package(path):
     config['repository'] = pkg.get('repository')
     config['version'] = pkg.get('version')
     config['description'] = pkg.get('description')
+    config['license'] = pkg.get('license')
     config['main'] = pkg.get('main')
     config['dependencies'] = pkg.get('dependencies', {})
     config['optionalDependencies'] = pkg.get('optionalDependencies', {})

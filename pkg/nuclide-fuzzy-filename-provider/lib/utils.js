@@ -9,6 +9,12 @@
  * @format
  */
 
+type ParsedFileNameQuery = {|
+  +fileName: string,
+  +line?: number,
+  +column?: number,
+|};
+
 export function getIgnoredNames(): Array<string> {
   // $FlowIssue: Filter predicates
   const ignoredNames = atom.config.get('core.ignoredNames');
@@ -17,4 +23,16 @@ export function getIgnoredNames(): Array<string> {
   } else {
     return [];
   }
+}
+
+export function parseFileNameQuery(query: string): ParsedFileNameQuery {
+  const [fileName, line, column] = query.split(/:+/);
+  const lineNumber = parseInt(line, 10);
+  const columnNumber = parseInt(column, 10);
+
+  return {
+    fileName,
+    line: !Number.isNaN(lineNumber) ? lineNumber - 1 : undefined,
+    column: !Number.isNaN(columnNumber) ? columnNumber - 1 : undefined,
+  };
 }

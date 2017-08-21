@@ -24,9 +24,9 @@
     }
   },
   "consumedServices": {
-    "hyperclick.provider": {
+    "hyperclick": {
       "versions": {
-        "0.0.0": "consumeProvider"
+        "0.1.0": "consumeProvider"
       }
     }
   },

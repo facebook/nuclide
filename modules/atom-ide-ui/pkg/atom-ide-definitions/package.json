@@ -11,16 +11,26 @@
         "0.0.0": "consumeDefinitionProvider"
       }
     },
-    "atom-ide-definitions": {
+    "datatip": {
+      "versions": {
+        "0.1.0": "consumeDatatipService"
+      }
+    },
+    "definitions": {
       "versions": {
         "0.1.0": "consumeDefinitionProvider"
+      }
+    },
+    "definition-preview": {
+      "versions": {
+        "0.1.0": "consumeDefinitionPreviewProvider"
       }
     }
   },
   "providedServices": {
-    "hyperclick.provider": {
+    "hyperclick": {
       "versions": {
-        "0.0.0": "getHyperclickProvider"
+        "0.1.0": "getHyperclickProvider"
       }
     }
   }

@@ -35,19 +35,14 @@
     "createDebuggerView"
   ],
   "consumedServices": {
-    "nuclide.workspace-views": {
-      "versions": {
-        "0.0.0": "consumeWorkspaceViewsService"
-      }
-    },
     "nuclide.registerExecutor": {
       "versions": {
         "0.0.0": "consumeRegisterExecutor"
       }
     },
-    "nuclide-datatip.provider": {
+    "datatip": {
       "versions": {
-        "0.0.0": "consumeDatatipService"
+        "0.1.0": "consumeDatatipService"
       }
     },
     "nuclide-evaluation-expression.provider": {

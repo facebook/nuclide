@@ -11,17 +11,21 @@
 
 import type {
   HostServices,
+  Progress,
   ShowNotificationLevel,
 } from '../../nuclide-language-service-rpc/lib/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 import type {OutputService, Message} from '../../nuclide-console/lib/types';
+import type {BusySignalService} from 'atom-ide-ui';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
 import {Subject, Observable} from 'rxjs';
-import {
-  forkHostServices,
-} from '../../nuclide-language-service-rpc/lib/HostServicesAggregator';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {forkHostServices} from '../../nuclide-language-service-rpc/lib/HostServicesAggregator';
+import {applyTextEditsForMultipleFiles} from 'nuclide-commons-atom/text-edit';
 
 let rootAggregatorPromise: ?Promise<HostServices>;
 const logger = getLogger('HostServices');
@@ -41,8 +45,13 @@ export async function getHostServices(): Promise<HostServices> {
 (((null: any): RootHostServices): HostServices);
 
 class RootHostServices {
-  _consoleSubjects: Map<string, Promise<Subject<Message>>> = new Map();
+  _busySignalServicePromise: ?Promise<?BusySignalService>;
+  _nullProgressMessage: Progress = {
+    setTitle: s => {},
+    dispose: () => {},
+  };
   // lazily created map from source, to how we'll push messages from that source
+  _consoleSubjects: Map<string, Promise<Subject<Message>>> = new Map();
 
   consoleNotification(
     source: string,
@@ -117,6 +126,74 @@ class RootHostServices {
       });
       return () => notification.dismiss();
     }).publish();
+  }
+
+  async applyTextEditsForMultipleFiles(
+    changes: Map<NuclideUri, Array<TextEdit>>,
+  ): Promise<boolean> {
+    return applyTextEditsForMultipleFiles(changes);
+  }
+
+  _getBusySignalService(): Promise<?BusySignalService> {
+    // TODO(ljw): if the busy-signal-package has been disabled before this
+    // this function is called, we'll return a promise that never completes.
+    if (this._busySignalServicePromise == null) {
+      this._busySignalServicePromise = new Promise((resolve, reject) => {
+        atom.packages.serviceHub.consume(
+          'atom-ide-busy-signal',
+          '0.1.0',
+          service => {
+            // When the package is provided to us, resolve the promise
+            resolve(service);
+            // When the package becomes unavailable to us, put in a null promise
+            return new UniversalDisposable(() => {
+              this._busySignalServicePromise = Promise.resolve(null);
+            });
+          },
+        );
+      });
+    }
+    return this._busySignalServicePromise;
+  }
+
+  async showProgress(
+    title: string,
+    options?: {|debounce?: boolean|},
+  ): Promise<Progress> {
+    const service = await this._getBusySignalService();
+    const busyMessage =
+      service == null
+        ? this._nullProgressMessage
+        : service.reportBusy(title, {...options});
+    // The BusyMessage type from atom-ide-busy-signal happens to satisfy the
+    // nuclide-rpc-able interface 'Progress': thus, we can return it directly.
+    return (busyMessage: Progress);
+  }
+
+  showActionRequired(
+    title: string,
+    options?: {|clickable?: boolean|},
+  ): ConnectableObservable<void> {
+    return Observable.defer(() => this._getBusySignalService())
+      .switchMap(service => {
+        return Observable.create(observer => {
+          let onDidClick;
+          if (options != null && options.clickable) {
+            onDidClick = () => {
+              observer.next();
+            };
+          }
+          const busyMessage =
+            service == null
+              ? this._nullProgressMessage
+              : service.reportBusy(title, {
+                  waitingFor: 'user',
+                  onDidClick,
+                });
+          return () => busyMessage.dispose();
+        });
+      })
+      .publish();
   }
 
   dispose(): void {

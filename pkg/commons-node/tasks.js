@@ -116,26 +116,30 @@ export function observableFromTask(task: Task): Observable<TaskEvent> {
   return Observable.create(observer => {
     let finished = false;
 
-    const messages = typeof task.onMessage === 'function'
-      ? observableFromSubscribeFunction(
-          task.onMessage.bind(task),
-        ).map(message => ({type: 'message', message}))
-      : Observable.never();
-    const progresses = typeof task.onProgress === 'function'
-      ? observableFromSubscribeFunction(
-          task.onProgress.bind(task),
-        ).map(progress => ({type: 'progress', progress}))
-      : Observable.never();
-    const results = typeof task.onResult === 'function'
-      ? observableFromSubscribeFunction(
-          task.onResult.bind(task),
-        ).map(result => ({type: 'result', result}))
-      : Observable.never();
-    const statuses = typeof task.onStatusChange === 'function'
-      ? observableFromSubscribeFunction(
-          task.onStatusChange.bind(task),
-        ).map(status => ({type: 'status', status}))
-      : Observable.never();
+    const messages =
+      typeof task.onMessage === 'function'
+        ? observableFromSubscribeFunction(
+            task.onMessage.bind(task),
+          ).map(message => ({type: 'message', message}))
+        : Observable.never();
+    const progresses =
+      typeof task.onProgress === 'function'
+        ? observableFromSubscribeFunction(
+            task.onProgress.bind(task),
+          ).map(progress => ({type: 'progress', progress}))
+        : Observable.never();
+    const results =
+      typeof task.onResult === 'function'
+        ? observableFromSubscribeFunction(
+            task.onResult.bind(task),
+          ).map(result => ({type: 'result', result}))
+        : Observable.never();
+    const statuses =
+      typeof task.onStatusChange === 'function'
+        ? observableFromSubscribeFunction(
+            task.onStatusChange.bind(task),
+          ).map(status => ({type: 'status', status}))
+        : Observable.never();
 
     const completeEvents = observableFromSubscribeFunction(
       task.onDidComplete.bind(task),
@@ -199,6 +203,7 @@ export function createStep(
 ): Observable<TaskEvent> {
   return Observable.concat(
     Observable.of({type: 'progress', progress: null}),
+    // flowlint-next-line sketchy-null-string:off
     stepName
       ? Observable.of({type: 'status', status: stepName})
       : Observable.empty(),

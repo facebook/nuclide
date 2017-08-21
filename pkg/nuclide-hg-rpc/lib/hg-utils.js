@@ -13,7 +13,11 @@ import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {HgExecOptions} from './hg-exec-types';
 
 import {Observable} from 'rxjs';
-import {runCommandDetailed, scriptifyCommand} from 'nuclide-commons/process';
+import {
+  runCommandDetailed,
+  scriptifyCommand,
+  ProcessExitError,
+} from 'nuclide-commons/process';
 import {getLogger} from 'log4js';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {
@@ -59,7 +63,7 @@ export async function hgAsyncExecute(
   try {
     return await runCommandDetailed(command, args, options).toPromise();
   } catch (err) {
-    logAndThrowHgError(args, options, err.stdout, err.stderr);
+    logAndThrowHgError(args, options, err);
   }
 }
 
@@ -102,19 +106,32 @@ export function hgRunCommand(
 function logAndThrowHgError(
   args: Array<string>,
   options: Object,
-  stdout: string,
-  stderr: string,
+  err: Error,
 ): void {
-  getLogger('nuclide-hg-rpc').error(
-    `Error executing hg command: ${JSON.stringify(args)}\n` +
-      `stderr: ${stderr}\nstdout: ${stdout}\n` +
-      `options: ${JSON.stringify(options)}`,
-  );
-  if (stderr.length > 0 && stdout.length > 0) {
-    throw new Error(`hg error\nstderr: ${stderr}\nstdout: ${stdout}`);
+  if (err instanceof ProcessExitError) {
+    getLogger('nuclide-hg-rpc').error(
+      `Error executing hg command: ${JSON.stringify(args)}\n` +
+        `stderr: ${err.stderr}\nstdout: ${String(err.stdout)}\n` +
+        `options: ${JSON.stringify(options)}`,
+    );
+    const {stdout, stderr, exitCode} = err;
+    let message = 'hg error';
+    if (exitCode != null) {
+      message += ` (exit code ${exitCode})`;
+    }
+    if (stderr.length > 0) {
+      message += `\nstderr: ${stderr}`;
+    }
+    if (stdout != null && stdout.length > 0) {
+      message += `\nstdout: ${stdout}`;
+    }
+    throw new Error(message);
   } else {
-    // One of `stderr` or `stdout` is empty - not both.
-    throw new Error(stderr || stdout);
+    getLogger('nuclide-hg-rpc').error(
+      `Error executing hg command: ${JSON.stringify(args)}\n` +
+        `options: ${JSON.stringify(options)}`,
+    );
+    throw err;
   }
 }
 

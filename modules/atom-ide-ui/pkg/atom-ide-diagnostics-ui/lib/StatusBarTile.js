@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -12,7 +13,7 @@
 import type {
   ObservableDiagnosticUpdater,
   DiagnosticMessage,
-} from '../../atom-ide-diagnostics';
+} from '../../atom-ide-diagnostics/lib/types';
 
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import {Icon} from 'nuclide-commons-ui/Icon';
@@ -209,7 +210,7 @@ class StatusBarTileComponent extends React.Component {
 
   _onClick(): void {
     const target = atom.views.getView(atom.workspace);
-    atom.commands.dispatch(target, 'nuclide-diagnostics-ui:toggle-table');
+    atom.commands.dispatch(target, 'diagnostics:toggle-table');
     analytics.track('diagnostics-show-table-from-status-bar');
   }
 }

@@ -15,19 +15,13 @@ import type {TextEdit} from './HackConnectionService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {HackCompletionsResult} from './rpc-types';
-import type {
-  AutocompleteResult,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {runCommand, spawn} from 'nuclide-commons/process';
 import {maybeToString} from 'nuclide-commons/string';
 import {RpcProcess} from '../../nuclide-rpc';
-import {
-  getHackCommand,
-  findHackConfigDir,
-  HACK_FILE_EXTENSIONS,
-} from './hack-config';
+import {getHackCommand, findHackConfigDir} from './hack-config';
 import {ServiceRegistry, loadServicesConfig} from '../../nuclide-rpc';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
 import invariant from 'assert';
@@ -40,6 +34,7 @@ import {Cache, DISPOSE_VALUE} from 'nuclide-commons/cache';
 import {Observable} from 'rxjs';
 import {getBufferAtVersion} from '../../nuclide-open-files-rpc';
 import {hasPrefix, convertCompletions} from './Completions';
+import {HACK_FILE_EXTENSIONS} from '../../nuclide-hack-common/lib/constants';
 import {findHackPrefix} from '../../nuclide-hack-common/lib/autocomplete';
 
 // From hphp/hack/src/utils/exit_status.ml
@@ -284,9 +279,9 @@ export function closeProcesses(fileCache: FileCache): void {
   logger.info('Hack closeProcesses');
   if (processes.has(fileCache)) {
     logger.info(
-      `Shutting down HackProcesses ${Array.from(processes
-          .get(fileCache)
-          .keys()).join(',')}`,
+      `Shutting down HackProcesses ${Array.from(
+        processes.get(fileCache).keys(),
+      ).join(',')}`,
     );
     processes.delete(fileCache);
   }

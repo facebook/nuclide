@@ -9,55 +9,37 @@
  * @format
  */
 
-import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {DevicePanelServiceApi} from '../../../nuclide-devices/lib/types';
-import type {Store} from '../types';
+import type {DevicePanelServiceApi} from '../../../nuclide-device-panel/lib/types';
 
+import {AndroidBridge} from '../bridges/AndroidBridge';
+import {TizenBridge} from '../bridges/TizenBridge';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {getAdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 import {ATDeviceListProvider} from './ATDeviceListProvider';
 import {ATDeviceInfoProvider} from './ATDeviceInfoProvider';
 import {ATDeviceProcessesProvider} from './ATDeviceProcessesProvider';
 import {ATDeviceStopPackageProvider} from './ATDeviceStopPackageProvider';
 import {ATConfigurePathTaskProvider} from './ATConfigurePathTaskProvider';
-import {getSdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 
 export function registerDevicePanelProviders(
   api: DevicePanelServiceApi,
-  store: Store,
+  android: AndroidBridge,
+  tizen: TizenBridge,
 ): IDisposable {
-  const TIZEN = 'tizen';
-  const ANDROID = 'android';
-
-  const tizenSdkFactory = (host: NuclideUri) => getSdbServiceByNuclideUri(host);
-  const androidSdkFactory = (host: NuclideUri) =>
-    getAdbServiceByNuclideUri(host);
-
   return new UniversalDisposable(
     // list
-    api.registerListProvider(
-      new ATDeviceListProvider(ANDROID, androidSdkFactory),
-    ),
-    api.registerListProvider(new ATDeviceListProvider(TIZEN, tizenSdkFactory)),
+    api.registerListProvider(new ATDeviceListProvider(android)),
+    api.registerListProvider(new ATDeviceListProvider(tizen)),
     // info
-    api.registerInfoProvider(
-      new ATDeviceInfoProvider(ANDROID, androidSdkFactory),
-    ),
-    api.registerInfoProvider(new ATDeviceInfoProvider(TIZEN, tizenSdkFactory)),
+    api.registerInfoProvider(new ATDeviceInfoProvider(android)),
+    api.registerInfoProvider(new ATDeviceInfoProvider(tizen)),
     // processes
-    api.registerProcessesProvider(
-      new ATDeviceProcessesProvider(ANDROID, androidSdkFactory),
-    ),
+    api.registerProcessesProvider(new ATDeviceProcessesProvider(android)),
     // process tasks
-    api.registerProcessTaskProvider(
-      new ATDeviceStopPackageProvider(ANDROID, androidSdkFactory),
-    ),
+    api.registerProcessTaskProvider(new ATDeviceStopPackageProvider(android)),
     // device type tasks
     api.registerDeviceTypeTaskProvider(
-      new ATConfigurePathTaskProvider(ANDROID, androidSdkFactory, store),
+      new ATConfigurePathTaskProvider(android),
     ),
-    api.registerDeviceTypeTaskProvider(
-      new ATConfigurePathTaskProvider(TIZEN, tizenSdkFactory, store),
-    ),
+    api.registerDeviceTypeTaskProvider(new ATConfigurePathTaskProvider(tizen)),
   );
 }

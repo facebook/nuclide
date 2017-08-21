@@ -17,6 +17,7 @@ export function createEmptyAppState(): AppState {
   return {
     customAdbPaths: new Map(),
     customSdbPaths: new Map(),
+    adbPorts: new Map(),
   };
 }
 
@@ -24,12 +25,13 @@ export function serialize(state: AppState): Object {
   return {
     customAdbPaths: objectFromMap(state.customAdbPaths),
     customSdbPaths: objectFromMap(state.customSdbPaths),
+    adbPorts: objectFromMap(state.adbPorts),
   };
 }
 
 export function deserialize(rawState: ?Object): ?Object {
   if (rawState != null) {
-    ['customAdbPaths', 'customSdbPaths'].forEach(objectProp => {
+    ['customAdbPaths', 'customSdbPaths', 'adbPorts'].forEach(objectProp => {
       if (rawState.hasOwnProperty(objectProp)) {
         rawState[objectProp] = new Map(
           objectEntries(rawState[objectProp] || {}),

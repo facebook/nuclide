@@ -10,11 +10,6 @@
         "0.0.0": "consumeCwdApi"
       }
     },
-    "nuclide.workspace-views": {
-      "versions": {
-        "0.0.0": "consumeWorkspaceViewsService"
-      }
-    },
     "working-sets.provider": {
       "versions": {
         "0.0.0": "consumeWorkingSetsStore"
@@ -53,7 +48,7 @@
       "revealFileOnSwitch": {
         "title": "Reveal File on Switch",
         "type": "boolean",
-        "default": false,
+        "default": true,
         "description": "Automatically reveal the current file when you switch tabs"
       },
       "hideIgnoredNames": {
@@ -90,6 +85,12 @@
           "Head changes",
           "Stack changes"
         ]
+      },
+      "autoExpandSingleChild": {
+        "title": "Auto expand single child",
+        "type": "boolean",
+        "default": true,
+        "description": "Automatically expand single child directory when parent is expanded"
       }
     },
     "packageType": "Atom",

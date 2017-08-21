@@ -9,6 +9,8 @@
  * @format
  */
 
+/* eslint-disable nuclide-internal/no-commonjs */
+
 export type TrackEvent = {
   key: string,
   values: {[key: string]: mixed},

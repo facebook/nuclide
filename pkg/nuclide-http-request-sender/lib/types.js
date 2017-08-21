@@ -16,6 +16,7 @@ export type AppState = {
   method: Verb,
   headers: {[key: string]: string},
   body: ?string,
+  parameters: Array<Parameter>,
 };
 
 export type PartialAppState = {
@@ -23,6 +24,7 @@ export type PartialAppState = {
   method?: Verb,
   headers?: {[key: string]: string},
   body?: ?string,
+  parameters?: Array<Parameter>,
 };
 
 export type Store = {
@@ -44,6 +46,11 @@ export type UpdateStateAction = {
 
 export type SendRequestAction = {
   type: 'SEND_REQUEST',
+};
+
+export type Parameter = ?{
+  key: string,
+  value: string,
 };
 
 export type Action = UpdateStateAction | SendRequestAction;

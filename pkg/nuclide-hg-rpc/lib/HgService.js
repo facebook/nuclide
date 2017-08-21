@@ -18,11 +18,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import {WatchmanClient} from '../../nuclide-watchman-helpers';
 import fs from 'fs';
 
-import {
-  AmendMode,
-  MergeConflictFileStatus,
-  MergeConflictStatus,
-} from './hg-constants';
+import {AmendMode, MergeConflictStatus} from './hg-constants';
 import {Subject} from 'rxjs';
 import {parseMultiFileHgDiffUnifiedOutput} from './hg-diff-output-parser';
 import {
@@ -197,13 +193,6 @@ export type VcsLogResponse = {
   entries: Array<VcsLogEntry>,
 };
 
-export type MergeConflict = {
-  path: string,
-  status: MergeConflictStatusValue,
-  mergeConflictsCount?: number,
-  resolvedConflictsCount?: number,
-};
-
 // Information about file for local, base and other commit that caused the conflict
 export type MergeConflictSideFileData = {
   contents: ?string,
@@ -226,7 +215,7 @@ export type MergeConflictFileData = {
   conflictCount?: number,
 };
 
-export type MergeConflictsEnriched = {
+export type MergeConflicts = {
   conflicts: Array<MergeConflictFileData>,
   command: string,
 };
@@ -596,12 +585,16 @@ export class HgService {
       return;
     } else if (mergeDirectoryExists) {
       // Detect if the repository is in a conflict state.
-      const mergeConflicts = await this.fetchMergeConflicts();
-      if (mergeConflicts.length > 0) {
+      const mergeConflicts = await this._fetchMergeConflicts();
+      if (mergeConflicts != null) {
         this._isInConflict = true;
         this._hgConflictStateDidChangeObserver.next(true);
       }
     }
+  }
+
+  async _fetchMergeConflicts(): Promise<?MergeConflicts> {
+    return this.fetchMergeConflicts().refCount().toPromise();
   }
 
   _emitHgRepoStateChanged(): void {
@@ -702,6 +695,7 @@ export class HgService {
 
   createBookmark(name: string, revision: ?string): Promise<void> {
     const args = [];
+    // flowlint-next-line sketchy-null-string:off
     if (revision) {
       args.push('--rev', revision);
     }
@@ -828,7 +822,7 @@ export class HgService {
           'blame',
           '-c', // Query the hash
           '-T',
-          '{node|short}\n', // Just display the hash per line
+          '{lines % "{node|short}\n"}', // Just display the hash per line
           '-r',
           'wdir()', // Blank out uncommitted changes
           filePath,
@@ -988,6 +982,23 @@ export class HgService {
     return this._commitCode(message, ['commit', ...filePaths]).publish();
   }
 
+  /*
+   * Edit commit message associated with a revision
+   * @param revision Hash of the revision to be updated
+   * @param message New commit message
+   * @return Process update message while running metaedit
+   */
+  editCommitMessage(
+    revision: string,
+    message: string,
+  ): ConnectableObservable<LegacyProcessMessage> {
+    const args = ['metaedit', '-r', revision, '-m', message];
+    const execOptions = {
+      cwd: this._workingDirectory,
+    };
+    return this._hgObserveExecution(args, execOptions).publish();
+  }
+
   /**
    * Amend code changes to the latest commit.
    * @param message Commit message.  Message will remain unchaged if not provided.
@@ -1017,6 +1028,14 @@ export class HgService {
         throw new Error('Unexpected AmendMode');
     }
     return this._commitCode(message, args).publish();
+  }
+
+  restack(): ConnectableObservable<LegacyProcessMessage> {
+    const args = ['rebase', '--restack', '--config', 'ui.merge=:merge'];
+    const execOptions = {
+      cwd: this._workingDirectory,
+    };
+    return this._hgObserveExecution(args, execOptions).publish();
   }
 
   splitRevision(): ConnectableObservable<LegacyProcessMessage> {
@@ -1281,7 +1300,7 @@ export class HgService {
     return {entries};
   }
 
-  fetchMergeConflictsWithDetails(): ConnectableObservable<?MergeConflictsEnriched> {
+  fetchMergeConflicts(): ConnectableObservable<?MergeConflicts> {
     const args = ['resolve', '--tool=internal:dumpjson', '--all'];
     const execOptions = {
       cwd: this._workingDirectory,
@@ -1318,81 +1337,6 @@ export class HgService {
         .catch(() => Observable.of(null))
         .publish()
     );
-  }
-
-  /*
-   * Setting fetchResolved will return all resolved and unresolved conflicts,
-   * the default would only fetch the current unresolved conflicts.
-   */
-  async fetchMergeConflicts(
-    fetchResolved: ?boolean,
-  ): Promise<Array<MergeConflict>> {
-    const {stdout} = await this._hgAsyncExecute(
-      ['resolve', '--list', '-Tjson'],
-      {
-        cwd: this._workingDirectory,
-      },
-    );
-    const fileListStatuses = JSON.parse(stdout);
-    const resolvedFiles = fetchResolved
-      ? fileListStatuses
-          .filter(
-            fileStatus =>
-              fileStatus.status === MergeConflictFileStatus.RESOLVED,
-          )
-          .map(fileStatus => ({
-            path: fileStatus.path,
-            status: MergeConflictStatus.RESOLVED,
-          }))
-      : [];
-    const conflictedFiles = fileListStatuses.filter(fileStatus => {
-      return fileStatus.status === MergeConflictFileStatus.UNRESOLVED;
-    });
-    const origBackupPath = await this._getOrigBackupPath();
-    const conflicts = await Promise.all(
-      conflictedFiles.map(async conflictedFile => {
-        let status;
-        // Heuristic: If the `.orig` file doesn't exist, then it's deleted by the rebasing commit.
-        if (await this._checkOrigFile(origBackupPath, conflictedFile.path)) {
-          status = MergeConflictStatus.BOTH_CHANGED;
-        } else {
-          status = MergeConflictStatus.DELETED_IN_THEIRS;
-        }
-        return {
-          path: conflictedFile.path,
-          status,
-        };
-      }),
-    );
-    return [...conflicts, ...resolvedFiles];
-  }
-
-  async _getOrigBackupPath(): Promise<string> {
-    if (this._origBackupPath == null) {
-      const relativeBackupPath = await this.getConfigValueAsync(
-        'ui.origbackuppath',
-      );
-      if (relativeBackupPath == null) {
-        this._origBackupPath = this._workingDirectory;
-      } else {
-        this._origBackupPath = nuclideUri.join(
-          this._workingDirectory,
-          relativeBackupPath,
-        );
-      }
-    }
-    return this._origBackupPath;
-  }
-
-  async _checkOrigFile(
-    origBackupPath: string,
-    filePath: string,
-  ): Promise<boolean> {
-    const origFilePath = nuclideUri.join(origBackupPath, `${filePath}.orig`);
-    logger.info('origBackupPath:', origBackupPath);
-    logger.info('filePath:', filePath);
-    logger.info('origFilePath:', origFilePath);
-    return fsPromise.exists(origFilePath);
   }
 
   markConflictedFile(
@@ -1433,6 +1377,16 @@ export class HgService {
       cwd: this._workingDirectory,
     };
     return hgRunCommand(args, execOptions).publish();
+  }
+
+  resolveAllFiles(): ConnectableObservable<LegacyProcessMessage> {
+    const args = ['resolve', '--all'];
+    const execOptions = {
+      cwd: this._workingDirectory,
+    };
+    return this._hgObserveExecution(args, execOptions)
+      .switchMap(processExitCodeAndThrow)
+      .publish();
   }
 
   rebase(
@@ -1491,5 +1445,16 @@ export class HgService {
         throw e;
       }
     }
+  }
+
+  /**
+   * Gets the current head revision hash
+   */
+  getHeadId(): ConnectableObservable<string> {
+    const args = ['log', '--template', '{node}', '--limit', '1'];
+    const execOptions = {
+      cwd: this._workingDirectory,
+    };
+    return this._hgRunCommand(args, execOptions).publish();
   }
 }

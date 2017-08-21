@@ -14,17 +14,20 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import type {QueryScore} from './QueryScore';
 
 const NON_UPPERCASE_CHARS_REGEXP = /[^a-z0-9]/g;
+
+function sanitize(str: string) {
+  return str.toLowerCase().replace(NON_UPPERCASE_CHARS_REGEXP, '');
+}
+
 /**
  * Returns the score of the common subsequence between `needle` and `haystack` or -1 if there is
  * no common subsequence.
  * A lower number means `needle` is more relevant to `haystack`.
  */
 function scoreCommonSubsequence(needle_: string, haystack_: string): number {
-  // Don't ignore the needle's case, but strip punctuation.
-  const needle = needle_.replace(/[^a-zA-Z0-9]/g, '');
-  let haystack = haystack_;
-  haystack = haystack.toLowerCase();
-  haystack = haystack.replace(NON_UPPERCASE_CHARS_REGEXP, '');
+  // Sanitize the needle and haystack.
+  const needle = sanitize(needle_);
+  const haystack = sanitize(haystack_);
   if (needle.length === haystack.length) {
     return needle === haystack ? 0 : -1;
   }

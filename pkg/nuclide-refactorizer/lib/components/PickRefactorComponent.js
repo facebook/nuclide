@@ -31,13 +31,17 @@ export class PickRefactorComponent extends React.Component {
       return <div>No refactorings available at this location</div>;
     }
 
-    const elements = availableRefactorings.map((r, i) => (
+    const elements = availableRefactorings.map((r, i) =>
       <div key={i} className="nuclide-refactorizer-refactor-option">
         {this._renderRefactorOption(r)}
-      </div>
-    ));
+      </div>,
+    );
     // Class used to identify this element in integration tests
-    return <div className="nuclide-refactorizer-pick-refactor">{elements}</div>;
+    return (
+      <div className="nuclide-refactorizer-pick-refactor">
+        {elements}
+      </div>
+    );
   }
 
   _pickRefactor(refactoring: AvailableRefactoring): void {

@@ -68,7 +68,9 @@ export default class BasicStatsSectionComponent extends React.Component {
           <tr>
             <th width="30%">Metric</th>
             <th width="50%">Value</th>
-            <th width="20%" className="text-right">Toolbar</th>
+            <th width="20%" className="text-right">
+              Toolbar
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -83,8 +85,12 @@ export default class BasicStatsSectionComponent extends React.Component {
             }
             return (
               <tr {...props} key={s}>
-                <th>{stat.name}</th>
-                <td>{stat.value}</td>
+                <th>
+                  {stat.name}
+                </th>
+                <td>
+                  {stat.value}
+                </td>
                 <td className="text-right">
                   <Button
                     size={ButtonSizes.EXTRA_SMALL}

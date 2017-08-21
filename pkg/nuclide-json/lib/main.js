@@ -67,8 +67,8 @@ export function getHyperclickProvider(): HyperclickProvider {
 
 export function provideCodeFormat(): CodeFormatProvider {
   return {
-    selector: 'source.json',
-    inclusionPriority: 1,
+    grammarScopes: ['source.json'],
+    priority: 1,
     formatEntireFile(editor, range) {
       return CodeFormatHelpers.formatEntireFile(editor, range);
     },

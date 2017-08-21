@@ -1,16 +1,17 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
 import invariant from 'assert';
-import {parse} from 'shell-quote';
+import {parse, quote} from './_shell-quote';
 
 export function stringifyError(error: Error): string {
   return `name: ${error.name}, message: ${error.message}, stack: ${error.stack}.`;
@@ -79,6 +80,7 @@ export function relativeDate(
   if (input instanceof Date) {
     input = input.getTime();
   }
+  // flowlint-next-line sketchy-null-number:off
   if (!reference) {
     reference = new Date().getTime();
   }
@@ -123,19 +125,33 @@ export function countOccurrences(haystack: string, char: string) {
 }
 
 /**
- * shell-quote's parse allows pipe operators.
+ * shell-quote's parse allows pipe operators and comments.
  * Generally users don't care about this, so throw if we encounter any operators.
  */
 export function shellParse(str: string, env?: Object): Array<string> {
   const result = parse(str, env);
   for (let i = 0; i < result.length; i++) {
     if (typeof result[i] !== 'string') {
-      throw new Error(
-        `Unexpected operator "${result[i].op}" provided to shellParse`,
-      );
+      if (result[i].op != null) {
+        throw new Error(
+          `Unexpected operator "${result[i].op}" provided to shellParse`,
+        );
+      } else {
+        throw new Error(
+          `Unexpected comment "${result[i].comment}" provided to shellParse`,
+        );
+      }
     }
   }
   return result;
+}
+
+/**
+ * Technically you can pass in { operator: string } here,
+ * but we don't use that in most APIs.
+ */
+export function shellQuote(args: Array<string>): string {
+  return quote(args);
 }
 
 export function removeCommonPrefix(a: string, b: string): [string, string] {
@@ -191,6 +207,12 @@ export function indent(
 
 export function pluralize(noun: string, count: number) {
   return count === 1 ? noun : noun + 's';
+}
+
+export function capitalize(str: string): string {
+  return str.length === 0
+    ? str
+    : str.charAt(0).toUpperCase().concat(str.slice(1));
 }
 
 // Originally copied from:

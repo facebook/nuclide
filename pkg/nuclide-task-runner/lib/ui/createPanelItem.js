@@ -12,9 +12,7 @@
 import type {Store, TaskRunner} from '../types';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
-import {
-  viewableFromReactElement,
-} from '../../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactElement';
 import {nextAnimationFrame, throttle} from 'nuclide-commons/observable';
 import * as Actions from '../redux/Actions';
 import {Toolbar} from './Toolbar';

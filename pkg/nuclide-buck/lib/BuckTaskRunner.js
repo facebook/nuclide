@@ -18,6 +18,7 @@ import type {
   SerializedState,
   Store,
   TaskType,
+  CompilationDatabaseParams,
 } from './types';
 import {PlatformService} from './PlatformService';
 
@@ -30,7 +31,7 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {getLogger} from 'log4js';
@@ -70,6 +71,9 @@ const TASKS = [
     icon: 'nuclicon-debugger',
   },
 ];
+
+// This must match URI defined in ../../nuclide-console/lib/ui/ConsoleContainer
+const CONSOLE_VIEW_URI = 'atom://nuclide/console';
 
 function shouldEnableTask(taskType: TaskType, ruleType: string): boolean {
   switch (taskType) {
@@ -123,9 +127,8 @@ export class BuckTaskRunner {
   }
 
   getIcon(): ReactClass<any> {
-    return () => (
-      <Icon icon="nuclicon-buck" className="nuclide-buck-task-runner-icon" />
-    );
+    return () =>
+      <Icon icon="nuclicon-buck" className="nuclide-buck-task-runner-icon" />;
   }
 
   getBuildSystem(): BuckBuildSystem {
@@ -241,6 +244,19 @@ export class BuckTaskRunner {
     return this._store;
   }
 
+  getCompilationDatabaseParamsForCurrentContext(): CompilationDatabaseParams {
+    const {selectedDeploymentTarget} = this._getStore().getState();
+    const empty = {flavorsForTarget: [], args: []};
+    if (selectedDeploymentTarget == null) {
+      return empty;
+    }
+    const {platform} = selectedDeploymentTarget;
+    if (typeof platform.getCompilationDatabaseParams === 'function') {
+      return platform.getCompilationDatabaseParams();
+    }
+    return empty;
+  }
+
   runTask(taskType: string): Task {
     invariant(
       taskType === 'build' ||
@@ -250,11 +266,8 @@ export class BuckTaskRunner {
       'Invalid task type',
     );
 
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-console:toggle',
-      {visible: true},
-    );
+    // eslint-disable-next-line nuclide-internal/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI);
 
     const state = this._getStore().getState();
     const {
@@ -264,6 +277,7 @@ export class BuckTaskRunner {
       selectedDeploymentTarget,
       taskSettings,
     } = state;
+    // flowlint-next-line sketchy-null-string:off
     invariant(buckRoot);
     invariant(buildRuleType);
 

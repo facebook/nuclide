@@ -40,6 +40,17 @@
 // The export is typed with `typeof fetch` so flow treats the polyfill as the
 // real `fetch`.
 
-export default (typeof global.fetch === 'function'
-  ? global.fetch
-  : require('node-fetch'): typeof fetch);
+import {isRunningInTest} from './system-info';
+import nodeFetch from 'node-fetch';
+
+// Stub out `fetch` in all tests so we don't inadvertently rely on external URLs.
+const testFetch: typeof fetch = function testFetch() {
+  return Promise.reject(
+    Error('fetch is stubbed out for testing. Use a spy instead.'),
+  );
+};
+
+const fetchImpl =
+  typeof global.fetch === 'function' ? global.fetch : (nodeFetch: typeof fetch);
+
+export default (isRunningInTest() ? testFetch : fetchImpl);

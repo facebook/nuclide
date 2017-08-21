@@ -39,8 +39,6 @@ export class DebuggerCallstackComponent extends React.Component {
 
   constructor(props: DebuggerCallstackComponentProps) {
     super(props);
-    (this: any)._handleCallframeClick = this._handleCallframeClick.bind(this);
-    (this: any)._locationComponent = this._locationComponent.bind(this);
     this._disposables = new UniversalDisposable();
     this.state = {
       callstack: props.callstackStore.getCallstack(),
@@ -48,27 +46,28 @@ export class DebuggerCallstackComponent extends React.Component {
     };
   }
 
-  _locationComponent(props: {
+  _locationComponent = (props: {
     data: {
       path: string,
       line: number,
       column?: number,
       hasSource?: boolean,
     },
-  }): React.Element<any> {
-    const missingSourceItem = this.props.callstackStore
-      .getDebuggerStore()
-      .getCanSetSourcePaths() && !props.data.hasSource
-      ? <span
-          className={classnames('text-error', 'icon', 'icon-alert')}
-          onClick={() => this.props.actions.configureSourcePaths()}
-          ref={addTooltip({
-            title: 'Source file not found! Some debugger features will not work without source.' +
-              '<br/><br/>' +
-              'Click to configure source file paths...',
-          })}
-        />
-      : null;
+  }): React.Element<any> => {
+    const missingSourceItem =
+      this.props.callstackStore.getDebuggerStore().getCanSetSourcePaths() &&
+      !props.data.hasSource
+        ? <span
+            className={classnames('text-error', 'icon', 'icon-alert')}
+            onClick={() => this.props.actions.configureSourcePaths()}
+            ref={addTooltip({
+              title:
+                'Source file not found! Some debugger features will not work without source.' +
+                '<br/><br/>' +
+                'Click to configure source file paths...',
+            })}
+          />
+        : null;
 
     // Callstack paths may have a format like file://foo/bar, or
     // lldb://asm/0x1234. These are not valid paths that can be used to
@@ -82,10 +81,12 @@ export class DebuggerCallstackComponent extends React.Component {
     return (
       <div title={`${path}:${line}`}>
         {missingSourceItem}
-        <span>{path}:{line}</span>
+        <span>
+          {path}:{line}
+        </span>
       </div>
     );
-  }
+  };
 
   componentDidMount(): void {
     const {callstackStore} = this.props;
@@ -103,37 +104,38 @@ export class DebuggerCallstackComponent extends React.Component {
     this._disposables.dispose();
   }
 
-  _handleCallframeClick(
+  _handleCallframeClick = (
     clickedCallframe: ?CallstackItem,
     callFrameIndex: number,
-  ): void {
+  ): void => {
     this.props.bridge.setSelectedCallFrameIndex(callFrameIndex);
     this.props.actions.setSelectedCallFrameIndex(callFrameIndex);
-  }
+  };
 
   render(): ?React.Element<any> {
     const {callstack} = this.state;
-    const rows = callstack == null
-      ? []
-      : callstack.map((callstackItem, i) => {
-          const {location} = callstackItem;
-          const isSelected = this.state.selectedCallFrameIndex === i;
-          const cellData = {
-            data: {
-              frame: i,
-              address: callstackItem.name,
-              location,
-              isSelected,
-            },
-          };
+    const rows =
+      callstack == null
+        ? []
+        : callstack.map((callstackItem, i) => {
+            const {location} = callstackItem;
+            const isSelected = this.state.selectedCallFrameIndex === i;
+            const cellData = {
+              data: {
+                frame: i,
+                address: callstackItem.name,
+                location,
+                isSelected,
+              },
+            };
 
-          if (isSelected) {
-            // $FlowIssue className is an optional property of a table row
-            cellData.className = 'nuclide-debugger-callstack-item-selected';
-          }
+            if (isSelected) {
+              // $FlowIssue className is an optional property of a table row
+              cellData.className = 'nuclide-debugger-callstack-item-selected';
+            }
 
-          return cellData;
-        });
+            return cellData;
+          });
 
     const columns = [
       {
@@ -152,11 +154,10 @@ export class DebuggerCallstackComponent extends React.Component {
       },
     ];
 
-    const emptyComponent = () => (
+    const emptyComponent = () =>
       <div className="nuclide-debugger-callstack-list-empty">
         callstack unavailable
-      </div>
-    );
+      </div>;
 
     return (
       <Table

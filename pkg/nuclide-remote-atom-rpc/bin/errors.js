@@ -10,6 +10,7 @@
  */
 
 import log4js from 'log4js';
+import os from 'os';
 
 import {
   FileAppender,
@@ -42,15 +43,15 @@ export function setupErrorHandling() {
   });
 }
 
-export async function setupLogging() {
+export function setupLogging() {
   // Initialize logging
-  await initialUpdateConfig();
+  initialUpdateConfig();
 
   const config = {
     appenders: [FileAppender],
   };
 
-  const serverLogAppenderConfig = await getServerLogAppenderConfig();
+  const serverLogAppenderConfig = getServerLogAppenderConfig();
   if (serverLogAppenderConfig) {
     config.appenders.push(serverLogAppenderConfig);
   }
@@ -59,8 +60,21 @@ export async function setupLogging() {
 }
 
 export function reportConnectionErrorAndExit(detailMessage: string): void {
-  process.stderr.write(`Error: ${detailMessage}.\n`);
-  process.stderr.write('Do you have Atom with Nuclide open?\n');
+  process.stderr.write(
+    `Error connecting to nuclide-server on ${os.hostname()}:\n`,
+  );
+  process.stderr.write(`  ${detailMessage}.\n`);
+  process.stderr.write('\n');
+  process.stderr.write('Potential fixes:\n');
+  process.stderr.write('* Ensure Atom with Nuclide is open.\n');
+  process.stderr.write(
+    `* Verify Nuclide's current directory located on ${os.hostname()}\n`,
+  );
+  process.stderr.write(
+    '* Click the menu item "Nuclide/Kill Nuclide Server and Restart"\n',
+  );
+  process.stderr.write('\n');
+  process.stderr.write('Callstack:\n');
   process.stderr.write(new Error().stack);
   process.stderr.write('\n');
   process.exit(EXIT_CODE_CONNECTION_ERROR);

@@ -14,11 +14,16 @@ import type {FileResult} from './types';
 import React from 'react';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
+import groupMatchIndexes from 'nuclide-commons/groupMatchIndexes';
 
 type Key = number | string;
 
 function renderSubsequence(seq: string, props: Object): ?React.Element<any> {
-  return seq.length === 0 ? null : <span {...props}>{seq}</span>;
+  return seq.length === 0
+    ? null
+    : <span {...props}>
+        {seq}
+      </span>;
 }
 
 function renderUnmatchedSubsequence(
@@ -49,47 +54,11 @@ export default class FileResultComponent {
       matchIndexes = matchIndexes.map(i => i - (dirName.length - 1));
     }
 
-    let streakOngoing = false;
-    let start = 0;
-    const pathComponents = [];
-    // Split the path into highlighted and non-highlighted subsequences for optimal rendering perf.
-    // Do this in O(n) where n is the number of matchIndexes (ie. less than the length of the path).
-    matchIndexes.forEach((i, n) => {
-      if (matchIndexes[n + 1] === i + 1) {
-        if (!streakOngoing) {
-          pathComponents.push(
-            renderUnmatchedSubsequence(filePath.slice(start, i), i),
-          );
-          start = i;
-          streakOngoing = true;
-        }
-      } else {
-        if (streakOngoing) {
-          pathComponents.push(
-            renderMatchedSubsequence(filePath.slice(start, i + 1), i),
-          );
-          streakOngoing = false;
-        } else {
-          if (i > 0) {
-            pathComponents.push(
-              renderUnmatchedSubsequence(
-                filePath.slice(start, i),
-                `before${i}`,
-              ),
-            );
-          }
-          pathComponents.push(
-            renderMatchedSubsequence(filePath.slice(i, i + 1), i),
-          );
-        }
-        start = i + 1;
-      }
-    });
-    pathComponents.push(
-      renderUnmatchedSubsequence(
-        filePath.slice(start, filePath.length),
-        'last',
-      ),
+    const pathComponents = groupMatchIndexes(
+      filePath,
+      matchIndexes,
+      renderMatchedSubsequence,
+      renderUnmatchedSubsequence,
     );
     return (
       <PathWithFileIcon path={nuclideUri.basename(filePath)}>

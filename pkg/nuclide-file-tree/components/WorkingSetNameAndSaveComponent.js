@@ -35,9 +35,6 @@ export class WorkingSetNameAndSaveComponent extends React.Component {
     this.state = {
       name: props.initialName,
     };
-
-    (this: any)._trackName = this._trackName.bind(this);
-    (this: any)._saveWorkingSet = this._saveWorkingSet.bind(this);
   }
 
   componentDidMount(): void {}
@@ -78,11 +75,11 @@ export class WorkingSetNameAndSaveComponent extends React.Component {
     );
   }
 
-  _trackName(text: string): void {
+  _trackName = (text: string): void => {
     this.setState({name: text});
-  }
+  };
 
-  _saveWorkingSet(): void {
+  _saveWorkingSet = (): void => {
     if (this.state.name === '') {
       atom.notifications.addWarning('Name is missing', {
         detail: 'Please provide a name for the Working Set',
@@ -95,5 +92,5 @@ export class WorkingSetNameAndSaveComponent extends React.Component {
     } else {
       this.props.onSave(this.state.name);
     }
-  }
+  };
 }

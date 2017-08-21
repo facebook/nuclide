@@ -9,12 +9,9 @@
  * @format
  */
 
-import typeof * as FileSystemService
-  from '../../nuclide-server/lib/services/FileSystemService';
+import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
 import type {ServerConnection} from './ServerConnection';
-import type {
-  HgRepositoryDescription,
-} from '../../nuclide-source-control-helpers';
+import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
 import type {RemoteFile} from './RemoteFile';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 

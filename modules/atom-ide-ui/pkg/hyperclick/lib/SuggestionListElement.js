@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -17,6 +18,7 @@ import {CompositeDisposable, Disposable} from 'atom';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import invariant from 'assert';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
 /**
  * We need to create this custom HTML element so we can hook into the view
@@ -145,7 +147,9 @@ class SuggestionList extends React.Component {
           onMouseDown={this._boundConfirm}
           onMouseEnter={this._setSelectedIndex.bind(this, index)}>
           {item.title}
-          <span className="right-label">{item.rightLabel}</span>
+          <span className="right-label">
+            {item.rightLabel}
+          </span>
         </li>
       );
     });
@@ -226,8 +230,7 @@ class SuggestionList extends React.Component {
     const listNode = ReactDOM.findDOMNode(this.refs.selectionList);
     // $FlowFixMe
     const selectedNode = listNode.getElementsByClassName('selected')[0];
-    // $FlowFixMe
-    selectedNode.scrollIntoViewIfNeeded(false);
+    scrollIntoViewIfNeeded(selectedNode, false);
   }
 }
 

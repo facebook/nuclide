@@ -16,6 +16,7 @@ import {GRAMMARS, EXTENSIONS} from './constants';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {getMerlinServiceByNuclideUri} from '../../nuclide-remote-connection';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   priority: 20,
   providerName: 'nuclide-ocaml',

@@ -10,10 +10,7 @@
  */
 
 import type {ThreadItem, NuclideThreadData, DebuggerModeType} from './types';
-import type {
-  PinnedDatatip,
-  DatatipService,
-} from '../../nuclide-datatip/lib/types';
+import type {DatatipService} from 'atom-ide-ui';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import {Disposable, CompositeDisposable, Emitter} from 'atom';
 import React from 'react';
@@ -34,7 +31,7 @@ export default class ThreadStore {
   _owningProcessId: number;
   _selectedThreadId: number;
   _stopThreadId: number;
-  _threadChangeDatatip: ?PinnedDatatip;
+  _threadChangeDatatip: ?IDisposable;
   _threadsReloading: boolean;
   _debuggerMode: DebuggerModeType;
 
@@ -212,12 +209,11 @@ export default class ThreadStore {
   }
 
   _createAlertComponentClass(message: string): ReactClass<any> {
-    return () => (
+    return () =>
       <div className="nuclide-debugger-thread-switch-alert">
         <Icon icon="alert" />
         {message}
-      </div>
-    );
+      </div>;
   }
 
   dispose(): void {

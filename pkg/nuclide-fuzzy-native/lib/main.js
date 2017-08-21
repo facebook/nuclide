@@ -16,11 +16,13 @@ const logger = getLogger('nuclide-fuzzy-native');
 // Use the pre-built, native module if available.
 // If not, use the fallback JS implementation.
 try {
+  // eslint-disable-next-line nuclide-internal/no-commonjs
   module.exports = require('nuclide-prebuilt-libs/fuzzy-native');
 } catch (e) {
   logger.error(
     'Failed to load native fuzzy matching. Falling back to JS implementation',
     e,
   );
+  // eslint-disable-next-line nuclide-internal/no-commonjs
   module.exports = require('./FallbackMatcher');
 }

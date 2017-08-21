@@ -21,13 +21,18 @@ import {ConfigCache} from 'nuclide-commons/ConfigCache';
 
 const FLOW_BIN_PATH = 'node_modules/.bin/flow';
 
+type FlowVersionInfo = {
+  pathToFlow: string,
+  flowVersion: string,
+};
+
 // All the information needed to execute Flow in a given root. The path to the Flow binary we want
 // to use may vary per root -- for now, only if we are using the version of Flow from `flow-bin`.
 // The options also vary, right now only because they set the cwd to the current Flow root.
 export type FlowExecInfo = {
   pathToFlow: string,
-  execOptions: Object,
   flowVersion: string,
+  execOptions: Object,
 };
 
 export class FlowExecInfoContainer {
@@ -45,9 +50,10 @@ export class FlowExecInfoContainer {
 
   _pathToFlow: string;
   _canUseFlowBin: boolean;
+  _versionInfo: ?FlowVersionInfo;
 
-  constructor() {
-    this._flowConfigDirCache = new ConfigCache('.flowconfig');
+  constructor(versionInfo: ?FlowVersionInfo) {
+    this._flowConfigDirCache = new ConfigCache(['.flowconfig']);
 
     this._flowExecInfoCache = LRU({
       max: 10,
@@ -55,6 +61,7 @@ export class FlowExecInfoContainer {
     });
 
     this._disposables = new CompositeDisposable();
+    this._versionInfo = versionInfo;
 
     this._observeSettings();
   }
@@ -80,17 +87,22 @@ export class FlowExecInfoContainer {
   }
 
   async _computeFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
-    const flowPath = await this._getPathToFlow(root);
-    if (flowPath == null) {
-      return null;
+    let versionInfo;
+    if (this._versionInfo == null) {
+      const flowPath = await this._getPathToFlow(root);
+      if (flowPath == null) {
+        return null;
+      }
+      versionInfo = await getFlowVersionInformation(flowPath, root);
+      if (versionInfo == null) {
+        return null;
+      }
+    } else {
+      versionInfo = this._versionInfo;
     }
-    const versionInfo = await getFlowVersionInformation(flowPath, root);
-    if (versionInfo == null) {
-      return null;
-    }
+
     return {
-      pathToFlow: versionInfo.pathToFlow,
-      flowVersion: versionInfo.flowVersion,
+      ...versionInfo,
       execOptions: getFlowExecOptions(root),
     };
   }
@@ -190,7 +202,9 @@ async function canFindFlow(flowPath: string): Promise<boolean> {
     // "flow.exe", format the path correctly to pass to `where <flow>`
     const dirPath = nuclideUri.dirname(flowPath);
     if (dirPath != null && dirPath !== '' && dirPath !== '.') {
-      const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(flowPath)}`;
+      const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(
+        flowPath,
+      )}`;
       return (await which(whichPath)) != null;
     }
   }

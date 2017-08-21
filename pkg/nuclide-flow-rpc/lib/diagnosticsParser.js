@@ -9,7 +9,11 @@
  * @format
  */
 
-import type {FileDiagnosticMessage, Trace, Fix} from 'atom-ide-ui';
+import type {
+  DiagnosticFix,
+  DiagnosticTrace,
+  FileDiagnosticMessage,
+} from 'atom-ide-ui';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import type {
@@ -33,7 +37,9 @@ export function flowStatusOutputToDiagnostics(
 }
 
 // Exported for testing
-export function diagnosticToFix(diagnostic: FileDiagnosticMessage): ?Fix {
+export function diagnosticToFix(
+  diagnostic: FileDiagnosticMessage,
+): ?DiagnosticFix {
   for (const extractionFunction of fixExtractionFunctions) {
     const fix = extractionFunction(diagnostic);
     if (fix != null) {
@@ -45,10 +51,12 @@ export function diagnosticToFix(diagnostic: FileDiagnosticMessage): ?Fix {
 }
 
 const fixExtractionFunctions: Array<
-  (diagnostic: FileDiagnosticMessage) => ?Fix,
+  (diagnostic: FileDiagnosticMessage) => ?DiagnosticFix,
 > = [unusedSuppressionFix, namedImportTypo];
 
-function unusedSuppressionFix(diagnostic: FileDiagnosticMessage): ?Fix {
+function unusedSuppressionFix(
+  diagnostic: FileDiagnosticMessage,
+): ?DiagnosticFix {
   // Automatically remove unused suppressions:
   if (
     diagnostic.trace != null &&
@@ -68,7 +76,7 @@ function unusedSuppressionFix(diagnostic: FileDiagnosticMessage): ?Fix {
   return null;
 }
 
-function namedImportTypo(diagnostic: FileDiagnosticMessage): ?Fix {
+function namedImportTypo(diagnostic: FileDiagnosticMessage): ?DiagnosticFix {
   const trace = diagnostic.trace;
   const text = diagnostic.text;
   if (trace == null || trace.length !== 1 || text == null) {
@@ -129,7 +137,9 @@ function extractPath(
 }
 
 // A trace object is very similar to an error object.
-function flowMessageToTrace(message: FlowStatusErrorMessageComponent): Trace {
+function flowMessageToTrace(
+  message: FlowStatusErrorMessageComponent,
+): DiagnosticTrace {
   return {
     type: 'Trace',
     text: message.descr,
@@ -167,11 +177,13 @@ function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
   return diagnosticMessage;
 }
 
-function extractTraces(flowStatusError: FlowStatusError): Array<Trace> | void {
+function extractTraces(
+  flowStatusError: FlowStatusError,
+): Array<DiagnosticTrace> | void {
   const flowMessageComponents: Array<FlowStatusErrorMessageComponent> =
     flowStatusError.message;
 
-  const trace: Array<Trace> = [];
+  const trace: Array<DiagnosticTrace> = [];
   // When the message is an array with multiple elements, the second element
   // onwards comprise the trace for the error.
   if (flowMessageComponents.length > 1) {

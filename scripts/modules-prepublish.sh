@@ -18,3 +18,4 @@ find "$CALLING_DIR" \
 
 echo "Module prepublish: compiling source (2 / 2) ..."
 "$OWN_DIR/release-transpile.js" --overwrite "$CALLING_DIR"
+rm -f DEVELOPMENT

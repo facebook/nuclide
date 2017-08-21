@@ -9,16 +9,21 @@
  * @format
  */
 
-export type AndroidJavaProcess = {
+export type SimpleProcess = {
   user: string,
   pid: string,
   name: string,
 };
 
+export type AndroidJavaProcess = SimpleProcess;
+
 export type DebugBridgeType = 'adb' | 'sdb';
+
+export type DeviceId = {name: string, port: number};
 
 export type DeviceDescription = {|
   name: string,
+  port: number,
   architecture: string,
   apiVersion: string,
   model: string,
@@ -33,4 +38,10 @@ export type Process = {
   isJava: boolean,
 };
 
-export type DBPathsInfo = {active: ?string, all: Array<string>};
+export type DebugBridgeConfig = {path: string, ports: Array<number>};
+
+export type DebugBridgeFullConfig = {
+  active: ?string,
+  all: Array<string>,
+  ports: Array<number>,
+};

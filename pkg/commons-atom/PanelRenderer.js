@@ -35,9 +35,8 @@ export default class PanelRenderer {
   render(props: {visible: boolean}): void {
     if (props.visible) {
       if (this._panel == null) {
-        const item = this._item == null
-          ? (this._item = this._createItem())
-          : this._item;
+        const item =
+          this._item == null ? (this._item = this._createItem()) : this._item;
         this._panel = addPanel(this._location, {
           item,
           priority: this._priority == null ? undefined : this._priority,

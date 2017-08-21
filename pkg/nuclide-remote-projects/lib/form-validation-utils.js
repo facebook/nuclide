@@ -123,11 +123,12 @@ export function validateFormInputs(
     params: profileParams,
     saveable: true,
   };
-  const validationResult = warningMessage.length > 0
-    ? {
-        validatedProfile,
-        warningMessage,
-      }
-    : {validatedProfile};
+  const validationResult =
+    warningMessage.length > 0
+      ? {
+          validatedProfile,
+          warningMessage,
+        }
+      : {validatedProfile};
   return validationResult;
 }

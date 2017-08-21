@@ -34,6 +34,7 @@ export type FileTreeNodeOptions = {
   subscription?: ?IDisposable,
   highlightedText?: string,
   matchesFilter?: boolean,
+  isPendingLoad?: boolean,
 };
 
 type DefaultFileTreeNodeOptions = {
@@ -50,6 +51,7 @@ type DefaultFileTreeNodeOptions = {
   subscription: ?IDisposable,
   highlightedText: string,
   matchesFilter: boolean,
+  isPendingLoad: boolean,
 };
 
 const DEFAULT_OPTIONS: DefaultFileTreeNodeOptions = {
@@ -66,6 +68,7 @@ const DEFAULT_OPTIONS: DefaultFileTreeNodeOptions = {
   subscription: null,
   highlightedText: '',
   matchesFilter: true,
+  isPendingLoad: false,
 };
 
 export type ImmutableNodeSettableFields = {
@@ -81,6 +84,7 @@ export type ImmutableNodeSettableFields = {
   subscription?: ?IDisposable,
   highlightedText?: string,
   matchesFilter?: boolean,
+  isPendingLoad?: boolean,
 };
 
 /**
@@ -154,6 +158,7 @@ export class FileTreeNode {
   subscription: ?IDisposable;
   highlightedText: string;
   matchesFilter: boolean;
+  isPendingLoad: boolean;
 
   // Derived
   isRoot: boolean;
@@ -174,8 +179,9 @@ export class FileTreeNode {
   containsDragHover: boolean;
   containsTrackedNode: boolean;
   containsFilterMatches: boolean;
-  shownChildrenBelow: number;
+  shownChildrenCount: number;
   containsHidden: boolean;
+  childrenAreLoading: boolean;
 
   /**
   * The children property is an OrderedMap instance keyed by child's name property.
@@ -221,8 +227,9 @@ export class FileTreeNode {
     let containsDragHover = this.isDragHovered;
     let containsTrackedNode = this.isTracked;
     let containsFilterMatches = this.matchesFilter;
-    let shownChildrenBelow = this.shouldBeShown ? 1 : 0;
     let containsHidden = !this.shouldBeShown;
+    let childrenAreLoading = this.childrenAreLoading || this.isLoading;
+    let childCountIfNotPendingLoad = 0;
 
     let prevChild = null;
     this.children.forEach(c => {
@@ -251,11 +258,15 @@ export class FileTreeNode {
       }
 
       if (this.shouldBeShown && this.isExpanded) {
-        shownChildrenBelow += c.shownChildrenBelow;
+        childCountIfNotPendingLoad += c.shownChildrenCount;
       }
 
       if (!containsHidden && c.containsHidden) {
         containsHidden = true;
+      }
+
+      if (!childrenAreLoading && c.childrenAreLoading) {
+        childrenAreLoading = true;
       }
     });
     if (prevChild != null) {
@@ -266,8 +277,15 @@ export class FileTreeNode {
     this.containsDragHover = containsDragHover;
     this.containsTrackedNode = containsTrackedNode;
     this.containsFilterMatches = containsFilterMatches;
-    this.shownChildrenBelow = shownChildrenBelow;
     this.containsHidden = containsHidden;
+    this.childrenAreLoading = childrenAreLoading;
+
+    this.isPendingLoad = this.isPendingLoad && childrenAreLoading;
+    let shownChildrenCount = this.shouldBeShown ? 1 : 0;
+    if (!this.isPendingLoad) {
+      shownChildrenCount += childCountIfNotPendingLoad;
+    }
+    this.shownChildrenCount = shownChildrenCount;
   }
 
   /**
@@ -285,26 +303,23 @@ export class FileTreeNode {
     this.isExpanded = o.isExpanded !== undefined ? o.isExpanded : D.isExpanded;
     this.isSelected = o.isSelected !== undefined ? o.isSelected : D.isSelected;
     this.isFocused = o.isFocused !== undefined ? o.isFocused : D.isFocused;
-    this.isDragHovered = o.isDragHovered !== undefined
-      ? o.isDragHovered
-      : D.isDragHovered;
+    this.isDragHovered =
+      o.isDragHovered !== undefined ? o.isDragHovered : D.isDragHovered;
     this.isLoading = o.isLoading !== undefined ? o.isLoading : D.isLoading;
     this.wasFetched = o.wasFetched !== undefined ? o.wasFetched : D.wasFetched;
     this.isTracked = o.isTracked !== undefined ? o.isTracked : D.isTracked;
     this.isCwd = o.isCwd !== undefined ? o.isCwd : D.isCwd;
     this.children = o.children !== undefined ? o.children : D.children;
-    this.connectionTitle = o.connectionTitle !== undefined
-      ? o.connectionTitle
-      : D.connectionTitle;
-    this.subscription = o.subscription !== undefined
-      ? o.subscription
-      : D.subscription;
-    this.highlightedText = o.highlightedText !== undefined
-      ? o.highlightedText
-      : D.highlightedText;
-    this.matchesFilter = o.matchesFilter !== undefined
-      ? o.matchesFilter
-      : D.matchesFilter;
+    this.connectionTitle =
+      o.connectionTitle !== undefined ? o.connectionTitle : D.connectionTitle;
+    this.subscription =
+      o.subscription !== undefined ? o.subscription : D.subscription;
+    this.highlightedText =
+      o.highlightedText !== undefined ? o.highlightedText : D.highlightedText;
+    this.matchesFilter =
+      o.matchesFilter !== undefined ? o.matchesFilter : D.matchesFilter;
+    this.isPendingLoad =
+      o.isPendingLoad !== undefined ? o.isPendingLoad : D.isPendingLoad;
   }
 
   /**
@@ -349,6 +364,7 @@ export class FileTreeNode {
       subscription: this.subscription,
       highlightedText: this.highlightedText,
       matchesFilter: this.matchesFilter,
+      isPendingLoad: this.isPendingLoad,
     };
   }
 
@@ -506,7 +522,7 @@ export class FileTreeNode {
       return null;
     }
 
-    if (this.shownChildrenBelow > 1) {
+    if (this.shownChildrenCount > 1) {
       return this.children.find(c => c.shouldBeShown);
     }
 
@@ -608,7 +624,7 @@ export class FileTreeNode {
     let index = this.shouldBeShown ? 1 : 0;
     let prev = this.findPrevShownSibling();
     while (prev != null) {
-      index += prev.shownChildrenBelow;
+      index += prev.shownChildrenCount;
       prev = prev.findPrevShownSibling();
     }
     return (
@@ -676,6 +692,13 @@ export class FileTreeNode {
       props.children !== undefined &&
       props.children !== this.children &&
       !Immutable.is(this.children, props.children)
+    ) {
+      return false;
+    }
+
+    if (
+      props.isPendingLoad !== undefined &&
+      props.isPendingLoad !== this.isPendingLoad
     ) {
       return false;
     }

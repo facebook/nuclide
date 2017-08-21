@@ -51,6 +51,7 @@ export class CustomPaneItem extends HTMLElement {
   }
 
   getTitle(): string {
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._title);
     return this._title;
   }

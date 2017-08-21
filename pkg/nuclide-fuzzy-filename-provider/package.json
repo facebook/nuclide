@@ -12,7 +12,12 @@
   "consumedServices": {
     "atom-ide-busy-signal": {
       "versions": {
-        "0.2.0": "consumeBusySignal"
+        "0.1.0": "consumeBusySignal"
+      }
+    },
+    "nuclide-fuzzy-filename-fallback": {
+      "versions": {
+        "0.0.0": "consumeFallbackProvider"
       }
     }
   },

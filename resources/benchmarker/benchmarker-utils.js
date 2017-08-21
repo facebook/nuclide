@@ -77,6 +77,7 @@ function green(str: string): string {
   return `\x1b[92m${str}\x1b[0m`;
 }
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   timedAsync,
   timedSync,

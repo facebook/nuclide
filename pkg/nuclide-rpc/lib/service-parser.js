@@ -125,6 +125,7 @@ function getFileParser(fileName: string, source: ?string): FileParser {
     return parser;
   }
   parser = new FileParser(fileName);
+  // flowlint-next-line sketchy-null-string:off
   parser.parse(source || fs.readFileSync(fileName, 'utf8'));
   fileParsers.set(fileName, parser);
   return parser;
@@ -903,7 +904,8 @@ class FileParser {
         return type.name;
       case 'QualifiedTypeIdentifier':
         invariant(type.id.type === 'Identifier');
-        return `${this._parseTypeName(serviceParser, type.qualification)}.${type.id.name}`;
+        return `${this._parseTypeName(serviceParser, type.qualification)}.${type
+          .id.name}`;
       default:
         throw this._error(type, `Expected named type. Found ${type.type}`);
     }

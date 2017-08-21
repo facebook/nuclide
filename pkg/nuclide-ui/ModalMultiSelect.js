@@ -60,12 +60,6 @@ export class ModalMultiSelect extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._confirmValues = this._confirmValues.bind(this);
-    (this: any)._dismissModal = this._dismissModal.bind(this);
-    (this: any)._selectAll = this._selectAll.bind(this);
-    (this: any)._selectNone = this._selectNone.bind(this);
-    (this: any)._resetSelection = this._resetSelection.bind(this);
-    (this: any)._showModal = this._showModal.bind(this);
     this.state = {
       activeValues: props.value,
       showModal: false,
@@ -92,36 +86,36 @@ export class ModalMultiSelect extends React.Component {
     );
   }
 
-  _selectAll(): void {
+  _selectAll = (): void => {
     const allValues = this.props.options.map(option => option.value);
     this.setState({activeValues: allValues});
-  }
+  };
 
-  _selectNone(): void {
+  _selectNone = (): void => {
     this.setState({activeValues: []});
-  }
+  };
 
-  _resetSelection(): void {
+  _resetSelection = (): void => {
     this.setState({activeValues: this.props.value});
-  }
+  };
 
-  _showModal(): void {
+  _showModal = (): void => {
     this.setState({
       showModal: true,
       // When you show the modal, the initial selection should match the actually selected values.
       activeValues: this.props.value,
     });
-  }
+  };
 
-  _dismissModal(): void {
+  _dismissModal = (): void => {
     this.setState({showModal: false});
-  }
+  };
 
-  _confirmValues(): void {
+  _confirmValues = (): void => {
     // TODO (matthewwithanm): Use ctrl-enter to confirm
     this._dismissModal();
     this.props.onChange(this.state.activeValues);
-  }
+  };
 
   _renderModal(): ?React.Element<any> {
     if (!this.state.showModal) {
@@ -144,9 +138,7 @@ export class ModalMultiSelect extends React.Component {
             <Button onClick={this._resetSelection}>Reset</Button>
           </ButtonGroup>
           <ButtonGroup>
-            <Button onClick={this._dismissModal}>
-              Cancel
-            </Button>
+            <Button onClick={this._dismissModal}>Cancel</Button>
             <Button
               buttonType={ButtonTypes.PRIMARY}
               onClick={this._confirmValues}>

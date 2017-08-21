@@ -9,18 +9,18 @@
  * @format
  */
 
-import invariant from 'assert';
-
-function getElement(): HTMLElement {
+function getElement(): ?HTMLElement {
   const element = atom.views
     .getView(atom.workspace)
-    .querySelector('.nuclide-busy-signal-status-bar');
-  invariant(element != null);
+    .querySelector('.atom-ide-busy-signal-status-bar');
   return element;
 }
 
 export default {
   isBusy(): boolean {
-    return getElement().classList.contains('loading-spinner-tiny');
+    const element = getElement();
+    return (
+      element != null && element.classList.contains('loading-spinner-tiny')
+    );
   },
 };

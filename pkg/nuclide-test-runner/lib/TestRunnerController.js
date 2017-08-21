@@ -51,15 +51,6 @@ export class TestRunnerController {
     this._root = document.createElement('div');
     this._root.className = 'nuclide-test-runner-root';
 
-    // Bind Functions for use as callbacks;
-    // TODO: Replace with property initializers when supported by Flow;
-    (this: any).clearOutput = this.clearOutput.bind(this);
-    (this: any).stopTests = this.stopTests.bind(this);
-    (this: any)._handleClickRun = this._handleClickRun.bind(this);
-    (this: any)._onDebuggerCheckboxChanged = this._onDebuggerCheckboxChanged.bind(
-      this,
-    );
-
     // TODO: Use the ReadOnlyTextBuffer class from nuclide-atom-text-editor when it is exported.
     this._buffer = new TextBuffer();
     // Make `delete` a no-op to effectively create a read-only buffer.
@@ -72,14 +63,14 @@ export class TestRunnerController {
     this._renderPanel();
   }
 
-  clearOutput() {
+  clearOutput = () => {
     this._buffer.setText('');
     this._path = undefined;
     this._run = undefined;
     this._stopListening();
     this._testSuiteModel = undefined;
     this._renderPanel();
-  }
+  };
 
   destroy() {
     this._stopListening();
@@ -95,17 +86,16 @@ export class TestRunnerController {
    */
   async runTests(path?: string): Promise<void> {
     this._runningTest = true;
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-test-runner:toggle-panel',
-      {visible: true},
-    );
+
+    // eslint-disable-next-line nuclide-internal/atom-apis
+    atom.workspace.open(WORKSPACE_VIEW_URI);
 
     // Get selected test runner when Flow knows `this._testRunnerPanel` is defined.
     const selectedTestRunner = this._testRunnerPanel.getSelectedTestRunner();
     if (!selectedTestRunner) {
       logger.warn(
-        `No test runner selected. Active test runners: ${this._testRunners.size}`,
+        `No test runner selected. Active test runners: ${this._testRunners
+          .size}`,
       );
       return;
     }
@@ -127,6 +117,7 @@ export class TestRunnerController {
       testPath = activeTextEditor.getPath();
     }
 
+    // flowlint-next-line sketchy-null-string:off
     if (!testPath) {
       logger.warn('Attempted to run tests on an editor with no path.');
       return;
@@ -185,7 +176,7 @@ export class TestRunnerController {
     return debuggerService.isInDebuggingMode(debuggerProviderName);
   }
 
-  stopTests(): void {
+  stopTests = (): void => {
     // Resume the debugger if needed.
     atom.commands.dispatch(
       atom.views.getView(atom.workspace),
@@ -194,7 +185,7 @@ export class TestRunnerController {
     this._stopListening();
     // Respond in the UI immediately and assume the process is properly killed.
     this._setExecutionState(TestRunnerPanel.ExecutionState.STOPPED);
-  }
+  };
 
   /**
    * Adds an end-of-line character to `text` and appends the resulting string to this controller's
@@ -209,16 +200,16 @@ export class TestRunnerController {
     this._buffer.append(`${text}${os.EOL}`, {undo: 'skip'});
   }
 
-  _onDebuggerCheckboxChanged(isChecked: boolean): void {
+  _onDebuggerCheckboxChanged = (isChecked: boolean): void => {
     this._attachDebuggerBeforeRunning = isChecked;
     this._renderPanel();
-  }
+  };
 
-  _handleClickRun(event: SyntheticMouseEvent): void {
+  _handleClickRun = (event: SyntheticMouseEvent): void => {
     // Don't pass a reference to `runTests` directly because the callback receives a mouse event as
     // its argument. `runTests` needs to be called with no arguments.
     this.runTests();
-  }
+  };
 
   _runTestRunnerServiceForPath(
     testRun: Observable<Message>,

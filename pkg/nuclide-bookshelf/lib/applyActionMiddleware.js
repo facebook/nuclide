@@ -78,9 +78,8 @@ function watchProjectRepository(
       );
 
       const activeBookmark = bookmarks.filter(bookmark => bookmark.active)[0];
-      const activeShortHead = activeBookmark == null
-        ? EMPTY_SHORTHEAD
-        : activeBookmark.bookmark;
+      const activeShortHead =
+        activeBookmark == null ? EMPTY_SHORTHEAD : activeBookmark.bookmark;
 
       return {
         payload: {
@@ -122,9 +121,8 @@ function restorePaneItemState(
     repositoryState.shortHeadsToFileList.get(shortHead) || [],
   );
 
-  const oldOpenEditors = getRepoPathToEditors().get(
-    repository.getWorkingDirectory(),
-  ) || [];
+  const oldOpenEditors =
+    getRepoPathToEditors().get(repository.getWorkingDirectory()) || [];
   const oldOpenUris = oldOpenEditors.map(
     textEditor => textEditor.getPath() || '',
   );

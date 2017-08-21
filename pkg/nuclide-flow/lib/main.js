@@ -17,10 +17,8 @@ import type {
   FlowSettings,
 } from '../../nuclide-flow-rpc';
 import type {ServerConnection} from '../../nuclide-remote-connection';
-import type {
-  AtomLanguageServiceConfig,
-} from '../../nuclide-language-service/lib/AtomLanguageService';
-import type {BusySignalService} from '../../nuclide-busy-signal';
+import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
+import type {BusySignalService} from 'atom-ide-ui';
 
 import invariant from 'assert';
 import {Observable} from 'rxjs';
@@ -134,10 +132,10 @@ export function serverStatusUpdatesToBusyMessages(
               const readablePath = nuclideUri.nuclideUriToDisplayString(
                 nextStatus.pathToRoot,
               );
-              const readableStatus = nextStatus.status ===
-                ('init': ServerStatusType)
-                ? 'initializing'
-                : 'busy';
+              const readableStatus =
+                nextStatus.status === ('init': ServerStatusType)
+                  ? 'initializing'
+                  : 'busy';
               // Use an observable to encapsulate clearing the message.
               // The switchMap above will ensure that messages get cleared.
               return Observable.create(observer => {
@@ -163,17 +161,11 @@ export function consumeBusySignal(service: BusySignalService): IDisposable {
       return ls.getServerStatusUpdates().refCount();
     });
 
-  if (disposables != null) {
-    disposables.add(service);
-  }
   const subscription = serverStatusUpdatesToBusyMessages(
     serverStatusUpdates,
     service,
   );
   return new UniversalDisposable(() => {
-    if (disposables != null) {
-      disposables.remove(service);
-    }
     subscription.unsubscribe();
   });
 }
@@ -208,9 +200,10 @@ async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
   return {
     name: 'Flow',
     grammars: JS_GRAMMARS,
+    // flowlint-next-line sketchy-null-mixed:off
     highlight: enableHighlight
       ? {
-          version: '0.0.0',
+          version: '0.1.0',
           priority: 1,
           analyticsEventName: 'flow.codehighlight',
         }
@@ -230,7 +223,6 @@ async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
       version: '0.1.0',
       priority: 20,
       definitionEventName: 'flow.get-definition',
-      definitionByIdEventName: 'flow.get-definition-by-id',
     },
     autocomplete: {
       version: '2.0.0',
@@ -246,7 +238,8 @@ async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
           filterResultsByPrefix(request.prefix, results),
         shouldFilter,
       },
-      onDidInsertSuggestionAnalyticsEventName: 'nuclide-flow.autocomplete-chosen',
+      onDidInsertSuggestionAnalyticsEventName:
+        'nuclide-flow.autocomplete-chosen',
     },
     diagnostics: (await shouldUsePushDiagnostics())
       ? {

@@ -31,6 +31,7 @@ const LOGO = (
 );
 /* eslint-enable max-len */
 
-export default (props: {className?: string}): React.Element<any> => (
-  <div {...props}>{LOGO}</div>
-);
+export default (props: {className?: string}): React.Element<any> =>
+  <div {...props}>
+    {LOGO}
+  </div>;

@@ -41,7 +41,7 @@
       "whitelistedTags": {
         "title": "Tags to include",
         "description": "Messages that don't have tags that match this pattern will be ignored.",
-        "default": "^(core\\.react|tid:com\\.facebook\\.react\\.JavaScript)$",
+        "default": "^(core\\.react|tid:com\\.facebook\\.react\\.JavaScript|com.apple.console)$",
         "type": "string"
       }
     }

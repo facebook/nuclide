@@ -85,11 +85,6 @@ export class Dropdown extends React.Component {
     title: '',
   };
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleDropdownClick = this._handleDropdownClick.bind(this);
-  }
-
   render(): React.Element<any> {
     const selectedOption = this._findSelectedOption(this.props.options);
 
@@ -135,11 +130,11 @@ export class Dropdown extends React.Component {
     return text;
   }
 
-  _handleDropdownClick(event: SyntheticMouseEvent): void {
+  _handleDropdownClick = (event: SyntheticMouseEvent): void => {
     const currentWindow = remote.getCurrentWindow();
     const menu = this._menuFromOptions(this.props.options);
     menu.popup(currentWindow, event.clientX, event.clientY);
-  }
+  };
 
   _menuFromOptions(options: Array<Option>): remote.Menu {
     const menu = new remote.Menu();
@@ -225,11 +220,12 @@ export function DropdownButton(props: DropdownButtonProps): React.Element<any> {
     'nuclide-ui-dropdown-flat': props.isFlat === true,
   });
 
-  const label = props.children == null
-    ? null
-    : <span className="nuclide-dropdown-label-text-wrapper">
-        {props.children}
-      </span>;
+  const label =
+    props.children == null
+      ? null
+      : <span className="nuclide-dropdown-label-text-wrapper">
+          {props.children}
+        </span>;
 
   return (
     <ButtonComponent

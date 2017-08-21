@@ -14,7 +14,7 @@ import type {LegacyProcessMessage} from 'nuclide-commons/process';
 
 import {Subject} from 'rxjs';
 
-import {dispatchConsoleToggle, pipeProcessMessagesToConsole} from './main';
+import {changeConsoleVisibility, pipeProcessMessagesToConsole} from './main';
 
 const SHOW_CONSOLE_ON_PROCESS_EVENTS = ['stdout', 'stderr', 'error'];
 
@@ -48,7 +48,7 @@ export default class ConsoleClient {
       !this._consoleShown &&
       SHOW_CONSOLE_ON_PROCESS_EVENTS.includes(processMessage.kind)
     ) {
-      dispatchConsoleToggle(true);
+      changeConsoleVisibility(true);
       this._consoleShown = true;
     }
   }

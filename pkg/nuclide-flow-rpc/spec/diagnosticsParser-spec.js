@@ -256,7 +256,8 @@ describe('diagnosticToFix', () => {
       trace: [
         {
           type: 'Trace',
-          text: 'This module has no named export called `FooBrBaaaaz`. Did you mean `foobar`?',
+          text:
+            'This module has no named export called `FooBrBaaaaz`. Did you mean `foobar`?',
           rangeInFile: null,
         },
       ],

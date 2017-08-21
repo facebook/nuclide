@@ -11,7 +11,8 @@
 
 import type {
   FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
+  FindReferencesProvider as FindReferencesProviderType,
+} from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -20,7 +21,7 @@ import loadingNotification from '../../commons-atom/loading-notification';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type FindReferencesConfig = {|
-  version: '0.0.0',
+  version: '0.1.0',
   analyticsEventName: string,
 |};
 
@@ -49,7 +50,7 @@ export class FindReferencesProvider<T: LanguageService> {
     connectionToLanguageService: ConnectionCache<T>,
   ): IDisposable {
     return atom.packages.serviceHub.provide(
-      'nuclide-find-references.provider',
+      'find-references',
       config.version,
       new FindReferencesProvider(
         name,
@@ -87,3 +88,7 @@ export class FindReferencesProvider<T: LanguageService> {
     });
   }
 }
+
+(((null: any): FindReferencesProvider<
+  LanguageService,
+>): FindReferencesProviderType);

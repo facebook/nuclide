@@ -24,6 +24,7 @@ import {Emitter} from 'atom';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
 import {DebuggerStore} from './DebuggerStore';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 export type LineToBreakpointMap = Map<number, FileLineBreakpoint>;
 
@@ -103,6 +104,13 @@ export default class BreakpointStore {
       case ActionTypes.DELETE_BREAKPOINT_IPC:
         this._deleteBreakpoint(payload.data.path, payload.data.line, false);
         break;
+      case ActionTypes.UPDATE_BREAKPOINT_HITCOUNT:
+        this._updateBreakpointHitcount(
+          payload.data.path,
+          payload.data.line,
+          payload.data.hitCount,
+        );
+        break;
       case ActionTypes.BIND_BREAKPOINT_IPC:
         this._bindBreakpoint(
           payload.data.path,
@@ -151,6 +159,19 @@ export default class BreakpointStore {
         breakpoint,
       });
     }
+  }
+
+  _updateBreakpointHitcount(
+    path: string,
+    line: number,
+    hitCount: number,
+  ): void {
+    const breakpoint = this.getBreakpointAtLine(path, line);
+    if (breakpoint == null) {
+      return;
+    }
+    breakpoint.hitCount = hitCount;
+    this._updateBreakpoint(breakpoint);
   }
 
   _updateBreakpointEnabled(breakpointId: number, enabled: boolean): void {
@@ -275,12 +296,35 @@ export default class BreakpointStore {
         this._updateBreakpoint(updatedBp);
       }
     }
+
+    const debuggerStore = this.getDebuggerStore();
+    if (debuggerStore != null) {
+      const currentInfo = debuggerStore.getDebugProcessInfo();
+      if (
+        condition !== '' &&
+        currentInfo != null &&
+        !currentInfo.getDebuggerCapabilities().conditionalBreakpoints
+      ) {
+        // If the current debugger does not support conditional breakpoints, and the bp that
+        // was just bound has a condition on it, warn the user that the condition isn't going
+        // to be honored.
+        atom.notifications.addWarning(
+          'The current debugger does not support conditional breakpoints. The breakpoint at this location will hit without ' +
+            'evaluating the specified condition expression:\n' +
+            `${nuclideUri.basename(path)}:${line}`,
+        );
+        const updatedBp = this.getBreakpointAtLine(path, line);
+        if (updatedBp != null) {
+          this._updateBreakpointCondition(updatedBp.id, '');
+        }
+      }
+    }
   }
 
   _handleDebuggerModeChange(newMode: DebuggerModeType): void {
     if (newMode === DebuggerMode.STOPPED) {
       // All breakpoints should be unresolved after stop debugging.
-      this._resetBreakpointUnresolved();
+      this._resetBreakpoints();
     } else {
       for (const breakpoint of this.getAllBreakpoints()) {
         if (!breakpoint.resolved) {
@@ -290,9 +334,11 @@ export default class BreakpointStore {
     }
   }
 
-  _resetBreakpointUnresolved(): void {
+  _resetBreakpoints(): void {
     for (const breakpoint of this.getAllBreakpoints()) {
       breakpoint.resolved = false;
+      breakpoint.hitCount = undefined;
+      this._emitter.emit(BREAKPOINT_NEED_UI_UPDATE, breakpoint.path);
     }
   }
 
@@ -350,6 +396,26 @@ export default class BreakpointStore {
 
   getDebuggerStore(): ?DebuggerStore {
     return this._debuggerStore;
+  }
+
+  breakpointSupportsConditions(breakpoint: FileLineBreakpoint): boolean {
+    // If currently debugging, return whether or not the current debugger supports this.
+    const debuggerStore = this.getDebuggerStore();
+    if (
+      debuggerStore != null &&
+      debuggerStore.getDebuggerMode() !== DebuggerMode.STOPPED
+    ) {
+      const currentDebugInfo = debuggerStore.getDebugProcessInfo();
+      if (currentDebugInfo != null) {
+        return currentDebugInfo.getDebuggerCapabilities()
+          .conditionalBreakpoints;
+      }
+    }
+
+    // If not currently debugging, return if any of the debuggers that support
+    // the file extension this bp is in support conditions.
+    // TODO: have providers register their file extensions and filter correctly here.
+    return true;
   }
 
   _deserializeBreakpoints(breakpoints: Array<SerializedBreakpoint>): void {

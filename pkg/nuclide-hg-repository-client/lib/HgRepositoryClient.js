@@ -18,8 +18,7 @@ import type {
   LineDiff,
   RevisionInfo,
   RevisionShowInfo,
-  MergeConflict,
-  MergeConflictsEnriched,
+  MergeConflicts,
   RevisionFileChanges,
   StatusCodeNumberValue,
   StatusCodeIdValue,
@@ -29,9 +28,11 @@ import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {LRUCache} from 'lru-cache';
 import type {ConnectableObservable} from 'rxjs';
 
+import {parseHgDiffUnifiedOutput} from '../../nuclide-hg-rpc/lib/hg-diff-output-parser';
 import {Emitter} from 'atom';
 import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 import RevisionsCache from './RevisionsCache';
+import {gitDiffContentAgainstFile} from './utils';
 import {
   StatusCodeIdToNumber,
   StatusCodeNumber,
@@ -39,10 +40,9 @@ import {
 import {BehaviorSubject, Observable} from 'rxjs';
 import LRU from 'lru-cache';
 import featureConfig from 'nuclide-commons-atom/feature-config';
-import {
-  observeBufferOpen,
-  observeBufferCloseOrRename,
-} from '../../commons-atom/text-buffer';
+import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
+import {observeBufferCloseOrRename} from '../../commons-atom/text-buffer';
 import {getLogger} from 'log4js';
 
 const STATUS_DEBOUNCE_DELAY_MS = 300;
@@ -123,7 +123,6 @@ import type {RemoteDirectory} from '../../nuclide-remote-connection';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import invariant from 'assert';
 import {mapTransform} from 'nuclide-commons/collection';
 
 export type HgStatusChanges = {
@@ -151,6 +150,8 @@ export class HgRepositoryClient {
   _revisionStatusCache: RevisionStatusCache;
   _revisionIdToFileChanges: LRUCache<string, RevisionFileChanges>;
   _fileContentsAtRevisionIds: LRUCache<string, Map<NuclideUri, string>>;
+  _fileContentsAtHead: LRUCache<NuclideUri, string>;
+  _currentHeadId: ?string;
 
   _bookmarks: BehaviorSubject<{
     isLoading: boolean,
@@ -178,6 +179,7 @@ export class HgRepositoryClient {
     );
     this._revisionIdToFileChanges = new LRU({max: 100});
     this._fileContentsAtRevisionIds = new LRU({max: 20});
+    this._fileContentsAtHead = new LRU({max: 30});
 
     this._emitter = new Emitter();
     this._subscriptions = new UniversalDisposable(this._emitter, this._service);
@@ -200,37 +202,53 @@ export class HgRepositoryClient {
           return Observable.empty();
         }
 
-        return observeBufferOpen()
-          .filter(buffer => {
+        return observableFromSubscribeFunction(
+          atom.workspace.observePaneItems.bind(atom.workspace),
+        ).flatMap(paneItem => {
+          const item = ((paneItem: any): Object);
+          return this._observePaneItemVisibility(item).switchMap(visible => {
+            if (!visible || !isValidTextEditor(item)) {
+              return Observable.empty();
+            }
+
+            const textEditor = (item: atom$TextEditor);
+            const buffer = textEditor.getBuffer();
             const filePath = buffer.getPath();
-            return (
-              filePath != null &&
-              filePath.length !== 0 &&
-              this.isPathRelevant(filePath)
-            );
-          })
-          .flatMap(buffer => {
-            const filePath = buffer.getPath();
-            invariant(
-              filePath,
-              'already filtered empty and non-relevant file paths',
-            );
-            return observableFromSubscribeFunction(
-              buffer.onDidSave.bind(buffer),
+            if (
+              filePath == null ||
+              filePath.length === 0 ||
+              !this.isPathRelevant(filePath)
+            ) {
+              return Observable.empty();
+            }
+            return Observable.combineLatest(
+              observableFromSubscribeFunction(
+                buffer.onDidSave.bind(buffer),
+              ).startWith(''),
+              this._hgUncommittedStatusChanges.statusChanges,
             )
+              .filter(([_, statusChanges]) => {
+                return (
+                  statusChanges.has(filePath) &&
+                  this.isStatusModified(statusChanges.get(filePath))
+                );
+              })
               .map(() => filePath)
-              .startWith(filePath)
               .takeUntil(
-                observeBufferCloseOrRename(buffer).do(() => {
+                Observable.merge(
+                  observeBufferCloseOrRename(buffer),
+                  this._observePaneItemVisibility(item).filter(v => !v),
+                ).do(() => {
                   // TODO(most): rewrite to be simpler and avoid side effects.
                   // Remove the file from the diff stats cache when the buffer is closed.
                   this._hgDiffCacheFilesToClear.add(filePath);
                 }),
               );
           });
+        });
       })
-      .subscribe(filePath => this._updateDiffInfo([filePath]));
-
+      .flatMap(filePath => this._updateDiffInfo([filePath]))
+      .subscribe();
     this._subscriptions.add(diffStatsSubscription);
 
     this._initializationPromise = this._service.waitForWatchmanSubscriptions();
@@ -315,9 +333,11 @@ export class HgRepositoryClient {
         this._bookmarks.next({isLoading: false, bookmarks}),
       ),
       conflictStateChanges.subscribe(this._conflictStateChanged.bind(this)),
-      shouldRevisionsUpdate.subscribe(() =>
-        this._revisionsCache.refreshRevisions(),
-      ),
+      shouldRevisionsUpdate.subscribe(() => {
+        this._revisionsCache.refreshRevisions();
+        this._fileContentsAtHead.reset();
+        this._hgDiffCache = new Map();
+      }),
     );
   }
 
@@ -427,6 +447,10 @@ export class HgRepositoryClient {
 
   observeStackStatusChanges(): HgStatusChanges {
     return this._hgStackStatusChanges;
+  }
+
+  _observePaneItemVisibility(item: Object): Observable<boolean> {
+    return observePaneItemVisibility(item);
   }
 
   onDidChangeStatuses(callback: () => mixed): IDisposable {
@@ -555,6 +579,7 @@ export class HgRepositoryClient {
   // TODO (jessicalin) Can we change the API to make this method return a Promise?
   // If not, might need to do a synchronous `hg status` query.
   isPathModified(filePath: ?NuclideUri): boolean {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return false;
     }
@@ -569,6 +594,7 @@ export class HgRepositoryClient {
   // TODO (jessicalin) Can we change the API to make this method return a Promise?
   // If not, might need to do a synchronous `hg status` query.
   isPathNew(filePath: ?NuclideUri): boolean {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return false;
     }
@@ -581,6 +607,7 @@ export class HgRepositoryClient {
   }
 
   isPathAdded(filePath: ?NuclideUri): boolean {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return false;
     }
@@ -593,6 +620,7 @@ export class HgRepositoryClient {
   }
 
   isPathUntracked(filePath: ?NuclideUri): boolean {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return false;
     }
@@ -608,6 +636,7 @@ export class HgRepositoryClient {
   // If not, this method lies a bit by using cached information.
   // TODO (jessicalin) Make this work for ignored directories.
   isPathIgnored(filePath: ?NuclideUri): boolean {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return false;
     }
@@ -655,6 +684,7 @@ export class HgRepositoryClient {
   }
 
   getCachedPathStatus(filePath: ?NuclideUri): StatusCodeNumberValue {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return StatusCodeNumber.CLEAN;
     }
@@ -710,6 +740,7 @@ export class HgRepositoryClient {
 
   getDiffStats(filePath: ?NuclideUri): {added: number, deleted: number} {
     const cleanStats = {added: 0, deleted: 0};
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return cleanStats;
     }
@@ -729,6 +760,7 @@ export class HgRepositoryClient {
   // types can be exported.
   // TODO (jessicalin) Make this method work with the passed-in `text`. t6391579
   getLineDiffs(filePath: ?NuclideUri, text: ?string): Array<LineDiff> {
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return [];
     }
@@ -750,9 +782,9 @@ export class HgRepositoryClient {
    *   A file path will not appear in the returned Map if it is not in the repo,
    *   if it has no changes, or if there is a pending `hg diff` call for it already.
    */
-  async _updateDiffInfo(
+  _updateDiffInfo(
     filePaths: Array<NuclideUri>,
-  ): Promise<?Map<NuclideUri, DiffInfo>> {
+  ): Observable<?Map<NuclideUri, DiffInfo>> {
     const pathsToFetch = filePaths.filter(aPath => {
       // Don't try to fetch information for this path if it's not in the repo.
       if (!this.isPathRelevant(aPath)) {
@@ -768,49 +800,99 @@ export class HgRepositoryClient {
     });
 
     if (pathsToFetch.length === 0) {
-      return new Map();
+      return Observable.of(new Map());
     }
 
-    // Call the HgService and update our cache with the results.
-    const pathsToDiffInfo = await this._service.fetchDiffInfo(pathsToFetch);
-    if (pathsToDiffInfo) {
-      for (const [filePath, diffInfo] of pathsToDiffInfo) {
-        this._hgDiffCache.set(filePath, diffInfo);
+    return this._getCurrentHeadId().switchMap(currentHeadId => {
+      if (currentHeadId == null) {
+        return Observable.of(new Map());
       }
-    }
 
-    // Remove files marked for deletion.
-    this._hgDiffCacheFilesToClear.forEach(fileToClear => {
-      this._hgDiffCache.delete(fileToClear);
+      return this._getFileDiffs(
+        pathsToFetch,
+        currentHeadId,
+      ).do(pathsToDiffInfo => {
+        if (pathsToDiffInfo) {
+          for (const [filePath, diffInfo] of pathsToDiffInfo) {
+            this._hgDiffCache.set(filePath, diffInfo);
+          }
+        }
+
+        // Remove files marked for deletion.
+        this._hgDiffCacheFilesToClear.forEach(fileToClear => {
+          this._hgDiffCache.delete(fileToClear);
+        });
+        this._hgDiffCacheFilesToClear.clear();
+
+        // The fetched files can now be updated again.
+        for (const pathToFetch of pathsToFetch) {
+          this._hgDiffCacheFilesUpdating.delete(pathToFetch);
+        }
+
+        // TODO (t9113913) Ideally, we could send more targeted events that better
+        // describe what change has occurred. Right now, GitRepository dictates either
+        // 'did-change-status' or 'did-change-statuses'.
+        this._emitter.emit('did-change-statuses');
+      });
     });
-    this._hgDiffCacheFilesToClear.clear();
+  }
 
-    // The fetched files can now be updated again.
-    for (const pathToFetch of pathsToFetch) {
-      this._hgDiffCacheFilesUpdating.delete(pathToFetch);
+  _getFileDiffs(
+    pathsToFetch: Array<NuclideUri>,
+    revision: string,
+  ): Observable<Map<NuclideUri, DiffInfo>> {
+    const fileContents = pathsToFetch.map(filePath => {
+      const cachedContent = this._fileContentsAtHead.get(filePath);
+      let contentObservable;
+      if (cachedContent == null) {
+        contentObservable = this._service
+          .fetchFileContentAtRevision(filePath, revision)
+          .refCount()
+          .map(contents => {
+            this._fileContentsAtHead.set(filePath, contents);
+            return contents;
+          });
+      } else {
+        contentObservable = Observable.of(cachedContent);
+      }
+      return contentObservable
+        .switchMap(content => {
+          return gitDiffContentAgainstFile(content, filePath);
+        })
+        .map(diff => ({
+          filePath,
+          diff,
+        }));
+    });
+    const diffs = Observable.merge(...fileContents)
+      .map(({filePath, diff}) => {
+        // This is to differentiate between diff delimiter and the source
+        // eslint-disable-next-line no-useless-escape
+        const toParse = diff.split('--- ');
+        const lineDiff = parseHgDiffUnifiedOutput(toParse[1]);
+        return [filePath, lineDiff];
+      })
+      .toArray()
+      .map(contents => new Map(contents));
+    return diffs;
+  }
+
+  _getCurrentHeadId(): Observable<string> {
+    if (this._currentHeadId != null) {
+      return Observable.of(this._currentHeadId);
     }
-
-    // TODO (t9113913) Ideally, we could send more targeted events that better
-    // describe what change has occurred. Right now, GitRepository dictates either
-    // 'did-change-status' or 'did-change-statuses'.
-    this._emitter.emit('did-change-statuses');
-    return pathsToDiffInfo;
+    return this._service
+      .getHeadId()
+      .refCount()
+      .do(headId => (this._currentHeadId = headId));
   }
 
   _updateInteractiveMode(isInteractiveMode: boolean) {
     this._emitter.emit('did-change-interactive-mode', isInteractiveMode);
   }
 
-  fetchMergeConflictsWithDetails(): Observable<?MergeConflictsEnriched> {
-    return this._service.fetchMergeConflictsWithDetails().refCount();
-  }
-
-  /*
-   * Setting fetchResolved will return all resolved and unresolved conflicts,
-   * the default would only fetch the current unresolved conflicts.
-   */
-  fetchMergeConflicts(fetchResolved?: boolean): Promise<Array<MergeConflict>> {
-    return this._service.fetchMergeConflicts(fetchResolved);
+  fetchMergeConflicts(): Observable<?MergeConflicts> {
+    return this._service.fetchMergeConflicts().refCount();
   }
 
   markConflictedFile(
@@ -1074,6 +1156,17 @@ export class HgRepositoryClient {
       );
   }
 
+  restack(): Observable<LegacyProcessMessage> {
+    return this._service.restack().refCount();
+  }
+
+  editCommitMessage(
+    revision: string,
+    message: string,
+  ): Observable<LegacyProcessMessage> {
+    return this._service.editCommitMessage(revision, message).refCount();
+  }
+
   splitRevision(): Observable<LegacyProcessMessage> {
     // TODO(T17463635)
     this._updateInteractiveMode(true);
@@ -1112,6 +1205,10 @@ export class HgRepositoryClient {
     return this._service.abortOperation(command).refCount();
   }
 
+  resolveAllFiles(): Observable<LegacyProcessMessage> {
+    return this._service.resolveAllFiles().refCount();
+  }
+
   rebase(
     destination: string,
     source?: string,
@@ -1129,6 +1226,7 @@ export class HgRepositoryClient {
     if (filePaths.length === 0) {
       this._hgDiffCache = new Map();
       this._hgStatusCache = new Map();
+      this._fileContentsAtHead.reset();
     } else {
       this._hgDiffCache = new Map(this._hgDiffCache);
       this._hgStatusCache = new Map(this._hgStatusCache);

@@ -1,0 +1,41 @@
+{
+  "name": "nuclide-code-search",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Grep-like service for searching code",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm",
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Code Search"
+      ]
+    },
+    "config": {
+      "tool": {
+        "title": "Code Search Tool",
+        "type": "string",
+        "default": "ag",
+        "enum": ["ag", "ack", "rg"],
+        "description": "The chosen tool must be available in your PATH"
+      },
+      "maxResults": {
+        "title": "Maximum number of results per project folder",
+        "type": "integer",
+        "default": 30,
+        "description": "A much higher number might affect the CPU usage and the rendering of Quick-Open"
+      }
+    }
+  },
+  "providedServices": {
+    "nuclide-quick-open-register-provider": {
+      "description": "Register ourselves with the quick-open package",
+      "versions": {
+        "0.0.0": "registerProvider"
+      }
+    }
+  }
+}

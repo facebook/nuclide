@@ -10,10 +10,7 @@
  */
 
 import type {TypeHintProvider} from './types';
-import type {
-  DatatipProvider,
-  DatatipService,
-} from '../../nuclide-datatip/lib/types';
+import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
 import type TypeHintManagerType from './TypeHintManager';
 
 import invariant from 'assert';
@@ -47,9 +44,8 @@ class Activation {
     invariant(this.typeHintManager);
     const datatip = this.typeHintManager.datatip.bind(this.typeHintManager);
     const datatipProvider: DatatipProvider = {
-      validForScope: () => true,
       providerName: PACKAGE_NAME,
-      inclusionPriority: 1,
+      priority: 1,
       datatip,
     };
     const disposable = service.addProvider(datatipProvider);

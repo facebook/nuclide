@@ -9,7 +9,6 @@
  * @format
  */
 
-import type {Viewable} from '../../../nuclide-workspace-views/lib/types';
 import type {
   AppState,
   ConsolePersistedState,
@@ -22,26 +21,23 @@ import type {
   Store,
 } from '../types';
 import type {CreatePasteFunction} from '../../../nuclide-paste-base';
+import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
-import {
-  viewableFromReactElement,
-} from '../../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactElement';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
+import {getFilterPattern} from 'nuclide-commons-ui/RegExpFilter';
 import getCurrentExecutorId from '../getCurrentExecutorId';
 import * as Actions from '../redux/Actions';
 import Console from './Console';
-import escapeStringRegexp from 'escape-string-regexp';
 import React from 'react';
 import {Observable, Subject} from 'rxjs';
-import invariant from 'assert';
 
 type Props = {
   store: Store,
   initialFilterText?: string,
   initialEnableRegExpFilter?: boolean,
   initialUnselectedSourceIds?: Array<string>,
-  createPasteFunction: ?CreatePasteFunction,
 };
 
 type State = {
@@ -49,6 +45,7 @@ type State = {
   // State shared between all Console instances
   //
 
+  createPasteFunction: ?CreatePasteFunction,
   currentExecutor: ?Executor,
   providers: Map<string, OutputProvider>,
   providerStatuses: Map<string, OutputProviderStatus>,
@@ -73,6 +70,8 @@ type BoundActionCreators = {
   clearRecords: () => void,
 };
 
+// Other Nuclide packages (which cannot import this) depend on this URI. If this
+// needs to be changed, grep for CONSOLE_VIEW_URI and ensure that the URIs match.
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/console';
 
 const INITIAL_RECORD_HEIGHT = 21;
@@ -83,20 +82,17 @@ export class ConsoleContainer extends React.Component {
   state: State;
 
   _actionCreators: BoundActionCreators;
+
+  // Associates Records with their display state (height, expansionStateId).
+  _displayableRecords: WeakMap<Record, DisplayableRecord>;
+
+  _nextRecordId: number;
   _statesSubscription: rxjs$ISubscription;
   _stateChanges: Subject<void>;
   _titleChanges: Observable<string>;
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleDisplayableRecordHeightChange = this._handleDisplayableRecordHeightChange.bind(
-      this,
-    );
-    (this: any)._selectSources = this._selectSources.bind(this);
-    (this: any)._toggleRegExpFilter = this._toggleRegExpFilter.bind(this);
-    (this: any)._updateFilterText = this._updateFilterText.bind(this);
-    (this: any)._resetAllFilters = this._resetAllFilters.bind(this);
-    (this: any)._createPaste = this._createPaste.bind(this);
     const {
       initialFilterText,
       initialEnableRegExpFilter,
@@ -104,6 +100,7 @@ export class ConsoleContainer extends React.Component {
     } = props;
     this.state = {
       ready: false,
+      createPasteFunction: null,
       currentExecutor: null,
       providers: new Map(),
       providerStatuses: new Map(),
@@ -113,10 +110,11 @@ export class ConsoleContainer extends React.Component {
       sources: [],
       filterText: initialFilterText == null ? '' : initialFilterText,
       enableRegExpFilter: Boolean(initialEnableRegExpFilter),
-      unselectedSourceIds: initialUnselectedSourceIds == null
-        ? []
-        : initialUnselectedSourceIds,
+      unselectedSourceIds:
+        initialUnselectedSourceIds == null ? [] : initialUnselectedSourceIds,
     };
+    this._nextRecordId = 0;
+    this._displayableRecords = new WeakMap();
     this._stateChanges = new Subject();
     this._titleChanges = this._stateChanges
       .map(() => this.state)
@@ -167,19 +165,18 @@ export class ConsoleContainer extends React.Component {
       .audit(() => nextAnimationFrame)
       .subscribe(state => {
         const currentExecutorId = getCurrentExecutorId(state);
-        const currentExecutor = currentExecutorId != null
-          ? state.executors.get(currentExecutorId)
-          : null;
+        const currentExecutor =
+          currentExecutorId != null
+            ? state.executors.get(currentExecutorId)
+            : null;
         this.setState({
+          createPasteFunction: state.createPasteFunction,
           ready: true,
           currentExecutor,
           executors: state.executors,
           providers: state.providers,
           providerStatuses: state.providerStatuses,
-          displayableRecords: toDisplayableRecords(
-            this.state.displayableRecords,
-            state.records,
-          ),
+          displayableRecords: this._toDisplayableRecords(state.records),
           history: state.history,
           sources: getSources(state),
         });
@@ -190,11 +187,10 @@ export class ConsoleContainer extends React.Component {
     this._statesSubscription.unsubscribe();
   }
 
-  copy(): Viewable {
+  copy(): atom$PaneItem {
     return viewableFromReactElement(
       <ConsoleContainer
         store={this.props.store}
-        createPasteFunction={this.props.createPasteFunction}
         initialFilterText={this.state.filterText}
         initialEnableRegExpFilter={this.state.enableRegExpFilter}
         initialUnselectedSourceIds={this.state.unselectedSourceIds}
@@ -220,13 +216,14 @@ export class ConsoleContainer extends React.Component {
     return this._actionCreators;
   }
 
-  _resetAllFilters(): void {
+  _resetAllFilters = (): void => {
     this._selectSources(this.state.sources.map(s => s.id));
-    this._updateFilterText('');
-  }
+    this.setState({filterText: ''});
+  };
 
-  async _createPaste(): Promise<void> {
-    if (this.props.createPasteFunction == null) {
+  _createPaste = async (): Promise<void> => {
+    const {createPasteFunction} = this.state;
+    if (createPasteFunction == null) {
       return;
     }
 
@@ -240,9 +237,8 @@ export class ConsoleContainer extends React.Component {
       )
       .map(displayable => {
         const record = displayable.record;
-        const level = record.level != null
-          ? record.level.toString().toUpperCase()
-          : 'LOG';
+        const level =
+          record.level != null ? record.level.toString().toUpperCase() : 'LOG';
         const timestamp = record.timestamp.toLocaleString();
         return `[${level}][${record.sourceId}][${timestamp}]\t ${record.text}`;
       })
@@ -258,8 +254,7 @@ export class ConsoleContainer extends React.Component {
 
     atom.notifications.addInfo('Creating Paste...');
 
-    invariant(this.props.createPasteFunction != null);
-    const uri = await this.props.createPasteFunction(
+    const uri = await createPasteFunction(
       lines,
       {
         title: 'Nuclide Console Paste',
@@ -268,14 +263,14 @@ export class ConsoleContainer extends React.Component {
     );
 
     atom.notifications.addSuccess(`Created Paste at ${uri}`);
-  }
+  };
 
   _getFilterInfo(): {
-    isValid: boolean,
+    invalid: boolean,
     selectedSourceIds: Array<string>,
     displayableRecords: Array<DisplayableRecord>,
   } {
-    const {pattern, isValid} = this._getFilterPattern(
+    const {pattern, invalid} = getFilterPattern(
       this.state.filterText,
       this.state.enableRegExpFilter,
     );
@@ -294,7 +289,7 @@ export class ConsoleContainer extends React.Component {
     );
 
     return {
-      isValid,
+      invalid,
       selectedSourceIds,
       displayableRecords,
     };
@@ -307,20 +302,19 @@ export class ConsoleContainer extends React.Component {
 
     const actionCreators = this._getBoundActionCreators();
     const {
-      isValid,
+      invalid,
       selectedSourceIds,
       displayableRecords,
     } = this._getFilterInfo();
     const filteredRecordCount =
       this.state.displayableRecords.length - displayableRecords.length;
 
-    const createPaste = this.props.createPasteFunction != null
-      ? this._createPaste
-      : null;
+    const createPaste =
+      this.state.createPasteFunction != null ? this._createPaste : null;
 
     return (
       <Console
-        invalidFilterInput={!isValid}
+        invalidFilterInput={invalid}
         execute={actionCreators.execute}
         selectExecutor={actionCreators.selectExecutor}
         clearRecords={actionCreators.clearRecords}
@@ -337,8 +331,7 @@ export class ConsoleContainer extends React.Component {
         selectSources={this._selectSources}
         executors={this.state.executors}
         getProvider={id => this.state.providers.get(id)}
-        toggleRegExpFilter={this._toggleRegExpFilter}
-        updateFilterText={this._updateFilterText}
+        updateFilter={this._updateFilter}
         onDisplayableRecordHeightChange={
           this._handleDisplayableRecordHeightChange
         }
@@ -357,61 +350,72 @@ export class ConsoleContainer extends React.Component {
     };
   }
 
-  _selectSources(selectedSourceIds: Array<string>): void {
+  _selectSources = (selectedSourceIds: Array<string>): void => {
     const sourceIds = this.state.sources.map(source => source.id);
     const unselectedSourceIds = sourceIds.filter(
       sourceId => selectedSourceIds.indexOf(sourceId) === -1,
     );
     this.setState({unselectedSourceIds});
-  }
+  };
 
-  _toggleRegExpFilter(): void {
-    this.setState({enableRegExpFilter: !this.state.enableRegExpFilter});
-  }
+  _updateFilter = (change: RegExpFilterChange): void => {
+    const {text, isRegExp} = change;
+    this.setState({
+      filterText: text,
+      enableRegExpFilter: isRegExp,
+    });
+  };
 
-  _updateFilterText(filterText: string): void {
-    this.setState({filterText});
-  }
-
-  _getFilterPattern(
-    filterText: string,
-    isRegExp: boolean,
-  ): {pattern: ?RegExp, isValid: boolean} {
-    if (filterText === '') {
-      return {pattern: null, isValid: true};
-    }
-    const source = isRegExp ? filterText : escapeStringRegexp(filterText);
-    try {
-      return {
-        pattern: new RegExp(source, 'i'),
-        isValid: true,
-      };
-    } catch (err) {
-      return {
-        pattern: null,
-        isValid: false,
-      };
-    }
-  }
-
-  _handleDisplayableRecordHeightChange(
+  _handleDisplayableRecordHeightChange = (
     recordId: number,
     newHeight: number,
     callback: () => void,
-  ): void {
+  ): void => {
+    const newDisplayableRecords = [];
+    this.state.displayableRecords.forEach(displayableRecord => {
+      if (displayableRecord.id === recordId) {
+        // Update the changed record.
+        const newDisplayableRecord = {
+          ...displayableRecord,
+          height: newHeight,
+        };
+        newDisplayableRecords.push(newDisplayableRecord);
+        this._displayableRecords.set(
+          displayableRecord.record,
+          newDisplayableRecord,
+        );
+      } else {
+        newDisplayableRecords.push(displayableRecord);
+      }
+    });
     this.setState(
       {
-        displayableRecords: this.state.displayableRecords.map(existing => {
-          return existing.id !== recordId
-            ? existing
-            : {
-                ...existing,
-                height: newHeight,
-              };
-        }),
+        displayableRecords: newDisplayableRecords,
       },
       callback,
     );
+  };
+
+  /**
+   * Transforms the Records from the store into DisplayableRecords. This caches the result
+   * per-ConsoleContainer instance because the same record can have different heights in different
+   * containers.
+   */
+  _toDisplayableRecords(records: Array<Record>): Array<DisplayableRecord> {
+    return records.map(record => {
+      const displayableRecord = this._displayableRecords.get(record);
+      if (displayableRecord != null) {
+        return displayableRecord;
+      }
+      const newDisplayableRecord = {
+        id: this._nextRecordId++,
+        record,
+        height: INITIAL_RECORD_HEIGHT,
+        expansionStateId: {},
+      };
+      this._displayableRecords.set(record, newDisplayableRecord);
+      return newDisplayableRecord;
+    });
   }
 }
 
@@ -423,9 +427,8 @@ function getSources(state: AppState): Array<Source> {
         id: provider.id,
         name: provider.id,
         status: state.providerStatuses.get(provider.id) || 'stopped',
-        start: typeof provider.start === 'function'
-          ? provider.start
-          : undefined,
+        start:
+          typeof provider.start === 'function' ? provider.start : undefined,
         stop: typeof provider.stop === 'function' ? provider.stop : undefined,
       };
       return [k, source];
@@ -472,66 +475,4 @@ function filterRecords(
       (filterPattern == null || filterPattern.test(record.text))
     );
   });
-}
-
-/**
- * Transforms the Records from the store into DisplayableRecords while preserving
- * the recorded heights and expansion state keys of still existing records.
- *
- * NOTE: This method works under the assumption that the Record array is only
- *       transformed by adding/removing items from the head and/or tail of the array.
- */
-function toDisplayableRecords(
-  currentDisplayables: Array<DisplayableRecord>,
-  newRecords: Array<Record>,
-): Array<DisplayableRecord> {
-  if (newRecords.length === 0) {
-    return [];
-  }
-
-  let currentIndex = 0;
-  let newRecordIndex = 0;
-  const results = [];
-
-  // Iterate through currentDisplayables until we find an existing displayable
-  // whose record matches the head of the newRecords array
-  while (
-    currentIndex < currentDisplayables.length &&
-    currentDisplayables[currentIndex].record !== newRecords[newRecordIndex]
-  ) {
-    currentIndex += 1;
-  }
-
-  // Since we assume additions/removals occur only to the head/tail of the array
-  // all common records must be found in a contiguous section in the arrays, so
-  // we copy the record heights and expansion state keys so they are kept intact
-  while (
-    currentIndex < currentDisplayables.length &&
-    newRecordIndex < newRecords.length &&
-    currentDisplayables[currentIndex].record === newRecords[newRecordIndex]
-  ) {
-    const {height, expansionStateId} = currentDisplayables[currentIndex];
-    results.push({
-      id: newRecordIndex,
-      record: newRecords[newRecordIndex],
-      height,
-      expansionStateId,
-    });
-    currentIndex += 1;
-    newRecordIndex += 1;
-  }
-
-  // Any remaining records in newRecords were not matched to an existing displayable
-  // so they must be new. Create new DisplayableRecord instances for them here.
-  while (newRecordIndex < newRecords.length) {
-    results.push({
-      id: newRecordIndex,
-      record: newRecords[newRecordIndex],
-      height: INITIAL_RECORD_HEIGHT,
-      expansionStateId: {},
-    });
-    newRecordIndex += 1;
-  }
-
-  return results;
 }

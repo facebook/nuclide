@@ -1,9 +1,6 @@
-// flow-typed signature: c5f918cd3de18b19a20558e6f3bbcc84
-// flow-typed version: cdd17a64e0/semver_v5.1.x/flow_>=v0.27.0
+// flow-typed signature: 6c70b54deb7f68a246ffb76a0bff389e
+// flow-typed version: cbb363d9d1/semver_v5.1.x/flow_>=v0.19.x
 
-// List of members taken from here: https://www.npmjs.com/package/semver/#functions
-// TODO support the `loose` parameter
-// TODO support SemVer instances as input parameters
 declare module 'semver' {
   declare type Release =
     'major' |
@@ -16,7 +13,7 @@ declare module 'semver' {
 
   // The supported comparators are taken from the source here:
   // https://github.com/npm/node-semver/blob/8bd070b550db2646362c9883c8d008d32f66a234/semver.js#L623
-  declare type Comparator =
+  declare type Operator =
     '===' |
     '!==' |
     '==' |
@@ -29,53 +26,85 @@ declare module 'semver' {
     '<=';
 
   declare class SemVer {
-    loose: ?boolean,
-    raw: string,
-    major: number,
-    minor: number,
-    patch: number,
-    prerelease: Array<string | number>,
-    build: Array<string>,
-    version: string,
+    build: Array<string>;
+    loose: ?boolean;
+    major: number;
+    minor: number;
+    patch: number;
+    prerelease: Array<string | number>;
+    raw: string;
+    version: string;
+
+    constructor(version: string | SemVer, loose?: boolean): SemVer;
+    compare(other: string | SemVer): -1 | 0 | 1;
+    compareMain(other: string | SemVer): -1 | 0 | 1;
+    comparePre(other: string | SemVer): -1 | 0 | 1;
+    format(): string;
+    inc(release: Release, identifier: string): this;
   }
 
-  // Functions
-  declare function valid(v: string): string | null;
-  declare function inc(v: string, release: Release): string | null;
-  declare function major(v: string): number;
-  declare function minor(v: string): number;
-  declare function patch(v: string): number;
+  declare class Comparator {
+    loose?: boolean;
+    operator: Operator;
+    semver: SemVer;
+    value: string;
 
-  // Comparison
-  declare function gt(v1: string, v2: string): boolean;
-  declare function gte(v1: string, v2: string): boolean;
-  declare function lt(v1: string, v2: string): boolean;
-  declare function lte(v1: string, v2: string): boolean;
-  declare function eq(v1: string, v2: string): boolean;
-  declare function neq(v1: string, v2: string): boolean;
-  declare function cmp(v1: string, comparator: Comparator, v2: string): boolean;
-  declare function compare(v1: string, v2: string): -1 | 0 | 1;
-  declare function rcompare(v1: string, v2: string): -1 | 0 | 1;
-  declare function diff(v1: string, v2: string): ?Release;
-
-  // Ranges
-  declare function validRange(r: string): string | null;
-  declare function satisfies(version: string, range: string): boolean;
-  declare function maxSatisfying(versions: Array<string>, range: string): string | null;
-  declare function gtr(version: string, range: string): boolean;
-  declare function ltr(version: string, range: string): boolean;
-  declare function outside(version: string, range: string, hilo: '>' | '<'): boolean;
-
-  // Not explicitly documented
-  declare function parse(version: string): ?SemVer;
+    constructor(comp: string | Comparator, loose?: boolean): Comparator;
+    parse(comp: string): void;
+    test(version: string): boolean;
+  }
 
   declare class Range {
-    set: Array<Array<{semver: SemVer}>>;
+    loose: ?boolean;
+    raw: string;
+    set: Array<Array<Comparator>>;
 
-    constructor(range: string, loose?: boolean): Range;
-
+    constructor(range: string | Range, loose?: boolean): Range;
     format(): string;
+    parseRange(range: string): Array<Comparator>;
     test(version: string): boolean;
     toString(): string;
   }
+
+  declare var SEMVER_SPEC_VERSION: string;
+  declare var re: Array<RegExp>;
+  declare var src: Array<string>;
+
+  // Functions
+  declare function valid(v: string | SemVer, loose?: boolean): string | null;
+  declare function clean(v: string | SemVer, loose?: boolean): string | null;
+  declare function inc(v: string | SemVer, release: Release, loose?: boolean, identifier?: string): string | null;
+  declare function inc(v: string | SemVer, release: Release, identifier: string): string | null;
+  declare function major(v: string | SemVer, loose?: boolean): number;
+  declare function minor(v: string | SemVer, loose?: boolean): number;
+  declare function patch(v: string | SemVer, loose?: boolean): number;
+
+  // Comparison
+  declare function gt(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function gte(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function lt(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function lte(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function eq(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function neq(v1: string | SemVer, v2: string | SemVer, loose?: boolean): boolean;
+  declare function cmp(v1: string | SemVer, comparator: Operator, v2: string | SemVer, loose?: boolean): boolean;
+  declare function compare(v1: string | SemVer, v2: string | SemVer, loose?: boolean): -1 | 0 | 1;
+  declare function rcompare(v1: string | SemVer, v2: string | SemVer, loose?: boolean): -1 | 0 | 1;
+  declare function compareLoose(v1: string | SemVer, v2: string | SemVer): -1 | 0 | 1;
+  declare function diff(v1: string | SemVer, v2: string | SemVer): ?Release;
+  declare function sort(list: Array<string | SemVer>, loose?: boolean): Array<string | SemVer>;
+  declare function rsort(list: Array<string | SemVer>, loose?: boolean): Array<string | SemVer>;
+  declare function compareIdentifiers(v1: string | SemVer, v2: string | SemVer): -1 | 0 | 1;
+  declare function rcompareIdentifiers(v1: string | SemVer, v2: string | SemVer): -1 | 0 | 1;
+
+  // Ranges
+  declare function validRange(range: string | Range, loose?: boolean): string | null;
+  declare function satisfies(version: string | SemVer, range: string | Range, loose?: boolean): boolean;
+  declare function maxSatisfying(versions: Array<string | SemVer>, range: string | Range, loose?: boolean): string | SemVer | null;
+  declare function gtr(version: string | SemVer, range: string | Range, loose?: boolean): boolean;
+  declare function ltr(version: string | SemVer, range: string | Range, loose?: boolean): boolean;
+  declare function outside(version: string | SemVer, range: string | Range, hilo: '>' | '<', loose?: boolean): boolean;
+
+  // Not explicitly documented, or deprecated
+  declare function parse(version: string, loose?: boolean): ?SemVer;
+  declare function toComparators(range: string | Range, loose?: boolean): Array<Array<string>>;
 }

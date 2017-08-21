@@ -31,7 +31,7 @@
     }
   },
   "providedServices": {
-    "atom-ide-diagnostics": {
+    "DEPRECATED-diagnostics": {
       "versions": {
         "0.2.0": "getDiagnosticsProvider"
       }

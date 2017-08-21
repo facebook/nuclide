@@ -51,7 +51,11 @@ class Wrapper extends React.Component {
     children?: any,
   };
   render(): React.Element<any> {
-    return <div>{this.props.children}</div>;
+    return (
+      <div>
+        {this.props.children}
+      </div>
+    );
   }
 }
 
@@ -139,7 +143,9 @@ describe('RecentFilesProvider', () => {
         new Date(mockResult.timestamp).toLocaleString(),
       );
       const renderedComponent = TestUtils.renderIntoDocument(
-        <Wrapper>{reactElement}</Wrapper>,
+        <Wrapper>
+          {reactElement}
+        </Wrapper>,
       );
       expect(
         TestUtils.scryRenderedDOMComponentsWithClass(

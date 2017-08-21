@@ -13,12 +13,12 @@ import type {ConnectableObservable} from 'rxjs';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
+  AutocompleteRequest,
   AutocompleteResult,
+  FormatOptions,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
-import type {
-  HostServices,
-} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
 import type {
   FileVersion,
   FileNotifier,
@@ -27,17 +27,15 @@ import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
-import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
+  CodeAction,
+  FileDiagnosticMessage,
 } from 'atom-ide-ui';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
 import invariant from 'assert';
 
@@ -77,9 +75,9 @@ export type FlowSettings = {
   lazyServer: boolean,
 };
 
-import {
-  FlowSingleProjectLanguageService,
-} from './FlowSingleProjectLanguageService';
+export type {FlowLocNoSource} from './flowOutputTypes';
+
+import {FlowSingleProjectLanguageService} from './FlowSingleProjectLanguageService';
 import {FlowServiceState} from './FlowServiceState';
 
 let state: ?FlowServiceState = null;
@@ -108,10 +106,9 @@ export async function initialize(
   return new FlowLanguageService(fileCache, host, config);
 }
 
-class FlowLanguageService
-  extends MultiProjectLanguageService<
-    ServerLanguageService<FlowSingleProjectLanguageService>,
-  > {
+class FlowLanguageService extends MultiProjectLanguageService<
+  ServerLanguageService<FlowSingleProjectLanguageService>,
+> {
   constructor(fileCache: FileCache, host: HostServices, config: FlowSettings) {
     const logger = getLogger('Flow');
     super();
@@ -119,13 +116,14 @@ class FlowLanguageService
       logger,
       fileCache,
       host,
-      '.flowconfig',
+      ['.flowconfig'],
       ['.js', '.jsx'],
       projectDir => {
         const execInfoContainer = getState().getExecInfoContainer();
         const singleProjectLS = new FlowSingleProjectLanguageService(
           projectDir,
           execInfoContainer,
+          fileCache,
         );
         const languageService = new ServerLanguageService(
           fileCache,
@@ -182,13 +180,12 @@ class FlowLanguageService
 export interface FlowLanguageServiceType {
   getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>>,
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
-    activatedManually: boolean,
-    prefix: string,
+    request: AutocompleteRequest,
   ): Promise<?AutocompleteResult>,
 
   getDefinition(
@@ -205,6 +202,12 @@ export interface FlowLanguageServiceType {
 
   getOutline(fileVersion: FileVersion): Promise<?Outline>,
 
+  getCodeActions(
+    fileVersion: FileVersion,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>>,
+
   typeHint(fileVersion: FileVersion, position: atom$Point): Promise<?TypeHint>,
 
   highlight(
@@ -215,11 +218,13 @@ export interface FlowLanguageServiceType {
   formatSource(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
   formatEntireFile(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?{
     newCursor?: number,
     formatted: string,
@@ -229,6 +234,7 @@ export interface FlowLanguageServiceType {
     fileVersion: FileVersion,
     position: atom$Point,
     triggerCharacter: string,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
   getEvaluationExpression(

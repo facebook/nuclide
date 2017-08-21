@@ -25,34 +25,30 @@ export class Commands {
   ) {
     this._dispatch = dispatch;
     this._getState = getState;
-
-    (this: any).addProjectRepository = this.addProjectRepository.bind(this);
-    (this: any).restorePaneItemState = this.restorePaneItemState.bind(this);
-    (this: any).updatePaneItemState = this.updatePaneItemState.bind(this);
   }
 
-  addProjectRepository(repository: atom$Repository): void {
+  addProjectRepository = (repository: atom$Repository): void => {
     this._dispatch({
       payload: {
         repository,
       },
       type: ActionType.ADD_PROJECT_REPOSITORY,
     });
-  }
+  };
 
-  updatePaneItemState(): void {
+  updatePaneItemState = (): void => {
     this._dispatch({
       type: ActionType.UPDATE_PANE_ITEM_STATE,
       payload: {
         repositoryPathToEditors: getRepoPathToEditors(),
       },
     });
-  }
+  };
 
-  restorePaneItemState(
+  restorePaneItemState = (
     repository: atom$Repository,
     newShortHead: string,
-  ): void {
+  ): void => {
     track('bookshelf-restore-files');
     this._dispatch({
       payload: {
@@ -61,5 +57,5 @@ export class Commands {
       },
       type: ActionType.RESTORE_PANE_ITEM_STATE,
     });
-  }
+  };
 }

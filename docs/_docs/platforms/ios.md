@@ -44,8 +44,6 @@ Nuclide supports the [Buck](https://buckbuild.com/) build system. See the
 Debugging native [Objective-C](/docs/languages/objective-c/) iOS applications is
 [supported using Buck](/docs/features/buck/#debug).
 
-> [React Native](/docs/platforms/react-native/#debugging) is also supported.
-
 ## Simulator Logs
 
 When running your iOS project in the iOS simulator, you can open and view the simulator logs

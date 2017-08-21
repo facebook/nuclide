@@ -22,9 +22,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {File} from 'atom';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 
 let atomPanel: ?Object;
@@ -82,6 +80,7 @@ class FileSystemActions {
   openAddFileDialogRelative(onDidConfirm: (filePath: ?string) => mixed): void {
     const editor = atom.workspace.getActiveTextEditor();
     const filePath = editor != null ? editor.getPath() : null;
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return;
     }
@@ -322,7 +321,8 @@ class FileSystemActions {
       iconClassName: 'icon-file-add',
       message: (
         <span>
-          Enter the path for the new {entryType} in the root:<br />{path}
+          Enter the path for the new {entryType} in the root:<br />
+          {path}
         </span>
       ),
       onConfirm,

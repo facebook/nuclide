@@ -9,8 +9,7 @@
  * @format
  */
 
-import typeof * as FileSystemService
-  from '../../lib/services/FileSystemService';
+import typeof * as FileSystemService from '../../lib/services/FileSystemService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import ServiceTestHelper from './ServiceTestHelper';

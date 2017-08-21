@@ -30,13 +30,19 @@ export default class CommandsSectionComponent extends React.Component {
           <th>Command</th>
         </thead>
         <tbody>
-          {loggedCalls.map((call, i) => (
+          {loggedCalls.map((call, i) =>
             <tr key={i}>
-              <td>{call.time.toTimeString().replace(/ .+/, '')}</td>
-              <td>{call.duration}</td>
-              <td>{call.command}</td>
-            </tr>
-          ))}
+              <td>
+                {call.time.toTimeString().replace(/ .+/, '')}
+              </td>
+              <td>
+                {call.duration}
+              </td>
+              <td>
+                {call.command}
+              </td>
+            </tr>,
+          )}
         </tbody>
       </table>
     );

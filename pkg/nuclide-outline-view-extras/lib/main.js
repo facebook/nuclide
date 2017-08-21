@@ -16,6 +16,8 @@ import type {RegisterNux} from '../../nuclide-nux/lib/main';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
+import {WORKSPACE_VIEW_URI} from 'atom-ide-ui/pkg/atom-ide-outline-view/lib/OutlineViewPanel';
+
 const NUX_OUTLINE_VIEW_TOUR = 'nuclide_outline_view_nux';
 const NUX_OUTLINE_VIEW_ID = 4342;
 const GK_NUX_OUTLINE_VIEW = 'mp_nuclide_outline_view_nux';
@@ -85,13 +87,11 @@ class Activation {
       feature: {
         title: 'Outline View',
         icon: 'list-unordered',
-        description: 'Displays major components of the current file (classes, methods, etc.)',
+        description:
+          'Displays major components of the current file (classes, methods, etc.)',
         command: () => {
-          atom.commands.dispatch(
-            atom.views.getView(atom.workspace),
-            'nuclide-outline-view:toggle',
-            {visible: true},
-          );
+          // eslint-disable-next-line nuclide-internal/atom-apis
+          atom.workspace.open(WORKSPACE_VIEW_URI);
         },
       },
       priority: 2.5, // Between diff view and test runner

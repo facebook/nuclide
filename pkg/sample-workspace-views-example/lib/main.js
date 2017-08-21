@@ -9,13 +9,8 @@
  * @format
  */
 
-import type {
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
-
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ExampleGadgetA, WORKSPACE_VIEW_URI_A} from './ExampleGadgetA';
 import {ExampleGadgetB, WORKSPACE_VIEW_URI_B} from './ExampleGadgetB';
@@ -25,45 +20,39 @@ import React from 'react';
 let disposables: ?UniversalDisposable = null;
 
 export function activate() {
-  disposables = new UniversalDisposable();
+  disposables = registerCommandAndOpener();
 }
 
 // This example shows two different ways to create a gadget: ExampleGadgetA stores its state in a
 // separate model object while ExampleGadgetB stores its state in a React element.
-
-export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-  invariant(disposables != null);
-
-  // Option A
-  disposables.add(
-    api.addOpener(uri => {
+function registerCommandAndOpener(): UniversalDisposable {
+  return new UniversalDisposable(
+    // Option A
+    atom.workspace.addOpener(uri => {
       if (uri === WORKSPACE_VIEW_URI_A) {
         return new ExampleGadgetA();
       }
     }),
-    () => api.destroyWhere(item => item instanceof ExampleGadgetA),
+    () => destroyItemWhere(item => item instanceof ExampleGadgetA),
     atom.commands.add(
       'atom-workspace',
       'sample-toggle-example-gadget-a:toggle',
-      event => {
-        api.toggle(WORKSPACE_VIEW_URI_A, (event: any).detail);
+      () => {
+        atom.workspace.toggle(WORKSPACE_VIEW_URI_A);
       },
     ),
-  );
-
-  // Option B
-  disposables.add(
-    api.addOpener(uri => {
+    // Option B
+    atom.workspace.addOpener(uri => {
       if (uri === WORKSPACE_VIEW_URI_B) {
         return viewableFromReactElement(<ExampleGadgetB />);
       }
     }),
-    () => api.destroyWhere(item => item instanceof ExampleGadgetB),
+    () => destroyItemWhere(item => item instanceof ExampleGadgetB),
     atom.commands.add(
       'atom-workspace',
       'sample-toggle-example-gadget-b:toggle',
       event => {
-        api.toggle(WORKSPACE_VIEW_URI_B, (event: any).detail);
+        atom.workspace.toggle(WORKSPACE_VIEW_URI_B);
       },
     ),
   );

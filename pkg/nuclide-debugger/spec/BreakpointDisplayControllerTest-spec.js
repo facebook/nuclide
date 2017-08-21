@@ -12,6 +12,7 @@
 /* global MouseEvent */
 
 import invariant from 'assert';
+import {jasmineAttachWorkspace} from 'nuclide-commons-atom/test-helpers';
 import BreakpointDisplayController from '../lib/BreakpointDisplayController';
 import BreakpointStore from '../lib/BreakpointStore';
 import {DebuggerStore} from '../lib/DebuggerStore';
@@ -53,13 +54,13 @@ describe('BreakpointDisplayController', () => {
 
   beforeEach(() => {
     waitsForPromise(async () => {
+      jasmineAttachWorkspace();
+
       editor = await utils.createEditorWithUniquePath();
       const editorPath = editor.getPath();
+      // flowlint-next-line sketchy-null-string:off
       invariant(editorPath);
       testFilePath = editorPath;
-      const element = document.querySelector('#jasmine-content');
-      invariant(element != null);
-      element.appendChild(atom.views.getView(editor));
 
       dispatcher = new DebuggerDispatcher();
       store = new BreakpointStore(dispatcher);

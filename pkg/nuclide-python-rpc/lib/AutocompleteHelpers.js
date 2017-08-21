@@ -11,9 +11,7 @@
 
 import type {PythonCompletion} from './PythonService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  AutocompleteResult,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
 import type JediServerManager from './JediServerManager';
 
 import {matchRegexEndingAt} from 'nuclide-commons/range';

@@ -68,17 +68,19 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
-  "activationHooks": [
-    "language-python:grammar-used",
-    "MagicPython:grammar-used"
-  ],
   "consumedServices": {
     "atom-ide-busy-signal": {
       "versions": {
-        "0.2.0": "consumeBusySignal"
+        "0.1.0": "consumeBusySignal"
+      }
+    },
+    "nuclide.buck-platforms": {
+      "versions": {
+        "0.0.0": "consumePlatformService"
       }
     }
   },
+
   "providedServices": {
     "linter": {
       "versions": {

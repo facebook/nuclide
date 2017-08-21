@@ -22,8 +22,11 @@ type PropsType = {
   dialogCloser: () => void,
 };
 
-export class DebuggerLaunchAttachConnectionChooser
-  extends React.Component<void, PropsType, void> {
+export class DebuggerLaunchAttachConnectionChooser extends React.Component<
+  void,
+  PropsType,
+  void,
+> {
   props: PropsType;
   _disposables: UniversalDisposable;
 

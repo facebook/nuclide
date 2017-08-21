@@ -1,5 +1,5 @@
-// flow-typed signature: 8a4e38b655e562703b86cbc18c5748ed
-// flow-typed version: 3c94680f9f/log4js_v1.x.x/flow_>=v0.34.x
+// flow-typed signature: c69efc63ea2cb8646a8685b0e937fb25
+// flow-typed version: b43dff3e0e/log4js_v1.x.x/flow_>=v0.25.x
 
 type log4js$Logger = {
   level: string,

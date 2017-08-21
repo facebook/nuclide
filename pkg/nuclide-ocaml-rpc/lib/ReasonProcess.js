@@ -12,9 +12,11 @@
 import type {formatResult} from './ReasonService';
 
 import {runCommand, getOriginalEnvironment} from 'nuclide-commons/process';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 export async function formatImpl(
   content: string,
+  filePath: string,
   language: 're' | 'ml',
   refmtFlags: Array<string>,
 ): Promise<formatResult> {
@@ -30,6 +32,7 @@ export async function formatImpl(
     // if [ "$TERM" = "nuclide"]; then someOverrideLogic if
     env: await getOriginalEnvironment(),
     input: content,
+    cwd: nuclideUri.dirname(filePath),
   };
   try {
     const stdout = await runCommand(path, flags, options).toPromise();

@@ -49,22 +49,21 @@ type Props = {
   onFileChecked: (filePath: NuclideUri) => void,
   onFileChosen: (filePath: NuclideUri) => void,
   onForgetFile: (filePath: NuclideUri, analyticsSourceKey: string) => void,
+  onMarkFileResolved?: (
+    filePath: NuclideUri,
+    analyticsSourceKey: string,
+  ) => void,
   onOpenFileInDiffView: (
     filePath: NuclideUri,
     analyticsSourceKey: string,
   ) => void,
+  openInDiffViewOption: boolean,
   onRevertFile: (filePath: NuclideUri, analyticsSourceKey: string) => void,
   rootPath: NuclideUri,
 };
 
 export default class ChangedFile extends React.Component {
   props: Props;
-
-  constructor(props: Props) {
-    super(props);
-
-    (this: any)._onCheckboxChange = this._onCheckboxChange.bind(this);
-  }
 
   _getFileClassname(): string {
     const {commandPrefix, fileStatus, isHgPath, isSelected} = this.props;
@@ -118,6 +117,21 @@ export default class ChangedFile extends React.Component {
     );
   }
 
+  _renderResolveAction(filePath: string): ?React.Element<any> {
+    return this.props.onMarkFileResolved
+      ? this._renderAction(
+          'resolve' /* key */,
+          'check' /* icon */,
+          'Mark file as resolved' /* title */,
+          this.props.onMarkFileResolved.bind(
+            this,
+            filePath,
+            ANALYTICS_SOURCE_KEY,
+          ),
+        )
+      : null;
+  }
+
   _renderMarkDeletedAction(filePath: string): React.Element<any> {
     return this._renderAction(
       'mark-deleted' /* key */,
@@ -145,22 +159,24 @@ export default class ChangedFile extends React.Component {
     );
   }
 
-  _renderOpenInDiffViewAction(filePath: string): React.Element<any> {
-    return this._renderAction(
-      'diff' /* key */,
-      'diff' /* icon */,
-      'Open file in Diff View' /* title */,
-      this.props.onOpenFileInDiffView.bind(
-        this,
-        filePath,
-        ANALYTICS_SOURCE_KEY,
-      ),
-    );
+  _renderOpenInDiffViewAction(filePath: string): ?React.Element<any> {
+    return this.props.openInDiffViewOption
+      ? this._renderAction(
+          'diff' /* key */,
+          'diff' /* icon */,
+          'Open file in Diff View' /* title */,
+          this.props.onOpenFileInDiffView.bind(
+            this,
+            filePath,
+            ANALYTICS_SOURCE_KEY,
+          ),
+        )
+      : null;
   }
 
-  _onCheckboxChange(isChecked: boolean): void {
+  _onCheckboxChange = (isChecked: boolean): void => {
     this.props.onFileChecked(this.props.filePath);
-  }
+  };
 
   render(): React.Element<any> {
     const {
@@ -197,6 +213,10 @@ export default class ChangedFile extends React.Component {
         case FileChangeStatus.REMOVED: // removed from both FS and VCS
           eligibleActions.push(this._renderRestoreAction(filePath));
           break;
+        case FileChangeStatus.CHANGE_DELETE:
+          eligibleActions.push(this._renderDeleteAction(filePath));
+          eligibleActions.push(this._renderResolveAction(filePath));
+          break;
       }
       actions = (
         <div className="nuclide-changed-file-actions">
@@ -207,13 +227,14 @@ export default class ChangedFile extends React.Component {
     const statusName = FileChangeStatusToLabel[fileStatus];
     const projectRelativePath =
       getAtomProjectRelativePath(filePath) || filePath;
-    const checkbox = isChecked != null
-      ? <Checkbox
-          className="nuclide-changed-file-checkbox"
-          checked={isChecked}
-          onChange={this._onCheckboxChange}
-        />
-      : null;
+    const checkbox =
+      isChecked != null
+        ? <Checkbox
+            className="nuclide-changed-file-checkbox"
+            checked={isChecked}
+            onChange={this._onCheckboxChange}
+          />
+        : null;
     return (
       <li
         data-name={baseName}

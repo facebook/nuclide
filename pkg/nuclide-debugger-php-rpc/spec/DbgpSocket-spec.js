@@ -237,7 +237,7 @@ describe('debugger-php-rpc DbgpSocket', () => {
         '/home/peterhal/test/dbgp/test-client.php',
       );
       expect(locationOfFrame(frame0)).toEqual({
-        lineNumber: 3,
+        lineNumber: 4,
         scriptId: fileOfFrame(frame0),
       });
 
@@ -248,7 +248,7 @@ describe('debugger-php-rpc DbgpSocket', () => {
         '/home/peterhal/test/dbgp/test-client.php',
       );
       expect(locationOfFrame(frame1)).toEqual({
-        lineNumber: 9,
+        lineNumber: 10,
         scriptId: fileOfFrame(frame1),
       });
     });

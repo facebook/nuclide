@@ -1,0 +1,50 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "Find References",
+          "command": "find-references:activate"
+        },
+        {
+          "label": "Diagnostics",
+          "submenu": [
+            {
+              "label": "Fix All in Current File",
+              "command": "diagnostics:fix-all-in-current-file"
+            },
+            {
+              "label": "Open All Files with Errors",
+              "command": "diagnostics:open-all-files-with-errors"
+            },
+            {
+              "label": "Go To First Diagnostic",
+              "command": "diagnostics:go-to-first-diagnostic"
+            },
+            {
+              "label": "Go To Last Diagnostic",
+              "command": "diagnostics:go-to-last-diagnostic"
+            },
+            {
+              "label": "Go To Next Diagnostic",
+              "command": "diagnostics:go-to-next-diagnostic"
+            },
+            {
+              "label": "Go To Previous Diagnostic",
+              "command": "diagnostics:go-to-previous-diagnostic"
+            },
+            {
+              "label": "Go To Next Diagnostic Trace",
+              "command": "diagnostics:go-to-next-diagnostic-trace"
+            },
+            {
+              "label": "Go To Previous Diagnostic Trace",
+              "command": "diagnostics:go-to-previous-diagnostic-trace"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

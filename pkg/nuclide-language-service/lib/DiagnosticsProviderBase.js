@@ -10,10 +10,10 @@
  */
 
 import type {
+  DiagnosticInvalidationCallback,
+  DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
-  InvalidationMessage,
-  MessageInvalidationCallback,
-  MessageUpdateCallback,
+  DiagnosticUpdateCallback,
 } from 'atom-ide-ui';
 
 import {CompositeDisposable, Emitter} from 'atom';
@@ -26,12 +26,14 @@ type ProviderBaseOptions = {
    * The callback by which a provider is notified that a new consumer has subscribed to diagnostic
    * updates.
    */
-  onNewUpdateSubscriber?: (callback: MessageUpdateCallback) => mixed,
+  onNewUpdateSubscriber?: (callback: DiagnosticUpdateCallback) => mixed,
   /**
    * The callback by which a provider is notified that a new consumer has subscribed to diagnostic
    * invalidations.
    */
-  onNewInvalidateSubscriber?: (callback: MessageInvalidationCallback) => mixed,
+  onNewInvalidateSubscriber?: (
+    callback: DiagnosticInvalidationCallback,
+  ) => mixed,
   /**
    * If true, this will cause onTextEditorEvent to get called more often -- approximately whenever
    * the user stops typing. If false, it will get called only when the user saves.
@@ -74,9 +76,9 @@ export class DiagnosticsProviderBase {
 
   // callbacks provided by client
   _textEventCallback: (editor: TextEditor) => mixed;
-  _newUpdateSubscriberCallback: (callback: MessageUpdateCallback) => mixed;
+  _newUpdateSubscriberCallback: (callback: DiagnosticUpdateCallback) => mixed;
   _newInvalidateSubscriberCallback: (
-    callback: MessageInvalidationCallback,
+    callback: DiagnosticInvalidationCallback,
   ) => mixed;
 
   constructor(
@@ -160,7 +162,7 @@ export class DiagnosticsProviderBase {
     this._emitter.emit(UPDATE_EVENT, update);
   }
 
-  publishMessageInvalidation(message: InvalidationMessage): void {
+  publishMessageInvalidation(message: DiagnosticInvalidationMessage): void {
     this._emitter.emit(INVALIDATE_EVENT, message);
   }
 
@@ -168,13 +170,13 @@ export class DiagnosticsProviderBase {
    * Clients should delegate to these
    */
 
-  onMessageUpdate(callback: MessageUpdateCallback): IDisposable {
+  onMessageUpdate(callback: DiagnosticUpdateCallback): IDisposable {
     const disposable = this._emitter.on(UPDATE_EVENT, callback);
     this._newUpdateSubscriberCallback(callback);
     return disposable;
   }
 
-  onMessageInvalidation(callback: MessageInvalidationCallback): IDisposable {
+  onMessageInvalidation(callback: DiagnosticInvalidationCallback): IDisposable {
     const disposable = this._emitter.on(INVALIDATE_EVENT, callback);
     this._newInvalidateSubscriberCallback(callback);
     return disposable;

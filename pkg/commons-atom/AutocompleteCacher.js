@@ -10,10 +10,16 @@
  */
 
 import passesGK from '../commons-node/passesGK';
+import {PromiseWithState} from 'nuclide-commons/promise';
 
 export type AutocompleteCacherConfig<T> = {|
-  // Return null here to indicate that we should fall back to `getSuggestions`.
+  // This function filters+sorts the firstResult that came back from `getSuggestions`.
+  // Return null here to if firstResult isn't appropriate and we should go back
+  // to the language service.
   updateResults: (request: atom$AutocompleteRequest, firstResult: T) => ?T,
+  // If we had to go to `getSuggestions` for whatever reason, we can still configure
+  // a filter+sort function to be used in that case too.
+  updateFirstResults?: (request: atom$AutocompleteRequest, firstResult: T) => T,
   // If this is provided, we will ask it whether we can filter on the given request after first
   // verifying that the cursor has only moved by one column since the last request.
   shouldFilter?: (
@@ -30,7 +36,7 @@ export type AutocompleteCacherConfig<T> = {|
 |};
 
 type AutocompleteSession<T> = {
-  firstResult: Promise<?T>,
+  firstResultPromise: PromiseWithState<?T>,
   lastRequest: atom$AutocompleteRequest,
 };
 
@@ -48,7 +54,12 @@ export default class AutocompleteCacher<T> {
     getSuggestions: (request: atom$AutocompleteRequest) => Promise<?T>,
     config: AutocompleteCacherConfig<T>,
   ) {
-    this._getSuggestions = getSuggestions;
+    this._getSuggestions = async (request: atom$AutocompleteRequest) => {
+      const results = await getSuggestions(request);
+      return config.updateFirstResults == null || results == null
+        ? results
+        : config.updateFirstResults(request, results);
+    };
     this._config = config;
     this._setEnabled();
   }
@@ -69,21 +80,36 @@ export default class AutocompleteCacher<T> {
     }
     const session = this._session;
     if (session != null && this._canMaybeFilterResults(session, request)) {
-      // We need to send this request speculatively because if firstResult resolves to `null`, we'll
-      // need this result. If we wait for firstResult to resolve before sending it, satisfying this
-      // request could take as much as two round trips to the server. We could avoid this in some
-      // cases by checking if firstResult has already been resolved. If it has already resolved to a
-      // non-null value, we can skip this request.
+      const state = session.firstResultPromise.getState();
+      if (state.kind === 'fulfilled' && state.value != null) {
+        // Maybe an earlier request had already resolved to not-null so we can use
+        // it right now, synchronously?
+        const firstResult = state.value;
+        const result = this._config.updateResults(request, firstResult);
+        if (result != null) {
+          this._session = {...this._session, lastRequest: request};
+          return Promise.resolve(result);
+        }
+      }
+
+      // If it hasn't already resolved, or if it had resolved to not-null,
+      // or if the updateResults function decided synchronously that it wasn't
+      // able to do anything, then in all cases we'll send an additional request
+      // speculatively right now (to reduce overall latency) and defer the
+      // decision about whether to use the existing response or
+      // the speculative one.
       const resultFromLanguageService = this._getSuggestions(request);
       const result = this._filterSuggestionsIfPossible(
         request,
-        session.firstResult,
+        session.firstResultPromise.getPromise(),
         resultFromLanguageService,
       );
       this._session = {
-        firstResult: getNewFirstResult(
-          session.firstResult,
-          resultFromLanguageService,
+        firstResultPromise: new PromiseWithState(
+          getNewFirstResult(
+            session.firstResultPromise.getPromise(),
+            resultFromLanguageService,
+          ),
         ),
         lastRequest: request,
       };
@@ -91,7 +117,7 @@ export default class AutocompleteCacher<T> {
     } else {
       const result = this._getSuggestions(request);
       this._session = {
-        firstResult: result,
+        firstResultPromise: new PromiseWithState(result),
         lastRequest: request,
       };
       return result;
@@ -120,9 +146,10 @@ export default class AutocompleteCacher<T> {
     currentRequest: atom$AutocompleteRequest,
   ): boolean {
     const {lastRequest} = session;
-    const shouldFilter = this._config.shouldFilter != null
-      ? this._config.shouldFilter
-      : defaultShouldFilter;
+    const shouldFilter =
+      this._config.shouldFilter != null
+        ? this._config.shouldFilter
+        : defaultShouldFilter;
     const charsSinceLastRequest =
       currentRequest.bufferPosition.column - lastRequest.bufferPosition.column;
     return (
@@ -152,6 +179,26 @@ function defaultShouldFilter(
   currentRequest: atom$AutocompleteRequest,
   charsSinceLastRequest: number,
 ) {
+  // This function's goal is to check whether the currentRequest represents
+  // additional typing to do further filtering, or whether it represents an
+  // entirely new autocomplete request.
+  // It does this by checking the request.prefix that AutocompletePlus had
+  // computed for the previous request vs the currentRequest. How
+  // AutocompletePlus computes this prefix is via a 'word regex' to see what
+  // word the caret is on, and take the portion of it to the left of the caret.
+  // Its word regex is roughly [a-zA-Z0-9_-]+. If the currentRequest.prefix
+  // is strictly longer than the lastRequest.prefix, by the right number
+  // of characters, then we should continue to do further filtering.
+  // NOTE: the prefix computed by AutocompletePlus is not necessarily the
+  // replacementPrefix that will be used if the user accepts a suggestion.
+  // And it's not necessarily appropriate for the language (e.g. flow
+  // disallows hyphens, and php allows $). But that doesn't matter. We're merely
+  // using it as a convenient consistent source of a good enough word regex.
+  // We do further filtering to only accept [a-zA-Z_], so no numerals or
+  // hyphens. This makes us very conservative. When we're too conservative
+  // (e.g. always failing to cache for identifiers that have numerals or
+  // hyphens), the only bad effect is more autocomplete requests to the
+  // language server than is strictly necessary.
   return (
     currentRequest.prefix.startsWith(lastRequest.prefix) &&
     currentRequest.prefix.length ===

@@ -27,7 +27,13 @@ class FileSearchProcess {
   _directory: string;
   _ignoredNames: Array<string>;
 
-  constructor(task: Task, directory: string, ignoredNames: Array<string>) {
+  constructor(directory: string, ignoredNames: Array<string>) {
+    this._directory = directory;
+    this._ignoredNames = ignoredNames;
+  }
+
+  async initialize(): Promise<void> {
+    const task = new Task();
     this._task = task;
     task.onError(buffer => {
       logger.error(
@@ -37,8 +43,17 @@ class FileSearchProcess {
       this.dispose();
     });
     task.onExit(() => this.dispose());
-    this._directory = directory;
-    this._ignoredNames = ignoredNames;
+
+    try {
+      await task.invokeRemoteMethod({
+        file: require.resolve('./process/FileSearch'),
+        method: 'initFileSearchForDirectory',
+        args: [this._directory, this._ignoredNames],
+      });
+    } catch (e) {
+      this.dispose();
+      throw e;
+    }
   }
 
   async query(query: string): Promise<Array<FileSearchResult>> {
@@ -82,13 +97,9 @@ async function newFileSearch(
     throw new Error('Provided path is not a directory : ' + directory);
   }
 
-  const task = new Task();
-  await task.invokeRemoteMethod({
-    file: require.resolve('./process/FileSearch'),
-    method: 'initFileSearchForDirectory',
-    args: [directory, ignoredNames],
-  });
-  return new FileSearchProcess(task, directory, ignoredNames);
+  const fileSearchProcess = new FileSearchProcess(directory, ignoredNames);
+  await fileSearchProcess.initialize();
+  return fileSearchProcess;
 }
 
 export async function fileSearchForDirectory(

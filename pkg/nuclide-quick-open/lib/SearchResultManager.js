@@ -228,12 +228,14 @@ export default class SearchResultManager {
     await Promise.all(eligibilities);
 
     if (
-      !(arrayEqual(this._directories, directories) &&
+      !(
+        arrayEqual(this._directories, directories) &&
         mapEqual(
           this._directoryEligibleProviders,
           directoryEligibleProviders,
         ) &&
-        areSetsEqual(this._globalEligibleProviders, globalEligibleProviders))
+        areSetsEqual(this._globalEligibleProviders, globalEligibleProviders)
+      )
     ) {
       this._directories = directories;
       this._directoryEligibleProviders = directoryEligibleProviders;
@@ -450,9 +452,10 @@ export default class SearchResultManager {
       const provider = this._quickOpenProviderRegistry.getGlobalProviderByName(
         providerName,
       );
-      providerPaths = provider && this._globalEligibleProviders.has(provider)
-        ? [GLOBAL_KEY]
-        : [];
+      providerPaths =
+        provider && this._globalEligibleProviders.has(provider)
+          ? [GLOBAL_KEY]
+          : [];
     } else {
       providerPaths = this._sortDirectories().map(d => d.getPath());
     }
@@ -561,12 +564,14 @@ export default class SearchResultManager {
       title: display != null ? display.title : provider.name,
       prompt: display != null ? display.prompt : `Search ${provider.name}`,
       action: display != null && display.action != null ? display.action : '',
-      canOpenAll: display != null && display.canOpenAll != null
-        ? display.canOpenAll
-        : true,
-      priority: provider.priority != null
-        ? provider.priority
-        : Number.POSITIVE_INFINITY,
+      canOpenAll:
+        display != null && display.canOpenAll != null
+          ? display.canOpenAll
+          : true,
+      priority:
+        provider.priority != null
+          ? provider.priority
+          : Number.POSITIVE_INFINITY,
     };
     return providerSpec;
   }

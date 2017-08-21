@@ -33,12 +33,12 @@ type NotificationMessage = {
  */
 export class ObservableManager {
   _notifications: Observable<NotificationMessage>;
-  _outputWindowMessages: Observable<Object>;
+  _outputWindowMessages: Observable<string>;
   _disposables: UniversalDisposable;
 
   constructor(
     notifications: Observable<NotificationMessage>,
-    outputWindowMessages: Observable<Object>,
+    outputWindowMessages: Observable<string>,
   ) {
     this._notifications = notifications;
     this._outputWindowMessages = outputWindowMessages;
@@ -58,20 +58,10 @@ export class ObservableManager {
     this._registerConsoleLogging(this._outputWindowMessages.share());
   }
 
-  _registerConsoleLogging(
-    sharedOutputWindowMessages: Observable<Object>,
-  ): void {
-    const filteredMesages = sharedOutputWindowMessages
-      .filter(messageObj => messageObj.method === 'Console.messageAdded')
-      .map(messageObj => {
-        return JSON.stringify({
-          level: messageObj.params.message.level,
-          text: messageObj.params.message.text,
-        });
-      });
+  _registerConsoleLogging(outputMessages: Observable<string>): void {
     const outputDisposable = registerConsoleLogging(
       'PHP Debugger',
-      filteredMesages,
+      outputMessages,
     );
     if (outputDisposable != null) {
       this._disposables.add(outputDisposable);

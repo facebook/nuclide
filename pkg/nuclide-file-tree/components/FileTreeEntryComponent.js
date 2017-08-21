@@ -62,19 +62,6 @@ export class FileTreeEntryComponent extends React.Component {
   constructor(props: Props) {
     super(props);
     this.dragEventCount = 0;
-    (this: any)._onMouseDown = this._onMouseDown.bind(this);
-    (this: any)._onClick = this._onClick.bind(this);
-    (this: any)._onDoubleClick = this._onDoubleClick.bind(this);
-
-    (this: any)._onDragEnter = this._onDragEnter.bind(this);
-    (this: any)._onDragLeave = this._onDragLeave.bind(this);
-    (this: any)._onDragStart = this._onDragStart.bind(this);
-    (this: any)._onDragOver = this._onDragOver.bind(this);
-    (this: any)._onDrop = this._onDrop.bind(this);
-
-    (this: any)._checkboxOnChange = this._checkboxOnChange.bind(this);
-    (this: any)._checkboxOnClick = this._checkboxOnClick.bind(this);
-    (this: any)._checkboxOnMouseDown = this._checkboxOnMouseDown.bind(this);
 
     this.state = {
       isLoading: false,
@@ -198,8 +185,8 @@ export class FileTreeEntryComponent extends React.Component {
           <PathWithFileIcon
             className={classnames('name', 'nuclide-file-tree-path', {
               'icon-nuclicon-file-directory': node.isContainer && !node.isCwd,
-              'icon-nuclicon-file-directory-starred': node.isContainer &&
-                node.isCwd,
+              'icon-nuclicon-file-directory-starred':
+                node.isContainer && node.isCwd,
             })}
             isFolder={node.isContainer}
             path={node.uri}
@@ -266,7 +253,7 @@ export class FileTreeEntryComponent extends React.Component {
     );
   }
 
-  _onMouseDown(event: SyntheticMouseEvent) {
+  _onMouseDown = (event: SyntheticMouseEvent) => {
     event.stopPropagation();
     if (this._isToggleNodeExpand(event)) {
       return;
@@ -282,9 +269,9 @@ export class FileTreeEntryComponent extends React.Component {
     } else if (selectionMode === 'single-select' && !node.isSelected) {
       getActions().setSelectedNode(node.rootUri, node.uri);
     }
-  }
+  };
 
-  _onClick(event: SyntheticMouseEvent) {
+  _onClick = (event: SyntheticMouseEvent) => {
     event.stopPropagation();
     const node = this.props.node;
 
@@ -328,9 +315,9 @@ export class FileTreeEntryComponent extends React.Component {
     if (node.isSelected) {
       getActions().setFocusedNode(node.rootUri, node.uri);
     }
-  }
+  };
 
-  _onDoubleClick(event: SyntheticMouseEvent) {
+  _onDoubleClick = (event: SyntheticMouseEvent) => {
     event.stopPropagation();
 
     if (this.props.node.isContainer) {
@@ -342,9 +329,9 @@ export class FileTreeEntryComponent extends React.Component {
     } else {
       getActions().confirmNode(this.props.node.rootUri, this.props.node.uri);
     }
-  }
+  };
 
-  _onDragEnter(event: DragEvent) {
+  _onDragEnter = (event: DragEvent) => {
     event.stopPropagation();
     const movableNodes = store
       .getSelectedNodes()
@@ -364,9 +351,9 @@ export class FileTreeEntryComponent extends React.Component {
       );
     }
     this.dragEventCount++;
-  }
+  };
 
-  _onDragLeave(event: DragEvent) {
+  _onDragLeave = (event: DragEvent) => {
     event.stopPropagation();
     // Avoid calling an unhoverNode action if dragEventCount is already 0.
     if (this.dragEventCount === 0) {
@@ -377,9 +364,9 @@ export class FileTreeEntryComponent extends React.Component {
       this.dragEventCount = 0;
       getActions().unhoverNode(this.props.node.rootUri, this.props.node.uri);
     }
-  }
+  };
 
-  _onDragStart(event: DragEvent) {
+  _onDragStart = (event: DragEvent) => {
     event.stopPropagation();
     if (this._pathContainer == null) {
       return;
@@ -407,21 +394,21 @@ export class FileTreeEntryComponent extends React.Component {
       invariant(document.body != null);
       document.body.removeChild(fileIcon);
     });
-  }
+  };
 
-  _onDragOver(event: DragEvent) {
+  _onDragOver = (event: DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
-  }
+  };
 
-  _onDrop(event: DragEvent) {
+  _onDrop = (event: DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
     // Reset the dragEventCount for the currently dragged node upon dropping.
     this.dragEventCount = 0;
     getActions().moveToNode(this.props.node.rootUri, this.props.node.uri);
-  }
+  };
 
   _toggleNodeExpanded(deep: boolean): void {
     if (this.props.node.isExpanded) {
@@ -445,23 +432,23 @@ export class FileTreeEntryComponent extends React.Component {
     }
   }
 
-  _checkboxOnChange(isChecked: boolean): void {
+  _checkboxOnChange = (isChecked: boolean): void => {
     if (isChecked) {
       getActions().checkNode(this.props.node.rootUri, this.props.node.uri);
     } else {
       getActions().uncheckNode(this.props.node.rootUri, this.props.node.uri);
     }
-  }
+  };
 
-  _checkboxOnClick(event: SyntheticEvent): void {
+  _checkboxOnClick = (event: SyntheticEvent): void => {
     event.stopPropagation();
-  }
+  };
 
-  _checkboxOnMouseDown(event: SyntheticMouseEvent): void {
+  _checkboxOnMouseDown = (event: SyntheticMouseEvent): void => {
     // Chrome messes with scrolling if a focused input is being scrolled out of view
     // so we'll just prevent the checkbox from receiving the focus
     event.preventDefault();
-  }
+  };
 }
 
 function getSelectionMode(event: SyntheticMouseEvent): SelectionMode {

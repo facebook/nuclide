@@ -13,17 +13,14 @@ import React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import {Badge, BadgeColors, BadgeSizes} from './Badge';
 
-const BadgeBasicExample = (): React.Element<any> => (
+const BadgeBasicExample = (): React.Element<any> =>
   <div>
     <Block>
-      <Badge value={1} />{' '}
-      <Badge value={11} />{' '}
-      <Badge value={123} />
+      <Badge value={1} /> <Badge value={11} /> <Badge value={123} />
     </Block>
-  </div>
-);
+  </div>;
 
-const BadgeColorExample = (): React.Element<any> => (
+const BadgeColorExample = (): React.Element<any> =>
   <div>
     <Block>
       Info: <Badge color={BadgeColors.info} value={123} />
@@ -37,10 +34,9 @@ const BadgeColorExample = (): React.Element<any> => (
     <Block>
       Error: <Badge color={BadgeColors.error} value={123} />
     </Block>
-  </div>
-);
+  </div>;
 
-const BadgeSizeExample = (): React.Element<any> => (
+const BadgeSizeExample = (): React.Element<any> =>
   <div>
     <Block>
       Small: <Badge size={BadgeSizes.small} value={123} />
@@ -51,18 +47,16 @@ const BadgeSizeExample = (): React.Element<any> => (
     <Block>
       Large: <Badge size={BadgeSizes.large} value={123} />
     </Block>
-  </div>
-);
+  </div>;
 
-const BadgeIconExample = (): React.Element<any> => (
+const BadgeIconExample = (): React.Element<any> =>
   <div>
     <Block>
       <Badge icon="gear" value={13} />{' '}
       <Badge icon="cloud-download" color={BadgeColors.info} value={23} />{' '}
       <Badge icon="octoface" color={BadgeColors.success} value={42} />
     </Block>
-  </div>
-);
+  </div>;
 
 export const BadgeExamples = {
   sectionName: 'Badges',

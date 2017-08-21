@@ -32,11 +32,6 @@ export default class PromptButton extends React.Component {
   props: Props;
   _disposables: IDisposable;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleClick = this._handleClick.bind(this);
-  }
-
   render(): ?React.Element<any> {
     return (
       <span
@@ -50,7 +45,7 @@ export default class PromptButton extends React.Component {
     );
   }
 
-  _handleClick(event: SyntheticMouseEvent): void {
+  _handleClick = (event: SyntheticMouseEvent): void => {
     const currentWindow = remote.getCurrentWindow();
     const menu = new remote.Menu();
     // TODO: Sort alphabetically by label
@@ -65,5 +60,5 @@ export default class PromptButton extends React.Component {
       );
     });
     menu.popup(currentWindow, event.clientX, event.clientY);
-  }
+  };
 }

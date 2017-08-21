@@ -57,14 +57,9 @@ const DELETE_BUTTON_TITLE_UNDELETABLE = 'Selected item cannot be deleted';
 export class MutableListSelector extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._onDeleteButtonClicked = this._onDeleteButtonClicked.bind(this);
-  }
-
-  _onDeleteButtonClicked() {
+  _onDeleteButtonClicked = () => {
     this.props.onDeleteButtonClicked(this.props.idOfSelectedItem);
-  }
+  };
 
   _onItemClicked(itemId: string) {
     this.props.onItemClicked(itemId);

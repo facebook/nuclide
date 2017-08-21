@@ -26,7 +26,7 @@ describe('nuclide-distraction-free-mode', () => {
       const commandTarget = atom.views.getView(atom.workspace);
 
       runs(() => {
-        atom.commands.dispatch(commandTarget, 'nuclide-outline-view:toggle', {
+        atom.commands.dispatch(commandTarget, 'outline-view:toggle', {
           visible: true,
         });
       });

@@ -9,13 +9,10 @@
  * @format
  */
 
-import type {
-  Viewable,
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
 import type {SshTunnelService, Store} from './types';
 
 import createPackage from 'nuclide-commons-atom/createPackage';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {TunnelsPanel, WORKSPACE_VIEW_URI} from './ui/TunnelsPanel';
 import * as Actions from './redux/Actions';
@@ -25,7 +22,7 @@ import {applyMiddleware, combineReducers, createStore} from 'redux';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import {Disposable} from 'atom';
 
 class Activation {
@@ -43,6 +40,7 @@ class Activation {
 
     this._disposables = new UniversalDisposable(
       this._closeAllTunnels.bind(this),
+      this._registerCommandAndOpener(),
     );
   }
 
@@ -50,19 +48,19 @@ class Activation {
     this._disposables.dispose();
   }
 
-  consumeWorkspaceViewsService(api: WorkspaceViewsService) {
-    this._disposables.add(
-      api.addOpener(uri => {
+  _registerCommandAndOpener(): UniversalDisposable {
+    return new UniversalDisposable(
+      atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           return new TunnelsPanel(this._store);
         }
       }),
-      () => api.destroyWhere(item => item instanceof TunnelsPanel),
+      () => destroyItemWhere(item => item instanceof TunnelsPanel),
       atom.commands.add(
         'atom-workspace',
         'nuclide-ssh-tunnels-panel:toggle',
-        event => {
-          api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+        () => {
+          atom.workspace.toggle(WORKSPACE_VIEW_URI);
         },
       ),
     );
@@ -70,8 +68,8 @@ class Activation {
 
   provideSshTunnelService(): SshTunnelService {
     return {
-      openTunnel: tunnel => {
-        this._store.dispatch(Actions.openTunnel(tunnel));
+      openTunnel: (tunnel, onOpen, onClose) => {
+        this._store.dispatch(Actions.openTunnel(tunnel, onOpen, onClose));
         return new Disposable(() =>
           this._store.dispatch(Actions.closeTunnel(tunnel)),
         );
@@ -79,7 +77,7 @@ class Activation {
     };
   }
 
-  deserializeSshTunnelsPanel(): Viewable {
+  deserializeSshTunnelsPanel(): atom$PaneItem {
     return new TunnelsPanel(this._store);
   }
 

@@ -10,10 +10,15 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {SetCustomAdbPathAction, SetCustomSdbPathAction} from '../types';
+import type {
+  SetCustomAdbPathAction,
+  SetCustomSdbPathAction,
+  SetAdbPortAction,
+} from '../types';
 
 export const SET_CUSTOM_ADB_PATH = 'SET_CUSTOM_ADB_PATH';
 export const SET_CUSTOM_SDB_PATH = 'SET_CUSTOM_SDB_PATH';
+export const SET_ADB_PORT = 'SET_ADB_PORT';
 
 export function setCustomAdbPath(
   host: NuclideUri,
@@ -22,6 +27,13 @@ export function setCustomAdbPath(
   return {
     type: SET_CUSTOM_ADB_PATH,
     payload: {host, path},
+  };
+}
+
+export function setAdbPort(host: NuclideUri, port: ?string): SetAdbPortAction {
+  return {
+    type: SET_ADB_PORT,
+    payload: {host, port},
   };
 }
 

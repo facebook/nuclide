@@ -9,10 +9,10 @@
  * @format
  */
 
-import type {ActionsObservable} from '../../../commons-node/redux-observable';
+import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 import type {PlatformGroup, Store} from '../types';
 import type {Action} from './Actions';
-import type {ResolvedRuleType} from '../../../nuclide-buck-rpc';
+import type {ResolvedRuleType} from '../../../nuclide-buck-rpc/lib/types';
 
 import invariant from 'assert';
 import {Observable} from 'rxjs';
@@ -26,9 +26,10 @@ export function setProjectRootEpic(
   return actions.ofType(Actions.SET_PROJECT_ROOT).switchMap(action => {
     invariant(action.type === Actions.SET_PROJECT_ROOT);
     const {projectRoot} = action;
-    const rootObs = projectRoot == null
-      ? Observable.of(null)
-      : Observable.fromPromise(getBuckProjectRoot(projectRoot));
+    const rootObs =
+      projectRoot == null
+        ? Observable.of(null)
+        : Observable.fromPromise(getBuckProjectRoot(projectRoot));
     return rootObs.switchMap(buckRoot =>
       Observable.of(
         Actions.setBuckRoot(buckRoot),
@@ -81,6 +82,7 @@ export function setRuleTypeEpic(
     const {ruleType} = action;
     if (ruleType) {
       const state = store.getState();
+      // flowlint-next-line sketchy-null-string:off
       invariant(state.buckRoot);
       return state.platformService
         .getPlatformGroups(state.buckRoot, ruleType.type, state.buildTarget)

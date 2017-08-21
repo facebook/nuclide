@@ -28,7 +28,6 @@ export class Webview extends React.Component<void, Props, void> {
 
   constructor(props: Object) {
     super(props);
-    (this: any)._handleDidFinishLoad = this._handleDidFinishLoad.bind(this);
     this._disposables = new CompositeDisposable();
   }
 
@@ -91,9 +90,9 @@ export class Webview extends React.Component<void, Props, void> {
     });
   }
 
-  _handleDidFinishLoad(event: Event): void {
+  _handleDidFinishLoad = (event: Event): void => {
     if (this.props.onDidFinishLoad) {
       this.props.onDidFinishLoad(event);
     }
-  }
+  };
 }

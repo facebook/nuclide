@@ -19,11 +19,6 @@ type Props = {||};
 export default class Inspector extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleDidFinishLoad = this._handleDidFinishLoad.bind(this);
-  }
-
   getTitle(): string {
     return 'React Inspector';
   }
@@ -48,15 +43,26 @@ export default class Inspector extends React.Component {
     );
   }
 
-  _handleDidFinishLoad(event: Event) {
+  _handleDidFinishLoad = (event: Event) => {
+    const themes = atom.config.get('core.themes');
+
+    let theme = '';
+
+    // Atom has 2 theme settings: UI and Syntax.
+    // DevTools matches the Syntax theme, which is the 2nd in the array.
+    if (Array.isArray(themes) && themes.length > 1) {
+      theme = themes[1];
+    }
+
     const element = ((event.target: any): WebviewElement);
     const requirePaths = require.cache[__filename].paths;
     const inspectorDevTools = require.resolve('react-devtools-core/standalone');
     element.executeJavaScript(
       `initializeElementInspector(
         ${JSON.stringify(inspectorDevTools)},
-        ${JSON.stringify(requirePaths)}
+        ${JSON.stringify(requirePaths)},
+        ${JSON.stringify(theme)}
       );`,
     );
-  }
+  };
 }

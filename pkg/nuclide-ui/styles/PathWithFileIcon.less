@@ -1,3 +1,29 @@
+@import "ui-variables";
+
 .nuclide-ui-path-with-file-icon {
   display: inline-block;
+  position: relative;
+}
+
+.nuclide-ui-path-with-file-icon-decoration-icon {
+  position: absolute;
+  transform: scale(0.6);
+  left: 3px;
+  top: 3px;
+}
+
+.nuclide-ui-path-with-file-icon-warning-icon-background,
+.nuclide-ui-path-with-file-icon-error-icon-background {
+  fill: @base-background-color;
+  left: -2px;
+  position: absolute;
+  top: 2px;
+  z-index: -1;
+}
+
+atom-panel-container {
+  .nuclide-ui-path-with-file-icon-warning-icon-background,
+  .nuclide-ui-path-with-file-icon-error-icon-background {
+    fill: @tool-panel-background-color;
+  }
 }

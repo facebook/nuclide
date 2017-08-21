@@ -38,21 +38,19 @@ export class ShowMoreComponent extends React.Component {
     super(props);
     this.state = {
       // Defaults to false if showMoreByDefault not specified
-      showingMore: this.props.showMoreByDefault != null &&
-        this.props.showMoreByDefault,
+      showingMore:
+        this.props.showMoreByDefault != null && this.props.showMoreByDefault,
       currentHeight: 0,
     };
-    (this: any)._toggleShowMore = this._toggleShowMore.bind(this);
-    (this: any)._updateMeasurements = this._updateMeasurements.bind(this);
   }
 
-  _updateMeasurements(newMeasurements: DOMMeasurements): void {
+  _updateMeasurements = (newMeasurements: DOMMeasurements): void => {
     if (newMeasurements.scrollHeight !== this.state.currentHeight) {
       this.setState({
         currentHeight: newMeasurements.scrollHeight,
       });
     }
-  }
+  };
 
   render(): React.Element<any> {
     const {showingMore, currentHeight} = this.state;
@@ -65,9 +63,8 @@ export class ShowMoreComponent extends React.Component {
           overflowY: 'hidden',
         }
       : {};
-    const displayNoneIfBelowMaxHeight = currentHeight <= maxHeight
-      ? {display: 'none'}
-      : {};
+    const displayNoneIfBelowMaxHeight =
+      currentHeight <= maxHeight ? {display: 'none'} : {};
     const showMoreButton = (
       <div
         className="nuclide-ui-show-more-button-container"
@@ -96,7 +93,7 @@ export class ShowMoreComponent extends React.Component {
     );
   }
 
-  _toggleShowMore(): void {
+  _toggleShowMore = (): void => {
     this.setState({showingMore: !this.state.showingMore});
-  }
+  };
 }

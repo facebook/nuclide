@@ -15,19 +15,16 @@ import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
-import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
 } from 'atom-ide-ui';
 import type {ConnectableObservable} from 'rxjs';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
-import type {
+  AutocompleteRequest,
   AutocompleteResult,
   SymbolResult,
   LanguageService,
@@ -37,13 +34,12 @@ import type {
 export interface HackLanguageService extends LanguageService {
   getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>>,
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
-    activatedManually: boolean,
-    prefix: string,
+    request: AutocompleteRequest,
   ): Promise<?AutocompleteResult>,
 
   getDefinition(

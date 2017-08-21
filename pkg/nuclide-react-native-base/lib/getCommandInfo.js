@@ -36,8 +36,8 @@ export async function getCommandInfo(
   }
 
   return (
-    (await getCommandFromNodePackage(projectRootPath)) ||
-    getCommandFromBuck(projectRootPath)
+    (await getCommandFromBuck(projectRootPath)) ||
+    getCommandFromNodePackage(projectRootPath)
   );
 }
 

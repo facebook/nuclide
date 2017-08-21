@@ -10,8 +10,8 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {BusySignalService} from '../../nuclide-busy-signal';
 import type {
+  BusySignalService,
   CodeFormatProvider,
   DefinitionProvider,
   DefinitionQueryResult,
@@ -20,9 +20,14 @@ import type {
 } from 'atom-ide-ui';
 import type {TypeHintProvider} from '../../nuclide-type-hint/lib/types';
 import type {RefactorProvider} from '../../nuclide-refactorizer';
-import type {ClangCompilationDatabaseProvider} from './types';
+import type {
+  ClangConfigurationProvider,
+  ClangDeclarationInfoProvider,
+} from './types';
 import type {RelatedFilesProvider} from '../../nuclide-related-files/lib/types';
 
+import {Observable} from 'rxjs';
+import SharedObservableCache from '../../commons-node/SharedObservableCache';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {CompositeDisposable, Disposable} from 'atom';
 import AutocompleteHelpers from './AutocompleteHelpers';
@@ -34,9 +39,10 @@ import Refactoring from './Refactoring';
 import ClangLinter from './ClangLinter';
 import {GRAMMARS, GRAMMAR_SET, PACKAGE_NAME} from './constants';
 import {
-  reset,
-  registerCompilationDatabaseProvider,
+  resetForSource,
+  registerClangProvider,
   getRelatedSourceOrHeader,
+  getDeclarationInfo,
 } from './libclang';
 
 let busySignalService: ?BusySignalService = null;
@@ -60,7 +66,7 @@ export function activate() {
         if (path == null) {
           return;
         }
-        await reset(editor);
+        await resetForSource(editor);
       },
     ),
   );
@@ -104,27 +110,33 @@ export function provideDefinitions(): DefinitionProvider {
 }
 
 export function consumeBusySignal(service: BusySignalService): IDisposable {
-  if (subscriptions != null) {
-    subscriptions.add(service);
-  }
   busySignalService = service;
   return new UniversalDisposable(() => {
-    if (subscriptions != null) {
-      subscriptions.remove(service);
-    }
     busySignalService = null;
   });
 }
 
 export function provideCodeFormat(): CodeFormatProvider {
   return {
-    selector: Array.from(GRAMMAR_SET).join(', '),
-    inclusionPriority: 1,
+    grammarScopes: Array.from(GRAMMAR_SET),
+    priority: 1,
     formatEntireFile(editor, range) {
       return CodeFormatHelpers.formatEntireFile(editor, range);
     },
   };
 }
+
+const busySignalCache = new SharedObservableCache(path => {
+  // Return an observable that starts the busy signal on subscription
+  // and disposes it upon unsubscription.
+  return Observable.create(() => {
+    if (busySignalService != null) {
+      return new UniversalDisposable(
+        busySignalService.reportBusy(`Clang: compiling \`${path}\``),
+      );
+    }
+  }).share();
+});
 
 export function provideLinter(): LinterProvider {
   return {
@@ -135,10 +147,12 @@ export function provideLinter(): LinterProvider {
     lint(editor) {
       const getResult = () => ClangLinter.lint(editor);
       if (busySignalService != null) {
-        return busySignalService.reportBusyWhile(
-          `Clang: compiling \`${editor.getTitle()}\``,
-          getResult,
-        );
+        // Use the busy signal cache to dedupe busy signal messages.
+        // The shared subscription gets released when all the lints finish.
+        return busySignalCache
+          .get(editor.getTitle())
+          .race(Observable.defer(getResult))
+          .toPromise();
       }
       return getResult();
     },
@@ -170,6 +184,12 @@ export function provideRefactoring(): RefactorProvider {
   };
 }
 
+export function provideDeclarationInfo(): ClangDeclarationInfoProvider {
+  return {
+    getDeclarationInfo,
+  };
+}
+
 export function provideRelatedFiles(): RelatedFilesProvider {
   return {
     getRelatedFiles(filePath: NuclideUri): Promise<Array<string>> {
@@ -180,10 +200,10 @@ export function provideRelatedFiles(): RelatedFilesProvider {
   };
 }
 
-export function consumeCompilationDatabase(
-  provider: ClangCompilationDatabaseProvider,
+export function consumeClangConfigurationProvider(
+  provider: ClangConfigurationProvider,
 ): Disposable {
-  return registerCompilationDatabaseProvider(provider);
+  return registerClangProvider(provider);
 }
 
 export function deactivate() {

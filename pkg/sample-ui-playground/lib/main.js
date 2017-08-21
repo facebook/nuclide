@@ -9,14 +9,8 @@
  * @format
  */
 
-import type {
-  Viewable,
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
-
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Playground, WORKSPACE_VIEW_URI} from './Playground';
 import invariant from 'assert';
@@ -25,7 +19,7 @@ import React from 'react';
 let disposables: ?UniversalDisposable = null;
 
 export function activate(): void {
-  disposables = new UniversalDisposable();
+  disposables = registerCommandAndOpener();
 }
 
 export function deactivate(): void {
@@ -34,26 +28,20 @@ export function deactivate(): void {
   disposables = null;
 }
 
-export function consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-  invariant(disposables != null);
-  disposables.add(
-    api.addOpener(uri => {
+function registerCommandAndOpener(): UniversalDisposable {
+  return new UniversalDisposable(
+    atom.workspace.addOpener(uri => {
       if (uri === WORKSPACE_VIEW_URI) {
         return viewableFromReactElement(<Playground />);
       }
     }),
-    () => api.destroyWhere(item => item instanceof Playground),
-    atom.commands.add(
-      'atom-workspace',
-      'sample-ui-playground:toggle',
-      event => {
-        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
-      },
-    ),
+    () => destroyItemWhere(item => item instanceof Playground),
+    atom.commands.add('atom-workspace', 'sample-ui-playground:toggle', () => {
+      atom.workspace.toggle(WORKSPACE_VIEW_URI);
+    }),
   );
-  // Optionally return a disposable to clean up this package's state when gadgets goes away
 }
 
-export function deserializeSampleUiPlayground(): Viewable {
+export function deserializeSampleUiPlayground(): atom$PaneItem {
   return viewableFromReactElement(<Playground />);
 }

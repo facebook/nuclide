@@ -11,23 +11,88 @@
 
 import React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
-import PathWithFileIcon from './PathWithFileIcon';
+import PathWithFileIcon, {DecorationIcons} from './PathWithFileIcon';
 
-function PathWithFileIconExample(): React.Element<any> {
+function ListItem(props: {children?: mixed}): React.Element<any> {
+  return (
+    <div className="list-item">
+      {props.children}
+    </div>
+  );
+}
+
+function BasicExample(): React.Element<any> {
   return (
     <div>
       <Block>
         <p>
-          Simply wrap paths in &lt;PathWithFileIcon /&gt; to get the appropriate icons:
+          Simply wrap paths in &lt;PathWithFileIcon /&gt; to get the appropriate
+          icons:
         </p>
         <div>
-          <PathWithFileIcon path="maybe/some/javascript.js" />
-          <PathWithFileIcon path="how/about/php.php" />
-          <PathWithFileIcon path="text.txt" />
-          <PathWithFileIcon path="markdown.md" />
-          <PathWithFileIcon path="emptiness" />
-          <PathWithFileIcon path=".dotfile" />
-          <PathWithFileIcon isFolder={true} path="how/about/a/folder/" />
+          <ListItem>
+            <PathWithFileIcon path="maybe/some/javascript.js" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon path="how/about/php.php" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon path="text.txt" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon path="markdown.md" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon path="emptiness" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon path=".dotfile" />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon isFolder={true} path="how/about/a/folder/" />
+          </ListItem>
+        </div>
+      </Block>
+    </div>
+  );
+}
+
+function DecorationIconExample(): React.Element<any> {
+  return (
+    <div>
+      <Block>
+        <p>
+          PathWithFileIcon export a DecorationIcons object containing custom
+          decorations. You can optionally pass one of those decorations to
+          decorate the file icon with e.g. a small AtomIcon:
+        </p>
+        <div>
+          <ListItem>
+            <PathWithFileIcon
+              decorationIcon={DecorationIcons.Warning}
+              path="fileA.js"
+            />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon
+              decorationIcon={DecorationIcons.Error}
+              path="fileB.js"
+            />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon
+              decorationIcon={DecorationIcons.Warning}
+              isFolder={true}
+              path="folderA"
+            />
+          </ListItem>
+          <ListItem>
+            <PathWithFileIcon
+              decorationIcon={DecorationIcons.Error}
+              isFolder={true}
+              path="folderB"
+            />
+          </ListItem>
         </div>
       </Block>
     </div>
@@ -36,11 +101,16 @@ function PathWithFileIconExample(): React.Element<any> {
 
 export const PathWithFileIconExamples = {
   sectionName: 'PathWithFileIcon',
-  description: 'Renders a file icon for a given path iff the file-icons package is installed.',
+  description:
+    'Renders a file icon for a given path iff the file-icons package is installed.',
   examples: [
     {
       title: 'File icon wrapper example',
-      component: PathWithFileIconExample,
+      component: BasicExample,
+    },
+    {
+      title: 'decorationIcon',
+      component: DecorationIconExample,
     },
   ],
 };

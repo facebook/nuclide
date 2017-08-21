@@ -64,6 +64,7 @@ export class XhrConnectionHeartbeat {
       await this.sendHeartBeat();
       this._heartbeatConnectedOnce = true;
       const now = Date.now();
+      // flowlint-next-line sketchy-null-number:off
       this._lastHeartbeatTime = this._lastHeartbeatTime || now;
       if (
         this._lastHeartbeat === 'away' ||

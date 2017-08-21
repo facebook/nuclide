@@ -9,226 +9,312 @@
  * @format
  */
 
-import type {
-  ContinueToLocationRequest,
-} from '../../nuclide-debugger-base/lib/protocol-types.js';
+import * as DebugProtocol from 'vscode-debugprotocol';
+
+import {
+  Breakpoint,
+  BreakpointEvent,
+  Handles,
+  OutputEvent,
+  Scope,
+  Source,
+  StackFrame,
+  StoppedEvent,
+  TerminatedEvent,
+} from 'vscode-debugadapter';
 
 import invariant from 'assert';
-import {updateSettings} from './settings';
 import {makeExpressionHphpdCompatible} from './utils';
 import logger from './utils';
-import {pathToUri, uriToPath, getBreakpointLocation} from './helpers';
-import Handler from './Handler';
+import {functionOfFrame, locationOfFrame} from './frame';
 import {
-  idOfFrame,
-  functionOfFrame,
-  fileUrlOfFrame,
-  locationOfFrame,
-} from './frame';
-import {
-  ConnectionStatus,
   COMMAND_STEP_INTO,
   COMMAND_STEP_OVER,
   COMMAND_STEP_OUT,
   BREAKPOINT_RESOLVED_NOTIFICATION,
 } from './DbgpSocket';
 import {
-  ConnectionMultiplexerNotification,
+  ConnectionMultiplexer,
   ConnectionMultiplexerStatus,
-} from './ConnectionMultiplexer.js';
+} from './ConnectionMultiplexer';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {sleep} from 'nuclide-commons/promise';
+import {Deferred, sleep} from 'nuclide-commons/promise';
+import {BREAKPOINT} from './Connection';
+import {arrayFlatten, setDifference} from 'nuclide-commons/collection';
+import nullthrows from 'nullthrows';
 
-import {FileCache} from '../../nuclide-debugger-common';
-import EventEmitter from 'events';
 import {CompositeDisposable} from 'event-kit';
-import type {Breakpoint} from './BreakpointStore';
-import type {ConnectionMultiplexer} from './ConnectionMultiplexer';
-import type {ClientCallback} from './ClientCallback';
+import type {
+  Breakpoint as HhBreakpointType,
+  ExceptionState,
+} from './BreakpointStore';
 
-const SESSION_END_EVENT = 'session-end-event';
 const RESOLVE_BREAKPOINT_DELAY_MS = 500;
 
-// Handles all 'Debug.*' Chrome dev tools messages
-export class DebuggerHandler extends Handler {
+type VsBreakpointpointDescriptor = {
+  id: number,
+  path: string,
+  line: number,
+  condition: string,
+  vsBpDeferred: Deferred<DebugProtocol.Breakpoint>,
+  vsBp: ?DebugProtocol.Breakpoint,
+};
+
+export class DebuggerHandler {
   _connectionMultiplexer: ConnectionMultiplexer;
-  _files: FileCache;
-  _emitter: EventEmitter;
   _subscriptions: CompositeDisposable;
   _hadFirstContinuationCommand: boolean;
   _temporaryBreakpointpointId: ?string;
+  _eventSender: (event: DebugProtocol.Event) => mixed;
 
-  constructor(
-    clientCallback: ClientCallback,
-    connectionMultiplexer: ConnectionMultiplexer,
-  ) {
-    super('Debugger', clientCallback);
+  // Since we want to send breakpoint events, we will assign an id to every event
+  // so that the frontend can match events with breakpoints.
+  _breakpointId = 0;
+  _breakpoints: Map<string, VsBreakpointpointDescriptor[]> = new Map();
+  _variableHandles: Handles<string> = new Handles();
 
+  _sendOutput(message: string, level: string): void {
+    this._eventSender(new OutputEvent(message, level));
+  }
+
+  _sendNotification(message: string, type: string): void {
+    this._eventSender(new OutputEvent(message, 'nuclide_notification', {type}));
+  }
+
+  constructor(eventSender: (event: DebugProtocol.Event) => mixed) {
+    this._eventSender = eventSender;
     this._hadFirstContinuationCommand = false;
-    this._connectionMultiplexer = connectionMultiplexer;
-    this._files = new FileCache(
-      clientCallback.sendServerMethod.bind(clientCallback),
+    this._connectionMultiplexer = new ConnectionMultiplexer(
+      this._sendOutput.bind(this),
+      this._sendNotification.bind(this),
     );
-    this._emitter = new EventEmitter();
     this._subscriptions = new CompositeDisposable(
       this._connectionMultiplexer.onStatus(this._onStatusChanged.bind(this)),
       this._connectionMultiplexer.onNotification(
         this._onNotification.bind(this),
       ),
+      this._connectionMultiplexer,
     );
+    (this: any)._removeBreakpoint = this._removeBreakpoint.bind(this);
   }
 
-  onSessionEnd(callback: () => void): void {
-    logger.debug('onSessionEnd');
-    this._emitter.on(SESSION_END_EVENT, callback);
-  }
-
-  async handleMethod(id: number, method: string, params: Object): Promise<any> {
-    switch (method) {
-      // TODO: Add Console (aka logging) support
-      case 'enable':
-        this._debuggerEnable(id);
-        break;
-
-      case 'pause':
-        this._pause();
-        break;
-
-      case 'stepInto':
-        this._sendContinuationCommand(COMMAND_STEP_INTO);
-        break;
-
-      case 'stepOut':
-        this._sendContinuationCommand(COMMAND_STEP_OUT);
-        break;
-
-      case 'stepOver':
-        this._sendContinuationCommand(COMMAND_STEP_OVER);
-        break;
-
-      case 'resume':
-        this._resume();
-        break;
-
-      case 'setPauseOnExceptions':
-        await this._setPauseOnExceptions(id, params);
-        break;
-
-      case 'setAsyncCallStackDepth':
-      case 'skipStackFrames':
-        this.replyWithError(id, 'Not implemented');
-        break;
-
-      case 'getScriptSource':
-        // TODO: Handle file read errors.
-        // TODO: Handle non-file scriptIds
-        this.replyToCommand(id, {
-          scriptSource: await this._files.getFileSource(params.scriptId),
-        });
-        break;
-
-      case 'setBreakpointByUrl':
-        this._setBreakpointByUrl(id, params);
-        break;
-
-      case 'continueToLocation':
-        this._continueToLocation(id, params);
-        break;
-
-      case 'removeBreakpoint':
-        await this._removeBreakpoint(id, params);
-        break;
-
-      case 'evaluateOnCallFrame':
-        const compatParams = makeExpressionHphpdCompatible(params);
-        const result = await this._connectionMultiplexer.evaluateOnCallFrame(
-          Number(compatParams.callFrameId),
-          compatParams.expression,
-        );
-        this.replyToCommand(id, result);
-        break;
-
-      case 'selectThread':
-        this._selectThread(params);
-        break;
-
-      case 'setDebuggerSettings':
-        updateSettings(params);
-        break;
-
-      case 'getThreadStack':
-        const threadStackObject = await this._getThreadStack();
-        this.replyToCommand(id, threadStackObject);
-        break;
-
-      default:
-        this.unknownMethod(id, method, params);
-        break;
-    }
-  }
-
-  async _getThreadStack(): Object {
-    const enabledConnection = this._connectionMultiplexer.getEnabledConnectionId();
-    return {
-      callFrames: enabledConnection == null
-        ? []
-        : await this._getStackFrames(enabledConnection),
-    };
-  }
-
-  async _selectThread(params: Object): Promise<void> {
-    const {threadId} = params;
-    await this._connectionMultiplexer.selectThread(threadId);
-    this._sendPausedMessage();
-  }
-
-  async _setPauseOnExceptions(id: number, params: Object): Promise<any> {
-    const {state} = params;
-    await this._connectionMultiplexer
+  setPauseOnExceptions(
+    breakpointId: number,
+    state: ExceptionState,
+  ): Promise<void> {
+    return this._connectionMultiplexer
       .getBreakpointStore()
-      .setPauseOnExceptions(String(id), state);
-    this.replyToCommand(id, {});
+      .setPauseOnExceptions(String(breakpointId), state);
   }
 
-  async _setBreakpointByUrl(id: number, params: Object): Promise<void> {
-    const {lineNumber, url, columnNumber, condition} = params;
-    if (!url || columnNumber !== 0) {
-      this.replyWithError(
-        id,
-        'Invalid arguments to Debugger.setBreakpointByUrl: ' +
-          JSON.stringify(params),
-      );
-      return;
-    }
-    await this._files.registerFile(url);
+  async setBreakpoints(
+    path: string,
+    bpSources: Array<DebugProtocol.SourceBreakpoint>,
+  ): Promise<Array<DebugProtocol.Breakpoint>> {
+    const existingBreakpoints = this._breakpoints.get(path) || [];
+    const existingBsSet = new Set(existingBreakpoints);
+    const newBpSources = new Set(bpSources);
 
-    const path = uriToPath(url);
+    const addBpDescriptors = Array.from(
+      setDifference(newBpSources, existingBsSet, v => v.line),
+    ).map(bpSrc => ({
+      id: ++this._breakpointId,
+      path,
+      line: bpSrc.line,
+      condition: bpSrc.condition || '',
+      vsBp: null,
+      vsBpDeferred: new Deferred(),
+    }));
+
+    const toRemoveBpDesciptiors: Array<VsBreakpointpointDescriptor> = [];
+    const toRemoveBpIds = new Set();
+    setDifference(
+      existingBsSet,
+      newBpSources,
+      v => v.line,
+    ).forEach((bp: any) => {
+      toRemoveBpDesciptiors.push(bp);
+      toRemoveBpIds.add(bp.id);
+    });
+
+    const newBreakpoints = existingBreakpoints
+      .filter(bp => !toRemoveBpIds.has(bp.id))
+      .concat(addBpDescriptors);
+
+    this._breakpoints.set(path, newBreakpoints);
+
+    await Promise.all(
+      Array.from(toRemoveBpDesciptiors).map(this._removeBreakpoint),
+    );
+
+    addBpDescriptors.forEach((bpD: any) => {
+      const bpDescriptior: VsBreakpointpointDescriptor = bpD;
+      this._setBreakpointFromDesciptior(bpDescriptior).then((vsBp, error) => {
+        if (error != null) {
+          bpDescriptior.vsBpDeferred.reject(error);
+        } else {
+          bpDescriptior.vsBpDeferred.resolve(vsBp);
+          bpDescriptior.vsBp = vsBp;
+        }
+      });
+    });
+
+    const syncedVsBreakpoints = await Promise.all(
+      newBreakpoints.map(bp => bp.vsBpDeferred.promise),
+    );
+    if (newBreakpoints.length !== bpSources.length) {
+      logger.error(
+        'Breakpoint sources are different from set breakpoints',
+        bpSources,
+        newBreakpoints,
+      );
+    }
+    return syncedVsBreakpoints;
+  }
+
+  async _setBreakpointFromDesciptior(
+    bpDescriptior: VsBreakpointpointDescriptor,
+  ): Promise<DebugProtocol.Breakpoint> {
     const breakpointStore = this._connectionMultiplexer.getBreakpointStore();
     // Chrome lineNumber is 0-based while xdebug lineno is 1-based.
     const breakpointId = await breakpointStore.setFileLineBreakpoint(
-      String(id),
-      path,
-      lineNumber + 1,
-      condition,
+      String(bpDescriptior.id),
+      bpDescriptior.path,
+      bpDescriptior.line,
+      bpDescriptior.condition,
     );
-    const breakpoint = await breakpointStore.getBreakpoint(breakpointId);
-    invariant(breakpoint != null);
-    this.replyToCommand(id, {
-      breakpointId,
-      resolved: breakpoint.resolved,
-      locations: [getBreakpointLocation(breakpoint)],
+    const hhBreakpoint = breakpointStore.getBreakpoint(breakpointId);
+    invariant(hhBreakpoint != null);
+    const bp: DebugProtocol.Breakpoint = new Breakpoint(
+      hhBreakpoint.resolved,
+      bpDescriptior.line,
+    );
+    bp.id = bpDescriptior.id;
+    return bp;
+  }
+
+  async _removeBreakpoint(
+    bpDescriptior: VsBreakpointpointDescriptor,
+  ): Promise<void> {
+    // A breakpoint may still be pending-creation.
+    await bpDescriptior.vsBpDeferred.promise;
+    await this._connectionMultiplexer.removeBreakpoint(
+      String(bpDescriptior.id),
+    );
+  }
+
+  async getStackFrames(id: number): Promise<Array<DebugProtocol.StackFrame>> {
+    // this._connectionMultiplexer.selectThread(id);
+    const frames = await this._connectionMultiplexer.getConnectionStackFrames(
+      id,
+    );
+    if ((frames != null && frames.stack != null) || frames.stack.length === 0) {
+      return Promise.all(
+        frames.stack.map((frame, frameIndex) =>
+          this._convertFrame(frame, frameIndex),
+        ),
+      );
+    }
+
+    return [];
+  }
+
+  async getScopesForFrame(
+    frameIndex: number,
+  ): Promise<Array<DebugProtocol.Scope>> {
+    const scopes = await this._connectionMultiplexer.getScopesForFrame(
+      frameIndex,
+    );
+    return scopes.map(scope => {
+      return new Scope(
+        // flowlint-next-line sketchy-null-string:off
+        scope.object.description || scope.name || scope.type,
+        this._variableHandles.create(nullthrows(scope.object.objectId)),
+        true,
+      );
     });
   }
 
-  async _continueToLocation(
-    id: number,
-    params: ContinueToLocationRequest,
+  async _convertFrame(
+    frame: Object,
+    frameIndex: number,
+  ): Promise<DebugProtocol.StackFrame> {
+    logger.debug('Converting frame: ' + JSON.stringify(frame));
+    const location = locationOfFrame(frame);
+    const hasSource = true; // TODO;
+    if (!hasSource) {
+      location.scriptId = '';
+    }
+
+    return new StackFrame(
+      frameIndex,
+      functionOfFrame(frame),
+      hasSource
+        ? new Source(nuclideUri.basename(location.scriptId), location.scriptId)
+        : null,
+      location.lineNumber,
+      0,
+    );
+  }
+
+  _sendContinuationCommand(command: string): void {
+    logger.debug('Sending continuation command: ' + command);
+    this._connectionMultiplexer.sendContinuationCommand(command);
+  }
+
+  pause(): void {
+    this._connectionMultiplexer.pause();
+  }
+
+  resume(): void {
+    if (!this._hadFirstContinuationCommand) {
+      this._hadFirstContinuationCommand = true;
+      this._subscriptions.add(
+        this._connectionMultiplexer.listen(this._endSession.bind(this)),
+      );
+      return;
+    }
+    this._connectionMultiplexer.resume();
+  }
+
+  _updateBreakpointHitCount() {
+    // If the enabled connection just hit a breakpoint, update its hit count.
+    if (this._connectionMultiplexer.getEnabledConnection == null) {
+      return;
+    }
+    const currentConnection = this._connectionMultiplexer.getEnabledConnection();
+    if (
+      currentConnection == null ||
+      currentConnection.getStopReason() !== BREAKPOINT
+    ) {
+      return;
+    }
+    const stopLocation = currentConnection.getStopBreakpointLocation();
+    if (stopLocation == null) {
+      return;
+    }
+    const hhBp = this._connectionMultiplexer
+      .getBreakpointStore()
+      .findBreakpoint(stopLocation.filename, stopLocation.lineNumber);
+    if (hhBp == null) {
+      return;
+    }
+    hhBp.hitCount++;
+    const vsBreakpoint = this._getBreakpointById(Number(hhBp.chromeId));
+    if (vsBreakpoint == null) {
+      return;
+    }
+    vsBreakpoint.nuclide_hitCount = hhBp.hitCount;
+    this._eventSender(new BreakpointEvent('update', vsBreakpoint));
+  }
+
+  async continueToLocation(
+    params: DebugProtocol.nuclide_ContinueToLocationArguments,
   ): Promise<void> {
     const enabledConnection = this._connectionMultiplexer.getEnabledConnection();
-    const {location: {columnNumber, lineNumber, scriptId}} = params;
+    const {source, line} = params;
     if (enabledConnection == null) {
-      this.replyWithError(id, 'No active connection to continue running!');
-      return;
+      throw new Error('No active connection to continue on!');
     }
 
     const breakpointStore = this._connectionMultiplexer.getBreakpointStore();
@@ -238,25 +324,12 @@ export class DebuggerHandler extends Handler {
       this._temporaryBreakpointpointId = null;
     }
 
-    if (!scriptId || (columnNumber != null && columnNumber !== 0)) {
-      this.replyWithError(
-        id,
-        'Invalid arguments to Debugger.continueToLocation: ' +
-          JSON.stringify(params),
-      );
-      return;
-    }
-
-    const filePath = nuclideUri.getPath(scriptId);
-    const url = pathToUri(filePath);
-    await this._files.registerFile(url);
-
     // Chrome lineNumber is 0-based while xdebug lineno is 1-based.
     this._temporaryBreakpointpointId = await breakpointStore.setFileLineBreakpointForConnection(
       enabledConnection,
-      String(id),
-      filePath,
-      lineNumber + 1,
+      String(++this._breakpointId),
+      nullthrows(source.path),
+      line,
       /* condition */ '',
     );
 
@@ -266,106 +339,30 @@ export class DebuggerHandler extends Handler {
     invariant(breakpoint != null);
     invariant(breakpoint.connectionId === enabledConnection.getId());
 
-    this.replyToCommand(id, {});
     // TODO change to resume on resolve notification when it's received after setting a breakpoint.
     await sleep(RESOLVE_BREAKPOINT_DELAY_MS);
-    this._resume();
+    this.resume();
   }
 
-  async _removeBreakpoint(id: number, params: Object): Promise<any> {
-    const {breakpointId} = params;
-    await this._connectionMultiplexer.removeBreakpoint(breakpointId);
-    this.replyToCommand(id, {id: breakpointId});
+  stepOver(): void {
+    this._sendContinuationCommand(COMMAND_STEP_OVER);
   }
 
-  _debuggerEnable(id: number): void {
-    this.replyToCommand(id, {});
-    this._sendFakeLoaderBreakpoint();
+  stepInto(): void {
+    this._sendContinuationCommand(COMMAND_STEP_INTO);
   }
 
-  async _getStackFrames(id: number): Promise<Array<Object>> {
-    const frames = await this._connectionMultiplexer.getConnectionStackFrames(
-      id,
-    );
-
-    if ((frames != null && frames.stack != null) || frames.stack.length === 0) {
-      return Promise.all(
-        frames.stack.map((frame, frameIndex) =>
-          this._convertFrame(frame, frameIndex),
-        ),
-      );
-    }
-
-    return Promise.resolve([]);
+  stepOut(): void {
+    this._sendContinuationCommand(COMMAND_STEP_OUT);
   }
 
-  async _getTopFrameForConnection(id: number): Promise<?Object> {
-    const frames = await this._connectionMultiplexer.getConnectionStackFrames(
-      id,
-    );
-    if (frames == null || frames.stack == null || frames.stack.length === 0) {
-      return null;
-    }
-    return this._convertFrame(frames.stack[0], 0);
-  }
-
-  async _convertFrame(frame: Object, frameIndex: number): Promise<Object> {
-    logger.debug('Converting frame: ' + JSON.stringify(frame));
-    const file = await this._files.registerFile(fileUrlOfFrame(frame));
-    const location = locationOfFrame(frame);
-    const hasSource = await file.hasSource();
-    if (!hasSource) {
-      location.scriptId = '';
-    }
-
-    let scopeChain = null;
-    try {
-      scopeChain = await this._connectionMultiplexer.getScopesForFrame(
-        frameIndex,
-      );
-    } catch (e) {
-      // Couldn't get scopes.
-    }
-
-    return {
-      callFrameId: idOfFrame(frame),
-      functionName: functionOfFrame(frame),
-      location,
-      scopeChain,
-    };
-  }
-
-  _sendContinuationCommand(command: string): void {
-    logger.debug('Sending continuation command: ' + command);
-    this._connectionMultiplexer.sendContinuationCommand(command);
-  }
-
-  _pause(): void {
-    this._connectionMultiplexer.pause();
-  }
-
-  _resume(): void {
-    if (!this._hadFirstContinuationCommand) {
-      this._hadFirstContinuationCommand = true;
-      this.sendMethod('Debugger.resumed');
-      this._subscriptions.add(
-        this._connectionMultiplexer.listen(this._endSession.bind(this)),
-      );
-      return;
-    }
-    this._connectionMultiplexer.resume();
-  }
-
-  async _onStatusChanged(status: string, params: ?Object): Promise<void> {
+  async _onStatusChanged(status: string): Promise<void> {
     logger.debug('Sending status: ' + status);
     switch (status) {
       case ConnectionMultiplexerStatus.AllConnectionsPaused:
       case ConnectionMultiplexerStatus.SingleConnectionPaused:
+        this._updateBreakpointHitCount();
         await this._sendPausedMessage();
-        await this._clearIfTemporaryBreakpoint();
-        break;
-      case ConnectionMultiplexerStatus.Running:
-        this.sendMethod('Debugger.resumed');
         break;
       case ConnectionMultiplexerStatus.End:
         this._endSession();
@@ -377,59 +374,12 @@ export class DebuggerHandler extends Handler {
     }
   }
 
-  async _clearIfTemporaryBreakpoint(): Promise<void> {
-    const temporaryBreakpointId = this._temporaryBreakpointpointId;
-    if (temporaryBreakpointId == null) {
-      return;
-    }
-    const breakpointStore = this._connectionMultiplexer.getBreakpointStore();
-    const breakpoint = breakpointStore.getBreakpoint(temporaryBreakpointId);
-    const enabledConnection = this._connectionMultiplexer.getEnabledConnection();
-    if (
-      enabledConnection == null ||
-      breakpoint == null ||
-      enabledConnection.getId() !== breakpoint.connectionId
-    ) {
-      return;
-    }
-    const {breakpointInfo} = breakpoint;
-    const stopLocation = enabledConnection.getStopBreakpointLocation();
-    if (
-      stopLocation != null &&
-      stopLocation.filename === breakpointInfo.filename &&
-      stopLocation.lineNumber === breakpointInfo.lineNumber
-    ) {
-      await breakpointStore.removeBreakpoint(temporaryBreakpointId);
-      this._temporaryBreakpointpointId = null;
-    }
-  }
-
   async _onNotification(notifyName: string, params: ?Object): Promise<void> {
     switch (notifyName) {
       case BREAKPOINT_RESOLVED_NOTIFICATION:
         invariant(params);
-        const breakpoint: Breakpoint = params;
-        this.sendMethod('Debugger.breakpointResolved', {
-          breakpointId: breakpoint.chromeId,
-          location: getBreakpointLocation(breakpoint),
-        });
-        break;
-      case ConnectionMultiplexerNotification.RequestUpdate:
-        invariant(params);
-        const frame = params.status === ConnectionStatus.Break
-          ? await this._getTopFrameForConnection(params.id)
-          : null;
-        this.sendMethod('Debugger.threadUpdated', {
-          thread: {
-            id: String(params.id),
-            name: String(params.id),
-            address: frame != null ? frame.functionName : 'N/A',
-            location: frame != null ? frame.location : null,
-            hasSource: true,
-            stopReason: params.stopReason,
-            description: 'N/A',
-          },
-        });
+        const breakpoint: HhBreakpointType = params;
+        this._resolveBreakpoint(Number(breakpoint.chromeId));
         break;
       default:
         const message = `Unexpected notification: ${notifyName}`;
@@ -438,58 +388,106 @@ export class DebuggerHandler extends Handler {
     }
   }
 
+  _resolveBreakpoint(bpId: number): void {
+    const breakpoint = this._getBreakpointById(bpId);
+    if (breakpoint == null) {
+      logger.warn('Cannot resolve non-existing breakpoint', bpId);
+    } else {
+      breakpoint.verified = true;
+      this._eventSender(new BreakpointEvent('update', breakpoint));
+    }
+  }
+
+  _getBreakpointById(bpId: number): ?DebugProtocol.Breakpoint {
+    const bpDescriptior = arrayFlatten(
+      Array.from(this._breakpoints.values()),
+    ).find(bp => bp.id === bpId);
+    return bpDescriptior == null ? null : bpDescriptior.vsBp;
+  }
+
   // May only call when in paused state.
   async _sendPausedMessage(): Promise<any> {
     const requestSwitchMessage = this._connectionMultiplexer.getRequestSwitchMessage();
     this._connectionMultiplexer.resetRequestSwitchMessage();
     if (requestSwitchMessage != null) {
-      this.sendUserMessage('outputWindow', {
-        level: 'info',
-        text: requestSwitchMessage,
-      });
+      this._sendOutput(requestSwitchMessage, 'info');
     }
     const enabledConnectionId = this._connectionMultiplexer.getEnabledConnectionId();
-    this.sendMethod('Debugger.paused', {
-      callFrames: enabledConnectionId != null
-        ? await this._getStackFrames(enabledConnectionId)
-        : [],
-      reason: 'breakpoint', // TODO: better reason?
-      threadSwitchMessage: requestSwitchMessage,
-      data: {},
-      stopThreadId: enabledConnectionId,
-    });
-
-    // Send an update for the enabled thread to cause the request window in the
-    // front-end to update.
-    if (enabledConnectionId != null) {
-      const frame = await this._getTopFrameForConnection(enabledConnectionId);
-      this.sendMethod('Debugger.threadUpdated', {
-        thread: {
-          id: String(enabledConnectionId),
-          name: String(enabledConnectionId),
-          address: frame != null ? frame.functionName : 'N/A',
-          location: frame != null ? frame.location : null,
-          hasSource: true,
-          stopReason: this._connectionMultiplexer.getConnectionStopReason(
-            enabledConnectionId,
-          ),
-          description: 'N/A',
-        },
-      });
+    if (enabledConnectionId == null) {
+      throw new Error('No active hhvm connection to pause!');
     }
+    this._eventSender(new StoppedEvent('breakpoint', enabledConnectionId));
   }
 
-  _sendFakeLoaderBreakpoint(): void {
-    this.sendMethod('Debugger.paused', {
-      callFrames: [],
-      reason: 'initial break',
-      data: {},
-    });
+  dispose(): void {
+    this._endSession();
   }
 
   _endSession(): void {
     logger.debug('DebuggerHandler: Ending session');
+    this._eventSender(new TerminatedEvent());
     this._subscriptions.dispose();
-    this._emitter.emit(SESSION_END_EVENT);
+  }
+
+  async getProperties(
+    variablesReference: number,
+  ): Promise<Array<DebugProtocol.Variable>> {
+    const id: string = this._variableHandles.get(variablesReference);
+    if (id == null) {
+      return [];
+    }
+    const properties = await this._connectionMultiplexer.getProperties(id);
+    return properties.map(prop => {
+      return {
+        name: prop.name,
+        type: (prop.value && prop.value.type) || 'unknown',
+        value: String(
+          // flowlint-next-line sketchy-null-string:off
+          prop.value && (prop.value.description || prop.value.value),
+        ),
+        variablesReference:
+          // flowlint-next-line sketchy-null-string:off
+          prop.value && prop.value.objectId
+            ? this._variableHandles.create(prop.value.objectId)
+            : 0,
+      };
+    });
+  }
+
+  async evaluate(
+    expression: string,
+    frameId: ?number,
+    response: DebugProtocol.EvaluateResponse,
+  ): Promise<void> {
+    const hphpdExpression = makeExpressionHphpdCompatible(expression);
+    let hhResult;
+    if (frameId == null) {
+      hhResult = await this._connectionMultiplexer.runtimeEvaluate(
+        hphpdExpression,
+      );
+    } else {
+      hhResult = await this._connectionMultiplexer.evaluateOnCallFrame(
+        frameId,
+        hphpdExpression,
+      );
+    }
+    if (hhResult.wasThrown) {
+      response.success = false;
+      // $FlowIgnore: returning an ErrorResponse.
+      response.body = {
+        error: {
+          id: hhResult.error.$.code,
+          format: hhResult.error.message[0],
+        },
+      };
+    } else {
+      response.body = {
+        type: hhResult.result.type,
+        result: String(hhResult.result.description || hhResult.result.value),
+        variablesReference: hhResult.result.objectId
+          ? this._variableHandles.create(hhResult.result.objectId)
+          : 0,
+      };
+    }
   }
 }

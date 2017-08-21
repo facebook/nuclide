@@ -10,7 +10,10 @@
  */
 
 import type DebuggerModel from './DebuggerModel';
-import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
+import type {
+  DebuggerInstanceBase,
+  DebuggerProcessInfo,
+} from '../../nuclide-debugger-base';
 
 export default class RemoteControlService {
   _getModel: () => ?DebuggerModel;
@@ -43,6 +46,14 @@ export default class RemoteControlService {
     model.getActions().toggleBreakpoint(filePath, line);
   }
 
+  addBreakpoint(filePath: string, line: number): void {
+    const model = this._getModel();
+    if (model == null) {
+      throw new Error('Package is not activated.');
+    }
+    model.getActions().addBreakpoint(filePath, line);
+  }
+
   isInDebuggingMode(providerName: string): boolean {
     const model = this._getModel();
     if (model == null) {
@@ -50,6 +61,14 @@ export default class RemoteControlService {
     }
     const session = model.getStore().getDebuggerInstance();
     return session != null && session.getProviderName() === providerName;
+  }
+
+  getDebuggerInstance(): ?DebuggerInstanceBase {
+    const model = this._getModel();
+    if (model == null) {
+      throw new Error('Package is not activated.');
+    }
+    return model.getStore().getDebuggerInstance();
   }
 
   killDebugger(): void {

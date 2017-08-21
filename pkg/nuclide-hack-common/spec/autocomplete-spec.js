@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  Completion,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {Completion} from '../../nuclide-language-service/lib/LanguageService';
 
 import {default as TextBuffer, Point} from 'simple-text-buffer';
 import {compareHackCompletions, findHackPrefix} from '../lib/autocomplete';

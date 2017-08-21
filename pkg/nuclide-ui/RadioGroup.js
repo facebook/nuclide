@@ -15,6 +15,7 @@ import React from 'react';
 let uid = 0;
 
 type Props = {
+  className?: string,
   optionLabels: Array<React.Element<any>>,
   selectedIndex: number,
   onSelectedChange(selectedIndex: number): void,
@@ -45,15 +46,20 @@ export default class RadioGroup extends React.Component {
   }
 
   render(): React.Element<any> {
-    const {onSelectedChange} = this.props;
-    const checkboxes = this.props.optionLabels.map((labelContent, i) => {
+    const {
+      className,
+      onSelectedChange,
+      optionLabels,
+      selectedIndex,
+    } = this.props;
+    const checkboxes = optionLabels.map((labelContent, i) => {
       const id = 'nuclide-radiogroup-' + uid + '-' + i;
       return (
         <div key={i} className="nuclide-ui-radiogroup-div">
           <input
             className="input-radio"
             type="radio"
-            checked={i === this.props.selectedIndex}
+            checked={i === selectedIndex}
             name={'radiogroup-' + this.state.uid}
             id={id}
             onChange={() => {
@@ -69,7 +75,7 @@ export default class RadioGroup extends React.Component {
       );
     });
     return (
-      <div>
+      <div className={className}>
         {checkboxes}
       </div>
     );

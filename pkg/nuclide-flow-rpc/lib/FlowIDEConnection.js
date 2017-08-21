@@ -10,8 +10,9 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-
 import type {FlowStatusOutput, FlowAutocompleteOutput} from './flowOutputTypes';
+import type {FileCache} from '../../nuclide-open-files-rpc';
+import type {LocalFileEvent} from '../../nuclide-open-files-rpc/lib/rpc-types';
 
 import {Disposable} from 'event-kit';
 import {Observable} from 'rxjs';
@@ -21,6 +22,8 @@ import through from 'through';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {track} from '../../nuclide-analytics';
 import {getLogger} from 'log4js';
+
+import {FileEventKind} from '../../nuclide-open-files-rpc';
 
 // TODO put these in flow-typed when they are fleshed out better
 
@@ -54,11 +57,14 @@ const SUBSCRIBE_METHOD_NAME = 'subscribeToDiagnostics';
 
 const NOTIFICATION_METHOD_NAME = 'diagnosticsNotification';
 
+const OPEN_EVENT_METHOD_NAME = 'didOpen';
+const CLOSE_EVENT_METHOD_NAME = 'didClose';
+
 const SUBSCRIBE_RETRY_INTERVAL = 5000;
 const SUBSCRIBE_RETRIES = 10;
 
 // Manages the connection to a single `flow ide` process. The lifecycle of an instance of this class
-// is tied to the lifecycle of a the `flow ide` process.
+// is tied to the lifecycle of the `flow ide` process.
 export class FlowIDEConnection {
   _connection: RpcConnection;
   _ideProcess: child_process$ChildProcess;
@@ -72,8 +78,11 @@ export class FlowIDEConnection {
   _diagnostics: Observable<FlowStatusOutput>;
   _recheckBookends: Observable<RecheckBookend>;
 
-  constructor(process: child_process$ChildProcess) {
+  _fileCache: FileCache;
+
+  constructor(process: child_process$ChildProcess, fileCache: FileCache) {
     this._disposables = new UniversalDisposable();
+    this._fileCache = fileCache;
     this._ideProcess = process;
     this._ideProcess.stderr.pipe(
       through(msg => {
@@ -92,29 +101,68 @@ export class FlowIDEConnection {
     this._ideProcess.on('exit', () => this.dispose());
     this._ideProcess.on('close', () => this.dispose());
 
-    this._diagnostics = Observable.fromEventPattern(
+    const diagnostics = Observable.fromEventPattern(
       handler => {
         this._connection.onNotification(
           NOTIFICATION_METHOD_NAME,
           (errors: FlowStatusOutput) => {
-            // $FlowFixMe
             handler(errors);
           },
         );
       },
       // no-op: vscode-jsonrpc offers no way to unsubscribe
       () => {},
-    ).publishReplay(1);
+    );
+
+    this._diagnostics = Observable.using(() => {
+      const fileEventsObservable: Observable<
+        Array<LocalFileEvent>,
+      > = this._fileCache
+        .observeFileEvents()
+        // $FlowFixMe (bufferTime isn't in the libdef for rxjs)
+        .bufferTime(100 /* ms */)
+        .filter(fileEvents => fileEvents.length !== 0);
+
+      const fileEventsHandler = fileEvents => {
+        const openPaths: Array<string> = [];
+        const closePaths: Array<string> = [];
+        for (const fileEvent of fileEvents) {
+          const filePath = fileEvent.fileVersion.filePath;
+          switch (fileEvent.kind) {
+            case FileEventKind.OPEN:
+              openPaths.push(filePath);
+              break;
+            case FileEventKind.CLOSE:
+              closePaths.push(filePath);
+              break;
+            case FileEventKind.EDIT:
+              // TODO: errors-as-you-type
+              break;
+            default:
+              (fileEvent.kind: empty);
+          }
+        }
+        if (openPaths.length !== 0) {
+          this._connection.sendNotification(OPEN_EVENT_METHOD_NAME, openPaths);
+        }
+        if (closePaths.length !== 0) {
+          this._connection.sendNotification(
+            CLOSE_EVENT_METHOD_NAME,
+            closePaths,
+          );
+        }
+      };
+
+      return fileEventsObservable.subscribe(fileEventsHandler);
+    }, () => diagnostics).publishReplay(1);
     this._disposables.add(this._diagnostics.connect());
 
     this._recheckBookends = Observable.fromEventPattern(
       handler => {
         this._connection.onNotification('startRecheck', () => {
-          // $FlowFixMe
           handler({kind: 'start-recheck'});
         });
         this._connection.onNotification('endRecheck', () => {
-          // $FlowFixMe
           handler({kind: 'end-recheck'});
         });
       },

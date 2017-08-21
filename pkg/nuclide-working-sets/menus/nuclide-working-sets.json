@@ -13,6 +13,10 @@
             {
               "label": "Toggle last selected",
               "command": "working-sets:toggle-last-selected"
+            },
+            {
+              "label": "Find in active",
+              "command": "working-sets:find-in-active"
             }
           ]
         }

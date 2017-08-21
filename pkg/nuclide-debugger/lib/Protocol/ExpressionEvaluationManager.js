@@ -113,7 +113,7 @@ export default class ExpressionEvaluationManager {
         return;
       }
       const {result, wasThrown, exceptionDetails} = response;
-      if (result.objectId != null) {
+      if (result != null && result.objectId != null) {
         this._remoteObjectManager.addObject(result.objectId);
       }
       this._raiseIPCEvent('ExpressionEvaluationResponse', {

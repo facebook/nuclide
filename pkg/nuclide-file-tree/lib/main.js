@@ -14,10 +14,8 @@ import type FileTreeContextMenu from './FileTreeContextMenu';
 import type {ExportStoreData} from './FileTreeStore';
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
-import type {
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 
@@ -26,16 +24,19 @@ import createPackage from 'nuclide-commons-atom/createPackage';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import disablePackage from '../../commons-atom/disablePackage';
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
-import {nextAnimationFrame} from 'nuclide-commons/observable';
+import {
+  compact,
+  macrotask,
+  nextAnimationFrame,
+} from 'nuclide-commons/observable';
 
 import FileTreeSidebarComponent from '../components/FileTreeSidebarComponent';
 import FileTreeController from './FileTreeController';
 import {WorkingSet} from '../../nuclide-working-sets-common';
 import {REVEAL_FILE_ON_SWITCH_SETTING, WORKSPACE_VIEW_URI} from './Constants';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import React from 'react';
 import {Observable} from 'rxjs';
 
@@ -59,11 +60,11 @@ class Activation {
   _fileTreeComponent: ?FileTreeSidebarComponent;
   _restored: boolean; // Has the package state been restored from a previous session?
   _disposables: UniversalDisposable;
-  _paneItemSubscription: ?IDisposable;
 
   constructor(rawState: ?SerializedState) {
     let state = rawState || {};
     const serializedVersionMatches =
+      // flowlint-next-line sketchy-null-mixed:off
       (state.version || 1) === DESERIALIZER_VERSION;
     if (!serializedVersionMatches) {
       state = {};
@@ -71,6 +72,26 @@ class Activation {
 
     this._disposables = new UniversalDisposable(
       disablePackage('tree-view'),
+      // This is a horrible hack to work around the fact that the tree view doesn't properly clean
+      // up after its views when disabled as soon as it's activated. See atom/tree-view#1136
+      observableFromSubscribeFunction(
+        atom.workspace.observePaneItems.bind(atom.workspace),
+      )
+        // Wait for any post-addition work to be done by tree-view.
+        // $FlowFixMe: Add `delayWhen` to RxJS defs
+        .delayWhen(() => macrotask)
+        .subscribe(item => {
+          if (
+            item != null &&
+            typeof item.getURI === 'function' &&
+            item.getURI() === 'atom://tree-view' &&
+            atom.packages.isPackageDisabled('tree-view') &&
+            atom.workspace.paneForItem(item) && // Make sure it's still in the workspace.
+            typeof item.destroy === 'function'
+          ) {
+            item.destroy();
+          }
+        }),
       () => {
         this._fileTreeController.destroy();
       },
@@ -87,15 +108,26 @@ class Activation {
     const prefixKeyNavSetting =
       'nuclide-file-tree.allowKeyboardPrefixNavigation';
     const allowPendingPaneItems = 'core.allowPendingPaneItems';
+    const autoExpandSingleChild = 'nuclide-file-tree.autoExpandSingleChild';
 
     this._disposables.add(
       this._fixContextMenuHighlight(),
       featureConfig.observe(prefixKeyNavSetting, (x: any) =>
         this._setPrefixKeyNavSetting(x),
       ),
-      featureConfig.observe(REVEAL_FILE_ON_SWITCH_SETTING, (x: any) =>
-        this._setRevealOnFileSwitch(x),
-      ),
+      featureConfig
+        .observeAsStream(REVEAL_FILE_ON_SWITCH_SETTING)
+        .switchMap((shouldReveal: any) => {
+          return shouldReveal
+            ? this._currentActiveFilePath()
+            : Observable.empty();
+        })
+        .subscribe(filePath =>
+          this._fileTreeController.revealFilePath(
+            filePath,
+            /* showIfHidden */ false,
+          ),
+        ),
       atom.config.observe(ignoredNamesSetting, (x: any) =>
         this._setIgnoredNames(x),
       ),
@@ -109,6 +141,10 @@ class Activation {
       atom.config.observe(
         allowPendingPaneItems,
         this._setUsePreviewTabs.bind(this),
+      ),
+      featureConfig.observe(
+        autoExpandSingleChild,
+        this._setAutoExpandSingleChild.bind(this),
       ),
       atom.commands.add(
         'atom-workspace',
@@ -130,6 +166,7 @@ class Activation {
           }
         },
       ),
+      this._registerCommandAndOpener(),
     );
   }
 
@@ -263,27 +300,15 @@ class Activation {
     this._fileTreeController.setIgnoredNames(normalizedIgnoredNames);
   }
 
-  _setRevealOnFileSwitch(shouldReveal: boolean) {
-    if (shouldReveal) {
-      // Guard against this getting called multiple times
-      if (!this._paneItemSubscription) {
-        this._paneItemSubscription = atom.workspace.onDidStopChangingActivePaneItem(
-          this._fileTreeController.revealActiveFile.bind(
-            this._fileTreeController,
-            /* showIfHidden */ false,
-          ),
-        );
-        this._disposables.add(this._paneItemSubscription);
-      }
-    } else {
-      // Use a local so Flow can refine the type.
-      const paneItemSubscription = this._paneItemSubscription;
-      if (paneItemSubscription) {
-        this._disposables.remove(paneItemSubscription);
-        paneItemSubscription.dispose();
-        this._paneItemSubscription = null;
-      }
-    }
+  _currentActiveFilePath(): Observable<NuclideUri> {
+    const rawPathStream = observableFromSubscribeFunction(
+      atom.workspace.onDidStopChangingActivePaneItem.bind(atom.workspace),
+    ).map(() => {
+      const editor = atom.workspace.getActiveTextEditor();
+      return editor != null ? editor.getPath() : null;
+    });
+
+    return compact(rawPathStream).distinctUntilChanged();
   }
 
   _setPrefixKeyNavSetting(usePrefixNav: ?boolean): void {
@@ -300,6 +325,12 @@ class Activation {
       return;
     }
     this._fileTreeController.setUsePreviewTabs(usePreviewTabs);
+  }
+
+  _setAutoExpandSingleChild(autoExpandSingleChild: mixed): void {
+    this._fileTreeController.setAutoExpandSingleChild(
+      autoExpandSingleChild === true,
+    );
   }
 
   getContextMenuForFileTree(): FileTreeContextMenu {
@@ -320,21 +351,23 @@ class Activation {
     return this._fileTreeComponent;
   }
 
-  consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-    this._disposables.add(
-      api.addOpener(uri => {
+  _registerCommandAndOpener(): UniversalDisposable {
+    const disposable = new UniversalDisposable(
+      atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           return this._createView();
         }
       }),
-      () => api.destroyWhere(item => item instanceof FileTreeSidebarComponent),
-      atom.commands.add('atom-workspace', 'nuclide-file-tree:toggle', event => {
-        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      () => destroyItemWhere(item => item instanceof FileTreeSidebarComponent),
+      atom.commands.add('atom-workspace', 'nuclide-file-tree:toggle', () => {
+        atom.workspace.toggle(WORKSPACE_VIEW_URI);
       }),
     );
     if (!this._restored) {
-      api.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
+      // eslint-disable-next-line nuclide-internal/atom-apis
+      atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
     }
+    return disposable;
   }
 
   deserializeFileTreeSidebarComponent(): FileTreeSidebarComponent {

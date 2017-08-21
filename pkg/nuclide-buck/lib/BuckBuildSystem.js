@@ -11,7 +11,7 @@
 
 import type {BuckEvent} from './BuckEventStream';
 import type {LegacyProcessMessage, TaskEvent} from 'nuclide-commons/process';
-import type {ResolvedBuildTarget} from '../../nuclide-buck-rpc';
+import type {ResolvedBuildTarget} from '../../nuclide-buck-rpc/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import typeof * as BuckService from '../../nuclide-buck-rpc';
 import type {
@@ -22,9 +22,9 @@ import type {
   TaskSettings,
 } from './types';
 import type {
-  ObservableDiagnosticProvider,
+  DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
-  InvalidationMessage,
+  ObservableDiagnosticProvider,
 } from 'atom-ide-ui';
 
 import {Observable, Subject, TimeoutError} from 'rxjs';
@@ -43,11 +43,6 @@ import {
   getEventsFromSocket,
   getEventsFromProcess,
 } from './BuckEventStream';
-import {
-  getDeployBuildEvents,
-  getDeployInstallEvents,
-  getDeployTestEvents,
-} from './DeployEventStream';
 
 const SOCKET_TIMEOUT = 30000;
 
@@ -55,7 +50,9 @@ export type {BuckSubcommand} from './types';
 
 export class BuckBuildSystem {
   _diagnosticUpdates: Subject<DiagnosticProviderUpdate> = new Subject();
-  _diagnosticInvalidations: Subject<InvalidationMessage> = new Subject();
+  _diagnosticInvalidations: Subject<
+    DiagnosticInvalidationMessage,
+  > = new Subject();
 
   build(opts: BuckBuildOptions): BuckBuildTask {
     const {root, target, args} = opts;
@@ -86,19 +83,6 @@ export class BuckBuildSystem {
     };
   }
 
-  async _getBuckTargetType(
-    buckService: BuckService,
-    buckRoot: string,
-    buildTarget: string,
-  ): Promise<string> {
-    const output = await buckService.showOutput(buckRoot, buildTarget);
-    if (output.length === 1) {
-      return output[0]['buck.type'] || '';
-    }
-
-    return '';
-  }
-
   runSubcommand(
     buckRoot: NuclideUri,
     subcommand: BuckSubcommand,
@@ -106,6 +90,9 @@ export class BuckBuildSystem {
     taskSettings: TaskSettings,
     isDebug: boolean,
     udid: ?string,
+    processEventCallback: ?(
+      processStream: Observable<LegacyProcessMessage>,
+    ) => Observable<BuckEvent>,
   ): Observable<TaskEvent> {
     // Clear Buck diagnostics every time we run a buck command.
     this._diagnosticInvalidations.next({scope: 'all'});
@@ -113,104 +100,88 @@ export class BuckBuildSystem {
     const buildArguments = taskSettings.buildArguments || [];
     const runArguments = taskSettings.runArguments || [];
     const targetString = getCommandStringForResolvedBuildTarget(buildTarget);
-    return Observable.fromPromise(
-      this._getBuckTargetType(buckService, buckRoot, targetString),
-    ).flatMap(targetType => {
-      return Observable.fromPromise(buckService.getHTTPServerPort(buckRoot))
-        .catch(err => {
-          getLogger('nuclide-buck').warn(
-            `Failed to get httpPort for ${nuclideUri.getPath(buckRoot)}`,
-            err,
-          );
-          return Observable.of(-1);
-        })
-        .switchMap(httpPort => {
-          let socketEvents = null;
-          if (httpPort > 0) {
-            socketEvents = getEventsFromSocket(
-              buckService.getWebSocketStream(buckRoot, httpPort).refCount(),
-            ).share();
-          }
+    return Observable.fromPromise(buckService.getHTTPServerPort(buckRoot))
+      .catch(err => {
+        getLogger('nuclide-buck').warn(
+          `Failed to get httpPort for ${nuclideUri.getPath(buckRoot)}`,
+          err,
+        );
+        return Observable.of(-1);
+      })
+      .switchMap(httpPort => {
+        let socketEvents = null;
+        if (httpPort > 0) {
+          socketEvents = getEventsFromSocket(
+            buckService.getWebSocketStream(buckRoot, httpPort).refCount(),
+          ).share();
+        }
 
-          const args = runArguments.length > 0 &&
-            (subcommand === 'run' || subcommand === 'install')
+        const args =
+          runArguments.length > 0 &&
+          (subcommand === 'run' || subcommand === 'install')
             ? buildArguments.concat(['--']).concat(runArguments)
             : buildArguments;
 
-          const processMessages = runBuckCommand(
-            buckService,
-            buckRoot,
-            targetString,
-            subcommand,
-            args,
-            isDebug,
-            udid,
-          ).share();
-          const processEvents = getEventsFromProcess(processMessages).share();
+        const processMessages = runBuckCommand(
+          buckService,
+          buckRoot,
+          targetString,
+          subcommand,
+          args,
+          isDebug,
+          udid,
+        ).share();
+        const processEvents = getEventsFromProcess(processMessages).share();
 
-          let httpRecommendation;
-          let mergedEvents;
-          if (socketEvents == null) {
-            // Without a websocket, just pipe the Buck output directly.
-            mergedEvents = processEvents;
-            httpRecommendation = createMessage(
-              'For better logs, set httpserver.port in your Buck config and restart Nuclide.',
-              'info',
-            );
-          } else {
-            mergedEvents = combineEventStreams(
-              subcommand,
-              socketEvents,
-              processEvents,
-            ).share();
-            httpRecommendation = Observable.empty();
-          }
-
-          return Observable.concat(
-            httpRecommendation,
-            // Wait until the socket starts up before triggering the Buck process.
-            socketEvents == null
-              ? Observable.empty()
-              : socketEvents
-                  .filter(event => event.type === 'socket-connected')
-                  .take(1)
-                  .timeout(SOCKET_TIMEOUT)
-                  .catch(err => {
-                    if (err instanceof TimeoutError) {
-                      throw Error('Timed out connecting to Buck server.');
-                    }
-                    throw err;
-                  })
-                  .ignoreElements(),
-            this._consumeEventStream(
-              Observable.merge(
-                mergedEvents,
-                featureConfig.get('nuclide-buck.compileErrorDiagnostics')
-                  ? getDiagnosticEvents(mergedEvents, buckRoot)
-                  : Observable.empty(),
-                isDebug && subcommand === 'install'
-                  ? getDeployInstallEvents(processMessages, buckRoot)
-                  : Observable.empty(),
-                isDebug && subcommand === 'build'
-                  ? getDeployBuildEvents(
-                      processMessages,
-                      buckService,
-                      buckRoot,
-                      targetString,
-                      runArguments,
-                      targetType,
-                    )
-                  : Observable.empty(),
-                isDebug && subcommand === 'test'
-                  ? getDeployTestEvents(processMessages, buckRoot, targetType)
-                  : Observable.empty(),
-              ),
-              buckRoot,
-            ),
+        let httpRecommendation;
+        let mergedEvents;
+        if (socketEvents == null) {
+          // Without a websocket, just pipe the Buck output directly.
+          mergedEvents = processEvents;
+          httpRecommendation = createMessage(
+            'For better logs, set httpserver.port in your Buck config and restart Nuclide.',
+            'info',
           );
-        })
-        .share();
-    });
+        } else {
+          mergedEvents = combineEventStreams(
+            subcommand,
+            socketEvents,
+            processEvents,
+          ).share();
+          httpRecommendation = Observable.empty();
+        }
+
+        return Observable.concat(
+          httpRecommendation,
+          // Wait until the socket starts up before triggering the Buck process.
+          socketEvents == null
+            ? Observable.empty()
+            : socketEvents
+                .filter(event => event.type === 'socket-connected')
+                .take(1)
+                .timeout(SOCKET_TIMEOUT)
+                .catch(err => {
+                  if (err instanceof TimeoutError) {
+                    throw Error('Timed out connecting to Buck server.');
+                  }
+                  throw err;
+                })
+                .ignoreElements(),
+          this._consumeEventStream(
+            Observable.merge(
+              mergedEvents,
+              featureConfig.get('nuclide-buck.compileErrorDiagnostics')
+                ? getDiagnosticEvents(mergedEvents, buckRoot)
+                : Observable.empty(),
+              processEventCallback != null
+                ? processEventCallback(processMessages)
+                : Observable.empty(),
+            ),
+            buckRoot,
+          ),
+        );
+      })
+      .share();
   }
 
   getDiagnosticProvider(): ObservableDiagnosticProvider {

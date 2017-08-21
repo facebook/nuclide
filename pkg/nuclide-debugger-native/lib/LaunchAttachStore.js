@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  AttachTargetInfo,
-} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
+import type {AttachTargetInfo} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 import type LaunchAttachDispatcher, {
   LaunchAttachAction,
 } from './LaunchAttachDispatcher';

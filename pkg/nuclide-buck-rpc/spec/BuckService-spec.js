@@ -17,8 +17,14 @@ import {copyBuildFixture} from '../../nuclide-test-helpers';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import * as processJs from 'nuclide-commons/process';
 
-// Disable buckd so it doesn't linger around after the test.
-process.env.NO_BUCKD = '1';
+// flowlint-next-line sketchy-null-string:off
+if (!process.env.SANDCASTLE) {
+  // Disable buckd so it doesn't linger around after the test.
+  process.env.NO_BUCKD = '1';
+} else {
+  // Enable this on Sandcastle for faster tests.
+  process.env.NO_BUCKD = '';
+}
 
 beforeEach(() => {
   // This timeout covers the average case. Blocks that need more time specify it

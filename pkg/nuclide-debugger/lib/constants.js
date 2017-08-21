@@ -28,7 +28,8 @@ export const AnalyticsEvents = Object.freeze({
   DEBUGGER_TOGGLE_ATTACH_DIALOG: 'debugger-toggle-attach-dialog',
   DEBUGGER_TOGGLE_CAUGHT_EXCEPTION: 'debugger-toggle-caught-exception',
   DEBUGGER_TOGGLE_PAUSE_EXCEPTION: 'debugger-toggle-pause-exception',
-  DEBUGGER_TOGGLE_SINGLE_THREAD_STEPPING: 'debugger-toggle-single-thread-stepping',
+  DEBUGGER_TOGGLE_SINGLE_THREAD_STEPPING:
+    'debugger-toggle-single-thread-stepping',
   DEBUGGER_UI_MOUNTED: 'debugger-ui-mounted',
   DEBUGGER_UI_TOGGLED: 'debugger-ui-toggled',
   DEBUGGER_WATCH_ADD_EXPRESSION: 'debugger-watch-add-expression',

@@ -76,7 +76,7 @@ describe('Clang Integration Test (objc)', () => {
 
     waitsForAutocompleteSuggestions();
 
-    runs(() => {
+    waitsForPromise(async () => {
       const items = getAutocompleteSuggestions();
       expect(items[0]).toEqual({
         word: 'NSObject',
@@ -93,7 +93,7 @@ describe('Clang Integration Test (objc)', () => {
       expect(lineText).toBe('{NSObject');
 
       // This is a clear syntax error, so we should get an error on save.
-      textEditor.save();
+      await textEditor.save();
     });
 
     waitsFor('error to show up in diagnostics', 10000, () => {

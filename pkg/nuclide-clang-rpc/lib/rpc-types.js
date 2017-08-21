@@ -110,3 +110,28 @@ export type ClangLocalReferences = {
   cursor_kind: string,
   references: Array<atom$Range>,
 };
+
+export type ClangRequestSettings = {|
+  compilationDatabase: ?ClangCompilationDatabase,
+  projectRoot: ?string,
+|};
+
+export type ClangCompilationDatabase = {|
+  file: ?string,
+  flagsFile: ?string,
+  libclangPath: ?string,
+|};
+
+export type ClangCompilationDatabaseEntry = {|
+  command: string,
+  file: string,
+  directory: string,
+  arguments?: Array<string>,
+|};
+
+export type ClangFlags = {|
+  // Will be computed and memoized from rawData on demand.
+  flags?: ?Array<string>,
+  rawData: ?ClangCompilationDatabaseEntry,
+  flagsFile: ?string,
+|};

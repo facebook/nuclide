@@ -46,13 +46,6 @@ export class TreeNodeComponent extends React.PureComponent {
   props: Props;
   state: void;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._onClick = this._onClick.bind(this);
-    (this: any)._onDoubleClick = this._onDoubleClick.bind(this);
-    (this: any)._onMouseDown = this._onMouseDown.bind(this);
-  }
-
   render(): React.Element<any> {
     const rowClassNameObj: {[key: string]: ?boolean} = {
       // Support for selectors in the "file-icons" package.
@@ -110,20 +103,20 @@ export class TreeNodeComponent extends React.PureComponent {
     );
   }
 
-  _onClick(event: SyntheticMouseEvent): void {
+  _onClick = (event: SyntheticMouseEvent): void => {
     // $FlowFixMe
     if (ReactDOM.findDOMNode(this.refs.arrow).contains(event.target)) {
       this.props.onClickArrow(event, this.props.node);
     } else {
       this.props.onClick(event, this.props.node);
     }
-  }
+  };
 
-  _onDoubleClick(event: SyntheticMouseEvent): void {
+  _onDoubleClick = (event: SyntheticMouseEvent): void => {
     this.props.onDoubleClick(event, this.props.node);
-  }
+  };
 
-  _onMouseDown(event: SyntheticMouseEvent): void {
+  _onMouseDown = (event: SyntheticMouseEvent): void => {
     this.props.onMouseDown(event, this.props.node);
-  }
+  };
 }

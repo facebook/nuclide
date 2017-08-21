@@ -9,7 +9,7 @@
  * @format
  */
 
-import {ConnectableObservable, Subject} from 'rxjs';
+import {ConnectableObservable, Observable, Subject} from 'rxjs';
 import type {DiffInfo, StatusCodeIdValue} from '../lib/HgService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
@@ -78,5 +78,16 @@ export default class MockHgService {
 
   dispose(): Promise<void> {
     return Promise.resolve();
+  }
+
+  getHeadId(): Observable<string> {
+    return new Observable();
+  }
+
+  fetchFileContentAtRevision(
+    filePath: NuclideUri,
+    revision: string,
+  ): ConnectableObservable<string> {
+    return new Subject().publish();
   }
 }

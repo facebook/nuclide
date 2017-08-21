@@ -15,6 +15,12 @@
       ]
     },
     "config": {
+      "sourceKittenDisabled": {
+        "title": "Disable SourceKitten",
+        "type": "boolean",
+        "default": false,
+        "description": "Whether to disable integration with SourceKitten."
+      },
       "swiftToolchainPath": {
         "title": "Swift Toolchain Path",
         "type": "string",

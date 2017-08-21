@@ -84,8 +84,8 @@ async function main(args) {
     logger.info(`Server ready time: ${process.uptime() * 1000}ms`);
   } catch (e) {
     // In case the exception occurred before logging initialization finished.
-    await initialUpdateConfig();
-    await serverStartTimer.onError(e);
+    initialUpdateConfig();
+    serverStartTimer.onError(e);
     logger.fatal(e);
     flushLogsAndAbort();
   }

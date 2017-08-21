@@ -16,8 +16,8 @@ import type {
 import {Observable, Subject} from 'rxjs';
 
 export default class ClientCallback {
-  _serverMessageObservable: Subject<any>; // For server messages.
-  _userOutputObservable: Subject<any>; // For user visible output messages.
+  _serverMessageObservable: Subject<string>; // For server messages.
+  _userOutputObservable: Subject<string>; // For user visible output messages.
   _atomNotificationObservable: Subject<AtomNotification>;
 
   constructor() {
@@ -53,5 +53,6 @@ export default class ClientCallback {
   dispose(): void {
     this._serverMessageObservable.complete();
     this._userOutputObservable.complete();
+    this._atomNotificationObservable.complete();
   }
 }

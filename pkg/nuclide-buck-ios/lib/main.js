@@ -10,29 +10,20 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {BuckBuildSystem} from '../../nuclide-buck/lib/BuckBuildSystem';
-import type {
-  Device,
-  PlatformGroup,
-  TaskSettings,
-  TaskType,
-} from '../../nuclide-buck/lib/types';
-import type {TaskEvent} from 'nuclide-commons/process';
+import type {PlatformGroup} from '../../nuclide-buck/lib/types';
 import type {PlatformService} from '../../nuclide-buck/lib/PlatformService';
-import type {ResolvedBuildTarget} from '../../nuclide-buck-rpc/lib/BuckService';
+import type {LegacyProcessMessage} from 'nuclide-commons/process';
+import type {BuckEvent} from '../../nuclide-buck/lib/BuckEventStream';
 
+import {SUPPORTED_RULE_TYPES} from './types';
+import {getDevicePlatform, getSimulatorPlatform} from './Platforms';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Disposable} from 'atom';
 import {Observable} from 'rxjs';
-import * as IosSimulator from '../../nuclide-ios-common';
-import invariant from 'assert';
+import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 
 let disposable: ?Disposable = null;
-
-const RUNNABLE_RULE_TYPES = new Set(['apple_bundle']);
-
-const SUPPORTED_RULE_TYPES = new Set([...RUNNABLE_RULE_TYPES, 'apple_test']);
 
 export function deactivate(): void {
   if (disposable != null) {
@@ -42,10 +33,10 @@ export function deactivate(): void {
 }
 
 export function consumePlatformService(service: PlatformService): void {
-  disposable = service.register(provideIosDevices);
+  disposable = service.register(provideIosPlatformGroup);
 }
 
-function provideIosDevices(
+function provideIosPlatformGroup(
   buckRoot: NuclideUri,
   ruleType: string,
   buildTarget: string,
@@ -60,129 +51,38 @@ function provideIosDevices(
     if (result) {
       return Observable.of(null);
     } else {
-      return IosSimulator.getFbsimctlSimulators().map(simulators => {
-        if (!simulators.length) {
-          return null;
-        }
-
-        return {
-          name: 'iOS Simulators',
-          platforms: [
-            {
-              isMobile: true,
-              name: 'iOS Simulators',
-              tasksForDevice: device => getTasks(buckRoot, ruleType),
-              runTask: (builder, taskType, target, settings, device) =>
-                _runTask(
-                  builder,
-                  taskType,
-                  ruleType,
-                  target,
-                  settings,
-                  device,
-                  buckRoot,
-                ),
-              deviceGroups: [
-                {
-                  name: 'iOS Simulators',
-                  devices: simulators.map(simulator => ({
-                    name: `${simulator.name} (${simulator.os})`,
-                    udid: simulator.udid,
-                    arch: simulator.arch,
-                  })),
-                },
-              ],
-            },
-          ],
-        };
+      return Observable.fromPromise(
+        _getDebuggerCallback(buckRoot),
+      ).switchMap(debuggerCallback => {
+        return Observable.combineLatest(
+          getSimulatorPlatform(buckRoot, ruleType, debuggerCallback),
+          getDevicePlatform(buckRoot, ruleType, debuggerCallback),
+        ).map(([simulatorPlatform, devicePlatform]) => {
+          return {
+            name: 'iOS',
+            platforms: [simulatorPlatform, devicePlatform],
+          };
+        });
       });
     }
   });
 }
 
-function getTasks(buckRoot: NuclideUri, ruleType: string): Set<TaskType> {
-  const tasks = new Set(['build']);
-  if (RUNNABLE_RULE_TYPES.has(ruleType)) {
-    tasks.add('run');
-  }
-  if (!nuclideUri.isRemote(buckRoot)) {
-    tasks.add('test');
-    tasks.add('debug');
-  }
-  return tasks;
-}
-
-function _runTask(
-  builder: BuckBuildSystem,
-  taskType: TaskType,
-  ruleType: string,
-  buildTarget: ResolvedBuildTarget,
-  settings: TaskSettings,
-  device: ?Device,
+async function _getDebuggerCallback(
   buckRoot: NuclideUri,
-): Observable<TaskEvent> {
-  invariant(device);
-  invariant(device.arch);
-  invariant(device.udid);
-  const udid = device.udid;
-  const arch = device.arch;
-  invariant(typeof arch === 'string');
-  invariant(typeof udid === 'string');
+): Promise<?(Observable<LegacyProcessMessage>) => Observable<BuckEvent>> {
+  const nativeDebuggerService = await consumeFirstProvider(
+    'nuclide-debugger.native-debugger-service',
+  );
 
-  const flavor = `iphonesimulator-${arch}`;
-  const newTarget = {
-    ...buildTarget,
-    flavors: buildTarget.flavors.concat([flavor]),
-  };
+  if (nativeDebuggerService == null) {
+    return null;
+  }
 
-  if (nuclideUri.isRemote(buckRoot)) {
-    let runRemoteTask;
-    try {
-      // $FlowFB
-      const remoteWorkflow = require('./fb-RemoteWorkflow');
-      runRemoteTask = () => {
-        return remoteWorkflow.runRemoteTask(
-          buckRoot,
-          builder,
-          taskType,
-          ruleType,
-          buildTarget,
-          settings,
-          udid,
-          flavor,
-        );
-      };
-    } catch (_) {
-      runRemoteTask = () => {
-        throw new Error(
-          'Remote workflow currently unsupported for this target.',
-        );
-      };
-    }
-
-    return runRemoteTask();
-  } else {
-    return builder.runSubcommand(
+  return (processStream: Observable<LegacyProcessMessage>) => {
+    return nativeDebuggerService.debugTargetFromBuckOutput(
       buckRoot,
-      _getLocalSubcommand(taskType, ruleType),
-      newTarget,
-      settings,
-      taskType === 'debug',
-      udid,
+      processStream,
     );
-  }
-}
-
-function _getLocalSubcommand(taskType: TaskType, ruleType: string) {
-  if (taskType !== 'run' && taskType !== 'debug') {
-    return taskType;
-  }
-  switch (ruleType) {
-    case 'apple_bundle':
-      return 'install';
-    case 'apple_test':
-      return 'test';
-    default:
-      throw new Error('Unsupported rule type');
-  }
+  };
 }

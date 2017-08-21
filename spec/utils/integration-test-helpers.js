@@ -16,6 +16,7 @@ import child_process from 'child_process';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {jasmineAttachWorkspace} from 'nuclide-commons-atom/test-helpers';
 import {
   RemoteConnection,
   getServiceByNuclideUri,
@@ -33,23 +34,11 @@ export function jasmineIntegrationTestSetup(): void {
     process.env.TMUX == null,
     'ERROR: tmux interferes with remote integration tests -- please run the tests outside of tmux',
   );
-  // Allow jasmine to interact with the DOM.
-  jasmine.attachToDOM(atom.views.getView(atom.workspace));
 
   // This prevents zombie buck/java processes from hanging the tests
   process.env.NO_BUCKD = '1';
 
-  // Set the testing window dimensions (smallish, yet realistic).
-  // TODO: In Atom 1.10.0 these styles changed. https://github.com/atom/atom/pull/11960
-  // .spec-reporter-container now covers #jasmine-content and that makes it
-  // annoying to debug issues. Fix this.
-  const styleCSS = `
-    height: 600px;
-    width: 1000px;
-  `;
-  const element = document.querySelector('#jasmine-content');
-  invariant(element != null);
-  element.setAttribute('style', styleCSS);
+  jasmineAttachWorkspace();
 
   // Unmock timer functions.
   jasmine.useRealClock();

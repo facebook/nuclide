@@ -44,6 +44,7 @@ export default class NewProtocolMessageChecker {
     const msgObj = JSON.parse(message);
     switch (msgObj.method) {
       case 'Debugger.breakpointResolved':
+      case 'Debugger.breakpointHitCountChanged':
       case 'Debugger.paused':
       case 'Debugger.resumed':
       case 'Debugger.scriptParsed':

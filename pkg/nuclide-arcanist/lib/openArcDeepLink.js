@@ -21,9 +21,7 @@ import {getLastProjectPath} from '../../nuclide-arcanist-base';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {asyncFilter} from 'nuclide-commons/promise';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import getMatchingProjects from './getMatchingProjects';
 import tryReopenProject from './tryReopenProject';
 
@@ -38,25 +36,31 @@ async function searchOtherWindows(
   path: string,
 ): Promise<?electron$BrowserWindow> {
   const windows = await Promise.all(
-    remote.BrowserWindow.getAllWindows().map(browserWindow => {
-      return new Promise((resolve, reject) => {
-        // In case `atom` hasn't been initialized yet.
-        browserWindow.webContents.executeJavaScript(
-          'atom && atom.project.getPaths()',
-          result => {
-            // Guard against null returns (and also help Flow).
-            const containsPath =
-              Array.isArray(result) &&
-              result.find(
-                project =>
-                  typeof project === 'string' &&
-                  nuclideUri.contains(path, project),
-              );
-            resolve(containsPath ? browserWindow : null);
-          },
-        );
-      });
-    }),
+    remote.BrowserWindow
+      .getAllWindows()
+      // Atom 1.17 added GitHub's git integration, which spawns a hidden
+      // browser window which we should ignore.
+      .filter(browserWindow => browserWindow.isVisible())
+      .map(browserWindow => {
+        return new Promise((resolve, reject) => {
+          // In case `atom` hasn't been initialized yet.
+          browserWindow.webContents.executeJavaScript(
+            'atom && atom.project.getPaths()',
+            result => {
+              // Guard against null returns (and also help Flow).
+              const containsPath =
+                Array.isArray(result) &&
+                result.find(
+                  project =>
+                    typeof project === 'string' &&
+                    nuclideUri.contains(path, project),
+                );
+              // flowlint-next-line sketchy-null-mixed:off
+              resolve(containsPath ? browserWindow : null);
+            },
+          );
+        });
+      }),
   );
   return windows.find(Boolean);
 }
@@ -133,9 +137,8 @@ export async function openArcDeepLink(
     for (let i = 0; i < paths.length; i++) {
       const localPath = nuclideUri.join(match, paths[i]);
       const intLine = lines == null ? undefined : parseInt(lines[i], 10) - 1;
-      const intColumn = columns == null
-        ? undefined
-        : parseInt(columns[i], 10) - 1;
+      const intColumn =
+        columns == null ? undefined : parseInt(columns[i], 10) - 1;
       goToLocation(localPath, intLine, intColumn);
     }
   } catch (err) {

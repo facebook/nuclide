@@ -124,11 +124,13 @@ function selectValidDeploymentTarget(
 
   let existingDevice = null;
   let existingPlatform = null;
+  // flowlint-next-line sketchy-null-string:off
   if (preferredPlatformName) {
     for (const platformGroup of platformGroups) {
       for (const platform of platformGroup.platforms) {
         if (platform.isMobile && platform.name === preferredPlatformName) {
           existingPlatform = platform;
+          // flowlint-next-line sketchy-null-string:off
           if (preferredDeviceName) {
             for (const deviceGroup of platform.deviceGroups) {
               for (const device of deviceGroup.devices) {

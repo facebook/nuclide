@@ -60,7 +60,7 @@ async function createConfigDirectory(
       if (clearDirectory) {
         // When starting up a new server, we remove any connection configs leftover
         // from previous runs.
-        await fs.rmdir(configDirPath);
+        await fs.rimraf(configDirPath);
         if (await fs.exists(configDirPath)) {
           throw new Error(
             'createConfigDirectory: Failed to remove' + configDirPath,
@@ -88,7 +88,7 @@ export async function createNewEntry(
   // TODO: Instead of using this dummy '0' port, will need to figure out
   // a directory structure which can handle multiple registered servers on the client side.
   const subdir = nuclideUri.join(configDirectory, String(0));
-  await fs.rmdir(subdir);
+  await fs.rimraf(subdir);
   if (await fs.exists(subdir)) {
     throw new Error('createNewEntry: Failed to delete: ' + subdir);
   }

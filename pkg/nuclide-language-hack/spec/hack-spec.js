@@ -1618,7 +1618,9 @@ describe('PHP grammar', () => {
         .map(token => token.value);
       expect(nonClosureTokens.length).toBe(
         0,
-        `These tokens are missing the closure tag: ${nonClosureTokens.join(', ')}`,
+        `These tokens are missing the closure tag: ${nonClosureTokens.join(
+          ', ',
+        )}`,
       );
     });
   });

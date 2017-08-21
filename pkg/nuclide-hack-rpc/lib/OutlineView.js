@@ -131,8 +131,9 @@ function outlineFromHackIdeItem(hackItem: HackIdeOutlineItem): OutlineTree {
       hackItem.span.line_end,
       hackItem.span.char_end,
     ),
-    children: hackItem.children == null
-      ? []
-      : hackItem.children.map(outlineFromHackIdeItem),
+    children:
+      hackItem.children == null
+        ? []
+        : hackItem.children.map(outlineFromHackIdeItem),
   };
 }

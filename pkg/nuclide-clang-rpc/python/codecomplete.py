@@ -132,6 +132,9 @@ class CompletionResult:
     def to_dict(self):
         completion_string = self._result.string
         briefComment = completion_string.briefComment
+        # In newer Clang versions, briefComment is a string.
+        if not isinstance(briefComment, basestring):
+            briefComment = briefComment and briefComment.spelling
 
         chunks = []
         result_type = CompletionResult._get_chunks(completion_string, chunks)
@@ -145,7 +148,7 @@ class CompletionResult:
             'chunks': chunks,
             'result_type': result_type,
             'cursor_kind': self.kind,
-            'brief_comment': briefComment and briefComment.spelling,
+            'brief_comment': briefComment,
             'typed_name': self.typed_name,
         }
 

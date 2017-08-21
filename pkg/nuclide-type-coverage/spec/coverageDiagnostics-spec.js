@@ -11,8 +11,8 @@
 
 import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 import type {
+  DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
-  InvalidationMessage,
   FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {Result} from 'nuclide-commons-atom/ActiveEditorRegistry';
@@ -35,7 +35,7 @@ describe('diagnosticProviderForResultStream', () => {
   let diagnosticProvider: ObservableDiagnosticProvider = (null: any);
 
   let updates: Array<Array<FileDiagnosticMessage>> = (null: any);
-  let invalidations: Array<InvalidationMessage> = (null: any);
+  let invalidations: Array<DiagnosticInvalidationMessage> = (null: any);
 
   let editor: atom$TextEditor = (null: any);
 

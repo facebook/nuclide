@@ -22,8 +22,6 @@ not get as full-featured diagnostics, type hinting, etc. since there is no
 Nuclide's JavaScript support is similar to its support for [Flow](/docs/languages/flow), except
 you will not get as full-featured diagnostics, type hinting, etc. since there is no
 [typechecker](http://flowtype.org/) to assist Nuclide with your project's metadata.
-[Debugging through Node](/docs/features/debugger/#basics) is similar to
-[Flow](/docs/languages/flow/#debugging) as well.
 
 JavaScript is a primary language for [React Native](https://facebook.github.io/react-native/), and
 Nuclide is a great IDE for [developing React Native applications](/docs/platforms/react-native).

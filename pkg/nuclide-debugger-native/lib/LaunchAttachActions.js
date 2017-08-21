@@ -16,8 +16,7 @@ import type {
 } from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {DebuggerProcessInfo} from '../../nuclide-debugger-base';
-import typeof * as NativeDebuggerService
-  from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
+import typeof * as NativeDebuggerService from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 
 import invariant from 'assert';
 import {AttachProcessInfo} from './AttachProcessInfo';
@@ -33,6 +32,7 @@ export class LaunchAttachActions extends LaunchAttachActionsBase {
   constructor(dispatcher: LaunchAttachDispatcher, targetUri: NuclideUri) {
     super(targetUri);
     this._dispatcher = dispatcher;
+    (this: any).updateAttachTargetList = this.updateAttachTargetList.bind(this);
   }
 
   attachDebugger(attachTarget: AttachTargetInfo): Promise<void> {

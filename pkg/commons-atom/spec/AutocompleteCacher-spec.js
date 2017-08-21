@@ -107,7 +107,7 @@ describe('AutocompleteCacher', () => {
         mockedRequest2,
       );
 
-      expect(getSuggestions.callCount).toBe(2);
+      expect(getSuggestions.callCount).toBe(1);
       expect(getSuggestions).toHaveBeenCalledWith(mockedRequest);
 
       expect(updateResults.callCount).toBe(1);
@@ -202,18 +202,6 @@ describe('AutocompleteCacher', () => {
     });
   });
 
-  it('should pass a new request through if updateResults is null', () => {
-    waitsForPromise(async () => {
-      await autocompleteCacher.getSuggestions(mockedRequest);
-      mockedUpdateResults = null;
-      mockedSuggestions = Promise.resolve(['new']);
-      const secondResults = await autocompleteCacher.getSuggestions(
-        mockedRequest2,
-      );
-      expect(secondResults).toBe(await mockedSuggestions);
-    });
-  });
-
   it('should pass a new request through if the first returned null', () => {
     waitsForPromise(async () => {
       mockedSuggestions = Promise.resolve(null);
@@ -269,7 +257,7 @@ describe('AutocompleteCacher', () => {
           mockedRequest2,
         );
 
-        expect(getSuggestions.callCount).toBe(2);
+        expect(getSuggestions.callCount).toBe(1);
         expect(getSuggestions).toHaveBeenCalledWith(mockedRequest);
 
         expect(updateResults.callCount).toBe(1);

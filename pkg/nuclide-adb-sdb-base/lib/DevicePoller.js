@@ -9,22 +9,24 @@
  * @format
  */
 
+import type {Expected} from '../../commons-node/expected';
+import type {DeviceDescription} from '../../nuclide-adb-sdb-rpc/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {Device} from '../../nuclide-device-panel/lib/types';
+
 import {getAdbServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getSdbServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {Observable} from 'rxjs';
-import {Expect} from '../../nuclide-expected';
+import {Expect} from '../../commons-node/expected';
 import {track} from '../../nuclide-analytics';
-
-import type {Expected} from '../../nuclide-expected';
-import type {DeviceDescription} from '../../nuclide-adb-sdb-rpc/lib/types';
-import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {Device} from '../../nuclide-devices/lib/types';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {Cache} from '../../commons-node/cache';
 
 export type DBType = 'sdb' | 'adb';
 
 class DevicePoller {
   _type: DBType;
-  _observables: Map<NuclideUri, Observable<Expected<Device[]>>> = new Map();
+  _observables: Cache<string, Observable<Expected<Device[]>>> = new Cache();
 
   constructor(type: DBType) {
     this._type = type;
@@ -34,41 +36,46 @@ class DevicePoller {
     return this._type === 'adb' ? 'android' : 'tizen';
   }
 
-  observe(host: NuclideUri): Observable<Expected<Device[]>> {
-    let observable = this._observables.get(host);
-    if (observable != null) {
-      return observable;
-    }
-    observable = Observable.interval(3000)
-      .startWith(0)
-      .switchMap(() =>
-        this.fetch(host)
-          .map(devices => Expect.value(devices))
-          .catch(() =>
-            Observable.of(
-              Expect.error(
-                new Error(
-                  `Can't fetch ${this._getPlatform()} devices. Make sure that ${this._type} is in your $PATH and that it works properly.`,
+  observe(_host: NuclideUri): Observable<Expected<Device[]>> {
+    const host = nuclideUri.isRemote(_host) ? _host : '';
+    return this._observables.getOrCreate(host, () =>
+      Observable.interval(2000)
+        .startWith(0)
+        .switchMap(() =>
+          this.fetch(host)
+            .map(devices => Expect.value(devices))
+            .catch(() =>
+              Observable.of(
+                Expect.error(
+                  new Error(
+                    `Can't fetch ${this._getPlatform()} devices. Make sure that ${this
+                      ._type} is in your $PATH and that it works properly.`,
+                  ),
                 ),
               ),
             ),
-          ),
-      )
-      .publishReplay(1)
-      .refCount();
-    this._observables.set(host, observable);
-    return observable;
+        )
+        .publishReplay(1)
+        .refCount(),
+    );
   }
 
   fetch(host: NuclideUri): Observable<Device[]> {
-    const rpc = this._type === 'adb'
-      ? getAdbServiceByNuclideUri(host)
-      : getSdbServiceByNuclideUri(host);
+    try {
+      const rpc =
+        this._type === 'adb'
+          ? getAdbServiceByNuclideUri(host)
+          : getSdbServiceByNuclideUri(host);
 
-    return rpc
-      .getDeviceList()
-      .refCount()
-      .map(devices => devices.map(device => this.parseRawDevice(device)));
+      return rpc
+        .getDeviceList()
+        .refCount()
+        .map(devices => devices.map(device => this.parseRawDevice(device)));
+    } catch (e) {
+      // The remote host connection can go away while we are fetching if the user
+      // removes it from the file tree or the network connection is lost.
+      return Observable.of([]);
+    }
   }
 
   parseRawDevice(device: DeviceDescription): Device {
@@ -91,6 +98,7 @@ class DevicePoller {
 
     return {
       name: device.name,
+      port: device.port,
       displayName,
       architecture: deviceArchitecture,
       rawArchitecture: device.architecture,

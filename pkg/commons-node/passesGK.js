@@ -66,3 +66,9 @@ export function isGkEnabled(name: string): ?boolean {
 export function onceGkInitialized(callback: () => mixed): IDisposable {
   return getGatekeeper().onceGkInitialized(callback);
 }
+
+export function onceGkInitializedAsync(): Promise<void> {
+  return new Promise(resolve => {
+    getGatekeeper().onceGkInitialized(() => resolve());
+  });
+}

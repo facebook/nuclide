@@ -10,25 +10,19 @@
  */
 
 import type {
-  ClearRecordsAction,
-  RegisterExecutorAction,
-  ExecuteAction,
+  Action,
   Executor,
   OutputProvider,
   OutputProviderStatus,
   Record,
   RecordProvider,
-  RecordReceivedAction,
-  RegisterRecordProviderAction,
-  RegisterSourceAction,
-  RemoveSourceAction,
-  SelectExecutorAction,
-  SetMaxMessageCountAction,
   SourceInfo,
-  UpdateStatusAction,
 } from '../types';
 
+import type {CreatePasteFunction} from '../../../nuclide-paste-base';
+
 export const CLEAR_RECORDS = 'CLEAR_RECORDS';
+export const SET_CREATE_PASTE_FUNCTION = 'SET_CREATE_PASTE_FUNCTION';
 export const REGISTER_EXECUTOR = 'REGISTER_EXECUTOR';
 export const EXECUTE = 'EXECUTE';
 export const REGISTER_RECORD_PROVIDER = 'REGISTER_RECORD_PROVIDER';
@@ -39,34 +33,32 @@ export const REGISTER_SOURCE = 'REGISTER_SOURCE';
 export const REMOVE_SOURCE = 'REMOVE_SOURCE';
 export const UPDATE_STATUS = 'UPDATE_STATUS';
 
-export function clearRecords(): ClearRecordsAction {
+export function clearRecords(): Action {
   return {type: CLEAR_RECORDS};
 }
 
-export function recordReceived(record: Record): RecordReceivedAction {
+export function recordReceived(record: Record): Action {
   return {
     type: RECORD_RECEIVED,
     payload: {record},
   };
 }
 
-export function registerExecutor(executor: Executor): RegisterExecutorAction {
+export function registerExecutor(executor: Executor): Action {
   return {
     type: REGISTER_EXECUTOR,
     payload: {executor},
   };
 }
 
-export function execute(code: string): ExecuteAction {
+export function execute(code: string): Action {
   return {
     type: EXECUTE,
     payload: {code},
   };
 }
 
-export function registerOutputProvider(
-  outputProvider: OutputProvider,
-): RegisterRecordProviderAction {
+export function registerOutputProvider(outputProvider: OutputProvider): Action {
   // Transform the messages into actions and merge them into the action stream.
   // TODO: Add enabling/disabling of registered source and only subscribe when enabled. That
   //       way, we won't trigger cold observer side-effects when we don't need the results.
@@ -89,16 +81,14 @@ export function registerOutputProvider(
   });
 }
 
-export function registerRecordProvider(
-  recordProvider: RecordProvider,
-): RegisterRecordProviderAction {
+export function registerRecordProvider(recordProvider: RecordProvider): Action {
   return {
     type: REGISTER_RECORD_PROVIDER,
     payload: {recordProvider},
   };
 }
 
-export function registerSource(source: SourceInfo): RegisterSourceAction {
+export function registerSource(source: SourceInfo): Action {
   return {
     type: REGISTER_SOURCE,
     payload: {source},
@@ -107,49 +97,56 @@ export function registerSource(source: SourceInfo): RegisterSourceAction {
 
 export function unregisterRecordProvider(
   recordProvider: RecordProvider,
-): RemoveSourceAction {
+): Action {
   return removeSource(recordProvider.id);
 }
 
 export function unregisterOutputProvider(
   outputProvider: OutputProvider,
-): RemoveSourceAction {
+): Action {
   return removeSource(outputProvider.id);
 }
 
-export function selectExecutor(executorId: string): SelectExecutorAction {
+export function selectExecutor(executorId: string): Action {
   return {
     type: SELECT_EXECUTOR,
     payload: {executorId},
   };
 }
 
-export function setMaxMessageCount(
-  maxMessageCount: number,
-): SetMaxMessageCountAction {
+export function setMaxMessageCount(maxMessageCount: number): Action {
   return {
     type: SET_MAX_MESSAGE_COUNT,
     payload: {maxMessageCount},
   };
 }
 
-export function removeSource(sourceId: string): RemoveSourceAction {
+export function removeSource(sourceId: string): Action {
   return {
     type: REMOVE_SOURCE,
     payload: {sourceId},
   };
 }
 
-export function unregisterExecutor(executor: Executor): RemoveSourceAction {
+export function unregisterExecutor(executor: Executor): Action {
   return removeSource(executor.id);
 }
 
 export function updateStatus(
   providerId: string,
   status: OutputProviderStatus,
-): UpdateStatusAction {
+): Action {
   return {
     type: UPDATE_STATUS,
     payload: {providerId, status},
+  };
+}
+
+export function setCreatePasteFunction(
+  createPasteFunction: ?CreatePasteFunction,
+): Action {
+  return {
+    type: SET_CREATE_PASTE_FUNCTION,
+    payload: {createPasteFunction},
   };
 }

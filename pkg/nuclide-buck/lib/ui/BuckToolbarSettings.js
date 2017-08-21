@@ -12,9 +12,8 @@
 import type {PlatformProviderSettings, TaskSettings} from '../types';
 
 import React from 'react';
-import {quote} from 'shell-quote';
 
-import {shellParse} from 'nuclide-commons/string';
+import {shellParse, shellQuote} from 'nuclide-commons/string';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
@@ -41,15 +40,16 @@ export default class BuckToolbarSettings extends React.Component {
     super(props);
     const {buildArguments, runArguments} = props.settings;
     this.state = {
-      buildArguments: buildArguments == null ? '' : quote(buildArguments),
-      runArguments: runArguments == null ? '' : quote(runArguments),
+      buildArguments: buildArguments == null ? '' : shellQuote(buildArguments),
+      runArguments: runArguments == null ? '' : shellQuote(runArguments),
     };
   }
 
   render(): React.Element<any> {
-    const extraSettingsUi = this.props.platformProviderSettings != null
-      ? this.props.platformProviderSettings.ui
-      : null;
+    const extraSettingsUi =
+      this.props.platformProviderSettings != null
+        ? this.props.platformProviderSettings.ui
+        : null;
     return (
       <Modal onDismiss={this.props.onDismiss}>
         <div className="block">
@@ -57,7 +57,8 @@ export default class BuckToolbarSettings extends React.Component {
             <label>Current Buck root:</label>
             <p>
               <code>
-                {this.props.currentBuckRoot || 'No Buck project found.'}
+                {// flowlint-next-line sketchy-null-string:off
+                this.props.currentBuckRoot || 'No Buck project found.'}
               </code>
             </p>
             <label>Build Arguments:</label>
@@ -82,9 +83,7 @@ export default class BuckToolbarSettings extends React.Component {
           </div>
           <div style={{display: 'flex', justifyContent: 'flex-end'}}>
             <ButtonGroup>
-              <Button onClick={this.props.onDismiss}>
-                Cancel
-              </Button>
+              <Button onClick={this.props.onDismiss}>Cancel</Button>
               <Button
                 buttonType={ButtonTypes.PRIMARY}
                 onClick={this._onSave.bind(this)}>

@@ -12,8 +12,7 @@
 import type {ServerConnection} from './ServerConnection';
 import type {RemoteDirectory} from './RemoteDirectory';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import typeof * as FileSystemService
-  from '../../nuclide-server/lib/services/FileSystemService';
+import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
 
 import invariant from 'assert';
 import passesGK from '../../commons-node/passesGK';
@@ -21,6 +20,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import crypto from 'crypto';
 import {Disposable, Emitter} from 'atom';
 import {getLogger} from 'log4js';
+import Stream from 'stream';
 
 const logger = getLogger('nuclide-remote-connection');
 
@@ -101,7 +101,10 @@ export class RemoteFile {
         }
       },
       error => {
-        logger.error('Failed to subscribe RemoteFile:', this._path, error);
+        // In the case of new files, it's normal for the remote file to not exist yet.
+        if (error.code !== 'ENOENT') {
+          logger.error('Failed to subscribe RemoteFile:', this._path, error);
+        }
         this._watchSubscription = null;
       },
       () => {
@@ -122,9 +125,12 @@ export class RemoteFile {
       (await passesGK('nuclide_watch_warn_unmanaged_file'))
     ) {
       atom.notifications.addWarning(
-        `Couldn't watch remote file \`${nuclideUri.basename(this._path)}\` for changes!`,
+        `Couldn't watch remote file \`${nuclideUri.basename(
+          this._path,
+        )}\` for changes!`,
         {
-          detail: "Updates to the file outside Nuclide won't reload automatically\n" +
+          detail:
+            "Updates to the file outside Nuclide won't reload automatically\n" +
             "Please add the file's project directory to Nuclide\n",
           dismissable: true,
         },
@@ -194,20 +200,24 @@ export class RemoteFile {
   }
 
   getDigestSync(): string {
+    // flowlint-next-line sketchy-null-string:off
     if (!this._digest) {
       // File's `getDigestSync()` calls `readSync()`, which we don't implement.
       // However, we mimic it's behavior for when a file does not exist.
       this._setDigest('');
     }
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._digest);
     return this._digest;
   }
 
   async getDigest(): Promise<string> {
+    // flowlint-next-line sketchy-null-string:off
     if (this._digest) {
       return this._digest;
     }
     await this.read();
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._digest);
     return this._digest;
   }
@@ -241,6 +251,7 @@ export class RemoteFile {
   }
 
   getRealPathSync(): string {
+    // flowlint-next-line sketchy-null-string:off
     return this._realpath || this._path;
   }
 
@@ -304,12 +315,23 @@ export class RemoteFile {
     }
   }
 
+  async writeWithPermission(text: string, permission: number): Promise<void> {
+    const previouslyExisted = await this.exists();
+    await this._getFileSystemService().writeFile(this._path, text, {
+      mode: permission,
+    });
+    if (!previouslyExisted && this._subscriptionCount > 0) {
+      this._subscribeToNativeChangeEvents();
+    }
+  }
+
   getParent(): RemoteDirectory {
     const directoryPath = nuclideUri.dirname(this._path);
     const remoteConnection = this._server.getRemoteConnectionForUri(this._path);
-    const hgRepositoryDescription = remoteConnection != null
-      ? remoteConnection.getHgRepositoryDescription()
-      : null;
+    const hgRepositoryDescription =
+      remoteConnection != null
+        ? remoteConnection.getHgRepositoryDescription()
+        : null;
     return this._server.createDirectory(directoryPath, hgRepositoryDescription);
   }
 
@@ -323,5 +345,70 @@ export class RemoteFile {
 
   _getService(serviceName: string): any {
     return this._server.getService(serviceName);
+  }
+
+  /**
+   * Implementing a real stream (with chunks) is potentially very inefficient, as making
+   * multiple RPC calls can take much longer than just fetching the entire file.
+   * This stream just fetches the entire file contents for now.
+   */
+  createReadStream(): stream$Readable {
+    const path = this._path;
+    const service = this._getFileSystemService();
+    // push() triggers another read(), so make sure we don't read the file twice.
+    let pushed = false;
+    const stream = new Stream.Readable({
+      read(size) {
+        if (pushed) {
+          return;
+        }
+        service.readFile(path).then(
+          buffer => {
+            pushed = true;
+            stream.push(buffer);
+            stream.push(null);
+          },
+          err => {
+            stream.emit('error', err);
+          },
+        );
+      },
+    });
+    return stream;
+  }
+
+  /**
+   * As with createReadStream, it's potentially very inefficient to write remotely in multiple
+   * chunks. This stream just accumulates the data locally and flushes it all at once.
+   */
+  createWriteStream(): stream$Writable {
+    const writeData = [];
+    let writeLength = 0;
+    const stream = new Stream.Writable({
+      write(chunk, encoding, next) {
+        // `chunk` may be mutated by the caller, so make sure it's copied.
+        writeData.push(Buffer.from(chunk));
+        writeLength += chunk.length;
+        next();
+      },
+    });
+    const originalEnd = stream.end;
+    // TODO: (hansonw) T20364274 Override final() in Node 8 and above.
+    // For now, we'll overwrite the end function manually.
+    // $FlowIgnore
+    stream.end = cb => {
+      invariant(cb instanceof Function, 'end() called without a callback');
+      this._getFileSystemService()
+        .writeFileBuffer(this._path, Buffer.concat(writeData, writeLength))
+        .then(
+          () => cb(),
+          err => {
+            stream.emit('error', err);
+            cb();
+          },
+        );
+      originalEnd.call(stream);
+    };
+    return stream;
   }
 }

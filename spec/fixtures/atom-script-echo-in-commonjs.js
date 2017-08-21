@@ -22,4 +22,4 @@ async function runCommand(args: Array<string>): Promise<ExitCode> {
 // This modules is purposefully written in CommonJS to test that atom-script
 // can correctly handle modules that export a function, as opposed to a
 // `default` function.
-module.exports = runCommand;
+module.exports = runCommand; // eslint-disable-line nuclide-internal/no-commonjs

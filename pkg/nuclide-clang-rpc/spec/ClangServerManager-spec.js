@@ -14,8 +14,10 @@ import ClangServerManager from '../lib/ClangServerManager';
 
 describe('ClangServerManager', () => {
   let serverManager;
+  let emptyRequestSettings;
   beforeEach(() => {
     serverManager = new ClangServerManager();
+    emptyRequestSettings = {compilationDatabase: null, projectRoot: null};
     spyOn(serverManager._flagsManager, 'getFlagsForSrc').andReturn(
       Promise.resolve(null),
     );
@@ -26,16 +28,21 @@ describe('ClangServerManager', () => {
       serverManager._flagsManager.getFlagsForSrc.andReturn(
         Promise.resolve({flags: ['a']}),
       );
-      const flagsResult = await serverManager._getFlags('test.cpp');
+      const flagsResult = await serverManager._getFlags(
+        'test.cpp',
+        emptyRequestSettings,
+      );
       expect(flagsResult).toEqual({flags: ['a'], usesDefaultFlags: false});
     });
   });
 
   it('falls back to default flags', () => {
     waitsForPromise(async () => {
-      const flagsResult = await serverManager._getFlags('test.cpp', null, [
-        'b',
-      ]);
+      const flagsResult = await serverManager._getFlags(
+        'test.cpp',
+        emptyRequestSettings,
+        ['b'],
+      );
       expect(flagsResult).toEqual({
         flags: ['b'],
         usesDefaultFlags: true,

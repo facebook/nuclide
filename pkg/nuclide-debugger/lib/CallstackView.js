@@ -60,9 +60,10 @@ export class CallstackView extends React.PureComponent {
     const {model} = this.props;
     const actions = model.getActions();
     const {mode} = this.state;
-    const disabledClass = mode !== DebuggerMode.RUNNING
-      ? ''
-      : ' nuclide-debugger-container-new-disabled';
+    const disabledClass =
+      mode !== DebuggerMode.RUNNING
+        ? ''
+        : ' nuclide-debugger-container-new-disabled';
 
     return (
       <div

@@ -59,14 +59,14 @@ These shortcuts provide quick access to development features such as [Code Diagn
 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `Option-O`| `Alt-O` | `nuclide-outline-view:toggle` | Toggles the [Outline View](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions. |
+| `Option-O`| `Alt-O` | `outline-view:toggle` | Toggles the [Outline View](/docs/features/outline-view/) for a supported file so you can easily navigate to class and function definitions. |
 | `Cmd-I` | `Ctrl-I` | `nuclide-context-view:toggle` | Toggles the [Context View](/docs/features/context-view/). |
 
 ### Hack/Flow/JavaScript
 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `Option-Shift-Cmd-F` | `Alt-Shift-Ctrl-F` | `nuclide-find-references:activate` | In projects such as Hack or Flow, this will allow you to find all the references to a selected, highlighted entity in your project. |
+| `Option-Shift-Cmd-F` | `Alt-Shift-Ctrl-F` | `find-references:activate` | In projects such as Hack or Flow, this will allow you to find all the references to a selected, highlighted entity in your project. |
 | `Option-Cmd-Y` | `Alt-Cmd-Y` | `nuclide-hack-symbol-provider:toggle-provider` | Allows you to search for Hack function, classes and constants within you Hack project.
 | `Cmd-Shift-I` | `Ctrl-Shift-I` | `nuclide-format-js:format` | Automatically tries to insert missing `require` statements to your [Flow](/docs/languages/flow/) or [JavaScript](/docs/languages/other/#javascript) project.
 
@@ -75,12 +75,12 @@ These shortcuts provide quick access to development features such as [Code Diagn
 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
-| `Option-Shift-D` | `Alt-Shift-D` | `nuclide-diagnostics-ui:toggle-table`  | Display the window showing you messages about your code. Possible messages include lint, compiler errors, etc. |
-| `Option-Shift-A` | `Alt-Shift-A` | `nuclide-diagnostics-ui:fix-all-in-current-file` | Nuclide can fix certain types of problems for you automatically, including various lint problems. This will allow all those to be fixed in the current file. |
-| `Option-Ctrl-<` | `Alt-Ctrl-<` | `nuclide-diagnostics-ui:go-to-first-diagnostic` | Go to the first diagnostic. |
-| `Option-Ctrl->` | `Alt-Ctrl->` | `nuclide-diagnostics-ui:go-to-last-diagnostic` | Go to the last diagnostic. |
-| `Option-<` | `Alt-<` | `nuclide-diagnostics-ui:go-to-previous-diagnostic` | Go to the previous diagnostic. |
-| `Option-Ctrl->` | `Alt->` | `nuclide-diagnostics-ui:go-to-next-diagnostic` | Go to the next diagnostic. |
+| `Option-Shift-D` | `Alt-Shift-D` | `diagnostics:toggle-table`  | Display the window showing you messages about your code. Possible messages include lint, compiler errors, etc. |
+| `Option-Shift-A` | `Alt-Shift-A` | `diagnostics:fix-all-in-current-file` | Nuclide can fix certain types of problems for you automatically, including various lint problems. This will allow all those to be fixed in the current file. |
+| `Option-Ctrl-<` | `Alt-Ctrl-<` | `diagnostics:go-to-first-diagnostic` | Go to the first diagnostic. |
+| `Option-Ctrl->` | `Alt-Ctrl->` | `diagnostics:go-to-last-diagnostic` | Go to the last diagnostic. |
+| `Option-<` | `Alt-<` | `diagnostics:go-to-previous-diagnostic` | Go to the previous diagnostic. |
+| `Option-Ctrl->` | `Alt->` | `diagnostics:go-to-next-diagnostic` | Go to the next diagnostic. |
 
 ## Project Explorer's File Tree
 

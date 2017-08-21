@@ -12,19 +12,16 @@
 import type {OutputService} from '../../nuclide-console/lib/types';
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 
-import {DebuggingActivation} from './debugging/DebuggingActivation';
 import {PackagerActivation} from './packager/PackagerActivation';
 import {ShellActivation} from './shell/ShellActivation';
 import {CompositeDisposable} from 'atom';
 
 export default class Activation {
-  _debuggingActivation: DebuggingActivation;
   _packagerActivation: PackagerActivation;
   _disposables: IDisposable;
 
   constructor(state: ?Object) {
     this._disposables = new CompositeDisposable(
-      (this._debuggingActivation = new DebuggingActivation()),
       (this._packagerActivation = new PackagerActivation()),
       new ShellActivation(),
     );

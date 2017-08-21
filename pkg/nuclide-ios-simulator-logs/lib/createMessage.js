@@ -19,10 +19,13 @@ import {parseMessageText} from './parseMessageText';
  */
 export function createMessage(record: AslRecord): Message {
   const {text, level, tags} = parseMessageText(record.Message);
+  if (record.Facility) {
+    tags.push(record.Facility);
+  }
   return {
     text,
     level: level == null ? getLevel(record.Level) : level,
-    tags: tags == null ? undefined : tags,
+    tags: tags.length === 0 ? undefined : tags,
   };
 }
 

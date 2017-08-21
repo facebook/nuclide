@@ -9,7 +9,13 @@
  */
 'use strict';
 
-/* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
+/* eslint
+  comma-dangle: [1, always-multiline],
+  prefer-object-spread/prefer-object-spread: 0,
+  nuclide-internal/no-commonjs: 0,
+  */
+
+const path = require('path');
 
 const FAKE_DISABLE_RE = /\s*eslint-disable\s+nuclide-internal\/license-header\s*/;
 
@@ -40,7 +46,45 @@ const NO_FLOW_AND_NO_TRANSPILE = `\
  */
 'use strict';
 
-/* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
+/* eslint
+  comma-dangle: [1, always-multiline],
+  prefer-object-spread/prefer-object-spread: 0,
+  nuclide-internal/no-commonjs: 0,
+  */
+`;
+
+const MODULES_FLOW_FORMAT_AND_TRANSPILE = `\
+/**
+ * Copyright (c) 2017-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @flow
+ * @format
+ */
+`;
+
+const MODULES_NO_FLOW_AND_NO_TRANSPILE = `\
+/**
+ * Copyright (c) 2017-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @noflow
+ */
+'use strict';
+
+/* eslint
+  comma-dangle: [1, always-multiline],
+  prefer-object-spread/prefer-object-spread: 0,
+  nuclide-internal/no-commonjs: 0,
+  */
 `;
 
 module.exports = function(context) {
@@ -58,17 +102,51 @@ module.exports = function(context) {
       const sourceCode = context.getSourceCode();
       const source = sourceCode.text;
 
-      if (source.startsWith(FLOW_FORMAT_AND_TRANSPILE)) {
+      const isInModules = context
+        .getFilename()
+        .startsWith(path.join(__dirname, '..', '..', 'modules/'));
+      const flowHeader = isInModules
+        ? MODULES_FLOW_FORMAT_AND_TRANSPILE
+        : FLOW_FORMAT_AND_TRANSPILE;
+      if (source.startsWith(flowHeader)) {
         return;
       }
 
-      if (source.replace(SHEBANG_RE, '').startsWith(NO_FLOW_AND_NO_TRANSPILE)) {
+      const noFlowHeader = isInModules
+        ? MODULES_NO_FLOW_AND_NO_TRANSPILE
+        : NO_FLOW_AND_NO_TRANSPILE;
+      if (source.replace(SHEBANG_RE, '').startsWith(noFlowHeader)) {
         return;
+      }
+
+      let fix;
+      // The modules folder has a special license that shouldn't be blindly applied.
+      if (!isInModules) {
+        const comment = context.getSourceCode().getAllComments()[0];
+        if (
+          comment != null &&
+          comment.type === 'Block' &&
+          comment.loc.start.line === 1
+        ) {
+          if (comment.value.includes('@flow')) {
+            fix = fixer => fixer.replaceText(comment, flowHeader.trim());
+          } else if (comment.value.includes('@noflow')) {
+            // TODO: replace the stuff after the docblock.
+            // It should be pretty obvious to the user, though.
+            fix = fixer => fixer.replaceText(comment, noFlowHeader.trim());
+          } else {
+            // Default to the @flow header.
+            fix = fixer => fixer.insertTextBeforeRange([0, 0], flowHeader);
+          }
+        } else if (!source.match(SHEBANG_RE)) {
+          fix = fixer => fixer.insertTextBeforeRange([0, 0], flowHeader);
+        }
       }
 
       context.report({
         node,
         message: 'Expected a license header',
+        fix,
       });
     },
   };

@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -444,6 +445,7 @@ export async function asyncFilter<T>(
   limit?: number,
 ): Promise<Array<T>> {
   const filteredList = [];
+  // flowlint-next-line sketchy-null-number:off
   await asyncLimit(array, limit || array.length, async (item: T) => {
     if (await filterFunction(item)) {
       filteredList.push(item);
@@ -459,6 +461,7 @@ export async function asyncObjFilter<T>(
 ): Promise<{[key: string]: T}> {
   const keys = Object.keys(obj);
   const filteredObj = {};
+  // flowlint-next-line sketchy-null-number:off
   await asyncLimit(keys, limit || keys.length, async (key: string) => {
     const item = obj[key];
     if (await filterFunction(item, key)) {
@@ -495,6 +498,7 @@ export async function asyncSome<T>(
   limit?: number,
 ): Promise<boolean> {
   let resolved = false;
+  // flowlint-next-line sketchy-null-number:off
   await asyncLimit(array, limit || array.length, async (item: T) => {
     if (resolved) {
       // We don't need to call the someFunction anymore or wait any longer.
@@ -534,4 +538,41 @@ export function lastly<T>(
       return Promise.resolve(fn()).then(() => Promise.reject(err));
     },
   );
+}
+
+/**
+ * With a pure promise object, there's no way to tell synchronously
+ * whether or not it has 'settled' (i.e. been fulfilled or rejected).
+ * Here we provide a wrapper that provides that information.
+ */
+export type PromiseState<T> =
+  | {kind: 'pending'}
+  | {kind: 'fulfilled', value: T}
+  | {kind: 'rejected', error: any};
+
+export class PromiseWithState<T> {
+  _promise: Promise<T>;
+  _state: PromiseState<T>;
+
+  constructor(promise: Promise<T>) {
+    this._state = {kind: 'pending'};
+    this._promise = promise.then(
+      value => {
+        this._state = {kind: 'fulfilled', value};
+        return value;
+      },
+      error => {
+        this._state = {kind: 'rejected', error};
+        throw error;
+      },
+    );
+  }
+
+  getPromise(): Promise<T> {
+    return this._promise;
+  }
+
+  getState(): PromiseState<T> {
+    return this._state;
+  }
 }

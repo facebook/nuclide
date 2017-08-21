@@ -41,9 +41,10 @@ export function convertDefinitions(
     return {
       path: definition_pos.filename || filePath,
       position: atomPointOfHackRangeStart(definition_pos),
-      range: definition_span == null
-        ? undefined
-        : hackSpanToAtomRange(definition_span),
+      range:
+        definition_span == null
+          ? undefined
+          : hackSpanToAtomRange(definition_span),
       // TODO: definition_id
       id: name,
       name,

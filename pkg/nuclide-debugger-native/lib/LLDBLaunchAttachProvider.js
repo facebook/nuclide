@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  DebuggerActionUIProvider,
-} from './actions/DebuggerActionUIProvider';
+import type {DebuggerActionUIProvider} from './actions/DebuggerActionUIProvider';
 import type {DebuggerConfigAction} from '../../nuclide-debugger-base';
 
 import {asyncFilter} from 'nuclide-commons/promise';

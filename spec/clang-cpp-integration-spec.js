@@ -76,7 +76,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
 
     waitsForAutocompleteSuggestions();
 
-    runs(() => {
+    waitsForPromise(async () => {
       const items = getAutocompleteSuggestions();
       expect(items.length).toBeGreaterThan(1);
       expect(items[0]).toEqual({
@@ -100,7 +100,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
       expect(lineText).toBe('t.method()}');
 
       // This is a clear syntax error, so we should get an error on save.
-      textEditor.save();
+      await textEditor.save();
     });
 
     waitsFor('error to show up in diagnostics', 10000, () => {
@@ -150,7 +150,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
 
       // Trigger a datatip on t
       textEditor.setCursorBufferPosition([12, 17]);
-      atom.commands.dispatch(textEditorView, 'nuclide-datatip:toggle');
+      atom.commands.dispatch(textEditorView, 'datatip:toggle');
     });
 
     let datatip;

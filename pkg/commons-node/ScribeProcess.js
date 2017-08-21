@@ -9,8 +9,10 @@
  * @format
  */
 
+import child_process from 'child_process';
 import os from 'os';
-import {runCommand, spawn} from 'nuclide-commons/process';
+import {spawn} from 'nuclide-commons/process';
+import once from './once';
 // $FlowFixMe: Add EmptyError to type defs
 import {EmptyError, Subject} from 'rxjs';
 
@@ -38,14 +40,14 @@ export default class ScribeProcess {
   /**
    * Check if `scribe_cat` exists in PATH.
    */
-  static async isScribeCatOnPath(): Promise<boolean> {
+  static isScribeCatOnPath = once(() => {
     try {
-      await runCommand('which', [SCRIBE_CAT_COMMAND]).toPromise();
-      return true;
-    } catch (err) {
+      const proc = child_process.spawnSync('which', [SCRIBE_CAT_COMMAND]);
+      return proc.status === 0;
+    } catch (e) {
       return false;
     }
-  }
+  });
 
   /**
    * Write a string to a Scribe category.

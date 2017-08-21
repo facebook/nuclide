@@ -14,7 +14,7 @@ import type {Level} from '../../nuclide-console/lib/types';
 type Parsed = {
   text: string,
   level: ?Level,
-  tags: ?Array<string>,
+  tags: Array<string>,
 };
 
 const TAG_RE = /\[([^[\]]*)]/g;
@@ -30,7 +30,7 @@ export function parseMessageText(raw: string): Parsed {
     return {
       text: raw,
       level: null,
-      tags: null,
+      tags: [],
     };
   }
 

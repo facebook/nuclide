@@ -9,11 +9,12 @@
  * @format
  */
 
+import {Range} from 'simple-text-buffer';
+
 import fuzzaldrinPlus from 'fuzzaldrin-plus';
 
-import type {
-  AutocompleteResult,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {FlowLocNoSource} from '../../nuclide-flow-rpc';
 
 // A simple heuristic for identifier names in JavaScript.
 export const JAVASCRIPT_IDENTIFIER_REGEX = /[$_a-zA-Z][$_\w]*/g;
@@ -89,4 +90,17 @@ export function filterResultsByPrefix(
     });
   }
   return {...results, items};
+}
+
+export function flowCoordsToAtomCoords(
+  flowCoords: FlowLocNoSource,
+): atom$Range {
+  return new Range(
+    [flowCoords.start.line - 1, flowCoords.start.column - 1],
+    [
+      flowCoords.end.line - 1,
+      // Yes, this is inconsistent. Yes, it works as expected in practice.
+      flowCoords.end.column,
+    ],
+  );
 }

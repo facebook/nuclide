@@ -127,15 +127,15 @@ export function shortHeadChangedNotification(
     );
 
     // TODO(most): Should we handle empty bookmark switches differently?
-    const newShortHeadDisplayText = newShortHead.length > 0
-      ? `to \`${newShortHead}\``
-      : '';
+    const newShortHeadDisplayText =
+      newShortHead.length > 0 ? `to \`${newShortHead}\`` : '';
 
     const shortHeadChangeNotification = atom.notifications.addInfo(
       `\`${workingDirectoryName}\`'s active bookmark has changed ${newShortHeadDisplayText}`,
       {
-        detail: 'Would you like to open the files you had active then?\n \n' +
-          "ProTip: Change the default behavior from 'Nuclide Settings>IDE Settings>Book Shelf'",
+        detail:
+          'Would you like to open the files you had active then?\n \n' +
+          "ProTip: Change the default behavior from 'Nuclide Settings>Nuclide-bookshelf'",
         dismissable: true,
         buttons: [
           {

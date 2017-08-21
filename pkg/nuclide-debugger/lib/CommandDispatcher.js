@@ -11,15 +11,14 @@
 
 import type {IPCEvent} from './types';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 require('./Protocol/Object');
 import InspectorBackendClass from './Protocol/NuclideProtocolParser';
 
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 import BridgeAdapter from './Protocol/BridgeAdapter';
-import {
-  isNewProtocolChannelEnabled,
-} from '../../nuclide-debugger-common/lib/NewProtocolChannelChecker';
+import {isNewProtocolChannelEnabled} from '../../nuclide-debugger-common/lib/NewProtocolChannelChecker';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {reportError} from './Protocol/EventReporter';
 
@@ -34,9 +33,11 @@ export default class CommandDispatcher {
   _webviewUrl: ?string;
   _bridgeAdapter: ?BridgeAdapter;
   _useNewChannel: boolean;
+  _getIsReadonlyTarget: () => boolean;
 
-  constructor() {
+  constructor(getIsReadonlyTarget: () => boolean) {
     this._useNewChannel = false;
+    this._getIsReadonlyTarget = getIsReadonlyTarget;
   }
 
   isNewChannel(): boolean {
@@ -85,12 +86,17 @@ export default class CommandDispatcher {
 
   async setupNuclideChannel(debuggerInstance: Object): Promise<void> {
     this._ensureSessionCreated();
-    this._useNewChannel = await isNewProtocolChannelEnabled();
+    this._useNewChannel = await isNewProtocolChannelEnabled(
+      debuggerInstance.getProviderName(),
+    );
     if (this._useNewChannel) {
       const dispatchers = await InspectorBackendClass.bootstrap(
         debuggerInstance,
       );
-      this._bridgeAdapter = new BridgeAdapter(dispatchers);
+      this._bridgeAdapter = new BridgeAdapter(
+        dispatchers,
+        this._getIsReadonlyTarget,
+      );
       invariant(this._sessionSubscriptions != null);
       this._sessionSubscriptions.add(() => {
         if (this._bridgeAdapter != null) {
@@ -140,7 +146,9 @@ export default class CommandDispatcher {
   }
 
   _sendViaNuclideChannel(...args: Array<any>): void {
-    invariant(this._bridgeAdapter != null);
+    if (this._bridgeAdapter == null) {
+      return;
+    }
     switch (args[0]) {
       case 'Continue':
         this._bridgeAdapter.resume();

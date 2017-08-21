@@ -10,9 +10,7 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
+import type {FindReferencesReturn} from 'atom-ide-ui';
 
 import {hackRangeToAtomRange} from './HackHelpers';
 

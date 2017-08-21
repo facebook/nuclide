@@ -103,7 +103,7 @@
       </div>
     </div>
     <script>
-      function initializeElementInspector(inspectorDevTools, requirePaths) {
+      function initializeElementInspector(inspectorDevTools, requirePaths, syntaxTheme) {
         // The paths used by Atom webviews' `require` aren't what you expect (i.e. they're not
         // based on the file location. Because of this, we pass the paths we want to use from the
         // JS host and patch it. That way, the standalone script will be able to find its
@@ -111,10 +111,33 @@
         // See https://github.com/atom/electron/issues/2631 for explanation.
         require.cache[__filename].paths = requirePaths;
 
+        const devTools = require(inspectorDevTools);
+        devTools.setContentDOMNode(document.getElementById('container'));
+
+        // Match the current syntax theme if we can.
+        let defaultThemeName;
+        switch (syntaxTheme) {
+          case 'atom-dark-syntax':
+            defaultThemeName = 'AtomDark';
+            break;
+          case 'atom-light-syntax':
+            defaultThemeName = 'AtomLight';
+            break;
+          case 'one-dark-syntax':
+            defaultThemeName = 'OneDark';
+            break;
+          case 'one-light-syntax':
+            defaultThemeName = 'OneLight';
+            break;
+        }
+
+        if (defaultThemeName) {
+          devTools.setBrowserName('Nuclide');
+          devTools.setDefaultThemeName(defaultThemeName);
+        }
+
         // Start the element inspector.
-        require(inspectorDevTools)
-          .setContentDOMNode(document.getElementById('container'))
-          .startServer();
+        devTools.startServer();
       }
     </script>
   </body>

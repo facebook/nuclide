@@ -49,6 +49,7 @@ export type ExportStoreData = {
   version: number,
   openFilesExpanded?: boolean,
   uncommittedChangesExpanded?: boolean,
+  foldersExpanded?: boolean,
 };
 
 export type StoreConfigData = {
@@ -100,10 +101,12 @@ export class FileTreeStore {
   roots: Immutable.OrderedMap<NuclideUri, FileTreeNode>;
   openFilesExpanded: boolean;
   uncommittedChangesExpanded: boolean;
+  foldersExpanded: boolean;
 
   _conf: StoreConfigData; // The configuration for the file-tree. Avoid direct writing.
   _workingSetsStore: ?WorkingSetsStore;
   _usePrefixNav: boolean;
+  _autoExpandSingleChild: boolean;
   _isLoadingMap: Immutable.Map<NuclideUri, Promise<void>>;
   _repositories: Immutable.Set<atom$Repository>;
   _fileChanges: Immutable.Map<
@@ -115,7 +118,6 @@ export class FileTreeStore {
   _emitter: Emitter;
   _logger: any;
   _animationFrameRequestSubscription: ?rxjs$Subscription;
-  _suppressChanges: boolean;
   _cwdKey: ?NuclideUri;
   _filter: string;
   _extraProjectSelectionContent: Immutable.List<React.Element<any>>;
@@ -145,13 +147,14 @@ export class FileTreeStore {
     this._fileChanges = new Immutable.Map();
 
     this._usePrefixNav = false;
+    this._autoExpandSingleChild = true;
     this._isLoadingMap = new Immutable.Map();
     this._repositories = new Immutable.Set();
 
     this._conf = DEFAULT_CONF;
-    this._suppressChanges = false;
     this._filter = '';
     this._extraProjectSelectionContent = new Immutable.List();
+    this.foldersExpanded = true;
     this.openFilesExpanded = true;
     this.uncommittedChangesExpanded = true;
     this._selectionRange = null;
@@ -207,6 +210,7 @@ export class FileTreeStore {
       selectedKeysByRoot,
       openFilesExpanded: this.openFilesExpanded,
       uncommittedChangesExpanded: this.uncommittedChangesExpanded,
+      foldersExpanded: this.foldersExpanded,
     };
   }
 
@@ -257,6 +261,10 @@ export class FileTreeStore {
 
     if (data.uncommittedChangesExpanded != null) {
       this.uncommittedChangesExpanded = data.uncommittedChangesExpanded;
+    }
+
+    if (data.foldersExpanded != null) {
+      this.foldersExpanded = data.foldersExpanded;
     }
 
     const normalizedAtomPaths = atom.project
@@ -339,6 +347,9 @@ export class FileTreeStore {
       case ActionTypes.CLEAR_TRACKED_NODE:
         this._clearTrackedNode();
         break;
+      case ActionTypes.CLEAR_TRACKED_NODE_IF_NOT_LOADING:
+        this._clearTrackedNodeIfNotLoading();
+        break;
       case ActionTypes.MOVE_TO_NODE:
         this._moveToNode(payload.rootKey, payload.nodeKey);
         break;
@@ -362,6 +373,9 @@ export class FileTreeStore {
         break;
       case ActionTypes.SET_USE_PREFIX_NAV:
         this._setUsePrefixNav(payload.usePrefixNav);
+        break;
+      case ActionTypes.SET_AUTO_EXPAND_SINGLE_CHILD:
+        this._setAutoExpandSingleChild(payload.autoExpandSingleChild);
         break;
       case ActionTypes.COLLAPSE_NODE_DEEP:
         this._collapseNodeDeep(payload.rootKey, payload.nodeKey);
@@ -459,6 +473,9 @@ export class FileTreeStore {
         break;
       case ActionTypes.SET_UNCOMMITTED_CHANGES_EXPANDED:
         this._setUncommittedChangesExpanded(payload.uncommittedChangesExpanded);
+        break;
+      case ActionTypes.SET_FOLDERS_EXPANDED:
+        this._setFoldersExpanded(payload.foldersExpanded);
         break;
       case ActionTypes.INVALIDATE_REMOVED_FOLDER:
         this._invalidateRemovedFolder();
@@ -583,10 +600,6 @@ export class FileTreeStore {
   }
 
   _emitChange(): void {
-    if (this._suppressChanges) {
-      return;
-    }
-
     if (this._animationFrameRequestSubscription != null) {
       this._animationFrameRequestSubscription.unsubscribe();
     }
@@ -596,14 +609,11 @@ export class FileTreeStore {
         const {performance} = global;
         const renderStart = performance.now();
         const childrenCount = this.roots.reduce(
-          (sum, root) => sum + root.shownChildrenBelow,
+          (sum, root) => sum + root.shownChildrenCount,
           0,
         );
 
         this._emitter.emit('change');
-        this._suppressChanges = true;
-        this._checkTrackedNode();
-        this._suppressChanges = false;
         this._animationFrameRequestSubscription = null;
 
         const duration = (performance.now() - renderStart).toString();
@@ -675,6 +685,10 @@ export class FileTreeStore {
 
   getRootKeys(): Array<NuclideUri> {
     return this.roots.toArray().map(root => root.uri);
+  }
+
+  getCwdKey(): ?string {
+    return this._cwdKey;
   }
 
   /**
@@ -816,6 +830,10 @@ export class FileTreeStore {
     return this._usePrefixNav;
   }
 
+  _setAutoExpandSingleChild(autoExpandSingleChild: boolean) {
+    this._autoExpandSingleChild = autoExpandSingleChild;
+  }
+
   /**
    * The node child keys may either be available immediately (cached), or
    * require an async fetch. If all of the children are needed it's easier to
@@ -955,6 +973,8 @@ export class FileTreeStore {
   _setFetchedKeys(nodeKey: NuclideUri, childrenKeys: Array<string> = []): void {
     const directory = FileTreeHelpers.getDirectoryByKey(nodeKey);
 
+    const nodesToAutoExpand: Array<FileTreeNode> = [];
+
     // The node with URI === nodeKey might be present at several roots - update them all
     this._updateNodeAtAllRoots(nodeKey, node => {
       // Maintain the order fetched from the FS
@@ -974,6 +994,14 @@ export class FileTreeStore {
           this._conf,
         );
       });
+
+      if (
+        this._autoExpandSingleChild &&
+        childrenNodes.length === 1 &&
+        childrenNodes[0].isContainer
+      ) {
+        nodesToAutoExpand.push(childrenNodes[0]);
+      }
 
       const children = FileTreeNode.childrenFromArray(childrenNodes);
       const subscription =
@@ -1001,6 +1029,9 @@ export class FileTreeStore {
     });
 
     this._clearLoading(nodeKey);
+    nodesToAutoExpand.forEach(node => {
+      this._expandNode(node.rootUri, node.uri);
+    });
   }
 
   _makeSubscription(nodeKey: NuclideUri, directory: ?Directory): ?IDisposable {
@@ -1156,7 +1187,7 @@ export class FileTreeStore {
    * Resets the node to be kept in view if no more data is being awaited. Safe to call many times
    * because it only changes state if a node is being tracked.
    */
-  _checkTrackedNode(): void {
+  _clearTrackedNodeIfNotLoading(): void {
     if (
       /*
        * The loading map being empty is a heuristic for when loading has completed. It is inexact
@@ -1203,9 +1234,23 @@ export class FileTreeStore {
   }
 
   _expandNode(rootKey: NuclideUri, nodeKey: NuclideUri): void {
-    this._updateNodeAtRoot(rootKey, nodeKey, node => {
+    const recursivelyExpandNode = (node: FileTreeNode) => {
       return node.setIsExpanded(true).setRecursive(
-        n => (!n.isContainer || !n.isExpanded ? n : null),
+        n => {
+          if (!n.isContainer) {
+            return n;
+          }
+
+          if (this._autoExpandSingleChild && n.children.size === 1) {
+            if (!n.isExpanded) {
+              return recursivelyExpandNode(n);
+            }
+
+            return null;
+          }
+
+          return !n.isExpanded ? n : null;
+        },
         n => {
           if (n.isContainer && n.isExpanded) {
             this._fetchChildKeys(n.uri);
@@ -1215,7 +1260,9 @@ export class FileTreeStore {
           return n;
         },
       );
-    });
+    };
+
+    this._updateNodeAtRoot(rootKey, nodeKey, recursivelyExpandNode);
   }
 
   /**
@@ -1233,6 +1280,7 @@ export class FileTreeStore {
     const promise = new Promise(resolve => {
       const expand = () => {
         const traversedNodeKey = itNodes.traversedNode();
+        // flowlint-next-line sketchy-null-string:off
         if (traversedNodeKey) {
           this._expandNode(rootKey, traversedNodeKey);
 
@@ -1402,9 +1450,10 @@ export class FileTreeStore {
     }
     const anchorIndex = anchorNode.calculateVisualIndex();
     const rangeIndex = rangeNode.calculateVisualIndex();
-    const direction = rangeIndex > anchorIndex
-      ? 'down'
-      : rangeIndex === anchorIndex ? 'none' : 'up';
+    const direction =
+      rangeIndex > anchorIndex
+        ? 'down'
+        : rangeIndex === anchorIndex ? 'none' : 'up';
 
     selectionRange = new SelectionRange(
       RangeKey.of(anchorNode),
@@ -1454,16 +1503,16 @@ export class FileTreeStore {
           if (!node.shouldBeShown) {
             return node;
           }
-          if (node.shownChildrenBelow === 1) {
+          if (node.shownChildrenCount === 1) {
             beginIndex++;
             return node;
           }
-          const endIndex = beginIndex + node.shownChildrenBelow - 1;
+          const endIndex = beginIndex + node.shownChildrenCount - 1;
           if (beginIndex <= modMaxIndex && modMinIndex <= endIndex) {
             beginIndex++;
             return null;
           }
-          beginIndex += node.shownChildrenBelow;
+          beginIndex += node.shownChildrenCount;
           return node;
         },
         // flip the isSelected flag accordingly, based on previous and current range.
@@ -1471,7 +1520,7 @@ export class FileTreeStore {
           if (!node.shouldBeShown) {
             return node;
           }
-          const curIndex = beginIndex - node.shownChildrenBelow;
+          const curIndex = beginIndex - node.shownChildrenCount;
           const inOldRange =
             Math.sign(curIndex - anchorIndex) *
               Math.sign(curIndex - rangeIndex) !==
@@ -1732,7 +1781,7 @@ export class FileTreeStore {
 
   /**
   * Makes sure a certain child node is present in the file tree, creating all its ancestors, if
-  * needed and scheduling a chilld key fetch. Used by the reveal active file functionality.
+  * needed and scheduling a child key fetch. Used by the reveal active file functionality.
   */
   _ensureChildNode(nodeKey: NuclideUri): void {
     let firstRootUri;
@@ -1801,6 +1850,7 @@ export class FileTreeStore {
         deepest.set({
           isLoading: true,
           isExpanded: true,
+          isPendingLoad: true,
           children: deepest.children.set(currentChild.name, currentChild),
         }),
         expandNode,
@@ -1948,6 +1998,11 @@ export class FileTreeStore {
     this._emitChange();
   }
 
+  _setFoldersExpanded(foldersExpanded: boolean): void {
+    this.foldersExpanded = foldersExpanded;
+    this._emitChange();
+  }
+
   reset(): void {
     this.roots.forEach(root => {
       root.traverse(n => {
@@ -2023,6 +2078,7 @@ class FileTreeStoreBfsIterator {
 
   next(): ?Promise<void> {
     const currentlyTraversedNode = this._currentlyTraversedNode;
+    // flowlint-next-line sketchy-null-string:off
     if (!this._promise && currentlyTraversedNode) {
       this._promise = this._fileTreeStore
         .promiseNodeChildKeys(this._rootKey, currentlyTraversedNode)

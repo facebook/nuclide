@@ -24,8 +24,10 @@ function sizeForIteration(iteration: number): number {
   return 0;
 }
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
-  description: 'times how long different sized files take to open, edit, save, close',
+  description:
+    'times how long different sized files take to open, edit, save, close',
   columns: ['bytes', 'open', 'insert0', 'insert', 'append', 'save', 'close'],
   timeout: TIMEOUT,
   iterations: ITERATIONS,

@@ -66,6 +66,7 @@ export function runTest(context: TestContext) {
       );
       return (
         diagnosticDescriptionElements.length === 1 &&
+        // flowlint-next-line sketchy-null-string:off
         diagnosticDescriptionElements[0].innerText &&
         diagnosticDescriptionElements[0].innerText.includes(expectedPanelText)
       );

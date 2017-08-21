@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -14,7 +15,7 @@ import {Block} from './Block';
 import {ProgressBar} from './ProgressBar';
 import {LoadingSpinner} from './LoadingSpinner';
 
-const ProgressBarExample = (): React.Element<any> => (
+const ProgressBarExample = (): React.Element<any> =>
   <div>
     <Block>
       <ProgressBar />
@@ -28,10 +29,9 @@ const ProgressBarExample = (): React.Element<any> => (
     <Block>
       <ProgressBar max={100} value={100} />
     </Block>
-  </div>
-);
+  </div>;
 
-const LoadingSpinnerExample = (): React.Element<any> => (
+const LoadingSpinnerExample = (): React.Element<any> =>
   <div>
     <Block>
       <LoadingSpinner size="EXTRA_SMALL" />
@@ -45,12 +45,12 @@ const LoadingSpinnerExample = (): React.Element<any> => (
     <Block>
       <LoadingSpinner size="LARGE" />
     </Block>
-  </div>
-);
+  </div>;
 
 export const ProgressIndicatorExamples = {
   sectionName: 'Progress Indicators',
-  description: 'Show that work is being performed. Consider using one of these for any work > 1s.',
+  description:
+    'Show that work is being performed. Consider using one of these for any work > 1s.',
   examples: [
     {
       title: 'ProgressBar',

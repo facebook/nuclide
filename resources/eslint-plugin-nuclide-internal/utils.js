@@ -9,7 +9,11 @@
  */
 'use strict';
 
-/* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
+/* eslint
+  comma-dangle: [1, always-multiline],
+  prefer-object-spread/prefer-object-spread: 0,
+  nuclide-internal/no-commonjs: 0,
+  */
 
 const fs = require('fs');
 const path = require('path');
@@ -47,6 +51,8 @@ function getPackage(startPath) {
 
 function isRequire(node) {
   return (
+    node &&
+    node.type === 'CallExpression' &&
     node.callee.type === 'Identifier' &&
     node.callee.name === 'require' &&
     node.arguments[0] &&

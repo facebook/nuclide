@@ -48,17 +48,16 @@ export class ConfirmRefactorComponent extends React.PureComponent {
           className="nuclide-refactorizer-confirm-list native-key-bindings"
           tabIndex={-1}>
           <TreeList>
-            {Array.from(editCount).map(([path, count]) => (
+            {Array.from(editCount).map(([path, count]) =>
               <TreeItem key={path}>
                 <PathWithFileIcon path={path}>
                   <span className="nuclide-refactorizer-confirm-list-path">
                     {getAtomProjectRelativePath(path)}
-                  </span>
-                  {' '}
+                  </span>{' '}
                   ({count} {pluralize('change', count)})
                 </PathWithFileIcon>
-              </TreeItem>
-            ))}
+              </TreeItem>,
+            )}
           </TreeList>
         </div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>

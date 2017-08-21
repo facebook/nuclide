@@ -31,9 +31,7 @@ import {repositoryForPath} from '../../nuclide-vcs-base';
 import {rootReducer} from './redux/Reducers';
 import {track} from '../../nuclide-analytics';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 
 class Activation {
   _store: Store;

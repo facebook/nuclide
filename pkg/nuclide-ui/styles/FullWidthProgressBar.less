@@ -1,0 +1,66 @@
+@import 'ui-variables';
+
+@nuclide-ui-fullwidthprogressbar-indeterminate-bar-1-size: 1000px;
+@nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-size: 1800px;
+@nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-color: fade(@ui-site-color-1, 30%);
+
+.nuclide-ui-full-width-progress-bar {
+  width: 100%;
+  height: 2px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &.indeterminate {
+    background-image: repeating-linear-gradient(
+      90deg,
+      @ui-site-color-1 0%,
+      @ui-site-color-1 25%,
+      transparent 25%,
+      transparent 100%,
+    );
+    background-size: @nuclide-ui-fullwidthprogressbar-indeterminate-bar-1-size 100%;
+    animation: animate-indeterminate-bar 8s linear infinite;
+
+    &:before {
+      content: ' ';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+
+      background-image: repeating-linear-gradient(
+        90deg,
+        @nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-color 0%,
+        @nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-color 25%,
+        transparent 25%,
+        transparent 100%,
+      );
+      background-size: @nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-size 100%;
+      animation: animate-indeterminate-bar-2 8s linear infinite;
+    }
+  }
+
+}
+
+@keyframes animate-indeterminate-bar {
+   0% { background-position: 0 0; }
+   100% { background-position: @nuclide-ui-fullwidthprogressbar-indeterminate-bar-1-size 0; }
+}
+
+@keyframes animate-indeterminate-bar-2 {
+   0% { background-position: 0 0; }
+   100% { background-position: @nuclide-ui-fullwidthprogressbar-indeterminate-bar-2-size 0; }
+}
+
+.nuclide-ui-full-width-progress-bar-bar {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  width: 0;
+  transition: width 0.3s ease-out;
+  background-color: @ui-site-color-1;
+}

@@ -67,9 +67,10 @@ export class ScopesView extends React.PureComponent {
     const {model} = this.props;
     const {mode} = this.state;
     const ScopesComponentWrapped = this._scopesComponentWrapped;
-    const disabledClass = mode !== DebuggerMode.RUNNING
-      ? ''
-      : ' nuclide-debugger-container-new-disabled';
+    const disabledClass =
+      mode !== DebuggerMode.RUNNING
+        ? ''
+        : ' nuclide-debugger-container-new-disabled';
 
     return (
       <div

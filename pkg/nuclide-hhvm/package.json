@@ -13,6 +13,21 @@
       "versions": {
         "0.0.0": "consumeTaskRunnerServiceApi"
       }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCwdApi"
+      }
+    },
+    "nuclide-remote-projects": {
+      "versions": {
+        "0.0.0": "consumeRemoteProjectsService"
+      }
+    },
+    "nuclide-deep-link.provider": {
+      "versions": {
+        "0.0.0": "consumeDeepLinkService"
+      }
     }
   },
   "description": "Provides HHVM debug tasks"

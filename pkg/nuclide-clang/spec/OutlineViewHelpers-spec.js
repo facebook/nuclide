@@ -129,7 +129,8 @@ describe('outlineFromClangOutline', () => {
           name: 'testVariable',
           extent: new Range([0, 1], [2, 3]),
           cursor_kind: ClangCursorTypes.VAR_DECL,
-          cursor_type: 'std::vector<std::vector<std::vector<std::vector<int>>>>',
+          cursor_type:
+            'std::vector<std::vector<std::vector<std::vector<int>>>>',
         },
       ]),
     ).toEqual([

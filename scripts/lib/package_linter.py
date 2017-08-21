@@ -9,9 +9,6 @@ import os
 import re
 import sys
 
-PACKAGE_NAME_WHITELIST = [
-    'hyperclick', # we want to upstream this to atom, so do not require nuclide- prefix
-]
 DEPENDENCIES_FIELDS = [
     'dependencies',
     'devDependencies',
@@ -33,8 +30,6 @@ class PackageLinter(object):
         self._current_file_being_linted = None
 
     def validate_packages(self):
-        self.validate_all_packages()
-
         for package_name in self._package_map:
             if not self.is_whitelisted_package(package_name):
                 package = self._package_map[package_name]
@@ -48,10 +43,6 @@ class PackageLinter(object):
                         package['packageRootAbsolutePath'], 'package.json')
                 self.validate_package(package_name, package)
         return not self._had_error
-
-    def validate_all_packages(self):
-        '''This method can be overridden by subclasses.'''
-        pass
 
     def is_whitelisted_package(self, package_name):
         return False
@@ -106,8 +97,6 @@ class PackageLinter(object):
             self.report_error('Extraneous "_atomModuleCache" for %s', package_name)
 
     def verify_package_name(self, package_name, package):
-        if package_name in PACKAGE_NAME_WHITELIST:
-            return
         expected_package_name = ''
         path = package['packageRootAbsolutePath']
         while True:
@@ -224,7 +213,7 @@ class PackageLinter(object):
         return package_name.startswith('fb-')
 
     def get_valid_package_prefixes(self):
-        return ['fb-', 'nuclide-', 'sample-', 'hyperclick', 'commons-atom', 'commons-node']
+        return ['fb-', 'nuclide-', 'sample-', 'commons-atom', 'commons-node']
 
     def report_error(self, message, *args):
         logging.error('PACKAGE ERROR (' + self._current_file_being_linted + '): ' + message, *args)

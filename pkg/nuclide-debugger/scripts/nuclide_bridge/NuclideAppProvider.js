@@ -9,8 +9,7 @@
  * @format
  */
 
-import UnresolvedBreakpointsSidebarPane
-  from './UnresolvedBreakpointsSidebarPane';
+import UnresolvedBreakpointsSidebarPane from './UnresolvedBreakpointsSidebarPane';
 import ThreadsWindowPane from './ThreadsWindowPane';
 import WebInspector from '../../lib/WebInspector';
 

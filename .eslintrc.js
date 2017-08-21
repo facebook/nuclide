@@ -9,7 +9,11 @@
  */
 'use strict';
 
-/* eslint comma-dangle: [1, always-multiline], prefer-object-spread/prefer-object-spread: 0 */
+/* eslint
+  comma-dangle: [1, always-multiline],
+  prefer-object-spread/prefer-object-spread: 0,
+  nuclide-internal/no-commonjs: 0,
+  */
 /* eslint-disable max-len */
 
 module.exports = {
@@ -34,6 +38,10 @@ module.exports = {
     jasmine: true,
     node: true,
   },
+
+  extends: [
+    'plugin:jsx-a11y/recommended',
+  ],
 
   globals: {
     atom: false,
@@ -341,13 +349,17 @@ module.exports = {
     // nuclide-internal (https://github.com/facebook/nuclide/tree/master/resources/eslint-plugin-nuclide-internal)
     'nuclide-internal/atom-apis': 1,
     'nuclide-internal/consistent-import-name': 1,
+    'nuclide-internal/dom-apis': 1,
+    'nuclide-internal/flow-fb-oss': 1,
     'nuclide-internal/import-type-style': 1,
     'nuclide-internal/license-header': 1,
     'nuclide-internal/modules-dependencies': 1,
     'nuclide-internal/no-cross-atom-imports': [1, {whitelist: ['nuclide-ui']}],
+    'nuclide-internal/no-shell-quote': 1,
     'nuclide-internal/no-unnecessary-disposable-wrapping': 1,
     'nuclide-internal/prefer-nuclide-uri': 1,
     'nuclide-internal/use-nuclide-ui-components': 1,
+    'nuclide-internal/no-commonjs': 1,
 
     // prefer-object-spread (https://github.com/bryanrsmith/eslint-plugin-prefer-object-spread)
     'prefer-object-spread/prefer-object-spread': 1,
@@ -401,7 +413,7 @@ module.exports = {
     'react/jsx-max-props-per-line': 0,
     'react/jsx-no-bind': 0,
     // 'react/jsx-no-bind': 1,
-    'react/jsx-no-comment-textnodes': 0,
+    'react/jsx-no-comment-textnodes': 1,
     'react/jsx-no-duplicate-props': 1,
     'react/jsx-no-literals': 0,
     'react/jsx-no-target-blank': 0,
@@ -413,12 +425,88 @@ module.exports = {
     'react/jsx-uses-react': 1,
     'react/jsx-uses-vars': 1,
     'react/jxs-wrap-multilines': 0,
+
+    // JSX Accessibility checks
+    // some currently disabled to adopt incrementally, annotated 'incremental'
+   'jsx-a11y/accessible-emoji': 0,
+   'jsx-a11y/alt-text': 0, // incremental: error
+   'jsx-a11y/anchor-has-content': 0,
+   'jsx-a11y/aria-activedescendant-has-tabindex': 0,
+   'jsx-a11y/aria-props': 1,
+   'jsx-a11y/aria-proptypes': 0,
+   'jsx-a11y/aria-role': 0,
+   'jsx-a11y/aria-unsupported-elements': 0,
+   'jsx-a11y/click-events-have-key-events': 0,
+   'jsx-a11y/heading-has-content': 0,
+   'jsx-a11y/href-no-hash': 0,
+   'jsx-a11y/html-has-lang': 0,
+   'jsx-a11y/iframe-has-title': 0,
+   'jsx-a11y/img-has-alt': 0,
+   'jsx-a11y/img-redundant-alt': 0,
+   'jsx-a11y/interactive-supports-focus': [
+     1,
+     {
+       tabbable: [
+         'button',
+         'checkbox',
+         'link',
+         'searchbox',
+         'spinbutton',
+         'switch',
+         'textbox',
+       ],
+     },
+   ],
+   'jsx-a11y/label-has-for': 0,
+   'jsx-a11y/lang': 0,
+   'jsx-a11y/mouse-events-have-key-events': 0,
+   'jsx-a11y/no-access-key': 0,
+   'jsx-a11y/no-autofocus': 0,
+   'jsx-a11y/no-distracting-elements': 0,
+   'jsx-a11y/no-interactive-element-to-noninteractive-role': [
+     1,
+     {
+       tr: ['none', 'presentation'],
+     },
+   ],
+   'jsx-a11y/no-noninteractive-element-interactions': [
+     0, // incremental: warning
+     {
+       handlers: ['onClick'],
+     },
+   ],
+   'jsx-a11y/no-noninteractive-element-to-interactive-role': [
+     1,
+     {
+       ul: ['listbox', 'menu', 'menubar',
+         'radiogroup', 'tablist', 'tree', 'treegrid'],
+       ol: ['listbox', 'menu', 'menubar',
+         'radiogroup', 'tablist', 'tree', 'treegrid'],
+       li: ['menuitem', 'option', 'row', 'tab', 'treeitem'],
+       table: ['grid'],
+       td: ['gridcell'],
+     },
+   ],
+   'jsx-a11y/no-noninteractive-tabindex': 0, // incremental: error
+   'jsx-a11y/no-onchange': 0,
+   'jsx-a11y/no-redundant-roles': 0,
+   'jsx-a11y/no-static-element-interactions': [
+     0, // incremental: warning
+     {
+       handlers: ['onClick'],
+     },
+   ],
+   'jsx-a11y/role-has-required-aria-props': 0,
+   'jsx-a11y/role-supports-aria-props': 0,
+   'jsx-a11y/scope': 0,
+   'jsx-a11y/tabindex-no-positive': 0,
   },
 
   plugins: [
     'dependencies',
     'flowtype',
     'jasmine',
+    'jsx-a11y',
     'nuclide-internal',
     'prefer-object-spread',
     'prettier',

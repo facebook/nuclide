@@ -33,10 +33,6 @@ export default class SettingsInput extends React.Component {
   constructor(props: Object) {
     super(props);
     this._ignoreInputCallback = false;
-
-    (this: any)._handleChange = this._handleChange.bind(this);
-    (this: any)._onFocus = this._onFocus.bind(this);
-    (this: any)._onBlur = this._onBlur.bind(this);
   }
 
   _updateInput(input: AtomInput, newValue: string) {
@@ -45,7 +41,7 @@ export default class SettingsInput extends React.Component {
     this._ignoreInputCallback = false;
   }
 
-  _handleChange(newValue_: string) {
+  _handleChange = (newValue_: string) => {
     let newValue = newValue_;
     if (this._ignoreInputCallback) {
       return;
@@ -53,24 +49,24 @@ export default class SettingsInput extends React.Component {
 
     newValue = parseValue(this.props.type, newValue);
     this.props.onChange(newValue);
-  }
+  };
 
-  _onFocus() {
+  _onFocus = () => {
     const keyPath = this.props.keyPath;
     const input = this.refs[keyPath];
     if (isDefaultConfigValue(keyPath)) {
       const defaultValue = getDefaultConfigValueString(keyPath);
       this._updateInput(input, defaultValue);
     }
-  }
+  };
 
-  _onBlur() {
+  _onBlur = () => {
     const keyPath = this.props.keyPath;
     const input = this.refs[keyPath];
     if (isDefaultConfigValue(keyPath, input.getText())) {
       this._updateInput(input, '');
     }
-  }
+  };
 
   _getValue(): string {
     let value = valueToString(this.props.value);
@@ -108,8 +104,12 @@ export default class SettingsInput extends React.Component {
     return (
       <div>
         <label className="control-label">
-          <div className="setting-title">{title}</div>
-          <div className="setting-description">{description}</div>
+          <div className="setting-title">
+            {title}
+          </div>
+          <div className="setting-description">
+            {description}
+          </div>
         </label>
         <div className="controls">
           <div className="editor-container">

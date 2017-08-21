@@ -26,6 +26,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import getElementFilePath from '../../commons-atom/getElementFilePath';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {WORKSPACE_VIEW_URI} from './Constants';
 
 import {Disposable} from 'atom';
 import os from 'os';
@@ -113,7 +114,7 @@ export default class FileTreeController {
     for (
       let i = 0, c = VALID_FILTER_CHARS.charCodeAt(0);
       i < VALID_FILTER_CHARS.length;
-      i++, (c = VALID_FILTER_CHARS.charCodeAt(i))
+      i++, c = VALID_FILTER_CHARS.charCodeAt(i)
     ) {
       const char = String.fromCharCode(c);
       letterKeyBindings[
@@ -170,6 +171,7 @@ export default class FileTreeController {
           this,
         ),
         'nuclide-file-tree:remove': this._deleteSelection.bind(this),
+        'core:delete': this._deleteSelection.bind(this),
         'nuclide-file-tree:remove-project-folder-selection': this._removeRootFolderSelection.bind(
           this,
         ),
@@ -279,35 +281,29 @@ export default class FileTreeController {
   }
 
   _revealFile(event: Event): void {
-    const path = getElementFilePath(((event.target: any): HTMLElement));
+    let path = getElementFilePath(((event.target: any): HTMLElement));
+
     if (path == null) {
-      this.revealActiveFile();
-    } else {
-      this._revealFilePath(path);
+      const editor = atom.workspace.getActiveTextEditor();
+      path = editor != null ? editor.getPath() : null;
+      if (path == null) {
+        return;
+      }
     }
+
+    this.revealFilePath(path);
   }
 
-  /**
-   * Reveal the file that currently has focus in the file tree. If showIfHidden is false,
-   * this will enqueue a pending reveal to be executed when the file tree is shown again.
-   */
-  revealActiveFile(showIfHidden?: boolean = true): void {
-    const editor = atom.workspace.getActiveTextEditor();
-    const filePath = editor != null ? editor.getPath() : null;
-    this._revealFilePath(filePath, showIfHidden);
-  }
-
-  _revealFilePath(filePath: ?string, showIfHidden?: boolean = true): void {
+  revealFilePath(filePath: ?string, showIfHidden?: boolean = true): void {
     if (showIfHidden) {
       // Ensure the file tree is visible before trying to reveal a file in it. Even if the currently
       // active pane is not an ordinary editor, we still at least want to show the tree.
-      atom.commands.dispatch(
-        atom.views.getView(atom.workspace),
-        'nuclide-file-tree:toggle',
-        {visible: true},
-      );
+      // eslint-disable-next-line nuclide-internal/atom-apis
+      atom.workspace.open(WORKSPACE_VIEW_URI);
+      this._actions.setFoldersExpanded(true);
     }
 
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return;
     }
@@ -342,6 +338,7 @@ export default class FileTreeController {
       invariant(this._cwdApiSubscription == null);
       this._cwdApiSubscription = cwdApi.observeCwd(directory => {
         const path = directory == null ? null : directory.getPath();
+        // flowlint-next-line sketchy-null-string:off
         const rootKey = path && FileTreeHelpers.dirPathToKey(path);
         this._actions.setCwd(rootKey);
       });
@@ -390,6 +387,10 @@ export default class FileTreeController {
 
   setUsePrefixNav(usePrefixNav: boolean): void {
     this._actions.setUsePrefixNav(usePrefixNav);
+  }
+
+  setAutoExpandSingleChild(autoExpandSingleChild: boolean): void {
+    this._store._setAutoExpandSingleChild(autoExpandSingleChild);
   }
 
   updateWorkingSet(workingSet: WorkingSet): void {
@@ -474,13 +475,16 @@ export default class FileTreeController {
           },
           Cancel: () => {},
         },
-        detailedMessage: `You are deleting:${os.EOL}${selectedPaths.join(os.EOL)}`,
+        detailedMessage: `You are deleting:${os.EOL}${selectedPaths.join(
+          os.EOL,
+        )}`,
         message,
       });
     } else {
       let message;
       if (rootPaths.size === 1) {
-        message = `The root directory '${rootPaths.first().nodeName}' can't be removed.`;
+        message = `The root directory '${rootPaths.first()
+          .nodeName}' can't be removed.`;
       } else {
         const rootPathNames = rootPaths
           .map(node => `'${node.nodeName}'`)
@@ -577,13 +581,14 @@ export default class FileTreeController {
     this._openSelectedEntrySplit('horizontal', 'after');
   }
 
-  _removeRootFolderSelection(): void {
+  async _removeRootFolderSelection(): mixed {
     const rootNode = this._store.getSingleSelectedNode();
     if (rootNode != null && rootNode.isRoot) {
       // close all the files associated with the project before closing
       const projectEditors = atom.workspace.getTextEditors();
+
       const roots = this._store.getRootKeys();
-      const canceled = projectEditors.some(editor => {
+      for (const editor of projectEditors) {
         const path = editor.getPath();
         // if the path of the editor is not null AND
         // is part of the currently selected root that would be removed AND
@@ -593,16 +598,23 @@ export default class FileTreeController {
           path.startsWith(rootNode.uri) &&
           roots.filter(root => path.startsWith(root)).length === 1
         ) {
-          return !atom.workspace.paneForURI(path).destroyItem(editor);
+          // eslint-disable-next-line no-await-in-loop
+          const didDestroy = await atom.workspace
+            .paneForURI(path)
+            .destroyItem(editor);
+
+          // Atom has a bug where, in some cases, destroyItem returns nonsense.
+          // Luckily, in the case we care about, it returns a literal `false`,
+          // so we check for that explictly.
+          // https://github.com/atom/atom/issues/15157
+          if (didDestroy === false) {
+            return;
+          }
         }
-
-        return false;
-      });
-
-      if (!canceled) {
-        // actually close the project
-        atom.project.removePath(FileTreeHelpers.keyToPath(rootNode.uri));
       }
+
+      // actually close the project
+      atom.project.removePath(FileTreeHelpers.keyToPath(rootNode.uri));
     }
   }
 

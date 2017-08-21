@@ -1,0 +1,37 @@
+# A minimum openssl configuration.
+[ req ]
+distinguished_name  = req_distinguished_name
+# Enable v3 extensions for subject alternative name.
+req_extensions = v3_req
+
+[ req_distinguished_name ]
+countryName     = Country Name (2 letter code)
+countryName_default   = XX
+countryName_min     = 2
+countryName_max     = 2
+
+stateOrProvinceName   = State or Province Name (full name)
+#stateOrProvinceName_default  = Default Province
+
+localityName      = Locality Name (eg, city)
+localityName_default  = Default City
+
+0.organizationName    = Organization Name (eg, company)
+0.organizationName_default  = Default Company Ltd
+
+# we can do this but it is not needed normally :-)
+#1.organizationName   = Second Organization Name (eg, company)
+#1.organizationName_default = World Wide Web Pty Ltd
+
+organizationalUnitName    = Organizational Unit Name (eg, section)
+#organizationalUnitName_default =
+
+commonName      = Common Name (eg, your name or your server\'s hostname)
+commonName_max      = 64
+
+emailAddress      = Email Address
+emailAddress_max    = 64
+
+[ v3_req ]
+# Read Subject Alternative Name from env variable.
+subjectAltName=$ENV::OPENSSL_SAN

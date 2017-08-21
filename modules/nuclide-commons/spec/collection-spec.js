@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -17,12 +18,14 @@ import {
   mapUnion,
   isEmpty,
   keyMirror,
+  setFilter,
   setIntersect,
   setUnion,
   collect,
   MultiMap,
   objectEntries,
   objectFromMap,
+  objectValues,
   concatIterators,
   areSetsEqual,
   someOfIterable,
@@ -31,6 +34,7 @@ import {
   mapEqual,
   mapIterable,
   mapGetWithDefault,
+  count,
 } from '../collection';
 
 describe('arrayRemove', () => {
@@ -167,6 +171,18 @@ describe('keyMirror', () => {
   });
 });
 
+describe('setFilter', () => {
+  it('filters', () => {
+    const set = new Set(['foo', 'bar', 'baz']);
+    const filtered = setFilter(set, x => x.startsWith('b'));
+
+    expect(filtered.size).toBe(2);
+    expect(filtered.has('bar')).toBe(true);
+    expect(filtered.has('baz')).toBe(true);
+    expect(filtered.has('foo')).toBe(false);
+  });
+});
+
 describe('setIntersect', () => {
   it('intersects', () => {
     const set1 = new Set(['foo', 'bar', 'baz']);
@@ -293,6 +309,26 @@ describe('MultiMap', () => {
     multimap.add(1, 2);
     expect(multimap.hasAny(1)).toBe(true);
     expect(multimap.hasAny(2)).toBe(false);
+  });
+});
+
+describe('objectValues', () => {
+  it('returns the values of an object', () => {
+    expect(
+      objectValues({
+        a: 1,
+        b: 2,
+        c: 4,
+      }),
+    ).toEqual([1, 2, 4]);
+  });
+
+  it('throws for null', () => {
+    expect(() => objectEntries(null)).toThrow();
+  });
+
+  it('throws for undefined', () => {
+    expect(() => objectEntries(undefined)).toThrow();
   });
 });
 
@@ -453,5 +489,11 @@ describe('mapGetWithDefault', () => {
   it('returns `null` or `undefined` if they are values in the map', () => {
     expect(mapGetWithDefault(new Map([[1, null]]), 1, 3)).toBeNull();
     expect(mapGetWithDefault(new Map([[1, undefined]]), 1, 3)).toBeUndefined();
+  });
+});
+
+describe('count', () => {
+  it('returns how many values are in an iterable', () => {
+    expect(count([1, 2])).toBe(2);
   });
 });

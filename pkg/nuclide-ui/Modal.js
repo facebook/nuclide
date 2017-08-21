@@ -29,14 +29,6 @@ export class Modal extends React.Component {
   _innerElement: ?HTMLElement;
   _panel: atom$Panel;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleContainerInnerElement = this._handleContainerInnerElement.bind(
-      this,
-    );
-    (this: any)._handleWindowClick = this._handleWindowClick.bind(this);
-  }
-
   componentWillMount(): void {
     this._container = document.createElement('div');
     this._panel = atom.workspace.addModalPanel({item: this._container});
@@ -46,7 +38,7 @@ export class Modal extends React.Component {
     this._panel.destroy();
   }
 
-  _handleWindowClick(event: SyntheticMouseEvent): void {
+  _handleWindowClick = (event: SyntheticMouseEvent): void => {
     // If the user clicks outside of the modal, close it.
     if (
       this._innerElement &&
@@ -54,10 +46,10 @@ export class Modal extends React.Component {
     ) {
       this.props.onDismiss();
     }
-  }
+  };
 
   // Since we're rendering null, we can't use `findDOMNode(this)`.
-  _handleContainerInnerElement(el: ?HTMLElement): void {
+  _handleContainerInnerElement = (el: ?HTMLElement): void => {
     if (this._cancelDisposable != null) {
       this._cancelDisposable.dispose();
     }
@@ -78,7 +70,7 @@ export class Modal extends React.Component {
         .skipUntil(Observable.interval(0).first())
         .subscribe(this._handleWindowClick),
     );
-  }
+  };
 
   render() {
     const props = {...this.props};

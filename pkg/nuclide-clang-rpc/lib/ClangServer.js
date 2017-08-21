@@ -23,7 +23,7 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {runCommand, spawn} from 'nuclide-commons/process';
 import {RpcProcess} from '../../nuclide-rpc';
 import {ServiceRegistry, loadServicesConfig} from '../../nuclide-rpc';
-import {watchFile} from '../../nuclide-filewatcher-rpc';
+import {watchFileWithNode} from '../../nuclide-filewatcher-rpc';
 
 export type ClangServerStatus =
   | 'finding_flags'
@@ -94,18 +94,19 @@ function spawnClangProcess(
       __dirname,
       '../python/clang_server.py',
     );
-    const args = [pathToLibClangServer];
+    const argsFd = 3;
+    const args = [pathToLibClangServer, '--flags-from-pipe', `${argsFd}`];
     const libClangLibraryFile =
+      // flowlint-next-line sketchy-null-string:off
       libClangFromFlags || serverArgs.libClangLibraryFile;
     if (libClangLibraryFile != null) {
       args.push('--libclang-file', libClangLibraryFile);
     }
     args.push('--', src);
     // Note that the first flag is always the compiler path.
-    args.push(...flags.slice(1));
     const options = {
       cwd: nuclideUri.dirname(pathToLibClangServer),
-      stdio: 'pipe',
+      stdio: [null, null, null, 'pipe'], // check argsFd
       detached: false, // When Atom is killed, clang_server.py should be killed, too.
       env: {
         PYTHONPATH: pythonPathEnv,
@@ -115,7 +116,9 @@ function spawnClangProcess(
     // Note that safeSpawn() often overrides options.env.PATH, but that only happens when
     // options.env is undefined (which is not the case here). This will only be an issue if the
     // system cannot find `pythonExecutable`.
-    return spawn(pythonExecutable, args, options);
+    return spawn(pythonExecutable, args, options).do(proc => {
+      proc.stdio[argsFd].write(JSON.stringify(flags.slice(1)) + '\n');
+    });
   });
 }
 
@@ -162,7 +165,7 @@ export default class ClangServer {
       })
       .switchMap(flagsData => {
         if (flagsData != null && flagsData.flagsFile != null) {
-          return watchFile(flagsData.flagsFile).refCount().take(1);
+          return watchFileWithNode(flagsData.flagsFile).refCount().take(1);
         }
         return Observable.empty();
       })

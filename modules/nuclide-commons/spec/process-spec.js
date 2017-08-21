@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -30,6 +31,7 @@ import {
   ProcessSystemError,
   runCommand,
   runCommandDetailed,
+  scriptifyCommand,
   exitEventToMessage,
 } from 'nuclide-commons/process';
 
@@ -753,6 +755,24 @@ describe('commons-node/process', () => {
       expect(err.syscall).toBe('syscall value');
       expect(err.process).toBe(proc);
     });
+  });
+
+  describe('scriptifyCommand', () => {
+    if (process.platform === 'linux') {
+      it('escapes correctly on linux', () => {
+        waitsForPromise(async () => {
+          const output = await runCommand(
+            ...scriptifyCommand('echo', [
+              'a\\b c\\\\d e\\\\\\f g\\\\\\\\h "dubs" \'singles\'',
+              'one   two',
+            ]),
+          ).toPromise();
+          expect(output).toBe(
+            'a\\b c\\\\d e\\\\\\f g\\\\\\\\h "dubs" \'singles\' one   two',
+          );
+        });
+      });
+    }
   });
 });
 

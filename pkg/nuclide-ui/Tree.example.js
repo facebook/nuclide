@@ -14,7 +14,7 @@ import {Block} from 'nuclide-commons-ui/Block';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import {TreeList, TreeItem, NestedTreeItem} from './Tree';
 
-const BasicTreeExample = (): React.Element<any> => (
+const BasicTreeExample = (): React.Element<any> =>
   <div>
     Trees
     <Block>
@@ -31,35 +31,41 @@ const BasicTreeExample = (): React.Element<any> => (
         />
       </TreeList>
     </Block>
-  </div>
-);
+  </div>;
 
-const AtomStyleguideTreeExample = (): React.Element<any> => (
+const AtomStyleguideTreeExample = (): React.Element<any> =>
   <Block>
     <TreeList showArrows={true}>
       <NestedTreeItem title={<Icon icon="file-directory">A Directory</Icon>}>
         <NestedTreeItem
           collapsed={false}
           title={<Icon icon="file-directory">Nested Directory</Icon>}>
-          <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
+          <TreeItem>
+            <Icon icon="file-text">File one</Icon>
+          </TreeItem>
         </NestedTreeItem>
         <NestedTreeItem
           collapsed={true}
           title={<Icon icon="file-directory">Collapsed Nested Directory</Icon>}>
-          <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
+          <TreeItem>
+            <Icon icon="file-text">File one</Icon>
+          </TreeItem>
         </NestedTreeItem>
-        <TreeItem><Icon icon="file-text">File one</Icon></TreeItem>
+        <TreeItem>
+          <Icon icon="file-text">File one</Icon>
+        </TreeItem>
         <TreeItem selected={true}>
           <Icon icon="file-text">File three .selected!</Icon>
         </TreeItem>
       </NestedTreeItem>
-      <TreeItem><Icon icon="file-text">.icon-file-text</Icon></TreeItem>
+      <TreeItem>
+        <Icon icon="file-text">.icon-file-text</Icon>
+      </TreeItem>
       <TreeItem>
         <Icon icon="file-symlink-file">.icon-file-symlink-file</Icon>
       </TreeItem>
     </TreeList>
-  </Block>
-);
+  </Block>;
 
 export const TreeExamples = {
   sectionName: 'Trees',

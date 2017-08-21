@@ -9,90 +9,55 @@
  * @format
  */
 
-import typeof * as AdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/AdbService';
-import typeof * as SdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/SdbService';
-import type {DeviceTypeTaskProvider} from '../../../nuclide-devices/lib/types';
+import type {DeviceTypeTaskProvider} from '../../../nuclide-device-panel/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {TaskEvent} from 'nuclide-commons/process';
-import type {DBPathsInfo} from '../../../nuclide-adb-sdb-rpc/lib/types';
-import type {Store} from '../types';
+import type {Bridge} from '../types';
 
-import * as Actions from '../redux/Actions';
 import showModal from '../../../nuclide-ui/showModal';
 import {ATCustomDBPathModal} from './ui/ATCustomDBPathModal';
 import {Observable} from 'rxjs';
 import React from 'react';
 
 export class ATConfigurePathTaskProvider implements DeviceTypeTaskProvider {
-  _type: string;
-  _rpcFactory: (host: NuclideUri) => AdbService | SdbService;
-  _dbType: 'adb' | 'sdb';
-  _store: Store;
+  _bridge: Bridge;
 
-  constructor(
-    type: string,
-    rpcFactory: (host: NuclideUri) => AdbService | SdbService,
-    store: Store,
-  ) {
-    this._type = type;
-    this._rpcFactory = rpcFactory;
-    this._dbType = this._type === 'android' ? 'adb' : 'sdb';
-    this._store = store;
+  constructor(bridge: Bridge) {
+    this._bridge = bridge;
   }
 
   getType(): string {
-    return this._type;
+    return this._bridge.name;
   }
 
   getName(): string {
-    return `Configure ${this._dbType}`;
-  }
-
-  _getPathsInfo(host: NuclideUri): Promise<DBPathsInfo> {
-    return this._rpcFactory(host).getCurrentPathsInfo();
-  }
-
-  _getCurrentCustomPath(host: NuclideUri): ?string {
-    const state = this._store.getState();
-    return this._dbType === 'adb'
-      ? state.customAdbPaths.get(host)
-      : state.customSdbPaths.get(host);
-  }
-
-  _setCustomPath(host: NuclideUri, path: ?string): void {
-    this._store.dispatch(
-      this._dbType === 'adb'
-        ? Actions.setCustomAdbPath(host, path)
-        : Actions.setCustomSdbPath(host, path),
-    );
+    return `Configure ${this._bridge.debugBridge}`;
   }
 
   getTask(host: NuclideUri): Observable<TaskEvent> {
     return Observable.defer(() =>
-      this._getPathsInfo(host),
-    ).switchMap(pathsInfo => {
+      this._bridge.getFullConfig(host),
+    ).switchMap(fullConfig => {
       return Observable.create(observer => {
         const disposable = showModal(
-          dismiss => (
+          dismiss =>
             <ATCustomDBPathModal
               dismiss={dismiss}
-              currentActivePath={pathsInfo.active}
-              currentCustomPath={this._getCurrentCustomPath(host)}
-              registeredPaths={pathsInfo.all}
+              activePath={fullConfig.active}
+              activePort={fullConfig.ports[fullConfig.ports.length - 1]}
+              currentCustomPath={this._bridge.getCustomDebugBridgePath(host)}
+              registeredPaths={fullConfig.all}
               setCustomPath={customPath =>
-                this._setCustomPath(host, customPath)}
-              type={this._dbType}
-            />
-          ),
+                this._bridge.setCustomDebugBridgePath(host, customPath)}
+              type={this._bridge.debugBridge}
+            />,
           {
             className: 'nuclide-adb-sdb-custom-path-modal',
             onDismiss: () => {
               disposable.dispose();
               observer.complete();
             },
-            disableDismissOnClickOutsideModal: true,
+            shouldDismissOnClickOutsideModal: () => false,
           },
         );
       });

@@ -59,6 +59,7 @@ export default class RemoteProjectsController {
     // Flow does not understand that isTextEditor refines the type to atom$TextEditor
     const textEditor = ((paneItem: any): atom$TextEditor);
     const fileUri = textEditor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!fileUri) {
       return;
     }

@@ -10,10 +10,15 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import {AndroidBridge} from './bridges/AndroidBridge';
+import {TizenBridge} from './bridges/TizenBridge';
+
+export type Bridge = AndroidBridge | TizenBridge;
 
 export type AppState = {
   customAdbPaths: Map<NuclideUri, ?string>,
   customSdbPaths: Map<NuclideUri, ?string>,
+  adbPorts: Map<NuclideUri, ?string>,
 };
 
 export type Store = {
@@ -34,6 +39,14 @@ export type SetCustomSdbPathAction = {
   payload: {
     host: NuclideUri,
     path: ?string,
+  },
+};
+
+export type SetAdbPortAction = {
+  type: 'SET_ADB_PORT',
+  payload: {
+    host: NuclideUri,
+    port: ?string,
   },
 };
 

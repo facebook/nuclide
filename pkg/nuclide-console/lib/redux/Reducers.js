@@ -98,6 +98,13 @@ export default function accumulateState(
         history: state.history.concat(command).slice(-1000),
       };
     }
+    case Actions.SET_CREATE_PASTE_FUNCTION: {
+      const {createPasteFunction} = action.payload;
+      return {
+        ...state,
+        createPasteFunction,
+      };
+    }
   }
 
   return state;

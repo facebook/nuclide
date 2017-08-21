@@ -107,6 +107,7 @@ export function getServiceByConnection(
  * it returns a local service, otherwise a remote service will be returned.
  */
 export function getService(serviceName: string, hostname: ?string): ?Object {
+  // flowlint-next-line sketchy-null-string:off
   if (hostname) {
     const serverConnection = ServerConnection.getByHostname(hostname);
     if (serverConnection == null) {

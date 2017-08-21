@@ -33,22 +33,22 @@
         "0.0.0": "consumeLegacyProvider"
       }
     },
-    "atom-ide-code-format.range": {
+    "code-format.range": {
       "versions": {
         "0.1.0": "consumeRangeProvider"
       }
     },
-    "atom-ide-code-format.file": {
+    "code-format.file": {
       "versions": {
         "0.1.0": "consumeFileProvider"
       }
     },
-    "atom-ide-code-format.onType": {
+    "code-format.onType": {
       "versions": {
         "0.1.0": "consumeOnTypeProvider"
       }
     },
-    "atom-ide-code-format.onSave": {
+    "code-format.onSave": {
       "versions": {
         "0.1.0": "consumeOnSaveProvider"
       }

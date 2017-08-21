@@ -9,17 +9,13 @@
  * @format
  */
 
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
-import type {Datatip} from '../../nuclide-datatip/lib/types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {Datatip} from 'atom-ide-ui';
 import type DebuggerModel from './DebuggerModel';
 import type {EvaluationResult} from './types';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
-import {
-  getEvaluationExpressionFromRegexp,
-} from '../../nuclide-language-service/lib/EvaluationExpressionProvider';
+import {getEvaluationExpressionFromRegexp} from '../../nuclide-language-service/lib/EvaluationExpressionProvider';
 import {DebuggerMode} from './DebuggerStore';
 import {DebuggerDatatipComponent} from './DebuggerDatatipComponent';
 

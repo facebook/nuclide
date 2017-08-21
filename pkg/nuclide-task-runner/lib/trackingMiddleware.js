@@ -57,12 +57,10 @@ function trackTaskAction(
   invariant(activeTaskRunner);
   const {taskStatus} = action.payload;
   const {task} = taskStatus;
-  const taskTrackingData = typeof task.getTrackingData === 'function'
-    ? task.getTrackingData()
-    : {};
-  const error = action.type === Actions.TASK_ERRORED
-    ? action.payload.error
-    : null;
+  const taskTrackingData =
+    typeof task.getTrackingData === 'function' ? task.getTrackingData() : {};
+  const error =
+    action.type === Actions.TASK_ERRORED ? action.payload.error : null;
   trackEvent({
     type,
     data: {

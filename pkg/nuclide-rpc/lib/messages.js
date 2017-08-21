@@ -105,8 +105,9 @@ export function decodeError(
   if (encodedError != null && typeof encodedError === 'object') {
     const resultError = new Error();
     resultError.message =
-      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(message)}\n` +
-      JSON.stringify(encodedError.stack);
+      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(
+        message,
+      )}\n` + JSON.stringify(encodedError.stack);
     // $FlowIssue - some Errors (notably file operations) have a code.
     resultError.code = encodedError.code;
     resultError.stack = encodedError.stack;

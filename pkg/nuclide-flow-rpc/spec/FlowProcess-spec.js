@@ -87,7 +87,11 @@ describe('FlowProcess', () => {
       .createSpy()
       .andReturn(Observable.of({exitCode: FLOW_RETURN_CODES.ok}));
 
-    flowProcess = new FlowProcess(root, new FlowExecInfoContainer());
+    flowProcess = new FlowProcess(
+      root,
+      new FlowExecInfoContainer(),
+      (null: any) /* File Cache */,
+    );
   });
 
   afterEach(() => {

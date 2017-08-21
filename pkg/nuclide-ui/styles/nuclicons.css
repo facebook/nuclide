@@ -95,3 +95,6 @@ to `resources/nuclicons` and rerun the script.
 .icon-nuclicon-relay::before {
   content: "\f114";
 }
+.icon-nuclicon-funnel::before {
+  content: "\f115";
+}

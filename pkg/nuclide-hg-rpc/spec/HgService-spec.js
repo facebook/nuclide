@@ -20,6 +20,71 @@ import invariant from 'assert';
 import {Observable} from 'rxjs';
 import {CommandServer} from '../../nuclide-remote-atom-rpc/lib/CommandServer';
 
+const mockOutput = `
+[
+{
+  "command":"rebase",
+  "conflicts":[
+    {
+       "base":{
+          "contents": "",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false
+       },
+       "local":{
+          "contents": "t1",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false
+       },
+       "other":{
+          "contents":"t2",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false
+       },
+       "output":{
+          "contents": "\u003c\u003c\u003c\u003c\u003c\u003c\u003c dest:   aeef989d24c2 - asriram: t1\\nt1\\n=======\\nt2\\n\u003e\u003e\u003e\u003e\u003e\u003e\u003e source: 64c253f3c1d7 - asriram: t2\\n",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false,
+          "path":"temp1"
+       },
+       "path":"temp1"
+    },
+    {
+       "base":{
+          "contents": "",
+          "exists":false,
+          "isexec":false,
+          "issymlink":false
+       },
+       "local":{
+          "contents": "t1",
+          "exists":false,
+          "isexec":false,
+          "issymlink":false
+       },
+       "other":{
+          "contents":"t2",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false
+       },
+       "output":{
+          "contents": "\u003c\u003c\u003c\u003c\u003c\u003c\u003c dest:   aeef989d24c2 - asriram: t1\\nt1\\n=======\\nt2\\n\u003e\u003e\u003e\u003e\u003e\u003e\u003e source: 64c253f3c1d7 - asriram: t2\\n",
+          "exists":true,
+          "isexec":false,
+          "issymlink":false,
+          "path":"temp2"
+       },
+       "path":"temp2"
+    }
+  ]
+}
+]`;
+
 class TestHgService extends HgService {
   // These tests target the non-watchman-dependent features of LocalHgService.
   _subscribeToWatchman(): Promise<void> {
@@ -355,72 +420,7 @@ describe('HgService', () => {
     });
   });
 
-  describe('::fetchMergeConflictsWithDetails', () => {
-    const mockOutput = `
-[
-   {
-      "command":"rebase",
-      "conflicts":[
-        {
-           "base":{
-              "contents": "",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false
-           },
-           "local":{
-              "contents": "t1",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false
-           },
-           "other":{
-              "contents":"t2",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false
-           },
-           "output":{
-              "contents": "\u003c\u003c\u003c\u003c\u003c\u003c\u003c dest:   aeef989d24c2 - asriram: t1\\nt1\\n=======\\nt2\\n\u003e\u003e\u003e\u003e\u003e\u003e\u003e source: 64c253f3c1d7 - asriram: t2\\n",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false,
-              "path":"temp1"
-           },
-           "path":"temp1"
-        },
-        {
-           "base":{
-              "contents": "",
-              "exists":false,
-              "isexec":false,
-              "issymlink":false
-           },
-           "local":{
-              "contents": "t1",
-              "exists":false,
-              "isexec":false,
-              "issymlink":false
-           },
-           "other":{
-              "contents":"t2",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false
-           },
-           "output":{
-              "contents": "\u003c\u003c\u003c\u003c\u003c\u003c\u003c dest:   aeef989d24c2 - asriram: t1\\nt1\\n=======\\nt2\\n\u003e\u003e\u003e\u003e\u003e\u003e\u003e source: 64c253f3c1d7 - asriram: t2\\n",
-              "exists":true,
-              "isexec":false,
-              "issymlink":false,
-              "path":"temp2"
-           },
-           "path":"temp2"
-        }
-      ]
-   }
-]`;
-
+  describe('::fetchMergeConflicts', () => {
     it('fetches rich merge conflict data', () => {
       let wasCalled = false;
       spyOn(hgService, '_hgRunCommand').andCallFake((args, options) => {
@@ -429,7 +429,7 @@ describe('HgService', () => {
       });
       waitsForPromise(async () => {
         const mergeConflictsEnriched = await hgService
-          .fetchMergeConflictsWithDetails()
+          .fetchMergeConflicts()
           .refCount()
           .toPromise();
         expect(wasCalled).toBeTruthy();
@@ -448,40 +448,12 @@ describe('HgService', () => {
     const relativePath2 = relativize(PATH_2);
 
     beforeEach(() => {
-      spyOn(
-        hgService,
-        '_checkOrigFile',
-      ).andCallFake((origbackupPath, relativePath) => {
-        return relativePath === relativePath1;
-      });
-      spyOn(hgService, '_getOrigBackupPath').andReturn(
-        Promise.resolve(TEST_WORKING_DIRECTORY),
-      );
-      spyOn(hgService, '_hgAsyncExecute').andReturn({
+      spyOn(hgService, '_hgRunCommand').andReturn({
         stdout: JSON.stringify([
           {path: relativePath1, status: StatusCodeId.UNRESOLVED},
           {path: relativePath2, status: StatusCodeId.UNRESOLVED},
           {path: '/abc', status: 'something'},
         ]),
-      });
-    });
-
-    it('fetches merge conflicts', () => {
-      waitsForPromise(async () => {
-        const mergeConflicts = await hgService.fetchMergeConflicts();
-        expect(hgService._hgAsyncExecute).toHaveBeenCalledWith(
-          ['resolve', '--list', '-Tjson'],
-          {cwd: TEST_WORKING_DIRECTORY},
-        );
-        expect(mergeConflicts.length).toBe(2);
-        expect(mergeConflicts[0]).toEqual({
-          path: relativePath1,
-          status: MergeConflictStatus.BOTH_CHANGED,
-        });
-        expect(mergeConflicts[1]).toEqual({
-          path: relativePath2,
-          status: MergeConflictStatus.DELETED_IN_THEIRS,
-        });
       });
     });
   });
@@ -514,11 +486,13 @@ describe('HgService', () => {
 
     beforeEach(() => {
       mergeDirectoryExists = false;
-      mergeConflicts = [];
+      mergeConflicts = null;
       spyOn(hgService, '_checkMergeDirectoryExists').andCallFake(() => {
         return mergeDirectoryExists;
       });
-      spyOn(hgService, 'fetchMergeConflicts').andCallFake(() => mergeConflicts);
+      spyOn(hgService, '_fetchMergeConflicts').andCallFake(
+        () => mergeConflicts,
+      );
     });
 
     it("reports no conflicts when the merge directory isn't there", () => {
@@ -539,7 +513,7 @@ describe('HgService', () => {
 
     it('reports conflicts when merge directory exists + conflicts found', () => {
       mergeDirectoryExists = true;
-      mergeConflicts = [{path: PATH_1, status: StatusCodeId.UNRESOLVED}];
+      mergeConflicts = mockOutput;
       waitsForPromise(async () => {
         await hgService._checkConflictChange();
         expect(hgService._isInConflict).toBeTruthy();
@@ -548,7 +522,7 @@ describe('HgService', () => {
 
     it('exits of conflict state when the merge directory is removed', () => {
       mergeDirectoryExists = true;
-      mergeConflicts = [{path: PATH_1, status: StatusCodeId.UNRESOLVED}];
+      mergeConflicts = mockOutput;
       waitsForPromise(async () => {
         await hgService._checkConflictChange();
         expect(hgService._isInConflict).toBeTruthy();

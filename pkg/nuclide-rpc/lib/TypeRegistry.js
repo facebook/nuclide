@@ -119,7 +119,6 @@ function objectToStats(jsonStats: Object): fs.Stats {
   stats.ctime = new Date(jsonStats.ctime);
 
   if (jsonStats.birthtime) {
-    // $FlowIssue
     stats.birthtime = new Date(jsonStats.birthtime);
   }
 
@@ -260,8 +259,12 @@ export class TypeRegistry {
       // If the locations are equal then assume that the types are equal.
       if (!locationsEqual(existingMarshaller.location, location)) {
         throw new Error(
-          `${locationToString(location)}: A type by the name ${typeName} has already` +
-            ` been registered at ${locationToString(existingMarshaller.location)}.`,
+          `${locationToString(
+            location,
+          )}: A type by the name ${typeName} has already` +
+            ` been registered at ${locationToString(
+              existingMarshaller.location,
+            )}.`,
         );
       }
     } else {
@@ -586,9 +589,10 @@ export class TypeRegistry {
       base64string_ => {
         let base64string = base64string_;
         // Unbox argument.
-        base64string = base64string instanceof String
-          ? base64string.valueOf()
-          : base64string;
+        base64string =
+          base64string instanceof String
+            ? base64string.valueOf()
+            : base64string;
 
         assert(
           typeof base64string === 'string',
@@ -674,7 +678,9 @@ export class TypeRegistry {
             } else if (!prop.optional) {
               // If the property is optional, it's okay for it to be missing.
               throw new Error(
-                `Source object: ${JSON.stringify(obj)} is missing property ${prop.name}.`,
+                `Source object: ${JSON.stringify(
+                  obj,
+                )} is missing property ${prop.name}.`,
               );
             }
           }),
@@ -723,7 +729,9 @@ export class TypeRegistry {
               // If the property is optional, it's okay for it to be missing.
               // JSON omits undefined values, so they can also be missing.
               throw new Error(
-                `Source object: ${JSON.stringify(obj)} is missing property ${prop.name}.`,
+                `Source object: ${JSON.stringify(
+                  obj,
+                )} is missing property ${prop.name}.`,
               );
             }
           }),

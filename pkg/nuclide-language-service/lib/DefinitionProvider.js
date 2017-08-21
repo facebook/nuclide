@@ -20,7 +20,6 @@ export type DefinitionConfig = {|
   version: '0.1.0',
   priority: number,
   definitionEventName: string,
-  definitionByIdEventName: string,
 |};
 
 export class DefinitionProvider<T: LanguageService> {
@@ -28,7 +27,6 @@ export class DefinitionProvider<T: LanguageService> {
   priority: number;
   grammarScopes: Array<string>;
   _definitionEventName: string;
-  _definitionByIdEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
 
   constructor(
@@ -36,14 +34,12 @@ export class DefinitionProvider<T: LanguageService> {
     grammars: Array<string>,
     priority: number,
     definitionEventName: string,
-    definitionByIdEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
     this.name = name;
     this.priority = priority;
     this.grammarScopes = grammars;
     this._definitionEventName = definitionEventName;
-    this._definitionByIdEventName = definitionByIdEventName;
     this._connectionToLanguageService = connectionToLanguageService;
   }
 
@@ -54,14 +50,13 @@ export class DefinitionProvider<T: LanguageService> {
     connectionToLanguageService: ConnectionCache<T>,
   ): IDisposable {
     return atom.packages.serviceHub.provide(
-      'atom-ide-definitions',
+      'definitions',
       config.version,
       new DefinitionProvider(
         name,
         grammars,
         config.priority,
         config.definitionEventName,
-        config.definitionByIdEventName,
         connectionToLanguageService,
       ),
     );

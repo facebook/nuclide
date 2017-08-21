@@ -14,6 +14,7 @@ import type {
   PropertyDescriptor,
   RemoteObjectId,
 } from '../../nuclide-debugger-base/lib/protocol-types';
+import type {MessageSender} from './types';
 
 import logger from './utils';
 import {launchPhpScriptWithXDebugEnabled} from './helpers';
@@ -40,7 +41,6 @@ import {
 import {ASYNC_BREAK, BREAKPOINT, EXCEPTION} from './Connection';
 import EventEmitter from 'events';
 import invariant from 'assert';
-import {ClientCallback} from './ClientCallback';
 import {attachEvent} from 'nuclide-commons/event';
 
 import type {Socket} from 'net';
@@ -106,7 +106,6 @@ type EvaluationFailureResult = {
 // and if either the attach or launch DbgpConnectors are closed. The DbgpConnectors will likely only
 // close if HHVM crashes or is stopped.
 export class ConnectionMultiplexer {
-  _clientCallback: ClientCallback;
   _breakpointStore: BreakpointStore;
   _connectionStatusEmitter: EventEmitter;
   _status: string;
@@ -123,9 +122,15 @@ export class ConnectionMultiplexer {
   _lastEnabledConnection: ?Connection;
   _debuggerStartupDisposable: IDisposable;
   _pausePending: boolean;
+  _sendOutputMessage: MessageSender;
+  _sendNotificationMessage: MessageSender;
 
-  constructor(clientCallback: ClientCallback) {
-    this._clientCallback = clientCallback;
+  constructor(
+    sendOutputMessage: MessageSender,
+    sendNotificationMessage: MessageSender,
+  ) {
+    this._sendOutputMessage = sendOutputMessage;
+    this._sendNotificationMessage = sendNotificationMessage;
     this._status = ConnectionMultiplexerStatus.Init;
     this._connectionStatusEmitter = new EventEmitter();
     this._previousConnection = null;
@@ -186,7 +191,7 @@ export class ConnectionMultiplexer {
         this._launchedScriptProcess = launchPhpScriptWithXDebugEnabled(
           expandedScript,
           (text, level) => {
-            this._clientCallback.sendUserMessage('outputWindow', {level, text});
+            this._sendOutput(text, level);
             this._checkForEnd();
             resolve();
           },
@@ -199,11 +204,11 @@ export class ConnectionMultiplexer {
       Observable.of(null)
         .delay(DEBUGGER_CONNECT_TIMEOUT_MS)
         .switchMap(() => {
-          this._clientCallback.sendUserMessage('notification', {
-            type: 'error',
-            message: 'Error: Timed out while trying to establish debugger connection. ' +
+          this._sendNotificationMessage(
+            'Error: Timed out while trying to establish debugger connection. ' +
               'Is the webserver available?',
-          });
+            'error',
+          );
           return Observable.of(null).take(DEBUGGER_TEAR_DOWN_TIMEOUT_MS);
         })
         .subscribe(timeoutCallback),
@@ -296,7 +301,9 @@ export class ConnectionMultiplexer {
         );
         if (breakpointId == null) {
           logger.error(
-            `Cannot find xdebug breakpoint ${JSON.stringify(xdebugBreakpoint)} in connection.`,
+            `Cannot find xdebug breakpoint ${JSON.stringify(
+              xdebugBreakpoint,
+            )} in connection.`,
           );
           break;
         }
@@ -391,10 +398,7 @@ export class ConnectionMultiplexer {
         if (args[0] != null) {
           message = `${message}  Error message: ${args[0]}`;
         }
-        this._clientCallback.sendUserMessage('notification', {
-          type: 'error',
-          message,
-        });
+        this._sendNotificationMessage(message, 'error');
         if (this._isPaused()) {
           this._emitRequestUpdate(connection);
         }
@@ -419,8 +423,7 @@ export class ConnectionMultiplexer {
   }
 
   _sendOutput(text: string, level: string): void {
-    this._clientCallback.sendUserMessage('console', {text, level});
-    this._clientCallback.sendUserMessage('outputWindow', {text, level});
+    this._sendOutputMessage(text, level);
   }
 
   _updateStatus(): void {
@@ -493,7 +496,7 @@ export class ConnectionMultiplexer {
   _setBreakStatus(): void {
     this._setStatus(
       this._status === ConnectionMultiplexerStatus.UserAsyncBreakSent ||
-        getConfig().stopOneStopAll
+      getConfig().stopOneStopAll
         ? ConnectionMultiplexerStatus.AllConnectionsPaused
         : ConnectionMultiplexerStatus.SingleConnectionPaused,
     );
@@ -537,10 +540,7 @@ export class ConnectionMultiplexer {
   }
 
   _handleAttachError(error: string): void {
-    this._clientCallback.sendUserMessage('notification', {
-      type: 'error',
-      message: error,
-    });
+    this._sendNotificationMessage(error, 'error');
     logger.error(`PHP debugger attach error: ${error}`);
     this._emitStatus(ConnectionMultiplexerStatus.End);
   }
@@ -597,7 +597,8 @@ export class ConnectionMultiplexer {
     if (result.wasThrown) {
       this._sendOutput(
         'Failed to evaluate ' +
-          `"${expression}": (${result.error.$.code}) ${result.error.message[0]}`,
+          `"${expression}": (${result.error.$.code}) ${result.error
+            .message[0]}`,
         'error',
       );
     }
@@ -844,10 +845,10 @@ export class ConnectionMultiplexer {
     const stdoutRequestSucceeded = await connection.sendStdoutRequest();
     if (!stdoutRequestSucceeded) {
       logger.error('HHVM returned failure for a stdout request');
-      this._clientCallback.sendUserMessage('outputWindow', {
-        level: 'error',
-        text: 'HHVM failed to redirect stdout, so no output will be sent to the output window.',
-      });
+      this._sendOutput(
+        'HHVM failed to redirect stdout, so no output will be sent to the output window.',
+        'error',
+      );
     }
     // TODO: Stderr redirection is not implemented in HHVM so we won't check this return value.
     await connection.sendStderrRequest();

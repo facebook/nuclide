@@ -207,6 +207,7 @@ export class SshHandshake {
             username: config.username,
             password,
             tryKeyboard: true,
+            readyTimeout: READY_TIMEOUT_MS,
           });
         },
       );
@@ -271,6 +272,7 @@ export class SshHandshake {
     if (config.authMethod === SupportedMethods.SSL_AGENT) {
       // Point to ssh-agent's socket for ssh-agent-based authentication.
       let agent = process.env.SSH_AUTH_SOCK;
+      // flowlint-next-line sketchy-null-string:off
       if (!agent && /^win/.test(process.platform)) {
         // #100: On Windows, fall back to pageant.
         agent = 'pageant';
@@ -295,6 +297,7 @@ export class SshHandshake {
         username: config.username,
         password: config.password,
         tryKeyboard: true,
+        readyTimeout: READY_TIMEOUT_MS,
       });
     } else if (config.authMethod === SupportedMethods.PRIVATE_KEY) {
       // We use fs-plus's normalize() function because it will expand the ~, if present.
@@ -361,9 +364,10 @@ export class SshHandshake {
   _updateServerInfo(serverInfo: {}) {
     invariant(typeof serverInfo.port === 'number');
     this._remotePort = serverInfo.port;
-    this._remoteHost = typeof serverInfo.hostname === 'string'
-      ? serverInfo.hostname
-      : this._config.host;
+    this._remoteHost =
+      typeof serverInfo.hostname === 'string'
+        ? serverInfo.hostname
+        : this._config.host;
 
     // Because the value for the Initial Directory that the user supplied may have
     // been a symlink that was resolved by the server, overwrite the original `cwd`
@@ -404,7 +408,8 @@ export class SshHandshake {
       // TODO: the timeout value shall be configurable using .json file too (t6904691).
       const cmd =
         `${this._config.remoteServerCommand} --workspace=${this._config.cwd}` +
-        ` --common-name=${this._config.host} --json-output-file=${remoteTempFile} -t 60`;
+        ` --common-name=${this._config
+          .host} --json-output-file=${remoteTempFile} -t 60`;
 
       this._connection.exec(cmd, {pty: {term: 'nuclide'}}, (err, stream) => {
         if (err) {
@@ -549,7 +554,9 @@ export class SshHandshake {
 
     // Use an ssh tunnel if server is not secure
     if (this._isSecure()) {
+      // flowlint-next-line sketchy-null-string:off
       invariant(this._remoteHost);
+      // flowlint-next-line sketchy-null-number:off
       invariant(this._remotePort);
       connect({
         host: this._remoteHost,
@@ -569,6 +576,7 @@ export class SshHandshake {
         })
         .listen(0, 'localhost', () => {
           const localPort = this._getLocalPort();
+          // flowlint-next-line sketchy-null-number:off
           invariant(localPort);
           connect({
             host: 'localhost',

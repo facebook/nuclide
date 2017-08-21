@@ -52,6 +52,7 @@ export default class TestRunModel {
   }
 
   getDuration(): ?number {
+    // flowlint-next-line sketchy-null-number:off
     if (this.startTime && this.endTime) {
       return this.endTime - this.startTime;
     }
@@ -75,6 +76,8 @@ export default class TestRunModel {
     status: TestRunStatus,
   ): string {
     const durationStr = duration.toFixed(3);
-    return `      ${StatusSymbol[status]} ${name} ${durationStr}s ${StatusMessage[status]}`;
+    return `      ${StatusSymbol[
+      status
+    ]} ${name} ${durationStr}s ${StatusMessage[status]}`;
   }
 }

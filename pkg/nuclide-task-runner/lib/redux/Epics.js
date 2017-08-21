@@ -18,7 +18,8 @@ import type {
   TaskRunner,
   TaskRunnerState,
 } from '../types';
-import type {ActionsObservable} from '../../../commons-node/redux-observable';
+import type {Directory} from '../../../nuclide-remote-connection';
+import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 
 import {saveBuffer} from '../../../nuclide-remote-connection';
 import {observableFromTask} from '../../../commons-node/tasks';
@@ -33,16 +34,28 @@ export function setProjectRootEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return (
-    actions
-      .ofType(
-        Actions.REGISTER_TASK_RUNNER,
-        Actions.UNREGISTER_TASK_RUNNER,
-        Actions.DID_ACTIVATE_INITIAL_PACKAGES,
-      )
-      // Refreshes everything. Not the most efficient, but good enough
-      .map(() => Actions.setProjectRoot(store.getState().projectRoot))
-  );
+  return actions
+    .ofType(Actions.DID_ACTIVATE_INITIAL_PACKAGES)
+    .map(() => Actions.setProjectRoot(store.getState().projectRoot));
+}
+
+export function setProjectRootForNewTaskRunnerEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions.ofType(Actions.REGISTER_TASK_RUNNER).switchMap(action => {
+    invariant(action.type === Actions.REGISTER_TASK_RUNNER);
+    const {taskRunner} = action.payload;
+    const {projectRoot, taskRunnersReady} = store.getState();
+
+    if (!taskRunnersReady) {
+      return Observable.empty();
+    }
+
+    return getTaskRunnerState(taskRunner, projectRoot).map(result =>
+      Actions.setStateForTaskRunner(result.taskRunner, result.taskRunnerState),
+    );
+  });
 }
 
 export function setConsolesForTaskRunnersEpic(
@@ -110,70 +123,81 @@ export function setActiveTaskRunnerEpic(
   store: Store,
   options: EpicOptions,
 ): Observable<Action> {
-  return actions.ofType(Actions.SET_STATES_FOR_TASK_RUNNERS).switchMap(() => {
-    const {projectRoot} = store.getState();
+  return actions
+    .filter(
+      action =>
+        action.type === Actions.SET_STATES_FOR_TASK_RUNNERS ||
+        (action.type === Actions.UNREGISTER_TASK_RUNNER &&
+          action.payload.taskRunner === store.getState().activeTaskRunner),
+    )
+    .switchMap(action => {
+      const {projectRoot} = store.getState();
 
-    if (!projectRoot) {
-      return Observable.of(Actions.selectTaskRunner(null, false));
-    }
+      if (!projectRoot) {
+        return Observable.of(Actions.selectTaskRunner(null, false));
+      }
 
-    const {
-      activeTaskRunner,
-      taskRunners,
-      statesForTaskRunners,
-    } = store.getState();
-    const {preferencesForWorkingRoots} = options;
-    const preference = preferencesForWorkingRoots.getItem(
-      projectRoot.getPath(),
-    );
-
-    let visibilityAction;
-    let taskRunner = activeTaskRunner;
-
-    if (preference) {
-      // The user had a session for this root in the past, restore it
-      visibilityAction = Observable.of(
-        Actions.setToolbarVisibility(preference.visible, false),
+      const {
+        activeTaskRunner,
+        taskRunners,
+        statesForTaskRunners,
+      } = store.getState();
+      const {preferencesForWorkingRoots} = options;
+      const preference = preferencesForWorkingRoots.getItem(
+        projectRoot.getPath(),
       );
-      const preferredId = preference.taskRunnerId;
-      if (!activeTaskRunner || activeTaskRunner.id !== preferredId) {
-        const preferredRunner = taskRunners.find(
-          runner => runner.id === preferredId,
+
+      let visibilityAction;
+      let taskRunner = activeTaskRunner;
+
+      if (preference) {
+        // The user had a session for this root in the past, restore it
+        visibilityAction = Observable.of(
+          Actions.setToolbarVisibility(preference.visible, false),
         );
-        const state =
-          preferredRunner && statesForTaskRunners.get(preferredRunner);
-        if (state && state.enabled) {
-          taskRunner = preferredRunner;
+        const preferredId = preference.taskRunnerId;
+        if (!activeTaskRunner || activeTaskRunner.id !== preferredId) {
+          const preferredRunner = taskRunners.find(
+            runner => runner.id === preferredId,
+          );
+          const state =
+            preferredRunner && statesForTaskRunners.get(preferredRunner);
+          if (state && state.enabled) {
+            taskRunner = preferredRunner;
+          }
         }
-      }
-    } else {
-      const atLeastOneTaskRunnerEnabled = taskRunners.some(runner => {
-        const state = statesForTaskRunners.get(runner);
-        return state && state.enabled;
-      });
-      if (atLeastOneTaskRunnerEnabled) {
-        // Advertise the toolbar if there's a chance it's useful at this new working root.
-        visibilityAction = Observable.of(
-          Actions.setToolbarVisibility(true, true),
-        );
       } else {
-        visibilityAction = Observable.of(
-          Actions.setToolbarVisibility(false, false),
-        );
+        const atLeastOneTaskRunnerEnabled = taskRunners.some(runner => {
+          const state = statesForTaskRunners.get(runner);
+          return state && state.enabled;
+        });
+        if (atLeastOneTaskRunnerEnabled) {
+          // Advertise the toolbar if there's a chance it's useful at this new working root.
+          visibilityAction = Observable.of(
+            Actions.setToolbarVisibility(true, true),
+          );
+        } else {
+          visibilityAction = Observable.of(
+            Actions.setToolbarVisibility(false, false),
+          );
+        }
+        taskRunner = activeTaskRunner;
       }
-      taskRunner = activeTaskRunner;
-    }
 
-    // We have nothing to go with, let's make best effort to select a task runner
-    if (!taskRunner) {
-      taskRunner = getBestEffortTaskRunner(taskRunners, statesForTaskRunners);
-    }
+      // We have nothing to go with, let's make best effort to select a task runner
+      if (
+        !taskRunner ||
+        (taskRunner === activeTaskRunner &&
+          action.type === Actions.UNREGISTER_TASK_RUNNER)
+      ) {
+        taskRunner = getBestEffortTaskRunner(taskRunners, statesForTaskRunners);
+      }
 
-    return Observable.concat(
-      Observable.of(Actions.selectTaskRunner(taskRunner, false)),
-      visibilityAction,
-    );
-  });
+      return Observable.concat(
+        Observable.of(Actions.selectTaskRunner(taskRunner, false)),
+        visibilityAction,
+      );
+    });
 }
 
 export function combineTaskRunnerStatesEpic(
@@ -193,19 +217,8 @@ export function combineTaskRunnerStatesEpic(
       return Observable.of(Actions.setStatesForTaskRunners(new Map()));
     }
 
-    // This depends on the epic above, triggering setProjectRoot when taskRunners change
     const runnersAndStates = taskRunners.map(taskRunner =>
-      Observable.create(
-        observer =>
-          new UniversalDisposable(
-            taskRunner.setProjectRoot(projectRoot, (enabled, tasks) => {
-              observer.next([
-                taskRunner,
-                {enabled, tasks: enabled ? tasks : []},
-              ]);
-            }),
-          ),
-      ),
+      getTaskRunnerState(taskRunner, projectRoot),
     );
 
     return (
@@ -214,14 +227,16 @@ export function combineTaskRunnerStatesEpic(
         .combineAll()
         .map(tuples => {
           const statesForTaskRunners = new Map();
-          tuples.forEach(([taskRunner, state]) => {
-            statesForTaskRunners.set(taskRunner, state);
+          tuples.forEach(result => {
+            if (store.getState().taskRunners.includes(result.taskRunner)) {
+              statesForTaskRunners.set(
+                result.taskRunner,
+                result.taskRunnerState,
+              );
+            }
           });
-          return statesForTaskRunners;
+          return Actions.setStatesForTaskRunners(statesForTaskRunners);
         })
-        .map(statesForTaskRunners =>
-          Actions.setStatesForTaskRunners(statesForTaskRunners),
-        )
     );
   });
 }
@@ -693,4 +708,21 @@ function promptForShouldSave(taskMeta: TaskMetadata): Observable<boolean> {
       notification = null;
     };
   });
+}
+
+function getTaskRunnerState(
+  taskRunner: TaskRunner,
+  projectRoot: ?Directory,
+): Observable<{taskRunner: TaskRunner, taskRunnerState: TaskRunnerState}> {
+  return Observable.create(
+    observer =>
+      new UniversalDisposable(
+        taskRunner.setProjectRoot(projectRoot, (enabled, tasks) => {
+          observer.next({
+            taskRunner,
+            taskRunnerState: {enabled, tasks: enabled ? tasks : []},
+          });
+        }),
+      ),
+  );
 }

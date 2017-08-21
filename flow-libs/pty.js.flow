@@ -1,0 +1,99 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ */
+
+declare module 'nuclide-prebuilt-libs/pty' {
+
+  declare export type ArgvOrCommandLine = string[] | string;
+
+  declare export type ProcessEnv = {
+    +[key: string]: string;
+  }
+
+  declare export interface ITerminal
+      extends EventEmitterEvents<TerminalEvents, ITerminal> {
+    +process: string;
+    +pid: number;
+    write(data: string): void;
+    resize(cols: number, rows: number): void;
+    destroy(): void;
+    kill(signal?: string): void;
+    setEncoding(encoding: string): void;
+    resume(): void;
+    pause(): void;
+
+    // pty.js sets the encoding, so Buffer should not be used
+    once(event: 'data', listener: (chunk: string) => void): ITerminal;
+    on(event: 'data', listener: (chunk: string) => void): ITerminal;
+    addListener(event: 'data', listener: (chunk: string) => void): ITerminal;
+    removeListener(event: 'data', listener: (chunk: string) => void): ITerminal;
+    removeAllListeners(event: 'data'): ITerminal;
+    listenerCount(event: 'data'): number;
+    listeners(event: 'data'): Array<(chunk: string) => void>;
+
+    // The current pty.js only works on unix, so we can expect signal to be defined
+    once(event: 'exit',
+      listener: (code: number, signal: number) => void): ITerminal;
+    on(event: 'exit',
+      listener: (code: number, signal: number) => void): ITerminal;
+    addListener(event: 'exit',
+      listener: (code: number, signal: number) => void): ITerminal;
+    removeListener(event: 'exit',
+      listener: (code: number, signal: number) => void): ITerminal;
+    removeAllListeners(event: 'exit'): ITerminal;
+    listenerCount(event: 'exit'): number;
+    listeners(event: 'exit'): Array<(code: number, signal: number) => void>;
+
+    once(event: 'close', listener: () => void): ITerminal;
+    on(event: 'close', listener: () => void): ITerminal;
+    addListener(event: 'close', listener: () => void): ITerminal;
+    removeListener(event: 'close', listener: () => void): ITerminal;
+    removeAllListeners(event: 'close'): ITerminal;
+    listenerCount(event: 'close'): number;
+    listeners(event: 'close'): Array<() => void>;
+
+    once(event: 'error', listener: (err: {code?: string}) => void): ITerminal;
+    on(event: 'error', listener: (err: {code?: string}) => void): ITerminal;
+    addListener(event: 'error',
+      listener: (err: {code?: string}) => void): ITerminal;
+    removeListener(event: 'error',
+      listener: (err: {code?: string}) => void): ITerminal;
+    removeAllListeners(event: 'error'): ITerminal;
+    listenerCount(event: 'error'): number;
+    listeners(event: 'error'): Array<(err: {code?: string}) => void>;
+  }
+
+  declare export interface IPtyForkOptions {
+    name?: string;
+    cols?: number;
+    rows?: number;
+    cwd?: string;
+    env?: ProcessEnv;
+    uid?: number;
+    gid?: number;
+  }
+  declare export interface IPtyOpenOptions {
+    cols?: number;
+    rows?: number;
+  }
+
+  declare export function spawn(
+    file?: string,
+    args?: ArgvOrCommandLine,
+    opt?: IPtyForkOptions): ITerminal;
+  declare export function fork(
+    file?: string,
+    args?: ArgvOrCommandLine,
+    opt?: IPtyForkOptions): ITerminal;
+  declare export function createTerminal(
+    file?: string,
+    args?: ArgvOrCommandLine,
+    opt?: IPtyForkOptions): ITerminal;
+  declare export function open(options: IPtyOpenOptions): ITerminal;
+}

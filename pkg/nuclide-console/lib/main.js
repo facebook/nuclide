@@ -10,10 +10,6 @@
  */
 
 import type {
-  Viewable,
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
-import type {
   AppState,
   ConsolePersistedState,
   ConsoleService,
@@ -28,13 +24,12 @@ import type {
 } from './types';
 import type {CreatePasteFunction} from '../../nuclide-paste-base';
 import createPackage from 'nuclide-commons-atom/createPackage';
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as Actions from './redux/Actions';
@@ -52,7 +47,6 @@ class Activation {
   _disposables: UniversalDisposable;
   _rawState: ?Object;
   _store: Store;
-  _createPasteFunction: ?CreatePasteFunction;
 
   constructor(rawState: ?Object) {
     this._rawState = rawState;
@@ -87,6 +81,7 @@ class Activation {
           );
         },
       ),
+      this._registerCommandAndOpener(),
     );
   }
 
@@ -123,34 +118,36 @@ class Activation {
     });
   }
 
-  consumePasteProvider(provider: any): void {
-    this._createPasteFunction = (provider.createPaste: CreatePasteFunction);
+  consumePasteProvider(provider: any): IDisposable {
+    const createPaste: CreatePasteFunction = provider.createPaste;
+    this._getStore().dispatch(Actions.setCreatePasteFunction(createPaste));
+    return new UniversalDisposable(() => {
+      if (this._getStore().getState().createPasteFunction === createPaste) {
+        this._getStore().dispatch(Actions.setCreatePasteFunction(null));
+      }
+    });
   }
 
-  consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
-    this._disposables.add(
-      api.addOpener(uri => {
+  _registerCommandAndOpener(): UniversalDisposable {
+    return new UniversalDisposable(
+      atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           return viewableFromReactElement(
-            <ConsoleContainer
-              store={this._getStore()}
-              createPasteFunction={this._createPasteFunction}
-            />,
+            <ConsoleContainer store={this._getStore()} />,
           );
         }
       }),
-      () => api.destroyWhere(item => item instanceof ConsoleContainer),
-      atom.commands.add('atom-workspace', 'nuclide-console:toggle', event => {
-        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      () => destroyItemWhere(item => item instanceof ConsoleContainer),
+      atom.commands.add('atom-workspace', 'nuclide-console:toggle', () => {
+        atom.workspace.toggle(WORKSPACE_VIEW_URI);
       }),
     );
   }
 
-  deserializeConsoleContainer(state: ConsolePersistedState): Viewable {
+  deserializeConsoleContainer(state: ConsolePersistedState): atom$Pane {
     return viewableFromReactElement(
       <ConsoleContainer
         store={this._getStore()}
-        createPasteFunction={this._createPasteFunction}
         initialFilterText={state.filterText}
         initialEnableRegExpFilter={state.enableRegExpFilter}
         initialUnselectedSourceIds={state.unselectedSourceIds}
@@ -293,10 +290,12 @@ class Activation {
 function deserializeAppState(rawState: ?Object): AppState {
   return {
     executors: new Map(),
+    createPasteFunction: null,
     currentExecutorId: null,
-    records: rawState && rawState.records
-      ? rawState.records.map(deserializeRecord)
-      : [],
+    records:
+      rawState && rawState.records
+        ? rawState.records.map(deserializeRecord)
+        : [],
     history: [],
     providers: new Map(),
     providerStatuses: new Map(),

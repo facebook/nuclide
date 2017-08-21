@@ -14,9 +14,7 @@ import {WatchExpressionStore} from './WatchExpressionStore';
 import type {Observable} from 'rxjs';
 
 import React from 'react';
-import {
-  LazyNestedValueComponent,
-} from '../../nuclide-ui/LazyNestedValueComponent';
+import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 import {Section} from '../../nuclide-ui/Section';
 
@@ -38,7 +36,6 @@ export class ScopesComponent extends React.Component {
 
   constructor(props: ScopesComponentProps) {
     super(props);
-    (this: any)._renderExpression = this._renderExpression.bind(this);
     this._expansionStates = new Map();
   }
 
@@ -51,14 +48,14 @@ export class ScopesComponent extends React.Component {
     return expansionStateId;
   }
 
-  _renderExpression(
+  _renderExpression = (
     fetchChildren: (objectId: string) => Observable<?ExpansionResult>,
     binding: {
       name: string,
       value: EvaluationResult,
     },
     index: number,
-  ): ?React.Element<any> {
+  ): ?React.Element<any> => {
     if (binding == null) {
       // `binding` might be `null` while switching threads.
       return null;
@@ -77,7 +74,7 @@ export class ScopesComponent extends React.Component {
         </div>
       </div>
     );
-  }
+  };
 
   _renderScopeSection(
     fetchChildren: (objectId: string) => Observable<?ExpansionResult>,
@@ -85,13 +82,14 @@ export class ScopesComponent extends React.Component {
   ): ?React.Element<any> {
     // Non-local scopes should be collapsed by default since users typically care less about them.
     const collapsedByDefault = !isLocalScopeName(scope.name);
-    const noLocals = collapsedByDefault || scope.scopeVariables.length > 0
-      ? null
-      : <div className="nuclide-debugger-expression-value-row">
-          <span className="nuclide-debugger-expression-value-content">
-            (no variables)
-          </span>
-        </div>;
+    const noLocals =
+      collapsedByDefault || scope.scopeVariables.length > 0
+        ? null
+        : <div className="nuclide-debugger-expression-value-row">
+            <span className="nuclide-debugger-expression-value-content">
+              (no variables)
+            </span>
+          </div>;
 
     return (
       <Section

@@ -38,21 +38,17 @@ type StateType = {
   recentlyLaunchedScript: ?string,
 };
 
-export class LaunchUiComponent
-  extends React.Component<void, PropsType, StateType> {
+export class LaunchUiComponent extends React.Component<
+  void,
+  PropsType,
+  StateType,
+> {
   props: PropsType;
   state: StateType;
   _disposables: UniversalDisposable;
 
   constructor(props: PropsType) {
     super(props);
-    (this: any)._getActiveFilePath = this._getActiveFilePath.bind(this);
-    (this: any)._handleLaunchButtonClick = this._handleLaunchButtonClick.bind(
-      this,
-    );
-    (this: any)._handleRecentSelectionChange = this._handleRecentSelectionChange.bind(
-      this,
-    );
     this._disposables = new UniversalDisposable();
     this.state = {
       pathsDropdownIndex: 0,
@@ -192,13 +188,13 @@ export class LaunchUiComponent
     });
   }
 
-  _handleRecentSelectionChange(newValue: string): void {
+  _handleRecentSelectionChange = (newValue: string): void => {
     this.setState({
       recentlyLaunchedScript: newValue,
     });
-  }
+  };
 
-  _handleLaunchButtonClick(): void {
+  _handleLaunchButtonClick = (): void => {
     const scriptPath = this.refs.scriptPath.getText().trim();
     this._setRecentlyLaunchedScript(
       scriptPath,
@@ -213,9 +209,9 @@ export class LaunchUiComponent
     serializeDebuggerConfig(...this._getSerializationArgs(), {
       scriptPath,
     });
-  }
+  };
 
-  _getActiveFilePath(): string {
+  _getActiveFilePath = (): string => {
     const editor = atom.workspace.getActiveTextEditor();
     if (editor != null) {
       const fileUri = editor.getPath();
@@ -224,7 +220,7 @@ export class LaunchUiComponent
       }
     }
     return '';
-  }
+  };
 
   _isValidScriptUri(uri: NuclideUri): boolean {
     if (!nuclideUri.isRemote(uri)) {

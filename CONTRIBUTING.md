@@ -16,6 +16,12 @@ project.
 Follow this guide to start developing on Nuclide:
 https://nuclide.io/docs/advanced-topics/building-from-source/
 
+## `atom-ide-ui`
+
+The development process for `atom-ide-ui` is similar, since it's a subset
+of the Nuclide repository. Please see the separate
+[CONTRIBUTING.md](modules/atom-ide-ui/CONTRIBUTING.md) file for details.
+
 ## Pull Requests
 
 1. Fork the repo and create your branch from `master` for core changes, or

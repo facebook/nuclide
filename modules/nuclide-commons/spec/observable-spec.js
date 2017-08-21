@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -13,6 +14,8 @@ import {
   bufferUntil,
   diffSets,
   cacheWhileSubscribed,
+  macrotask,
+  microtask,
   nextAnimationFrame,
   reconcileSetDiffs,
   splitStream,
@@ -469,6 +472,32 @@ describe('bufferUntil', () => {
         .toArray()
         .toPromise();
       expect(chunks).toEqual([[1, 2], [3, 4]]);
+    });
+  });
+
+  describe('microtask', () => {
+    it('is cancelable', () => {
+      waitsForPromise(async () => {
+        const spy = jasmine.createSpy();
+        const sub = microtask.subscribe(spy);
+        let resolve;
+        const promise = new Promise(r => (resolve = r));
+        sub.unsubscribe();
+        process.nextTick(() => {
+          expect(spy).not.toHaveBeenCalled();
+          resolve();
+        });
+        return promise;
+      });
+    });
+  });
+
+  describe('macrotask', () => {
+    it('is cancelable', () => {
+      spyOn(global, 'clearImmediate').andCallThrough();
+      const sub = macrotask.subscribe(() => {});
+      sub.unsubscribe();
+      expect(clearImmediate).toHaveBeenCalled();
     });
   });
 });

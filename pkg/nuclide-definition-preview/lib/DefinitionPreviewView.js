@@ -38,9 +38,10 @@ export class DefinitionPreviewView extends React.Component {
 
   constructor(props: ContextElementProps) {
     super(props);
-    const buffer = props.definition != null
-      ? bufferForUri(props.definition.path)
-      : new TextBuffer();
+    const buffer =
+      props.definition != null
+        ? bufferForUri(props.definition.path)
+        : new TextBuffer();
     const heightSetting = (featureConfig.get(
       'nuclide-definition-preview.editorHeight',
     ): any);
@@ -59,12 +60,6 @@ export class DefinitionPreviewView extends React.Component {
       'nuclide-definition-preview.editorHeight',
       (newHeight: any) => this._setEditorHeight((newHeight: number)),
     );
-
-    (this: any)._openCurrentDefinitionInMainEditor = this._openCurrentDefinitionInMainEditor.bind(
-      this,
-    );
-    (this: any)._increaseEditorHeight = this._increaseEditorHeight.bind(this);
-    (this: any)._decreaseEditorHeight = this._decreaseEditorHeight.bind(this);
   }
 
   componentWillReceiveProps(newProps: ContextElementProps): void {
@@ -148,13 +143,13 @@ export class DefinitionPreviewView extends React.Component {
         </div>;
   }
 
-  _openCurrentDefinitionInMainEditor(): void {
+  _openCurrentDefinitionInMainEditor = (): void => {
     analytics.track('nuclide-definition-preview:openInMainEditor');
     const def = this.props.definition;
     if (def != null) {
       goToLocation(def.path, def.position.row, def.position.column, true);
     }
-  }
+  };
 
   // Sets the height of the definition preview editor only if it satisfies the minimum height
   _setEditorHeight(height: number): void {
@@ -164,13 +159,13 @@ export class DefinitionPreviewView extends React.Component {
     }
   }
 
-  _increaseEditorHeight(): void {
+  _increaseEditorHeight = (): void => {
     this._setEditorHeight(this.state.editorHeight + EDITOR_HEIGHT_DELTA);
-  }
+  };
 
-  _decreaseEditorHeight(): void {
+  _decreaseEditorHeight = (): void => {
     this._setEditorHeight(this.state.editorHeight - EDITOR_HEIGHT_DELTA);
-  }
+  };
 
   getEditor(): atom$TextEditor {
     return this.refs.editor.getModel();

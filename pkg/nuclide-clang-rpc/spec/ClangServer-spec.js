@@ -85,7 +85,8 @@ describe('ClangServer', () => {
                   file: nuclideUri.join(__dirname, 'fixtures/test.cpp'),
                 },
                 ranges: [],
-                spelling: 'candidate function not viable: requires 0 arguments, but 1 was provided',
+                spelling:
+                  'candidate function not viable: requires 0 arguments, but 1 was provided',
               },
             ],
           },
@@ -270,7 +271,9 @@ describe('ClangServer', () => {
   it('listens to flag changes', () => {
     waitsForPromise(async () => {
       const subject = new Subject();
-      spyOn(FileWatcherService, 'watchFile').andReturn(subject.publish());
+      spyOn(FileWatcherService, 'watchFileWithNode').andReturn(
+        subject.publish(),
+      );
 
       const serverArgs = findClangServerArgs();
       const server = new ClangServer(

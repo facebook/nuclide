@@ -22,36 +22,14 @@ You can also bring up the Debugger panel by choosing `Debugger -> Show` from the
 ## Basics
 
 Nuclide supports debugging for multiple [languages](#language-specific-debugging) and
-[platforms](#platform-specific-debugging). However, there are some basic debugging concepts that apply across all languages. Debugging a Node
-project will be used to help illustrate the points described here.
+[platforms](#platform-specific-debugging). However, there are some basic debugging concepts that apply across all languages.
 
 ### Debuggable Target
 
 Specific details are provided for each [language](#language-specific-debugging) or
 [platform](#platform-specific-debugging), but in general, to begin debugging code in Nuclide, you
 need to either launch a debug process from within Nuclide (e.g., iOS from the Buck toolbar) or
-attach to a currently running process (e.g., `node`) for debugging.
-
-*Example*
-
-If you have a Node project running (e.g, via `npm start` or `node yourfile.js`), press
-`Cmd-Shift-A` (`Ctrl-Shift-A` on Linux) to toggle the Debugger Attach Dialog. Then, attach Nuclide to the
-relevant `node` process.
-
-![](/static/images/docs/feature-debugger-basics-attach-target-process.png)
-
-> If you have multiple processes running with the same name, you can use something similar to
-> `ps aux | grep <process-name>` or Apple's Activity Monitor to find the Process ID (PID) that
-> matches with the process in the list in Nuclide's Debugger Selection window.
-
-Once you attach to a process, you will see a confirmation of the attachment in the command-line for
-that process.
-
-```bash
-$ node read.js
-Starting debugger agent.
-Debugger listening on port 5858
-```
+attach to a currently running process for debugging.
 
 After attaching to the process by clicking **Attach**, you should see the Debugger Controls to the right of the [Editing Area](/docs/editor/basics/#editing-area).
 
@@ -68,17 +46,6 @@ are able to perform debugging tasks such as [step](#basics__stepping) and
 > There is currently only one type of breakpoint called a *source breakpoint*. This is a breakpoint
 > on one line of code. We are looking into ways to support functional, conditional, and other types
 > of breakpoints.
-
-*Example*
-
-Here we have breakpoints on lines 13 and 18 of `read.js`.
-
-![](/static/images/docs/feature-debugger-basics-breakpoints-set.png)
-
-In the [main debugging](#basics__debugger) tab of the Debugger, you will see what
-breakpoints are set as well.
-
-![](/static/images/docs/feature-debugger-basics-breakpoints-debugger-controls.png)
 
 ### Debugger
 
@@ -117,13 +84,6 @@ depends on the language being debugged.
 
 The **Watch Expressions** area is for you to keep track of the values of global and local variables. To add a new value to track, enter it in the `add new watch expression` text box. To remove a watched variable, click the `x` icon of the variable you wish to delete.
 
-*Example*
-
-Here we have breakpoints set on line 10 of `read.js` and line 3 of `math.js`. We set watches on two global variables (`num1` and `num2`) in the `read.js` file. The call stack shows that we are
-currently in the `processSum` method and started from the `onData` method.
-
-![](/static/images/docs/feature-debugger-watches-ex.png)
-
 ***Detaching***
 
 You can detach the debugger from the current process by clicking "X" to close the debugger controls pane, or by clicking the "stop" button.
@@ -136,26 +96,6 @@ Nuclide Debugger provides stepping functionality with shortcuts within the Debug
 via the [keyboard](/docs/editor/keyboard-shortcuts/#debugger).
 
 ![](/static/images/docs/feature-debugger-stepping-controls.png)
-
-*Example*
-
-Assume we have a breakpoint set at line 22 of `read.js` (before the call to `processSum()`).
-
-![](/static/images/docs/feature-debugger-stepping-line22-ex.png)
-
-The following shows what happens when you step into the function. The code execution steps into the actual
-`processSum()` function itself.
-
-![](/static/images/docs/feature-debugger-stepping-stepin-ex.png)
-
-The following shows what happens when you step over the function. `processSum()` is fully executed,
-and we move on to closing the `readline` object.
-
-![](/static/images/docs/feature-debugger-stepping-stepover-ex.png)
-
-You can even step into a function that exists in another module.
-
-![](/static/images/docs/feature-debugger-stepping-other-module-ex.png)
 
 ### Evaluation
 
@@ -186,15 +126,12 @@ While the [general process](#basics) for debugging in Nuclide is similar, there 
 language specific debugging workflows that require discussion and illustration.
 
 - [Hack and PHP](/docs/languages/hack/#debugging)
-- [Flow and JavaScript](/docs/languages/flow/#debugging) (The canonical example for debugging as
-  described [above](#basics)).
 - [C++](/docs/languages/cpp/#debugging)
 - [Objective-C](/docs/languages/objective-c/#debugging)
 
 
 ## Platform Specific Debugging
 
-- [React Native](/docs/platforms/react-native/#debugging)
 - [iOS](/docs/platforms/ios/#debugging)
 - [Android](/docs/platforms/android/#debugging)
 

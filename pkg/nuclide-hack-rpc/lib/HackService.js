@@ -12,12 +12,12 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
 import type {HackRange} from './rpc-types';
+import type {SingleFileLanguageService} from '../../nuclide-language-service-rpc';
 import type {
+  FormatOptions,
   LanguageService,
 } from '../../nuclide-language-service/lib/LanguageService';
-import type {
-  HostServices,
-} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
@@ -25,40 +25,38 @@ import type {HackDefinition} from './Definitions';
 import type {HackIdeOutline} from './OutlineView';
 import type {HackTypedRegion} from './TypedRegions';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
-import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
 import type {HackReferencesResult} from './FindReferences';
 import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
+  CodeAction,
+  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {
+  AutocompleteRequest,
   AutocompleteResult,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {HackDiagnosticsMessage} from './HackConnectionService';
 
 import {Observable} from 'rxjs';
 import {wordAtPositionFromBuffer} from 'nuclide-commons/range';
 import {arrayFlatten, arrayCompact} from 'nuclide-commons/collection';
 import invariant from 'assert';
-import {
-  createMultiLspLanguageService,
-} from '../../nuclide-vscode-language-service';
+import {createMultiLspLanguageService} from '../../nuclide-vscode-language-service-rpc';
+import {HACK_FILE_EXTENSIONS} from '../../nuclide-hack-common/lib/constants';
 import {callHHClient} from './HackHelpers';
 import {
   findHackConfigDir,
   setHackCommand,
   getHackCommand,
   logger,
-  HACK_FILE_EXTENSIONS,
+  HACK_LOGGER_CATEGORY,
 } from './hack-config';
 import {
   getHackProcess,
@@ -99,25 +97,21 @@ export type HackFormatSourceResult = {
 export async function initializeLsp(
   command: string,
   args: Array<string>,
-  projectFileName: string,
+  projectFileNames: Array<string>,
   fileExtensions: Array<NuclideUri>,
   logLevel: LogLevel,
   fileNotifier: FileNotifier,
   host: HostServices,
 ): Promise<LanguageService> {
-  invariant(fileNotifier instanceof FileCache);
-  logger.setLevel(logLevel);
   const cmd = command === '' ? await getHackCommand() : command;
-  return createMultiLspLanguageService(
-    logger,
+  return createMultiLspLanguageService('hack', cmd, args, {
+    logCategory: HACK_LOGGER_CATEGORY,
+    logLevel,
     fileNotifier,
     host,
-    'Hack',
-    cmd,
-    args,
-    projectFileName,
+    projectFileNames,
     fileExtensions,
-  );
+  });
 }
 
 export async function initialize(
@@ -157,8 +151,7 @@ class HackLanguageServiceImpl extends ServerLanguageService {
   async getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
-    activatedManually: boolean,
-    prefix: string,
+    request: AutocompleteRequest,
   ): Promise<?AutocompleteResult> {
     try {
       const process = await getHackProcess(
@@ -168,7 +161,7 @@ class HackLanguageServiceImpl extends ServerLanguageService {
       return process.getAutocompleteSuggestions(
         fileVersion,
         position,
-        activatedManually,
+        request.activatedManually,
       );
     } catch (e) {
       return null;
@@ -221,7 +214,15 @@ class HackSingleFileLanguageService {
     throw new Error('replaced by observeDiagnstics');
   }
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticUpdate>> {
+  async getCodeActions(
+    filePath: NuclideUri,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>> {
+    throw new Error('Not implemented');
+  }
+
+  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>> {
     logger.debug('observeDiagnostics');
     return observeConnections(this._fileCache)
       .mergeMap(connection => {
@@ -400,6 +401,7 @@ class HackSingleFileLanguageService {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     const contents = buffer.getText();
     const startOffset = buffer.characterIndexForPosition(range.start) + 1;
@@ -433,6 +435,7 @@ class HackSingleFileLanguageService {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?{
     newCursor?: number,
     formatted: string,
@@ -445,6 +448,7 @@ class HackSingleFileLanguageService {
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
     triggerCharacter: string,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     throw new Error('Not implemented');
   }
@@ -472,6 +476,9 @@ class HackSingleFileLanguageService {
 
   dispose(): void {}
 }
+
+// Assert that HackSingleFileLanguageService satisifes the SingleFileLanguageService interface:
+(((null: any): HackSingleFileLanguageService): SingleFileLanguageService);
 
 function formatAtomLineColumn(position: atom$Point): string {
   return formatLineColumn(position.row + 1, position.column + 1);

@@ -18,9 +18,7 @@ import type {Point} from 'atom';
 import {getBuckProjectRoot} from '../../nuclide-buck-base';
 import {getBuildFileName} from './buildFiles';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import escapeStringRegExp from 'escape-string-regexp';
@@ -40,12 +38,14 @@ export async function parseTarget(
   filePath: ?NuclideUri,
   buckRoot: string,
 ): Promise<?Target> {
+  // flowlint-next-line sketchy-null-string:off
   if (!match || !filePath) {
     return null;
   }
 
   let path;
   const fullTarget = match[1];
+  // flowlint-next-line sketchy-null-string:off
   if (fullTarget) {
     // Strip off the leading slashes from the fully-qualified build target.
     const basePath = fullTarget.substring('//'.length);
@@ -57,6 +57,7 @@ export async function parseTarget(
     path = filePath;
   }
   const name = match[2];
+  // flowlint-next-line sketchy-null-string:off
   if (!name) {
     return null;
   }
@@ -119,6 +120,7 @@ export async function getSuggestion(
   }
 
   const buckRoot = await getBuckProjectRoot(absolutePath);
+  // flowlint-next-line sketchy-null-string:off
   if (!buckRoot) {
     return null;
   }

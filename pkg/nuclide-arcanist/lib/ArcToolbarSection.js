@@ -25,15 +25,6 @@ type Props = {
 export default class ArcToolbarSection extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._arcBuild = this._arcBuild.bind(this);
-    (this: any)._handleBuildTargetChange = this._handleBuildTargetChange.bind(
-      this,
-    );
-    (this: any)._reloadBuildTargets = this._reloadBuildTargets.bind(this);
-  }
-
   componentDidMount(): void {
     this.props.model.viewActivated();
   }
@@ -98,15 +89,15 @@ export default class ArcToolbarSection extends React.Component {
     );
   }
 
-  _reloadBuildTargets(): void {
+  _reloadBuildTargets = (): void => {
     this.props.model.updateBuildTargets();
-  }
+  };
 
-  _handleBuildTargetChange(value: string): void {
+  _handleBuildTargetChange = (value: string): void => {
     this.props.model.setActiveBuildTarget(value);
-  }
+  };
 
-  _arcBuild(): void {
+  _arcBuild = (): void => {
     this.props.model.arcBuild();
-  }
+  };
 }

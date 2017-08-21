@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {ResolvedRuleType} from '../../../nuclide-buck-rpc';
+import type {ResolvedRuleType} from '../../../nuclide-buck-rpc/lib/types';
 import type {DeploymentTarget, PlatformGroup, TaskSettings} from '../types';
 
 export type Action =

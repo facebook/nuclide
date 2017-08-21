@@ -1,8 +1,0 @@
-{
-  ".platform-darwin atom-workspace": {
-    "alt-cmd-shift-f": "nuclide-find-references:activate"
-  },
-  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
-    "alt-ctrl-shift-f": "nuclide-find-references:activate"
-  }
-}

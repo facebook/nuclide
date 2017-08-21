@@ -10,8 +10,7 @@
  */
 
 import type {Provider} from '../../nuclide-quick-open/lib/types';
-import type RecentFilesService
-  from '../../nuclide-recent-files-service/lib/RecentFilesService';
+import type RecentFilesService from '../../nuclide-recent-files-service/lib/RecentFilesService';
 
 import {
   RecentFilesProvider,

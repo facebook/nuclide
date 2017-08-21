@@ -10,7 +10,7 @@
  */
 
 import type {Action, Store} from '../types';
-import type {ActionsObservable} from '../../../commons-node/redux-observable';
+import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import * as Actions from './Actions';
@@ -54,6 +54,7 @@ export function executeEpic(
     invariant(action.type === Actions.EXECUTE);
     const {code} = action.payload;
     const currentExecutorId = getCurrentExecutorId(store.getState());
+    // flowlint-next-line sketchy-null-string:off
     invariant(currentExecutorId);
 
     const executor = store.getState().executors.get(currentExecutorId);
@@ -96,11 +97,12 @@ export function registerRecordProviderEpic(
     const messageActions = recordProvider.records.map(Actions.recordReceived);
 
     // TODO: Can this be delayed until sometime after registration?
-    const statusActions = typeof recordProvider.observeStatus === 'function'
-      ? observableFromSubscribeFunction(
-          recordProvider.observeStatus,
-        ).map(status => Actions.updateStatus(recordProvider.id, status))
-      : Observable.empty();
+    const statusActions =
+      typeof recordProvider.observeStatus === 'function'
+        ? observableFromSubscribeFunction(
+            recordProvider.observeStatus,
+          ).map(status => Actions.updateStatus(recordProvider.id, status))
+        : Observable.empty();
 
     const unregisteredEvents = actions
       .ofType(Actions.REMOVE_SOURCE)

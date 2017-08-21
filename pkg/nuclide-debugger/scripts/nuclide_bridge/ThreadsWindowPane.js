@@ -15,6 +15,7 @@ import NuclideBridge from './NuclideBridge';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import WebInspector from '../../lib/WebInspector';
+import {scrollIntoView} from 'nuclide-commons-ui/scrollIntoView';
 
 type StateType = {
   threadData: ?ThreadData,
@@ -32,8 +33,6 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
       threadData: null,
     };
     this._stoppedThread = null;
-    (this: any)._handleThreadsUpdated = this._handleThreadsUpdated.bind(this);
-    (this: any)._handleClearInterface = this._handleClearInterface.bind(this);
   }
 
   componentWillUnmount() {
@@ -48,9 +47,9 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
     this._scrollToStoppedThread();
   }
 
-  _handleThreadsUpdated(event: WebInspector.Event): void {
+  _handleThreadsUpdated = (event: WebInspector.Event): void => {
     this.setState(this._getState());
-  }
+  };
 
   _getState(): StateType {
     let threadData = null;
@@ -82,9 +81,9 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
     );
   }
 
-  _handleClearInterface(event: WebInspector.Event): void {
+  _handleClearInterface = (event: WebInspector.Event): void => {
     this.setState({threadData: null});
-  }
+  };
 
   _unregisterUpdate(): void {
     WebInspector.targetManager.removeModelListener(
@@ -132,7 +131,7 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
 
   _scrollToStoppedThread() {
     if (this._stoppedThread != null) {
-      this._stoppedThread.scrollIntoView();
+      scrollIntoView(this._stoppedThread);
     }
   }
 
@@ -156,10 +155,18 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
               onDoubleClick={this._handleDoubleClick.bind(this, thread)}
               style={rowStyle}
               ref={ref => this._setStoppedThread(ref)}>
-              <td>{indicator}</td>
-              <td>{thread.id}</td>
-              <td>{thread.address}</td>
-              <td>{thread.stopReason}</td>
+              <td>
+                {indicator}
+              </td>
+              <td>
+                {thread.id}
+              </td>
+              <td>
+                {thread.address}
+              </td>
+              <td>
+                {thread.stopReason}
+              </td>
             </tr>,
           );
         } else {
@@ -167,10 +174,18 @@ class ThreadsWindowComponent extends React.Component<void, mixed, StateType> {
             <tr
               onDoubleClick={this._handleDoubleClick.bind(this, thread)}
               style={rowStyle}>
-              <td>{indicator}</td>
-              <td>{thread.id}</td>
-              <td>{thread.address}</td>
-              <td>{thread.stopReason}</td>
+              <td>
+                {indicator}
+              </td>
+              <td>
+                {thread.id}
+              </td>
+              <td>
+                {thread.address}
+              </td>
+              <td>
+                {thread.stopReason}
+              </td>
             </tr>,
           );
         }

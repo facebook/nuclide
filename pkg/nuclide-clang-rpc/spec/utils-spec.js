@@ -12,7 +12,7 @@
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {generateFixture} from '../../nuclide-test-helpers';
 
-import {findIncludingSourceFile} from '../lib/utils';
+import {findIncludingSourceFile} from '../lib/RelatedFileFinder';
 
 describe('findIncludingSourceFile', () => {
   it('is able to find an absolute include', () => {

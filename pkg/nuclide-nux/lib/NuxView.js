@@ -201,17 +201,20 @@ export class NuxView {
     // Let the link to the next NuxView be enabled iff
     //  a) it is not the last NuxView in the tour AND
     //  b) there is no condition for completion
-    const nextLinkStyle = !this._finalNuxInTour &&
-      this._completePredicate == null
-      ? LINK_ENABLED
-      : LINK_DISABLED;
+    const nextLinkStyle =
+      !this._finalNuxInTour && this._completePredicate == null
+        ? LINK_ENABLED
+        : LINK_DISABLED;
 
     // Additionally, the `Next` button may be disabled if an action must be completed.
     // In this case we show a hint to the user.
     const nextLinkButton = `\
       <span
-        class="nuclide-nux-link ${nextLinkStyle} nuclide-nux-next-link-${this._index}"
-        ${nextLinkStyle === LINK_DISABLED ? 'title="Interact with the indicated UI element to proceed."' : ''}>
+        class="nuclide-nux-link ${nextLinkStyle} nuclide-nux-next-link-${this
+      ._index}"
+        ${nextLinkStyle === LINK_DISABLED
+          ? 'title="Interact with the indicated UI element to proceed."'
+          : ''}>
         Continue
       </span>
     `;
@@ -227,7 +230,8 @@ export class NuxView {
             ${this._content}
         </div>
         <div class="nuclide-nux-navigation">
-          <span class="nuclide-nux-link ${LINK_ENABLED} nuclide-nux-dismiss-link-${this._index}">
+          <span class="nuclide-nux-link ${LINK_ENABLED} nuclide-nux-dismiss-link-${this
+      ._index}">
             ${!this._finalNuxInTour ? 'Dismiss' : 'Complete'} Tour
           </span>
           ${!this._finalNuxInTour ? nextLinkButton : ''}

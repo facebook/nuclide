@@ -1,15 +1,17 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
 import {Range} from 'atom';
+import semver from 'semver';
 import temp from 'temp';
 import * as config from '../lib/config';
 import CodeFormatManager from '../lib/CodeFormatManager';
@@ -28,8 +30,8 @@ describe('CodeFormatManager', () => {
     waitsForPromise(async () => {
       const manager = new CodeFormatManager();
       manager.addRangeProvider({
-        selector: 'text.plain.null-grammar',
-        inclusionPriority: 1,
+        grammarScopes: ['text.plain.null-grammar'],
+        priority: 1,
         formatCode: () =>
           Promise.resolve([
             {
@@ -43,7 +45,7 @@ describe('CodeFormatManager', () => {
       textEditor.setText('abc');
       atom.commands.dispatch(
         atom.views.getView(textEditor),
-        'nuclide-code-format:format-code',
+        'code-format:format-code',
       );
       waitsFor(() => textEditor.getText() === 'def');
     });
@@ -53,15 +55,15 @@ describe('CodeFormatManager', () => {
     waitsForPromise(async () => {
       const manager = new CodeFormatManager();
       manager.addFileProvider({
-        selector: 'text.plain.null-grammar',
-        inclusionPriority: 1,
+        grammarScopes: ['text.plain.null-grammar'],
+        priority: 1,
         formatEntireFile: () => Promise.resolve({formatted: 'ghi'}),
       });
 
       textEditor.setText('abc');
       atom.commands.dispatch(
         atom.views.getView(textEditor),
-        'nuclide-code-format:format-code',
+        'code-format:format-code',
       );
       waitsFor(() => textEditor.getText() === 'ghi');
     });
@@ -71,8 +73,8 @@ describe('CodeFormatManager', () => {
     waitsForPromise(async () => {
       const manager = new CodeFormatManager();
       const provider = {
-        selector: 'text.plain.null-grammar',
-        inclusionPriority: 1,
+        grammarScopes: ['text.plain.null-grammar'],
+        priority: 1,
         formatAtPosition: () =>
           Promise.resolve([
             {
@@ -103,8 +105,8 @@ describe('CodeFormatManager', () => {
       spyOn(config, 'getFormatOnSave').andReturn(true);
       const manager = new CodeFormatManager();
       manager.addOnSaveProvider({
-        selector: 'text.plain.null-grammar',
-        inclusionPriority: 1,
+        grammarScopes: ['text.plain.null-grammar'],
+        priority: 1,
         formatOnSave: () =>
           Promise.resolve([
             {
@@ -121,25 +123,62 @@ describe('CodeFormatManager', () => {
     });
   });
 
+  // TODO(19829039): remove check
+  if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
+    it('formats an editor on save in 1.19', () => {
+      waitsForPromise(async () => {
+        spyOn(config, 'getFormatOnSave').andReturn(true);
+        const manager = new CodeFormatManager();
+        manager.addOnSaveProvider({
+          grammarScopes: ['text.plain.null-grammar'],
+          priority: 1,
+          formatOnSave: () =>
+            Promise.resolve([
+              {
+                oldRange: new Range([0, 0], [0, 3]),
+                oldText: 'abc',
+                newText: 'def',
+              },
+            ]),
+        });
+
+        textEditor.setText('abc');
+        await textEditor.save();
+        expect(textEditor.getText()).toBe('def');
+      });
+    });
+  }
+
   it('should still save on timeout', () => {
     waitsForPromise(async () => {
       jasmine.Clock.useMock();
       spyOn(config, 'getFormatOnSave').andReturn(true);
       const manager = new CodeFormatManager();
       manager.addRangeProvider({
-        selector: 'text.plain.null-grammar',
-        inclusionPriority: 1,
+        grammarScopes: ['text.plain.null-grammar'],
+        priority: 1,
         formatCode: () => new Promise(() => {}),
       });
 
       const spy = spyOn(textEditor.getBuffer(), 'save').andCallThrough();
       textEditor.save();
-      textEditor.save();
+      const savePromise = Promise.resolve(textEditor.save());
+
       // The first save should be pushed through after the 2nd.
-      expect(spy.callCount).toBe(1);
-      jasmine.Clock.tick(3000);
+      waitsFor(() => spy.callCount === 1);
+
+      runs(() => {
+        jasmine.Clock.tick(3000);
+      });
+
       // Hitting the timeout will force the 2nd save through.
-      expect(spy.callCount).toBe(2);
+      waitsFor(() => spy.callCount === 2);
+
+      // The real save should still go through.
+      waitsForPromise(() => savePromise);
+
+      // Sanity check.
+      runs(() => expect(spy.callCount).toBe(2));
     });
   });
 });

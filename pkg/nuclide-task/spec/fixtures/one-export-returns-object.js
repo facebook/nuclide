@@ -16,4 +16,5 @@ const theFunction = (extraProp: mixed): Object => {
   };
 };
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = theFunction;

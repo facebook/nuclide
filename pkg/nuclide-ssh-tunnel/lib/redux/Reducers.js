@@ -9,24 +9,34 @@
  * @format
  */
 
-import type {Action, Tunnel} from '../types';
+import type {Action, Tunnel, OpenTunnel} from '../types';
 
 import * as Actions from './Actions';
 import Immutable from 'immutable';
+import invariant from 'assert';
 
 export function openTunnels(
-  state: Immutable.Map<Tunnel, () => void> = new Immutable.Map(),
+  state: Immutable.Map<Tunnel, OpenTunnel> = new Immutable.Map(),
   action: Action,
 ) {
   switch (action.type) {
     case Actions.ADD_OPEN_TUNNEL:
-      const {tunnel, close} = action.payload;
-      return state.set(tunnel, close);
+      const {close, tunnel} = action.payload;
+      return state.set(tunnel, {
+        close,
+        state: 'initializing',
+      });
     case Actions.CLOSE_TUNNEL:
       const toClose = action.payload.tunnel;
-      const closeTunnel = state.get(toClose);
-      closeTunnel();
+      const openTunnel = state.get(toClose);
+      openTunnel.close(action.payload.error);
       return state.delete(toClose);
+    case Actions.SET_TUNNEL_STATE:
+      invariant(state.get(action.payload.tunnel) != null);
+      return state.update(action.payload.tunnel, value => ({
+        ...value,
+        state: action.payload.state,
+      }));
     default:
       return state;
   }

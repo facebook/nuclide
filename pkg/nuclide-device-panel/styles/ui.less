@@ -1,0 +1,63 @@
+@import "ui-variables";
+
+.nuclide-device-panel-container {
+  flex-direction: column;
+  padding: 5px 5px 0px 5px;
+  flex: 0 0 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.nuclide-device-panel-text-with-icon {
+  .icon {
+    vertical-align: bottom;
+  }
+  .icon:hover {
+    color: @text-color-highlight;
+  }
+  .icon::before {
+    vertical-align: bottom;
+    margin-right: 0px;
+  }
+}
+
+.nuclide-device-panel-tasks-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.nuclide-device-panel-disconnected-icon {
+  .icon {
+    color: #cb2431;
+  }
+}
+
+.nuclide-device-panel-host-selector {
+  padding-bottom: 5px;
+}
+
+.nuclide-device-panel-debug-button {
+  text-align: center;
+  cursor: pointer;
+}
+
+.nuclide-device-panel-device-action-button {
+  text-align: center;
+  cursor: pointer;
+}
+
+.nuclide-device-panel-device-list-error {
+  color: red;
+  white-space: normal;
+}
+
+.nuclide-device-panel-process-table {
+  font-size: 0.8em;
+  .icon:hover {
+    color: @text-color-highlight;
+  }
+  .icon::before {
+    margin-right: 0px;
+    vertical-align: top;
+  }
+}

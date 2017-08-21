@@ -230,6 +230,7 @@ type electron$BrowserWindowEvents =
   | 'leave-full-screen'
   | 'enter-html-full-screen'
   | 'leave-html-full-screen'
+  | 'context-menu'
   | 'app-command'         // Windows
   | 'scroll-touch-begin'  // macOS
   | 'scroll-touch-end'    // macOS

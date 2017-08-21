@@ -11,13 +11,11 @@
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
+import {WORKSPACE_VIEW_URI} from '../lib/HealthPaneItem';
 
 const openHealthPane = () => {
-  atom.commands.dispatch(
-    atom.views.getView(atom.workspace),
-    'nuclide-health:toggle',
-    {visible: true},
-  );
+  // eslint-disable-next-line nuclide-internal/atom-apis
+  atom.workspace.open(WORKSPACE_VIEW_URI);
 };
 
 function findHealthPaneAndItem(): {pane: ?atom$Pane, item: ?Object} {
@@ -37,18 +35,7 @@ describe('Health', () => {
       {label: 'workspace views to load', timeout: 10000},
       async () => {
         jasmine.unspy(window, 'setTimeout');
-        const WORKSPACE_VIEW_DIRS = [
-          nuclideUri.dirname(
-            require.resolve('../../nuclide-workspace-views/package.json'),
-          ),
-          nuclideUri.dirname(
-            require.resolve(
-              '../../nuclide-workspace-view-locations/package.json',
-            ),
-          ),
-        ];
         await Promise.all([
-          ...WORKSPACE_VIEW_DIRS.map(dir => atom.packages.activatePackage(dir)),
           atom.packages.activatePackage(nuclideUri.join(__dirname, '..')),
         ]);
       },

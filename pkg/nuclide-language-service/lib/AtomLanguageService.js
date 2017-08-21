@@ -20,12 +20,13 @@ import type {TypeHintConfig} from './TypeHintProvider';
 import type {CodeFormatConfig} from './CodeFormatProvider';
 import type {FindReferencesConfig} from './FindReferencesProvider';
 import type {EvaluationExpressionConfig} from './EvaluationExpressionProvider';
+import type {CodeActionConfig} from './CodeActionProvider';
 import type {
   AutocompleteConfig,
   OnDidInsertSuggestionCallback,
 } from './AutocompleteProvider';
 import type {DiagnosticsConfig} from './DiagnosticsProvider';
-import type {BusySignalService} from '../../nuclide-busy-signal';
+import type {BusySignalService} from 'atom-ide-ui';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {Observable} from 'rxjs';
@@ -40,6 +41,7 @@ import {FindReferencesProvider} from './FindReferencesProvider';
 import {EvaluationExpressionProvider} from './EvaluationExpressionProvider';
 import {AutocompleteProvider} from './AutocompleteProvider';
 import {registerDiagnostics} from './DiagnosticsProvider';
+import {CodeActionProvider} from './CodeActionProvider';
 import {getLogger} from 'log4js';
 
 export type BusySignalProvider = {
@@ -59,6 +61,7 @@ export type AtomLanguageServiceConfig = {|
   evaluationExpression?: EvaluationExpressionConfig,
   autocomplete?: AutocompleteConfig,
   diagnostics?: DiagnosticsConfig,
+  codeAction?: CodeActionConfig,
 |};
 
 export class AtomLanguageService<T: LanguageService> {
@@ -105,7 +108,7 @@ export class AtomLanguageService<T: LanguageService> {
     this._subscriptions.add(
       atom.packages.serviceHub.consume(
         'atom-ide-busy-signal',
-        '0.2.0',
+        '0.1.0',
         service => {
           this._subscriptions.add(service);
           busySignalService = service;
@@ -122,7 +125,7 @@ export class AtomLanguageService<T: LanguageService> {
       this._subscriptions.add(
         CodeHighlightProvider.register(
           this._config.name,
-          this._selector(),
+          this._config.grammars,
           highlightConfig,
           this._connectionToLanguageService,
         ),
@@ -134,7 +137,7 @@ export class AtomLanguageService<T: LanguageService> {
       this._subscriptions.add(
         OutlineViewProvider.register(
           this._config.name,
-          this._selector(),
+          this._config.grammars,
           outlineConfig,
           this._connectionToLanguageService,
         ),
@@ -182,7 +185,7 @@ export class AtomLanguageService<T: LanguageService> {
       this._subscriptions.add(
         CodeFormatProvider.register(
           this._config.name,
-          this._selector(),
+          this._config.grammars,
           codeFormatConfig,
           this._connectionToLanguageService,
           busySignalProvider,
@@ -240,6 +243,18 @@ export class AtomLanguageService<T: LanguageService> {
         ),
       );
     }
+
+    const codeActionConfig = this._config.codeAction;
+    if (codeActionConfig != null) {
+      this._subscriptions.add(
+        CodeActionProvider.register(
+          this._config.name,
+          this._config.grammars,
+          codeActionConfig,
+          this._connectionToLanguageService,
+        ),
+      );
+    }
   }
 
   async getLanguageServiceForUri(fileUri: ?NuclideUri): Promise<?T> {
@@ -265,6 +280,17 @@ export class AtomLanguageService<T: LanguageService> {
       .observeValues()
       .switchMap(languageService => {
         return Observable.fromPromise(languageService);
+      });
+  }
+
+  observeConnectionLanguageEntries(): Observable<[?ServerConnection, T]> {
+    return this._connectionToLanguageService
+      .observeEntries()
+      .switchMap(([connection, servicePromise]) => {
+        return Observable.fromPromise(servicePromise).map(languageService => [
+          connection,
+          languageService,
+        ]);
       });
   }
 

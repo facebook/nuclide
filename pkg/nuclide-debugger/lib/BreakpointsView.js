@@ -30,8 +30,12 @@ export class BreakpointsView extends React.PureComponent {
     const actions = model.getActions();
 
     return (
-      <div className={classnames('nuclide-debugger-container-new')}>
-        <div className="nuclide-debugger-pane-content">
+      <div
+        className={classnames(
+          'nuclide-debugger-container-new',
+          'nuclide-debugger-breakpoint-list',
+        )}>
+        <div className="nuclide-debugger-pane-content ">
           <BreakpointListComponent
             actions={actions}
             breakpointStore={model.getBreakpointStore()}

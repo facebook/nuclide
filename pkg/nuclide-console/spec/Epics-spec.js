@@ -11,7 +11,7 @@
 
 import type {AppState} from '../lib/types';
 
-import {ActionsObservable} from '../../commons-node/redux-observable';
+import {ActionsObservable} from 'nuclide-commons/redux-observable';
 import * as Actions from '../lib/redux/Actions';
 import * as Epics from '../lib/redux/Epics';
 import invariant from 'assert';

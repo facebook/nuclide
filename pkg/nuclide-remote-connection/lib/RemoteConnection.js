@@ -10,15 +10,11 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  HgRepositoryDescription,
-} from '../../nuclide-source-control-helpers';
+import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
 
 import typeof * as FileWatcherServiceType from '../../nuclide-filewatcher-rpc';
-import typeof * as FileSystemServiceType
-  from '../../nuclide-server/lib/services/FileSystemService';
-import typeof * as SourceControlService
-  from '../../nuclide-server/lib/services/SourceControlService';
+import typeof * as FileSystemServiceType from '../../nuclide-server/lib/services/FileSystemService';
+import typeof * as SourceControlService from '../../nuclide-server/lib/services/SourceControlService';
 import type {RemoteFile} from './RemoteFile';
 import type {RemoteDirectory} from './RemoteDirectory';
 
@@ -128,9 +124,10 @@ export class RemoteConnection {
       const config = {...connectionConfig, cwd, displayTitle};
       return await RemoteConnection.findOrCreate(config);
     } catch (e) {
-      const log = e.name === 'VersionMismatchError'
-        ? logger.warn.bind(logger)
-        : logger.error.bind(logger);
+      const log =
+        e.name === 'VersionMismatchError'
+          ? logger.warn.bind(logger)
+          : logger.error.bind(logger);
       log(`Failed to reuse connectionConfiguration for ${hostOrIp}`, e);
       return null;
     }

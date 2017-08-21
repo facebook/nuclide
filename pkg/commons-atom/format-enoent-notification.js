@@ -41,7 +41,9 @@ export default function formatEnoentNotification(options: Options): Result {
 3. Atom doesn't know about PATH modifications made in your shell config (".bash_profile", ".zshrc",
    etc.). If *${toolName}* is installed and you can run it successfully from your terminal using the
    command \`${command}\`, Nuclide may just not be looking in the right place. Update the command by
-   changing the **${maybeToString(settingTitle)}** setting (under **${categoryTitle}**) on the
+   changing the **${maybeToString(
+     settingTitle,
+   )}** setting (under **${categoryTitle}**) on the
    Nuclide settings page.`;
 
   return {

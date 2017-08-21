@@ -25,7 +25,7 @@
         "title": "Shutdown Server After Disconnect",
         "type": "boolean",
         "description": "Shutdown nuclide server after all remote projects are disconnected",
-        "default": true
+        "default": false
       }
     },
     "packageType": "Atom",
@@ -62,6 +62,11 @@
     "nuclide-notifications.provideRaiseNativeNotification": {
       "versions": {
         "0.0.0": "consumeNotifications"
+      }
+    },
+    "working-sets.provider": {
+      "versions": {
+        "0.0.0": "consumeWorkingSetsStore"
       }
     }
   }

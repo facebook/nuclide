@@ -68,9 +68,10 @@ let formattingDiv;
  * and stuff really easily and only happens once per notification so it's okay.
  */
 function stripFormatting(raw: string): string {
-  const div = formattingDiv == null
-    ? (formattingDiv = document.createElement('div'))
-    : formattingDiv;
+  const div =
+    formattingDiv == null
+      ? (formattingDiv = document.createElement('div'))
+      : formattingDiv;
   div.innerHTML = marked(raw);
   return div.innerText || '';
 }

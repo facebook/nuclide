@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
 import {getDefaultEvaluationExpression} from '../../nuclide-debugger-base';
 

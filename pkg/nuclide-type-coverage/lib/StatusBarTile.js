@@ -94,13 +94,14 @@ export class StatusBarTile extends React.Component {
       case 'result':
         const coverageResult = result.result;
         this.setState({
-          result: coverageResult == null
-            ? null
-            : {
-                percentage: coverageResult.percentage,
-                providerName: result.provider.displayName,
-                icon: result.provider.icon,
-              },
+          result:
+            coverageResult == null
+              ? null
+              : {
+                  percentage: coverageResult.percentage,
+                  providerName: result.provider.displayName,
+                  icon: result.provider.icon,
+                },
           pending: false,
         });
         break;

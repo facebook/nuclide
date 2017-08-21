@@ -9,14 +9,34 @@
  * @format
  */
 
-import type {ActionsObservable} from '../../commons-node/redux-observable';
-import type {Action, Store} from './types';
+import type {ActionsObservable} from 'nuclide-commons/redux-observable';
+import type {Action, Store, Parameter} from './types';
 
 import * as Actions from './Actions';
 import {Observable} from 'rxjs';
+import querystring from 'querystring';
 import invariant from 'assert';
 import xfetch from '../../commons-node/xfetch';
 import {track} from '../../nuclide-analytics';
+
+function _formatUri(
+  method: string,
+  uri: string,
+  parameters: Array<Parameter>,
+): string {
+  // Generate object of valid and non-duplicate parameter key/value pairs
+  const queryParameters = parameters.reduce((paramObj, param) => {
+    if (param && param.key) {
+      const trimmedKey = param.key.trim();
+      if (!paramObj.hasOwnProperty(trimmedKey)) {
+        paramObj[trimmedKey] = param.value.trim();
+      }
+    }
+    return paramObj;
+  }, {});
+  const queryString = querystring.stringify(queryParameters);
+  return `${uri}${queryString ? '?' : ''}${queryString}`;
+}
 
 export function sendHttpRequest(
   actions: ActionsObservable<Action>,
@@ -28,12 +48,17 @@ export function sendHttpRequest(
       .do(action => {
         invariant(action.type === Actions.SEND_REQUEST);
         const credentials = 'include'; // We always want to send cookies.
-        const {uri, method, headers, body} = store.getState();
-        const options = method === 'POST'
-          ? {method, credentials, headers, body}
-          : {method, credentials, headers};
-        track('nuclide-http-request-sender:http-request', {uri, options});
-        xfetch(uri, options);
+        const {uri, method, headers, body, parameters} = store.getState();
+        const formattedUri = encodeURI(_formatUri(method, uri, parameters));
+        const options =
+          method === 'POST'
+            ? {method, credentials, headers, body}
+            : {method, credentials, headers};
+        track('nuclide-http-request-sender:http-request', {
+          formattedUri,
+          options,
+        });
+        xfetch(formattedUri, options);
       })
       // This epic is just for side-effects.
       .ignoreElements()

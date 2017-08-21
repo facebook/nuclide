@@ -1,0 +1,41 @@
+@import "ui-variables";
+
+.code-search-provider-result-context {
+  margin-left: 1em;
+}
+
+.code-search-provider-result-context-rest,
+.code-search-provider-result-context-match {
+  font-family: monospace;
+}
+
+.code-search-provider-result-context-match {
+  color: @text-color-highlight;
+  font-weight: bold;
+}
+
+.code-search-provider-result-context-rest {
+  color: @text-color;
+}
+
+/**
+ * Crazy hack to make the highlight row be under the second line instead of
+ * the first. We use negative margin in order to shift the element in the flow
+ * by one row and use position: relative and negative top to restore it back
+ * when it it displayed.
+ */
+
+@height: 25px;
+// One: @ui-line-height
+// Atom: @component-line-height
+
+.code-search-provider-result-first-result-for-path {
+  margin-top: @height;
+  margin-bottom: -@height;
+  position: relative;
+  top: -@height;
+}
+
+.selected .code-search-provider-result-path {
+  color: @text-color;
+}

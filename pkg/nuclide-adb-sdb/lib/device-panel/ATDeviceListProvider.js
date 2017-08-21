@@ -9,46 +9,28 @@
  * @format
  */
 
-import {
-  observeAndroidDevicesX,
-  observeTizenDevicesX,
-} from '../../../nuclide-adb-sdb-base/lib/DevicePoller';
-import {Observable} from 'rxjs';
-
-import typeof * as AdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/AdbService';
-import typeof * as SdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/SdbService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   Device,
   DeviceListProvider,
-} from '../../../nuclide-devices/lib/types';
-import type {Expected} from '../../../nuclide-expected';
+} from '../../../nuclide-device-panel/lib/types';
+import type {Expected} from '../../../commons-node/expected';
+import type {Bridge} from '../types';
+
+import {Observable} from 'rxjs';
 
 export class ATDeviceListProvider implements DeviceListProvider {
-  _type: string;
-  _rpcFactory: (host: NuclideUri) => AdbService | SdbService;
-  _dbAvailable: Map<NuclideUri, Promise<boolean>>;
+  _bridge: Bridge;
 
-  constructor(
-    type: string,
-    rpcFactory: (host: NuclideUri) => AdbService | SdbService,
-  ) {
-    this._type = type;
-    this._rpcFactory = rpcFactory;
-    this._dbAvailable = new Map();
+  constructor(bridge: Bridge) {
+    this._bridge = bridge;
   }
 
   getType(): string {
-    return this._type;
+    return this._bridge.name;
   }
 
   observe(host: NuclideUri): Observable<Expected<Device[]>> {
-    if (this._type === 'android') {
-      return observeAndroidDevicesX(host);
-    } else {
-      return observeTizenDevicesX(host);
-    }
+    return this._bridge.observeDevicesX(host);
   }
 }

@@ -46,6 +46,7 @@ type Props = {
   // Callback when a file's checkbox is toggled
   onFileChecked?: (filePath: NuclideUri) => void,
   onFileChosen: (filePath: NuclideUri) => void,
+  onMarkFileResolved?: (filePath: NuclideUri) => void,
   getRevertTargetRevision?: () => ?string,
   openInDiffViewOption?: boolean,
 };
@@ -66,17 +67,6 @@ export class MultiRootChangedFilesView extends React.PureComponent {
     checkedFiles: null,
     onFileChecked: () => {},
   };
-
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleAddFile = this._handleAddFile.bind(this);
-    (this: any)._handleDeleteFile = this._handleDeleteFile.bind(this);
-    (this: any)._handleForgetFile = this._handleForgetFile.bind(this);
-    (this: any)._handleOpenFileInDiffView = this._handleOpenFileInDiffView.bind(
-      this,
-    );
-    (this: any)._handleRevertFile = this._handleRevertFile.bind(this);
-  }
 
   componentDidMount(): void {
     this._subscriptions = new UniversalDisposable();
@@ -273,54 +263,54 @@ export class MultiRootChangedFilesView extends React.PureComponent {
     return analyticsSurface == null ? 'n/a' : analyticsSurface;
   }
 
-  _handleAddFile(
+  _handleAddFile = (
     filePath: string,
     analyticsSource?: string = DEFAULT_ANALYTICS_SOURCE_KEY,
-  ): void {
+  ): void => {
     addPath(filePath);
     track(`${ANALYTICS_PREFIX}-add-file`, {
       source: analyticsSource,
       surface: this._getAnalyticsSurface(),
     });
-  }
+  };
 
-  _handleDeleteFile(
+  _handleDeleteFile = (
     filePath: string,
     analyticsSource?: string = DEFAULT_ANALYTICS_SOURCE_KEY,
-  ): void {
+  ): void => {
     confirmAndDeletePath(filePath);
     track(`${ANALYTICS_PREFIX}-delete-file`, {
       source: analyticsSource,
       surface: this._getAnalyticsSurface(),
     });
-  }
+  };
 
-  _handleForgetFile(
+  _handleForgetFile = (
     filePath: string,
     analyticsSource?: string = DEFAULT_ANALYTICS_SOURCE_KEY,
-  ): void {
+  ): void => {
     forgetPath(filePath);
     track(`${ANALYTICS_PREFIX}-forget-file`, {
       source: analyticsSource,
       surface: this._getAnalyticsSurface(),
     });
-  }
+  };
 
-  _handleOpenFileInDiffView(
+  _handleOpenFileInDiffView = (
     filePath: string,
     analyticsSource?: string = DEFAULT_ANALYTICS_SOURCE_KEY,
-  ): void {
+  ): void => {
     openFileInDiffView(filePath);
     track(`${ANALYTICS_PREFIX}-file-in-diff-view`, {
       source: analyticsSource,
       surface: this._getAnalyticsSurface(),
     });
-  }
+  };
 
-  _handleRevertFile(
+  _handleRevertFile = (
     filePath: string,
     analyticsSource?: string = DEFAULT_ANALYTICS_SOURCE_KEY,
-  ): void {
+  ): void => {
     const {getRevertTargetRevision} = this.props;
     let targetRevision = null;
     if (getRevertTargetRevision != null) {
@@ -331,7 +321,7 @@ export class MultiRootChangedFilesView extends React.PureComponent {
       source: analyticsSource,
       surface: this._getAnalyticsSurface(),
     });
-  }
+  };
 
   render(): React.Element<any> {
     const {
@@ -344,11 +334,15 @@ export class MultiRootChangedFilesView extends React.PureComponent {
       hideEmptyFolders,
       onFileChecked,
       onFileChosen,
+      onMarkFileResolved,
+      openInDiffViewOption,
       selectedFile,
     } = this.props;
     if (fileStatusesByRoot.size === 0) {
       return (
-        <TreeList showArrows={true}><TreeItem>No changes</TreeItem></TreeList>
+        <TreeList showArrows={true}>
+          <TreeItem>No changes</TreeItem>
+        </TreeList>
       );
       // The 'showArrows' is so CSS styling gives this the same indent as
       // real changes do (which themselves have showArrows=true).
@@ -359,12 +353,10 @@ export class MultiRootChangedFilesView extends React.PureComponent {
         {Array.from(
           fileStatusesByRoot.entries(),
         ).map(([root, fileStatuses]) => {
-          const fileChanges = fileChangesByRoot == null
-            ? null
-            : fileChangesByRoot.get(root);
-          const checkedFiles = checkedFilesByRoot == null
-            ? null
-            : checkedFilesByRoot.get(root);
+          const fileChanges =
+            fileChangesByRoot == null ? null : fileChangesByRoot.get(root);
+          const checkedFiles =
+            checkedFilesByRoot == null ? null : checkedFilesByRoot.get(root);
           return (
             <ChangedFilesList
               checkedFiles={checkedFiles}
@@ -380,7 +372,9 @@ export class MultiRootChangedFilesView extends React.PureComponent {
               onFileChecked={onFileChecked}
               onFileChosen={onFileChosen}
               onForgetFile={this._handleForgetFile}
+              onMarkFileResolved={onMarkFileResolved}
               onOpenFileInDiffView={this._handleOpenFileInDiffView}
+              openInDiffViewOption={openInDiffViewOption || false}
               onRevertFile={this._handleRevertFile}
               rootPath={root}
               selectedFile={selectedFile}

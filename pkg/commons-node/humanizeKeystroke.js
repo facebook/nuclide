@@ -80,9 +80,8 @@ function humanizeKey(key: string, platform: ?string): string | Array<string> {
   if (!key) {
     return key;
   }
-  const modifierKeyMap = platform === 'darwin'
-    ? MAC_MODIFIER_KEYMAP
-    : NON_MAC_MODIFIER_KEYMAP;
+  const modifierKeyMap =
+    platform === 'darwin' ? MAC_MODIFIER_KEYMAP : NON_MAC_MODIFIER_KEYMAP;
   if (modifierKeyMap[key]) {
     return modifierKeyMap[key];
   }
@@ -119,6 +118,7 @@ export default function humanizeKeystroke(
   if (!keystroke) {
     return keystroke;
   }
+  // flowlint-next-line sketchy-null-string:off
   platform = platform || process.platform;
   const separator = platform === 'darwin' ? '' : '+';
   let key;

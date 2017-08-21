@@ -48,7 +48,7 @@
       "pythonBinaryPath": {
         "title": "Python Path",
         "type": "string",
-        "default": "/usr/bin/python",
+        "default": "",
         "description": "Path to the python binary used to run the LLDB backend."
       },
       "lldbPythonPath": {
@@ -78,6 +78,19 @@
       "description": "LLDB debugger provider.",
       "versions": {
         "0.0.0": "createDebuggerProvider"
+      }
+    },
+    "nuclide-debugger.native-debugger-service": {
+      "description": "LLDB debugger provider.",
+      "versions": {
+        "0.0.0": "createNativeDebuggerService"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide.buck-platforms": {
+      "versions": {
+        "0.0.0": "consumePlatformService"
       }
     }
   }

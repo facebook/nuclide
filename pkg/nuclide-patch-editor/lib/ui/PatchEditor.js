@@ -31,14 +31,6 @@ export default class PatchEditor extends React.Component {
   props: Props;
   _patch: Array<diffparser$FileDiff>;
 
-  constructor(props: Props) {
-    super(props);
-
-    (this: any)._onClickConfirm = this._onClickConfirm.bind(this);
-    (this: any)._onClickDirectEdit = this._onClickDirectEdit.bind(this);
-    (this: any)._onClickQuit = this._onClickQuit.bind(this);
-  }
-
   render(): React.Element<any> {
     const files = Array.from(this.props.patchData.files.values());
     return (
@@ -62,17 +54,17 @@ export default class PatchEditor extends React.Component {
     );
   }
 
-  _onClickConfirm(): void {
+  _onClickConfirm = (): void => {
     this.props.onConfirm(patchToString(this.props.patchData));
-  }
+  };
 
   // The "Direct Edit" button removes the patch editor UI and allows the user
   // to edit the text representation of the patch directly
-  _onClickDirectEdit(): void {
+  _onClickDirectEdit = (): void => {
     this.props.onManualEdit();
-  }
+  };
 
-  _onClickQuit(): void {
+  _onClickQuit = (): void => {
     this.props.onQuit();
-  }
+  };
 }

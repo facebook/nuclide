@@ -37,7 +37,7 @@ class LocalTestContext {
     this._projectPath = null;
 
     beforeEach(() => {
-      waitsForPromise({label: 'local test setup'}, async () => {
+      waitsForPromise({label: 'local test setup', timeout: 10000}, async () => {
         jasmineIntegrationTestSetup();
         await activateAllPackages();
       });

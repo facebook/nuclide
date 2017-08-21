@@ -9,6 +9,7 @@
  * @format
  */
 
+// flowlint-next-line untyped-type-import:off
 import type Immutable from 'immutable';
 
 export class LazyTreeNode {
@@ -87,6 +88,7 @@ export class LazyTreeNode {
    */
   getKey(): string {
     let key = this.__key;
+    // flowlint-next-line sketchy-null-string:off
     if (!key) {
       // TODO(mbolin): Escape slashes.
       const prefix = this.__parent ? this.__parent.getKey() : '/';

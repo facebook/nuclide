@@ -14,6 +14,7 @@ import type {ServerConnection} from '..';
 import invariant from 'assert';
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {observeStream} from 'nuclide-commons/stream';
 import crypto from 'crypto';
 import {Subject} from 'rxjs';
 import temp from 'temp';
@@ -433,6 +434,59 @@ describe('RemoteFile', () => {
       mockWatch.next({type: 'change', path: 'test2'});
       expect(deletionHandler).not.toHaveBeenCalled();
       expect(changeHandler).toHaveBeenCalled();
+    });
+  });
+
+  describe('RemoteFile::createReadStream()', () => {
+    it('is able to read file contents', () => {
+      waitsForPromise(async () => {
+        const tempDir = temp.mkdirSync('stream_test');
+        const filePath = nuclideUri.join(tempDir, 'file.txt');
+        fs.writeFileSync(filePath, 'test1234');
+
+        const file = new RemoteFile(connectionMock, filePath);
+        const readStream = file.createReadStream();
+        const data = await observeStream(readStream).toArray().toPromise();
+        expect(data).toEqual(['test1234']);
+      });
+    });
+
+    it('handles errors', () => {
+      waitsForPromise(async () => {
+        const file = new RemoteFile(connectionMock, 'test');
+        const readStream = file.createReadStream();
+        const data = await observeStream(readStream)
+          .toArray()
+          .toPromise()
+          .catch(e => e);
+        expect(data instanceof Error).toBe(true);
+      });
+    });
+  });
+
+  describe('RemoteFile::createWriteStream()', () => {
+    it('is able to write file contents', () => {
+      waitsForPromise(async () => {
+        const tempDir = temp.mkdirSync('stream_test');
+        const filePath = nuclideUri.join(tempDir, 'file.txt');
+        const file = new RemoteFile(connectionMock, filePath);
+        const writeStream = file.createWriteStream();
+        writeStream.write('test1234');
+        await new Promise(resolve => writeStream.end(resolve));
+        expect(fs.readFileSync(filePath, 'utf8')).toBe('test1234');
+      });
+    });
+
+    it('handles errors', () => {
+      waitsForPromise(async () => {
+        const file = new RemoteFile(connectionMock, 'a/');
+        const writeStream = file.createWriteStream();
+        writeStream.write('test1234');
+        let error: ?Error = null;
+        writeStream.on('error', e => (error = e));
+        await new Promise(resolve => writeStream.end(resolve));
+        expect(error).not.toBeNull();
+      });
     });
   });
 });

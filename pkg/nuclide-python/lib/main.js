@@ -9,17 +9,12 @@
  * @format
  */
 
-import type {BusySignalService} from '../../nuclide-busy-signal';
-import type {LinterProvider} from 'atom-ide-ui';
-import typeof * as PythonService
-  from '../../nuclide-python-rpc/lib/PythonService';
+import type {BusySignalService, LinterProvider} from 'atom-ide-ui';
+import type {PlatformService} from '../../nuclide-buck/lib/PlatformService';
+import typeof * as PythonService from '../../nuclide-python-rpc/lib/PythonService';
 import type {ServerConnection} from '../../nuclide-remote-connection';
-import type {
-  AtomLanguageServiceConfig,
-} from '../../nuclide-language-service/lib/AtomLanguageService';
-import type {
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 
 import {GRAMMARS, GRAMMAR_SET} from './constants';
 import {getLintOnFly} from './config';
@@ -33,6 +28,7 @@ import {
   getAutocompleteArguments,
   getIncludeOptionalArguments,
 } from './config';
+import {providePythonPlatformGroup} from './pythonPlatform';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const PYTHON_SERVICE_NAME = 'PythonService';
@@ -63,14 +59,14 @@ const atomConfig: AtomLanguageServiceConfig = {
     analyticsEventName: 'python.outline',
   },
   codeFormat: {
-    version: '0.0.0',
+    version: '0.1.0',
     priority: 1,
     analyticsEventName: 'python.formatCode',
     canFormatRanges: false,
     canFormatAtPosition: false,
   },
   findReferences: {
-    version: '0.0.0',
+    version: '0.1.0',
     analyticsEventName: 'python.get-references',
   },
   autocomplete: {
@@ -81,13 +77,13 @@ const atomConfig: AtomLanguageServiceConfig = {
     excludeLowerPriority: false,
     analyticsEventName: 'nuclide-python:getAutocompleteSuggestions',
     autocompleteCacherConfig: null,
-    onDidInsertSuggestionAnalyticsEventName: 'nuclide-python.autocomplete-chosen',
+    onDidInsertSuggestionAnalyticsEventName:
+      'nuclide-python.autocomplete-chosen',
   },
   definition: {
     version: '0.1.0',
     priority: 20,
     definitionEventName: 'python.get-definition',
-    definitionByIdEventName: 'python.get-definition-by-id',
   },
 };
 
@@ -106,7 +102,6 @@ class Activation {
   }
 
   consumeBusySignal(service: BusySignalService): IDisposable {
-    this._subscriptions.add(service);
     this._busySignalService = service;
     return new UniversalDisposable(() => {
       this._busySignalService = null;
@@ -129,6 +124,10 @@ class Activation {
         );
       },
     };
+  }
+
+  consumePlatformService(service: PlatformService): void {
+    this._subscriptions.add(service.register(providePythonPlatformGroup));
   }
 
   dispose(): void {

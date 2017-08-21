@@ -11,3 +11,7 @@
 
 export {AtomLanguageService} from './AtomLanguageService';
 export {getHostServices} from './HostServices';
+export {
+  updateAutocompleteResults,
+  updateAutocompleteFirstResults,
+} from './AutocompleteProvider';

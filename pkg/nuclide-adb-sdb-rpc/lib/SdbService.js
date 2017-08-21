@@ -9,87 +9,79 @@
  * @format
  */
 
-import {pathForDebugBridge, getStore} from './AdbSdbPathStore';
-import {ConnectableObservable, Observable} from 'rxjs';
-import {Sdb} from './Sdb';
-
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
-import type {DeviceDescription, DBPathsInfo} from './types';
+import type {DeviceDescription, DebugBridgeFullConfig, DeviceId} from './types';
+
+import {getStore} from './common/Store';
+import {ConnectableObservable} from 'rxjs';
+import {Sdb} from './bridges/Sdb';
+import {Processes} from './common/Processes';
+import {Devices} from './common/Devices';
+
+const SDB = 'sdb';
 
 export async function registerSdbPath(
   id: string,
   path: NuclideUri,
   priority: number = -1,
 ): Promise<void> {
-  getStore('sdb').registerPath(id, {path, priority});
+  getStore(SDB).registerPath(id, {path, priority});
 }
 
-export async function getCurrentPathsInfo(): Promise<DBPathsInfo> {
-  return getStore('sdb').getCurrentPathsInfo();
+export async function getFullConfig(): Promise<DebugBridgeFullConfig> {
+  return getStore(SDB).getFullConfig();
 }
 
 export async function registerCustomPath(path: ?string): Promise<void> {
-  getStore('adb').registerCustomPath(path);
+  getStore(SDB).registerCustomPath(path);
 }
-
-async function getSdb(): Promise<Sdb> {
-  return new Sdb((await pathForDebugBridge('sdb')));
-}
-
-const sdbObs = Observable.defer(() =>
-  pathForDebugBridge('sdb'),
-).switchMap(sdbPath => Observable.of(new Sdb(sdbPath)));
 
 export function getDeviceInfo(
-  name: string,
+  device: DeviceId,
 ): ConnectableObservable<Map<string, string>> {
-  return sdbObs.switchMap(sdb => sdb.getCommonDeviceInfo(name)).publish();
+  return new Sdb(device).getDeviceInfo().publish();
 }
 
 export function getDeviceList(): ConnectableObservable<
   Array<DeviceDescription>,
 > {
-  return sdbObs.switchMap(sdb => sdb.getDeviceList()).publish();
+  return new Devices(Sdb).getDeviceList().publish();
 }
 
 export async function getPidFromPackageName(
-  device: string,
+  device: DeviceId,
   packageName: string,
 ): Promise<number> {
-  return (await getSdb()).getPidFromPackageName(device, packageName);
+  return new Processes(new Sdb(device)).getPidFromPackageName(packageName);
 }
 
 export async function getFileContentsAtPath(
-  device: string,
+  device: DeviceId,
   path: string,
 ): Promise<string> {
-  return (await getSdb()).getFileContentsAtPath(device, path);
+  return new Sdb(device).getFileContentsAtPath(path);
 }
 
 export function installPackage(
-  device: string,
+  device: DeviceId,
   packagePath: NuclideUri,
 ): ConnectableObservable<LegacyProcessMessage> {
   // TODO(T17463635)
-  return Observable.defer(() => getSdb())
-    .switchMap(d => d.installPackage(device, packagePath))
-    .publish();
+  return new Sdb(device).installPackage(packagePath).publish();
 }
 
 export async function launchApp(
-  device: string,
+  device: DeviceId,
   identifier: string,
 ): Promise<string> {
-  return (await getSdb()).launchApp(device, identifier);
+  return new Sdb(device).launchApp(identifier);
 }
 
 export function uninstallPackage(
-  device: string,
+  device: DeviceId,
   packageName: string,
 ): ConnectableObservable<LegacyProcessMessage> {
   // TODO(T17463635)
-  return Observable.defer(() => getSdb())
-    .switchMap(d => d.uninstallPackage(device, packageName))
-    .publish();
+  return new Sdb(device).uninstallPackage(packageName).publish();
 }

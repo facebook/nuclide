@@ -188,6 +188,9 @@ export class RpcConnection<TransportType: Transport> {
   _calls: Map<number, Call>;
   _options: RpcConnectionOptions;
 
+  // Used to track if the request ID is incrementing atomically
+  _lastRequestId: number;
+
   // Do not call this directly, use factory methods below.
   constructor(
     kind: RpcConnectionKind,
@@ -209,6 +212,7 @@ export class RpcConnection<TransportType: Transport> {
     });
     this._subscriptions = new Map();
     this._calls = new Map();
+    this._lastRequestId = -1;
   }
 
   // Creates a connection on the server side.
@@ -432,6 +436,7 @@ export class RpcConnection<TransportType: Transport> {
           );
         });
         const {trackSampleRate} = this._options;
+        // flowlint-next-line sketchy-null-number:off
         if (trackSampleRate && Math.random() * trackSampleRate <= 1) {
           return trackTiming(
             trackingIdOfMessageAndNetwork(this._objectRegistry, message),
@@ -772,6 +777,32 @@ export class RpcConnection<TransportType: Transport> {
   async _handleRequestMessage(message: RequestMessage): Promise<void> {
     const id = message.id;
 
+    if (
+      id !== this._lastRequestId + 1 &&
+      this._lastRequestId !== -1 &&
+      // We're excluding Unsubscribe messages since they reuse the IDs from
+      // their corresponding Subscribe messages, and will trigger
+      // false positive warnings.
+      message.type !== 'unsubscribe'
+    ) {
+      const eventName = trackingIdOfMessage(this._objectRegistry, message);
+
+      logger.warn(
+        `Out-of-order message received, id === ${id},` +
+          `_lastRequestId === ${this._lastRequestId}`,
+      );
+
+      track('message-id-mismatch', {
+        eventName,
+        id,
+        lastRequestId: this._lastRequestId,
+      });
+    }
+
+    if (id > this._lastRequestId) {
+      this._lastRequestId = id;
+    }
+
     // Here's the main message handler ...
     try {
       switch (message.type) {
@@ -819,13 +850,15 @@ export class RpcConnection<TransportType: Transport> {
   }
 
   _trackLargeResponse(message: RequestMessage, size: number) {
+    // flowlint-next-line sketchy-null-number:off
     if (!this._options.trackSampleRate) {
       return;
     }
     const eventName = trackingIdOfMessage(this._objectRegistry, message);
-    const args = message.args != null
-      ? shorten(JSON.stringify(message.args), 100, '...')
-      : '';
+    const args =
+      message.args != null
+        ? shorten(JSON.stringify(message.args), 100, '...')
+        : '';
     logger.warn(`${eventName}: Large response of size ${size}. Args:`, args);
     track('large-rpc-response', {
       eventName,

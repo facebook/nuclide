@@ -1,16 +1,16 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
 import type {
-  CodeFormatProvider,
   RangeCodeFormatProvider,
   FileCodeFormatProvider,
   OnTypeCodeFormatProvider,
@@ -18,10 +18,12 @@ import type {
 } from './types';
 
 import {Range} from 'atom';
-import {Observable} from 'rxjs';
+import semver from 'semver';
+import {Observable, Subject} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {nextTick} from 'nuclide-commons/observable';
+import {microtask} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import {
   observeEditorDestroy,
   observeTextEditors,
@@ -30,14 +32,12 @@ import {applyTextEditsToBuffer} from 'nuclide-commons-atom/text-edit';
 import {getFormatOnSave, getFormatOnType} from './config';
 import {getLogger} from 'log4js';
 
-const logger = getLogger('atom-ide-code-format');
-
 // Save events are critical, so don't allow providers to block them.
 const SAVE_TIMEOUT = 2500;
 
 type FormatEvent =
   | {
-      type: 'command' | 'save',
+      type: 'command' | 'save' | 'new-save',
       editor: atom$TextEditor,
     }
   | {
@@ -48,13 +48,17 @@ type FormatEvent =
 
 export default class CodeFormatManager {
   _subscriptions: UniversalDisposable;
-  _rangeProviders: Array<RangeCodeFormatProvider> = [];
-  _fileProviders: Array<FileCodeFormatProvider> = [];
-  _onTypeProviders: Array<OnTypeCodeFormatProvider> = [];
-  _onSaveProviders: Array<OnSaveCodeFormatProvider> = [];
+  _rangeProviders: ProviderRegistry<RangeCodeFormatProvider>;
+  _fileProviders: ProviderRegistry<FileCodeFormatProvider>;
+  _onTypeProviders: ProviderRegistry<OnTypeCodeFormatProvider>;
+  _onSaveProviders: ProviderRegistry<OnSaveCodeFormatProvider>;
 
   constructor() {
     this._subscriptions = new UniversalDisposable(this._subscribeToEvents());
+    this._rangeProviders = new ProviderRegistry();
+    this._fileProviders = new ProviderRegistry();
+    this._onTypeProviders = new ProviderRegistry();
+    this._onSaveProviders = new ProviderRegistry();
   }
 
   /**
@@ -68,7 +72,7 @@ export default class CodeFormatManager {
     const commandEvents = observableFromSubscribeFunction(callback =>
       atom.commands.add(
         'atom-text-editor',
-        'nuclide-code-format:format-code',
+        'code-format:format-code',
         callback,
       ),
     ).switchMap(() => {
@@ -124,19 +128,32 @@ export default class CodeFormatManager {
 
     const saveEvents = Observable.create(observer => {
       const realSave = editor.save;
+      const newSaves = new Subject();
       // HACK: intercept the real TextEditor.save and handle it ourselves.
       // Atom has no way of injecting content into the buffer asynchronously
       // before a save operation.
       // If we try to format after the save, and then save again,
       // it's a poor user experience (and also races the text buffer's reload).
-      // TODO(hansonw): Revisit this with the new 1.19 editors.
       const editor_ = (editor: any);
       editor_.save = () => {
-        observer.next();
+        // TODO(19829039): remove check
+        if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
+          // In 1.19, TextEditor.save() is async (and the promise is used).
+          // We can just directly format + save here.
+          newSaves.next('new-save');
+          return this._safeFormatCodeOnSave(editor)
+            .takeUntil(newSaves)
+            .toPromise()
+            .then(() => realSave.call(editor));
+        } else {
+          observer.next('save');
+        }
       };
+      const subscription = newSaves.subscribe(observer);
       return () => {
         // Restore the save function when we're done.
         editor_.save = realSave;
+        subscription.unsubscribe();
       };
     });
 
@@ -149,7 +166,7 @@ export default class CodeFormatManager {
 
     return Observable.merge(
       changeEvents.map(edit => ({type: 'type', editor, edit})),
-      saveEvents.map(() => ({type: 'save', editor})),
+      saveEvents.map(type => ({type, editor})),
     ).takeUntil(
       Observable.merge(observeEditorDestroy(editor), willDestroyEvents),
     );
@@ -166,9 +183,12 @@ export default class CodeFormatManager {
             }
           })
           .catch(err => {
-            atom.notifications.addError('Failed to format code', {
-              description: err.message,
-            });
+            atom.notifications.addError(
+              `Failed to format code: ${err.message}`,
+              {
+                detail: err.detail,
+              },
+            );
             return Observable.empty();
           });
       case 'type':
@@ -176,22 +196,19 @@ export default class CodeFormatManager {
           editor,
           event.edit,
         ).catch(err => {
-          logger.warn('Failed to format code on type:', err);
+          getLogger('code-format').warn('Failed to format code on type:', err);
           return Observable.empty();
         });
       case 'save':
         return (
-          this._formatCodeOnSaveInTextEditor(editor)
-            .timeout(SAVE_TIMEOUT)
-            .catch(err => {
-              logger.warn('Failed to format code on save:', err);
-              return Observable.empty();
-            })
+          this._safeFormatCodeOnSave(editor)
             // Fire-and-forget the original save function.
             // This is actually async for remote files, but we don't use the result.
             // NOTE: finally is important, as saves should still fire on unsubscribe.
             .finally(() => editor.getBuffer().save())
         );
+      case 'new-save':
+        return Observable.empty();
       default:
         return Observable.throw(`unknown event type ${event.type}`);
     }
@@ -234,15 +251,8 @@ export default class CodeFormatManager {
           selectionEnd.column === 0 ? selectionEnd : [selectionEnd.row + 1, 0],
         );
       }
-      const {scopeName} = editor.getGrammar();
-      const rangeProvider = this._getMatchingProviderForScopeName(
-        this._rangeProviders,
-        scopeName,
-      );
-      const fileProvider = this._getMatchingProviderForScopeName(
-        this._fileProviders,
-        scopeName,
-      );
+      const rangeProvider = this._rangeProviders.getProviderForEditor(editor);
+      const fileProvider = this._fileProviders.getProviderForEditor(editor);
       const contents = editor.getText();
       if (
         rangeProvider != null &&
@@ -267,9 +277,10 @@ export default class CodeFormatManager {
           this._checkContentsAreSame(contents, editor.getText());
           buffer.setTextViaDiff(formatted);
 
-          const newPosition = newCursor != null
-            ? buffer.positionForCharacterIndex(newCursor)
-            : editor.getCursorBufferPosition();
+          const newPosition =
+            newCursor != null
+              ? buffer.positionForCharacterIndex(newCursor)
+              : editor.getCursorBufferPosition();
 
           // We call setCursorBufferPosition even when there is no newCursor,
           // because it unselects the text selection.
@@ -295,11 +306,7 @@ export default class CodeFormatManager {
       // the character that will usually cause a reformat (i.e. `}` instead of `{`).
       const character = event.newText[event.newText.length - 1];
 
-      const {scopeName} = editor.getGrammar();
-      const provider = this._getMatchingProviderForScopeName(
-        this._onTypeProviders,
-        scopeName,
-      );
+      const provider = this._onTypeProviders.getProviderForEditor(editor);
       if (provider == null) {
         return Observable.empty();
       }
@@ -318,7 +325,7 @@ export default class CodeFormatManager {
       // We want to wait until the cursor has actually moved before we issue a
       // format request, so that we format at the right position (and potentially
       // also let any other event handlers have their go).
-      return nextTick
+      return microtask
         .switchMap(() =>
           provider.formatAtPosition(
             editor,
@@ -342,13 +349,17 @@ export default class CodeFormatManager {
     });
   }
 
-  _formatCodeOnSaveInTextEditor(editor: atom$TextEditor): Observable<void> {
-    const {scopeName} = editor.getGrammar();
-    const saveProvider = this._getMatchingProviderForScopeName(
-      this._onSaveProviders,
-      scopeName,
-    );
+  _safeFormatCodeOnSave(editor: atom$TextEditor): Observable<void> {
+    return this._formatCodeOnSaveInTextEditor(editor)
+      .timeout(SAVE_TIMEOUT)
+      .catch(err => {
+        getLogger('code-format').warn('Failed to format code on save:', err);
+        return Observable.empty();
+      });
+  }
 
+  _formatCodeOnSaveInTextEditor(editor: atom$TextEditor): Observable<void> {
+    const saveProvider = this._onSaveProviders.getProviderForEditor(editor);
     if (saveProvider != null) {
       return Observable.fromPromise(
         saveProvider.formatOnSave(editor),
@@ -364,47 +375,20 @@ export default class CodeFormatManager {
     return Observable.empty();
   }
 
-  _getMatchingProviderForScopeName<T: CodeFormatProvider>(
-    providers: Array<T>,
-    scopeName: string,
-  ): ?T {
-    return providers.find(provider => {
-      const providerGrammars = provider.selector.split(/, ?/);
-      return (
-        provider.inclusionPriority > 0 &&
-        providerGrammars.indexOf(scopeName) !== -1
-      );
-    });
-  }
-
   addRangeProvider(provider: RangeCodeFormatProvider): IDisposable {
-    return this._addProvider(this._rangeProviders, provider);
+    return this._rangeProviders.addProvider(provider);
   }
 
   addFileProvider(provider: FileCodeFormatProvider): IDisposable {
-    return this._addProvider(this._fileProviders, provider);
+    return this._fileProviders.addProvider(provider);
   }
 
   addOnTypeProvider(provider: OnTypeCodeFormatProvider): IDisposable {
-    return this._addProvider(this._onTypeProviders, provider);
+    return this._onTypeProviders.addProvider(provider);
   }
 
   addOnSaveProvider(provider: OnSaveCodeFormatProvider): IDisposable {
-    return this._addProvider(this._onSaveProviders, provider);
-  }
-
-  _addProvider<T: CodeFormatProvider>(
-    providers: Array<T>,
-    provider: T,
-  ): IDisposable {
-    providers.push(provider);
-    providers.sort((a, b) => b.inclusionPriority - a.inclusionPriority);
-    return new UniversalDisposable(() => {
-      const index = providers.indexOf(provider);
-      if (index !== -1) {
-        providers.splice(index);
-      }
-    });
+    return this._onSaveProviders.addProvider(provider);
   }
 
   dispose() {

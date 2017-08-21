@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-vscode-language-service-rpc",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Adapter between Nuclide's LanguageService and VS Code's Language Service Protocol",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "npm"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

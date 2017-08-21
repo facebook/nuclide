@@ -34,7 +34,6 @@ export class ProviderContainer extends React.Component {
     this.state = {
       collapsed: false,
     };
-    (this: any)._setCollapsed = this._setCollapsed.bind(this);
   }
 
   render(): ?React.Element<any> {
@@ -53,11 +52,11 @@ export class ProviderContainer extends React.Component {
     );
   }
 
-  _setCollapsed(collapsed: boolean): void {
+  _setCollapsed = (collapsed: boolean): void => {
     this.setState({collapsed});
     track('nuclide-context-view-toggle-provider', {
       title: this.props.title,
       collapsed: String(collapsed),
     });
-  }
+  };
 }

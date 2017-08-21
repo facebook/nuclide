@@ -10,7 +10,7 @@
  */
 
 import {Observable} from 'rxjs';
-import {ActionsObservable} from '../../commons-node/redux-observable';
+import {ActionsObservable} from 'nuclide-commons/redux-observable';
 import * as BuckBase from '../../nuclide-buck-base';
 import * as Actions from '../lib/redux/Actions';
 import {

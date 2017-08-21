@@ -11,10 +11,16 @@
 
 import typeof * as GrepService from '../../nuclide-grep-rpc';
 import type {search$FileResult} from '../../nuclide-grep-rpc';
+import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
 
+import invariant from 'assert';
 import {Observable, ReplaySubject} from 'rxjs';
+import {arrayFlatten} from 'nuclide-commons/collection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {RemoteDirectory} from '../../nuclide-remote-connection';
+import {WORKING_SET_PATH_MARKER} from '../../nuclide-working-sets-common/lib/constants';
+
+import {logger} from './constants';
 
 type RemoteDirectorySearch = {
   then: (onFullfilled: any, onRejected: any) => Promise<any>,
@@ -23,11 +29,16 @@ type RemoteDirectorySearch = {
 
 export default class RemoteDirectorySearcher {
   _serviceProvider: (dir: RemoteDirectory) => GrepService;
+  _getWorkingSetsStore: () => ?WorkingSetsStore;
 
   // When constructed, RemoteDirectorySearcher must be passed a function that
   // it can use to get a 'GrepService' for a given remote path.
-  constructor(serviceProvider: (dir: RemoteDirectory) => GrepService) {
+  constructor(
+    serviceProvider: (dir: RemoteDirectory) => GrepService,
+    getWorkingSetsStore: () => ?WorkingSetsStore,
+  ) {
     this._serviceProvider = serviceProvider;
+    this._getWorkingSetsStore = getWorkingSetsStore;
   }
 
   canSearchDirectory(directory: atom$Directory | RemoteDirectory): boolean {
@@ -45,19 +56,22 @@ export default class RemoteDirectorySearcher {
     // Get the remote service that corresponds to each remote directory.
     const services = directories.map(dir => this._serviceProvider(dir));
 
+    const includePaths = directories.map(dir =>
+      this.processPaths(dir.getPath(), options.inclusions),
+    );
+
     const searchStreams: Array<
       Observable<search$FileResult>,
-    > = directories.map((dir, index) =>
-      services[index]
-        .grepSearch(
-          dir.getPath(),
-          regex,
-          RemoteDirectorySearcher.processPaths(
-            dir.getPath(),
-            options.inclusions,
-          ),
-        )
-        .refCount(),
+    > = includePaths.map(
+      (inclusion, index) =>
+        // processPaths returns null if the inclusions are too strict for the
+        // given directory, so we don't even want to start the search. This can
+        // happen if we're searching in a working set that excludes the directory.
+        inclusion
+          ? services[index]
+              .grepSearch(directories[index].getPath(), regex, inclusion)
+              .refCount()
+          : Observable.empty(),
     );
 
     // Start the search in each directory, and merge the resulting streams.
@@ -100,15 +114,48 @@ export default class RemoteDirectorySearcher {
   /**
    * If a query's prefix matches the rootPath's basename, treat the query as a relative search.
    * Based on https://github.com/atom/atom/blob/master/src/scan-handler.coffee.
-   * Marked as static for testing.
+   * Returns null if we shouldn't search rootPath.
    */
-  static processPaths(rootPath: string, paths: ?Array<string>): Array<string> {
+  processPaths(rootPath: string, paths: ?Array<string>): ?Array<string> {
     if (paths == null) {
       return [];
     }
     const rootPathBase = nuclideUri.basename(rootPath);
     const results = [];
     for (const path of paths) {
+      if (path === WORKING_SET_PATH_MARKER) {
+        const workingSetsStore = this._getWorkingSetsStore();
+        if (!workingSetsStore) {
+          logger.error(
+            'workingSetsStore not found but trying to search in working sets',
+          );
+          continue;
+        }
+
+        const workingSetUris = arrayFlatten(
+          workingSetsStore
+            .getApplicableDefinitions()
+            .filter(def => def.active)
+            .map(def => def.uris),
+        )
+          // A working set can contain paths outside of rootPath. Ignore these.
+          .filter(uri => nuclideUri.contains(rootPath, uri))
+          // `processPaths` expects the second argument to be a relative path
+          // instead of the fully qualified NuclideUris we have here.
+          .map(uri => nuclideUri.relative(rootPath, uri));
+
+        if (workingSetUris.length === 0) {
+          // Working set and rootPath are disjoint, we shouldn't search rootPath
+          return null;
+        }
+
+        invariant(!workingSetUris.includes(WORKING_SET_PATH_MARKER));
+        const processed = this.processPaths(rootPath, workingSetUris);
+        invariant(processed);
+        results.push(...processed);
+        continue;
+      }
+
       const segments = nuclideUri.split(path);
       const firstSegment = segments.shift();
       results.push(path);

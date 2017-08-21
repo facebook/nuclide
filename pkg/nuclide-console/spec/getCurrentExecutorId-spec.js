@@ -15,6 +15,7 @@ import getCurrentExecutorId from '../lib/getCurrentExecutorId';
 import {Observable} from 'rxjs';
 
 const baseAppState = {
+  createPasteFunction: null,
   currentExecutorId: 'a',
   maxMessageCount: Number.POSITIVE_INFINITY,
   executors: new Map([['a', createDummyExecutor('a')]]),

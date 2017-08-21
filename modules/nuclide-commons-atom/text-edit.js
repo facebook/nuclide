@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -14,6 +15,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 
 import {existingEditorForUri} from './text-editor';
+import {goToLocation} from './go-to-location';
 
 export type TextEdit = {
   oldRange: atom$Range,
@@ -23,10 +25,56 @@ export type TextEdit = {
 };
 
 /**
+ * Attempts to apply the given patches for multiple files. Accepts a Map as input
+ * with file paths as keys and a corresponding array of TextEdits as values.
+ *
+ * It is an error to send overlapping text-edits. All text-edits describe changes
+ * made to the initial document version. The order of the edits does not matter
+ * as they will be sorted before they are applied.
+ *
+ * All changes will be applied to the buffers but not saved. If a file is not
+ * currently open, it will be opened.
+ *
+ * If a change is undone (Cmd+Z), only the changes of the current
+ * file will be undone. All of the changes for that file will be undone at once.
+ *
+ * Returns true if the application was successful, otherwise false. If any of
+ * the changes fail, for ANY file, then none of the changes are applied.
+ */
+export async function applyTextEditsForMultipleFiles(
+  changes: Map<NuclideUri, Array<TextEdit>>,
+): Promise<boolean> {
+  const paths = Array.from(changes.keys());
+
+  // NOTE: There is a race here. If the file contents change while the
+  // editors are being opened, then the ranges of the TextEdits will be off.
+  // However, currently this is only used to applyEdits to open files.
+  const editors = await Promise.all(
+    paths.map(async path => goToLocation(path)),
+  );
+  const checkpoints = editors.map(editor => {
+    invariant(editor != null);
+    const buffer = editor.getBuffer();
+    return [buffer, buffer.createCheckpoint()];
+  });
+  const allOkay = paths.reduce((successSoFar, path) => {
+    const edits = changes.get(path);
+    return successSoFar && edits != null && applyTextEdits(path, ...edits);
+  }, true);
+  if (!allOkay) {
+    checkpoints.forEach(([buffer, checkPoint]) => {
+      buffer.revertToCheckpoint(checkPoint);
+      return false;
+    });
+  }
+  return allOkay;
+}
+
+/**
  * Attempts to apply the given patches to the given file.
  *
- * For best results, the edits should be non-overlapping and in order. That is, for every edit
- * provided, the start of its range should be after the end of the previous edit's range.
+ * It is an error to send overlapping edits. The order of the edits does not
+ * matter (they will be sorted before they are applied).
  *
  * The file must be currently open in Atom, and the changes will be applied to the buffer but not
  * saved.
@@ -38,6 +86,12 @@ export function applyTextEdits(
   path: NuclideUri,
   ...edits: Array<TextEdit>
 ): boolean {
+  // Sort the edits to be in order (For every edit, the start of its range will
+  // be after the end of the previous edit's range.)
+  edits.sort((e1, e2) => e1.oldRange.compare(e2.oldRange));
+  if (editsOverlap(edits)) {
+    throw new Error('applyTextEdits cannot be called with overlapping edits.');
+  }
   const editor = existingEditorForUri(path);
   invariant(editor != null);
   return applyTextEditsToBuffer(editor.getBuffer(), edits);
@@ -91,4 +145,14 @@ function applyToBuffer(buffer: atom$TextBuffer, edit: TextEdit): boolean {
   }
   buffer.setTextInRange(edit.oldRange, edit.newText);
   return true;
+}
+
+// Returns whether an array of sorted TextEdits contain an overlapping range.
+function editsOverlap(sortedEdits: Array<TextEdit>): boolean {
+  for (let i = 0; i < sortedEdits.length - 1; i++) {
+    if (sortedEdits[i].oldRange.intersectsWith(sortedEdits[i + 1].oldRange)) {
+      return true;
+    }
+  }
+  return false;
 }

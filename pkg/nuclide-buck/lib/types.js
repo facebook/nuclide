@@ -19,7 +19,7 @@ import type {BuckBuildSystem} from '../../nuclide-buck/lib/BuckBuildSystem';
 import type {
   ResolvedBuildTarget,
   ResolvedRuleType,
-} from '../../nuclide-buck-rpc/lib/BuckService';
+} from '../../nuclide-buck-rpc/lib/types';
 
 import React from 'react';
 
@@ -96,6 +96,12 @@ export type MobilePlatform = {
   ) => Observable<TaskEvent>,
   deviceGroups: Array<DeviceGroup>,
   extraUiWhenSelected?: (device: ?Device) => ?PlatformProviderUi,
+  getCompilationDatabaseParams?: () => CompilationDatabaseParams,
+};
+
+export type CompilationDatabaseParams = {
+  flavorsForTarget: Array<string>,
+  args: Array<string>,
 };
 
 export type DesktopPlatform = {

@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {DatatipService} from '../../nuclide-datatip/lib/types';
+import type {DatatipService} from 'atom-ide-ui';
 
 import invariant from 'assert';
 import UnicodeDatatipManager from './UnicodeDatatipManager';

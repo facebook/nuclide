@@ -9,37 +9,36 @@
  * @format
  */
 
-import typeof * as AdbService
-  from '../../../nuclide-adb-sdb-rpc/lib/AdbService';
 import type {
+  Device,
   DeviceProcessesProvider,
   Process,
-} from '../../../nuclide-devices/lib/types';
+} from '../../../nuclide-device-panel/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
+import {AndroidBridge} from '../bridges/AndroidBridge';
 import {Observable} from 'rxjs';
 
 export class ATDeviceProcessesProvider implements DeviceProcessesProvider {
-  _type: string;
-  _rpcFactory: (host: NuclideUri) => AdbService;
+  _bridge: AndroidBridge;
 
-  constructor(type: string, rpcFactory: (host: NuclideUri) => AdbService) {
-    this._type = type;
-    this._rpcFactory = rpcFactory;
+  constructor(bridge: AndroidBridge) {
+    this._bridge = bridge;
   }
 
-  observe(host: NuclideUri, device: string): Observable<Process[]> {
+  getType(): string {
+    return this._bridge.name;
+  }
+
+  observe(host: NuclideUri, device: Device): Observable<Process[]> {
     return Observable.interval(3000)
       .startWith(0)
       .switchMap(() =>
-        this._rpcFactory(host)
+        this._bridge
+          .getService(host)
           .getProcesses(device)
           .refCount()
           .catch(() => Observable.of([])),
       );
-  }
-
-  getType(): string {
-    return this._type;
   }
 }

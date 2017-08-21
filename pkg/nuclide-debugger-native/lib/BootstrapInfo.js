@@ -9,15 +9,18 @@
  * @format
  */
 
-import type {DebuggerInstanceBase} from '../../nuclide-debugger-base';
+import type {
+  DebuggerCapabilities,
+  DebuggerProperties,
+  DebuggerInstanceBase,
+} from '../../nuclide-debugger-base';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   BootstrapDebuggerInfo,
   DebuggerConfig,
   NativeDebuggerService as NativeDebuggerServiceType,
 } from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
-import typeof * as NativeDebuggerService
-  from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
+import typeof * as NativeDebuggerService from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 
 import invariant from 'assert';
 import {
@@ -41,8 +44,16 @@ export class BootstrapInfo extends DebuggerProcessInfo {
     return new BootstrapInfo(this._targetUri, this._bootstrapInfo);
   }
 
-  supportThreads(): boolean {
-    return true;
+  getDebuggerCapabilities(): DebuggerCapabilities {
+    return {
+      ...super.getDebuggerCapabilities(),
+      singleThreadStepping: true,
+      threads: true,
+    };
+  }
+
+  getDebuggerProps(): DebuggerProperties {
+    return super.getDebuggerProps();
   }
 
   async debug(): Promise<DebuggerInstanceBase> {
@@ -70,17 +81,14 @@ export class BootstrapInfo extends DebuggerProcessInfo {
     return debugSession;
   }
 
-  supportSingleThreadStepping(): boolean {
-    return true;
-  }
-
   getDebuggerConfig(): DebuggerConfig {
     return {
       logLevel: getConfig().serverLogLevel,
       pythonBinaryPath: getConfig().pythonBinaryPath,
       buckConfigRootFile: getConfig().buckConfigRootFile,
-      lldbPythonPath: this._bootstrapInfo.lldbPythonPath ||
-        getConfig().lldbPythonPath,
+      lldbPythonPath:
+        // flowlint-next-line sketchy-null-string:off
+        this._bootstrapInfo.lldbPythonPath || getConfig().lldbPythonPath,
       envPythonPath: '',
     };
   }

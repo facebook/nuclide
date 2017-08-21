@@ -17,18 +17,13 @@ import type {
   NuclideSavedConnectionDialogConfig,
 } from './connection-types';
 
-import type {
-  SshConnectionConfiguration,
-} from '../../nuclide-remote-connection/lib/SshHandshake';
-import type {
-  DnsLookup,
-} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
+import type {SshConnectionConfiguration} from '../../nuclide-remote-connection/lib/SshHandshake';
+import type {DnsLookup} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 
 import invariant from 'assert';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {arrayCompact} from 'nuclide-commons/collection';
-import lookupPreferIpv6
-  from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
+import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
 
 /**
  * Section: Default Connection Profile
@@ -87,6 +82,7 @@ export function getDefaultConnectionProfile(options?: {
   if (options != null) {
     dialogSettings.cwd = options.initialCwd;
     dialogSettings.server = options.initialServer;
+    // flowlint-next-line sketchy-null-string:off
     if (options.initialRemoteServerCommand) {
       dialogSettings.remoteServerCommand = options.initialRemoteServerCommand;
     }

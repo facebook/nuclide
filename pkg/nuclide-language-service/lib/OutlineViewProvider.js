@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Outline} from 'atom-ide-ui';
+import type {Outline, OutlineProvider} from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -23,7 +23,7 @@ export type OutlineViewConfig = {|
 |};
 
 export class OutlineViewProvider<T: LanguageService> {
-  grammarScopes: string;
+  grammarScopes: Array<string>;
   priority: number;
   name: string;
   _analyticsEventName: string;
@@ -31,13 +31,13 @@ export class OutlineViewProvider<T: LanguageService> {
 
   constructor(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
     this.name = name;
-    this.grammarScopes = selector;
+    this.grammarScopes = grammarScopes;
     this.priority = priority;
     this._analyticsEventName = analyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
@@ -45,16 +45,16 @@ export class OutlineViewProvider<T: LanguageService> {
 
   static register(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     config: OutlineViewConfig,
     connectionToLanguageService: ConnectionCache<T>,
   ): IDisposable {
     return atom.packages.serviceHub.provide(
-      'atom-ide-outline-view',
+      'outline-view',
       config.version,
       new OutlineViewProvider(
         name,
-        selector,
+        grammarScopes,
         config.priority,
         config.analyticsEventName,
         connectionToLanguageService,
@@ -76,3 +76,5 @@ export class OutlineViewProvider<T: LanguageService> {
     });
   }
 }
+
+(((null: any): OutlineViewProvider<LanguageService>): OutlineProvider);

@@ -18,6 +18,7 @@ import {Range} from 'atom';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   name: 'nuclide-ocaml',
   grammarScopes: Array.from(GRAMMARS),

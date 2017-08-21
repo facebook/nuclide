@@ -14,6 +14,7 @@ import type {
   BreakpointId,
   Location,
   BreakpointResolvedEvent,
+  BreakpointHitCountEvent,
   SetBreakpointByUrlResponse,
   SetPauseOnExceptionsRequest,
 } from '../../../nuclide-debugger-base/lib/protocol-types';
@@ -94,7 +95,9 @@ export default class BreakpointManager {
       // not implement "resolved" flag in resolved resposne.
       if (resolved !== false) {
         for (const location of locations) {
-          this._sendBreakpointResolved(breakpointId, location);
+          if (location != null) {
+            this._sendBreakpointResolved(breakpointId, location);
+          }
         }
       }
     }
@@ -131,7 +134,9 @@ export default class BreakpointManager {
       // In current design, there is a UI race between user sets breakpoint
       // while engine haven't created it yet so this may be expected.
       // Issue an warning instead of error.
-      reportWarning('Do you try to update a breakpoint not exist?');
+      reportWarning(
+        'Failed to update breakpoint: the debugger was unable to locate the breakpoint at the specified file and line.',
+      );
     }
   }
 
@@ -148,7 +153,7 @@ export default class BreakpointManager {
         this.setFilelineBreakpoint(newRequest);
         break;
       case 'RemoveBreakpoint':
-        this.removeBreakpoint(newRequest);
+        this._removeBreakpointFromBackend(newRequest);
         break;
       case 'ReplaceBreakpoint':
         this.removeBreakpoint(newRequest);
@@ -179,6 +184,12 @@ export default class BreakpointManager {
   }
 
   removeBreakpoint(request: IPCBreakpoint): void {
+    this._removeBreakpointFromBackend(request);
+    // Remove from our record list.
+    this._removeBreakpointFromList(request);
+  }
+
+  _removeBreakpointFromBackend(request: IPCBreakpoint): void {
     const breakpoint = this._findBreakpointOnFileLine(
       request.sourceURL,
       request.lineNumber,
@@ -187,14 +198,13 @@ export default class BreakpointManager {
       // Remove from engine.
       if (this._isConfirmedBreakpoint(breakpoint)) {
         this._debuggerDispatcher.removeBreakpoint(breakpoint.id);
+      } else {
+        reportError(
+          `Cannot removeBreakpoint as it's unverified! ${JSON.stringify(
+            breakpoint,
+          )}`,
+        );
       }
-      // Remove from our record list.
-      this._removeBreakpointFromList(request);
-    } else {
-      // In current design, there is a UI race between user remove breakpoint
-      // while engine haven't created it yet so this may be expected.
-      // Issue an warning instead of error.
-      reportWarning('Do you try to remove a breakpoint not exist?');
     }
   }
 
@@ -237,21 +247,36 @@ export default class BreakpointManager {
   ): void {
     const breakpoint = this._getBreakpointFromId(breakpointId);
     if (breakpoint != null) {
-      this._breakpointEvent$.next(['BreakpointRemoved', breakpoint.request]);
-      this._breakpointEvent$.next([
+      this._raiseIPCEvent('BreakpointRemoved', breakpoint.request);
+      this._raiseIPCEvent(
         'BreakpointAdded',
         this._createResolvedBreakpointFromLocation(
           location,
           breakpoint.request.condition,
         ),
-      ]);
+      );
+      // Update original request's location to the new bound one.
+      breakpoint.request.lineNumber = location.lineNumber;
     } else {
       // Some engine(C++) may fire breakpointResolved before setBreakpointByUrl
       // is resolved.
-      this._breakpointEvent$.next([
+      this._raiseIPCEvent(
         'BreakpointAdded',
         this._createResolvedBreakpointFromLocation(location, ''),
-      ]);
+      );
+    }
+  }
+
+  _sendBreakpointHitCountChanged(
+    breakpointId: BreakpointId,
+    hitCount: number,
+  ): void {
+    const breakpoint = this._getBreakpointFromId(breakpointId);
+    if (breakpoint != null) {
+      this._raiseIPCEvent('BreakpointHitCountChanged', {
+        breakpoint: breakpoint.request,
+        hitCount,
+      });
     }
   }
 
@@ -276,11 +301,27 @@ export default class BreakpointManager {
 
   handleBreakpointResolved(params: BreakpointResolvedEvent): void {
     const {breakpointId, location} = params;
-    if (this._getBreakpointFromId(breakpointId) !== null) {
+    if (this._getBreakpointFromId(breakpointId) !== null && location != null) {
       this._sendBreakpointResolved(breakpointId, location);
     } else {
       // User has removed this breakpoint before engine resolves it.
       // This is an expected scenario, just ignore it.
     }
+  }
+
+  handleBreakpointHitCountChanged(params: BreakpointHitCountEvent): void {
+    const {breakpointId, hitCount} = params;
+    if (this._getBreakpointFromId(breakpointId) !== null) {
+      this._sendBreakpointHitCountChanged(breakpointId, hitCount);
+    } else {
+      // User has removed this breakpoint before this message reached the front-end.
+      // This is an expected scenario, just ignore it.
+    }
+  }
+
+  // Not a real IPC event, but simulate the chrome IPC events/responses
+  // across bridge boundary.
+  _raiseIPCEvent(...args: Array<mixed>): void {
+    this._breakpointEvent$.next(args);
   }
 }

@@ -25,6 +25,7 @@ import {observeStream} from 'nuclide-commons/stream';
 import {splitStream} from 'nuclide-commons/observable';
 import {runCommand} from 'nuclide-commons/process';
 import {Observable} from 'rxjs';
+import {track} from '../../nuclide-analytics';
 
 type AttachInfoArgsType = {
   pid: string,
@@ -113,6 +114,26 @@ export async function getAttachTargetInfoList(
     });
 }
 
+async function _getDefaultLLDBConfig(): Promise<{
+  pythonPath: string,
+  lldbModulePath: string,
+}> {
+  try {
+    // $FlowFB
+    const fbPaths = require('./fb-Paths');
+    return {
+      pythonPath: await fbPaths.getFBPythonPath(),
+      lldbModulePath: await fbPaths.getFBLLDBModulePath(),
+    };
+  } catch (_) {}
+
+  /*
+   * Default is to use the system python and let the python scripts figure out
+   * which lldb to use.
+   */
+  return {pythonPath: '/usr/bin/python', lldbModulePath: ''};
+}
+
 export class NativeDebuggerService extends DebuggerRpcWebSocketService {
   _config: DebuggerConfig;
 
@@ -126,6 +147,7 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     this.getLogger().debug(`attach process: ${JSON.stringify(attachInfo)}`);
     const inferiorArguments = {
       pid: String(attachInfo.pid),
+      // flowlint-next-line sketchy-null-string:off
       basepath: attachInfo.basepath
         ? attachInfo.basepath
         : this._config.buckConfigRootFile,
@@ -143,12 +165,21 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
       launch_arguments: launchInfo.arguments,
       launch_environment_variables: launchInfo.environmentVariables,
       working_directory: launchInfo.workingDirectory,
+      // flowlint-next-line sketchy-null-string:off
       stdin_filepath: launchInfo.stdinFilePath ? launchInfo.stdinFilePath : '',
+      // flowlint-next-line sketchy-null-string:off
       basepath: launchInfo.basepath
         ? launchInfo.basepath
         : this._config.buckConfigRootFile,
       lldb_python_path: this._config.lldbPythonPath,
+      core_dump_path: launchInfo.coreDump || '',
     };
+
+    if (launchInfo.coreDump != null && launchInfo.coreDump !== '') {
+      // Track feature usage of core dump debugging.
+      track('nuclide-debugger-debug-coredump-start');
+    }
+
     return Observable.fromPromise(
       this._startDebugging(inferiorArguments),
     ).publish();
@@ -158,6 +189,7 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     this.getLogger().debug(`bootstrap lldb: ${JSON.stringify(bootstrapInfo)}`);
     const inferiorArguments = {
       lldb_bootstrap_files: bootstrapInfo.lldbBootstrapFiles,
+      // flowlint-next-line sketchy-null-string:off
       basepath: bootstrapInfo.basepath
         ? bootstrapInfo.basepath
         : this._config.buckConfigRootFile,
@@ -171,10 +203,23 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
   async _startDebugging(
     inferiorArguments: LaunchAttachArgsType,
   ): Promise<void> {
-    const lldbProcess = this._spawnPythonBackend();
+    const pythonBinaryPath =
+      // flowlint-next-line sketchy-null-string:off
+      this._config.pythonBinaryPath ||
+      (await _getDefaultLLDBConfig()).pythonPath;
+    const lldbPythonPath =
+      // flowlint-next-line sketchy-null-mixed:off
+      inferiorArguments.lldb_python_path ||
+      (await _getDefaultLLDBConfig()).lldbModulePath;
+
+    const lldbProcess = this._spawnPythonBackend(pythonBinaryPath);
     lldbProcess.on('exit', this._handleLLDBExit.bind(this));
     this._registerIpcChannel(lldbProcess);
-    this._sendArgumentsToPythonBackend(lldbProcess, inferiorArguments);
+    // $FlowIgnore typecast
+    this._sendArgumentsToPythonBackend(lldbProcess, {
+      ...inferiorArguments,
+      lldb_python_path: lldbPythonPath,
+    });
     const lldbWebSocketListeningPort = await this._connectWithLLDB(lldbProcess);
 
     // TODO[jeffreytan]: explicitly use ipv4 address 127.0.0.1 for now.
@@ -218,7 +263,7 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     }
   }
 
-  _spawnPythonBackend(): child_process$ChildProcess {
+  _spawnPythonBackend(pythonPath: string): child_process$ChildProcess {
     const lldbPythonScriptPath = nuclideUri.join(
       __dirname,
       '../scripts/main.py',
@@ -237,11 +282,7 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     this.getLogger().info(
       `spawn child_process: ${JSON.stringify(python_args)}`,
     );
-    const lldbProcess = child_process.spawn(
-      this._config.pythonBinaryPath,
-      python_args,
-      options,
-    );
+    const lldbProcess = child_process.spawn(pythonPath, python_args, options);
     this.getSubscriptions().add(() => lldbProcess.kill());
     return lldbProcess;
   }

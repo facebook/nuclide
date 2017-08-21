@@ -67,19 +67,6 @@ export class FileTreeToolbarComponent extends React.Component {
         this.setState({definitionsAreEmpty: empty});
       }),
     );
-
-    (this: any)._toggleWorkingSetsSelector = this._toggleWorkingSetsSelector.bind(
-      this,
-    );
-    (this: any)._checkIfClosingSelector = this._checkIfClosingSelector.bind(
-      this,
-    );
-    (this: any)._editWorkingSet = this._editWorkingSet.bind(this);
-    (this: any)._saveWorkingSet = this._saveWorkingSet.bind(this);
-    (this: any)._updateWorkingSet = this._updateWorkingSet.bind(this);
-    (this: any)._toggleWorkingSetEditMode = this._toggleWorkingSetEditMode.bind(
-      this,
-    );
   }
 
   componentDidMount(): void {
@@ -145,7 +132,8 @@ export class FileTreeToolbarComponent extends React.Component {
       <div
         className={classnames({
           'nuclide-file-tree-toolbar': true,
-          'nuclide-file-tree-toolbar-fader': workingSet.isEmpty() &&
+          'nuclide-file-tree-toolbar-fader':
+            workingSet.isEmpty() &&
             !this.state.selectionIsActive &&
             !this._store.isEditingWorkingSet(),
         })}>
@@ -164,7 +152,7 @@ export class FileTreeToolbarComponent extends React.Component {
     );
   }
 
-  _toggleWorkingSetsSelector(): void {
+  _toggleWorkingSetsSelector = (): void => {
     if (this._inProcessOfClosingSelection) {
       this._inProcessOfClosingSelection = false;
       return;
@@ -175,7 +163,7 @@ export class FileTreeToolbarComponent extends React.Component {
     }
 
     this.setState({selectionIsActive: !this.state.selectionIsActive});
-  }
+  };
 
   _renderWorkingSetSelectionPanel(): () => void {
     const reactDiv = document.createElement('div');
@@ -205,15 +193,15 @@ export class FileTreeToolbarComponent extends React.Component {
     return onClose;
   }
 
-  _toggleWorkingSetEditMode(): void {
+  _toggleWorkingSetEditMode = (): void => {
     if (this._store.isEditingWorkingSet()) {
       this._finishEditingWorkingSet();
     } else {
       this._startEditingWorkingSet(new WorkingSet());
     }
-  }
+  };
 
-  _saveWorkingSet(name: string): void {
+  _saveWorkingSet = (name: string): void => {
     const workingSetsStore = this._store.getWorkingSetsStore();
     invariant(workingSetsStore);
 
@@ -221,24 +209,24 @@ export class FileTreeToolbarComponent extends React.Component {
     this._finishEditingWorkingSet();
     workingSetsStore.saveWorkingSet(name, editedWorkingSet);
     workingSetsStore.activate(name);
-  }
+  };
 
-  _updateWorkingSet(prevName: string, name: string): void {
+  _updateWorkingSet = (prevName: string, name: string): void => {
     const workingSetsStore = this._store.getWorkingSetsStore();
     invariant(workingSetsStore);
     const editedWorkingSet = this._store.getEditedWorkingSet();
     this._finishEditingWorkingSet();
 
     workingSetsStore.update(prevName, name, editedWorkingSet);
-  }
+  };
 
-  _checkIfClosingSelector(): void {
+  _checkIfClosingSelector = (): void => {
     if (this.state.selectionIsActive) {
       this._inProcessOfClosingSelection = true;
     }
-  }
+  };
 
-  _editWorkingSet(name: string, uris: Array<string>): void {
+  _editWorkingSet = (name: string, uris: Array<string>): void => {
     this._prevName = name;
     this.setState({
       isUpdatingExistingWorkingSet: true,
@@ -246,7 +234,7 @@ export class FileTreeToolbarComponent extends React.Component {
       selectionIsActive: false,
     });
     this._startEditingWorkingSet(new WorkingSet(uris));
-  }
+  };
 
   _startEditingWorkingSet(workingSet: WorkingSet): void {
     this._actions.startEditingWorkingSet(workingSet);

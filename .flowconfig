@@ -34,5 +34,11 @@ suppress_comment=.*\\$FlowIgnore.*
 ; uncommenting the next line will silence flow errors about missing 'fb' modules
 ; suppress_comment=.*\\$FlowFB.*
 
+[lints]
+untyped-type-import=error
+
+sketchy-null=error
+sketchy-null-bool=off
+
 [version]
-0.47.0
+0.52.0

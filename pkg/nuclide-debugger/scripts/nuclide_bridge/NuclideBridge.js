@@ -370,9 +370,8 @@ class NuclideBridge {
           path: uiLocation.uiSourceCode.uri(),
           column: uiLocation.columnNumber,
           line: uiLocation.lineNumber,
-          hasSource: callFrame.hasSource() != null
-            ? callFrame.hasSource()
-            : true,
+          hasSource:
+            callFrame.hasSource() != null ? callFrame.hasSource() : true,
         },
       };
     });
@@ -424,6 +423,7 @@ class NuclideBridge {
         const result = getIpcEvaluationResult(wasThrown, remoteObject);
         ipcRenderer.sendToHost('notification', 'ExpressionEvaluationResponse', {
           result,
+          // flowlint-next-line sketchy-null-mixed:off
           error: wasThrown ? error || result : null,
           expression,
           id,
@@ -434,14 +434,15 @@ class NuclideBridge {
           // frame.
           mainTarget.debuggerModel.threadStore.getRefreshedThreadStack(
             callFrames => {
-              const frames = callFrames != null && callFrames.length > 0
-                ? callFrames
-                : mainTarget.debuggerModel.callFrames;
+              const frames =
+                callFrames != null && callFrames.length > 0
+                  ? callFrames
+                  : mainTarget.debuggerModel.callFrames;
 
-              const targetFrameId = frames.length === 0 ||
-                this._callframeId !== -1
-                ? this._callframeId
-                : frames[0].id;
+              const targetFrameId =
+                frames.length === 0 || this._callframeId !== -1
+                  ? this._callframeId
+                  : frames[0].id;
 
               frames
                 .filter(frame => frame.id === targetFrameId)
@@ -565,15 +566,12 @@ class NuclideBridge {
     // doing this results in an "Runtime.getProperties failed" error in node-inspector since that
     // call is only valid during a paused state.
     process.nextTick(() => {
-      const targetManager = WebInspector != null
-        ? WebInspector.targetManager
-        : null;
-      const mainTarget = targetManager != null
-        ? targetManager.mainTarget()
-        : null;
-      const debuggerModel = mainTarget != null
-        ? mainTarget.debuggerModel
-        : null;
+      const targetManager =
+        WebInspector != null ? WebInspector.targetManager : null;
+      const mainTarget =
+        targetManager != null ? targetManager.mainTarget() : null;
+      const debuggerModel =
+        mainTarget != null ? mainTarget.debuggerModel : null;
       const stillPaused = debuggerModel != null && debuggerModel.isPaused();
       if (stillPaused) {
         this._continue();

@@ -12,44 +12,38 @@
 import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {
-  HostServices,
-} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
 
 /* LanguageService related type imports */
-import type {
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 
-import invariant from 'assert';
-
-import {FileCache} from '../../nuclide-open-files-rpc';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
-import {
-  createMultiLspLanguageService,
-} from '../../nuclide-vscode-language-service';
+import {createMultiLspLanguageService} from '../../nuclide-vscode-language-service-rpc';
 
-import {logger} from './config';
+import {GRAPHQL_LOGGER_CATEGORY} from './config';
 
 export async function initializeLsp(
   command: string,
   args: Array<string>,
-  projectFileName: string,
+  spawnOptions: Object,
+  projectFileNames: Array<string>,
   fileExtensions: Array<NuclideUri>,
   logLevel: LogLevel,
   fileNotifier: FileNotifier,
   host: HostServices,
 ): Promise<LanguageService> {
-  invariant(fileNotifier instanceof FileCache);
-  logger.setLevel(logLevel);
   return createMultiLspLanguageService(
-    logger,
-    fileNotifier,
-    host,
-    'GraphQL',
-    command,
-    args,
-    projectFileName,
-    fileExtensions,
+    'graphql',
+    process.execPath,
+    [require.resolve(command), ...args],
+    {
+      logCategory: GRAPHQL_LOGGER_CATEGORY,
+      logLevel,
+      fileNotifier,
+      host,
+      spawnOptions,
+      projectFileNames,
+      fileExtensions,
+    },
   );
 }

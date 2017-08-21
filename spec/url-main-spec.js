@@ -116,9 +116,8 @@ describe('acquireLock/releaseLock', () => {
   });
 
   it('expires after a timeout', () => {
-    const dateSpy = spyOn(Date, 'now').andReturn(0);
     expect(acquireLock()).toBe(true);
-    dateSpy.andReturn(10000);
+    advanceClock(10000);
     expect(acquireLock()).toBe(true);
   });
 });

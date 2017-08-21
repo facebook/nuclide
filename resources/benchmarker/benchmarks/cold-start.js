@@ -20,8 +20,10 @@ import {timedAsync} from '../benchmarker-utils';
 
 const isNotTheme = pkg => pkg.getType !== 'theme';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
-  description: 'times how long it takes to activate packages for Atom & Nuclide',
+  description:
+    'times how long it takes to activate packages for Atom & Nuclide',
   columns: [
     'mode',
     'claimedWindowLoadTime',

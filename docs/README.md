@@ -12,7 +12,7 @@ The requirements for running a GitHub pages site locally is described in [GitHub
 
 > If you have run the site before, you can start with step 1 and then move on to step 5.
 
-1. Ensure that you are in the `./docs` directory in your local nuclide.io repo clone (i.e., the same directory where this `README.md` exists). The below RubyGems commands, etc. must be run from there.
+1. Ensure that you are in the same directory where this `README.md` and the `Gemfile` file exists (e.g., it could be in `nuclide/docs` on `master`, in the root of a `gh-pages` branch, etc). The below RubyGems commands, etc. must be run from there.
 
 1. Make sure you have Ruby and [RubyGems](https://rubygems.org/) installed.
 
@@ -26,10 +26,11 @@ The requirements for running a GitHub pages site locally is described in [GitHub
     # may require sudo
     gem install bundler
     ```
+
 1. Install the project's dependencies
 
     ```
-    # run this in the 'docs' directory
+    # run this in the directory containing the "Gemfile" file.
     bundle install
     ```
 
@@ -44,18 +45,28 @@ The requirements for running a GitHub pages site locally is described in [GitHub
     - On first runs or for structural changes to the documentation (e.g., new sidebar menu item), do a full build.
 
     ```
-    bundle exec jekyll serve --config=_config.yml,_config_local_dev.yml
+    # run this in the directory containing the "Gemfile" file
+    bundle exec jekyll serve
     ```
 
     - For content changes only, you can use `--incremental` for faster builds.
 
     ```
-    bundle exec jekyll serve --config=_config.yml,_config_local_dev.yml --incremental
+    bundle exec jekyll serve --incremental
     ```
 
     > We use `bundle exec` instead of running straight `jekyll` because `bundle exec` will always use the version of Jekyll from our `Gemfile`. Just running `jekyll` will use the system version and may not necessarily be compatible.
 
-    > The `_config_local_dev` file overrides some URL settings that you might be using in production to allow you to test links, etc. locally.
+    - To run using an actual IP address, you can use `--host=0.0.0.0`
+
+    ```
+    # run this in the directory containing the "Gemfile" file
+    bundle exec jekyll serve --host=0.0.0.0
+    ```
+
+    This will allow you to use the IP address associated with your machine in the URL. That way you could share it with other people.
+
+    e.g., on a Mac, you can your IP address with something like `ifconfig | grep "inet " | grep -v 127.0.0.1`.
 
 1. Either of commands in the previous step will serve up the site on your local device at http://127.0.0.1:4000/ or http://localhost:4000.
 
@@ -66,6 +77,7 @@ Occasionally that gem might get updated with new or changed functionality. If th
 you can run:
 
 ```
+# run this in the directory containing the "Gemfile" file
 bundle update
 ```
 

@@ -53,7 +53,7 @@ export class TunnelsPanel {
 
     const props = states.map(state => {
       return {
-        tunnels: Array.from(state.openTunnels.keys()),
+        tunnels: Array.from(state.openTunnels.entries()),
         closeTunnel: tunnel =>
           this._store.dispatch(Actions.closeTunnel(tunnel)),
       };

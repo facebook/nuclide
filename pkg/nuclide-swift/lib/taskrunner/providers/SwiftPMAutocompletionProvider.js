@@ -13,8 +13,7 @@ import type {SourceKittenCompletion} from '../../sourcekitten/Complete';
 
 import SwiftPMTaskRunnerStore from '../SwiftPMTaskRunnerStore';
 import {asyncExecuteSourceKitten} from '../../sourcekitten/SourceKitten';
-import sourceKittenCompletionToAtomSuggestion
-  from '../../sourcekitten/Complete';
+import sourceKittenCompletionToAtomSuggestion from '../../sourcekitten/Complete';
 
 /**
  * An autocompletion provider that uses the compile commands in a built Swift
@@ -35,6 +34,7 @@ export default class SwiftPMAutocompletionProvider {
   }): Promise<?Array<atom$AutocompleteSuggestion>> {
     const filePath = request.editor.getPath();
     let compilerArgs;
+    // flowlint-next-line sketchy-null-string:off
     if (filePath) {
       const commands = await this._store.getCompileCommands();
       compilerArgs = commands.get(filePath);
@@ -50,9 +50,11 @@ export default class SwiftPMAutocompletionProvider {
       '--offset',
       String(offset),
       '--',
+      // flowlint-next-line sketchy-null-string:off
       compilerArgs ? compilerArgs : '',
     ]);
 
+    // flowlint-next-line sketchy-null-string:off
     if (!result) {
       return [];
     }

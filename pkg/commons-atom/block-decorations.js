@@ -87,9 +87,8 @@ export function syncBlockDecorations<Value>(
     });
 
     // The position should be `after` if the element is at the end of the file.
-    const position = lineNumber >= editor.getLineCount() - 1
-      ? 'after'
-      : 'before';
+    const position =
+      lineNumber >= editor.getLineCount() - 1 ? 'after' : 'before';
     const item = document.createElement('div');
     ReactDOM.render(element, item);
     marker.onDidDestroy(() => {

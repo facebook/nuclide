@@ -12,9 +12,9 @@
 import type DebuggerInstanceBase from './DebuggerInstance';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  ControlButtonSpecification,
-} from '../../nuclide-debugger/lib/types';
-import type {ThreadColumn} from '../../nuclide-debugger-base/lib/types';
+  DebuggerCapabilities,
+  DebuggerProperties,
+} from '../../nuclide-debugger-base';
 
 export default class DebuggerProcessInfo {
   _serviceName: string;
@@ -33,20 +33,24 @@ export default class DebuggerProcessInfo {
     return this._targetUri;
   }
 
-  getThreadsComponentTitle(): string {
-    return 'Threads';
+  getDebuggerCapabilities(): DebuggerCapabilities {
+    return {
+      conditionalBreakpoints: false,
+      continueToLocation: false,
+      customSourcePaths: false,
+      readOnlyTarget: false,
+      singleThreadStepping: false,
+      threads: false,
+    };
   }
 
-  getThreadColumns(): ?Array<ThreadColumn> {
-    // Use the debugger view's default columns.
-    return null;
-  }
-
-  // Whether or not this ProcessInfo supports threading or not.
-  // TODO: move this into chrome protocol after we move threads window
-  // to Nuclide UI.
-  supportThreads(): boolean {
-    return false;
+  getDebuggerProps(): DebuggerProperties {
+    return {
+      customControlButtons: [],
+      targetDescription: () => null,
+      threadColumns: null,
+      threadsComponentTitle: 'Threads',
+    };
   }
 
   configureSourceFilePaths(): void {
@@ -54,28 +58,8 @@ export default class DebuggerProcessInfo {
     throw new Error('Not supported');
   }
 
-  supportsConfigureSourcePaths(): boolean {
-    return false;
-  }
-
-  supportSingleThreadStepping(): boolean {
-    return false;
-  }
-
-  supportContinueToLocation(): boolean {
-    return false;
-  }
-
-  singleThreadSteppingEnabled(): boolean {
-    return false;
-  }
-
   clone(): DebuggerProcessInfo {
     throw new Error('abstract method');
-  }
-
-  customControlButtons(): Array<ControlButtonSpecification> {
-    return [];
   }
 
   async debug(): Promise<DebuggerInstanceBase> {

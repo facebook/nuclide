@@ -12,21 +12,12 @@
 import {ConfigCache} from 'nuclide-commons/ConfigCache';
 import {runCommand} from 'nuclide-commons/process';
 import {getLogger} from 'log4js';
+import {HACK_CONFIG_FILE_NAME} from '../../nuclide-hack-common/lib/constants';
 
-const HACK_LOGGER_CATEGORY = 'nuclide-hack';
+export const HACK_LOGGER_CATEGORY = 'nuclide-hack';
 export const logger = getLogger(HACK_LOGGER_CATEGORY);
 
-const HACK_CONFIG_FILE_NAME = '.hhconfig';
 const PATH_TO_HH_CLIENT = 'hh_client';
-
-// From hack/src/utils/findUtils.ml
-export const HACK_FILE_EXTENSIONS: Array<string> = [
-  '.php', // normal php file
-  '.hh', // Hack extension some open source code is starting to use
-  '.phpt', // our php template files
-  '.hhi', // interface files only visible to the type checker
-  '.xhp', // XHP extensions
-];
 
 // Kick this off early, so we don't need to repeat this on every call.
 // We don't have a way of changing the path on the dev server after a
@@ -35,7 +26,7 @@ export const HACK_FILE_EXTENSIONS: Array<string> = [
 const DEFAULT_HACK_COMMAND: Promise<string> = findHackCommand();
 let hackCommand = DEFAULT_HACK_COMMAND;
 
-const configCache = new ConfigCache(HACK_CONFIG_FILE_NAME);
+const configCache = new ConfigCache([HACK_CONFIG_FILE_NAME]);
 
 /**
 * If this returns null, then it is not safe to run hack.
@@ -73,6 +64,7 @@ export async function getHackExecOptions(
     hackCommand,
     findHackConfigDir(localFile),
   ]);
+  // flowlint-next-line sketchy-null-string:off
   if (hackRoot && currentHackCommand) {
     return {hackRoot, hackCommand: currentHackCommand};
   } else {

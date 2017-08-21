@@ -27,12 +27,6 @@ type Props = {
 export class SelectFileChanges extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-
-    (this: any)._onToggleFile = this._onToggleFile.bind(this);
-  }
-
   shouldComponentUpdate(nextProps: Props): boolean {
     return this.props.fileData !== nextProps.fileData;
   }
@@ -67,10 +61,10 @@ export class SelectFileChanges extends React.Component {
     );
   }
 
-  _onToggleFile(): void {
+  _onToggleFile = (): void => {
     this.props.actionCreators.toggleFile(
       this.props.patchId,
       this.props.fileData.id,
     );
-  }
+  };
 }

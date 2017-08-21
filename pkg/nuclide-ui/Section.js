@@ -27,6 +27,7 @@ type Props = {
   onChange?: (isCollapsed: boolean) => mixed,
 
   size?: SectionSize,
+  title?: string,
 };
 
 type State = {
@@ -52,10 +53,9 @@ export class Section extends React.Component {
     this.state = {
       isCollapsed: initialIsCollapsed,
     };
-    (this: any)._toggleCollapsed = this._toggleCollapsed.bind(this);
   }
 
-  _toggleCollapsed(): void {
+  _toggleCollapsed = (): void => {
     if (this.props.collapsed == null) {
       // uncontrolled mode
       this.setState({isCollapsed: !this.state.isCollapsed});
@@ -65,15 +65,15 @@ export class Section extends React.Component {
         this.props.onChange(!this.props.collapsed);
       }
     }
-  }
+  };
 
   render(): React.Element<any> {
-    const collapsable: boolean = this.props.collapsable != null
-      ? this.props.collapsable
-      : false;
-    const collapsed = this.props.collapsed == null
-      ? this.state.isCollapsed
-      : this.props.collapsed;
+    const collapsable: boolean =
+      this.props.collapsable != null ? this.props.collapsable : false;
+    const collapsed =
+      this.props.collapsed == null
+        ? this.state.isCollapsed
+        : this.props.collapsed;
     // Only include classes if the component is collapsable
     const iconClass = classnames({
       icon: collapsable,
@@ -88,13 +88,19 @@ export class Section extends React.Component {
         ? 'Click to expand'
         : 'Click to collapse';
     }
+    // Any custom title prop should override the default title.
+    if (this.props.title != null) {
+      conditionalProps.title = this.props.title;
+    }
     const HeadlineComponent = getHeadlineComponent(this.props.size);
     return (
       <div className={this.props.className}>
         <HeadlineComponent className={iconClass} {...conditionalProps}>
           {this.props.headline}
         </HeadlineComponent>
-        <div style={collapsed ? {display: 'none'} : {}}>
+        <div
+          style={collapsed ? {display: 'none'} : {}}
+          className="nuclide-ui-section-body">
           {this.props.children}
         </div>
       </div>

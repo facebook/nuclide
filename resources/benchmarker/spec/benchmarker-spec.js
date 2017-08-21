@@ -10,7 +10,7 @@
  */
 
 /* global sessionStorage */
-/* eslint-disable no-console */
+/* eslint-disable no-console, nuclide-internal/no-commonjs */
 
 declare function waitsForPromise(
   optionsOrFunc:
@@ -107,7 +107,9 @@ describe('Nuclide performance', () => {
         resultFile = createResultFile(resultDir, benchmark, columns);
         setTestState({resultFile});
         console.log(
-          `Writing raw results for ${String(benchmark.name)} to ${yellow(resultFile)}`,
+          `Writing raw results for ${String(benchmark.name)} to ${yellow(
+            resultFile,
+          )}`,
         );
       }
 
@@ -116,9 +118,10 @@ describe('Nuclide performance', () => {
       await sleepUntilNoRequests();
 
       // Run the benchmark for this iteration/repetition and append the results to the result file.
-      const iterationDescription = benchmark.getIterationDescription != null
-        ? `; ${benchmark.getIterationDescription(iteration)}`
-        : '';
+      const iterationDescription =
+        benchmark.getIterationDescription != null
+          ? `; ${benchmark.getIterationDescription(iteration)}`
+          : '';
 
       console.log(
         yellow(
@@ -144,7 +147,9 @@ describe('Nuclide performance', () => {
       if (nextTestState.iteration === 0) {
         const processedResultFile = processResultFile(resultFile);
         console.log(
-          `Results for ${String(benchmark.name)} are in ${green(processedResultFile)}`,
+          `Results for ${String(benchmark.name)} are in ${green(
+            processedResultFile,
+          )}`,
         );
       }
       if (nextTestState.benchmarkIndex === 0) {
@@ -162,6 +167,7 @@ describe('Nuclide performance', () => {
 
 function getRunOptions(): RunOptions {
   let benchmarks = [];
+  // flowlint-next-line sketchy-null-string:off
   if (process.env.BENCHMARK) {
     // A single benchmark has been passed in from the command line or shell.
     benchmarks = [process.env.BENCHMARK];
@@ -174,6 +180,7 @@ function getRunOptions(): RunOptions {
   }
 
   let packages = [];
+  // flowlint-next-line sketchy-null-string:off
   if (process.env.BENCHMARK_PACKAGES) {
     // packages to be loaded have been passed in from the command line or shell.
     packages = process.env.BENCHMARK_PACKAGES
@@ -203,6 +210,7 @@ function getRunOptions(): RunOptions {
 
 function getTestState(): Object {
   const item = sessionStorage.getItem(RUN_STATE_KEY);
+  // flowlint-next-line sketchy-null-string:off
   if (item) {
     try {
       return JSON.parse(item);

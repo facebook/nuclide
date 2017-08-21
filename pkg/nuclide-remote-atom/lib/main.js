@@ -9,8 +9,7 @@
  * @format
  */
 
-import typeof * as RemoteCommandServiceType
-  from '../../nuclide-remote-atom-rpc/lib/RemoteCommandService';
+import typeof * as RemoteCommandServiceType from '../../nuclide-remote-atom-rpc/lib/RemoteCommandService';
 import type {
   AtomCommands,
   AtomFileEvent,

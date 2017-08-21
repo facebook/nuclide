@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Datatip} from '../../nuclide-datatip/lib/types';
+import type {Datatip} from 'atom-ide-ui';
 
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {makeSampleDatatipComponent} from './SampleDatatipComponent';

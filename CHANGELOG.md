@@ -1,5 +1,175 @@
 # Nuclide Changelog
 
+## v0.245.0
+
+### General
+
+* Added a command (“Nuclide Task Runner: Stop Task”) and keyboard shortcut (⌘B S) for stopping the running build task.
+* Outline View no longer obscures search area when outline contents overflow.
+
+### Debugger
+
+* Fixed “Toggle Debugger” in the view menu. (Previously, it did nothing.)
+* Fixed editing watch expressions.
+
+### Buck
+
+* Buck toolbar now detects connected physical iOS devices and allows to build for and deploy to them.
+
+### GraphQL
+
+* Incorporated graphql-config for more granular project controls.
+* Missing Watchman no longer triggers a red box notification.
+
+## v0.244.0
+
+### General
+
+* More Atom 1.19 compatibility updates
+* Fixed misaligned file-tree highlights while horizontally scrolling
+* Fixed minor wrapping issues in long diagnostics popups
+
+### Debugger
+
+* Added “Manage Devices” button to debugger pane to allow quick access to the Device Panel
+* Fixed a bug preventing "Copy Callstack" from working properly
+* Fixed an issue causing red error boxes when dragging debugger panes around on Atom 1.18+
+
+## v0.243.0
+
+### General
+
+* Items in the View context menu are now sorted alphabetically
+* Many compatibility fixes for Atom 1.19.
+* Fixed broken go-to-definition / code-formatting for OCaml files.
+
+### Debugger
+
+* Fixed an issue where right clicking the background of the breakpoints pane doesn't offer breakpoint options like "remove all breakpoints"
+* Fixed a bug preventing the debugger from auto attaching to a cxx_test target from the when clicking debug on the Buck toolbar
+
+
+## v0.242.0
+
+### Highlights
+
+* The file-icons package is now installed for all users by default.
+
+### General
+
+* Fixed a bug causing spurious segments of code to be highlighted.
+
+### Debugger
+
+* Added the ability to debug native core dumps.
+* Added breakpoint hit counts for PHP, Python, C++ and Java debuggers.
+* Debugger will now remember the width of the debugging panes when the debugger is stopped, and use your preferred size the next time it is launched.
+* Fixed the “Debug” button on the task runner toolbar for iOS targets was not working.
+* Fixed a bug causing occasional warning messages when removing or editing a breakpoint.
+
+
+## v0.241.0
+
+### Hotfix Release
+
+* Fixes the issues that were created with the latest `graphql-language-service` release:
+* Fixes the breakage happening from using user's local node, which may have a different version from Atom's node
+* Fixes Nuclide's LSP implementation to handle `null` value
+* Fixed `graphql-language-service` incorrectly using node's `URL` module
+
+## v0.240.0
+
+### Debugger
+
+* Added support for **conditional breakpoints **in Java, PHP/Hack, C++ and Python debuggers. Right click any breakpoint and choose “Edit Breakpoint...” to add conditions!
+* Fixed bug that caused the File Tree to open when starting the debugger, even if the file tree had previously been hidden
+* Removing request memory limit when debugging PHP with Nuclide to avoid OOM exceptions when using the debugger console. (Note: requires an HHVM patch: should be available with the next HHVM release)
+
+## v0.239.0
+
+### Hotfix Release
+* Revert Atom 1.19 buffer changeCount fix
+
+## v0.238.0
+
+### Hotfix Release
+* Fix build
+
+## v0.237.0
+
+### General
+
+* Fixed a regression that made the file-tree's selected element behavior erratic.
+* Updated Find in Project to search in your active Working Set (remote only) `Cmd-Ctrl-Shift-F` (windows: `Ctrl-Alt-Shift-F`) to try
+
+### Debugger
+
+* Strip ANSI codes from stdout/stderr debugger output.
+
+## v0.236.0
+
+### Highlights
+
+* Add a key binding hint to the status bar which shows available key bindings for the most recently taken action.
+
+### General
+
+* Fixed stale diagnostics after file renames.
+* Fixed some issues with keyboard navigation shortcuts in the file tree on Windows.
+* Fixed remote connection restoration with Atom 1.18.
+* Dropping node and react native support from Nuclide based on low internal usage and feedback outside Facebook -- that'd enable us to improve Nuclide's debugger quality first and later, add proper debugging support.
+
+### Debugger
+
+* PHP/Hack Debugger: Fixed bug causing output to stdout to be echo'ed twice in the Nuclide console.
+* Added support for nested debugger tabs so that the debugger panes share docks nicely with other components (such as Outline View or the Commit Form) while retaining the ability to individually close, stack or move debugger panes around the workspace.
+
+## v0.235.0
+
+### Hotfix Release
+* Removed an improper watchman version check.
+
+
+## v0.234.0
+
+### Highlights
+* The Outline View now has a search box to filter results.
+
+## General
+
+* Nuclide now requires Atom ≥ 1.17.2.
+* File Tree now shows your current working directory name in the title, and hovering over the title shows the full path including remote machine name.
+* File Tree: When opening a file, the Open Files section will no longer resize until  the mouse leaves the File Tree.
+* File Tree's Open Files listing now supports the file-icons package.
+* Main menu: Items in the “Nuclide” menu are now sorted alphabetically.
+* Working Sets: Fixed a bug preventing people from being able to close the Working Set selection modal.
+* “Find References” now defaults to opening in the bottom pane.
+    * This is configurable in Nuclide Settings (“where to open the find references pane”).
+* Console: Fix autoscroll when large messages are added.
+
+## Languages
+
+* Faster autocompletion in Flow (when using v48+) thanks to using the persistent connection.
+
+## Debugger
+
+* Fix error when remote root folder is removed (ie. disconnected) after debugging.
+
+
+## v0.233.0
+
+### General
+
+* Fixed an issue where running code format on a large file could end up hanging Nuclide and Atom
+* Added a "Set Current Working Root Here" context menu to file tabs.
+* The owner and group of remote files are now preserved.
+
+### Debugger
+
+* Updated Debugger documentation to reflect many changes to the launch/attach workflow, debugger panes and updated screenshots to match latest UI.
+* Added work around to fix an issue in Atom 1.17+ where opening a new pane like the Outline View or Commit Form while the debugger is open causes an odd and difficult to use pane layout
+* Added “Enable All” and “Disable All” commands to the Breakpoint pane context menu
+
 ## v0.232.0
 
 ### Hotfix Release

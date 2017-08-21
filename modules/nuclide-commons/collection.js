@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -93,6 +94,16 @@ export function mapUnion<T, X>(...maps: Array<Map<T, X>>): Map<T, X> {
   return unionMap;
 }
 
+export function mapCompact<T, X>(map: Map<T, ?X>): Map<T, X> {
+  const selected = new Map();
+  for (const [key, value] of map) {
+    if (value != null) {
+      selected.set(key, value);
+    }
+  }
+  return selected;
+}
+
 export function mapFilter<T, X>(
   map: Map<T, X>,
   selector: (key: T, value: X) => boolean,
@@ -167,7 +178,7 @@ export function every<T>(
 }
 
 export function setIntersect<T>(a: Set<T>, b: Set<T>): Set<T> {
-  return new Set(Array.from(a).filter(e => b.has(e)));
+  return setFilter(a, e => b.has(e));
 }
 
 export function setUnion<T>(a: Set<T>, b: Set<T>): Set<T> {
@@ -199,6 +210,20 @@ export function setDifference<T>(
     }
   });
   return result;
+}
+
+export function setFilter<T>(
+  set: Set<T>,
+  predicate: (value: T) => boolean,
+): Set<T> {
+  const out = new Set();
+  for (const item of set) {
+    if (predicate(item)) {
+      out.add(item);
+    }
+  }
+
+  return out;
 }
 
 /**
@@ -350,7 +375,11 @@ export class MultiMap<K, V> {
   }
 }
 
-export function objectEntries<T>(obj: {[key: string]: T}): Array<[string, T]> {
+export function objectValues<T>(obj: {[key: string]: T}): Array<T> {
+  return Object.keys(obj).map(key => obj[key]);
+}
+
+export function objectEntries<T>(obj: ?{[key: string]: T}): Array<[string, T]> {
   if (obj == null) {
     throw new TypeError();
   }
@@ -444,4 +473,13 @@ export function iterableContains<T>(iterable: Iterable<T>, value: T): boolean {
   return !iterableIsEmpty(
     filterIterable(iterable, element => element === value),
   );
+}
+
+export function count<T>(iterable: Iterable<T>): number {
+  let size = 0;
+  // eslint-disable-next-line no-unused-vars
+  for (const element of iterable) {
+    size++;
+  }
+  return size;
 }

@@ -18,6 +18,7 @@ import logger from './utils';
 import {getConfig} from './config';
 import {shellParse} from 'nuclide-commons/string';
 import {runCommand} from 'nuclide-commons/process';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import {pathToUri, uriToPath} from '../../nuclide-debugger-common/lib/helpers';
 export {pathToUri, uriToPath};
@@ -107,11 +108,25 @@ export function launchPhpScriptWithXDebugEnabled(
   scriptPath: string,
   sendToOutputWindowAndResolve?: (text: string, level: string) => void,
 ): child_process$ChildProcess {
-  const {phpRuntimePath, phpRuntimeArgs} = getConfig();
+  const {
+    phpRuntimePath,
+    phpRuntimeArgs,
+    dummyRequestFilePath,
+    launchWrapperCommand,
+  } = getConfig();
   const runtimeArgs = shellParse(phpRuntimeArgs);
+  const isDummyLaunch = scriptPath === dummyRequestFilePath;
+
+  let processPath = phpRuntimePath;
+  const processOptions = {};
+  if (!isDummyLaunch && launchWrapperCommand != null) {
+    processPath = launchWrapperCommand;
+    processOptions.cwd = nuclideUri.dirname(dummyRequestFilePath);
+  }
+
   const scriptArgs = shellParse(scriptPath);
   const args = [...runtimeArgs, ...scriptArgs];
-  const proc = child_process.spawn(phpRuntimePath, args);
+  const proc = child_process.spawn(processPath, args, processOptions);
   logger.debug(
     dedent`
     child_process(${proc.pid}) spawned with xdebug enabled.
@@ -125,14 +140,16 @@ export function launchPhpScriptWithXDebugEnabled(
     const block: string = chunk.toString();
     const output = `child_process(${proc.pid}) stdout: ${block}`;
     logger.debug(output);
-    if (sendToOutputWindowAndResolve != null) {
-      sendToOutputWindowAndResolve(block, 'text');
-    }
+    // No need to forward stdout to the client here. Stdout is also sent
+    // over the XDebug protocol channel and is forwarded to the client
+    // by DbgpSocket.
   });
   proc.stderr.on('data', chunk => {
     const block: string = chunk.toString().trim();
     const output = `child_process(${proc.pid}) stderr: ${block}`;
     logger.debug(output);
+    // TODO: Remove this when XDebug forwards stderr streams over
+    // DbgpSocket.
     if (sendToOutputWindowAndResolve != null) {
       sendToOutputWindowAndResolve(block, 'error');
     }

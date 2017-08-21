@@ -62,6 +62,7 @@ function readAllTsv(
   return {columns, records};
 }
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   writeTsv,
   writeAllTsv,

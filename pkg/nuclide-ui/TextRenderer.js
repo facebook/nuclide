@@ -18,7 +18,11 @@ export function TextRenderer(
 ): ?React.Element<any> {
   const {type, value} = evaluationResult;
   if (type === 'text') {
-    return <span>{value}</span>;
+    return (
+      <span>
+        {value}
+      </span>
+    );
   } else {
     return null;
   }

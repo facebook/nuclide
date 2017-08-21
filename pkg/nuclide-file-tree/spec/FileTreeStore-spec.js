@@ -448,6 +448,7 @@ describe('FileTreeStore', () => {
       );
       const dir3 = map.get('dir3');
       const dir31 = map.get('dir3/dir31');
+      // flowlint-next-line sketchy-null-string:off
       invariant(dir3 && dir31);
       actions.setRootKeys([dir3]);
 
@@ -467,6 +468,7 @@ describe('FileTreeStore', () => {
       );
       const dir3 = map.get('dir3');
       const dir31 = map.get('dir3/dir31');
+      // flowlint-next-line sketchy-null-string:off
       invariant(dir3 && dir31);
       actions.setRootKeys([dir3]);
 
@@ -491,6 +493,7 @@ describe('FileTreeStore', () => {
       const dir3 = map.get('dir3');
       const dir31 = map.get('dir3/dir31');
       const dir32 = map.get('dir3/dir32');
+      // flowlint-next-line sketchy-null-string:off
       invariant(dir3 && dir31 && dir32);
       actions.setRootKeys([dir3]);
 

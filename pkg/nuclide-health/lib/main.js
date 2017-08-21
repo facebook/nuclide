@@ -9,9 +9,6 @@
  * @format
  */
 
-import type {
-  WorkspaceViewsService,
-} from '../../nuclide-workspace-views/lib/types';
 import type {HealthStats, PaneItemState} from './types';
 
 // Imports from non-Nuclide modules.
@@ -23,9 +20,8 @@ import {Observable} from 'rxjs';
 // Imports from other Nuclide packages.
 import {track} from '../../nuclide-analytics';
 import createPackage from 'nuclide-commons-atom/createPackage';
-import {
-  viewableFromReactElement,
-} from '../../commons-atom/viewableFromReactElement';
+import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
+import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {cacheWhileSubscribed} from 'nuclide-commons/observable';
@@ -34,6 +30,7 @@ import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 import HealthPaneItem, {WORKSPACE_VIEW_URI} from './HealthPaneItem';
 import getChildProcessesTree from './getChildProcessesTree';
 import getStats from './getStats';
+import trackStalls from './trackStalls';
 
 class Activation {
   _paneItemStates: Observable<PaneItemState>;
@@ -42,8 +39,8 @@ class Activation {
   _healthButton: ?HTMLElement;
 
   constructor(state: ?Object): void {
-    (this: any)._updateAnalytics = this._updateAnalytics.bind(this);
     (this: any)._updateToolbarJewel = this._updateToolbarJewel.bind(this);
+    (this: any)._updateAnalytics = this._updateAnalytics.bind(this);
 
     // Observe all of the settings.
     const configs: Observable<any> = featureConfig.observeAsStream(
@@ -99,6 +96,8 @@ class Activation {
       statsStream
         .buffer(analyticsTimeouts.switchMap(Observable.interval))
         .subscribe(this._updateAnalytics),
+      trackStalls(),
+      this._registerCommandAndOpener(),
     );
   }
 
@@ -123,10 +122,10 @@ class Activation {
     return disposable;
   }
 
-  consumeWorkspaceViewsService(api: WorkspaceViewsService): void {
+  _registerCommandAndOpener(): UniversalDisposable {
     invariant(this._paneItemStates);
-    this._subscriptions.add(
-      api.addOpener(uri => {
+    return new UniversalDisposable(
+      atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
           invariant(this._paneItemStates != null);
           return viewableFromReactElement(
@@ -134,9 +133,9 @@ class Activation {
           );
         }
       }),
-      () => api.destroyWhere(item => item instanceof HealthPaneItem),
-      atom.commands.add('atom-workspace', 'nuclide-health:toggle', event => {
-        api.toggle(WORKSPACE_VIEW_URI, (event: any).detail);
+      () => destroyItemWhere(item => item instanceof HealthPaneItem),
+      atom.commands.add('atom-workspace', 'nuclide-health:toggle', () => {
+        atom.workspace.toggle(WORKSPACE_VIEW_URI);
       }),
     );
   }

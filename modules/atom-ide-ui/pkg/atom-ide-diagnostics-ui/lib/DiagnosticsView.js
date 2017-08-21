@@ -1,16 +1,17 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {DiagnosticMessage} from '../../atom-ide-diagnostics';
+import type {DiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
 
 import analytics from 'nuclide-commons-atom/analytics';
 import DiagnosticsTable from './DiagnosticsTable';
@@ -78,6 +79,7 @@ export default class DiagnosticsView extends React.Component {
     });
     const isExpandable = diagnostics.find(
       diagnostic =>
+        // flowlint-next-line sketchy-null-string:off
         diagnostic.trace || (diagnostic.text && diagnostic.text.includes('\n')),
     );
 
@@ -87,8 +89,8 @@ export default class DiagnosticsView extends React.Component {
         <Toolbar>
           <ToolbarCenter>
             <span className="inline-block highlight-info">
-              nuclide-diagnostics is not compatible with the linter package. We recommend that
-              you&nbsp;
+              nuclide-diagnostics is not compatible with the linter package. We
+              recommend that you&nbsp;
               <a onClick={this.props.disableLinter}>
                 disable the linter package
               </a>
@@ -102,8 +104,12 @@ export default class DiagnosticsView extends React.Component {
       );
     }
 
-    const errorSpanClassName = `inline-block ${errorCount > 0 ? 'text-error' : ''}`;
-    const warningSpanClassName = `inline-block ${warningCount > 0 ? 'text-warning' : ''}`;
+    const errorSpanClassName = `inline-block ${errorCount > 0
+      ? 'text-error'
+      : ''}`;
+    const warningSpanClassName = `inline-block ${warningCount > 0
+      ? 'text-warning'
+      : ''}`;
 
     return (
       <div
@@ -176,7 +182,7 @@ export default class DiagnosticsView extends React.Component {
   _openAllFilesWithErrors() {
     atom.commands.dispatch(
       atom.views.getView(atom.workspace),
-      'nuclide-diagnostics-ui:open-all-files-with-errors',
+      'diagnostics:open-all-files-with-errors',
     );
   }
 }

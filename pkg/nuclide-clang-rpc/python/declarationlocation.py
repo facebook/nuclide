@@ -15,7 +15,8 @@ patterns = {
     'incl':  re.compile('^[ \t]*#[ \t]*(?:include|import)[ \t]+["<]([^\s"<>]+?)[">][ \t]*$'),
     'rel':   re.compile('"(.+?)"'),
     'abs':   re.compile('<(.+?)>'),
-    'iflag': re.compile('^-I(\S+)$')
+    'iflag': re.compile('^-I(\S+)$'),
+    'fflag': re.compile('^-F(\S+)$')
 }
 
 
@@ -46,17 +47,37 @@ def resolve_include(source_path, line_text, flags):
     # relative path, retrieve include paths from flags and search these paths
     # for the included file.
     if res is not None:
-        dir_names = get_include_paths_from_flags(flags)
+        dir_names, framework_dir_names = get_include_paths_from_flags(flags)
+        # look in include dirs
         path = res.group(1)
         for dir_name in dir_names:
             fullpath = os.path.normpath(os.path.join(dir_name, path))
             if os.path.isfile(fullpath):
                 return resolve_file_name(fullpath)
+
+        # look in frameworks, which have the pattern <FrameworkName/header.h>, which resolves to
+        #   <framework root path from the flag>/FrameworkName.framework/Headers/header.h
+        #   <framework root path from the flag>/FrameworkName.framework/PrivateHeaders/header.h
+        # clang will look for header.h in both folders in order
+        slash_index = path.find('/')
+        if slash_index == -1:
+            pass
+        framework = path[0:slash_index]
+        header = path[slash_index+1:]
+        for framework_dir_name in framework_dir_names:
+            framework_path = os.path.normpath(os.path.join(framework_dir_name,
+                                                           framework + '.framework'))
+            headers_path = os.path.join(framework_path, 'Headers')
+            private_headers_path = os.path.join(framework_path, 'PrivateHeaders')
+            for folder in [headers_path, private_headers_path]:
+                fullpath = os.path.join(folder, header)
+                if os.path.isfile(fullpath):
+                    return resolve_file_name(fullpath)
     return None
 
 
 def get_include_paths_from_flags(flags):
-    incl_paths, isys_paths = [], []
+    incl_paths, isys_paths, iframework_paths = [], [], []
 
     for idx, flag in enumerate(flags):
         # -I <<path>>
@@ -69,13 +90,22 @@ def get_include_paths_from_flags(flags):
             if idx + 1 >= len(flags):
                 break
             isys_paths.append(normalize_path(flags[idx + 1]))
-        # -I<<path>> (no whitespace between flag and arg)
+        # -iframework <<path>>
+        elif flag == '-iframework':
+            if idx + 1 >= len(flags):
+                break
+            iframework_paths.append(normalize_path(flags[idx + 1]))
         else:
+            # -I<<path>> (no whitespace between flag and path)
             res = patterns['iflag'].match(flag)
             if res is not None:
                 incl_paths.append(normalize_path(res.group(1)))
+            # -F<<path>> (no whitespace between flag and path)
+            res = patterns['fflag'].match(flag)
+            if res is not None:
+                iframework_paths.append(normalize_path(res.group(1)))
 
-    return incl_paths + isys_paths
+    return incl_paths + isys_paths, iframework_paths
 
 
 def normalize_path(path):

@@ -17,12 +17,16 @@ import invariant from 'assert';
 import {CompositeDisposable, TextBuffer} from 'atom';
 import {track} from '../../nuclide-analytics';
 import {RpcTimeoutError} from '../../nuclide-rpc';
+import debounce from 'nuclide-commons/debounce';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {countOccurrences} from 'nuclide-commons/string';
 import loadingNotification from '../../commons-atom/loading-notification';
 
 // Diffing is O(lines^2), so don't bother for files with too many lines.
 const DIFF_LINE_LIMIT = 5000;
+
+// Matches the default in Atom 1.19.
+const CHANGE_DEBOUNCE = 200;
 
 export default class NuclideTextBuffer extends TextBuffer {
   _connection: ServerConnection;
@@ -120,13 +124,13 @@ export default class NuclideTextBuffer extends TextBuffer {
       // Timeouts occur quite frequently when the network is unstable.
       // Demote these to 'error' level.
       const logger = getLogger('nuclide-remote-connection');
-      const logFunction = e instanceof RpcTimeoutError
-        ? logger.error
-        : logger.fatal;
+      const logFunction =
+        e instanceof RpcTimeoutError ? logger.error : logger.fatal;
       logFunction('Failed to save remote file.', e);
       let message = e.message;
       // This can happen if the user triggered the save while closing the file.
       // Unfortunately, we can't interrupt the user action, but we can at least reopen the buffer.
+      // flowlint-next-line sketchy-null-mixed:off
       if (this.destroyed) {
         message += '<br><br>Opening a new tab with your unsaved changes.';
         // goToLocation does not support opening an untitled editor
@@ -197,35 +201,47 @@ export default class NuclideTextBuffer extends TextBuffer {
     const fileSubscriptions = new CompositeDisposable();
 
     fileSubscriptions.add(
-      file.onDidChange(async () => {
-        const isModified = this._isModified();
-        this.emitModifiedStatusChanged(isModified);
-        if (isModified) {
-          this.conflict = true;
-        }
-        const previousContents = this.cachedDiskContents;
-        const previousSaveID = this._saveID;
-        await this.updateCachedDiskContents();
-        // If any save requests finished in the meantime, previousContents is not longer accurate.
-        // The most recent save request should trigger another change event, so we'll check for
-        // conflicts when that happens.
-        // Also, if a save is currently pending, it's possible we get the change event before the
-        // write promise comes back.
-        // Otherwise, what we wrote and what we read should match exactly.
-        if (
-          this._saveID !== previousSaveID ||
-          previousContents === this.cachedDiskContents ||
-          this._pendingSaveContents === this.cachedDiskContents
-        ) {
-          this.conflict = false;
-          return;
-        }
-        if (this.conflict) {
-          this.emitter.emit('did-conflict');
-        } else {
-          this.reload();
-        }
-      }),
+      file.onDidChange(
+        debounce(async () => {
+          // The buffer could have been destroyed during the debounce.
+          // flowlint-next-line sketchy-null-mixed:off
+          if (this.destroyed) {
+            return;
+          }
+          const isModified = this._isModified();
+          this.emitModifiedStatusChanged(isModified);
+          if (isModified) {
+            this.conflict = true;
+          }
+          const previousContents = this.cachedDiskContents;
+          const previousSaveID = this._saveID;
+          await this.updateCachedDiskContents();
+          // The buffer could have been destroyed while waiting.
+          // flowlint-next-line sketchy-null-mixed:off
+          if (this.destroyed) {
+            return;
+          }
+          // If any save requests finished in the meantime, previousContents is not longer accurate.
+          // The most recent save request should trigger another change event, so we'll check for
+          // conflicts when that happens.
+          // Also, if a save is currently pending, it's possible we get the change event before the
+          // write promise comes back.
+          // Otherwise, what we wrote and what we read should match exactly.
+          if (
+            this._saveID !== previousSaveID ||
+            previousContents === this.cachedDiskContents ||
+            this._pendingSaveContents === this.cachedDiskContents
+          ) {
+            this.conflict = false;
+            return;
+          }
+          if (this.conflict) {
+            this.emitter.emit('did-conflict');
+          } else {
+            this.reload();
+          }
+        }, CHANGE_DEBOUNCE),
+      ),
     );
 
     fileSubscriptions.add(

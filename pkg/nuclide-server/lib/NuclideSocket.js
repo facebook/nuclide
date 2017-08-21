@@ -85,7 +85,9 @@ export class NuclideSocket {
 
     const {protocol, host} = url.parse(serverUri);
     // TODO verify that `host` is non-null rather than using maybeToString
-    this._websocketUri = `ws${protocol === 'https:' ? 's' : ''}://${maybeToString(host)}`;
+    this._websocketUri = `ws${protocol === 'https:'
+      ? 's'
+      : ''}://${maybeToString(host)}`;
 
     this._heartbeat = new XhrConnectionHeartbeat(serverUri, options);
     this._heartbeat.onConnectionRestored(() => {
@@ -217,6 +219,7 @@ export class NuclideSocket {
   }
 
   _scheduleReconnect() {
+    // flowlint-next-line sketchy-null-number:off
     if (this._reconnectTimer) {
       return;
     }
@@ -234,6 +237,7 @@ export class NuclideSocket {
   }
 
   _clearReconnectTimer() {
+    // flowlint-next-line sketchy-null-number:off
     if (this._reconnectTimer) {
       clearTimeout(this._reconnectTimer);
       this._reconnectTimer = null;

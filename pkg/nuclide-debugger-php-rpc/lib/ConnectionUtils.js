@@ -27,10 +27,13 @@ async function getHackRoot(filePath: string): Promise<?string> {
 export async function setRootDirectoryUri(directoryUri: string): Promise<void> {
   const hackRootDirectory = await getHackRoot(directoryUri);
   logger.debug(
-    `setRootDirectoryUri: from ${directoryUri} to ${maybeToString(hackRootDirectory)}`,
+    `setRootDirectoryUri: from ${directoryUri} to ${maybeToString(
+      hackRootDirectory,
+    )}`,
   );
   // TODO: make xdebug_includes.php path configurable from hhconfig.
   const hackDummyRequestFilePath = nuclideUri.join(
+    // flowlint-next-line sketchy-null-string:off
     hackRootDirectory ? hackRootDirectory : '',
     '/scripts/xdebug_includes.php',
   );
@@ -60,7 +63,13 @@ export function isCorrectConnection(
   isAttachConnection: boolean,
   message: Object,
 ): boolean {
-  const {pid, idekeyRegex, attachScriptRegex, launchScriptPath} = getConfig();
+  const {
+    pid,
+    idekeyRegex,
+    attachScriptRegex,
+    launchScriptPath,
+    launchWrapperCommand,
+  } = getConfig();
   if (!message || !message.init || !message.init.$) {
     logger.error('Incorrect init');
     return false;
@@ -100,14 +109,22 @@ export function isCorrectConnection(
   if (getMode() === 'launch') {
     // TODO: Pass arguments separately from script path so this check can be simpler.
     invariant(launchScriptPath != null, 'Null launchScriptPath in launch mode');
+
+    if (launchWrapperCommand != null) {
+      return nuclideUri.basename(requestScriptPath) === launchWrapperCommand;
+    }
+
     return shellParse(launchScriptPath)[0] === requestScriptPath;
   }
 
   // The regex is only applied to connections coming in during attach mode.  We do not use the
   // regex for launching.
   return (
+    // flowlint-next-line sketchy-null-number:off
     (!pid || attributes.appid === String(pid)) &&
+    // flowlint-next-line sketchy-null-string:off
     (!idekeyRegex || new RegExp(idekeyRegex).test(attributes.idekey)) &&
+    // flowlint-next-line sketchy-null-string:off
     (!attachScriptRegex ||
       new RegExp(attachScriptRegex).test(requestScriptPath))
   );

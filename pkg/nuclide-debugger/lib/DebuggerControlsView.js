@@ -17,6 +17,9 @@ import {DebuggerSteppingComponent} from './DebuggerSteppingComponent';
 import type {DebuggerModeType} from './types';
 import {DebuggerMode} from './DebuggerStore';
 import DebuggerControllerView from './DebuggerControllerView';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+
+const DEVICE_PANEL_URL = 'atom://nuclide/devices';
 
 type Props = {
   model: DebuggerModel,
@@ -31,9 +34,6 @@ export class DebuggerControlsView extends React.PureComponent {
 
   constructor(props: Props) {
     super(props);
-
-    (this: any)._openDevTools = this._openDevTools.bind(this);
-    (this: any)._stopDebugging = this._stopDebugging.bind(this);
 
     this._disposables = new CompositeDisposable();
     const debuggerStore = props.model.getStore();
@@ -65,41 +65,59 @@ export class DebuggerControlsView extends React.PureComponent {
     const {model} = this.props;
     const actions = model.getActions();
     const {mode} = this.state;
-    const debuggerStoppedNotice = mode !== DebuggerMode.STOPPED
-      ? null
-      : <div className="nuclide-debugger-pane-content">
-          <div className="nuclide-debugger-state-notice">
-            <span>The debugger is not attached.</span>
-            <div className="padded">
-              <TruncatedButton
-                onClick={() =>
-                  atom.commands.dispatch(
-                    atom.views.getView(atom.workspace),
-                    'nuclide-debugger:show-attach-dialog',
-                  )}
-                icon="nuclicon-debugger"
-                label="Attach debugger..."
-              />
-              <TruncatedButton
-                onClick={() =>
-                  atom.commands.dispatch(
-                    atom.views.getView(atom.workspace),
-                    'nuclide-debugger:show-launch-dialog',
-                  )}
-                icon="nuclicon-debugger"
-                label="Launch debugger..."
-              />
+    const debuggerStoppedNotice =
+      mode !== DebuggerMode.STOPPED
+        ? null
+        : <div className="nuclide-debugger-pane-content">
+            <div className="nuclide-debugger-state-notice">
+              <span>The debugger is not attached.</span>
+              <div className="padded">
+                <TruncatedButton
+                  onClick={() =>
+                    atom.commands.dispatch(
+                      atom.views.getView(atom.workspace),
+                      'nuclide-debugger:show-attach-dialog',
+                    )}
+                  icon="nuclicon-debugger"
+                  label="Attach debugger..."
+                />
+                <TruncatedButton
+                  onClick={() =>
+                    atom.commands.dispatch(
+                      atom.views.getView(atom.workspace),
+                      'nuclide-debugger:show-launch-dialog',
+                    )}
+                  icon="nuclicon-debugger"
+                  label="Launch debugger..."
+                />
+                <TruncatedButton
+                  onClick={() => goToLocation(DEVICE_PANEL_URL)}
+                  icon="device-mobile"
+                  label="Manage devices..."
+                />
+              </div>
             </div>
-          </div>
-        </div>;
+          </div>;
 
-    const debugeeRunningNotice = mode !== DebuggerMode.RUNNING
-      ? null
-      : <div className="nuclide-debugger-pane-content">
-          <div className="nuclide-debugger-state-notice">
-            The debug target is currently running.
-          </div>
-        </div>;
+    const targetInfo = model.getStore().getDebugProcessInfo();
+    const targetDescription =
+      targetInfo == null
+        ? null
+        : targetInfo.getDebuggerProps().targetDescription();
+
+    const debugeeRunningNotice =
+      mode !== DebuggerMode.RUNNING
+        ? null
+        : <div className="nuclide-debugger-pane-content">
+            <div className="nuclide-debugger-state-notice">
+              The debug target is currently running.
+            </div>
+            {targetDescription == null
+              ? null
+              : <div className="nuclide-debugger-target-description">
+                  {targetDescription}
+                </div>}
+          </div>;
 
     return (
       <div className="nuclide-debugger-container-new">
@@ -124,13 +142,13 @@ export class DebuggerControlsView extends React.PureComponent {
     );
   }
 
-  _openDevTools(): void {
+  _openDevTools = (): void => {
     const {model} = this.props;
     model.getActions().openDevTools();
-  }
+  };
 
-  _stopDebugging(): void {
+  _stopDebugging = (): void => {
     const {model} = this.props;
     model.getActions().stopDebugging();
-  }
+  };
 }

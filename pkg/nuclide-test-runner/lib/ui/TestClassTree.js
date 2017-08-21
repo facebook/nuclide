@@ -13,9 +13,7 @@ import type {LazyTreeNode} from '../../../nuclide-ui/LazyTreeNode';
 import type TestSuiteModel from '../TestSuiteModel';
 
 import React from 'react';
-import {
-  PanelComponentScroller,
-} from 'nuclide-commons-ui/PanelComponentScroller';
+import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
 import TestClassTreeNode from './TestClassTreeNode';
 import {TreeRootComponent} from '../../../nuclide-ui/TreeRootComponent';
 
@@ -53,7 +51,9 @@ export default class TestClassTree extends React.Component {
         <ol>
           <li>Open the file you want to test</li>
           <li>Choose the appropriate runner from the dropdown</li>
-          <li>{'Click "Test" to run tests for that file\'s directory'}</li>
+          <li>
+            {'Click "Test" to run tests for that file\'s directory'}
+          </li>
         </ol>
       </div>
     );

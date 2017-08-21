@@ -10,7 +10,7 @@
  */
 
 import type {TypeHintProvider} from './types';
-import type {Datatip} from '../../nuclide-datatip/lib/types';
+import type {Datatip} from 'atom-ide-ui';
 
 import analytics from 'nuclide-commons-atom/analytics';
 import {arrayRemove} from 'nuclide-commons/collection';
@@ -48,6 +48,7 @@ export default class TypeHintManager {
     const typeHint = await analytics.trackTiming(name + '.typeHint', () =>
       provider.typeHint(editor, position),
     );
+    // flowlint-next-line sketchy-null-mixed:off
     if (!typeHint || this._marker) {
       return;
     }

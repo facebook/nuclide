@@ -37,9 +37,8 @@ export class ThreadsView extends React.PureComponent {
     this._disposables = new CompositeDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
-      customThreadColumns: (debuggerStore
-        .getSettings()
-        .get('CustomThreadColumns'): any) || [],
+      customThreadColumns:
+        (debuggerStore.getSettings().get('CustomThreadColumns'): any) || [],
       mode: debuggerStore.getDebuggerMode(),
       threadsComponentTitle: String(
         debuggerStore.getSettings().get('threadsComponentTitle'),
@@ -52,9 +51,8 @@ export class ThreadsView extends React.PureComponent {
     this._disposables.add(
       debuggerStore.onChange(() => {
         this.setState({
-          customThreadColumns: (debuggerStore
-            .getSettings()
-            .get('CustomThreadColumns'): any) || [],
+          customThreadColumns:
+            (debuggerStore.getSettings().get('CustomThreadColumns'): any) || [],
           mode: debuggerStore.getDebuggerMode(),
           threadsComponentTitle: String(
             debuggerStore.getSettings().get('threadsComponentTitle'),
@@ -75,9 +73,10 @@ export class ThreadsView extends React.PureComponent {
   render(): React.Element<any> {
     const {model} = this.props;
     const {mode, threadsComponentTitle, customThreadColumns} = this.state;
-    const disabledClass = mode !== DebuggerMode.RUNNING
-      ? ''
-      : ' nuclide-debugger-container-new-disabled';
+    const disabledClass =
+      mode !== DebuggerMode.RUNNING
+        ? ''
+        : ' nuclide-debugger-container-new-disabled';
 
     return (
       <div

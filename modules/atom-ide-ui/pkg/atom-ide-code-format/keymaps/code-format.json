@@ -1,11 +1,11 @@
 {
   ".platform-darwin atom-workspace atom-text-editor:not(.mini)": {
-    "cmd-shift-c": "nuclide-code-format:format-code"
+    "cmd-shift-c": "code-format:format-code"
   },
   ".platform-win32 atom-workspace atom-text-editor:not(.mini)": {
-    "ctrl-shift-c": "nuclide-code-format:format-code"
+    "ctrl-shift-c": "code-format:format-code"
   },
   ".platform-linux atom-workspace atom-text-editor:not(.mini)": {
-    "ctrl-shift-c": "nuclide-code-format:format-code"
+    "ctrl-shift-c": "code-format:format-code"
   }
 }

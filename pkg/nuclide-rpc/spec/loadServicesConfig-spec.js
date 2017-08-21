@@ -48,6 +48,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('resolves absolute paths', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
     servicesConfig.forEach(service => {
@@ -57,6 +58,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('uses the implementation when the definition is missing', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
     const fooService = servicesConfig.find(
@@ -67,6 +69,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('respects preserveFunctionNames', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
 

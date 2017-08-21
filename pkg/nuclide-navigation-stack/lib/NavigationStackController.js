@@ -176,7 +176,9 @@ export class NavigationStackController {
     remainingDirectories: Array<NuclideUri>,
   ): void {
     log(
-      `Removing path ${removedPath} remaining: ${JSON.stringify(remainingDirectories)}`,
+      `Removing path ${removedPath} remaining: ${JSON.stringify(
+        remainingDirectories,
+      )}`,
     );
     this._navigationStack.filter(location => {
       const uri = getPathOfLocation(location);
@@ -202,7 +204,9 @@ export class NavigationStackController {
       // Note that this will not actually update the scroll position
       // The scroll position update will happen on the next tick.
       log(
-        `navigating to: ${location.scrollTop} ${JSON.stringify(location.bufferPosition)}`,
+        `navigating to: ${location.scrollTop} ${JSON.stringify(
+          location.bufferPosition,
+        )}`,
       );
       setPositionAndScroll(editor, location.bufferPosition, location.scrollTop);
     } finally {

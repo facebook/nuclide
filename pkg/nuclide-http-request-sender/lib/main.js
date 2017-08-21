@@ -23,7 +23,7 @@ import * as Reducers from './Reducers';
 import {
   combineEpics,
   createEpicMiddleware,
-} from '../../commons-node/redux-observable';
+} from 'nuclide-commons/redux-observable';
 import {Observable} from 'rxjs';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {track} from '../../nuclide-analytics';
@@ -46,6 +46,7 @@ class Activation {
         cookie: '',
       },
       body: null,
+      parameters: [{key: '', value: ''}],
     };
     const epics = Object.keys(Epics)
       .map(k => Epics[k])

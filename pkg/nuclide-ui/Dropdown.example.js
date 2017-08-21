@@ -23,11 +23,10 @@ const DropdownExample = (() => {
     {value: 3, label: 'Three'},
     {value: 4, label: 'Four'},
   ];
-  return (): React.Element<any> => (
+  return (): React.Element<any> =>
     <div>
       <Dropdown options={options} value={2} />
-    </div>
-  );
+    </div>;
 })();
 
 const SplitButtonDropdownExample = (() => {
@@ -39,7 +38,7 @@ const SplitButtonDropdownExample = (() => {
     {value: 4, label: 'Squirrel', icon: 'squirrel'},
     {value: 5, label: 'Beaker', icon: 'telescope', disabled: true},
   ];
-  return (): React.Element<any> => (
+  return (): React.Element<any> =>
     <div>
       <SplitButtonDropdown
         options={options}
@@ -47,8 +46,7 @@ const SplitButtonDropdownExample = (() => {
         onConfirm={// eslint-disable-next-line no-alert
         x => alert(`You selected ${x}!`)}
       />
-    </div>
-  );
+    </div>;
 })();
 
 class ModalMultiSelectExample extends React.Component {

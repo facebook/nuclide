@@ -30,6 +30,7 @@ function asyncFetch(): Promise<any> {
   });
 }
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
   asyncFetch,
   getTotal,

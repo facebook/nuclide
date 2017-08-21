@@ -11,18 +11,18 @@
 
 import type {HomeFragments} from '../../nuclide-home/lib/types';
 
+import {WORKSPACE_VIEW_URI} from 'atom-ide-ui/pkg/atom-ide-diagnostics-ui/lib/DiagnosticsViewModel';
+
 export function getHomeFragments(): HomeFragments {
   return {
     feature: {
       title: 'Diagnostics',
       icon: 'law',
-      description: 'Displays diagnostics, errors, and lint warnings for your files and projects.',
+      description:
+        'Displays diagnostics, errors, and lint warnings for your files and projects.',
       command: () => {
-        atom.commands.dispatch(
-          atom.views.getView(atom.workspace),
-          'nuclide-diagnostics-ui:toggle-table',
-          {visible: true},
-        );
+        // eslint-disable-next-line nuclide-internal/atom-apis
+        atom.workspace.open(WORKSPACE_VIEW_URI);
       },
     },
     priority: 4,

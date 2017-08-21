@@ -9,6 +9,23 @@
  * @format
  */
 
-export type ClangCompilationDatabaseProvider = {
-  getCompilationDatabaseFile: (path: string) => Promise<?string>,
+import type {
+  ClangRequestSettings,
+  ClangCursor,
+} from '../../nuclide-clang-rpc/lib/rpc-types';
+
+export type ClangConfigurationProvider = {
+  getSettings: string => Promise<?ClangRequestSettings>,
+  reset: (host: string) => void,
+  resetForSource: (src: string) => void,
+  supportsSource: (src: string) => Promise<boolean>,
+  priority: number,
+};
+
+export type ClangDeclarationInfoProvider = {
+  getDeclarationInfo: (
+    editor: atom$TextEditor,
+    line: number,
+    column: number,
+  ) => Promise<?Array<ClangCursor>>,
 };

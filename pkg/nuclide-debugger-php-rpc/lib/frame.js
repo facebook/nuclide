@@ -59,7 +59,7 @@ export function fileUrlOfFrame(frame: DbgpStackFrame): string {
 export function locationOfFrame(frame: DbgpStackFrame): FrameLocation {
   return {
     // TODO: columnNumber: from cmdbegin/end
-    lineNumber: Number(frame.$.lineno) - 1,
+    lineNumber: Number(frame.$.lineno),
     scriptId: fileOfFrame(frame),
   };
 }

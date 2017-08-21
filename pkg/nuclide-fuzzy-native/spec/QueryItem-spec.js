@@ -89,6 +89,14 @@ describe('QueryItem', () => {
       expect(item.score('bb')).not.toBe(null);
     });
   });
+
+  describe('Extensions', () => {
+    it('should match full filenames', () => {
+      const item = new QueryItem('Hello.h');
+      expect(item.score('hello.h')).not.toBe(null);
+      expect(item.score('Hello.h')).not.toBe(null);
+    });
+  });
 });
 
 import {__test__} from '../lib/QueryItem';
@@ -128,11 +136,6 @@ describe('scoreCommonSubsequence', () => {
 
   it('returns a score of 0 for exact matches', () => {
     expect(scoreCommonSubsequence('nuclide', 'nuclide')).toEqual(0);
-  });
-
-  it('ignores the case of characters in `needle`, but not vice-versa', () => {
-    expect(scoreCommonSubsequence('nuclide', 'NuclIDE')).toEqual(0);
-    expect(scoreCommonSubsequence('NuclIDE', 'nuclide')).toEqual(-1);
   });
 
   it('ignores non-alphanumeric characters in `haystack`', () => {

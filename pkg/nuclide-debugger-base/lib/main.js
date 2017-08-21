@@ -28,7 +28,12 @@ export {
 } from './ChromeMessageRemoting';
 export {LaunchAttachActionsBase} from './LaunchAttachActionsBase';
 export {getDefaultEvaluationExpression} from './evaluationExpression';
-export {DebuggerConfigAction} from './types';
+export {
+  DebuggerConfigAction,
+  DebuggerCapabilities,
+  DebuggerProperties,
+  ThreadColumn,
+} from './types';
 
 export {
   setOutputService,

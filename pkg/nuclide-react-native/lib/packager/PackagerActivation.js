@@ -10,21 +10,19 @@
  */
 
 import type {OutputService} from '../../../nuclide-console/lib/types';
-import type {
-  CwdApi,
-} from '../../../nuclide-current-working-directory/lib/CwdApi';
+import type {CwdApi} from '../../../nuclide-current-working-directory/lib/CwdApi';
 import type {PackagerEvent} from './types';
 
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
 import {LogTailer} from '../../../nuclide-console/lib/LogTailer';
 import {getCommandInfo} from '../../../nuclide-react-native-base';
 import {observeProcess} from 'nuclide-commons/process';
+import {shellQuote} from 'nuclide-commons/string';
 import {parseMessages} from './parseMessages';
 import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
 import electron from 'electron';
 import {Observable} from 'rxjs';
-import {quote} from 'shell-quote';
 
 /**
  * Runs the server in the appropriate place. This class encapsulates all the state of the packager
@@ -60,7 +58,8 @@ export class PackagerActivation {
               "Couldn't find a React Native project",
               {
                 dismissable: true,
-                description: 'Make sure that your current working root (or its ancestor) contains a' +
+                description:
+                  'Make sure that your current working root (or its ancestor) contains a' +
                   ' "node_modules" directory with react-native installed, or a .buckconfig file' +
                   ' with a "[react-native]" section that has a "server" key.',
               },
@@ -92,10 +91,10 @@ export class PackagerActivation {
       }),
       atom.commands.add('atom-workspace', {
         'nuclide-react-native:start-packager': event => {
-          const detail = event.detail != null &&
-            typeof event.detail === 'object'
-            ? event.detail
-            : undefined;
+          const detail =
+            event.detail != null && typeof event.detail === 'object'
+              ? event.detail
+              : undefined;
           this._logTailer.start(detail);
         },
         'nuclide-react-native:stop-packager': () => this._logTailer.stop(),
@@ -176,7 +175,7 @@ function getPackagerObservable(
       }
       return observeProcess(command, args, {
         cwd,
-        env: {...process.env, REACT_EDITOR: quote(editor)},
+        env: {...process.env, REACT_EDITOR: shellQuote(editor)},
         killTreeWhenDone: true,
         /* TODO(T17353599) */ isExitError: () => false,
       }).catch(error => Observable.of({kind: 'error', error})); // TODO(T17463635)
@@ -185,9 +184,8 @@ function getPackagerObservable(
     .scan(
       (acc, event) => {
         return {
-          stderr: event.kind === 'stderr'
-            ? acc.stderr + event.data
-            : acc.stderr,
+          stderr:
+            event.kind === 'stderr' ? acc.stderr + event.data : acc.stderr,
           event,
         };
       },
@@ -204,10 +202,11 @@ function getPackagerObservable(
           return Observable.of(event.data);
         case 'exit':
           if (event.exitCode !== 0) {
-            // Completely ignore EADDRINUSE errors since the packager is probably already running.
             if (!stderr.includes('Error: listen EADDRINUSE :::8081')) {
               atom.notifications.addWarning(
-                'Packager failed to start - continuing anyway.',
+                'Packager failed to start - continuing anyway. This is expected if you ' +
+                  'are intentionally running a packager in a separate terminal. If not, ' +
+                  '`lsof -i tcp:8081` might help you find the process using the packager port',
                 {
                   dismissable: true,
                   detail: stderr.trim() === '' ? undefined : stderr,

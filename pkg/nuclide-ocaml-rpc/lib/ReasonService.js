@@ -17,8 +17,9 @@ export type formatResult =
 
 export async function format(
   content: string,
+  filePath: string,
   language: 're' | 'ml',
   refmtFlags: Array<string>,
 ): Promise<formatResult> {
-  return formatImpl(content, language, refmtFlags);
+  return formatImpl(content, filePath, language, refmtFlags);
 }

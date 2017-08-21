@@ -51,10 +51,6 @@ export class PanelView extends React.Component {
 
   constructor(props: Props) {
     super(props);
-    (this: any)._handleSendButtonClick = this._handleSendButtonClick.bind(this);
-    (this: any)._handleStartButtonClick = this._handleStartButtonClick.bind(
-      this,
-    );
     this.state = {
       grammar: null,
     };
@@ -113,10 +109,10 @@ export class PanelView extends React.Component {
     );
   }
 
-  _handleStartButtonClick(): void {
+  _handleStartButtonClick = (): void => {
     const commandString = this.refs.commandField.getText();
     this.props.startServer(commandString.trim());
-  }
+  };
 
   componentDidMount(): void {
     // Fill in initial command
@@ -143,7 +139,7 @@ export class PanelView extends React.Component {
     );
   }
 
-  _handleSendButtonClick(event: SyntheticMouseEvent): void {
+  _handleSendButtonClick = (event: SyntheticMouseEvent): void => {
     const {inputField} = this.refs;
     const rawMessage = inputField.getModel().getText();
     let parsed;
@@ -158,7 +154,7 @@ export class PanelView extends React.Component {
     }
     inputField.getModel().setText('');
     this.props.sendMessage(parsed);
-  }
+  };
 }
 
 function parseMessage(raw_: string): Object {

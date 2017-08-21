@@ -16,5 +16,5 @@ file for the active text editor.
 
 As shown in the upper-right-hand corner of the table, the default keyboard shortcut to toggle the
 list of diagnostics is `alt-shift-d`.
-The name of the command is `nuclide-diagnostics-ui:toggle-table` if you want to remap this in
+The name of the command is `diagnostics:toggle-table` if you want to remap this in
 your `~/.atom/keymap.cson` file.

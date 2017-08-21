@@ -16,6 +16,7 @@ import Reducers from '../lib/redux/Reducers';
 import {Observable} from 'rxjs';
 
 const emptyAppState = {
+  createPasteFunction: null,
   currentExecutorId: null,
   maxMessageCount: Number.POSITIVE_INFINITY,
   executors: new Map(),

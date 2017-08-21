@@ -9,9 +9,7 @@
  * @format
  */
 
-import type {
-  AttachTargetInfo,
-} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
+import type {AttachTargetInfo} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 
 import Dispatcher from '../../commons-node/Dispatcher';
 
@@ -29,5 +27,6 @@ export const ActionTypes = Object.freeze({
   typeof ActionTypes,
 >);
 
-export default class LaunchAttachDispatcher
-  extends Dispatcher<LaunchAttachAction> {}
+export default class LaunchAttachDispatcher extends Dispatcher<
+  LaunchAttachAction,
+> {}

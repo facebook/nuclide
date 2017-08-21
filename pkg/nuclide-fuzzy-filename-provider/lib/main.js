@@ -9,16 +9,14 @@
  * @format
  */
 
-import type {BusySignalService} from '../../nuclide-busy-signal';
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {BusySignalService} from 'atom-ide-ui';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import scheduleIdleCallback from '../../commons-node/scheduleIdleCallback';
-import {
-  getFuzzyFileSearchServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFuzzyFileSearchServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {RpcTimeoutError} from '../../nuclide-rpc';
 import {getLogger} from 'log4js';
 import FuzzyFileNameProvider from './FuzzyFileNameProvider';
@@ -26,20 +24,27 @@ import {getIgnoredNames} from './utils';
 
 const logger = getLogger('nuclide-fuzzy-filename-provider');
 
+/**
+ * A fallback provider for when the initial query hasn't come back yet.
+ */
+export type FuzzyFilenameFallbackProvider = {
+  executeQuery(
+    query: string,
+    directory: atom$Directory,
+  ): Promise<?Array<FileResult>>,
+};
+
 class Activation {
   _busySignalService: ?BusySignalService;
+  _fallbackProvider: ?FuzzyFilenameFallbackProvider;
   _subscriptions: UniversalDisposable;
   _subscriptionsByRoot: Map<string, UniversalDisposable>;
 
   constructor() {
-    this._subscriptions = new UniversalDisposable(() => {
-      if (this._busySignalService != null) {
-        this._busySignalService.dispose();
-      }
-    });
-    this._subscriptionsByRoot = new Map();
-
     (this: any)._readySearch = this._readySearch.bind(this);
+
+    this._subscriptions = new UniversalDisposable();
+    this._subscriptionsByRoot = new Map();
 
     // Do search preprocessing for all existing and future root directories.
     this._readySearch(atom.project.getPaths());
@@ -93,11 +98,12 @@ class Activation {
     const disposables = this._subscriptionsByRoot.get(projectPath);
     invariant(disposables != null);
 
-    const busySignalDisposable = this._busySignalService == null
-      ? new UniversalDisposable()
-      : this._busySignalService.reportBusy(
-          `File search: indexing ${projectPath}`,
-        );
+    const busySignalDisposable =
+      this._busySignalService == null
+        ? new UniversalDisposable()
+        : this._busySignalService.reportBusy(
+            `File search: indexing ${projectPath}`,
+          );
     disposables.add(busySignalDisposable);
 
     // It doesn't matter what the search term is. Empirically, doing an initial
@@ -108,8 +114,7 @@ class Activation {
     } catch (err) {
       throw err;
     } finally {
-      busySignalDisposable.dispose();
-      disposables.remove(busySignalDisposable);
+      disposables.dispose();
     }
   }
 
@@ -132,13 +137,44 @@ class Activation {
   }
 
   registerProvider(): Provider {
-    return FuzzyFileNameProvider;
+    return {
+      ...FuzzyFileNameProvider,
+      executeQuery: async (query: string, directory: atom$Directory) => {
+        const initialDisposable = this._subscriptionsByRoot.get(
+          directory.getPath(),
+        );
+        // If the initial query is still executing, use the fallback provider.
+        if (
+          initialDisposable != null &&
+          !initialDisposable.disposed &&
+          this._fallbackProvider != null
+        ) {
+          const results = await this._fallbackProvider.executeQuery(
+            query,
+            directory,
+          );
+          if (results != null && results.length > 0) {
+            return results;
+          }
+        }
+        return FuzzyFileNameProvider.executeQuery(query, directory);
+      },
+    };
   }
 
   consumeBusySignal(service: BusySignalService): IDisposable {
     this._busySignalService = service;
     return new UniversalDisposable(() => {
       this._busySignalService = null;
+    });
+  }
+
+  consumeFallbackProvider(
+    provider: FuzzyFilenameFallbackProvider,
+  ): IDisposable {
+    this._fallbackProvider = provider;
+    return new UniversalDisposable(() => {
+      this._fallbackProvider = null;
     });
   }
 

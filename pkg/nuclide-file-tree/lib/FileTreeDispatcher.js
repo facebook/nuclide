@@ -74,6 +74,9 @@ export type FileTreeAction =
       actionType: 'CLEAR_TRACKED_NODE',
     }
   | {
+      actionType: 'CLEAR_TRACKED_NODE_IF_NOT_LOADING',
+    }
+  | {
       actionType: 'MOVE_TO_NODE',
       rootKey: NuclideUri,
       nodeKey: NuclideUri,
@@ -88,6 +91,10 @@ export type FileTreeAction =
   | {
       actionType: 'SET_USE_PREFIX_NAV',
       usePrefixNav: boolean,
+    }
+  | {
+      actionType: 'SET_AUTO_EXPAND_SINGLE_CHILD',
+      autoExpandSingleChild: boolean,
     }
   | {
       actionType: 'SET_VCS_STATUSES', // VCS = version control system
@@ -198,6 +205,10 @@ export type FileTreeAction =
       content: React.Element<any>,
     }
   | {
+      actionType: 'SET_FOLDERS_EXPANDED',
+      foldersExpanded: boolean,
+    }
+  | {
       actionType: 'SET_OPEN_FILES_EXPANDED',
       openFilesExpanded: boolean,
     }
@@ -223,10 +234,12 @@ export const ActionTypes = Object.freeze({
   SET_ROOT_KEYS: 'SET_ROOT_KEYS',
   SET_TRACKED_NODE: 'SET_TRACKED_NODE',
   CLEAR_TRACKED_NODE: 'CLEAR_TRACKED_NODE',
+  CLEAR_TRACKED_NODE_IF_NOT_LOADING: 'CLEAR_TRACKED_NODE_IF_NOT_LOADING',
   MOVE_TO_NODE: 'MOVE_TO_NODE',
   SET_DROP_TARGET_NODE: 'SET_DROP_TARGET_NODE',
   SET_USE_PREVIEW_TABS: 'SET_USE_PREVIEW_TABS',
   SET_USE_PREFIX_NAV: 'SET_USE_PREFIX_NAV',
+  SET_AUTO_EXPAND_SINGLE_CHILD: 'SET_AUTO_EXPAND_SINGLE_CHILD',
   SET_VCS_STATUSES: 'SET_VCS_STATUSES',
   SET_REPOSITORIES: 'SET_REPOSITORIES',
   SET_WORKING_SET: 'SET_WORKING_SET',
@@ -252,9 +265,11 @@ export const ActionTypes = Object.freeze({
   ENSURE_CHILD_NODE: 'ENSURE_CHILD_NODE',
   CLEAR_FILTER: 'CLEAR_FILTER',
   ADD_EXTRA_PROJECT_SELECTION_CONTENT: 'ADD_EXTRA_PROJECT_SELECTION_CONTENT',
-  REMOVE_EXTRA_PROJECT_SELECTION_CONTENT: 'REMOVE_EXTRA_PROJECT_SELECTION_CONTENT',
+  REMOVE_EXTRA_PROJECT_SELECTION_CONTENT:
+    'REMOVE_EXTRA_PROJECT_SELECTION_CONTENT',
   SET_OPEN_FILES_EXPANDED: 'SET_OPEN_FILES_EXPANDED',
   SET_UNCOMMITTED_CHANGES_EXPANDED: 'SET_UNCOMMITTED_CHANGES_EXPANDED',
+  SET_FOLDERS_EXPANDED: 'SET_FOLDERS_EXPANDED',
   INVALIDATE_REMOVED_FOLDER: 'INVALIDATE_REMOVED_FOLDER',
 });
 

@@ -9,4 +9,5 @@
  * @format
  */
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = (): Promise<any> => Promise.resolve('#winning');

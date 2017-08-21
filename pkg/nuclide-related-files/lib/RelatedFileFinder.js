@@ -13,9 +13,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {RelatedFilesProvider} from './types';
 
 import {Disposable} from 'atom';
-import {
-  getFileSystemServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {timeoutPromise} from 'nuclide-commons/promise';
 
@@ -89,11 +87,12 @@ export default class RelatedFileFinder {
       .map(entry => nuclideUri.join(dirName, entry[0]))
       .concat(await RelatedFileFinder._findRelatedFilesFromProviders(filePath));
 
-    let wlFilelist = fileTypeWhitelist.size <= 0
-      ? filelist
-      : filelist.filter(otherFilePath => {
-          return fileTypeWhitelist.has(nuclideUri.extname(otherFilePath));
-        });
+    let wlFilelist =
+      fileTypeWhitelist.size <= 0
+        ? filelist
+        : filelist.filter(otherFilePath => {
+            return fileTypeWhitelist.has(nuclideUri.extname(otherFilePath));
+          });
     if (wlFilelist.length <= 0) {
       // no files in white list
       wlFilelist = filelist;

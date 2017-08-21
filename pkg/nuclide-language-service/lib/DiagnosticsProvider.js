@@ -11,11 +11,11 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  FileDiagnosticUpdate,
+  DiagnosticInvalidationCallback,
+  DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
-  InvalidationMessage,
-  MessageUpdateCallback,
-  MessageInvalidationCallback,
+  DiagnosticUpdateCallback,
+  FileDiagnosticMessages,
 } from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 import type {BusySignalProvider} from './AtomLanguageService';
@@ -31,6 +31,7 @@ import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import {Observable} from 'rxjs';
 import {ServerConnection} from '../../nuclide-remote-connection';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ensureInvalidations} from '../../nuclide-language-service-rpc';
 
@@ -48,8 +49,6 @@ export type ObservableDiagnosticsConfig = {|
   version: '0.2.0',
   analyticsEventName: string,
 |};
-
-const diagnosticService = 'atom-ide-diagnostics';
 
 export function registerDiagnostics<T: LanguageService>(
   name: string,
@@ -76,6 +75,7 @@ export function registerDiagnostics<T: LanguageService>(
     case '0.2.0':
       provider = new ObservableDiagnosticProvider(
         config.analyticsEventName,
+        grammars,
         logger,
         connectionToLanguageService,
       );
@@ -85,7 +85,7 @@ export function registerDiagnostics<T: LanguageService>(
   }
   result.add(
     atom.packages.serviceHub.provide(
-      diagnosticService,
+      'DEPRECATED-diagnostics',
       config.version,
       provider,
     ),
@@ -221,7 +221,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
     return Array.from(filePaths);
   }
 
-  _receivedNewUpdateSubscriber(callback: MessageUpdateCallback): void {
+  _receivedNewUpdateSubscriber(callback: DiagnosticUpdateCallback): void {
     // Every time we get a new subscriber, we need to push results to them. This
     // logic is common to all providers and should be abstracted out (t7813069)
     //
@@ -246,11 +246,11 @@ export class FileDiagnosticsProvider<T: LanguageService> {
     this._providerBase.setRunOnTheFly(runOnTheFly);
   }
 
-  onMessageUpdate(callback: MessageUpdateCallback): IDisposable {
+  onMessageUpdate(callback: DiagnosticUpdateCallback): IDisposable {
     return this._providerBase.onMessageUpdate(callback);
   }
 
-  onMessageInvalidation(callback: MessageInvalidationCallback): IDisposable {
+  onMessageInvalidation(callback: DiagnosticInvalidationCallback): IDisposable {
     return this._providerBase.onMessageInvalidation(callback);
   }
 
@@ -302,17 +302,21 @@ export class FileDiagnosticsProvider<T: LanguageService> {
 
 export class ObservableDiagnosticProvider<T: LanguageService> {
   updates: Observable<DiagnosticProviderUpdate>;
-  invalidations: Observable<InvalidationMessage>;
+  invalidations: Observable<DiagnosticInvalidationMessage>;
   _analyticsEventName: string;
+  _grammarScopes: Set<string>;
   _connectionToLanguageService: ConnectionCache<T>;
   _connectionToFiles: Cache<?ServerConnection, Set<NuclideUri>>;
   _logger: log4js$Logger;
+  _subscriptions: UniversalDisposable;
 
   constructor(
     analyticsEventName: string,
+    grammars: Array<string>,
     logger: log4js$Logger,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
+    this._grammarScopes = new Set(grammars);
     this._logger = logger;
     this._analyticsEventName = analyticsEventName;
     this._connectionToFiles = new Cache(connection => new Set());
@@ -322,7 +326,8 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
       .mergeMap(([connection, languageService]) => {
         const connectionName = ServerConnection.toDebugString(connection);
         this._logger.debug(
-          `Starting observing diagnostics ${connectionName}, ${this._analyticsEventName}`,
+          `Starting observing diagnostics ${connectionName}, ${this
+            ._analyticsEventName}`,
         );
         return Observable.fromPromise(languageService)
           .catch(error => {
@@ -333,7 +338,8 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
           })
           .mergeMap((language: LanguageService) => {
             this._logger.debug(
-              `Observing diagnostics ${connectionName}, ${this._analyticsEventName}`,
+              `Observing diagnostics ${connectionName}, ${this
+                ._analyticsEventName}`,
             );
             return ensureInvalidations(
               this._logger,
@@ -346,7 +352,7 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
               }),
             );
           })
-          .map((updates: Array<FileDiagnosticUpdate>) => {
+          .map((updates: Array<FileDiagnosticMessages>) => {
             const filePathToMessages = new Map();
             updates.forEach(update => {
               const {filePath, messages} = update;
@@ -354,12 +360,14 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
               const fileCache = this._connectionToFiles.get(connection);
               if (messages.length === 0) {
                 this._logger.debug(
-                  `Observing diagnostics: removing ${filePath}, ${this._analyticsEventName}`,
+                  `Observing diagnostics: removing ${filePath}, ${this
+                    ._analyticsEventName}`,
                 );
                 fileCache.delete(filePath);
               } else {
                 this._logger.debug(
-                  `Observing diagnostics: adding ${filePath}, ${this._analyticsEventName}`,
+                  `Observing diagnostics: adding ${filePath}, ${this
+                    ._analyticsEventName}`,
                 );
                 fileCache.add(filePath);
               }
@@ -383,7 +391,8 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
     )
       .map(connection => {
         this._logger.debug(
-          `Diagnostics closing ${connection.getRemoteHostname()}, ${this._analyticsEventName}`,
+          `Diagnostics closing ${connection.getRemoteHostname()}, ${this
+            ._analyticsEventName}`,
         );
         const files = Array.from(this._connectionToFiles.get(connection));
         this._connectionToFiles.delete(connection);
@@ -398,5 +407,24 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
         );
         throw error;
       });
+
+    // this._connectionToFiles is lazy, but diagnostics should appear as soon as
+    // a file belonging to the connection is open.
+    // Monitor open text editors and trigger a connection for each one, if needed.
+    this._subscriptions = new UniversalDisposable(
+      observeTextEditors(editor => {
+        const path = editor.getPath();
+        if (
+          path != null &&
+          this._grammarScopes.has(editor.getGrammar().scopeName)
+        ) {
+          this._connectionToLanguageService.getForUri(path);
+        }
+      }),
+    );
+  }
+
+  dispose(): void {
+    this._subscriptions.dispose();
   }
 }

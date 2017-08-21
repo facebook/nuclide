@@ -31,6 +31,13 @@ export function app(state: AppState, action: Action): AppState {
         customSdbPaths,
       };
 
+    case Actions.SET_ADB_PORT:
+      const adbPorts = new Map(state.adbPorts);
+      adbPorts.set(action.payload.host, action.payload.port);
+      return {
+        ...state,
+        adbPorts,
+      };
     default:
       return state;
   }

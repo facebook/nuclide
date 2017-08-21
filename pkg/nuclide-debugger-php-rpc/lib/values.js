@@ -58,10 +58,11 @@ export function convertValue(
 function convertStringValue(dbgpProperty: DbgpProperty): RemoteObject {
   let value;
   if (dbgpProperty.hasOwnProperty('_')) {
-    value = dbgpProperty.$.encoding === 'base64'
-      ? // $FlowFixMe(peterhal)
-        base64Decode(dbgpProperty._)
-      : `TODO: Non-base64 encoded string: ${JSON.stringify(dbgpProperty)}`;
+    value =
+      dbgpProperty.$.encoding === 'base64'
+        ? // $FlowFixMe(peterhal)
+          base64Decode(dbgpProperty._)
+        : `TODO: Non-base64 encoded string: ${JSON.stringify(dbgpProperty)}`;
   } else {
     // zero length strings have no dbgpProperty._ property
     value = '';
@@ -74,9 +75,10 @@ function convertStringValue(dbgpProperty: DbgpProperty): RemoteObject {
 }
 
 function convertIntValue(dbgpProperty: DbgpProperty): RemoteObject {
-  const value = dbgpProperty.$.encoding === 'base64'
-    ? `TODO: Base64 encoded int: ${JSON.stringify(dbgpProperty)}`
-    : dbgpProperty._;
+  const value =
+    dbgpProperty.$.encoding === 'base64'
+      ? `TODO: Base64 encoded int: ${JSON.stringify(dbgpProperty)}`
+      : dbgpProperty._;
   return {
     type: 'number',
     value,
@@ -84,9 +86,10 @@ function convertIntValue(dbgpProperty: DbgpProperty): RemoteObject {
 }
 
 function convertFloatValue(dbgpProperty: DbgpProperty): RemoteObject {
-  const value = dbgpProperty.$.encoding === 'base64'
-    ? `TODO: Base64 encoded float: ${JSON.stringify(dbgpProperty)}`
-    : dbgpProperty._;
+  const value =
+    dbgpProperty.$.encoding === 'base64'
+      ? `TODO: Base64 encoded float: ${JSON.stringify(dbgpProperty)}`
+      : dbgpProperty._;
   return {
     type: 'number',
     value,
@@ -95,9 +98,10 @@ function convertFloatValue(dbgpProperty: DbgpProperty): RemoteObject {
 
 function convertBoolValue(dbgpProperty: DbgpProperty): RemoteObject {
   invariant(dbgpProperty._ != null);
-  const value = dbgpProperty.$.encoding === 'base64'
-    ? `TODO: Base64 encoded bool: ${JSON.stringify(dbgpProperty)}`
-    : toBool(dbgpProperty._);
+  const value =
+    dbgpProperty.$.encoding === 'base64'
+      ? `TODO: Base64 encoded bool: ${JSON.stringify(dbgpProperty)}`
+      : toBool(dbgpProperty._);
   return {
     type: 'boolean',
     value,

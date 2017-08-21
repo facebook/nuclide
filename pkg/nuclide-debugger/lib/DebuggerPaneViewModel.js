@@ -24,18 +24,21 @@ export class DebuggerPaneViewModel {
   _debuggerModel: DebuggerModel;
   _paneDestroyed: (pane: DebuggerPaneConfig) => void;
   _removedFromLayout: boolean;
+  _preferredWidth: ?number;
 
   constructor(
     config: DebuggerPaneConfig,
     debuggerModel: DebuggerModel,
     isLifetimeView: boolean,
     paneDestroyed: (pane: DebuggerPaneConfig) => void,
+    preferredWidth: ?number,
   ) {
     this._config = config;
     this._debuggerModel = debuggerModel;
     this._isLifetimeView = isLifetimeView;
     this._paneDestroyed = paneDestroyed;
     this._removedFromLayout = false;
+    this._preferredWidth = preferredWidth;
   }
 
   dispose(): void {}
@@ -59,7 +62,8 @@ export class DebuggerPaneViewModel {
   }
 
   getPreferredWidth(): number {
-    return this._debuggerModel.getPreferredWidth();
+    // flowlint-next-line sketchy-null-number:off
+    return this._preferredWidth || this._debuggerModel.getPreferredWidth();
   }
 
   createView(): React.Element<any> {

@@ -7,10 +7,6 @@
           "label": "React Native",
           "submenu": [
             {
-              "label": "Start Debugging",
-              "command": "nuclide-react-native:start-debugging"
-            },
-            {
               "label": "Start Packager",
               "command": "nuclide-react-native:start-packager"
             },

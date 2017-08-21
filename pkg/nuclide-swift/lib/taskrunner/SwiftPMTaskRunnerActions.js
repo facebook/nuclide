@@ -58,7 +58,8 @@ export default class SwiftPMTaskRunnerActions {
       atom.notifications.addError(
         'The YAML produced by the Swift package manager is malformed',
         {
-          description: `Nuclide could not parse the YAML file at \`${yamlPath}\`. ` +
+          description:
+            `Nuclide could not parse the YAML file at \`${yamlPath}\`. ` +
             'Please file a bug, and include the contents of the file in ' +
             'your report.',
         },

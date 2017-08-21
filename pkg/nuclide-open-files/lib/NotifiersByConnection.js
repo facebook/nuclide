@@ -9,8 +9,7 @@
  * @format
  */
 
-import typeof * as OpenFilesService
-  from '../../nuclide-open-files-rpc/lib/OpenFilesService';
+import typeof * as OpenFilesService from '../../nuclide-open-files-rpc/lib/OpenFilesService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 

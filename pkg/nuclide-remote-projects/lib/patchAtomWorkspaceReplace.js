@@ -55,15 +55,16 @@ export default function patchAtomWorkspaceReplace(): UniversalDisposable {
         path => nuclideUri.isRemote(path) && !openBuffers.has(path),
       ),
     );
-    const regularReplace = unopenedRemotePaths.size === filePathSet.size
-      ? Promise.resolve(null)
-      : originalReplace.call(
-          atom.workspace,
-          regex,
-          replacementText,
-          Array.from(setDifference(filePathSet, unopenedRemotePaths)),
-          iterator,
-        );
+    const regularReplace =
+      unopenedRemotePaths.size === filePathSet.size
+        ? Promise.resolve(null)
+        : originalReplace.call(
+            atom.workspace,
+            regex,
+            replacementText,
+            Array.from(setDifference(filePathSet, unopenedRemotePaths)),
+            iterator,
+          );
     const remotePaths = new Map();
     for (const path of unopenedRemotePaths) {
       const service = getGrepServiceByNuclideUri(path);

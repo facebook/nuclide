@@ -16,6 +16,8 @@ import type {
   ExpansionResult,
 } from '../../nuclide-debugger/lib/types';
 
+import type {CreatePasteFunction} from '../../nuclide-paste-base';
+
 export type Level = TaskLevelType | Color;
 type Color =
   | 'red'
@@ -55,6 +57,7 @@ export type Record = {
 };
 
 export type AppState = {
+  createPasteFunction: ?CreatePasteFunction,
   currentExecutorId: ?string,
   executors: Map<string, Executor>,
   maxMessageCount: number,
@@ -168,82 +171,68 @@ export type Store = {
   dispatch(action: Action): void,
 };
 
-export type ClearRecordsAction = {
-  type: 'CLEAR_RECORDS',
-};
-
-export type RegisterExecutorAction = {
-  type: 'REGISTER_EXECUTOR',
-  payload: {
-    executor: Executor,
-  },
-};
-
-export type ExecuteAction = {
-  type: 'EXECUTE',
-  payload: {
-    code: string,
-  },
-};
-
-export type RecordReceivedAction = {
-  type: 'RECORD_RECEIVED',
-  payload: {
-    record: Record,
-  },
-};
-
-export type RegisterRecordProviderAction = {
-  type: 'REGISTER_RECORD_PROVIDER',
-  payload: {
-    recordProvider: RecordProvider,
-  },
-};
-
-export type RegisterSourceAction = {
-  type: 'REGISTER_SOURCE',
-  payload: {
-    source: SourceInfo,
-  },
-};
-
-export type RemoveSourceAction = {
-  type: 'REMOVE_SOURCE',
-  payload: {
-    sourceId: string,
-  },
-};
-
-export type SelectExecutorAction = {
-  type: 'SELECT_EXECUTOR',
-  payload: {
-    executorId: string,
-  },
-};
-
-export type SetMaxMessageCountAction = {
-  type: 'SET_MAX_MESSAGE_COUNT',
-  payload: {
-    maxMessageCount: number,
-  },
-};
-
-export type UpdateStatusAction = {
-  type: 'UPDATE_STATUS',
-  payload: {
-    providerId: string,
-    status: OutputProviderStatus,
-  },
-};
-
 export type Action =
-  | ClearRecordsAction
-  | ExecuteAction
-  | RecordReceivedAction
-  | RegisterExecutorAction
-  | RegisterRecordProviderAction
-  | RegisterSourceAction
-  | RemoveSourceAction
-  | SelectExecutorAction
-  | SetMaxMessageCountAction
-  | UpdateStatusAction;
+  | {
+      type: 'CLEAR_RECORDS',
+    }
+  | {
+      type: 'REGISTER_EXECUTOR',
+      payload: {
+        executor: Executor,
+      },
+    }
+  | {
+      type: 'EXECUTE',
+      payload: {
+        code: string,
+      },
+    }
+  | {
+      type: 'RECORD_RECEIVED',
+      payload: {
+        record: Record,
+      },
+    }
+  | {
+      type: 'REGISTER_RECORD_PROVIDER',
+      payload: {
+        recordProvider: RecordProvider,
+      },
+    }
+  | {
+      type: 'REGISTER_SOURCE',
+      payload: {
+        source: SourceInfo,
+      },
+    }
+  | {
+      type: 'REMOVE_SOURCE',
+      payload: {
+        sourceId: string,
+      },
+    }
+  | {
+      type: 'SELECT_EXECUTOR',
+      payload: {
+        executorId: string,
+      },
+    }
+  | {
+      type: 'SET_CREATE_PASTE_FUNCTION',
+      payload: {
+        createPasteFunction: ?CreatePasteFunction,
+      },
+    }
+  | {
+      type: 'SET_MAX_MESSAGE_COUNT',
+      payload: {
+        maxMessageCount: number,
+      },
+    }
+  | {
+      type: 'UPDATE_STATUS',
+      payload: {
+        providerId: string,
+        status: OutputProviderStatus,
+      },
+    };

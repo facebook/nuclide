@@ -15,11 +15,10 @@ import type BreakpointStore from './BreakpointStore';
 import type DebuggerActions from './DebuggerActions';
 
 import invariant from 'assert';
-import {
-  bufferPositionForMouseEvent,
-} from 'nuclide-commons-atom/mouse-to-position';
+import {bufferPositionForMouseEvent} from 'nuclide-commons-atom/mouse-to-position';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {showMenuForEvent} from '../../commons-atom/context-menu';
+import classnames from 'classnames';
 
 /**
  * A single delegate which handles events from the object.
@@ -206,7 +205,11 @@ export default class BreakpointDisplayController {
       return true;
     }
 
-    if (info.enabled !== bp.enabled || info.resolved !== bp.resolved) {
+    if (
+      info.enabled !== bp.enabled ||
+      info.resolved !== bp.resolved ||
+      info.conditional !== (bp.condition !== '')
+    ) {
       return true;
     }
 
@@ -265,6 +268,7 @@ export default class BreakpointDisplayController {
         false, // isShadow
         breakpoint.enabled,
         breakpoint.resolved,
+        breakpoint.condition,
       );
 
       // Remember the properties of the marker at this line so it's easy to tell if it
@@ -272,6 +276,7 @@ export default class BreakpointDisplayController {
       this._markerInfo.set(line, {
         enabled: breakpoint.enabled,
         resolved: breakpoint.resolved,
+        conditional: breakpoint.condition !== '',
       });
       marker.onDidChange(this._handleMarkerChange.bind(this));
       markersToKeep.push(marker);
@@ -286,6 +291,7 @@ export default class BreakpointDisplayController {
    */
   _handleMarkerChange(event: Object) {
     const path = this._editor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!path) {
       return;
     }
@@ -322,6 +328,7 @@ export default class BreakpointDisplayController {
     }
 
     const path = this._editor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!path) {
       return;
     }
@@ -332,7 +339,10 @@ export default class BreakpointDisplayController {
       !target.classList.contains('nuclide-debugger-shadow-breakpoint-icon') &&
       !target.classList.contains('nuclide-debugger-breakpoint-icon') &&
       !target.classList.contains('nuclide-debugger-breakpoint-icon-disabled') &&
-      !target.classList.contains('nuclide-debugger-breakpoint-icon-unresolved')
+      !target.classList.contains(
+        'nuclide-debugger-breakpoint-icon-unresolved',
+      ) &&
+      !target.classList.contains('nuclide-debugger-breakpoint-icon-conditional')
     ) {
       return;
     }
@@ -425,6 +435,7 @@ export default class BreakpointDisplayController {
         true, // isShadow
         true, // enabled
         false, // resolved
+        '', // condition
       );
     }
   }
@@ -434,6 +445,7 @@ export default class BreakpointDisplayController {
     isShadow: boolean,
     enabled: boolean,
     resolved: boolean,
+    condition: string,
   ): atom$Marker {
     const marker = this._editor.markBufferPosition([line, 0], {
       invalidate: 'never',
@@ -442,21 +454,30 @@ export default class BreakpointDisplayController {
     // If the debugger is not attached, display all breakpoints as resolved.
     // Once the debugger attaches, it will determine what's actually resolved or not.
     const unresolved = this._debugging && !resolved;
+    const conditional = condition !== '';
     const elem: HTMLElement = document.createElement('span');
     elem.dataset.line = line.toString();
-    elem.className = isShadow
-      ? 'nuclide-debugger-shadow-breakpoint-icon'
-      : !enabled
-          ? 'nuclide-debugger-breakpoint-icon-disabled'
-          : unresolved
-              ? 'nuclide-debugger-breakpoint-icon-unresolved'
-              : 'nuclide-debugger-breakpoint-icon';
+    elem.className = classnames({
+      'nuclide-debugger-breakpoint-icon': !isShadow && enabled && !unresolved,
+      'nuclide-debugger-breakpoint-icon-conditional': conditional,
+      'nuclide-debugger-breakpoint-icon-nonconditional': !conditional,
+      'nuclide-debugger-shadow-breakpoint-icon': isShadow,
+      'nuclide-debugger-breakpoint-icon-disabled': !isShadow && !enabled,
+      'nuclide-debugger-breakpoint-icon-unresolved':
+        !isShadow && enabled && unresolved,
+    });
 
     if (!isShadow) {
       if (!enabled) {
         elem.title = 'Disabled breakpoint';
       } else if (unresolved) {
         elem.title = 'Unresolved breakpoint';
+      } else {
+        elem.title = 'Breakpoint';
+      }
+
+      if (conditional) {
+        elem.title += ` (Condition: ${condition})`;
       }
     }
 

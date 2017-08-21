@@ -16,6 +16,7 @@
 
 import invariant from 'assert';
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 require('jasmine-node');
 
 // These are undocumented APIs. The type of jasmine is redefined here, so that
@@ -36,6 +37,7 @@ const jasmine: {
 
 function setGlobalFocusPriority(priority) {
   const env = jasmine.getEnv();
+  // flowlint-next-line sketchy-null-number:off
   if (!env.focusPriority) {
     env.focusPriority = 1;
   }
@@ -88,6 +90,7 @@ jasmine.getEnv().specFilter = function(spec) {
   const env = jasmine.getEnv();
   const globalFocusPriority = env.focusPriority;
   const parent = spec.parentSuite != null ? spec.parentSuite : spec.suite;
+  // flowlint-next-line sketchy-null-number:off
   if (!globalFocusPriority) {
     return true;
   } else if (spec.focusPriority >= globalFocusPriority) {

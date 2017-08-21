@@ -21,15 +21,10 @@ type Props = SettingsPropsDefault & {
 export default class SettingsCheckbox extends React.Component {
   props: Props;
 
-  constructor(props: Object) {
-    super(props);
-    (this: any)._handleChange = this._handleChange.bind(this);
-  }
-
-  _handleChange(event: SyntheticEvent) {
+  _handleChange = (event: SyntheticEvent) => {
     const isChecked = ((event.target: any): HTMLInputElement).checked;
     this.props.onChange(isChecked);
-  }
+  };
 
   render(): React.Element<any> {
     const keyPath = this.props.keyPath;
@@ -47,9 +42,13 @@ export default class SettingsCheckbox extends React.Component {
             onChange={this._handleChange}
             type="checkbox"
           />
-          <div className="setting-title">{title}</div>
+          <div className="setting-title">
+            {title}
+          </div>
         </label>
-        <div className="setting-description">{description}</div>
+        <div className="setting-description">
+          {description}
+        </div>
       </div>
     );
   }

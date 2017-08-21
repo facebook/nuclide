@@ -9,6 +9,7 @@
  * @format
  */
 
+// eslint-disable-next-line nuclide-internal/no-commonjs
 require('jasmine-node');
 
 /**

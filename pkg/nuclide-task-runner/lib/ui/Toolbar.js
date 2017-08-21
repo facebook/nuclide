@@ -14,9 +14,9 @@ import type {Option} from '../../../nuclide-ui/Dropdown';
 
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import {ProgressBar} from './ProgressBar';
 import {TaskRunnerButton} from './TaskRunnerButton';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
+import FullWidthProgressBar from '../../../nuclide-ui/FullWidthProgressBar';
 import classnames from 'classnames';
 import React from 'react';
 import invariant from 'assert';
@@ -68,13 +68,12 @@ export class Toolbar extends React.Component {
       }
     }
 
-    const ButtonComponent = buttonProps => (
+    const ButtonComponent = buttonProps =>
       <TaskRunnerButton
         {...buttonProps}
         disabled={this.props.taskIsRunning}
         iconComponent={this.props.iconComponent}
-      />
-    );
+      />;
 
     return (
       <div className={`${className} padded`}>
@@ -92,7 +91,7 @@ export class Toolbar extends React.Component {
           </span>
           {taskRunnerSpecificContent}
         </div>
-        <ProgressBar
+        <FullWidthProgressBar
           progress={this.props.progress}
           visible={this.props.taskIsRunning}
         />
@@ -170,11 +169,8 @@ function NoTaskRunnersMessage(): ?React.Element<any> {
   const featureLink = 'https://nuclide.io/docs/features/task-runner/';
   return (
     <span style={{'white-space': 'nowrap'}}>
-      Install and enable a
-      {' '}
-      <a href={featureLink}>task runner</a>
-      {' '}
-      to use this toolbar
+      Install and enable a <a href={featureLink}>task runner</a> to use this
+      toolbar
     </span>
   );
 }

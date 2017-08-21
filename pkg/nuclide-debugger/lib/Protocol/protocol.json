@@ -3771,6 +3771,14 @@
                 "description": "Fired when the virtual machine stopped on breakpoint or exception or any other stop criteria."
             },
             {
+                "name": "breakpointHitCountChanged",
+                "parameters": [
+                    { "name": "breakpointId", "$ref": "BreakpointId", "description": "Breakpoint unique identifier." },
+                    { "name": "hitCount", "type": "integer", "description": "Number of times the breakpoint has been it" }
+                ],
+                "description": "Fired when a breakpoint has been hit."
+            },
+            {
                 "name": "resumed",
                 "description": "Fired when the virtual machine resumed execution."
             },

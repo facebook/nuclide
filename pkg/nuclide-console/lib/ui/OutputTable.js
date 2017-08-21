@@ -21,9 +21,8 @@ import Hasher from 'nuclide-commons/Hasher';
 import React from 'react';
 import {List} from 'react-virtualized';
 import RecordView from './RecordView';
-import {
-  ResizeSensitiveContainer,
-} from '../../../nuclide-ui/ResizeSensitiveContainer';
+import recordsChanged from '../recordsChanged';
+import {ResizeSensitiveContainer} from '../../../nuclide-ui/ResizeSensitiveContainer';
 
 type Props = {
   displayableRecords: Array<DisplayableRecord>,
@@ -67,38 +66,35 @@ export default class OutputTable extends React.Component {
   props: Props;
   state: State;
 
-  // This is a <List> from react-virtualized (untyped library)
   _hasher: Hasher<Record>;
+  // This is a <List> from react-virtualized (untyped library)
   _list: ?React.Element<any>;
   _wrapper: ?HTMLElement;
   _renderedRecords: Map<Record, RecordView>;
+
+  // The currently rendered range.
+  _startIndex: number;
+  _stopIndex: number;
 
   constructor(props: Props) {
     super(props);
     this._hasher = new Hasher();
     this._renderedRecords = new Map();
-    (this: any)._getExecutor = this._getExecutor.bind(this);
-    (this: any)._getProvider = this._getProvider.bind(this);
-    (this: any)._getRowHeight = this._getRowHeight.bind(this);
-    (this: any)._handleListRef = this._handleListRef.bind(this);
-    (this: any)._handleTableWrapper = this._handleTableWrapper.bind(this);
-    (this: any)._handleRecordHeightChange = this._handleRecordHeightChange.bind(
-      this,
-    );
-    (this: any)._handleResize = this._handleResize.bind(this);
-    (this: any)._onScroll = this._onScroll.bind(this);
-    (this: any)._renderRow = this._renderRow.bind(this);
     this.state = {
       width: 0,
       height: 0,
     };
+    this._startIndex = 0;
+    this._stopIndex = 0;
   }
 
   componentDidUpdate(prevProps: Props, prevState: State): void {
     if (
       this._list != null &&
-      prevProps.displayableRecords.length !==
-        this.props.displayableRecords.length
+      recordsChanged(
+        prevProps.displayableRecords,
+        this.props.displayableRecords,
+      )
     ) {
       // $FlowIgnore Untyped react-virtualized List method
       this._list.recomputeRowHeights();
@@ -121,11 +117,17 @@ export default class OutputTable extends React.Component {
               rowRenderer={this._renderRow}
               overscanRowCount={OVERSCAN_COUNT}
               onScroll={this._onScroll}
+              onRowsRendered={this._handleListRender}
             />
           : null}
       </ResizeSensitiveContainer>
     );
   }
+
+  _handleListRender = (opts: {startIndex: number, stopIndex: number}): void => {
+    this._startIndex = opts.startIndex;
+    this._stopIndex = opts.stopIndex;
+  };
 
   scrollToBottom(): void {
     if (this._list != null) {
@@ -134,15 +136,15 @@ export default class OutputTable extends React.Component {
     }
   }
 
-  _getExecutor(id: string): ?Executor {
+  _getExecutor = (id: string): ?Executor => {
     return this.props.getExecutor(id);
-  }
+  };
 
-  _getProvider(id: string): ?OutputProvider {
+  _getProvider = (id: string): ?OutputProvider => {
     return this.props.getProvider(id);
-  }
+  };
 
-  _renderRow(rowMetadata: RowRendererParams): React.Element<any> {
+  _renderRow = (rowMetadata: RowRendererParams): React.Element<any> => {
     const {index, style} = rowMetadata;
     const displayableRecord = this.props.displayableRecords[index];
     const {record} = displayableRecord;
@@ -167,25 +169,25 @@ export default class OutputTable extends React.Component {
         />
       </div>
     );
-  }
+  };
 
   _containerRendered(): boolean {
     return this.state.width !== 0 && this.state.height !== 0;
   }
 
-  _getRowHeight({index}: RowHeightParams): number {
+  _getRowHeight = ({index}: RowHeightParams): number => {
     return this.props.displayableRecords[index].height;
-  }
+  };
 
-  _handleTableWrapper(tableWrapper: HTMLElement): void {
+  _handleTableWrapper = (tableWrapper: HTMLElement): void => {
     this._wrapper = tableWrapper;
-  }
+  };
 
-  _handleListRef(listRef: React.Element<any>): void {
+  _handleListRef = (listRef: React.Element<any>): void => {
     this._list = listRef;
-  }
+  };
 
-  _handleResize(height: number, width: number): void {
+  _handleResize = (height: number, width: number): void => {
     this.setState({
       width,
       height,
@@ -197,21 +199,40 @@ export default class OutputTable extends React.Component {
     this._renderedRecords.forEach(recordView =>
       recordView.measureAndNotifyHeight(),
     );
-  }
+  };
 
-  _handleRecordHeightChange(recordId: number, newHeight: number): void {
+  _handleRecordHeightChange = (recordId: number, newHeight: number): void => {
     this.props.onDisplayableRecordHeightChange(recordId, newHeight, () => {
       // The react-virtualized List component is provided the row heights
       // through a function, so it has no way of knowing that a row's height
       // has changed unless we explicitly notify it to recompute the heights.
-      if (this._list != null) {
+      if (this._list == null) {
+        return;
+      }
+      // $FlowIgnore Untyped react-virtualized List component method
+      this._list.recomputeRowHeights();
+
+      // If the element in the viewport when its height changes, scroll to ensure that the entirety
+      // of the record is in the viewport. This is important not just for if the last record changes
+      // height through user interaction (e.g. expanding a debugger variable), but also because this
+      // is the mechanism through which the record's true initial height is reported. Therefore, we
+      // may have scrolled to the bottom, and only afterwards received its true height. In this
+      // case, it's important that we then scroll to the new bottom.
+      const index = this.props.displayableRecords.findIndex(
+        record => record.id === recordId,
+      );
+      if (index >= this._startIndex && index <= this._stopIndex) {
         // $FlowIgnore Untyped react-virtualized List component method
-        this._list.recomputeRowHeights();
+        this._list.scrollToRow(index);
       }
     });
-  }
+  };
 
-  _onScroll({clientHeight, scrollHeight, scrollTop}: OnScrollParams): void {
+  _onScroll = ({
+    clientHeight,
+    scrollHeight,
+    scrollTop,
+  }: OnScrollParams): void => {
     this.props.onScroll(clientHeight, scrollHeight, scrollTop);
-  }
+  };
 }

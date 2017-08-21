@@ -16,7 +16,7 @@ import {
   ResizableFlexItem,
 } from './ResizableFlexContainer';
 
-const ResizableFlexContainerExample = (): React.Element<any> => (
+const ResizableFlexContainerExample = (): React.Element<any> =>
   <div>
     <div style={{display: 'flex', height: 100}}>
       <ResizableFlexContainer direction={FlexDirections.HORIZONTAL}>
@@ -43,8 +43,7 @@ const ResizableFlexContainerExample = (): React.Element<any> => (
         </ResizableFlexItem>
       </ResizableFlexContainer>
     </div>
-  </div>
-);
+  </div>;
 
 export const ResizableFlexContainerExamples = {
   sectionName: 'ResizableFlexContainer',

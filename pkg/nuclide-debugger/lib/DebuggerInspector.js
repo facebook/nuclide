@@ -25,12 +25,6 @@ type Props = {
 export default class DebuggerInspector extends React.PureComponent {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleClickClose = this._handleClickClose.bind(this);
-    (this: any)._handleClickDevTools = this._handleClickDevTools.bind(this);
-  }
-
   render(): React.Element<any> {
     return (
       <div className="inspector" style={{'text-align': 'right'}}>
@@ -45,14 +39,14 @@ export default class DebuggerInspector extends React.PureComponent {
     );
   }
 
-  _handleClickClose() {
+  _handleClickClose = () => {
     this.props.stopDebugging();
     hideDebuggerPane();
-  }
+  };
 
-  _handleClickDevTools() {
+  _handleClickDevTools = () => {
     this.props.openDevTools();
-  }
+  };
 }
 
 function hideDebuggerPane(): void {

@@ -84,7 +84,7 @@ export class SelectHunkChanges extends React.Component {
     const {editor} = this.state;
     if (editor != null) {
       gutterCheckboxes = this.state.hunkData.allChanges.map(
-        (isEnabled, index) => (
+        (isEnabled, index) =>
           <GutterCheckbox
             checked={isEnabled}
             editor={editor}
@@ -97,8 +97,7 @@ export class SelectHunkChanges extends React.Component {
                 this.props.hunk.oldStart,
                 index,
               )}
-          />
-        ),
+          />,
       );
     }
 

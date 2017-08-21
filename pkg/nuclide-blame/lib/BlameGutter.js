@@ -75,8 +75,6 @@ export default class BlameGutter {
     this._bufferLineToDecoration = new Map();
     // Priority is -200 by default and 0 is the line number
     this._gutter = editor.addGutter({name: gutterName, priority: -1200});
-    const gutterView: HTMLElement = atom.views.getView(this._gutter);
-    gutterView.classList.add('nuclide-blame');
 
     this._subscriptions.add(
       editor.onDidDestroy(() => {
@@ -102,6 +100,7 @@ export default class BlameGutter {
       this._editor,
       revision.hash,
     );
+    // flowlint-next-line sketchy-null-string:off
     if (url) {
       // Note that 'shell' is not the public 'shell' package on npm but an Atom built-in.
       shell.openExternal(url);
@@ -332,7 +331,8 @@ class GutterElement extends React.Component {
     if (isFirstLine) {
       const unixname = shortNameForAuthor(revision.author);
       const tooltip = {
-        title: escapeHTML(revision.title) +
+        title:
+          escapeHTML(revision.title) +
           '<br />' +
           escapeHTML(unixname) +
           ' &middot; ' +
@@ -349,7 +349,9 @@ class GutterElement extends React.Component {
             ? <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
             : null}
           {Avatar ? <Avatar size={16} unixname={unixname} /> : unixname + ': '}
-          <span>{revision.title}</span>
+          <span>
+            {revision.title}
+          </span>
           <div style={{opacity}} className="nuclide-blame-border-age" />
         </div>
       );

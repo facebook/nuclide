@@ -9,6 +9,8 @@
  * @format
  */
 
+import type {ControlButtonSpecification} from '../../nuclide-debugger/lib/types';
+
 export type AtomNotificationType = 'info' | 'warning' | 'error' | 'fatalError';
 export type AtomNotification = {
   type: AtomNotificationType,
@@ -27,4 +29,23 @@ export type ThreadColumn = {
   // The component receives the cell value via `props.data`.
   component?: any,
   shouldRightAlign?: boolean,
+};
+
+// Indicates which of various optional features that this debugger supports.
+export type DebuggerCapabilities = {
+  +conditionalBreakpoints: boolean,
+  +continueToLocation: boolean,
+  +customSourcePaths: boolean,
+  +singleThreadStepping: boolean,
+  +readOnlyTarget: boolean,
+  +threads: boolean,
+};
+
+// Describes how to configure various properties that individual debuggers
+// are allowed to override.
+export type DebuggerProperties = {
+  +customControlButtons: Array<ControlButtonSpecification>,
+  +targetDescription: () => ?string,
+  +threadColumns: ?Array<ThreadColumn>,
+  +threadsComponentTitle: string,
 };

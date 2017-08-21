@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {LanguageService} from './LanguageService';
+import type {FormatOptions, LanguageService} from './LanguageService';
 import type {BusySignalProvider} from './AtomLanguageService';
 import type {
   RangeCodeFormatProvider,
@@ -24,7 +24,7 @@ import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export type CodeFormatConfig = {|
-  version: '0.0.0',
+  version: '0.1.0',
   priority: number,
   analyticsEventName: string,
 
@@ -40,66 +40,71 @@ export type CodeFormatConfig = {|
 
 export class CodeFormatProvider<T: LanguageService> {
   name: string;
-  selector: string;
-  inclusionPriority: number;
+  grammarScopes: Array<string>;
+  priority: number;
   _analyticsEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
   _busySignalProvider: BusySignalProvider;
 
   constructor(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
     busySignalProvider: BusySignalProvider,
   ) {
     this.name = name;
-    this.selector = selector;
-    this.inclusionPriority = priority;
+    this.grammarScopes = grammarScopes;
+    this.priority = priority;
+    this._analyticsEventName = analyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
     this._busySignalProvider = busySignalProvider;
   }
 
   static register(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     config: CodeFormatConfig,
     connectionToLanguageService: ConnectionCache<T>,
     busySignalProvider: BusySignalProvider,
   ): IDisposable {
     const disposable = new UniversalDisposable(
-      atom.packages.serviceHub.provide(
-        'nuclide-code-format.provider',
-        config.version,
-        config.canFormatRanges
-          ? new RangeFormatProvider(
+      config.canFormatRanges
+        ? atom.packages.serviceHub.provide(
+            'code-format.range',
+            config.version,
+            new RangeFormatProvider(
               name,
-              selector,
-              config.priority,
-              config.analyticsEventName,
-              connectionToLanguageService,
-              busySignalProvider,
-            ).provide()
-          : new FileFormatProvider(
-              name,
-              selector,
+              grammarScopes,
               config.priority,
               config.analyticsEventName,
               connectionToLanguageService,
               busySignalProvider,
             ).provide(),
-      ),
+          )
+        : atom.packages.serviceHub.provide(
+            'code-format.file',
+            config.version,
+            new FileFormatProvider(
+              name,
+              grammarScopes,
+              config.priority,
+              config.analyticsEventName,
+              connectionToLanguageService,
+              busySignalProvider,
+            ).provide(),
+          ),
     );
 
     if (config.canFormatAtPosition) {
       disposable.add(
         atom.packages.serviceHub.provide(
-          'nuclide-code-format.provider',
+          'code-format.onType',
           config.version,
           new PositionFormatProvider(
             name,
-            selector,
+            grammarScopes,
             config.priority,
             config.analyticsEventName,
             connectionToLanguageService,
@@ -116,7 +121,7 @@ export class CodeFormatProvider<T: LanguageService> {
 class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   constructor(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
@@ -124,7 +129,7 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   ) {
     super(
       name,
-      selector,
+      grammarScopes,
       priority,
       analyticsEventName,
       connectionToLanguageService,
@@ -145,7 +150,11 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         const result = await this._busySignalProvider.reportBusyWhile(
           `${this.name}: Formatting ${fileVersion.filePath}`,
           async () => {
-            return (await languageService).formatSource(fileVersion, range);
+            return (await languageService).formatSource(
+              fileVersion,
+              range,
+              getFormatOptions(editor),
+            );
           },
         );
         if (result != null) {
@@ -160,8 +169,8 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   provide(): RangeCodeFormatProvider {
     return {
       formatCode: this.formatCode.bind(this),
-      selector: this.selector,
-      inclusionPriority: this.inclusionPriority,
+      grammarScopes: this.grammarScopes,
+      priority: this.priority,
     };
   }
 }
@@ -169,7 +178,7 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
 class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   constructor(
     name: string,
-    selector: string,
+    grammarScopes: Array<string>,
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
@@ -177,7 +186,7 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   ) {
     super(
       name,
-      selector,
+      grammarScopes,
       priority,
       analyticsEventName,
       connectionToLanguageService,
@@ -201,7 +210,11 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         const result = await this._busySignalProvider.reportBusyWhile(
           `${this.name}: Formatting ${fileVersion.filePath}`,
           async () => {
-            return (await languageService).formatEntireFile(fileVersion, range);
+            return (await languageService).formatEntireFile(
+              fileVersion,
+              range,
+              getFormatOptions(editor),
+            );
           },
         );
         if (result != null) {
@@ -216,8 +229,8 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   provide(): FileCodeFormatProvider {
     return {
       formatEntireFile: this.formatEntireFile.bind(this),
-      selector: this.selector,
-      inclusionPriority: this.inclusionPriority,
+      grammarScopes: this.grammarScopes,
+      priority: this.priority,
     };
   }
 }
@@ -241,6 +254,7 @@ class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
               fileVersion,
               position,
               character,
+              getFormatOptions(editor),
             );
           },
         );
@@ -256,8 +270,15 @@ class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
   provide(): OnTypeCodeFormatProvider {
     return {
       formatAtPosition: this.formatAtPosition.bind(this),
-      selector: this.selector,
-      inclusionPriority: this.inclusionPriority,
+      grammarScopes: this.grammarScopes,
+      priority: this.priority,
     };
   }
+}
+
+function getFormatOptions(editor: atom$TextEditor): FormatOptions {
+  return {
+    tabSize: editor.getTabLength(),
+    insertSpaces: editor.getSoftTabs(),
+  };
 }

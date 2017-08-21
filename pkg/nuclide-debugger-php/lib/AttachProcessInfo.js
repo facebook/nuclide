@@ -9,20 +9,18 @@
  * @format
  */
 
-import type {
-  PhpDebuggerService as PhpDebuggerServiceType,
-} from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
+import type {PhpDebuggerService as PhpDebuggerServiceType} from '../../nuclide-debugger-php-rpc/lib/PhpDebuggerService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {ControlButtonSpecification} from '../../nuclide-debugger/lib/types';
 import type {
-  ControlButtonSpecification,
-} from '../../nuclide-debugger/lib/types';
-import type {ThreadColumn} from '../../nuclide-debugger-base/lib/types';
+  DebuggerCapabilities,
+  DebuggerProperties,
+  ThreadColumn,
+} from '../../nuclide-debugger-base/lib/types';
 
 import {DebuggerProcessInfo} from '../../nuclide-debugger-base';
 import {PhpDebuggerInstance} from './PhpDebuggerInstance';
-import {
-  getPhpDebuggerServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {getPhpDebuggerServiceByNuclideUri} from '../../nuclide-remote-connection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import logger from './utils';
@@ -37,13 +35,34 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
     return new AttachProcessInfo(this._targetUri);
   }
 
-  async preAttachActions(): Promise<void> {
+  getDebuggerCapabilities(): DebuggerCapabilities {
+    return {
+      ...super.getDebuggerCapabilities(),
+      conditionalBreakpoints: true,
+      continueToLocation: true,
+      threads: true,
+    };
+  }
+
+  getDebuggerProps(): DebuggerProperties {
+    return {
+      ...super.getDebuggerProps(),
+      customControlButtons: this._getCustomControlButtons(),
+      threadColumns: this._getThreadColumns(),
+      threadsComponentTitle: 'Requests',
+    };
+  }
+
+  preAttachActions(): Promise<void> {
     try {
       // TODO(t18124539) @nmote This should require FlowFB but when used flow
       // complains that it is an unused supression.
+      // eslint-disable-next-line nuclide-internal/flow-fb-oss
       const services = require('./fb/services');
-      services.startSlog();
-    } catch (_) {}
+      return services.startSlog();
+    } catch (_) {
+      return Promise.resolve();
+    }
   }
 
   async debug(): Promise<PhpDebuggerInstance> {
@@ -67,15 +86,7 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
     return new service.PhpDebuggerService();
   }
 
-  supportThreads(): boolean {
-    return true;
-  }
-
-  getThreadsComponentTitle(): string {
-    return 'Requests';
-  }
-
-  getThreadColumns(): ?Array<ThreadColumn> {
+  _getThreadColumns(): ?Array<ThreadColumn> {
     return [
       {
         key: 'id',
@@ -95,19 +106,7 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
     ];
   }
 
-  supportSingleThreadStepping(): boolean {
-    return true;
-  }
-
-  singleThreadSteppingEnabled(): boolean {
-    return true;
-  }
-
-  supportContinueToLocation(): boolean {
-    return true;
-  }
-
-  customControlButtons(): Array<ControlButtonSpecification> {
+  _getCustomControlButtons(): Array<ControlButtonSpecification> {
     const customControlButtons = [
       {
         icon: 'link-external',

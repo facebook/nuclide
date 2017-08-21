@@ -14,9 +14,7 @@ import type {ConfigEntry} from '../../../nuclide-rpc';
 import NuclideServer from '../../lib/NuclideServer';
 import {NuclideSocket} from '../../lib/NuclideSocket';
 import {RpcConnection} from '../../../nuclide-rpc';
-import {
-  getRemoteNuclideUriMarshalers,
-} from '../../../nuclide-marshalers-common';
+import {getRemoteNuclideUriMarshalers} from '../../../nuclide-marshalers-common';
 
 type Services = Array<ConfigEntry>;
 

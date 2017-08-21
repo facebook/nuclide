@@ -33,26 +33,25 @@ type Props = {
 export default class HhvmToolbar extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._handleDropdownChange = this._handleDropdownChange.bind(this);
-    (this: any)._updateLastScriptCommand = this._updateLastScriptCommand.bind(
-      this,
-    );
-  }
-
-  _updateLastScriptCommand(command: string): void {
-    if (this.props.projectStore.getDebugMode() === 'script') {
+  _updateLastScriptCommand = (command: string): void => {
+    if (this.props.projectStore.getDebugMode() !== 'webserver') {
       this.props.projectStore.updateLastScriptCommand(command);
     }
-  }
+  };
 
   _getMenuItems(): Array<{label: string, value: DebugMode}> {
-    return this._isTargetLaunchable(
+    const additionalOptions = [];
+    try {
+      // $FlowFB: This is suppressed elsewhere, so vary the filename.
+      const helpers = require('./fb-hhvm.js');
+      additionalOptions.push(...helpers.getAdditionalLaunchOptions());
+    } catch (e) {}
+
+    return (this._isTargetLaunchable(
       this.props.projectStore.getCurrentFilePath(),
     )
       ? DEBUG_OPTIONS
-      : NO_LAUNCH_DEBUG_OPTIONS;
+      : NO_LAUNCH_DEBUG_OPTIONS).concat(additionalOptions);
   }
 
   _isTargetLaunchable(targetFilePath: string): boolean {
@@ -79,14 +78,16 @@ export default class HhvmToolbar extends React.Component {
     ) {
       store.setDebugMode('webserver');
     }
+    this._suggestTargetIfCustomDebugMode(store.getDebugMode());
     this.refs.debugTarget.setText(store.getDebugTarget());
   }
 
   render(): React.Element<any> {
     const store = this.props.projectStore;
-    const isDebugScript = store.getDebugMode() === 'script';
+    const isDebugScript = store.getDebugMode() !== 'webserver';
     const isDisabled = !isDebugScript;
     const value = store.getDebugTarget();
+
     return (
       <div className="hhvm-toolbar">
         <Dropdown
@@ -128,7 +129,26 @@ export default class HhvmToolbar extends React.Component {
     );
   }
 
-  _handleDropdownChange(value: DebugMode) {
-    this.props.projectStore.setDebugMode(value);
+  _suggestTargetIfCustomDebugMode(debugMode: DebugMode) {
+    // If a custom debug mode is selected, suggest a debug target for the user.
+    if (DEBUG_OPTIONS.find(option => option.value === debugMode) == null) {
+      try {
+        // $FlowFB
+        const helpers = require('./fb-hhvm');
+        const store = this.props.projectStore;
+        const suggestedTarget = helpers.suggestDebugTargetName(
+          debugMode,
+          store.getCurrentFilePath(),
+        );
+        if (suggestedTarget != null) {
+          store.updateLastScriptCommand(suggestedTarget);
+        }
+      } catch (e) {}
+    }
   }
+
+  _handleDropdownChange = (value: DebugMode) => {
+    this.props.projectStore.setDebugMode(value);
+    this._suggestTargetIfCustomDebugMode(value);
+  };
 }

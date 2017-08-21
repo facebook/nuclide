@@ -1,9 +1,10 @@
 /**
- * Copyright (c) 2015-present, Facebook, Inc.
+ * Copyright (c) 2017-present, Facebook, Inc.
  * All rights reserved.
  *
- * This source code is licensed under the license found in the LICENSE file in
- * the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
  * @format
@@ -51,7 +52,6 @@ import child_process from 'child_process';
 import idx from 'idx';
 import invariant from 'assert';
 import {Observable, TimeoutError} from 'rxjs';
-import {quote} from 'shell-quote';
 
 import UniversalDisposable from './UniversalDisposable';
 import nuclideUri from './nuclideUri';
@@ -60,6 +60,7 @@ import {MultiMap} from './collection';
 import {observableFromSubscribeFunction} from './event';
 import {observeStream} from './stream';
 import {splitStream, takeWhileInclusive} from './observable';
+import {shellQuote} from './string';
 
 // TODO(T17266325): Replace this in favor of `atom.whenShellEnvironmentLoaded()` when it lands
 import atomWhenShellEnvironmentLoaded from './whenShellEnvironmentLoaded';
@@ -292,9 +293,8 @@ export function getOutputStream(
   options?: GetOutputStreamOptions,
   rest: void,
 ): Observable<ProcessMessage> {
-  const chunk = idx(options, _ => _.splitByLines) === false
-    ? x => x
-    : splitStream;
+  const chunk =
+    idx(options, _ => _.splitByLines) === false ? x => x : splitStream;
   const maxBuffer = idx(options, _ => _.maxBuffer);
   const isExitError = idx(options, _ => _.isExitError) || isExitErrorDefault;
   const exitErrorBufferSize = idx(options, _ => _.exitErrorBufferSize) || 2000;
@@ -387,9 +387,22 @@ export function scriptifyCommand<T>(
     // On OS X, script takes the program to run and its arguments as varargs at the end.
     return ['script', ['-q', '/dev/null', command].concat(args), options];
   } else {
-    // On Linux, script takes the command to run as the -c parameter.
-    const allArgs = [command].concat(args);
-    return ['script', ['-q', '/dev/null', '-c', quote(allArgs)], options];
+    // On Linux, script takes the command to run as the -c parameter so we have to combine all of
+    // the arguments into a single string. Apparently, because of how `script` works, however, we
+    // wind up with double escapes. So we just strip one level of them.
+    const joined = shellQuote([command, ...args]).replace(/\\\\/g, '\\');
+    // flowlint-next-line sketchy-null-mixed:off
+    const opts = options || {};
+    // flowlint-next-line sketchy-null-mixed:off
+    const env = opts.env || {};
+    return [
+      'script',
+      ['-q', '/dev/null', '-c', joined],
+      // `script` will use `SHELL`, but shells have different behaviors with regard to escaping. To
+      // make sure that out escaping is correct, we need to force a particular shell.
+      // $FlowIssue: Adding SHELL here makes it no longer really T
+      {...opts, env: {...env, SHELL: '/bin/bash'}},
+    ];
   }
 }
 
@@ -444,6 +457,10 @@ export async function getOriginalEnvironment(): Promise<Object> {
           envVar.substring(0, equalIndex)
         ] = envVar.substring(equalIndex + 1);
       }
+    }
+    // Guard against invalid original environments.
+    if (!Object.keys(cachedOriginalEnvironment).length) {
+      cachedOriginalEnvironment = process.env;
     }
   } else {
     cachedOriginalEnvironment = process.env;
@@ -683,9 +700,8 @@ export class ProcessExitError extends Error {
   ) {
     // $FlowIssue: This isn't typed in the Flow node type defs
     const {spawnargs} = proc;
-    const commandName = spawnargs[0] === process.execPath
-      ? spawnargs[1]
-      : spawnargs[0];
+    const commandName =
+      spawnargs[0] === process.execPath ? spawnargs[1] : spawnargs[0];
     super(
       `"${commandName}" failed with ${exitEventToMessage({
         exitCode,
@@ -734,9 +750,8 @@ export class ProcessTimeoutError extends Error {
   constructor(timeout: number, proc: child_process$ChildProcess) {
     // $FlowIssue: This isn't typed in the Flow node type defs
     const {spawnargs} = proc;
-    const commandName = spawnargs[0] === process.execPath
-      ? spawnargs[1]
-      : spawnargs[0];
+    const commandName =
+      spawnargs[0] === process.execPath ? spawnargs[1] : spawnargs[0];
     super(`"${commandName}" timed out after ${timeout}ms`);
     this.name = 'ProcessTimeoutError';
   }
@@ -755,14 +770,15 @@ const MAX_LOGGED_CALLS = 100;
 const PREVERVED_HISTORY_CALLS = 50;
 
 const noopDisposable = {dispose: () => {}};
-const whenShellEnvironmentLoaded = typeof atom !== 'undefined' &&
+const whenShellEnvironmentLoaded =
+  typeof atom !== 'undefined' &&
   atomWhenShellEnvironmentLoaded &&
   !atom.inSpecMode()
-  ? atomWhenShellEnvironmentLoaded
-  : cb => {
-      cb();
-      return noopDisposable;
-    };
+    ? atomWhenShellEnvironmentLoaded
+    : cb => {
+        cb();
+        return noopDisposable;
+      };
 
 export const loggedCalls = [];
 function logCall(duration, command, args) {
@@ -809,15 +825,17 @@ function createProcessStream(
   const inputOption = options.input;
   let input;
   if (inputOption != null) {
-    input = typeof inputOption === 'string'
-      ? Observable.of(inputOption)
-      : inputOption;
+    input =
+      typeof inputOption === 'string'
+        ? Observable.of(inputOption)
+        : inputOption;
   }
 
   return observableFromSubscribeFunction(whenShellEnvironmentLoaded)
     .take(1)
     .switchMap(() => {
       const {dontLogInNuclide, killTreeWhenDone, timeout} = options;
+      // flowlint-next-line sketchy-null-number:off
       const enforceTimeout = timeout
         ? x =>
             // TODO: Use `timeoutWith()` when we upgrade to an RxJS that has it.
@@ -931,6 +949,7 @@ function createProcessStream(
           throw err;
         })
         .finally(() => {
+          // flowlint-next-line sketchy-null-mixed:off
           if (!proc.wasKilled && !finished) {
             killProcess(proc, Boolean(killTreeWhenDone));
           }

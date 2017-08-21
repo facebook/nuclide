@@ -138,8 +138,7 @@ the implementation (i.e., `.cpp` or `.m`) files.
 
 ## Debugging
 
-Nuclide has support for both [iOS](/docs/platforms/ios) debugging through
-[React Native](/docs/platforms/react-native/#debugging) and [Buck](http://buckbuild.com)
+Nuclide has support for [iOS](/docs/platforms/ios) debugging and [Buck](http://buckbuild.com)
 for native Objective-C applications (i.e., `.m` files).
 
 > Debugging Swift applications is currently not supported.

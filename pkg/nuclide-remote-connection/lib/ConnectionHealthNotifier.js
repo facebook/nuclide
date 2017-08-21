@@ -26,11 +26,15 @@ type HeartbeatNotification = {
   code: string,
 };
 
+// Returning true short-circuits the default error handling in onHeartbeatError()
+export type OnHeartbeatErrorCallback = (errorCode: string) => boolean;
+
 // Provides feedback to the user of the health of a NuclideSocket.
 export class ConnectionHealthNotifier {
   _heartbeatNetworkAwayCount: number;
   _lastHeartbeatNotification: ?HeartbeatNotification;
   _subscription: IDisposable;
+  _onHeartbeatError: ?OnHeartbeatErrorCallback;
 
   constructor(host: string, socket: NuclideSocket) {
     this._heartbeatNetworkAwayCount = 0;
@@ -50,10 +54,10 @@ export class ConnectionHealthNotifier {
       dismissable: boolean,
       askToReload: boolean,
     ) => {
-      const {code, notification: existingNotification} = this
-        ._lastHeartbeatNotification || {};
+      const {code, notification: existingNotification} =
+        this._lastHeartbeatNotification || {};
       if (code && code === errorCode && dismissable) {
-        // A dismissible heartbeat notification with this code is already active.
+        // A dismissable heartbeat notification with this code is already active.
         return;
       }
       let notification = null;
@@ -127,6 +131,11 @@ export class ConnectionHealthNotifier {
         },
       });
       logger.info('Heartbeat network error:', code, originalCode, message);
+
+      if (this._onHeartbeatError != null && this._onHeartbeatError(error)) {
+        return;
+      }
+
       switch (code) {
         case 'NETWORK_AWAY':
           // Notify switching networks, disconnected, timeout, unreachable server or fragile
@@ -152,7 +161,9 @@ export class ConnectionHealthNotifier {
             HEARTBEAT_NOTIFICATION_ERROR,
             code,
             '**Nuclide Server Is Not Reachable**<br/>' +
-              `It could be running on a port that is not accessible: ${String(port)}.`,
+              `It could be running on a port that is not accessible: ${String(
+                port,
+              )}.`,
             /* dismissable */ true,
             /* askToReload */ false,
           );
@@ -183,6 +194,12 @@ export class ConnectionHealthNotifier {
       socket.onHeartbeat(onHeartbeat),
       socket.onHeartbeatError(onHeartbeatError),
     );
+  }
+
+  // Sets function to be called on Heartbeat error.
+  // Function should return true to short-circuit the rest of the error logic.
+  setOnHeartbeatError(onHeartbeatError: ?OnHeartbeatErrorCallback): void {
+    this._onHeartbeatError = onHeartbeatError;
   }
 
   dispose(): void {

@@ -262,7 +262,7 @@ export class NuxManager {
         //    ii) there is a NUX-specific GK and the user passes it
         const shouldShowNuxes = isGkEnabled('cpe_nuclide')
           ? isGkEnabled('nuclide_all_nuxes') &&
-              (gkID == null || isGkEnabled(gkID))
+            (gkID == null || isGkEnabled(gkID))
           : true;
 
         // No longer need to cleanup

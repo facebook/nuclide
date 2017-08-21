@@ -16,13 +16,13 @@
         "^1.0.0 || ^2.0.0": "consumeLinterProvider"
       }
     },
-    "nuclide-diagnostics": {
+    "DEPRECATED-nuclide-diagnostics": {
       "versions": {
         "0.1.0": "consumeDiagnosticsProviderV1",
         "0.2.0": "consumeDiagnosticsProviderV2"
       }
     },
-    "atom-ide-diagnostics": {
+    "DEPRECATED-diagnostics": {
       "versions": {
         "0.1.0": "consumeDiagnosticsProviderV1",
         "0.2.0": "consumeDiagnosticsProviderV2"
@@ -30,7 +30,7 @@
     }
   },
   "providedServices": {
-    "atom-ide-diagnostics-store": {
+    "diagnostics-store": {
       "versions": {
         "0.0.0": "provideDiagnosticUpdates",
         "0.2.0": "provideObservableDiagnosticUpdates"

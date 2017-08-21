@@ -3,6 +3,6 @@
     "ctrl-cmd-l": "nuclide-vcs-log:show-log-for-active-editor"
   },
   ".platform-win32 atom-text-editor, .platform-linux atom-text-editor": {
-    "ctrl-shift-l": "nuclide-vcs-log:show-log-for-active-editor"
+    "ctrl-alt-l": "nuclide-vcs-log:show-log-for-active-editor"
   }
 }

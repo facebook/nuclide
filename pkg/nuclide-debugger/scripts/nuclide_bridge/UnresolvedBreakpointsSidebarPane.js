@@ -34,9 +34,6 @@ class UnresolvedBreakpointsComponent extends React.Component {
 
     this._changeHandler = null;
     this.state = this._getState();
-
-    (this: any)._updateState = this._updateState.bind(this);
-    (this: any)._getState = this._getState.bind(this);
   }
 
   componentWillMount() {
@@ -53,9 +50,11 @@ class UnresolvedBreakpointsComponent extends React.Component {
   render() {
     const children = this.state.breakpoints.map(breakpoint => {
       const {pathname} = url.parse(breakpoint.url);
+      // flowlint-next-line sketchy-null-string:off
       invariant(pathname);
       const longRep = `${pathname}:${breakpoint.line + 1}`;
-      const shortRep = `${nuclideUri.basename(pathname)}:${breakpoint.line + 1}`;
+      const shortRep = `${nuclideUri.basename(pathname)}:${breakpoint.line +
+        1}`;
       return (
         <li
           key={longRep}
@@ -79,19 +78,18 @@ class UnresolvedBreakpointsComponent extends React.Component {
     NuclideBridge.sendOpenSourceLocation(breakpoint.url, breakpoint.line);
   }
 
-  _updateState() {
+  _updateState = () => {
     this.setState(this._getState());
-  }
+  };
 
-  _getState() {
+  _getState = () => {
     return {
       breakpoints: NuclideBridge.getUnresolvedBreakpointsList(),
     };
-  }
+  };
 }
 
-export default class UnresolvedBreakpointsSidebarPane
-  extends WebInspector.SidebarPane {
+export default class UnresolvedBreakpointsSidebarPane extends WebInspector.SidebarPane {
   constructor() {
     // WebInspector classes are not es6 classes, but babel forces a super call.
     super();

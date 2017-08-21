@@ -59,6 +59,13 @@
   text-align: center;
 }
 
+.nuclide-debugger-target-description {
+  color: @text-color-highlight;
+   padding-bottom: 0.5em;
+  text-align: center;
+  font-size: 8pt;
+}
+
 .nuclide-debugger-section-header {
   padding: 0px 5px;
 }
@@ -136,12 +143,37 @@ Use flexbox cross-axis stretch to fill the vertical space.
   }
 }
 
+.nuclide-debugger-breakpoint-condition {
+  font-size: 8pt;
+  padding: 3px 0px 3px 25px;
+  color: @text-color-warning;
+  .icon {
+    height: 8px;
+  }
+}
+
+.nuclide-debugger-breakpoint-hitcount {
+  font-size: 8pt;
+  padding: 3px 0px 3px 25px;
+  color: @text-color-success;
+}
+
 .nuclide-debugger-breakpoint-unresolved {
   text-decoration: line-through;
 }
 
 .nuclide-debugger-breakpoint-disabled {
   text-decoration: line-through;
+}
+
+.nuclide-debugger-breakpoint-with-condition {
+  color: @text-color-warning;
+}
+
+.nuclide-debugger-breakpoint-condition {
+  font-size: 8pt;
+  padding: 3px 0px 3px 25px;
+  color: @text-color-warning;
 }
 
 /* Watch Expressions */
@@ -172,12 +204,23 @@ Use flexbox cross-axis stretch to fill the vertical space.
   overflow: visible;
 }
 
-.nuclide-debugger-watch-expression-xout {
-  cursor: pointer;
+.nuclide-debugger-watch-expression-controls {
   opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0.8em;
+  line-height: 2em;
+  background-color: @background-color-highlight;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
-.nuclide-debugger-watch-expression-xout.icon::before {
+.nuclide-debugger-watch-expression-control {
+  cursor: pointer;
+  color: @text-color-highlight;
+}
+
+.nuclide-debugger-watch-expression-control.icon::before {
   margin-right: 0px;
   text-align: center;
 }
@@ -185,13 +228,15 @@ Use flexbox cross-axis stretch to fill the vertical space.
 .nuclide-debugger-watch-expression-row:hover {
   background-color: @background-color-highlight;
 
-  .nuclide-debugger-watch-expression-xout {
-    opacity: 0.5;
+  .nuclide-debugger-watch-expression-controls {
+    opacity: 1;
+    color: fade(@text-color-highlight, 50%);
   }
 }
 
-.nuclide-debugger-watch-expression-xout.nuclide-debugger-watch-expression-xout:hover {
+.nuclide-debugger-watch-expression-controls.nuclide-debugger-watch-expression-controls:hover {
   opacity: 1;
+  color: @text-color-highlight;
 }
 
 .nuclide-debugger-watch-expression-input {
@@ -315,4 +360,27 @@ Use flexbox cross-axis stretch to fill the vertical space.
   height: 100%;
   display: flex;
   justify-content: center;
+}
+
+/* Breakpoint config dialog */
+.nuclide-debugger-bp-config-header {
+  align-items: baseline;
+  margin-bottom: 1em;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.nuclide-debugger-bp-config-actions {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  padding-top: 10px;
+  position: relative;
+  right: 8px;
+  bottom: 8px;
+}
+
+.nuclide-debugger-bp-dialog {
+  font-family: @font-family;
+  font-size: 12pt;
 }

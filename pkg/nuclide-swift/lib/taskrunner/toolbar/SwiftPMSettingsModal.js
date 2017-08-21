@@ -110,9 +110,7 @@ export default class SwiftPMSettingsModal extends React.Component {
           </div>
           <div style={{display: 'flex', justifyContent: 'flex-end'}}>
             <ButtonGroup>
-              <Button onClick={this.props.onDismiss}>
-                Cancel
-              </Button>
+              <Button onClick={this.props.onDismiss}>Cancel</Button>
               <Button
                 buttonType={ButtonTypes.PRIMARY}
                 onClick={this._onSave.bind(this)}>

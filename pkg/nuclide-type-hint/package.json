@@ -15,9 +15,9 @@
         "0.0.0": "consumeTypehintProvider"
       }
     },
-    "nuclide-datatip.provider": {
+    "datatip": {
       "versions": {
-        "0.0.0": "consumeDatatipService"
+        "0.1.0": "consumeDatatipService"
       }
     }
   }

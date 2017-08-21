@@ -18,15 +18,10 @@ type Props = {
 export default class FilteredMessagesReminder extends React.Component {
   props: Props;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any).handleClick = this.handleClick.bind(this);
-  }
-
-  handleClick(e: SyntheticEvent) {
+  handleClick = (e: SyntheticEvent) => {
     e.preventDefault();
     this.props.onReset();
-  }
+  };
 
   render(): ?React.Element<any> {
     const {filteredRecordCount} = this.props;
@@ -39,8 +34,8 @@ export default class FilteredMessagesReminder extends React.Component {
         <div style={{flex: 1}}>
           <pre>
             {filteredRecordCount}{' '}
-            {filteredRecordCount === 1 ? 'message is' : 'messages are'}{' '}
-            hidden by filters.
+            {filteredRecordCount === 1 ? 'message is' : 'messages are'} hidden
+            by filters.
           </pre>
         </div>
         <a href="#" onClick={this.handleClick}>

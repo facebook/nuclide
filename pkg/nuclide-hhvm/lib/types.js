@@ -9,4 +9,9 @@
  * @format
  */
 
-export type DebugMode = 'webserver' | 'script';
+// $FlowFB
+import type {CustomDebugMode} from './fb-types';
+
+export type PhpDebugMode = 'webserver' | 'script';
+
+export type DebugMode = PhpDebugMode | CustomDebugMode;

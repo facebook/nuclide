@@ -1,18 +1,18 @@
 {
   ".platform-darwin, .platform-linux, .platform-win32": {
-    "alt-shift-d": "nuclide-diagnostics-ui:toggle-table",
-    "alt-shift-a": "nuclide-diagnostics-ui:fix-all-in-current-file",
-    "alt-ctrl-<": "nuclide-diagnostics-ui:go-to-first-diagnostic",
-    "alt-ctrl->": "nuclide-diagnostics-ui:go-to-last-diagnostic",
-    "alt-<": "nuclide-diagnostics-ui:go-to-previous-diagnostic",
-    "alt->": "nuclide-diagnostics-ui:go-to-next-diagnostic"
+    "alt-shift-d": "diagnostics:toggle-table",
+    "alt-shift-a": "diagnostics:fix-all-in-current-file",
+    "alt-ctrl-<": "diagnostics:go-to-first-diagnostic",
+    "alt-ctrl->": "diagnostics:go-to-last-diagnostic",
+    "alt-<": "diagnostics:go-to-previous-diagnostic",
+    "alt->": "diagnostics:go-to-next-diagnostic"
   },
   ".platform-darwin": {
-    "alt-cmd-<": "nuclide-diagnostics-ui:go-to-previous-diagnostic-trace",
-    "alt-cmd->": "nuclide-diagnostics-ui:go-to-next-diagnostic-trace"
+    "alt-cmd-<": "diagnostics:go-to-previous-diagnostic-trace",
+    "alt-cmd->": "diagnostics:go-to-next-diagnostic-trace"
   },
   ".platform-linux, .platform-win32": {
-    "alt-ctrl-K": "nuclide-diagnostics-ui:go-to-previous-diagnostic-trace",
-    "alt-ctrl-L": "nuclide-diagnostics-ui:go-to-next-diagnostic-trace"
+    "alt-ctrl-K": "diagnostics:go-to-previous-diagnostic-trace",
+    "alt-ctrl-L": "diagnostics:go-to-next-diagnostic-trace"
   }
 }

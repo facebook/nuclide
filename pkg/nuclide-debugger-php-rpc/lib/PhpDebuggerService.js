@@ -9,15 +9,21 @@
  * @format
  */
 
+import type {ConnectableObservable} from 'rxjs';
+import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
+import type {AtomNotification} from '../../nuclide-debugger-base/lib/types';
+
 import logger from './utils';
 import {hphpdMightBeAttached} from './helpers';
 import {clearConfig, setConfig} from './config';
 import {setRootDirectoryUri} from './ConnectionUtils';
-import {MessageTranslator} from './MessageTranslator';
-import {CompositeDisposable} from 'event-kit';
-
-import type {ConnectableObservable} from 'rxjs';
-import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {VsAdapterTypes} from '../../nuclide-debugger-common/lib/constants';
+import passesGK from '../../commons-node/passesGK';
+import {
+  ClientCallback,
+  VsDebugSessionTranslator,
+} from '../../nuclide-debugger-common';
 
 export type PhpDebuggerSessionConfig = {
   xdebugAttachPort: number,
@@ -33,11 +39,7 @@ export type PhpDebuggerSessionConfig = {
   phpRuntimeArgs: string,
   dummyRequestFilePath: string,
   stopOneStopAll: boolean,
-};
-
-export type NotificationMessage = {
-  type: 'info' | 'warning' | 'error' | 'fatalError',
-  message: string,
+  launchWrapperCommand?: string,
 };
 
 // Connection states
@@ -46,14 +48,9 @@ const CONNECTING = 'connecting';
 const CONNECTED = 'connected';
 const CLOSED = 'closed';
 
-let lastServiceObjectDispose = null;
-
 /**
- * Proxy for converting between Chrome dev tools debugger
+ * Proxy for converting between Nuclide debugger
  * and HHVM Dbgp debuggee.
- *
- * Chrome Debugging protocol spec is here:
- * https://developer.chrome.com/devtools/docs/protocol/1.1/index
  *
  * Dbgp spec is here:
  * http://xdebug.org/docs-dbgp.php
@@ -63,31 +60,24 @@ let lastServiceObjectDispose = null;
  *    After the promise returned by debug() is resolved, call sendCommand() to send Chrome Commands,
  *    and be prepared to receive notifications via the server notifications observable.
  */
-import {ClientCallback} from './ClientCallback';
-import passesGK from '../../commons-node/passesGK';
-
 const GK_PAUSE_ONE_PAUSE_ALL = 'nuclide_debugger_php_pause_one_pause_all';
 
 export class PhpDebuggerService {
   _state: string;
-  _translator: ?MessageTranslator;
+  _translator: ?VsDebugSessionTranslator;
   _clientCallback: ClientCallback;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    if (lastServiceObjectDispose != null) {
-      lastServiceObjectDispose();
-    }
-    lastServiceObjectDispose = this.dispose.bind(this);
     this._state = INITIAL;
     this._translator = null;
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._clientCallback = new ClientCallback();
     this._disposables.add(this._clientCallback);
   }
 
-  getNotificationObservable(): ConnectableObservable<NotificationMessage> {
-    return this._clientCallback.getNotificationObservable().publish();
+  getNotificationObservable(): ConnectableObservable<AtomNotification> {
+    return this._clientCallback.getAtomNotificationObservable().publish();
   }
 
   getServerMessageObservable(): ConnectableObservable<string> {
@@ -111,33 +101,57 @@ export class PhpDebuggerService {
     logger.setLevel(config.logLevel);
     this._setState(CONNECTING);
 
-    const translator = new MessageTranslator(this._clientCallback);
-    this._disposables.add(translator);
-    translator.onSessionEnd(() => {
-      this._onEnd();
-    });
+    const translator = new VsDebugSessionTranslator(
+      VsAdapterTypes.HHVM,
+      {
+        command: this._getNodePath(),
+        args: [require.resolve('./vscode/vscode-debugger-entry')],
+      },
+      'launch',
+      {
+        config,
+        trace: false,
+      },
+      this._clientCallback,
+      logger,
+    );
+    this._disposables.add(
+      translator,
+      translator.observeSessionEnd().subscribe(this._onEnd.bind(this)),
+      () => (this._translator = null),
+    );
     this._translator = translator;
-
+    await translator.initilize();
     this._setState(CONNECTED);
 
     return 'HHVM connected';
   }
 
+  _getNodePath(): string {
+    try {
+      // $FlowFB
+      return require('../../nuclide-debugger-common/lib/fb-constants')
+        .DEVSERVER_NODE_PATH;
+    } catch (error) {
+      return 'node';
+    }
+  }
+
   async sendCommand(message: string): Promise<void> {
     logger.info('Recieved command: ' + message);
     if (this._translator) {
-      await this._translator.handleCommand(message);
+      this._translator.processCommand(JSON.parse(message));
     }
   }
 
   async _warnIfHphpdAttached(): Promise<void> {
     const mightBeAttached = await hphpdMightBeAttached();
     if (mightBeAttached) {
-      this._clientCallback.sendUserMessage('notification', {
-        type: 'warning',
-        message: 'You may have an hphpd instance currently attached to your server!' +
+      this._clientCallback.sendAtomNotification(
+        'warning',
+        'You may have an hphpd instance currently attached to your server!' +
           '<br />Please kill it, or the Nuclide debugger may not work properly.',
-      });
+      );
     }
   }
 

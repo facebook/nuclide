@@ -49,7 +49,8 @@ export class StatusBarTileComponent extends React.Component {
       if (featureConfig.get(COLOR_DISPLAY_SETTING)) {
         colorClasses = {
           'text-error': percentage <= REALLY_BAD_THRESHOLD,
-          'text-warning': percentage > REALLY_BAD_THRESHOLD &&
+          'text-warning':
+            percentage > REALLY_BAD_THRESHOLD &&
             percentage <= NOT_GREAT_THRESHOLD,
           // Nothing applied if percentage > NOT_GREAT_THRESHOLD,
           'nuclide-type-coverage-status-bar-active': this.props.isActive,

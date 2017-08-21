@@ -16,6 +16,7 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {track} from '../../nuclide-analytics';
 import {getLogger} from 'log4js';
 import {BehaviorSubject, Observable, Subscription} from 'rxjs';
+import {WORKSPACE_VIEW_URI as CONSOLE_VIEW_URI} from './ui/ConsoleContainer';
 
 type TrackingEventNames = {
   start: string,
@@ -73,11 +74,12 @@ export class LogTailer {
     this._eventNames = options.trackingEvents;
     this._errorHandler = options.handleError;
     const messages = options.messages.share();
-    this._ready = options.ready == null
-      ? null
-      : // Guard against a never-ending ready stream.
-        // $FlowFixMe: Add `materialize()` to Rx defs
-        options.ready.takeUntil(messages.materialize().takeLast(1));
+    this._ready =
+      options.ready == null
+        ? null
+        : // Guard against a never-ending ready stream.
+          // $FlowFixMe: Add `materialize()` to Rx defs
+          options.ready.takeUntil(messages.materialize().takeLast(1));
     this._runningCallbacks = [];
     this._startCount = 0;
     this._statuses = new BehaviorSubject('stopped');
@@ -120,7 +122,8 @@ export class LogTailer {
         if (!errorWasHandled) {
           // Default error handling.
           const message =
-            `An unexpected error occurred while running the ${this._name} process` +
+            `An unexpected error occurred while running the ${this
+              ._name} process` +
             (err.message ? `:\n\n**${err.message}**` : '.');
           const notification = atom.notifications.addError(message, {
             dismissable: true,
@@ -206,11 +209,8 @@ export class LogTailer {
   }
 
   _start(trackCall: boolean): void {
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-console:toggle',
-      {visible: true},
-    );
+    // eslint-disable-next-line nuclide-internal/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI);
 
     const currentStatus = this._statuses.getValue();
     if (currentStatus === 'starting') {

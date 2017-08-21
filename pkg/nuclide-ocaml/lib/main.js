@@ -14,9 +14,7 @@ import type {
   LinterProvider,
   OutlineProvider,
 } from 'atom-ide-ui';
-import type {
-  TypeHintProvider as TypeHintProviderType,
-} from '../../nuclide-type-hint/lib/types';
+import type {TypeHintProvider as TypeHintProviderType} from '../../nuclide-type-hint/lib/types';
 
 import {trackTiming} from '../../nuclide-analytics';
 import HyperclickProvider from './HyperclickProvider';
@@ -28,6 +26,8 @@ import TypeHintProvider from './TypeHintProvider';
 import {cases} from './DestructureHelpers';
 import {getEntireFormatting} from './CodeFormatHelpers';
 import {CompositeDisposable} from 'atom';
+import {createLanguageService} from './OCamlLanguage';
+import {getUseLspConnection} from '../../nuclide-ocaml-rpc/lib/OCamlService';
 
 export function getHyperclickProvider() {
   return HyperclickProvider;
@@ -75,18 +75,20 @@ export function createTypeHintProvider(): TypeHintProviderType {
 
 export function createCodeFormatProvider(): CodeFormatProvider {
   return {
-    selector: Array.from(GRAMMARS).join(', '),
-    inclusionPriority: 1,
+    grammarScopes: Array.from(GRAMMARS),
+    priority: 1,
     formatEntireFile: (editor, range) => getEntireFormatting(editor, range),
   };
 }
 
-let disposables: ?atom$CompositeDisposable;
+let disposables: atom$CompositeDisposable = new CompositeDisposable();
 
-export function activate() {
-  if (!disposables) {
-    disposables = new CompositeDisposable();
-
+export async function activate(): Promise<void> {
+  if (await getUseLspConnection()) {
+    const ocamlLspLanguageService = createLanguageService();
+    ocamlLspLanguageService.activate();
+    disposables.add(ocamlLspLanguageService);
+  } else {
     disposables.add(
       atom.commands.add('atom-workspace', 'nuclide-ocaml:destructure', () => {
         const editor = atom.workspace.getActiveTextEditor();
@@ -94,11 +96,37 @@ export function activate() {
           cases(editor, editor.getCursorScreenPosition());
         }
       }),
+      atom.packages.serviceHub.provide(
+        'outline-view',
+        '0.1.0',
+        provideOutlines(),
+      ),
+      atom.packages.serviceHub.provide(
+        'nuclide-type-hint.provider',
+        '0.0.0',
+        createTypeHintProvider(),
+      ),
+      atom.packages.serviceHub.provide(
+        'autocomplete.provider',
+        '2.0.0',
+        createAutocompleteProvider(),
+      ),
+      atom.packages.serviceHub.provide(
+        'hyperclick',
+        '0.1.0',
+        getHyperclickProvider(),
+      ),
+      atom.packages.serviceHub.provide('linter', '1.0.0', provideLinter()),
+      atom.packages.serviceHub.provide(
+        'code-format.file',
+        '0.1.0',
+        createCodeFormatProvider(),
+      ),
     );
   }
 }
 
-export function deactivate(): void {
-  disposables && disposables.dispose();
-  disposables = null;
+export async function deactivate(): Promise<void> {
+  disposables.dispose();
+  disposables = new CompositeDisposable();
 }

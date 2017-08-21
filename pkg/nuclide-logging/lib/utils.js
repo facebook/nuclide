@@ -10,6 +10,7 @@
  */
 
 import log4js from 'log4js';
+import StackTrace from 'stack-trace';
 
 import type {LoggingEvent} from './types';
 
@@ -33,11 +34,18 @@ export function patchErrorsOfLoggingEvent(
 
   loggingEventCopy.data = loggingEventCopy.data.map(item => {
     if (item instanceof Error) {
+      const stackTrace = StackTrace.parse(item).map(callsite => ({
+        functionName: callsite.getFunctionName(),
+        methodName: callsite.getMethodName(),
+        fileName: callsite.getFileName(),
+        lineNumber: callsite.getLineNumber(),
+        columnNumber: callsite.getColumnNumber(),
+      }));
       return {
         name: item.name,
         message: item.message,
         stack: item.stack,
-        stackTrace: item.stackTrace,
+        stackTrace,
       };
     }
     return item;

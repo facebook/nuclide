@@ -113,6 +113,7 @@ export default (async function runCommand(
 function resolvePath(fileName): string {
   if (!nuclideUri.isAbsolute(fileName)) {
     const pwd = process.env.PWD;
+    // flowlint-next-line sketchy-null-string:off
     invariant(pwd);
     return nuclideUri.join(pwd, fileName);
   } else {

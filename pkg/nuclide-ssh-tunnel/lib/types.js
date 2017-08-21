@@ -12,7 +12,11 @@
 import Immutable from 'immutable';
 
 export type SshTunnelService = {
-  openTunnel(tunnel: Tunnel): IDisposable,
+  openTunnel(
+    tunnel: Tunnel,
+    onOpen: () => void,
+    onClose: (?Error) => void,
+  ): IDisposable,
 };
 
 export type Store = {
@@ -21,17 +25,17 @@ export type Store = {
 };
 
 export type AppState = {
-  openTunnels: Immutable.Map<Tunnel, () => void>,
+  openTunnels: Immutable.Map<Tunnel, OpenTunnel>,
 };
 
 export type Remote = {
   host: string,
-  port: string,
+  port: number,
 };
 
 export type Local = {
   host: 'localhost',
-  port: string,
+  port: number,
 };
 
 export type Tunnel = {
@@ -39,12 +43,25 @@ export type Tunnel = {
   to: Local,
 };
 
-export type Action = OpenTunnelAction | AddOpenTunnelAction | CloseTunnelAction;
+export type OpenTunnel = {
+  close(error: ?Error): void,
+  state: TunnelState,
+};
+
+export type TunnelState = 'initializing' | 'ready' | 'active';
+
+export type Action =
+  | OpenTunnelAction
+  | AddOpenTunnelAction
+  | CloseTunnelAction
+  | SetTunnelStateAction;
 
 export type OpenTunnelAction = {
   type: 'OPEN_TUNNEL',
   payload: {
     tunnel: Tunnel,
+    onOpen: () => void,
+    onClose: (?Error) => void,
   },
 };
 
@@ -52,7 +69,7 @@ export type AddOpenTunnelAction = {
   type: 'ADD_OPEN_TUNNEL',
   payload: {
     tunnel: Tunnel,
-    close: () => void,
+    close: (?Error) => void,
   },
 };
 
@@ -60,5 +77,14 @@ export type CloseTunnelAction = {
   type: 'CLOSE_TUNNEL',
   payload: {
     tunnel: Tunnel,
+    error: ?Error,
+  },
+};
+
+export type SetTunnelStateAction = {
+  type: 'SET_TUNNEL_STATE',
+  payload: {
+    tunnel: Tunnel,
+    state: TunnelState,
   },
 };

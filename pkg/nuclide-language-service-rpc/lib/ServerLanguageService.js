@@ -15,24 +15,24 @@ import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
-  FindReferencesReturn,
-} from '../../nuclide-find-references/lib/rpc-types';
-import type {
   DefinitionQueryResult,
   DiagnosticProviderUpdate,
-  FileDiagnosticUpdate,
+  FileDiagnosticMessages,
+  FindReferencesReturn,
   Outline,
+  CodeAction,
+  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {
+  AutocompleteRequest,
   AutocompleteResult,
-  SymbolResult,
+  FormatOptions,
   LanguageService,
+  SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
-import type {
-  NuclideEvaluationExpression,
-} from '../../nuclide-debugger-interfaces/rpc-types';
+import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
 import invariant from 'assert';
 import {getBufferAtVersion} from '../../nuclide-open-files-rpc';
@@ -49,7 +49,7 @@ export type SingleFileLanguageService = {
     buffer: simpleTextBuffer$TextBuffer,
   ): Promise<?DiagnosticProviderUpdate>,
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticUpdate>>,
+  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>>,
 
   getAutocompleteSuggestions(
     filePath: NuclideUri,
@@ -78,6 +78,12 @@ export type SingleFileLanguageService = {
     buffer: simpleTextBuffer$TextBuffer,
   ): Promise<?Outline>,
 
+  getCodeActions(
+    filePath: NuclideUri,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>>,
+
   typeHint(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
@@ -94,12 +100,14 @@ export type SingleFileLanguageService = {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
   formatEntireFile(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?{
     newCursor?: number,
     formatted: string,
@@ -110,6 +118,7 @@ export type SingleFileLanguageService = {
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
     triggerCharacter: string,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
   getEvaluationExpression(
@@ -152,27 +161,27 @@ export class ServerLanguageService<
     return this._service.getDiagnostics(filePath, buffer);
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticUpdate>> {
+  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
     return this._service.observeDiagnostics().publish();
   }
 
   async getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
-    activatedManually: boolean,
-    prefix: string,
+    request: AutocompleteRequest,
   ): Promise<?AutocompleteResult> {
     const filePath = fileVersion.filePath;
     const buffer = await getBufferAtVersion(fileVersion);
     if (buffer == null) {
+      // TODO: this should return null so the empty list doesn't get cached
       return {isIncomplete: false, items: []};
     }
     return this._service.getAutocompleteSuggestions(
       filePath,
       buffer,
       position,
-      activatedManually,
-      prefix,
+      request.activatedManually,
+      request.prefix,
     );
   }
 
@@ -202,6 +211,15 @@ export class ServerLanguageService<
 
   getCoverage(filePath: NuclideUri): Promise<?CoverageResult> {
     return this._service.getCoverage(filePath);
+  }
+
+  async getCodeActions(
+    fileVersion: FileVersion,
+    range: atom$Range,
+    diagnostics: Array<FileDiagnosticMessage>,
+  ): Promise<Array<CodeAction>> {
+    const {filePath} = fileVersion;
+    return this._service.getCodeActions(filePath, range, diagnostics);
   }
 
   async getOutline(fileVersion: FileVersion): Promise<?Outline> {
@@ -240,18 +258,20 @@ export class ServerLanguageService<
   async formatSource(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     const filePath = fileVersion.filePath;
     const buffer = await getBufferAtVersion(fileVersion);
     if (buffer == null) {
       return null;
     }
-    return this._service.formatSource(filePath, buffer, range);
+    return this._service.formatSource(filePath, buffer, range, options);
   }
 
   async formatEntireFile(
     fileVersion: FileVersion,
     range: atom$Range,
+    options: FormatOptions,
   ): Promise<?{
     newCursor?: number,
     formatted: string,
@@ -261,13 +281,14 @@ export class ServerLanguageService<
     if (buffer == null) {
       return null;
     }
-    return this._service.formatEntireFile(filePath, buffer, range);
+    return this._service.formatEntireFile(filePath, buffer, range, options);
   }
 
   async formatAtPosition(
     fileVersion: FileVersion,
     position: atom$Point,
     triggerCharacter: string,
+    options: FormatOptions,
   ): Promise<?Array<TextEdit>> {
     const filePath = fileVersion.filePath;
     const buffer = await getBufferAtVersion(fileVersion);
@@ -279,6 +300,7 @@ export class ServerLanguageService<
       buffer,
       position,
       triggerCharacter,
+      options,
     );
   }
 
@@ -326,12 +348,12 @@ export class ServerLanguageService<
 
 export function ensureInvalidations(
   logger: log4js$Logger,
-  diagnostics: Observable<Array<FileDiagnosticUpdate>>,
-): Observable<Array<FileDiagnosticUpdate>> {
+  diagnostics: Observable<Array<FileDiagnosticMessages>>,
+): Observable<Array<FileDiagnosticMessages>> {
   const filesWithErrors = new Set();
   const trackedDiagnostics: Observable<
-    Array<FileDiagnosticUpdate>,
-  > = diagnostics.do((diagnosticArray: Array<FileDiagnosticUpdate>) => {
+    Array<FileDiagnosticMessages>,
+  > = diagnostics.do((diagnosticArray: Array<FileDiagnosticMessages>) => {
     for (const diagnostic of diagnosticArray) {
       const filePath = diagnostic.filePath;
       if (diagnostic.messages.length === 0) {
@@ -345,7 +367,7 @@ export function ensureInvalidations(
   });
 
   const fileInvalidations: Observable<
-    Array<FileDiagnosticUpdate>,
+    Array<FileDiagnosticMessages>,
   > = Observable.defer(() => {
     logger.debug('Clearing errors after stream closed');
     return Observable.of(

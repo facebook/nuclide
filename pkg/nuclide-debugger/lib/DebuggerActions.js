@@ -50,6 +50,9 @@ import ChromeActionRegistryActions from './ChromeActionRegistryActions';
 const GK_DEBUGGER_REQUEST_WINDOW = 'nuclide_debugger_php_request_window';
 const GK_DEBUGGER_REQUEST_SENDER = 'nuclide_debugger_request_sender';
 
+// This must match URI defined in ../../nuclide-console/lib/ui/ConsoleContainer
+const CONSOLE_VIEW_URI = 'atom://nuclide/console';
+
 /**
  * Flux style action creator for actions that affect the debugger.
  */
@@ -76,11 +79,13 @@ export default class DebuggerActions {
     this.setDebuggerMode(DebuggerMode.STARTING);
     this.setDebugProcessInfo(processInfo);
     try {
+      const debuggerCapabilities = processInfo.getDebuggerCapabilities();
+      const debuggerProps = processInfo.getDebuggerProps();
       const debuggerInstance = await processInfo.debug();
       await this._store.getBridge().setupNuclideChannel(debuggerInstance);
       this._registerConsole();
       const supportThreadsWindow =
-        processInfo.supportThreads() &&
+        debuggerCapabilities.threads &&
         (await this._allowThreadsForPhp(processInfo));
       this._store
         .getSettings()
@@ -88,23 +93,21 @@ export default class DebuggerActions {
       if (supportThreadsWindow) {
         this._store
           .getSettings()
-          .set('CustomThreadColumns', processInfo.getThreadColumns());
+          .set('CustomThreadColumns', debuggerProps.threadColumns);
         this._store
           .getSettings()
-          .set('threadsComponentTitle', processInfo.getThreadsComponentTitle());
+          .set('threadsComponentTitle', debuggerProps.threadsComponentTitle);
       }
-      const singleThreadStepping = processInfo.supportSingleThreadStepping();
+      const singleThreadStepping = debuggerCapabilities.singleThreadStepping;
       this._store
         .getSettings()
         .set('SingleThreadStepping', singleThreadStepping);
-      this.toggleSingleThreadStepping(
-        singleThreadStepping && processInfo.singleThreadSteppingEnabled(),
-      );
+      this.toggleSingleThreadStepping(singleThreadStepping);
       if (
         processInfo.getServiceName() !== 'hhvm' ||
         (await passesGK(GK_DEBUGGER_REQUEST_SENDER))
       ) {
-        const customControlButtons = processInfo.customControlButtons();
+        const customControlButtons = debuggerProps.customControlButtons;
         if (customControlButtons.length > 0) {
           this.updateControlButtons(customControlButtons);
         } else {
@@ -112,7 +115,7 @@ export default class DebuggerActions {
         }
       }
 
-      if (processInfo.supportsConfigureSourcePaths()) {
+      if (debuggerCapabilities.customSourcePaths) {
         this.updateConfigureSourcePathsCallback(
           processInfo.configureSourceFilePaths.bind(processInfo),
         );
@@ -236,7 +239,6 @@ export default class DebuggerActions {
     const newDebuggerInfo = currentDebuggerInfo.clone();
     invariant(newDebuggerInfo);
 
-    atom.notifications.addInfo('Restarting debugger...');
     this.startDebugging(newDebuggerInfo);
   }
 
@@ -559,6 +561,17 @@ export default class DebuggerActions {
     });
   }
 
+  updateBreakpointHitCount(path: string, line: number, hitCount: number): void {
+    this._dispatcher.dispatch({
+      actionType: ActionTypes.UPDATE_BREAKPOINT_HITCOUNT,
+      data: {
+        path,
+        line,
+        hitCount,
+      },
+    });
+  }
+
   bindBreakpointIPC(
     path: string,
     line: number,
@@ -708,10 +721,7 @@ export default class DebuggerActions {
 
   _handleDebugModeStart(): void {
     // Open the console window if it's not already opened.
-    atom.commands.dispatch(
-      atom.views.getView(atom.workspace),
-      'nuclide-console:toggle',
-      {visible: true},
-    );
+    // eslint-disable-next-line nuclide-internal/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI);
   }
 }

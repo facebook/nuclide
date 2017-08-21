@@ -41,12 +41,13 @@ import {Observable, Scheduler} from 'rxjs';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button} from 'nuclide-commons-ui/Button';
 import {Icon} from 'nuclide-commons-ui/Icon';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 import Tabs from '../../nuclide-ui/Tabs';
 import {Badge, BadgeSizes} from '../../nuclide-ui/Badge';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import humanizeKeystroke from '../../commons-node/humanizeKeystroke';
-import {throttle, nextTick} from 'nuclide-commons/observable';
+import {throttle, microtask} from 'nuclide-commons/observable';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
@@ -126,30 +127,12 @@ export default class QuickSelectionComponent extends React.Component {
       resultsByService: initialResults,
       renderableProviders: this.props.searchResultManager.getRenderableProviders(),
       selectedService: topOuterResult != null ? topOuterResult.serviceName : '',
-      selectedDirectory: topOuterResult != null
-        ? topOuterResult.directoryName
-        : '',
+      selectedDirectory:
+        topOuterResult != null ? topOuterResult.directoryName : '',
       selectedItemIndex: topOuterResult != null ? 0 : -1,
       hasUserSelection: false,
       initialQuery,
     };
-
-    (this: any)._handleClickOpenAll = this._handleClickOpenAll.bind(this);
-    (this: any)._handleDocumentMouseDown = this._handleDocumentMouseDown.bind(
-      this,
-    );
-    (this: any)._handleKeyPress = this._handleKeyPress.bind(this);
-    (this: any)._handleMoveDown = this._handleMoveDown.bind(this);
-    (this: any)._handleMoveNextTab = this._handleMoveNextTab.bind(this);
-    (this: any)._handleMovePreviousTab = this._handleMovePreviousTab.bind(this);
-    (this: any)._handleMoveToBottom = this._handleMoveToBottom.bind(this);
-    (this: any)._handleMoveToTop = this._handleMoveToTop.bind(this);
-    (this: any)._handleMoveUp = this._handleMoveUp.bind(this);
-    (this: any)._handleProvidersChange = this._handleProvidersChange.bind(this);
-    (this: any)._handleResultsChange = this._handleResultsChange.bind(this);
-    (this: any)._handleTabChange = this._handleTabChange.bind(this);
-    (this: any)._handleTextInputChange = this._handleTextInputChange.bind(this);
-    (this: any)._select = this._select.bind(this);
   }
 
   /**
@@ -264,7 +247,7 @@ export default class QuickSelectionComponent extends React.Component {
         observableFromSubscribeFunction(cb =>
           this._getTextEditor().onDidChange(cb),
         ),
-        nextTick,
+        microtask,
         {leading: false},
       ).subscribe(this._handleTextInputChange),
       observableFromSubscribeFunction(cb =>
@@ -292,21 +275,21 @@ export default class QuickSelectionComponent extends React.Component {
     this._subscriptions.dispose();
   }
 
-  _handleClickOpenAll(): void {
+  _handleClickOpenAll = (): void => {
     if (this.state.activeTab.canOpenAll) {
       this._openAll();
     }
-  }
+  };
 
-  _handleKeyPress(e: SyntheticKeyboardEvent): void {
+  _handleKeyPress = (e: SyntheticKeyboardEvent): void => {
     if (e.shiftKey && e.key === 'Enter') {
       if (this.state.activeTab.canOpenAll) {
         this._openAll();
       }
     }
-  }
+  };
 
-  _handleMovePreviousTab(event: Event): void {
+  _handleMovePreviousTab = (event: Event): void => {
     const currentProviderName = this.props.searchResultManager.getActiveProviderName();
     const currentTabIndex = this.state.renderableProviders.findIndex(
       tab => tab.name === currentProviderName,
@@ -318,9 +301,9 @@ export default class QuickSelectionComponent extends React.Component {
       previousProvider.name,
     );
     event.stopImmediatePropagation();
-  }
+  };
 
-  _handleMoveNextTab(event: Event): void {
+  _handleMoveNextTab = (event: Event): void => {
     const currentProviderName = this.props.searchResultManager.getActiveProviderName();
     const currentTabIndex = this.state.renderableProviders.findIndex(
       tab => tab.name === currentProviderName,
@@ -330,25 +313,25 @@ export default class QuickSelectionComponent extends React.Component {
       this.state.renderableProviders[0];
     this.props.quickSelectionActions.changeActiveProvider(nextProvider.name);
     event.stopImmediatePropagation();
-  }
+  };
 
-  _handleMoveToBottom(): void {
+  _handleMoveToBottom = (): void => {
     this._moveSelectionToBottom(/* userInitiated */ true);
-  }
+  };
 
-  _handleMoveToTop(): void {
+  _handleMoveToTop = (): void => {
     this._moveSelectionToTop(/* userInitiated */ true);
-  }
+  };
 
-  _handleMoveDown(): void {
+  _handleMoveDown = (): void => {
     this._moveSelectionDown(/* userInitiated */ true);
-  }
+  };
 
-  _handleMoveUp(): void {
+  _handleMoveUp = (): void => {
     this._moveSelectionUp(/* userInitiated */ true);
-  }
+  };
 
-  _handleDocumentMouseDown(event: Event): void {
+  _handleDocumentMouseDown = (event: Event): void => {
     // If the click did not happen on the modal or on any of its descendants,
     // the click was elsewhere on the document and should close the modal.
     // Otherwise, refocus the input box.
@@ -360,25 +343,25 @@ export default class QuickSelectionComponent extends React.Component {
     } else {
       process.nextTick(() => this._getInputTextEditor().focus());
     }
-  }
+  };
 
-  _handleTextInputChange(): void {
+  _handleTextInputChange = (): void => {
     this.setState({hasUserSelection: false});
     const query = this._getTextEditor().getText();
     this.props.quickSelectionActions.query(query);
-  }
+  };
 
-  _handleResultsChange(): void {
+  _handleResultsChange = (): void => {
     this._updateResults();
-  }
+  };
 
-  _handleProvidersChange(): void {
+  _handleProvidersChange = (): void => {
     this._updateResults();
 
     // Execute the current query again.
     // This will update any new providers.
     this.props.quickSelectionActions.query(this._getTextEditor().getText());
-  }
+  };
 
   _updateResults(): void {
     const activeProviderName = this.props.searchResultManager.getActiveProviderName();
@@ -414,7 +397,7 @@ export default class QuickSelectionComponent extends React.Component {
     );
   }
 
-  _select(): void {
+  _select = (): void => {
     const selectedItem = this._getItemAtIndex(
       this.state.selectedService,
       this.state.selectedDirectory,
@@ -427,7 +410,7 @@ export default class QuickSelectionComponent extends React.Component {
       const query = this._getTextEditor().getText();
       this.props.onSelection([selectedItem], providerName, query);
     }
-  }
+  };
 
   _getCurrentResultContext(): ?ResultContext {
     const nonEmptyResults = filterEmptyResults(this.state.resultsByService);
@@ -583,8 +566,7 @@ export default class QuickSelectionComponent extends React.Component {
     // Passing false causes the minimum necessary scroll to occur, so the selection sticks to the
     // top/bottom.
     if (selectedNode) {
-      // $FlowFixMe
-      selectedNode.scrollIntoViewIfNeeded(false);
+      scrollIntoViewIfNeeded(selectedNode, false);
     }
   }
 
@@ -689,13 +671,13 @@ export default class QuickSelectionComponent extends React.Component {
    * @param newTab is actually a ProviderSpec plus the `name` and `tabContent` properties added by
    *     _renderTabs(), which created the tab object in the first place.
    */
-  _handleTabChange(newTab: Tab): void {
+  _handleTabChange = (newTab: Tab): void => {
     const newProviderName = newTab.name;
     const currentProviderName = this.props.searchResultManager.getActiveProviderName();
     if (newProviderName !== currentProviderName) {
       this.props.quickSelectionActions.changeActiveProvider(newProviderName);
     }
-  }
+  };
 
   _renderTabs(): React.Element<any> {
     const workspace = atom.views.getView(atom.workspace);
@@ -713,7 +695,12 @@ export default class QuickSelectionComponent extends React.Component {
       }
       return {
         name: tab.name,
-        tabContent: <span>{tab.title}{keyBinding}</span>,
+        tabContent: (
+          <span>
+            {tab.title}
+            {keyBinding}
+          </span>
+        ),
       };
     });
     return (
