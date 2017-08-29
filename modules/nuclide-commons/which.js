@@ -10,10 +10,10 @@
  * @format
  */
 
-import os from "os";
-import nuclideUri from "./nuclideUri";
+import os from 'os';
+import nuclideUri from './nuclideUri';
 
-import { runCommand } from "./process";
+import {runCommand} from './process';
 
 /**
  * Provides a cross-platform way to check whether a binary is available.
@@ -26,7 +26,7 @@ function sanitizePathForWindows(path: string): string {
   if (nuclideUri.basename(path) === path) {
     // simple binary in $PATH
     return path;
-  } else if (path.includes(":")) {
+  } else if (path.includes(':')) {
     // already formatted for where
     return path;
   } else {
@@ -36,8 +36,8 @@ function sanitizePathForWindows(path: string): string {
 }
 
 export default (async function which(path: string): Promise<?string> {
-  const isWindows = process.platform === "win32";
-  const whichCommand = isWindows ? "where" : "which";
+  const isWindows = process.platform === 'win32';
+  const whichCommand = isWindows ? 'where' : 'which';
   const searchPath = isWindows ? sanitizePathForWindows(path) : path;
   try {
     const result = await runCommand(whichCommand, [searchPath]).toPromise();
