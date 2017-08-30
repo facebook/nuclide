@@ -202,10 +202,7 @@ async function canFindFlow(flowPath: string): Promise<boolean> {
     // "flow.exe", format the path correctly to pass to `where <flow>`
     const dirPath = nuclideUri.dirname(flowPath);
     if (dirPath != null && dirPath !== '' && dirPath !== '.') {
-      const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(
-        flowPath,
-      )}`;
-      return (await which(whichPath)) != null;
+      return (await which(flowPath)) != null;
     }
   }
 

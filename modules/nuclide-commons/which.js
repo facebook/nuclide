@@ -24,13 +24,9 @@ import {runCommand} from './process';
 
 function sanitizePathForWindows(path: string): string {
   if (nuclideUri.basename(path) === path) {
-    // simple binary in $PATH
-    return path;
-  } else if (path.includes(':')) {
-    // already formatted for where
+    // simple binary in $PATH like `flow`
     return path;
   } else {
-    // a well formed path
     return `${nuclideUri.dirname(path)}:${nuclideUri.basename(path)}`;
   }
 }
