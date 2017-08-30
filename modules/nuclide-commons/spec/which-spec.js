@@ -46,7 +46,7 @@ describe('which', () => {
     it('calls where on Windows', () => {
       const param: string = '';
       which(param);
-      expect(runCommand).toHaveBeenCalledWith('where', [`.\\${param}`]);
+      expect(runCommand).toHaveBeenCalledWith('where', ['']);
     });
 
     it('returns the first match', () => {
