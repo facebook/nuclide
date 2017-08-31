@@ -137,17 +137,20 @@ export function fetchCodeActions(
     const {messages, editor} = action.payload;
     return forkJoinArray(
       messages.map(message =>
-        Observable.fromPromise(
+        Observable.defer(() =>
           codeActionFetcher.getCodeActionForDiagnostic(message, editor),
         )
           .switchMap(codeActions => {
-            return forkJoinArray(
-              // Eagerly fetch the titles so that they're immediately usable in a UI.
-              codeActions.map(async codeAction => [
-                await codeAction.getTitle(),
-                codeAction,
-              ]),
-            );
+            return codeActions.length === 0
+              ? // forkJoin emits nothing for empty arrays.
+                Observable.of([])
+              : forkJoinArray(
+                  // Eagerly fetch the titles so that they're immediately usable in a UI.
+                  codeActions.map(async codeAction => [
+                    await codeAction.getTitle(),
+                    codeAction,
+                  ]),
+                );
           })
           .map(codeActions => [message, new Map(codeActions)]),
       ),

@@ -66,9 +66,10 @@ export class ExportManager {
 
 function isModuleExports(node: Object): boolean {
   return (
-    t.isMemberExpression(node.left) &&
-    node.left.object.name === 'module' &&
-    node.left.property.name === 'exports'
+    (t.isMemberExpression(node) &&
+      node.object.name === 'module' &&
+      node.property.name === 'exports') ||
+    (t.isIdentifier(node) && node.name === 'exports')
   );
 }
 
@@ -193,11 +194,14 @@ function expressionToExports(
     const propertyExports = shouldIndexEachObjectProperty
       ? arrayCompact(
           expression.properties.map(property => {
-            if (property.type === 'SpreadProperty') {
+            if (property.type === 'SpreadProperty' || property.computed) {
               return null;
             }
             return {
-              id: property.key.name,
+              id:
+                property.key.type === 'StringLiteral'
+                  ? property.key.value
+                  : property.key.name,
               uri: fileUri,
               type: expression.type,
               isTypeExport,
@@ -291,10 +295,31 @@ function traverseTreeAndIndexExports(
         case 'ExpressionStatement':
           if (
             node.expression &&
-            node.expression.type === 'AssignmentExpression' &&
-            isModuleExports(node.expression)
+            node.expression.type === 'AssignmentExpression'
           ) {
-            addModuleExports(node.expression.right, fileUri, exportIndex);
+            const {left, right} = node.expression;
+            if (isModuleExports(left)) {
+              addModuleExports(right, fileUri, exportIndex);
+            } else if (
+              t.isMemberExpression(left) &&
+              isModuleExports(left.object) &&
+              t.isIdentifier(left.property)
+            ) {
+              exportIndex.push({
+                id: left.property.name,
+                uri: fileUri,
+                type:
+                  // Exclude easy cases from being imported as types.
+                  right.type === 'ObjectExpression' ||
+                  right.type === 'FunctionExpression' ||
+                  right.type === 'NumericLiteral' ||
+                  right.type === 'StringLiteral'
+                    ? right.type
+                    : undefined,
+                isTypeExport: false,
+                isDefault: false,
+              });
+            }
           }
           break;
       }

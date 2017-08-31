@@ -12,7 +12,7 @@
 import child_process from 'child_process';
 import EventEmitter from 'events';
 import invariant from 'assert';
-import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
+import {__DEV__} from '../../commons-node/runtime-info';
 
 export type InvokeRemoteMethodParams = {
   file: string,
@@ -23,7 +23,7 @@ export type InvokeRemoteMethodParams = {
 export type RemoteMessage = {id: string} & InvokeRemoteMethodParams;
 
 const BOOTSTRAP_PATH = require.resolve('./bootstrap');
-const TRANSPILER_PATH = require.resolve('../../nuclide-node-transpiler');
+const TRANSPILER_PATH = require.resolve('../../commons-node/load-transpiler');
 
 /**
  * Task creates and manages communication with another Node process. In addition

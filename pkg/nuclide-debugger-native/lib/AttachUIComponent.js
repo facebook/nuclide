@@ -37,10 +37,12 @@ type StateType = {
   selectedAttachTarget: ?AttachTargetInfo,
   filterText: string,
   sortDescending: boolean,
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
 };
 
-function getColumns(): Array<Column> {
+type ColumnName = 'process' | 'pid' | 'command';
+
+function getColumns(): Array<Column<*>> {
   return [
     {
       title: 'Process Name',
@@ -61,7 +63,7 @@ function getColumns(): Array<Column> {
 }
 
 function getCompareFunction(
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
   sortDescending: boolean,
 ): (a: AttachTargetInfo, b: AttachTargetInfo) => number {
   switch (sortedColumn) {
@@ -201,7 +203,7 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
     return null;
   }
 
-  _handleSort = (sortedColumn: ?string, sortDescending: boolean): void => {
+  _handleSort = (sortedColumn: ?ColumnName, sortDescending: boolean): void => {
     this.setState({
       sortedColumn,
       sortDescending,

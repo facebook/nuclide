@@ -12,6 +12,8 @@
 
 import type {DiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
 import type {Column} from 'nuclide-commons-ui/Table';
+import type {DiagnosticMessageType} from '../../../atom-ide-diagnostics/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import analytics from 'nuclide-commons-atom/analytics';
 import classnames from 'classnames';
@@ -39,6 +41,22 @@ export type DisplayDiagnostic = {
   +description: DescriptionField,
   +diagnostic: DiagnosticMessage,
 };
+
+type TableData = {
+  type: DiagnosticMessageType,
+  providerName: string,
+  filePath: NuclideUri,
+  range: atom$Range,
+  description: {
+    showTraces: boolean,
+    diagnostic: DiagnosticMessage,
+    text: string,
+    isPlainText: boolean,
+  },
+  diagnostic: DiagnosticMessage,
+};
+
+type ColumnName = $Keys<TableData>;
 
 // Maximum number of results to render in the table before truncating and displaying a "Max results
 // reached" message.
@@ -129,12 +147,14 @@ type DiagnosticsTableProps = {
   showTraces: boolean,
 };
 
+type State = {
+  sortDescending: boolean,
+  sortedColumn: ?ColumnName,
+};
+
 export default class DiagnosticsTable extends React.Component<
   DiagnosticsTableProps,
-  {
-    sortDescending: boolean,
-    sortedColumn: ?string,
-  },
+  State,
 > {
   constructor(props: DiagnosticsTableProps) {
     super(props);
@@ -146,7 +166,7 @@ export default class DiagnosticsTable extends React.Component<
     };
   }
 
-  _handleSort(sortedColumn: ?string, sortDescending: boolean): void {
+  _handleSort(sortedColumn: ?ColumnName, sortDescending: boolean): void {
     this.setState({
       sortedColumn,
       sortDescending,
@@ -160,7 +180,7 @@ export default class DiagnosticsTable extends React.Component<
     goToDiagnosticLocation(item.diagnostic);
   }
 
-  _getColumns(): Array<Column> {
+  _getColumns(): Array<Column<TableData>> {
     const {showFileName} = this.props;
     const filePathColumnWidth = 0.2;
     const filePathColumn = showFileName

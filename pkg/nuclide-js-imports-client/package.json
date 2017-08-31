@@ -12,12 +12,6 @@
       "items": {"type": "string"},
       "default": [],
       "description": "If the working directory matches any of these regexes, then diagnostics will be provided. If the array is empty, diagnostics will be provided for all directories."
-    },
-    "autocompleteWhitelist": {
-      "title": "Directories for which the JS-Autoimports server should provide autocomplete",
-      "type": "array",
-      "default": [],
-      "description": "If the working directory matches any of these regexes, then autocomplete will be provided. If the array is empty, autocomplete will be provided for all directories."
     }
   },
   "nuclide": {

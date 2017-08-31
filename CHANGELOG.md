@@ -1,5 +1,11 @@
 # Nuclide Changelog
 
+## v0.251.0
+
+**Hotfix from 0.250.0**
+
+* Facebook-internal hotfix.
+
 ## v0.250.0
 
 ### General

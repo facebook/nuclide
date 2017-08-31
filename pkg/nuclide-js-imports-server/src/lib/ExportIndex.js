@@ -8,7 +8,7 @@
  * @flow
  * @format
  */
-import {arrayFlatten} from 'nuclide-commons/collection';
+
 import ExportMatcher from './ExportMatcher';
 
 import type {JSExport} from './types';
@@ -73,14 +73,6 @@ export class ExportIndex {
         maxResults,
       })
       .map(result => result.value);
-  }
-
-  getExportsStartingWith(query: string, maxResults: number): Array<JSExport> {
-    return arrayFlatten(
-      this.getIdsMatching(query, maxResults).map(id =>
-        this.getExportsFromId(id),
-      ),
-    );
   }
 
   setAll(file: NuclideUri, exports: Array<JSExport>) {

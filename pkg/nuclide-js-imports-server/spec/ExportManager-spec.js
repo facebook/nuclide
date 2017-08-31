@@ -194,7 +194,8 @@ describe('ExportManager', () => {
   });
   // TODO: actually index the values of the spread.
   it('Should index module.exports with a spread', () => {
-    const program = "const X = {}; module.exports = {...X, foo: 'foo'}";
+    const program =
+      "const X = {}; module.exports = {...X, [foo]: 'ignore', foo: 'foo'}";
     const manager = new ExportManager();
     const ast = babylon.parse(program, babylonOptions);
     manager.addFile('testFile', ast);
@@ -206,11 +207,22 @@ describe('ExportManager', () => {
     const manager = new ExportManager();
     const ast = babylon.parse(program, babylonOptions);
     manager.addFile('testFile', ast);
-    const exp = manager.getExportsIndex().getExportsFromId('testFile');
-    expect(exp).toBeDefined();
+    const exp = manager.getExportsIndex().getExportsFromId('SOME_KEY');
+    expect(exp.length).toBe(1);
+    expect(exp[0].id).toBe('SOME_KEY');
+  });
+  it('Should index exports member expressions', () => {
+    const program = 'exports.SOME_KEY = 3;';
+    const manager = new ExportManager();
+    const ast = babylon.parse(program, babylonOptions);
+    manager.addFile('testFile', ast);
+    const exp = manager.getExportsIndex().getExportsFromId('SOME_KEY');
+    expect(exp.length).toBe(1);
+    expect(exp[0].id).toBe('SOME_KEY');
+    expect(exp[0].type).toBe('NumericLiteral');
   });
   it('Should index module.exports with named class', () => {
-    const program = 'module.exports = class MyClass{};';
+    const program = 'exports = class MyClass{};';
     const manager = new ExportManager();
     const ast = babylon.parse(program, babylonOptions);
     manager.addFile('testFile', ast);

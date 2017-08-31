@@ -10,6 +10,8 @@
  */
 
 import * as t from 'babel-types';
+// This is in devDependencies. This file is only reachable in dev mode.
+// eslint-disable-next-line nuclide-internal/no-unresolved
 import generate from 'babel-generator';
 
 import type {

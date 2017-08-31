@@ -67,7 +67,7 @@ const TableExample = (): React.Element<any> => {
       data: {
         first: 7,
         second: 42,
-        // third is empty
+        third: undefined,
         fourth: 66,
         fifth: 123,
       },

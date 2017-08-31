@@ -1,0 +1,25 @@
+{
+  "name": "nuclide-navigation-stack-status-bar",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Status bar UI for your Nuclide navigation stack",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    },
+    "navigation-stack": {
+      "versions": {
+        "0.0.0": "consumeNavigationStack"
+      }
+    }
+  },
+  "activationCommands": {}
+}

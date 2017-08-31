@@ -10,7 +10,7 @@
  * @format
  */
 
-/* eslint-disable no-console */
+import {createLogger} from 'redux-logger';
 import featureConfig from './feature-config';
 
 /*
@@ -33,29 +33,24 @@ type Action = {
 
 type Dispatch = Action => Action;
 
+// More options can be found here if you wish to enable them:
+// https://github.com/evgenyrodionov/redux-logger#options
+type LoggerConfig = {
+  diff: boolean,
+};
+
 const enabledLoggers = featureConfig.getWithDefaults('redux-debug-loggers', []);
 
 const noopMiddleware = (store: Store) => (next: Dispatch) => (action: Action) =>
   next(action);
 
-const titleStyle = 'color: gray; font-weight: lighter;';
-const actionTypeStyle = 'color: black; font-weight: bold;';
-const actionStyle = 'color: #03A9F4; font-weight: bold';
-const nextStateStyle = 'color: #4CAF50; font-weight: bold';
-
-export default function createLoggerMiddleware(appName: string) {
+export default function createLoggerMiddleware(
+  appName: string,
+  loggerConfig: ?LoggerConfig,
+) {
   if (!enabledLoggers.includes(appName)) {
     return noopMiddleware;
   }
 
-  return (store: Store) => (next: Dispatch) => (action: Action) => {
-    const nextAction = next(action);
-    const nextState = store.getState();
-    const title = `%c Redux Loggger (${appName}) action: %c ${action.type}`;
-    console.group(title, titleStyle, actionTypeStyle);
-    console.log('%c action    ', actionStyle, action);
-    console.log('%c next state', nextStateStyle, nextState);
-    console.groupEnd();
-    return nextAction;
-  };
+  return createLogger(loggerConfig);
 }

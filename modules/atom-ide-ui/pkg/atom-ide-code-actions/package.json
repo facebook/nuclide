@@ -13,7 +13,7 @@
     }
   },
   "providedServices": {
-    "code-actions-fetcher": {
+    "code-action-fetcher": {
       "versions": {
         "0.1.0": "provideCodeActionFetcher"
       }

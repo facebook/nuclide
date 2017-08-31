@@ -26,15 +26,10 @@ When initialized, the server takes an optional `initializationOptions` object:
   // diagnostics and code actions will be provided. If this is not provided or
   // is an empty array, diagnostics will be provided for all directories.
   diagnosticsWhitelist: Array<string>,
-  // A list of regexes. If the working directory matches any of the regexes,
-  // autocomplete will be provided. If this is not provided or is an empty
-  // array, autocomplete will be provided for all directories.
-  autocompleteWhitelist: Array<string>,
 }
 ```
 
-#### Setting initialization options within Atom
-To set the initialization options from Nuclide, set `nuclide.nuclide-js-imports-client.diagnosticsWhitelist` and `nuclide.nuclide-js-imports-client.autocompleteWhitelist`. By default, they are set to empty arrays.
+This is controlled by the Atom config `nuclide.nuclide-js-imports-client.diagnosticsWhitelist`.
 
 ### ESLint Configuration
 The server will attempt to read from the project's `.eslintrc` file and `package.json` file for the project's global environments.
@@ -87,7 +82,5 @@ instead provide `CodeActions` for Flow's diagnostics. (Currently, it's too diffi
 to determine undefined types in a way that matches Flow's knowledge).
 
 ## Potential Improvements
-- Use LSP `TextEdit`s to support more advanced autocompletion. For example,
-currently destructured imports will not be autocompleted if the `bracker-matcher`
-package is enabled. This can be fixed using `TextEdit`s.
+- Make autocompletion work for multi-line imports/requires.
 - Index `flow-typed` directories to provide better support for `node_modules` exports.

@@ -36,10 +36,13 @@ type DebuggerThreadsComponentProps = {
 type DebuggerThreadsComponentState = {
   threadList: Array<ThreadItem>,
   selectedThreadId: number,
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
   sortDescending: boolean,
   threadsLoading: boolean,
 };
+
+type ColumnName = $Keys<ThreadItem>; // & 'isSelected';
+type CellData = ThreadItem & {isSelected: boolean};
 
 const activeThreadIndicatorComponent = (props: {cellData: boolean}) =>
   <div className="nuclide-debugger-thread-list-item-current-indicator">
@@ -114,15 +117,15 @@ export class DebuggerThreadsComponent extends React.Component<
     this.props.bridge.selectThread(data.id);
   };
 
-  _handleSort = (sortedColumn: ?string, sortDescending: boolean): void => {
+  _handleSort = (sortedColumn: ?ColumnName, sortDescending: boolean): void => {
     this.setState({sortedColumn, sortDescending});
   };
 
   _sortRows = (
-    threads: Array<Row>,
-    sortedColumnName: ?string,
+    threads: Array<Row<CellData>>,
+    sortedColumnName: ?ColumnName,
     sortDescending: boolean,
-  ): Array<Row> => {
+  ): Array<Row<CellData>> => {
     if (sortedColumnName == null) {
       return threads;
     }

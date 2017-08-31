@@ -17,6 +17,6 @@
   */
 
 // eslint-disable-next-line nuclide-internal/modules-dependencies
-require('../../../pkg/nuclide-node-transpiler');
+require('../../nuclide-node-transpiler');
 
 require('./cli');

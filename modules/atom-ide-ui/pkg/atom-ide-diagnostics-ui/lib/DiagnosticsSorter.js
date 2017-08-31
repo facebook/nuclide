@@ -17,10 +17,10 @@ import type {DisplayDiagnostic} from './ui/DiagnosticsTable';
  * Sorts the diagnostics according to given column and sort direction
  */
 export function sortDiagnostics(
-  diagnostics: Array<Row>,
+  diagnostics: Array<Row<*>>,
   sortedColumnName: ?string,
   sortDescending: boolean,
-): Array<Row> {
+): Array<Row<DisplayDiagnostic>> {
   if (sortedColumnName == null) {
     return diagnostics;
   }
@@ -29,9 +29,7 @@ export function sortDiagnostics(
     sortedColumnName === 'description'
       ? displayDiagnostic.data.description.text
       : displayDiagnostic.data[sortedColumnName];
-  // $FlowFixMe -- this whole thing is poorly typed
   return [...diagnostics].sort((a, b) => {
-    // $FlowFixMe -- this whole thing is poorly typed
     return cmp(getter(a), getter(b), !sortDescending);
   });
 }

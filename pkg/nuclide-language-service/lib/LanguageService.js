@@ -46,6 +46,11 @@ export type Completion = {
   filterText?: string, // used by updateAutocompleteResults
   sortText?: string, // used by updateAutocompleteResults
   extraData?: mixed, // used by whichever packages want to use it
+  // If textEdits are provided, snippet + text + replacementPrefix are **ignored** in favor of
+  // simply applying the given edits.
+  // The edits must not overlap and should contain the position of the completion request.
+  // Note: this is implemented in AutocompletionProvider and is not part of Atom's API.
+  textEdits?: Array<TextEdit>,
 };
 
 // This assertion ensures that Completion is a subtype of atom$AutocompleteSuggestion. If you are

@@ -21,8 +21,8 @@ import {
   OPEN_FILES_MENU_SELECTOR,
   COMMANDS_SELECTOR,
 } from './FileTreeConstants';
-import FileTreeHelpers from './FileTreeHelpers';
 import {FileTreeStore} from './FileTreeStore';
+import FileTreeHelpers from '../../nuclide-file-tree/lib/FileTreeHelpers';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
@@ -281,8 +281,11 @@ export default class FileTreeContextMenu {
         label: 'Duplicate',
         command: 'nuclide-file-tree:duplicate-selection',
         shouldDisplay: () => {
-          const node = this.getSingleSelectedNode();
-          return node != null && !node.isContainer;
+          const nodes = this.getSelectedNodes();
+          return (
+            nodes.size > 0 &&
+            nodes.every(node => node != null && !node.isContainer)
+          );
         },
       },
       {

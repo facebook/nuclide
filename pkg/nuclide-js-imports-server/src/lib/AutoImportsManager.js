@@ -122,6 +122,7 @@ export class AutoImportsManager {
   findFilesWithSymbol(id: string): Array<JSExport> {
     return this.exportsManager.getExportsIndex().getExportsFromId(id);
   }
+
   getSuggestedImportsForRange(
     file: NuclideUri,
     range: IRange,

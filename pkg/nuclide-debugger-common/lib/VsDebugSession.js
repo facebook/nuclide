@@ -21,6 +21,7 @@ import {
 } from 'nuclide-commons/process';
 import {Observable, Subject} from 'rxjs';
 import idx from 'idx';
+import {getOriginalEnvironment} from 'nuclide-commons/process';
 
 export interface AdapterExitedEvent extends DebugProtocol.base$Event {
   event: 'adapter-exited',
@@ -453,11 +454,9 @@ export default class VsDebugSession extends V8Protocol {
         'pipe', // stdout
         'pipe', // stderr
       ],
-      env: {
-        ...process.env,
-        // RN debugger can't be used in `production` environment.
-        NODE_ENV: 'development',
-      },
+      // RN debugger can't be used in `production` environment.
+      // NODE_ENV: 'development',
+      env: await getOriginalEnvironment(),
     };
     const serverProcess = (this._serverProcess = child_process.spawn(
       command,

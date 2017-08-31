@@ -24,9 +24,11 @@ type Props = {|
   processes: Expected<Process[]>,
 |};
 
+type ColumnName = 'pid' | 'user' | 'name' | 'cpuUsage' | 'memUsage' | 'debug';
+
 type State = {
   filterText: string,
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
   sortDescending: boolean,
 };
 
@@ -63,13 +65,13 @@ export class ProcessTable extends React.Component<Props, State> {
     }
   }
 
-  _handleSort = (sortedColumn: ?string, sortDescending: boolean): void => {
+  _handleSort = (sortedColumn: ?ColumnName, sortDescending: boolean): void => {
     this.setState({sortedColumn, sortDescending});
   };
 
   _sortProcesses(
     processes: Process[],
-    sortedColumnName: ?string,
+    sortedColumnName: ?ColumnName,
     sortDescending: boolean,
   ): Process[] {
     if (sortedColumnName == null) {
@@ -91,6 +93,7 @@ export class ProcessTable extends React.Component<Props, State> {
         };
 
     return processes.sort((a, b) =>
+      // $FlowFixMe: Process doesn't have a debug field.
       compare(a[sortedColumnName], b[sortedColumnName], !sortDescending),
     );
   }
