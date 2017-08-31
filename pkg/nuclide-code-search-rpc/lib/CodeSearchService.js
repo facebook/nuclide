@@ -58,9 +58,8 @@ async function resolveTool(tool: ?string): Promise<?string> {
   if (tool != null) {
     return tool;
   }
-  return asyncFind(
-    os.platform() == 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS,
-    tool => hasCommand(tool).then(has => (has ? tool : null)),
+  return asyncFind(os.platform() === 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS, t =>
+    hasCommand(t).then(has => (has ? t : null)),
   );
 }
 

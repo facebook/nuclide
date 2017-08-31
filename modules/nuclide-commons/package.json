@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "async-to-generator": "1.1.0",
+    "command-exists": "1.2.2",
     "event-kit": "2.2.0",
     "fs-plus": "2.9.3",
     "glob": "7.1.1",
