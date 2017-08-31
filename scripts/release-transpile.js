@@ -40,7 +40,7 @@ function runParent() {
   const os = require('os');
   const path = require('path');
 
-  const pathRules = require('../pkg/nuclide-node-transpiler/lib/path-rules');
+  const pathRules = require('../modules/nuclide-node-transpiler/lib/path-rules');
 
   const developmentFilePath = path.join(__dirname, '../DEVELOPMENT');
 
@@ -101,7 +101,7 @@ function runParent() {
 function runChild() {
   const fs = require('fs');
 
-  const NodeTranspiler = require('../pkg/nuclide-node-transpiler/lib/NodeTranspiler');
+  const NodeTranspiler = require('../modules/nuclide-node-transpiler/lib/NodeTranspiler');
   const nodeTranspiler = new NodeTranspiler();
 
   let overwrite;

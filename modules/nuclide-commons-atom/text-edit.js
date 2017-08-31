@@ -13,6 +13,7 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
+import {getLogger} from 'log4js';
 
 import {existingEditorForUri} from './text-editor';
 import {goToLocation} from './go-to-location';
@@ -90,7 +91,10 @@ export function applyTextEdits(
   // be after the end of the previous edit's range.)
   edits.sort((e1, e2) => e1.oldRange.compare(e2.oldRange));
   if (editsOverlap(edits)) {
-    throw new Error('applyTextEdits cannot be called with overlapping edits.');
+    getLogger('text-edit').warn(
+      'applyTextEdits was called with overlapping edits.',
+    );
+    return false;
   }
   const editor = existingEditorForUri(path);
   invariant(editor != null);

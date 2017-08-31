@@ -9,9 +9,15 @@
  * @format
  */
 
-import {getImportInformation} from '../src/Completions';
+import {ImportFormatter} from '../src/lib/ImportFormatter';
+import {
+  getImportInformation,
+  provideFullImportCompletions,
+  provideImportFileCompletions,
+} from '../src/Completions';
+import {AutoImportsManager} from '../src/lib/AutoImportsManager';
 
-describe('Completion', () => {
+describe('getImportInformation', () => {
   it('Should correctly parse value imports', () => {
     const importInformation = getImportInformation('import {something}');
     expect(importInformation).toBeDefined();
@@ -105,38 +111,11 @@ describe('Completion', () => {
     );
     expect(importInformation && importInformation.isComplete).toBe(true);
   });
-  it('Should correctly parse extra text with default imports', () => {
-    const importInformation = getImportInformation(
-      'import type TextDocuments someExtraText ',
-    );
-    expect(importInformation).toBeDefined();
-    expect(importInformation && importInformation.ids.length).toBe(1);
-    expect(importInformation && importInformation.ids[0]).toBe('TextDocuments');
-    expect(importInformation && importInformation.extraText).toBe(
-      'someExtraText ',
-    );
-    expect(importInformation && importInformation.importType).toBe(
-      'defaultType',
-    );
-    expect(importInformation && importInformation.isComplete).toBe(true);
-  });
-  it('Should correctly parse extra text with named imports', () => {
-    const importInformation = getImportInformation(
-      'import type {A, B , C    } from ',
-    );
-    expect(importInformation).toBeDefined();
-    expect(importInformation && importInformation.ids.length).toBe(3);
-    expect(importInformation && importInformation.ids[0]).toBe('A');
-    expect(importInformation && importInformation.extraText).toBe('from ');
-    expect(importInformation && importInformation.importType).toBe('namedType');
-    expect(importInformation && importInformation.isComplete).toBe(true);
-  });
   it('Should correctly parse incomplete default import', () => {
     const importInformation = getImportInformation('import TextDoc');
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('TextDoc');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'defaultValue',
     );
@@ -147,7 +126,6 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('TextDoc');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'defaultType',
     );
@@ -158,7 +136,6 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('AutoImpor');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'namedValue',
     );
@@ -169,7 +146,6 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('AutoImpor');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe('namedType');
     expect(importInformation && importInformation.isComplete).toBe(false);
   });
@@ -178,7 +154,6 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('CSS');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'requireImport',
     );
@@ -189,18 +164,6 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('CSS');
-    expect(importInformation && importInformation.extraText).toBe('');
-    expect(importInformation && importInformation.importType).toBe(
-      'requireImport',
-    );
-    expect(importInformation && importInformation.isComplete).toBe(true);
-  });
-  it('Should correctly parse the equals sign as extraText', () => {
-    const importInformation = getImportInformation('const CSS = ');
-    expect(importInformation).toBeDefined();
-    expect(importInformation && importInformation.ids.length).toBe(1);
-    expect(importInformation && importInformation.ids[0]).toBe('CSS');
-    expect(importInformation && importInformation.extraText).toBe('= ');
     expect(importInformation && importInformation.importType).toBe(
       'requireImport',
     );
@@ -222,7 +185,6 @@ describe('Completion', () => {
     expect(importInformation && importInformation.ids.length).toBe(2);
     expect(importInformation && importInformation.ids[0]).toBe('someId');
     expect(importInformation && importInformation.ids[1]).toBe('someOtherType');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'requireDestructured',
     );
@@ -233,10 +195,104 @@ describe('Completion', () => {
     expect(importInformation).toBeDefined();
     expect(importInformation && importInformation.ids.length).toBe(1);
     expect(importInformation && importInformation.ids[0]).toBe('some');
-    expect(importInformation && importInformation.extraText).toBe('');
     expect(importInformation && importInformation.importType).toBe(
       'requireDestructured',
     );
     expect(importInformation && importInformation.isComplete).toBe(false);
+  });
+});
+
+describe('Completion Functions', () => {
+  let autoImportsManager;
+  let importsFormatter;
+
+  beforeEach(() => {
+    autoImportsManager = new AutoImportsManager([]);
+    importsFormatter = new ImportFormatter(['/a/node_modules'], false);
+
+    autoImportsManager.indexFile('/a/b/test2.js', 'export function test2() {}');
+    autoImportsManager.indexFile(
+      '/a/above.js',
+      'export function test() {}\nexport function testAbove() {}',
+    );
+    autoImportsManager.indexFile('/a/b/test3.js', 'export function test() {}');
+    autoImportsManager.indexFile(
+      '/a/node_modules/module',
+      'export function test() {}',
+    );
+  });
+
+  function getCompletionText(completion) {
+    const {textEdit} = completion;
+    if (textEdit == null) {
+      return '';
+    }
+    return textEdit.newText;
+  }
+
+  describe('provideFullImportCompletions', () => {
+    it('returns completions in order', () => {
+      const importInformation = {
+        ids: ['test'],
+        importType: 'namedValue',
+        isComplete: false,
+      };
+      const completions = provideFullImportCompletions(
+        importInformation,
+        importsFormatter,
+        autoImportsManager,
+        '/a/b/test.js',
+        '',
+        0,
+        false,
+      );
+      // 1) IDs need to be ordered by relevance.
+      // 2) For the same ID, prefer node modules -> same directory -> other directories.
+      expect(completions.map(getCompletionText)).toEqual([
+        "import {test} from './test3';",
+        "import {test} from '../above';",
+        "import {test} from 'module';",
+        "import {test2} from './test2';",
+        "import {testAbove} from '../above';",
+      ]);
+    });
+  });
+
+  describe('provideImportFileCompletions', () => {
+    it('provides exact matches', () => {
+      const importInformation = {
+        ids: ['test', 'testAbove'],
+        importType: 'namedValue',
+        isComplete: false,
+      };
+      const completions = provideImportFileCompletions(
+        importInformation,
+        importsFormatter,
+        autoImportsManager,
+        '/a/b/test.js',
+        '',
+        0,
+        false,
+      );
+      expect(completions.map(getCompletionText)).toEqual([
+        "import {test, testAbove} from '../above';",
+      ]);
+
+      importInformation.ids = ['test'];
+      const singleCompletions = provideImportFileCompletions(
+        importInformation,
+        importsFormatter,
+        autoImportsManager,
+        '/a/b/test.js',
+        '',
+        0,
+        false,
+      );
+      expect(singleCompletions.map(getCompletionText)).toEqual([
+        "import {test} from './test3';",
+        "import {test} from '../above';",
+        "import {test} from 'module';",
+      ]);
+    });
   });
 });

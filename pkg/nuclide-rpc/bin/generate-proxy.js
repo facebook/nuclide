@@ -17,10 +17,6 @@
   */
 /* eslint-disable no-console */
 
-const {__DEV__} = require('../../nuclide-node-transpiler/lib/env');
-
-if (__DEV__) {
-  require('../../nuclide-node-transpiler');
-}
+require('../../commons-node/load-transpiler');
 
 require('../lib/generate-proxy-main');

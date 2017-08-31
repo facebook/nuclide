@@ -9,10 +9,10 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
-  "consumedServices": {
-    "status-bar": {
+  "providedServices": {
+    "navigation-stack": {
       "versions": {
-        "^1.0.0": "consumeStatusBar"
+        "0.0.0": "getNavigationStackProvider"
       }
     }
   },

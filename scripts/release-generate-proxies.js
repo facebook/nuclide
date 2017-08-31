@@ -17,10 +17,10 @@
   */
 /* eslint-disable no-console */
 
-const {__DEV__} = require('../pkg/nuclide-node-transpiler/lib/env');
+const {__DEV__} = require('../modules/nuclide-node-transpiler/lib/env');
 
 if (__DEV__) {
-  require('../pkg/nuclide-node-transpiler');
+  require('../modules/nuclide-node-transpiler');
 }
 
 const argv = require('yargs')

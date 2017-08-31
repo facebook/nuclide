@@ -357,6 +357,7 @@ module.exports = {
     'nuclide-internal/no-cross-atom-imports': [1, {whitelist: ['nuclide-ui']}],
     'nuclide-internal/no-shell-quote': 1,
     'nuclide-internal/no-unnecessary-disposable-wrapping': 1,
+    'nuclide-internal/no-unresolved': 1,
     'nuclide-internal/prefer-nuclide-uri': 1,
     'nuclide-internal/use-nuclide-ui-components': 1,
     'nuclide-internal/no-commonjs': 1,

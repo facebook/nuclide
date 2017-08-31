@@ -22,7 +22,7 @@ export type DebuggerConfigAction = 'launch' | 'attach';
 // Copied from nuclide-ui/Table.js because the RPC framework doesn't play well with type imports.
 export type ThreadColumn = {
   title: string,
-  key: string,
+  key: 'id' | 'name' | 'address' | 'location' | 'stopReason' | 'description',
   // Percentage. The `width`s of all columns must add up to 1.
   width?: number,
   // Optional React component for rendering cell contents.

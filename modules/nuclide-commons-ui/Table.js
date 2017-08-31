@@ -19,11 +19,9 @@ import {Icon} from './Icon';
 const DefaultEmptyComponent = () =>
   <div className="nuclide-ui-table-empty-message">Empty table</div>;
 
-// ColumnKey must be unique within the containing collection.
-type ColumnKey = string;
-export type Column = {
+export type Column<T: Object> = {
   title: string,
-  key: ColumnKey,
+  key: $Keys<T>,
   // Percentage. The `width`s of all columns must add up to 1.
   width?: number,
   // Optional React component for rendering cell contents.
@@ -31,16 +29,14 @@ export type Column = {
   component?: React.ComponentType<any>,
   shouldRightAlign?: boolean,
 };
-export type Row = {
+export type Row<T: Object> = {
   +className?: string,
-  +data: {
-    +[key: ColumnKey]: ?mixed,
-  },
+  +data: T,
 };
-type WidthMap = {
-  [key: ColumnKey]: number,
+type WidthMap<T> = {
+  [key: $Keys<T>]: number,
 };
-type Props = {
+type Props<T> = {
   /**
    * Optional classname for the entire table.
    */
@@ -50,8 +46,8 @@ type Props = {
    * Useful for making the table scrollable while keeping the header fixed.
    */
   maxBodyHeight?: string,
-  columns: Array<Column>,
-  rows: Array<Row>,
+  columns: Array<Column<T>>,
+  rows: Array<Row<T>>,
   /**
    * Whether to shade even and odd items differently. Default behavior is `true`.
    */
@@ -66,8 +62,8 @@ type Props = {
    * If specified, `onSort`, `sortedColumn`, and `sortDescending` must also be specified.
    */
   sortable?: boolean,
-  onSort?: (sortedBy: ?ColumnKey, sortDescending: boolean) => void,
-  sortedColumn?: ?ColumnKey,
+  onSort?: (sortedBy: $Keys<T>, sortDescending: boolean) => void,
+  sortedColumn?: ?$Keys<T>,
   sortDescending?: boolean,
   /**
    * Whether items can be selected.
@@ -103,17 +99,17 @@ type Props = {
    */
   headerTitle?: string,
 };
-type State = {
-  columnWidthRatios: WidthMap,
+type State<T> = {
+  columnWidthRatios: WidthMap<T>,
 };
 
-export class Table extends React.Component<Props, State> {
+export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
   _globalEventsDisposable: ?Disposable;
   _resizeStartX: ?number;
   _tableWidth: ?number;
-  _columnBeingResized: ?ColumnKey;
+  _columnBeingResized: ?$Keys<T>;
 
-  constructor(props: Props) {
+  constructor(props: Props<T>) {
     super(props);
     this._globalEventsDisposable = null;
     this._resizeStartX = null;
@@ -130,7 +126,7 @@ export class Table extends React.Component<Props, State> {
     };
   }
 
-  _getInitialWidthsForColumns(columns: Array<Column>): WidthMap {
+  _getInitialWidthsForColumns(columns: Array<Column<T>>): WidthMap<T> {
     const columnWidthRatios = {};
     let assignedWidth = 0;
     const unresolvedColumns = [];
@@ -151,7 +147,7 @@ export class Table extends React.Component<Props, State> {
   }
 
   /* Applies sizing constraints, and returns whether the column width actually changed. */
-  _updateWidths(resizedColumn: ColumnKey, newColumnSize: number): boolean {
+  _updateWidths(resizedColumn: $Keys<T>, newColumnSize: number): boolean {
     const {columnWidthRatios} = this.state;
     const {columns} = this.props;
     const originalColumnSize = columnWidthRatios[resizedColumn];
@@ -188,7 +184,7 @@ export class Table extends React.Component<Props, State> {
     return true;
   }
 
-  _handleResizerMouseDown(key: ColumnKey, event: SyntheticMouseEvent<>): void {
+  _handleResizerMouseDown(key: $Keys<T>, event: SyntheticMouseEvent<>): void {
     if (this._globalEventsDisposable != null) {
       this._unsubscribeFromGlobalEvents();
     }
@@ -259,7 +255,7 @@ export class Table extends React.Component<Props, State> {
     this._dispose();
   }
 
-  _handleSortByColumn(sortedBy: ColumnKey): void {
+  _handleSortByColumn(sortedBy: $Keys<T>): void {
     const {onSort, sortDescending, sortedColumn} = this.props;
     if (onSort == null) {
       return;
@@ -379,7 +375,6 @@ export class Table extends React.Component<Props, State> {
           cellStyle.width = width * 100 + '%';
         }
         return (
-          // $FlowFixMe(>=0.53.0) Flow suppress
           <div
             className={classnames({
               'nuclide-ui-table-body-cell': true,

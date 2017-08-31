@@ -30,8 +30,7 @@ export async function initializeLsp(
 ): Promise<LanguageService> {
   return createMultiLspLanguageService(
     'jsimports',
-    // TODO(hansonw): Add a flag to properly fork the Node process.
-    require.resolve('../../commons-node/fb-node-run.sh'),
+    process.execPath,
     [require.resolve('../../nuclide-js-imports-server/src/index-entry.js')],
     {
       fileNotifier,
@@ -41,6 +40,7 @@ export async function initializeLsp(
       projectFileNames,
       fileExtensions,
       initializationOptions,
+      spawnOptions: {env: {...process.env, ELECTRON_RUN_AS_NODE: '1'}},
     },
   );
 }

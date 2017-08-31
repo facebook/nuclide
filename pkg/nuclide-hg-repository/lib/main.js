@@ -37,18 +37,20 @@ function shouldDisplayActionTreeItem(
   contextMenu: FileTreeContextMenu,
   action: HgContenxtMenuAction,
 ): boolean {
-  const node = contextMenu.getSingleSelectedNode();
-  if (node == null || node.repo == null || node.repo.getType() !== 'hg') {
-    return false;
-  }
-  const hgRepository: HgRepositoryClient = (node.repo: any);
   if (action === 'Revert') {
-    return (
-      hgRepository.isStatusModified(node.vcsStatusCode) ||
-      hgRepository.isStatusAdded(node.vcsStatusCode)
-    );
+    const node = contextMenu.getSingleSelectedNode();
+    if (node == null || node.repo == null || node.repo.getType() !== 'hg') {
+      return false;
+    } else {
+      const hgRepository: HgRepositoryClient = (node.repo: any);
+      return (
+        hgRepository.isStatusModified(node.vcsStatusCode) ||
+        hgRepository.isStatusAdded(node.vcsStatusCode)
+      );
+    }
   } else if (action === 'Add') {
-    return hgRepository.isStatusUntracked(node.vcsStatusCode);
+    const nodes = contextMenu.getSelectedNodes();
+    return nodes.every(node => node.repo.isStatusUntracked(node.vcsStatusCode));
   } else {
     return false;
   }
@@ -188,9 +190,10 @@ export function addItemsToFileTreeContextMenu(
     {
       label: 'Add to Mercurial',
       callback() {
-        // TODO(most): support adding multiple nodes at once.
-        const addNode = contextMenu.getSingleSelectedNode();
-        addPath(addNode == null ? null : addNode.uri);
+        const nodes = contextMenu.getSelectedNodes();
+        for (const addNode of nodes) {
+          addPath(addNode == null ? null : addNode.uri);
+        }
       },
       shouldDisplay() {
         return shouldDisplayActionTreeItem(contextMenu, 'Add');

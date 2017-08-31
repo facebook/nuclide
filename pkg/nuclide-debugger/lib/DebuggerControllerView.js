@@ -15,7 +15,7 @@ import DebuggerInspector from './DebuggerInspector';
 import {DebuggerStore} from './DebuggerStore';
 import Bridge from './Bridge';
 import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
-import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
+import {__DEV__} from '../../commons-node/runtime-info';
 
 type Props = {
   breakpointStore: BreakpointStore,

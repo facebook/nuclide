@@ -19,7 +19,7 @@
 // Note that loading nuclide-node-transpiler is only necessary if we are
 // developing against the dev version of big-dig.
 // eslint-disable-next-line nuclide-internal/modules-dependencies
-require('../../../pkg/nuclide-node-transpiler');
+require('../../nuclide-node-transpiler');
 
 const {setupDefaultLogging} = require('./logging');
 setupDefaultLogging('big-dig-samples-cli-server.log');

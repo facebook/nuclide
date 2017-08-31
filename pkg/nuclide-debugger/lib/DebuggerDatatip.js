@@ -15,11 +15,9 @@ import type DebuggerModel from './DebuggerModel';
 import type {EvaluationResult} from './types';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
-import {getEvaluationExpressionFromRegexp} from '../../nuclide-language-service/lib/EvaluationExpressionProvider';
+import {getDefaultEvaluationExpression} from '../../nuclide-debugger-base';
 import {DebuggerMode} from './DebuggerStore';
 import {DebuggerDatatipComponent} from './DebuggerDatatipComponent';
-
-const DEFAULT_WORD_REGEX = /\w+/gi;
 
 function getEvaluationExpression(
   model: DebuggerModel,
@@ -37,9 +35,7 @@ function getEvaluationExpression(
     }
   }
   return matchingProvider === null
-    ? Promise.resolve(
-        getEvaluationExpressionFromRegexp(editor, position, DEFAULT_WORD_REGEX),
-      )
+    ? Promise.resolve(getDefaultEvaluationExpression(editor, position))
     : matchingProvider.getEvaluationExpression(editor, position);
 }
 

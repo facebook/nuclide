@@ -20,5 +20,5 @@ const fs = require('fs');
 const path = require('path');
 if (fs.existsSync(path.join(__dirname, 'DEVELOPMENT'))) {
   // eslint-disable-next-line nuclide-internal/modules-dependencies
-  require('../../pkg/nuclide-node-transpiler');
+  require('../nuclide-node-transpiler');
 }

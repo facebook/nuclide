@@ -180,6 +180,9 @@ export function codeActionsForMessage(
   action: Action,
 ): CodeActionsState {
   if (action.type === 'SET_CODE_ACTIONS') {
+    state.forEach(codeActions => {
+      codeActions.forEach(codeAction => codeAction.dispose());
+    });
     return action.payload.codeActionsForMessage;
   }
   return state;

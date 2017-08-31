@@ -25,6 +25,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import {File} from 'atom';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {repositoryForPath} from '../../nuclide-vcs-base';
+import Immutable from 'immutable';
 
 let atomPanel: ?Object;
 let dialogComponent: ?React.Component<any, any>;
@@ -328,12 +329,14 @@ class FileSystemActions {
   openDuplicateDialog(onDidConfirm: (filePaths: Array<string>) => mixed): void {
     const store = FileTreeStore.getInstance();
     const targetNodes = store.getTargetNodes();
-    if (targetNodes.size !== 1) {
-      // Can only copy one entry at a time.
-      return;
-    }
+    this.openNextDuplicateDialog(targetNodes, onDidConfirm);
+  }
 
-    const node = targetNodes.first();
+  openNextDuplicateDialog(
+    nodes: Immutable.List<FileTreeNode>,
+    onDidConfirm: (filePaths: Array<string>) => mixed,
+  ): void {
+    const node = nodes.first();
     const nodePath = node.localPath;
     let initialValue = nuclideUri.basename(nodePath);
     const ext = nuclideUri.extname(nodePath);
@@ -344,7 +347,8 @@ class FileSystemActions {
     if (hgRepository !== null) {
       additionalOptions.addToVCS = 'Add the new file to version control.';
     }
-    this._openDialog({
+
+    const dialogProps = {
       iconClassName: 'icon-arrow-right',
       initialValue,
       message: <span>Enter the new path for the duplicate.</span>,
@@ -365,10 +369,17 @@ class FileSystemActions {
           );
         });
       },
-      onClose: this._closeDialog,
+      onClose: () => {
+        if (nodes.rest().count() > 0) {
+          this.openNextDuplicateDialog(nodes.rest(), onDidConfirm);
+        } else {
+          this._closeDialog();
+        }
+      },
       selectBasename: true,
       additionalOptions,
-    });
+    };
+    this._openDialog(dialogProps);
   }
 
   openPasteDialog(): void {

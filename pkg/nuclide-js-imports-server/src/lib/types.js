@@ -14,16 +14,23 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 type ExportType =
   | 'FunctionDeclaration'
   | 'ClassDeclaration'
-  | 'VariableDeclartion'
+  | 'VariableDeclaration'
   | 'InterfaceDeclaration'
   | 'ObjectExpression'
   | 'FunctionExpression'
   | 'ClassExpression'
-  | 'TypeAlias';
+  | 'TypeAlias'
+  | 'NumericLiteral'
+  | 'StringLiteral';
 
 export type ImportSuggestion = {
   symbol: UndefinedSymbol,
   filesWithExport: Array<JSExport>,
+};
+
+export type JSImport = {
+  type: 'require' | 'import' | 'importType',
+  importPath: string,
 };
 
 export type JSExport = {

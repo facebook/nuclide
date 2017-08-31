@@ -205,6 +205,7 @@ export function lspCompletionItem_atomCompletion(
   item: CompletionItem,
 ): Completion {
   const useSnippet = item.insertTextFormat === InsertTextFormat.Snippet;
+  const lspTextEdits = getCompletionTextEdits(item);
   return {
     // LSP: label is what should be displayed in the autocomplete list
     // Atom: displayText is what's displayed
@@ -228,7 +229,22 @@ export function lspCompletionItem_atomCompletion(
     // LSP detail is the thing's signature
     // Atom: description is displayed in the footer of the autocomplete tab
     description: item.detail,
+    textEdits:
+      lspTextEdits != null
+        ? lspTextEdits_atomTextEdits(lspTextEdits)
+        : undefined,
   };
+}
+
+function getCompletionTextEdits(item: CompletionItem): ?Array<LspTextEditType> {
+  if (item.textEdit != null) {
+    if (item.additionalTextEdits != null) {
+      return [item.textEdit, ...item.additionalTextEdits];
+    } else {
+      return [item.textEdit];
+    }
+  }
+  return null;
 }
 
 export function lspMessageType_atomShowNotificationLevel(

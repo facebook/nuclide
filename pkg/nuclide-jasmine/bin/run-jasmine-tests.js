@@ -19,11 +19,7 @@
 
 // jasmine-node test runner with Atom test globals and babel transpiling support.
 
-const {__DEV__} = require('../../nuclide-node-transpiler/lib/env');
-
-if (__DEV__) {
-  require('../../nuclide-node-transpiler');
-}
+require('../../commons-node/load-transpiler');
 
 // Set this up before we call jasmine-node. jasmine-node does this same trick,
 // but neglects to respect the exit code, so we beat it the to the punch.

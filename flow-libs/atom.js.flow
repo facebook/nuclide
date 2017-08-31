@@ -77,10 +77,8 @@ declare class atom$Package {
  * Essential Classes
  */
 
-declare class atom$CustomEvent extends Event {
-  constructor(type: string, eventInitDict?: CustomEvent$Init): void;
-  detail: any;
-  originalEvent: ?Event;
+declare type atom$CustomEvent  = CustomEvent & {
+  originalEvent?: Event;
 }
 
 type atom$CommandCallback = (event: atom$CustomEvent) => mixed;
@@ -93,8 +91,8 @@ declare class atom$CommandRegistry {
     callback?: atom$CommandCallback
   ): IDisposable,
   dispatch(target: HTMLElement, commandName: string, detail?: Object): void,
-  onDidDispatch(callback: (event: Event) => mixed): IDisposable,
-  onWillDispatch(callback: (event: Event) => mixed): IDisposable,
+  onDidDispatch(callback: (event: atom$CustomEvent) => mixed): IDisposable,
+  onWillDispatch(callback: (event: atom$CustomEvent) => mixed): IDisposable,
 }
 
 declare class atom$CompositeDisposable {
@@ -839,9 +837,11 @@ declare class atom$TextEditor extends atom$Model {
       screenLine?: boolean,
     }): void,
   getCursorBufferPosition(): atom$Point,
+  getCursorBufferPositions(): Array<atom$Point>,
   getCursorScreenPosition(): atom$Point,
   getCursorScreenPositions(): Array<atom$Point>,
   getLastCursor(): atom$Cursor,
+  addCursorAtBufferPosition(point: atom$PointLike): atom$Cursor,
   moveToBeginningOfLine(): void,
   moveToEndOfLine(): void,
   moveToBottom(): void,
