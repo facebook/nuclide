@@ -16,6 +16,9 @@ import {findArcProjectIdOfPath} from '../../nuclide-arcanist-rpc';
 import {search as agAckSearch} from './AgAckService';
 import {search as rgSearch} from './RgService';
 import {ConnectableObservable, Observable} from 'rxjs';
+import {hasCommand} from 'nuclide-commons/hasCommand';
+import {asyncFind} from 'nuclide-commons/promise';
+import os from 'os';
 
 export async function isEligibleForDirectory(
   rootDirectory: NuclideUri,
@@ -48,15 +51,32 @@ const searchToolHandlers = new Map([
   ['rg', rgSearch],
 ]);
 
+const WINDOWS_TOOLS = ['rg'];
+const POSIX_TOOLS = ['ag', 'rg', 'ack'];
+
+async function resolveTool(tool: ?string): Promise<?string> {
+  if (tool != null) {
+    return tool;
+  }
+  return asyncFind(
+    os.platform() == 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS,
+    tool => hasCommand(tool).then(has => (has ? tool : null)),
+  );
+}
+
 export function searchWithTool(
-  tool: string,
+  tool: ?string,
   directory: NuclideUri,
   query: string,
   maxResults: number,
 ): ConnectableObservable<CodeSearchResult> {
-  const handler = searchToolHandlers.get(tool);
-  if (handler != null) {
-    return handler(directory, query).take(maxResults).publish();
-  }
-  return Observable.empty().publish();
+  return Observable.defer(() => resolveTool(tool))
+    .switchMap(actualTool => {
+      const handler = searchToolHandlers.get(actualTool);
+      if (handler != null) {
+        return handler(directory, query).take(maxResults);
+      }
+      return Observable.empty();
+    })
+    .publish();
 }

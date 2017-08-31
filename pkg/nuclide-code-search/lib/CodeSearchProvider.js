@@ -63,7 +63,12 @@ export const CodeSearchProvider: Provider = {
     ): any);
 
     return getCodeSearchServiceByNuclideUri(projectRoot)
-      .searchWithTool(config.tool, projectRoot, query, config.maxResults)
+      .searchWithTool(
+        config.tool.length === 0 ? null : config.tool,
+        projectRoot,
+        query,
+        config.maxResults,
+      )
       .refCount()
       .map(match => {
         const result = {
