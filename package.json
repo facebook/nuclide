@@ -35,9 +35,7 @@
     "fix-all": "eslint --fix .",
     "test": "npm run lint-all && npm run flow"
   },
-  "workspaces": [
-    "modules/*"
-  ],
+  "workspaces": ["modules/*"],
   "dependencies": {
     "adm-zip": "0.4.7",
     "async-to-generator": "1.1.0",
@@ -49,6 +47,7 @@
     "chalk": "1.1.3",
     "cheerio": "0.22.0",
     "classnames": "2.2.5",
+    "command-exists": "1.2.2",
     "connect": "3.5.0",
     "core-js": "2.4.1",
     "dedent": "0.6.0",
