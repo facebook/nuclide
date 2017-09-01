@@ -20,9 +20,25 @@ import {hasCommand} from 'nuclide-commons/hasCommand';
 import {asyncFind} from 'nuclide-commons/promise';
 import os from 'os';
 
+const WINDOWS_TOOLS = ['rg'];
+const POSIX_TOOLS = ['ag', 'rg', 'ack'];
+
+async function resolveTool(tool: ?string): Promise<?string> {
+  if (tool != null) {
+    return tool;
+  }
+  return asyncFind(os.platform() === 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS, t =>
+    hasCommand(t).then(has => (has ? t : null)),
+  );
+}
+
 export async function isEligibleForDirectory(
   rootDirectory: NuclideUri,
 ): Promise<boolean> {
+  if ((await resolveTool(null)) == null) {
+    return false;
+  }
+
   const projectId = await findArcProjectIdOfPath(rootDirectory);
   if (projectId == null) {
     return true;
@@ -50,18 +66,6 @@ const searchToolHandlers = new Map([
   ],
   ['rg', rgSearch],
 ]);
-
-const WINDOWS_TOOLS = ['rg'];
-const POSIX_TOOLS = ['ag', 'rg', 'ack'];
-
-async function resolveTool(tool: ?string): Promise<?string> {
-  if (tool != null) {
-    return tool;
-  }
-  return asyncFind(os.platform() === 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS, t =>
-    hasCommand(t).then(has => (has ? t : null)),
-  );
-}
 
 export function searchWithTool(
   tool: ?string,
