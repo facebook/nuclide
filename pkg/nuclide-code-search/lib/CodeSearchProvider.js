@@ -18,15 +18,16 @@ import * as React from 'react';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 
-type CodeSearchFileResult = {
+type CodeSearchFileResult = {|
   path: string,
   query: string,
   line: number,
   column: number,
   context: string,
-  relativePath: string,
+  displayPath: string,
   isFirstResultForPath: boolean,
-};
+  resultType: 'FILE',
+|};
 
 type NuclideCodeSearchConfig = {
   tool: string,
@@ -78,8 +79,10 @@ export const CodeSearchProvider: Provider<FileResult> = {
           line: match.row,
           column: match.column,
           context: match.line,
-
-          relativePath: '.' + nuclideUri.relative(projectRoot, match.file),
+          displayPath: `./${nuclideUri
+            .relative(projectRoot, match.file)
+            .replace(/\\/g, '/')}`,
+          resultType: 'FILE',
         };
         lastPath = match.file;
         return result;
@@ -97,13 +100,15 @@ export const CodeSearchProvider: Provider<FileResult> = {
       (rest, i) =>
         <span
           key={`rest-${i}`}
-          className="code-search-provider-result-context-rest">
+          className="code-search-provider-result-context-rest"
+        >
           {rest}
         </span>,
       (match, i) =>
         <span
           key={`match-${i}`}
-          className="code-search-provider-result-context-match">
+          className="code-search-provider-result-context-match"
+        >
           {match}
         </span>,
     );
@@ -113,12 +118,15 @@ export const CodeSearchProvider: Provider<FileResult> = {
           item.isFirstResultForPath
             ? 'code-search-provider-result-first-result-for-path'
             : null
-        }>
+        }
+      >
         {item.isFirstResultForPath &&
           <PathWithFileIcon
             className="code-search-provider-result-path"
-            path={item.relativePath}
-          />}
+            path={item.path}
+          >
+            {item.displayPath}
+          </PathWithFileIcon>}
         <div className="code-search-provider-result-context">
           {context}
         </div>
