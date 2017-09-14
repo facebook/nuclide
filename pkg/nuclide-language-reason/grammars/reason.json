@@ -592,6 +592,30 @@
       "begin": "(?<=[^[:word:]]and|^and|[^[:word:]]external|^external|[^[:word:]]let|^let|[^[:word:]]method|^method|[^[:word:]]rec|^rec)",
       "end": "(?=[;}]|\\b(and|class|constraint|exception|external|include|inherit|let|method|module|nonrec|open|private|rec|type|val|with)\\b)",
       "patterns": [
+        {
+          "comment": "FIXME; hack for punned arguments",
+          "begin": "(::)",
+          "end": "(?<=[[:space:]])",
+          "beginCaptures": {
+            "1": { "name": "keyword.control" }
+          },
+          "patterns": [
+            { "include": "#pattern" },
+            {
+              "begin": "(=)",
+              "end": "(\\?)|(?<=[^[:space:]=][[:space:]])(?=[[:space:]]*+[^\\.])",
+              "beginCaptures": {
+                "1": { "name": "markup.inserted keyword.control.less message.error" }
+              },
+              "endCaptures": {
+                "1": { "name": "storage.type" }
+              },
+              "patterns": [
+                { "include": "#value-expression-atomic-with-paths" }
+              ]
+            }
+          ]
+        },
         { "include": "#module-item-let-value-bind-name-or-pattern" },
         { "include": "#module-item-let-value-bind-params-type" },
         { "include": "#module-item-let-value-bind-type" },
@@ -605,7 +629,7 @@
         { "include": "#comment" },
         { "include": "#module-item-let-value-param" },
         {
-          "begin": "(:)[[:space:]]*(?![[:space:]]*[\\)])",
+          "begin": "(?<![:])(:)[[:space:]]*(?![[:space:]]*[:\\)])",
           "end": "(?=[;}=]|\\b(and|class|constraint|exception|external|include|inherit|let|method|module|nonrec|open|private|rec|val|with)\\b)",
           "beginCaptures": {
             "1": { "name": "variable.other.class.js variable.interpolation keyword.operator keyword.control message.error" }
@@ -637,7 +661,7 @@
     },
     "module-item-let-value-bind-type": {
       "comment": "FIXME: lookahead",
-      "begin": "(:)(?![[:space:]]*[\\)])",
+      "begin": "(?<![:])(:)(?![[:space:]]*[:\\)])",
       "end": "(?==[^>]|[;}]|\\b(and|class|constraint|exception|external|include|inherit|let|method|module|nonrec|open|private|rec|val|with)\\b)",
       "beginCaptures": {
         "1": { "name": "variable.other.class.js variable.interpolation keyword.operator keyword.control message.error" }
@@ -670,7 +694,7 @@
     "module-item-let-value-param-label": {
       "patterns": [
         {
-          "begin": "\\b([[:lower:]][[:word:]]*)\\b[[:space:]]*(::)",
+          "begin": "(\\b[[:lower:]][[:word:]]*\\b)?[[:space:]]*(::)",
           "end": "(?<=[[:space:]])",
           "beginCaptures": {
             "1": { "name": "markup.inserted constant.language support.property-value entity.name.filename" },
