@@ -65,6 +65,7 @@ export async function goToLocation(
       initialLine: line,
       initialColumn: column,
       searchAllPanes: true,
+      pending: true,
     });
 
     if (center && line != null) {
