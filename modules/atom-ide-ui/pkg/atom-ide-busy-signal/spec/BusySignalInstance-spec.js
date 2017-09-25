@@ -52,11 +52,9 @@ describe('BusySignalSingleton', () => {
   });
 
   it("should send the 'done' message even if the promise rejects", () => {
-    singleton.reportBusyWhile(
-      'foo',
-      () => Promise.reject(new Error()),
-      options,
-    );
+    singleton
+      .reportBusyWhile('foo', () => Promise.reject(new Error()), options)
+      .catch(() => {});
     expect(messages.length).toBe(1);
     waitsFor(
       () => messages.length === 2,
@@ -124,6 +122,35 @@ describe('BusySignalSingleton', () => {
       disposable.dispose();
       expect(messages.length).toBe(4);
       expect(messages[3]).toEqual([]);
+    });
+  });
+
+  it('should clear revealTooltip after the initial display', () => {
+    waitsForPromise(async () => {
+      function getCurrentMessages() {
+        return messageStore.getMessageStream().take(1).toPromise();
+      }
+
+      const dispose1 = singleton.reportBusy('foo', {
+        debounce: false,
+        revealTooltip: true,
+      });
+      let curMessages = await getCurrentMessages();
+      expect(curMessages.length).toBe(1);
+      expect(curMessages[0].shouldRevealTooltip()).toBe(true);
+
+      const dispose2 = singleton.reportBusy('foo', {
+        debounce: false,
+        revealTooltip: true,
+      });
+      curMessages = await getCurrentMessages();
+      expect(curMessages.length).toBe(2);
+      expect(curMessages[0].shouldRevealTooltip()).toBe(false);
+      expect(curMessages[1].shouldRevealTooltip()).toBe(true);
+
+      dispose1.dispose();
+      dispose2.dispose();
+      expect(await getCurrentMessages()).toEqual([]);
     });
   });
 });
