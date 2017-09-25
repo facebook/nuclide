@@ -124,6 +124,8 @@ export default class StatusBarTile {
       } else {
         this._isMouseOverItem = false;
       }
+    } else if (messages.some(message => message.shouldRevealTooltip())) {
+      this._ensureTooltip();
     }
   }
 
