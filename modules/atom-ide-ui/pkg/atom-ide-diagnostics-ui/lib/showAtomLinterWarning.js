@@ -45,8 +45,11 @@ export default function showAtomLinterWarning(): IDisposable {
   const packageName = featureConfig.getPackageName();
   return new UniversalDisposable(
     observePackageIsEnabled()
-      .filter(Boolean)
-      .subscribe(() => {
+      .distinctUntilChanged()
+      .switchMap(enabled => {
+        if (!enabled) {
+          return Observable.empty();
+        }
         const notification = atom.notifications.addInfo('Choose a linter UI', {
           description:
             'You have both `linter` and `atom-ide-diagnostics` enabled, which will both ' +
@@ -60,14 +63,12 @@ export default function showAtomLinterWarning(): IDisposable {
             {
               text: 'Disable Linter',
               onDidClick() {
-                notification.dismiss();
                 disableLinter();
               },
             },
             {
               text: 'Disable Diagnostics',
               onDidClick() {
-                notification.dismiss();
                 disableDiagnostics();
                 atom.notifications.addInfo('Re-enabling Diagnostics', {
                   description:
@@ -78,6 +79,12 @@ export default function showAtomLinterWarning(): IDisposable {
             },
           ],
         });
-      }),
+        return Observable.create(() => ({
+          unsubscribe() {
+            notification.dismiss();
+          },
+        }));
+      })
+      .subscribe(),
   );
 }
