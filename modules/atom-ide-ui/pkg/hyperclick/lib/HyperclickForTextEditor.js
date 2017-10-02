@@ -139,7 +139,8 @@ export default class HyperclickForTextEditor {
       this._hyperclick.showSuggestionList(this._textEditor, suggestion);
     } else {
       invariant(typeof suggestion.callback === 'function');
-      suggestion.callback();
+      const openExternal = atom.config.get('hyperclick.openExternal');
+      suggestion.callback(openExternal);
     }
   }
 

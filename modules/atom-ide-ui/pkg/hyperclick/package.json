@@ -197,6 +197,11 @@
           "description": "meta + click"
         }
       ]
+    },
+    "openExternal": {
+      "description": "Open clicked links in your default browser, or within Atom.",
+      "type": "boolean",
+      "default": true
     }
   },
   "nuclide": {
