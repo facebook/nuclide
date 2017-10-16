@@ -11,7 +11,7 @@
       "title": "Display only the symbol name in the outline",
       "type": "boolean",
       "default": "false",
-      "description": "For a more compact outline, display only the name of the element, ommitting, e.g., method parameters."
+      "description": "For a more compact outline, display only the name of the element, omitting, e.g., method parameters."
     }
   },
   "nuclide": {
