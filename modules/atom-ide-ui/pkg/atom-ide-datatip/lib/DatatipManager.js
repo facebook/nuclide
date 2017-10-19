@@ -326,6 +326,11 @@ class DatatipManagerForEditor {
       Observable.fromEvent(this._editorView, 'keydown').subscribe(e => {
         const modifierKey = getModifierKeyFromKeyboardEvent(e);
         if (modifierKey) {
+          // On Windows, key repeat applies to modifier keys too!
+          // So it's quite possible that we hit this twice without hitting keyup.
+          if (this._heldKeys.has(modifierKey)) {
+            return;
+          }
           this._heldKeys.add(modifierKey);
           if (this._datatipState !== DatatipState.HIDDEN) {
             this._fetchInResponseToKeyPress();
@@ -602,11 +607,13 @@ class DatatipManagerForEditor {
       this._datatipState === DatatipState.HIDDEN ||
       this._datatipState === DatatipState.FETCHING
     ) {
-      this._blacklistedPosition = getBufferPosition(
-        this._editor,
-        this._editorView,
-        this._lastMoveEvent,
-      );
+      if (this._blacklistedPosition == null) {
+        this._blacklistedPosition = getBufferPosition(
+          this._editor,
+          this._editorView,
+          this._lastMoveEvent,
+        );
+      }
       return;
     }
 
