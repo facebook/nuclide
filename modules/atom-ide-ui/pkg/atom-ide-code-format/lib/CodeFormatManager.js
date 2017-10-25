@@ -10,6 +10,7 @@
  * @format
  */
 
+import type {BusySignalService} from '../../atom-ide-busy-signal/lib/types';
 import type {
   RangeCodeFormatProvider,
   FileCodeFormatProvider,
@@ -18,10 +19,10 @@ import type {
 } from './types';
 
 import {Range} from 'atom';
-import semver from 'semver';
 import {Observable, Subject} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {microtask} from 'nuclide-commons/observable';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {completingSwitchMap, microtask} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import {
@@ -43,7 +44,7 @@ type FormatEvent =
   | {
       type: 'type',
       editor: atom$TextEditor,
-      edit: atom$TextEditEvent,
+      edit: atom$AggregatedTextEditEvent,
     };
 
 export default class CodeFormatManager {
@@ -52,6 +53,7 @@ export default class CodeFormatManager {
   _fileProviders: ProviderRegistry<FileCodeFormatProvider>;
   _onTypeProviders: ProviderRegistry<OnTypeCodeFormatProvider>;
   _onSaveProviders: ProviderRegistry<OnSaveCodeFormatProvider>;
+  _busySignalService: ?BusySignalService;
 
   constructor() {
     this._subscriptions = new UniversalDisposable(this._subscribeToEvents());
@@ -95,21 +97,13 @@ export default class CodeFormatManager {
           event => event.editor.getBuffer(),
           event => event,
           grouped =>
-            // $FlowFixMe: add durationSelector to groupBy
             observableFromSubscribeFunction(callback =>
-              // $FlowFixMe: add key to GroupedObservable
               grouped.key.onDidDestroy(callback),
             ),
         )
         .mergeMap(events =>
-          // Concatenate a null event to ensure that buffer destruction
-          // interrupts any pending format operations.
-          events.concat(Observable.of(null)).switchMap(event => {
-            if (event == null) {
-              return Observable.empty();
-            }
-            return this._handleEvent(event);
-          }),
+          // Make sure we halt everything when the editor gets destroyed.
+          events.let(completingSwitchMap(event => this._handleEvent(event))),
         )
         .subscribe()
     );
@@ -120,11 +114,8 @@ export default class CodeFormatManager {
    */
   _getEditorEventStream(editor: atom$TextEditor): Observable<FormatEvent> {
     const changeEvents = observableFromSubscribeFunction(callback =>
-      editor.getBuffer().onDidChange(callback),
-    )
-      // Debounce to ensure that multiple cursors only trigger one format.
-      // TODO(hansonw): Use onDidChangeText with 1.17+.
-      .debounceTime(0);
+      editor.getBuffer().onDidChangeText(callback),
+    );
 
     const saveEvents = Observable.create(observer => {
       const realSave = editor.save;
@@ -136,18 +127,11 @@ export default class CodeFormatManager {
       // it's a poor user experience (and also races the text buffer's reload).
       const editor_ = (editor: any);
       editor_.save = () => {
-        // TODO(19829039): remove check
-        if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
-          // In 1.19, TextEditor.save() is async (and the promise is used).
-          // We can just directly format + save here.
-          newSaves.next('new-save');
-          return this._safeFormatCodeOnSave(editor)
-            .takeUntil(newSaves)
-            .toPromise()
-            .then(() => realSave.call(editor));
-        } else {
-          observer.next('save');
-        }
+        newSaves.next('new-save');
+        return this._safeFormatCodeOnSave(editor)
+          .takeUntil(newSaves)
+          .toPromise()
+          .then(() => realSave.call(editor));
       };
       const subscription = newSaves.subscribe(observer);
       return () => {
@@ -234,12 +218,12 @@ export default class CodeFormatManager {
       const buffer = editor.getBuffer();
       const selectionRange = range || editor.getSelectedBufferRange();
       const {start: selectionStart, end: selectionEnd} = selectionRange;
-      let formatRange = null;
+      let formatRange: atom$Range;
       if (selectionRange.isEmpty()) {
         // If no selection is done, then, the whole file is wanted to be formatted.
         formatRange = buffer.getRange();
       } else {
-        // Format selections should start at the begining of the line,
+        // Format selections should start at the beginning of the line,
         // and include the last selected line end.
         // (If the user has already selected complete rows, then depending on how they
         // did it, their caret might be either (1) at the end of their last selected line
@@ -259,8 +243,11 @@ export default class CodeFormatManager {
         // When formatting the entire file, prefer file-based providers.
         (!formatRange.isEqual(buffer.getRange()) || fileProvider == null)
       ) {
-        return Observable.fromPromise(
-          rangeProvider.formatCode(editor, formatRange),
+        return Observable.defer(() =>
+          this._reportBusy(
+            editor,
+            rangeProvider.formatCode(editor, formatRange),
+          ),
         ).map(edits => {
           // Throws if contents have changed since the time of triggering format code.
           this._checkContentsAreSame(contents, editor.getText());
@@ -270,8 +257,11 @@ export default class CodeFormatManager {
           return true;
         });
       } else if (fileProvider != null) {
-        return Observable.fromPromise(
-          fileProvider.formatEntireFile(editor, formatRange),
+        return Observable.defer(() =>
+          this._reportBusy(
+            editor,
+            fileProvider.formatEntireFile(editor, formatRange),
+          ),
         ).map(({newCursor, formatted}) => {
           // Throws if contents have changed since the time of triggering format code.
           this._checkContentsAreSame(contents, editor.getText());
@@ -295,9 +285,14 @@ export default class CodeFormatManager {
 
   _formatCodeOnTypeInTextEditor(
     editor: atom$TextEditor,
-    event: atom$TextEditEvent,
+    aggregatedEvent: atom$AggregatedTextEditEvent,
   ): Observable<void> {
     return Observable.defer(() => {
+      // Don't try to format changes with multiple cursors.
+      if (aggregatedEvent.changes.length !== 1) {
+        return Observable.empty();
+      }
+      const event = aggregatedEvent.changes[0];
       // This also ensures the non-emptiness of event.newText for below.
       if (!shouldFormatOnType(event) || !getFormatOnType()) {
         return Observable.empty();
@@ -361,8 +356,8 @@ export default class CodeFormatManager {
   _formatCodeOnSaveInTextEditor(editor: atom$TextEditor): Observable<void> {
     const saveProvider = this._onSaveProviders.getProviderForEditor(editor);
     if (saveProvider != null) {
-      return Observable.fromPromise(
-        saveProvider.formatOnSave(editor),
+      return Observable.defer(() =>
+        this._reportBusy(editor, saveProvider.formatOnSave(editor)),
       ).map(edits => {
         applyTextEditsToBuffer(editor.getBuffer(), edits);
       });
@@ -373,6 +368,20 @@ export default class CodeFormatManager {
       ).ignoreElements();
     }
     return Observable.empty();
+  }
+
+  _reportBusy<T>(editor: atom$TextEditor, promise: Promise<T>): Promise<T> {
+    const busySignalService = this._busySignalService;
+    if (busySignalService != null) {
+      const path = editor.getPath();
+      const displayPath =
+        path != null ? nuclideUri.basename(path) : '<untitled>';
+      return busySignalService.reportBusyWhile(
+        `Formatting code in ${displayPath}`,
+        () => promise,
+      );
+    }
+    return promise;
   }
 
   addRangeProvider(provider: RangeCodeFormatProvider): IDisposable {
@@ -389,6 +398,13 @@ export default class CodeFormatManager {
 
   addOnSaveProvider(provider: OnSaveCodeFormatProvider): IDisposable {
     return this._onSaveProviders.addProvider(provider);
+  }
+
+  consumeBusySignal(busySignalService: BusySignalService): IDisposable {
+    this._busySignalService = busySignalService;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
   }
 
   dispose() {

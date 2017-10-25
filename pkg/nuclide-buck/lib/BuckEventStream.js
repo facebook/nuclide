@@ -11,7 +11,7 @@
 
 import type {BuckWebSocketMessage} from '../../nuclide-buck-rpc';
 import type {Level} from 'nuclide-commons/process';
-import type {FileDiagnosticMessage} from 'atom-ide-ui';
+import type {DiagnosticMessage} from 'atom-ide-ui';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {BuckBuildOutput, BuckSubcommand} from './types';
 
@@ -41,7 +41,7 @@ export type BuckEvent =
     }
   | {
       type: 'diagnostics',
-      diagnostics: Array<FileDiagnosticMessage>,
+      diagnostics: Array<DiagnosticMessage>,
     }
   | {
       type: 'socket-connected',
@@ -184,6 +184,7 @@ export function getEventsFromProcess(
           };
         }
       default:
+        (message: empty);
         throw new Error('impossible');
     }
   });

@@ -11,7 +11,7 @@
 
 import type {DOMMeasurements} from '../commons-atom/observe-element-dimensions';
 
-import React from 'react';
+import * as React from 'react';
 import {MeasuredComponent} from './MeasuredComponent';
 import {Button} from 'nuclide-commons-ui/Button';
 
@@ -30,10 +30,7 @@ type State = {
  * aligned at the bottom. Clicking "Show More" will remove the max height restriction
  * and expand the component to full height.
  */
-export class ShowMoreComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class ShowMoreComponent extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -52,7 +49,7 @@ export class ShowMoreComponent extends React.Component {
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {showingMore, currentHeight} = this.state;
     const {maxHeight} = this.props;
 

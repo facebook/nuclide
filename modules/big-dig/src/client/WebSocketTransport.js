@@ -43,7 +43,7 @@ export class WebSocketTransport {
     this._messages = new Subject();
 
     logger.info('Client #%s connecting with a new socket!', this.id);
-    socket.on('message', (data, flags) => {
+    socket.on('message', data => {
       this._onSocketMessage(data);
     });
 
@@ -51,13 +51,13 @@ export class WebSocketTransport {
       if (this._socket != null) {
         invariant(this._socket === socket);
         logger.info(
-          'Client #%s socket close recieved on open socket!',
+          'Client #%s socket close received on open socket!',
           this.id,
         );
         this._setClosed();
       } else {
         logger.info(
-          'Client #%s recieved socket close on already closed socket!',
+          'Client #%s received socket close on already closed socket!',
           this.id,
         );
       }
@@ -72,7 +72,7 @@ export class WebSocketTransport {
       }
     });
 
-    socket.on('pong', (data, flags) => {
+    socket.on('pong', data => {
       if (this._socket != null) {
         // data may be a Uint8Array
         this._emitter.emit('pong', data != null ? String(data) : data);

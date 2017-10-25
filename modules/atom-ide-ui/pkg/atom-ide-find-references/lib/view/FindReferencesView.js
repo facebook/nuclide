@@ -12,8 +12,7 @@
 
 import type {FileReferences} from '../types';
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as React from 'react';
 import FileReferencesView from './FileReferencesView';
 import FindReferencesModel from '../FindReferencesModel';
 import {pluralize} from 'nuclide-commons/string';
@@ -34,10 +33,7 @@ type State = {
   references: Array<FileReferences>,
 };
 
-export default class FindReferencesView extends React.Component {
-  props: Props;
-  state: State;
-
+export default class FindReferencesView extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -69,14 +65,11 @@ export default class FindReferencesView extends React.Component {
   }
 
   _onScroll(evt: Event) {
-    const root = ReactDOM.findDOMNode(this.refs.root);
-    // $FlowFixMe
+    const root = this.refs.root;
     if (this.state.loading || root.clientHeight >= root.scrollHeight) {
       return;
     }
-    // $FlowFixMe
     const scrollBottom = root.scrollTop + root.clientHeight;
-    // $FlowFixMe
     if (root.scrollHeight - scrollBottom <= SCROLL_LOAD_THRESHOLD) {
       this.setState({loading: true});
       this._fetchMore(PAGE_SIZE);
@@ -87,16 +80,16 @@ export default class FindReferencesView extends React.Component {
     this.setState({selected: this.state.selected === i ? -1 : i});
   }
 
-  render(): React.Element<any> {
-    const children = this.state.references.map((fileRefs, i) =>
+  render(): React.Node {
+    const children = this.state.references.map((fileRefs, i) => (
       <FileReferencesView
         key={i}
         isSelected={this.state.selected === i}
         {...fileRefs}
         basePath={this.props.model.getBasePath()}
         clickCallback={() => this._childClick(i)}
-      />,
-    );
+      />
+    ));
 
     const refCount = this.props.model.getReferenceCount();
     const fileCount = this.props.model.getFileCount();
@@ -104,14 +97,14 @@ export default class FindReferencesView extends React.Component {
       children.push(
         <div
           key="loading"
-          className="atom-ide-find-references-loading loading-spinner-medium"
+          className="find-references-loading loading-spinner-medium"
         />,
       );
     }
 
     return (
-      <div className="atom-ide-find-references">
-        <div className="atom-ide-find-references-count panel-heading">
+      <div className="find-references">
+        <div className="find-references-count panel-heading">
           {refCount} {pluralize('reference', refCount)} found in {fileCount}{' '}
           {pluralize('file', fileCount)} for{' '}
           <span className="highlight-info">
@@ -119,7 +112,7 @@ export default class FindReferencesView extends React.Component {
           </span>
         </div>
         <ul
-          className="atom-ide-find-references-files list-tree has-collapsable-children"
+          className="find-references-files list-tree has-collapsable-children"
           onScroll={this._onScroll}
           ref="root"
           tabIndex="0">

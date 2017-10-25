@@ -9,11 +9,7 @@ Hyperclick is triggered by two events:
 
 ## Known Providers
 
-* [Nuclide](https://atom.io/packages/nuclide) uses Hyperclick for C++, Flow, Hack, and more!
-* [js-hyperclick](https://atom.io/packages/js-hyperclick) Jump to variable definitions, including when imported/required from another file
-* [hyperclick-php](https://atom.io/packages/hyperclick-php) Locate php classes with the help of composer, and open the file
-* [go-plus](https://atom.io/packages/go-plus) Jump to definition for [go](https://golang.org)
-* [hyperlink-hyperclick](https://atom.io/packages/hyperlink-hyperclick) Open URLs in your default browser
+Check out the wiki: https://github.com/facebooknuclide/hyperclick/wiki/Known-Providers
 
 ## Demo
 
@@ -109,4 +105,3 @@ Additional provider fields:
 
 - `grammarScopes`: An (optional) `Array` of grammar `scopeNames` to provide suggestions for.
   Your provider will only be triggered in matching text editors.
-

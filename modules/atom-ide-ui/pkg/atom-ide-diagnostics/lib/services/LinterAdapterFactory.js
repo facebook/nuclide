@@ -13,43 +13,24 @@
 import type {LinterProvider} from '../types';
 import {LinterAdapter} from './LinterAdapter';
 
-function createSingleAdapter(provider: LinterProvider): ?LinterAdapter {
+type BusyReporter = (title: string) => IDisposable;
+
+export function createAdapter(
+  provider: LinterProvider,
+  busyReporter: BusyReporter,
+): ?LinterAdapter {
   const validationErrors = validateLinter(provider);
   if (validationErrors.length === 0) {
-    return new LinterAdapter(provider);
+    return new LinterAdapter(provider, busyReporter);
   } else {
     const nameString = provider.name;
     let message =
-      `nuclide-diagnostics-store found problems with a linter${nameString}. ` +
+      `nuclide-diagnostics-store found problems with the linter \`${nameString}\`. ` +
       'Diagnostic messages from that linter will be unavailable.\n';
     message += validationErrors.map(error => `- ${error}\n`).join('');
     atom.notifications.addError(message, {dismissable: true});
     return null;
   }
-}
-
-function addSingleAdapter(
-  adapters: Set<LinterAdapter>,
-  provider: LinterProvider,
-): void {
-  const adapter: ?LinterAdapter = createSingleAdapter(provider);
-  if (adapter) {
-    adapters.add(adapter);
-  }
-}
-
-export function createAdapters(
-  providers: LinterProvider | Array<LinterProvider>,
-): Set<LinterAdapter> {
-  const adapters = new Set();
-  if (Array.isArray(providers)) {
-    for (const provider of providers) {
-      addSingleAdapter(adapters, provider);
-    }
-  } else {
-    addSingleAdapter(adapters, providers);
-  }
-  return adapters;
 }
 
 export function validateLinter(provider: LinterProvider): Array<string> {
@@ -86,6 +67,11 @@ export function validateLinter(provider: LinterProvider): Array<string> {
       errors,
     );
 
+    // Older LinterV1 providers didn't have to provide a name.
+    // We'll tolerate this, since there's still a few out there.
+    if (provider.name == null) {
+      provider.name = 'Linter';
+    }
     validate(
       typeof provider.name === 'string',
       'provider must have a name',
@@ -97,6 +83,7 @@ export function validateLinter(provider: LinterProvider): Array<string> {
 }
 
 function validate(condition: mixed, msg: string, errors: Array<string>): void {
+  // flowlint-next-line sketchy-null-mixed:off
   if (!condition) {
     errors.push(msg);
   }

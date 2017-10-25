@@ -11,7 +11,7 @@
 
 import type {BoundActionCreators, Parameter} from './types';
 
-import React from 'react';
+import * as React from 'react';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
@@ -37,7 +37,7 @@ const METHOD_DROPDOWN_OPTIONS = [
   {label: 'POST', value: 'POST'},
 ];
 
-export class RequestEditDialog extends React.Component<void, PropsType, void> {
+export class RequestEditDialog extends React.Component<PropsType, void> {
   props: PropsType;
   _editorComponent: ?AtomTextEditor;
 
@@ -100,11 +100,15 @@ export class RequestEditDialog extends React.Component<void, PropsType, void> {
     );
   }
 
-  _handleTextBufferChange(event: atom$TextEditEvent): void {
+  _handleTextBufferChange(event: atom$AggregatedTextEditEvent): void {
     // TODO: It's better to store changes, even if they are illegal JSON.
     let headers;
     try {
-      headers = JSON.parse(event.newText);
+      const editorComponent = this._editorComponent;
+      invariant(editorComponent != null);
+      const editor = editorComponent.getModel();
+      invariant(editor != null);
+      headers = JSON.parse(editor.getText());
     } catch (_) {
       return; // Do not store illegal JSON.
     }
@@ -191,7 +195,7 @@ export class RequestEditDialog extends React.Component<void, PropsType, void> {
     this.props.actionCreators.updateState({parameters});
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="block">
         <div className="nuclide-edit-request-dialog">

@@ -10,7 +10,7 @@
  */
 
 /* global sessionStorage */
-/* eslint-disable no-console, nuclide-internal/no-commonjs */
+/* eslint-disable no-console, rulesdir/no-commonjs */
 
 declare function waitsForPromise(
   optionsOrFunc:
@@ -167,6 +167,7 @@ describe('Nuclide performance', () => {
 
 function getRunOptions(): RunOptions {
   let benchmarks = [];
+  // flowlint-next-line sketchy-null-string:off
   if (process.env.BENCHMARK) {
     // A single benchmark has been passed in from the command line or shell.
     benchmarks = [process.env.BENCHMARK];
@@ -179,6 +180,7 @@ function getRunOptions(): RunOptions {
   }
 
   let packages = [];
+  // flowlint-next-line sketchy-null-string:off
   if (process.env.BENCHMARK_PACKAGES) {
     // packages to be loaded have been passed in from the command line or shell.
     packages = process.env.BENCHMARK_PACKAGES
@@ -208,6 +210,7 @@ function getRunOptions(): RunOptions {
 
 function getTestState(): Object {
   const item = sessionStorage.getItem(RUN_STATE_KEY);
+  // flowlint-next-line sketchy-null-string:off
   if (item) {
     try {
       return JSON.parse(item);

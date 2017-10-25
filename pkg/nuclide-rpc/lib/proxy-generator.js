@@ -10,6 +10,8 @@
  */
 
 import * as t from 'babel-types';
+// This is in devDependencies. This file is only reachable in dev mode.
+// eslint-disable-next-line rulesdir/no-unresolved
 import generate from 'babel-generator';
 
 import type {
@@ -247,17 +249,14 @@ function generateFunctionProxy(name: string, funcType: FunctionType): any {
 
   // Promise.all(...).then(args => { return ...)
   const argumentsPromise = marshalArgsCall(funcType.argumentTypes);
-  const marshalArgsAndCall = thenPromise(
+
+  const result = generateUnmarshalResult(
+    funcType.returnType,
     argumentsPromise,
     t.arrowFunctionExpression(
       [t.identifier('args')],
       t.blockStatement([t.returnStatement(callExpression)]),
     ),
-  );
-
-  const result = generateUnmarshalResult(
-    funcType.returnType,
-    marshalArgsAndCall,
   );
 
   // function(arg0, ... argN) { return ... }
@@ -382,22 +381,25 @@ function generateRemoteDispatch(
     t.identifier('args'),
   ]);
 
-  // _client.marshal(this, thisType).then(id => { return ... })
-  const idThenCall = thenPromise(
-    generateTransformStatement(t.thisExpression(), thisType, true),
-    t.arrowFunctionExpression(
-      [idIdentifier],
-      t.blockStatement([t.returnStatement(remoteMethodCall)]),
-    ),
+  // Promise.all([argumentsPromise, idPromise])
+  const argumentsPromise = marshalArgsCall(funcType.argumentTypes);
+  const promiseAll = t.callExpression(
+    t.memberExpression(t.identifier('Promise'), t.identifier('all')),
+    [
+      t.arrayExpression([
+        argumentsPromise,
+        generateTransformStatement(t.thisExpression(), thisType, true),
+      ]),
+    ],
   );
 
-  // Promise.all(...).then(args => { return ... })
-  const argumentsPromise = marshalArgsCall(funcType.argumentTypes);
-  const marshallThenCall = thenPromise(
-    argumentsPromise,
+  // ... .then(([args, id]) => callRemoteMethod)
+  const result = generateUnmarshalResult(
+    funcType.returnType,
+    promiseAll,
     t.arrowFunctionExpression(
-      [t.identifier('args')],
-      t.blockStatement([t.returnStatement(idThenCall)]),
+      [t.arrayPattern([t.identifier('args'), idIdentifier])],
+      remoteMethodCall,
     ),
   );
 
@@ -405,7 +407,6 @@ function generateRemoteDispatch(
   const funcTypeArgs = funcType.argumentTypes.map((arg, i) =>
     t.identifier(`arg${i}`),
   );
-  const result = generateUnmarshalResult(funcType.returnType, marshallThenCall);
   return t.classMethod(
     'method',
     t.identifier(methodName),
@@ -414,25 +415,30 @@ function generateRemoteDispatch(
   );
 }
 
-function generateUnmarshalResult(returnType: Type, rpcCallExpression) {
+function generateUnmarshalResult(
+  returnType: Type,
+  argsExpression,
+  callExpression,
+) {
   switch (returnType.kind) {
     case 'void':
-      return rpcCallExpression;
+      return thenPromise(argsExpression, callExpression);
     case 'promise':
       const promiseTransformer = generateValueTransformer(returnType.type);
-      return thenPromise(rpcCallExpression, promiseTransformer);
-    case 'observable':
-      // rpcCallExpression is a call which returns Promise<Observable<unmarshalled result>>
-
-      // Observable.fromPromise(rpcCallExpression)
-      const callObservable = t.callExpression(
-        t.memberExpression(observableIdentifier, t.identifier('fromPromise')),
-        [rpcCallExpression],
+      return thenPromise(
+        thenPromise(argsExpression, callExpression),
+        promiseTransformer,
       );
-      // ... .flatMap(id => id)
-      const unmarshalledValues = t.callExpression(
-        t.memberExpression(callObservable, t.identifier('concatMap')),
-        [t.arrowFunctionExpression([idIdentifier], idIdentifier)],
+    case 'observable':
+      // Observable.fromPromise(argsExpression)
+      const argsObservable = t.callExpression(
+        t.memberExpression(observableIdentifier, t.identifier('fromPromise')),
+        [argsExpression],
+      );
+      // ... .switchMap(callExpression)
+      const callObservable = t.callExpression(
+        t.memberExpression(argsObservable, t.identifier('switchMap')),
+        [callExpression],
       );
 
       // Map the events through the appropriate marshaller. We use concatMap instead of
@@ -442,7 +448,7 @@ function generateUnmarshalResult(returnType: Type, rpcCallExpression) {
       // ... .concatMap(value => _client.unmarshal(value, returnType))
       const observableTransformer = generateValueTransformer(returnType.type);
       const unmarshalledObservable = t.callExpression(
-        t.memberExpression(unmarshalledValues, t.identifier('concatMap')),
+        t.memberExpression(callObservable, t.identifier('concatMap')),
         [observableTransformer],
       );
 
@@ -452,7 +458,7 @@ function generateUnmarshalResult(returnType: Type, rpcCallExpression) {
         [],
       );
     default:
-      throw new Error(`Unkown return type ${returnType.kind}.`);
+      throw new Error(`Unknown return type ${returnType.kind}.`);
   }
 }
 
@@ -506,6 +512,7 @@ function generateTransformStatement(
   const convertArgs = [id, objectToLiteral(type)];
 
   // If the type is parameterized, we send the parameters as an optional fourth argument.
+  // flowlint-next-line sketchy-null-mixed:off
   if (type.param) {
     convertArgs.push(objectToLiteral(type.param));
   }
@@ -527,6 +534,7 @@ function objectToLiteral(obj: any): any {
     return t.numericLiteral(obj);
   } else if (typeof obj === 'boolean') {
     return t.booleanLiteral(obj);
+    // eslint-disable-next-line eqeqeq
   } else if (obj === null) {
     return t.nullLiteral();
   } else if (obj === undefined) {

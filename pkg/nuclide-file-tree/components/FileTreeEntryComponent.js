@@ -10,9 +10,12 @@
  */
 
 import type {FileTreeNode} from '../lib/FileTreeNode';
+// flowlint-next-line untyped-type-import:off
+import type Immutable from 'immutable';
 
 import FileTreeActions from '../lib/FileTreeActions';
-import React from 'react';
+import FileTreeHelpers from '../lib/FileTreeHelpers';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
@@ -25,7 +28,6 @@ import FileTreeHgHelpers from '../lib/FileTreeHgHelpers';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
 import invariant from 'assert';
-import os from 'os';
 import {Observable} from 'rxjs';
 
 const store = FileTreeStore.getInstance();
@@ -33,24 +35,19 @@ const getActions = FileTreeActions.getInstance;
 
 type Props = {
   node: FileTreeNode,
+  selectedNodes: Immutable.Set<FileTreeNode>,
+  focusedNodes: Immutable.Set<FileTreeNode>,
+  isPreview?: boolean,
 };
 type State = {
   isLoading: boolean,
 };
 
-type SelectionMode =
-  | 'single-select'
-  | 'multi-select'
-  | 'range-select'
-  | 'invalid-select';
-
 const SUBSEQUENT_FETCH_SPINNER_DELAY = 500;
 const INITIAL_FETCH_SPINNER_DELAY = 25;
 const INDENT_LEVEL = 17;
 
-export class FileTreeEntryComponent extends React.Component {
-  state: State;
-  props: Props;
+export class FileTreeEntryComponent extends React.Component<Props, State> {
   // Keep track of the # of dragenter/dragleave events in order to properly decide
   // when an entry is truly hovered/unhovered, since these fire many times over
   // the duration of one user interaction.
@@ -71,7 +68,9 @@ export class FileTreeEntryComponent extends React.Component {
   shouldComponentUpdate(nextProps: Props, nextState: State): boolean {
     return (
       nextProps.node !== this.props.node ||
-      nextState.isLoading !== this.state.isLoading
+      nextState.isLoading !== this.state.isLoading ||
+      nextProps.selectedNodes !== this.props.selectedNodes ||
+      nextProps.focusedNodes !== this.props.focusedNodes
     );
   }
 
@@ -110,6 +109,7 @@ export class FileTreeEntryComponent extends React.Component {
       Observable.fromEvent(el, 'dragleave').subscribe(this._onDragLeave),
       Observable.fromEvent(el, 'dragstart').subscribe(this._onDragStart),
       Observable.fromEvent(el, 'dragover').subscribe(this._onDragOver),
+      Observable.fromEvent(el, 'dragend').subscribe(this._onDragEnd),
       Observable.fromEvent(el, 'drop').subscribe(this._onDrop),
     );
   }
@@ -122,8 +122,9 @@ export class FileTreeEntryComponent extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const node = this.props.node;
+    const isSelected = this.props.selectedNodes.has(node);
 
     const outerClassName = classnames('entry', {
       'file list-item': !node.isContainer,
@@ -132,8 +133,9 @@ export class FileTreeEntryComponent extends React.Component {
       collapsed: !node.isLoading && !node.isExpanded,
       expanded: !node.isLoading && node.isExpanded,
       'project-root': node.isRoot,
-      selected: node.isSelected || node.isDragHovered,
+      selected: isSelected || node.isDragHovered,
       'nuclide-file-tree-softened': node.shouldBeSoftened,
+      'nuclide-file-tree-root-being-reordered': node.isBeingReordered,
     });
     const listItemClassName = classnames({
       'header list-item': node.isContainer,
@@ -166,6 +168,15 @@ export class FileTreeEntryComponent extends React.Component {
       }
     }
 
+    let generatedClass;
+    if (node.generatedStatus === 'generated') {
+      generatedClass = 'generated-fully';
+    } else if (node.generatedStatus === 'partial') {
+      generatedClass = 'generated-partly';
+    } else {
+      generatedClass = '';
+    }
+
     let tooltip;
     if (node.isContainer) {
       if (node.isCwd) {
@@ -175,7 +186,7 @@ export class FileTreeEntryComponent extends React.Component {
 
     return (
       <li
-        className={`${outerClassName} ${statusClass}`}
+        className={`${outerClassName} ${statusClass} ${generatedClass}`}
         style={{paddingLeft: this.props.node.getDepth() * INDENT_LEVEL}}
         draggable={true}
         onMouseDown={this._onMouseDown}
@@ -191,13 +202,14 @@ export class FileTreeEntryComponent extends React.Component {
             isFolder={node.isContainer}
             path={node.uri}
             ref={elem => {
+              // $FlowFixMe(>=0.53.0) Flow suppress
               this._pathContainer = elem;
               tooltip && tooltip(elem);
             }}
             data-name={node.name}
             data-path={node.uri}>
             {this._renderCheckbox()}
-            {filterName(node.name, node.highlightedText, node.isSelected)}
+            {filterName(node.name, node.highlightedText, isSelected)}
           </PathWithFileIcon>
           {this._renderConnectionTitle()}
         </div>
@@ -237,7 +249,7 @@ export class FileTreeEntryComponent extends React.Component {
     );
   }
 
-  _isToggleNodeExpand(event: SyntheticMouseEvent) {
+  _isToggleNodeExpand(event: SyntheticMouseEvent<>) {
     if (!this._pathContainer) {
       return;
     }
@@ -253,27 +265,30 @@ export class FileTreeEntryComponent extends React.Component {
     );
   }
 
-  _onMouseDown = (event: SyntheticMouseEvent) => {
+  _onMouseDown = (event: SyntheticMouseEvent<>) => {
     event.stopPropagation();
     if (this._isToggleNodeExpand(event)) {
       return;
     }
 
     const node = this.props.node;
+    const isSelected = this.props.selectedNodes.has(node);
 
-    const selectionMode = getSelectionMode(event);
-    if (selectionMode === 'multi-select' && !node.isSelected) {
+    const selectionMode = FileTreeHelpers.getSelectionMode(event);
+    if (selectionMode === 'multi-select' && !isSelected) {
       getActions().addSelectedNode(node.rootUri, node.uri);
     } else if (selectionMode === 'range-select') {
       getActions().rangeSelectToNode(node.rootUri, node.uri);
-    } else if (selectionMode === 'single-select' && !node.isSelected) {
+    } else if (selectionMode === 'single-select' && !isSelected) {
       getActions().setSelectedNode(node.rootUri, node.uri);
     }
   };
 
-  _onClick = (event: SyntheticMouseEvent) => {
+  _onClick = (event: SyntheticMouseEvent<>) => {
     event.stopPropagation();
     const node = this.props.node;
+    const isSelected = this.props.selectedNodes.has(node);
+    const isFocused = this.props.focusedNodes.has(node);
 
     const deep = event.altKey;
     if (this._isToggleNodeExpand(event)) {
@@ -281,7 +296,7 @@ export class FileTreeEntryComponent extends React.Component {
       return;
     }
 
-    const selectionMode = getSelectionMode(event);
+    const selectionMode = FileTreeHelpers.getSelectionMode(event);
 
     if (
       selectionMode === 'range-select' ||
@@ -291,7 +306,7 @@ export class FileTreeEntryComponent extends React.Component {
     }
 
     if (selectionMode === 'multi-select') {
-      if (node.isFocused) {
+      if (isFocused) {
         getActions().unselectNode(node.rootUri, node.uri);
         // If this node was just unselected, immediately return and skip
         // the statement below that sets this node to focused.
@@ -299,12 +314,16 @@ export class FileTreeEntryComponent extends React.Component {
       }
     } else {
       if (node.isContainer) {
-        if (node.isFocused || node.conf.usePreviewTabs) {
+        if (isFocused || node.conf.usePreviewTabs) {
           this._toggleNodeExpanded(deep);
         }
       } else {
         if (node.conf.usePreviewTabs) {
-          getActions().confirmNode(node.rootUri, node.uri);
+          getActions().confirmNode(
+            node.rootUri,
+            node.uri,
+            true, // pending
+          );
         }
       }
       // Set selected node to clear any other selected nodes (i.e. in the case of
@@ -312,32 +331,32 @@ export class FileTreeEntryComponent extends React.Component {
       getActions().setSelectedNode(node.rootUri, node.uri);
     }
 
-    if (node.isSelected) {
+    if (isSelected) {
       getActions().setFocusedNode(node.rootUri, node.uri);
     }
   };
 
-  _onDoubleClick = (event: SyntheticMouseEvent) => {
+  _onDoubleClick = (event: SyntheticMouseEvent<>) => {
     event.stopPropagation();
 
     if (this.props.node.isContainer) {
       return;
     }
 
-    if (this.props.node.conf.usePreviewTabs) {
-      getActions().keepPreviewTab();
-    } else {
-      getActions().confirmNode(this.props.node.rootUri, this.props.node.uri);
-    }
+    getActions().confirmNode(this.props.node.rootUri, this.props.node.uri);
   };
 
   _onDragEnter = (event: DragEvent) => {
     event.stopPropagation();
-    const movableNodes = store
-      .getSelectedNodes()
-      .filter(node =>
-        FileTreeHgHelpers.isValidRename(node, this.props.node.uri),
-      );
+
+    const nodes = store.getSelectedNodes();
+    if (!this.props.isPreview && nodes.size === 1 && nodes.first().isRoot) {
+      getActions().reorderDragInto(this.props.node.rootUri);
+      return;
+    }
+    const movableNodes = nodes.filter(node =>
+      FileTreeHgHelpers.isValidRename(node, this.props.node.uri),
+    );
 
     // Ignores hover over invalid targets.
     if (!this.props.node.isContainer || movableNodes.size === 0) {
@@ -368,6 +387,7 @@ export class FileTreeEntryComponent extends React.Component {
 
   _onDragStart = (event: DragEvent) => {
     event.stopPropagation();
+
     if (this._pathContainer == null) {
       return;
     }
@@ -394,6 +414,10 @@ export class FileTreeEntryComponent extends React.Component {
       invariant(document.body != null);
       document.body.removeChild(fileIcon);
     });
+
+    if (this.props.node.isRoot) {
+      getActions().startReorderDrag(this.props.node.uri);
+    }
   };
 
   _onDragOver = (event: DragEvent) => {
@@ -401,13 +425,24 @@ export class FileTreeEntryComponent extends React.Component {
     event.stopPropagation();
   };
 
+  _onDragEnd = (event: DragEvent) => {
+    if (this.props.node.isRoot) {
+      getActions().endReorderDrag();
+    }
+  };
+
   _onDrop = (event: DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
-    // Reset the dragEventCount for the currently dragged node upon dropping.
-    this.dragEventCount = 0;
-    getActions().moveToNode(this.props.node.rootUri, this.props.node.uri);
+    const dragNode = store.getSingleSelectedNode();
+    if (dragNode != null && dragNode.isRoot) {
+      getActions().reorderRoots();
+    } else {
+      // Reset the dragEventCount for the currently dragged node upon dropping.
+      this.dragEventCount = 0;
+      getActions().moveToNode(this.props.node.rootUri, this.props.node.uri);
+    }
   };
 
   _toggleNodeExpanded(deep: boolean): void {
@@ -440,32 +475,13 @@ export class FileTreeEntryComponent extends React.Component {
     }
   };
 
-  _checkboxOnClick = (event: SyntheticEvent): void => {
+  _checkboxOnClick = (event: SyntheticEvent<>): void => {
     event.stopPropagation();
   };
 
-  _checkboxOnMouseDown = (event: SyntheticMouseEvent): void => {
+  _checkboxOnMouseDown = (event: SyntheticMouseEvent<>): void => {
     // Chrome messes with scrolling if a focused input is being scrolled out of view
     // so we'll just prevent the checkbox from receiving the focus
     event.preventDefault();
   };
-}
-
-function getSelectionMode(event: SyntheticMouseEvent): SelectionMode {
-  if (
-    (os.platform() === 'darwin' && event.metaKey && event.button === 0) ||
-    (os.platform() !== 'darwin' && event.ctrlKey && event.button === 0)
-  ) {
-    return 'multi-select';
-  }
-  if (os.platform() === 'darwin' && event.ctrlKey && event.button === 0) {
-    return 'single-select';
-  }
-  if (event.shiftKey && event.button === 0) {
-    return 'range-select';
-  }
-  if (!event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
-    return 'single-select';
-  }
-  return 'invalid-select';
 }

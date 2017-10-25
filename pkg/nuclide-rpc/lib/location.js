@@ -21,6 +21,7 @@ export function locationToString(location: Location): string {
     case 'builtin':
       return '<builtin>';
     default:
+      (location.type: empty);
       throw new Error('Bad location type');
   }
 }
@@ -36,6 +37,7 @@ export function locationsEqual(first: Location, second: Location): boolean {
     case 'builtin':
       return true;
     default:
+      (first.type: empty);
       throw new Error('Bad location type');
   }
 }
@@ -44,7 +46,7 @@ export function stripLocationsFileName(obj: any): any {
   function inspect(key: ?string, value: any): void {
     if (
       key === 'location' &&
-      value !== null &&
+      value != null &&
       typeof value.fileName === 'string'
     ) {
       value.fileName = nuclideUri.basename(value.fileName);

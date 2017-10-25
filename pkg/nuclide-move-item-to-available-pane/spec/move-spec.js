@@ -9,18 +9,21 @@
  * @format
  */
 
-import {activate} from '../lib/main';
+import fsPromise from 'nuclide-commons/fsPromise';
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+
+import {activate} from '../lib/main';
 
 describe('nuclide-move-item-to-available-pane', () => {
   it('moves items across panes and creates new ones, as appropriate', () => {
     waitsForPromise(async () => {
       activate();
 
-      await atom.workspace.open('A');
-      await atom.workspace.open('B');
-      await atom.workspace.open('C');
+      const tempdir = await fsPromise.tempdir();
+      await atom.workspace.open(nuclideUri.join(tempdir, 'A'));
+      await atom.workspace.open(nuclideUri.join(tempdir, 'B'));
+      await atom.workspace.open(nuclideUri.join(tempdir, 'C'));
       atom.workspace.getPanes()[0].activateItemAtIndex(0);
       assertWorkspaceState(['A*', 'B', 'C']);
 

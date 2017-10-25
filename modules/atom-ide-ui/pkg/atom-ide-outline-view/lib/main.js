@@ -37,7 +37,7 @@ class Activation {
 
     this._editorService = new ActiveEditorRegistry(
       (provider, editor) => {
-        analytics.track('nuclide-outline-view-getoutline');
+        analytics.track('outline-view-getoutline');
         return provider.getOutline(editor);
       },
       {},
@@ -53,25 +53,8 @@ class Activation {
     return this._editorService.consumeProvider(provider);
   }
 
-  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
-    const toolBar = getToolBar('nuclide-outline-view');
-    const {element} = toolBar.addButton({
-      icon: 'list-unordered',
-      callback: 'outline-view:toggle',
-      tooltip: 'Toggle Outline View',
-      priority: 200,
-    });
-    // Class added is not defined elsewhere, and is just used to mark the toolbar button
-    element.classList.add('nuclide-outline-view-toolbar-button');
-    const disposable = new UniversalDisposable(() => {
-      toolBar.removeItems();
-    });
-    this._disposables.add(disposable);
-    return disposable;
-  }
-
   _createOutlineViewPanelState(): OutlineViewPanelState {
-    analytics.track('nuclide-outline-view-show');
+    analytics.track('outline-view-show');
     return new OutlineViewPanelState(createOutlines(this._editorService));
   }
 

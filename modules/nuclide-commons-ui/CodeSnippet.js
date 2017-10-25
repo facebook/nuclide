@@ -11,7 +11,7 @@
  */
 
 import {AtomInput} from './AtomInput';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   text: string,
@@ -19,13 +19,11 @@ type Props = {
   highlights?: Array<atom$Range>,
   startLine: number,
   endLine: number,
-  onClick: (event: SyntheticMouseEvent) => mixed,
-  onLineClick: (event: SyntheticMouseEvent, line: number) => mixed,
+  onClick: (event: SyntheticMouseEvent<>) => mixed,
+  onLineClick: (event: SyntheticMouseEvent<>, line: number) => mixed,
 };
 
-export class CodeSnippet extends React.Component {
-  props: Props;
-
+export class CodeSnippet extends React.Component<Props> {
   componentDidMount() {
     const editor = this.refs.editor.getTextEditor();
     const {grammar, highlights, startLine} = this.props;
@@ -56,7 +54,7 @@ export class CodeSnippet extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const lineNumbers = [];
     for (let i = this.props.startLine; i <= this.props.endLine; i++) {
       lineNumbers.push(

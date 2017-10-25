@@ -147,6 +147,7 @@ export class DbgpSocket {
     this._transactionId = 0;
     this._calls = new Map();
     this._emitter = new EventEmitter();
+    this._emitter.setMaxListeners(100);
     this._isClosed = false;
     this._messageHandler = new DbgpMessageHandler();
     this._pendingEvalTransactionIds = new Set();
@@ -182,7 +183,7 @@ export class DbgpSocket {
 
   _onData(data: Buffer | string): void {
     const message = data.toString();
-    logger.debug('Recieved data: ' + message);
+    logger.debug('Received data: ' + message);
     let responses = [];
     try {
       responses = this._messageHandler.parseMessages(message);
@@ -619,6 +620,7 @@ export class DbgpSocket {
   _sendCommand(command: string, params: ?string): number {
     const id = ++this._transactionId;
     let message = `${command} -i ${id}`;
+    // flowlint-next-line sketchy-null-string:off
     if (params) {
       message += ' ' + params;
     }

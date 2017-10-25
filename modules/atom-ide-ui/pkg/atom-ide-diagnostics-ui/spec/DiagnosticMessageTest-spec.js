@@ -10,7 +10,7 @@
  * @format
  */
 
-import {separateUrls} from '../lib/DiagnosticsMessageText';
+import {separateUrls} from '../lib/ui/DiagnosticsMessageText';
 
 describe('DiagnosticsMessageText', () => {
   it('should leave text unchanged', () => {

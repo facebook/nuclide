@@ -14,6 +14,7 @@ import fs from 'fs';
 import fsPlus from 'fs-plus';
 import globLib from 'glob';
 import mkdirpLib from 'mkdirp';
+import mvLib from 'mv';
 import rimraf from 'rimraf';
 import temp from 'temp';
 
@@ -163,7 +164,7 @@ async function mkdirp(filePath: string): Promise<boolean> {
 /**
  * Removes directories even if they are non-empty. Does not fail if the directory doesn't exist.
  */
-function rmdir(filePath: string): Promise<void> {
+function rimrafWrapper(filePath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     rimraf(filePath, (err, result) => {
       if (err == null) {
@@ -175,8 +176,7 @@ function rmdir(filePath: string): Promise<void> {
   });
 }
 
-/** @return true only if we are sure directoryPath is on NFS. */
-async function isNfs(entityPath: string): Promise<boolean> {
+async function getFileSystemType(entityPath: string): Promise<?string> {
   if (process.platform === 'linux' || process.platform === 'darwin') {
     try {
       const stdout = await runCommand('stat', [
@@ -186,14 +186,26 @@ async function isNfs(entityPath: string): Promise<boolean> {
         '%T',
         entityPath,
       ]).toPromise();
-      return stdout.trim() === 'nfs';
+      return stdout.trim();
     } catch (err) {
-      return false;
+      return null;
     }
   } else {
-    // TODO Handle other platforms (windows?): t9917576.
-    return false;
+    // TODO Handle other platforms (windows?)
+    return null;
   }
+}
+
+/** @return true only if we are sure entityPath is on NFS. */
+async function isNfs(entityPath: string): Promise<boolean> {
+  return (await getFileSystemType(entityPath)) === 'nfs';
+}
+
+/** @return true only if we are sure entityPath is on a Fuse filesystem like
+            dewey or gvfs.
+*/
+async function isFuse(entityPath: string): Promise<boolean> {
+  return (await getFileSystemType(entityPath)) === 'fuseblk';
 }
 
 function glob(pattern: string, options?: Object): Promise<Array<string>> {
@@ -231,18 +243,6 @@ async function isNonNfsDirectory(directoryPath: string): Promise<boolean> {
 function copy(source: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     fsPlus.copy(source, dest, (err, result) => {
-      if (err == null) {
-        resolve(result);
-      } else {
-        reject(err);
-      }
-    });
-  });
-}
-
-function move(source: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    fsPlus.move(source, dest, (err, result) => {
       if (err == null) {
         resolve(result);
       } else {
@@ -324,6 +324,35 @@ function mkdir(path: string, mode?: number): Promise<void> {
   });
 }
 
+export type MvOptions = {
+  // Run mkdirp for the directory first. Defaults to false.
+  mkdirp?: boolean,
+  // Overwrite the file if it exists. Defaults to true.
+  clobber?: boolean,
+  // Optional: the concurrency limit when moving a directory.
+  limit?: number,
+};
+
+/**
+ * The key difference between 'mv' and 'rename' is that 'mv' works across devices.
+ * It's not uncommon to have temporary files in a different disk, for instance.
+ */
+function mv(
+  sourcePath: string,
+  destinationPath: string,
+  options?: MvOptions = {},
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    mvLib(sourcePath, destinationPath, options, error => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 // `fs.readFile` returns a Buffer unless an encoding is specified.
 // This workaround is adapted from the Flow declarations.
 type ReadFileType = ((filename: string, encoding: string) => Promise<string>) &
@@ -382,18 +411,6 @@ function realpath(path: string, cache?: Object): Promise<string> {
   });
 }
 
-function rename(oldPath: string, newPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    fs.rename(oldPath, newPath, (err, result) => {
-      if (err == null) {
-        resolve(result);
-      } else {
-        reject(err);
-      }
-    });
-  });
-}
-
 function stat(path: string): Promise<fs.Stats> {
   return new Promise((resolve, reject) => {
     fs.stat(path, (err, result) => {
@@ -430,6 +447,34 @@ function unlink(path: string): Promise<void> {
   });
 }
 
+function utimes(
+  path: string,
+  atime: number | Date,
+  mtime: number | Date,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.utimes(path, atime, mtime, err => {
+      if (err == null) {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+function rmdir(path: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.rmdir(path, err => {
+      if (err == null) {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
 export default {
   tempdir,
   tempfile,
@@ -438,25 +483,27 @@ export default {
   getCommonAncestorDirectory,
   exists,
   mkdirp,
-  rmdir,
+  rimraf: rimrafWrapper,
   isNfs,
+  isFuse,
   glob,
   isNonNfsDirectory,
 
   copy,
-  move,
   writeFile,
 
   chmod,
   chown,
   lstat,
   mkdir,
+  mv,
   readFile,
   readdir,
   readlink,
   realpath,
-  rename,
   stat,
   symlink,
   unlink,
+  utimes,
+  rmdir,
 };

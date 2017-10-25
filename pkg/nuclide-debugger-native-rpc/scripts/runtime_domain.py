@@ -107,7 +107,7 @@ class RuntimeDomain(HandlerDomain):
             accessorPropertiesOnly boolean
                 If true, returns accessor properties (with getter/setter) only;
                 internal properties are not returned either.
-            generatePreview	boolean
+            generatePreview boolean
                 Whether preview should be generated for the results.
         """
         obj = self.debugger_store.remote_object_manager.get_object(params['objectId'])

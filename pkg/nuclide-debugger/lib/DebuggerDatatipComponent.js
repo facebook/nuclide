@@ -12,20 +12,18 @@
 import type {WatchExpressionStore} from './WatchExpressionStore';
 import type {EvaluationResult} from './types';
 
-import React from 'react';
+import * as React from 'react';
 import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 
-type DebuggerDatatipComponentProps = {
-  expression: string,
-  evaluationResult: EvaluationResult,
-  watchExpressionStore: WatchExpressionStore,
-};
+type Props = {|
+  +expression: string,
+  +evaluationResult: EvaluationResult,
+  +watchExpressionStore: WatchExpressionStore,
+|};
 
-export class DebuggerDatatipComponent extends React.Component {
-  props: DebuggerDatatipComponentProps;
-
-  render(): ?React.Element<any> {
+export class DebuggerDatatipComponent extends React.Component<Props> {
+  render(): React.Node {
     const {expression, evaluationResult, watchExpressionStore} = this.props;
     const fetchChildren = watchExpressionStore.getProperties.bind(
       watchExpressionStore,

@@ -11,12 +11,12 @@
 
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
-import React from 'react';
+import * as React from 'react';
 
 export const WORKSPACE_VIEW_URI_B =
   'atom://nuclide/sample-workspace-views-example-b';
 
-export class ExampleGadgetB extends React.Component {
+export class ExampleGadgetB extends React.Component<{}> {
   getTitle(): string {
     return 'Example Gadget B';
   }
@@ -33,7 +33,7 @@ export class ExampleGadgetB extends React.Component {
     return WORKSPACE_VIEW_URI_B;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="pane-item padded nuclide-example-gadget">
         This gadget stores its state in the topmost React component.

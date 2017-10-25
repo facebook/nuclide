@@ -25,6 +25,7 @@ import {ConnectionCache} from '../../nuclide-remote-connection';
 import {trackTiming, track} from '../../nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import AutocompleteCacher from '../../commons-atom/AutocompleteCacher';
+import {applyTextEditsToBuffer} from 'nuclide-commons-atom/text-edit';
 
 export type OnDidInsertSuggestionArgument = {
   editor: atom$TextEditor,
@@ -93,6 +94,7 @@ export class AutocompleteProvider<T: LanguageService> {
 
     this.onDidInsertSuggestion = arg => {
       track(onDidInsertSuggestionAnalyticsEventName);
+      this._handleTextEdits(arg);
       if (this._onDidInsertSuggestion != null) {
         this._onDidInsertSuggestion(arg);
       }
@@ -137,6 +139,18 @@ export class AutocompleteProvider<T: LanguageService> {
       }
       return result != null ? result.items : null;
     });
+  }
+
+  _handleTextEdits(arg: OnDidInsertSuggestionArgument) {
+    const {editor, suggestion} = arg;
+    const textEdits = suggestion.textEdits;
+    if (textEdits != null) {
+      textEdits.sort((edit1, edit2) => {
+        // applyTextEditsToBuffer expects reverse ordering.
+        return edit2.oldRange.compare(edit1.oldRange);
+      });
+      applyTextEditsToBuffer(editor.getBuffer(), textEdits);
+    }
   }
 
   async _getSuggestionsFromLanguageService(
@@ -216,12 +230,40 @@ export class AutocompleteProvider<T: LanguageService> {
       },
     );
 
-    // Here's where we patch up the prefix in the results, if necessary
-    if (langSpecificPrefix !== prefix && results != null) {
-      results.items = results.items.map((c: Completion) => {
-        return c.replacementPrefix == null
-          ? {replacementPrefix: langSpecificPrefix, ...c}
-          : c;
+    if (results != null) {
+      const uniqueIndex = Math.floor(Math.random() * 1000000000);
+      results.items.forEach((c: Completion, index) => {
+        // textEdits aren't part of autocomplete-plus - we handle it in
+        // onDidInsertSuggestion above. We need to make this suggestion a no-op otherwise.
+        // There's no perfect solution at the moment, but the two options are:
+        // 1) Make text equal to the replacement prefix.
+        // 2) Provide an empty replacementPrefix, text, and snippet.
+        //
+        // 1) has the major downside of polluting the undo stack with an extra change.
+        // `autocomplete-plus` also has a default suffix-consuming feature where any text
+        // after the replaced text that matches a suffix of `text` will be deleted!
+        //
+        // 2) has the downside of not showing match highlights in the autocomplete UI.
+        // Between the two, we'll prefer accuracy at the cost of beauty.
+        //
+        // To get a better solution, `autocomplete-plus` needs a new API for custom suggestions.
+        if (c.textEdits != null) {
+          c.text = '';
+          // Atom ignores suggestions with an empty text & snippet.
+          // However, we can provide an empty snippet to trick it!
+          // 1) This works even if snippets are disabled.
+          // 2) Empty snippets don't appear in the undo stack.
+          // 3) autocomplete-plus dedupes snippets, so use unique indexes.
+          c.snippet = `$${uniqueIndex + index}`;
+          // Don't try to replace anything.
+          c.replacementPrefix = '';
+        } else if (
+          c.replacementPrefix == null &&
+          langSpecificPrefix !== prefix
+        ) {
+          // Here's where we patch up the prefix in the results, if necessary
+          c.replacementPrefix = langSpecificPrefix;
+        }
       });
     }
     return results;
@@ -288,6 +330,10 @@ export function updateAutocompleteFirstResults(
   // filter text to 40 characters. (That's an arbitrary hack, but good enough,
   // and cheaper than doing one pass to for max-length and another to pad).
   //
+  // Also, fuzzaldrinPlus will give matches with very low scores. We'll
+  // arbitrarily pick a threshold and reject ones below that.
+  const SCORE_THRESHOLD = 0.1;
+  //
   // While we're here, for sake of AutocompletePlus, each item also needs its
   // 'replacementPrefix' updated, because that's what AutcompletePlus uses to
   // to decide which characters to replace in the editor buffer.
@@ -295,9 +341,13 @@ export function updateAutocompleteFirstResults(
   // This 'reduce' takes ~25ms for 1000 items, largely in the scoring. The rest
   // of the function takes negligible time.
 
+  const baseScore = prefix === '' ? 1 : fuzzaldrinPlus.score(prefix, prefix);
+
   const items: Array<{filterScore: number, completion: Completion}> = [];
   for (const item of firstResult.items) {
+    // flowlint-next-line sketchy-null-string:off
     const text = item.displayText || item.snippet || item.text || '';
+    // flowlint-next-line sketchy-null-string:off
     const filterText = padEnd(item.filterText || text, 40, ' ');
     // If no prefix, then include all items and avoid doing work to score.
     const filterScore: number =
@@ -306,9 +356,14 @@ export function updateAutocompleteFirstResults(
     if (filterScore === 0) {
       continue;
     }
+    // Low score ratio indicates it's passes the filter, but not very well.
+    if (filterScore / baseScore < SCORE_THRESHOLD) {
+      continue;
+    }
     const completion: Completion = {
       ...item,
       replacementPrefix: prefix,
+      // flowlint-next-line sketchy-null-string:off
       sortText: item.sortText || text,
     };
     items.push({filterScore, completion});

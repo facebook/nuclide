@@ -12,7 +12,7 @@
 import invariant from 'assert';
 import loadServicesConfig from '../lib/loadServicesConfig';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 describe('loadServicesConfig()', () => {
   let configPath: ?string;
@@ -48,6 +48,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('resolves absolute paths', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
     servicesConfig.forEach(service => {
@@ -57,6 +58,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('uses the implementation when the definition is missing', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
     const fooService = servicesConfig.find(
@@ -67,6 +69,7 @@ describe('loadServicesConfig()', () => {
   });
 
   it('respects preserveFunctionNames', () => {
+    // flowlint-next-line sketchy-null-string:off
     invariant(configPath);
     const servicesConfig = loadServicesConfig(configPath);
 

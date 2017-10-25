@@ -14,36 +14,8 @@ import typeof * as JediService from './JediService';
 import LRUCache from 'lru-cache';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {getOriginalEnvironment} from 'nuclide-commons/process';
 import JediServer from './JediServer';
 import LinkTreeManager from './LinkTreeManager';
-
-async function getServerArgs(src: string) {
-  let overrides = {};
-  try {
-    // Override the python path and additional sys paths
-    // if override script is present.
-    // $FlowFB
-    const findJediServerArgs = require('./fb/find-jedi-server-args').default;
-    overrides = await findJediServerArgs(src);
-  } catch (e) {
-    // Ignore.
-  }
-
-  // Append the user's PYTHONPATH if it exists.
-  const {PYTHONPATH} = await getOriginalEnvironment();
-  if (PYTHONPATH != null && PYTHONPATH.trim() !== '') {
-    overrides.paths = (overrides.paths || [])
-      .concat(nuclideUri.splitPathList(PYTHONPATH));
-  }
-
-  return {
-    // Default to assuming that python is in system PATH.
-    pythonPath: 'python',
-    paths: [],
-    ...overrides,
-  };
-}
 
 export default class JediServerManager {
   // Cache the promises of additional paths to ensure that we never trigger two
@@ -68,12 +40,10 @@ export default class JediServerManager {
     });
   }
 
-  async getJediService(src: string): Promise<JediService> {
+  getJediService(src: string): Promise<JediService> {
     let server = this._servers.get(src);
     if (server == null) {
-      const {pythonPath, paths} = await getServerArgs(src);
-      // Create a JediServer using default python path.
-      server = new JediServer(src, pythonPath, paths);
+      server = new JediServer(src);
       this._servers.set(src, server);
 
       // Add link tree and top-level module paths without awaiting,
@@ -124,6 +94,7 @@ export default class JediServerManager {
 
   async _addTopLevelModulePath(src: string, server: JediServer): Promise<void> {
     const topLevelModulePath = await this.getTopLevelModulePath(src);
+    // flowlint-next-line sketchy-null-string:off
     if (server.isDisposed() || !topLevelModulePath) {
       return;
     }

@@ -12,7 +12,7 @@
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
 import {FileTreeStore} from '../lib/FileTreeStore';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {FileTreeEntryComponent} from './FileTreeEntryComponent';
 import {ProjectSelection} from './ProjectSelection';
@@ -31,15 +31,13 @@ type Props = {
   containerHeight: number,
   containerScrollTop: number,
   scrollToPosition: (top: number, height: number, approximate: boolean) => void,
-  onMouseEnter: (event: SyntheticMouseEvent) => mixed,
-  onMouseLeave: (event: SyntheticMouseEvent) => mixed,
+  onMouseEnter: (event: SyntheticMouseEvent<>) => mixed,
+  onMouseLeave: (event: SyntheticMouseEvent<>) => mixed,
 };
 
 const BUFFER_ELEMENTS = 15;
 
-export class FileTree extends React.Component {
-  state: State;
-  props: Props;
+export class FileTree extends React.Component<Props, State> {
   _store: FileTreeStore;
   _disposables: UniversalDisposable;
 
@@ -92,7 +90,7 @@ export class FileTree extends React.Component {
   }
 
   _scrollToTrackedNodeIfNeeded(): void {
-    const trackedIndex = findIndexOfTheTrackedNode(this._store.roots);
+    const trackedIndex = findIndexOfTheTrackedNode(this._store);
     if (trackedIndex < 0) {
       return;
     }
@@ -124,7 +122,7 @@ export class FileTree extends React.Component {
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const classes = {
       'nuclide-file-tree': true,
       'focusable-panel': true,
@@ -163,6 +161,39 @@ export class FileTree extends React.Component {
     firstToRender = Math.max(firstToRender, 0);
     const amountToRender = elementsInView + 2 * BUFFER_ELEMENTS;
 
+    let reorderPreview: ?{
+      entry: React.Element<any>,
+      above: boolean,
+      target: string,
+    };
+    const reorderPreviewStatus = this._store.reorderPreviewStatus;
+    if (reorderPreviewStatus != null) {
+      const source = reorderPreviewStatus.source;
+      const sourceNode = this._store.getNode(source, source);
+      const sourceIdx = reorderPreviewStatus.sourceIdx;
+      const target = reorderPreviewStatus.target;
+      const targetIdx = reorderPreviewStatus.targetIdx;
+      if (
+        sourceNode != null &&
+        target != null &&
+        targetIdx != null &&
+        targetIdx !== sourceIdx
+      ) {
+        reorderPreview = {
+          entry: (
+            <FileTreeEntryComponent
+              node={sourceNode}
+              isPreview={true}
+              selectedNodes={this._store.selectionManager.selectedNodes()}
+              focusedNodes={this._store.selectionManager.focusedNodes()}
+            />
+          ),
+          above: targetIdx < sourceIdx,
+          target,
+        };
+      }
+    }
+
     const visibleChildren = [];
     let chosenMeasured = false;
     let node = findFirstNodeToRender(roots, firstToRender);
@@ -177,12 +208,43 @@ export class FileTree extends React.Component {
     let key = firstToRender % amountToRender;
     while (node != null && visibleChildren.length < amountToRender) {
       if (!node.isRoot && !chosenMeasured) {
-        visibleChildren.push(
-          <FileTreeEntryComponent key={key} node={node} ref="measured" />,
+        const entry = (
+          <FileTreeEntryComponent
+            key={key}
+            node={node}
+            selectedNodes={this._store.selectionManager.selectedNodes()}
+            focusedNodes={this._store.selectionManager.focusedNodes()}
+            ref="measured"
+          />
         );
+        if (reorderPreview != null && reorderPreview.target === node.uri) {
+          if (reorderPreview.above) {
+            visibleChildren.push(reorderPreview.entry, entry);
+          } else {
+            visibleChildren.push(entry, reorderPreview.entry);
+          }
+        } else {
+          visibleChildren.push(entry);
+        }
         chosenMeasured = true;
       } else {
-        visibleChildren.push(<FileTreeEntryComponent key={key} node={node} />);
+        const entry = (
+          <FileTreeEntryComponent
+            key={key}
+            node={node}
+            selectedNodes={this._store.selectionManager.selectedNodes()}
+            focusedNodes={this._store.selectionManager.focusedNodes()}
+          />
+        );
+        if (reorderPreview != null && reorderPreview.target === node.uri) {
+          if (reorderPreview.above) {
+            visibleChildren.push(reorderPreview.entry, entry);
+          } else {
+            visibleChildren.push(entry, reorderPreview.entry);
+          }
+        } else {
+          visibleChildren.push(entry);
+        }
       }
       node = node.findNext();
       key = (key + 1) % amountToRender;
@@ -233,28 +295,13 @@ function findFirstNodeToRender(
   return findFirstNodeToRender(node.children, firstToRender - skipped - 1);
 }
 
-function findIndexOfTheTrackedNode(
-  nodes: OrderedMap<mixed, FileTreeNode>,
-): number {
-  let skipped = 0;
-  const trackedNodeRoot = nodes.find(node => {
-    if (node.containsTrackedNode) {
-      return true;
-    }
-
-    skipped += node.shownChildrenCount;
-    return false;
-  });
-
-  if (trackedNodeRoot == null) {
+function findIndexOfTheTrackedNode(store: FileTreeStore): number {
+  const trackedNode = store.getTrackedNode();
+  if (trackedNode == null) {
     return -1;
   }
 
-  if (trackedNodeRoot.isTracked) {
-    return skipped;
-  }
-
-  return skipped + 1 + findIndexOfTheTrackedNode(trackedNodeRoot.children);
+  return trackedNode.calculateVisualIndex();
 }
 
 function countShownNodes(roots: OrderedMap<mixed, FileTreeNode>): number {

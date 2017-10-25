@@ -17,12 +17,10 @@ import {track, trackTiming} from '../../nuclide-analytics';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {getLogger} from 'log4js';
+import {DEFAULT_FLAGS_WARNING} from './constants';
 import {getDiagnostics} from './libclang';
 
 const IDENTIFIER_REGEX = /[a-z0-9_]+/gi;
-const DEFAULT_FLAGS_WARNING =
-  'Diagnostics are disabled due to lack of compilation flags. ' +
-  'Build this file with Buck, or create a compile_commands.json file manually.';
 
 function isValidRange(clangRange: atom$Range): boolean {
   // Some ranges are unbounded/invalid (end with -1) or empty.
@@ -111,6 +109,7 @@ export default class ClangLinter {
           range = getRangeFromPoint(editor, diagnostic.location.point);
         }
 
+        // flowlint-next-line sketchy-null-string:off
         const filePath = diagnostic.location.file || bufferPath;
 
         let trace;
@@ -119,6 +118,7 @@ export default class ClangLinter {
             return {
               type: 'Trace',
               text: child.spelling,
+              // flowlint-next-line sketchy-null-string:off
               filePath: child.location.file || bufferPath,
               range: getRangeFromPoint(editor, child.location.point),
             };
@@ -148,7 +148,7 @@ export default class ClangLinter {
       });
     } else {
       result.push({
-        type: 'Warning',
+        type: 'Info',
         filePath: bufferPath,
         text: DEFAULT_FLAGS_WARNING,
         range: buffer.rangeForRow(0),

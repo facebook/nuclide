@@ -15,6 +15,7 @@ import invariant from 'assert';
 export function getUsername(): string {
   // It is slightly more robust to get the uid and look it up in /etc/whateveritis.
   const {env} = process;
+  // flowlint-next-line sketchy-null-string:off
   const username = env.LOGNAME || env.USER || env.LNAME || env.USERNAME;
   invariant(username);
   return username;

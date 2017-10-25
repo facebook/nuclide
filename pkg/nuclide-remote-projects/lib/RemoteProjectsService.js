@@ -43,7 +43,12 @@ export default class RemoteProjectsService {
   async createRemoteConnection(
     remoteProjectConfig: SerializableRemoteConnectionConfiguration,
   ): Promise<?RemoteConnection> {
-    const {host, cwd, displayTitle} = remoteProjectConfig;
+    const {
+      host,
+      cwd,
+      displayTitle,
+      promptReconnectOnFailure = true,
+    } = remoteProjectConfig;
     let connection = RemoteConnection.getByHostnameAndPath(host, cwd);
     if (connection != null) {
       return connection;
@@ -53,11 +58,14 @@ export default class RemoteProjectsService {
       host,
       cwd,
       displayTitle,
+      promptReconnectOnFailure,
     );
     if (connection != null) {
       return connection;
     }
-
+    if (promptReconnectOnFailure === false) {
+      return null;
+    }
     // If connection fails using saved config, open connect dialog.
     return openConnectionDialog({
       initialServer: host,

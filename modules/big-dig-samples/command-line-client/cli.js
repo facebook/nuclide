@@ -14,6 +14,7 @@ import type {BigDigClient} from 'big-dig/src/client/BigDigClient';
 import type {
   SshHandshakeErrorType,
   SshConnectionConfiguration,
+  Prompt,
 } from 'big-dig/src/client/SshHandshake';
 
 import invariant from 'assert';
@@ -52,18 +53,16 @@ function parseArgsAndRunMain(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     const sshHandshake = new SshHandshake({
-      onKeyboardInteractive(
+      async onKeyboardInteractive(
         name,
         instructions,
         instructionsLang,
-        prompts: Array<{echo: boolean, prompt: string}>,
-        finish: (answers: Array<string>) => void,
-      ) {
+        prompts: Array<Prompt>,
+      ): Promise<Array<string>> {
         invariant(prompts.length > 0);
         const {prompt, echo} = prompts[0];
-        question(prompt, !echo).then(answer => {
-          finish([answer]);
-        });
+        const answer = await question(prompt, !echo);
+        return [answer];
       },
 
       onWillConnect() {
@@ -104,7 +103,7 @@ function parseArgsAndRunMain(): Promise<void> {
       username: getUsername(),
       pathToPrivateKey: privateKey,
       authMethod: 'PRIVATE_KEY',
-      remoteServerCommand,
+      remoteServer: {command: remoteServerCommand},
       remoteServerCustomParams: {},
       password: '', // Should probably be nullable because of the authMethod.
     });

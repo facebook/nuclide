@@ -33,7 +33,7 @@ class DevicePoller {
   }
 
   _getPlatform(): string {
-    return this._type === 'adb' ? 'android' : 'tizen';
+    return this._type === 'adb' ? 'Android' : 'Tizen';
   }
 
   observe(_host: NuclideUri): Observable<Expected<Device[]>> {
@@ -94,10 +94,12 @@ class DevicePoller {
 
     const displayName = (device.name.startsWith('emulator')
       ? device.name
-      : device.model).concat(` (${displayArch}, API ${device.apiVersion})`);
+      : device.model
+    ).concat(` (${displayArch}, API ${device.apiVersion})`);
 
     return {
       name: device.name,
+      port: device.port,
       displayName,
       architecture: deviceArchitecture,
       rawArchitecture: device.architecture,

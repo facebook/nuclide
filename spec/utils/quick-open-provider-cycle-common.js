@@ -67,7 +67,7 @@ export function runTest(context: TestContext) {
           context.getProjectRelativePath(`TEST${i}.txt`),
         );
         invariant(editor != null);
-        editor.saveAs(context.getProjectRelativePath(`TEST${i}.txt`));
+        await editor.save();
       });
     }
 

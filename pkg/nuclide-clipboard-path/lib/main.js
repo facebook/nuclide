@@ -9,17 +9,17 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
 import {trackTiming} from '../../nuclide-analytics';
-import {getArcanistServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 function copyAbsolutePath(): void {
   trackOperation('copyAbsolutePath', () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
@@ -30,11 +30,13 @@ function copyAbsolutePath(): void {
 function copyProjectRelativePath(): void {
   trackOperation('copyProjectRelativePath', () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
 
     const projectRelativePath = getAtomProjectRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (projectRelativePath) {
       copyToClipboard('Copied project relative path', projectRelativePath);
     } else {
@@ -49,12 +51,14 @@ function copyProjectRelativePath(): void {
 function copyRepositoryRelativePath(): void {
   trackOperation('copyRepositoryRelativePath', async () => {
     const uri = getCurrentNuclideUri();
+    // flowlint-next-line sketchy-null-string:off
     if (!uri) {
       return;
     }
 
     // First source control relative.
     const repoRelativePath = getRepositoryRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (repoRelativePath) {
       copyToClipboard('Copied repository relative path', repoRelativePath);
       return;
@@ -62,6 +66,7 @@ function copyRepositoryRelativePath(): void {
 
     // Next try arcanist relative.
     const arcRelativePath = await getArcanistRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (arcRelativePath) {
       copyToClipboard('Copied arc project relative path', arcRelativePath);
       return;
@@ -69,6 +74,7 @@ function copyRepositoryRelativePath(): void {
 
     // Lastly, project and absolute.
     const projectRelativePath = getAtomProjectRelativePath(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (projectRelativePath) {
       copyToClipboard('Copied project relative path', projectRelativePath);
     } else {
@@ -87,9 +93,17 @@ function getRepositoryRelativePath(path: NuclideUri): ?string {
   return null;
 }
 
-function getArcanistRelativePath(path: NuclideUri): Promise<?string> {
-  const arcService = getArcanistServiceByNuclideUri(path);
-  return arcService.getProjectRelativePath(path);
+async function getArcanistRelativePath(path: NuclideUri): Promise<?string> {
+  try {
+    const {
+      getArcanistServiceByNuclideUri,
+      // $FlowFB
+    } = require('../../commons-atom/fb-remote-connection');
+    const arcService = getArcanistServiceByNuclideUri(path);
+    return await arcService.getProjectRelativePath(path);
+  } catch (err) {
+    return null;
+  }
 }
 
 function copyToClipboard(messagePrefix: string, value: string): void {
@@ -105,6 +119,7 @@ function getCurrentNuclideUri(): ?NuclideUri {
   }
 
   const path = editor.getPath();
+  // flowlint-next-line sketchy-null-string:off
   if (!path) {
     notify('Nothing copied. Current text editor is unnamed.');
     return null;
@@ -122,10 +137,10 @@ function notify(message: string): void {
 }
 
 class Activation {
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor(state: ?Object) {
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
       atom.commands.add(
         'atom-workspace',

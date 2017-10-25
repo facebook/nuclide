@@ -14,8 +14,8 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {HackSymbolProvider} from '../lib/HackSymbolProvider';
 import ReactDOM from 'react-dom';
-import TestUtils from 'react-addons-test-utils';
-import {clearRequireCache, uncachedRequire} from '../../nuclide-test-helpers';
+import TestUtils from 'react-dom/test-utils';
+import {clearRequireCache, uncachedRequire} from 'nuclide-commons/test-helpers';
 import invariant from 'assert';
 
 describe('HackSymbolProvider', () => {
@@ -243,6 +243,7 @@ describe('HackSymbolProvider', () => {
   describe('Result rendering', () => {
     it('should work', () => {
       const mockResult = {
+        resultType: 'SYMBOL',
         path: '/some/arbitrary/path',
         name: 'IExampleSymbolInterface',
         icon: 'puzzle',

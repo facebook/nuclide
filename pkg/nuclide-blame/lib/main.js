@@ -13,7 +13,7 @@ import type {BlameProvider} from './types';
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {FileTreeNode} from '../../nuclide-file-tree/lib/FileTreeNode';
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import invariant from 'assert';
 
 import BlameGutter from './BlameGutter';
@@ -21,13 +21,15 @@ import {getLogger} from 'log4js';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 import {track, trackTiming} from '../../nuclide-analytics';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const PACKAGES_MISSING_MESSAGE =
   'Could not open blame. Missing at least one blame provider.';
 const TOGGLE_BLAME_FILE_TREE_CONTEXT_MENU_PRIORITY = 2000;
 
 class Activation {
-  _packageDisposables: CompositeDisposable;
+  _packageDisposables: UniversalDisposable;
   _registeredProviders: Set<BlameProvider>;
   // Map of a TextEditor to its BlameGutter, if it exists.
   _textEditorToBlameGutter: Map<atom$TextEditor, BlameGutter>;
@@ -38,7 +40,7 @@ class Activation {
     this._registeredProviders = new Set();
     this._textEditorToBlameGutter = new Map();
     this._textEditorToDestroySubscription = new Map();
-    this._packageDisposables = new CompositeDisposable();
+    this._packageDisposables = new UniversalDisposable();
     this._packageDisposables.add(
       atom.contextMenu.add({
         'atom-text-editor': [
@@ -49,7 +51,8 @@ class Activation {
                 label: 'Toggle Blame',
                 command: 'nuclide-blame:toggle-blame',
                 shouldDisplay: (event: MouseEvent) =>
-                  this._canShowBlame() || this._canHideBlame(),
+                  this._canShowBlame(true /* fromContextMenu */) ||
+                  this._canHideBlame(true /* fromContextMenu */),
               },
             ],
           },
@@ -57,18 +60,15 @@ class Activation {
       }),
     );
     this._packageDisposables.add(
-      atom.commands.add(
-        'atom-text-editor',
-        'nuclide-blame:toggle-blame',
-        () => {
-          if (this._canShowBlame()) {
-            this._showBlame();
-          } else if (this._canHideBlame()) {
-            this._hideBlame();
-          }
-        },
-      ),
-      atom.commands.add('atom-text-editor', 'nuclide-blame:hide-blame', () => {
+      atom.commands.add('atom-workspace', 'nuclide-blame:toggle-blame', () => {
+        if (this._canShowBlame()) {
+          this._showBlame();
+        } else if (this._canHideBlame()) {
+          this._hideBlame();
+        }
+      }),
+      // eslint-disable-next-line
+      atom.commands.add('atom-workspace', 'nuclide-blame:hide-blame', () => {
         if (this._canHideBlame()) {
           this._hideBlame();
         }
@@ -157,7 +157,7 @@ class Activation {
 
   _showBlame(event): void {
     return trackTiming('blame.showBlame', () => {
-      const editor = atom.workspace.getActiveTextEditor();
+      const editor = getMostRelevantEditor();
       if (editor != null) {
         this._showBlameGutterForEditor(editor);
       }
@@ -166,20 +166,20 @@ class Activation {
 
   _hideBlame(event): void {
     return trackTiming('blame.hideBlame', () => {
-      const editor = atom.workspace.getActiveTextEditor();
+      const editor = getMostRelevantEditor();
       if (editor != null) {
         this._removeBlameGutterForEditor(editor);
       }
     });
   }
 
-  _canShowBlame(): boolean {
-    const editor = atom.workspace.getActiveTextEditor();
-    return !(editor != null && this._textEditorToBlameGutter.has(editor));
+  _canShowBlame(fromContextMenu: boolean = false): boolean {
+    const editor = getMostRelevantEditor(fromContextMenu);
+    return editor != null && !this._textEditorToBlameGutter.has(editor);
   }
 
-  _canHideBlame(): boolean {
-    const editor = atom.workspace.getActiveTextEditor();
+  _canHideBlame(fromContextMenu: boolean = false): boolean {
+    const editor = getMostRelevantEditor(fromContextMenu);
     return editor != null && this._textEditorToBlameGutter.has(editor);
   }
 
@@ -270,4 +270,18 @@ export function addItemsToFileTreeContextMenu(
 ): IDisposable {
   invariant(activation);
   return activation.addItemsToFileTreeContextMenu(contextMenu);
+}
+
+function getMostRelevantEditor(
+  fromContextMenu: boolean = false,
+): ?atom$TextEditor {
+  const editor = atom.workspace.getActiveTextEditor();
+  if (fromContextMenu || editor != null) {
+    return editor;
+  }
+  const item = atom.workspace
+    .getCenter()
+    .getActivePane()
+    .getActiveItem();
+  return isValidTextEditor(item) ? item : null;
 }

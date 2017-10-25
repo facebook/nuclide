@@ -13,7 +13,7 @@ import net from 'net';
 import {makeDbgpMessage} from '../lib/helpers';
 import {DbgpConnector} from '../lib/DbgpConnector';
 import EventEmitter from 'events';
-import {uncachedRequire, clearRequireCache} from '../../nuclide-test-helpers';
+import {uncachedRequire, clearRequireCache} from 'nuclide-commons/test-helpers';
 
 declare class ServerType extends events$EventEmitter {
   close(): void,

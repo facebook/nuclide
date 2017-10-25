@@ -16,7 +16,7 @@ import * as Actions from '../redux/Actions';
 import {Observable} from 'rxjs';
 import {TunnelsPanelTable} from './TunnelsPanelTable';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
-import React from 'react';
+import * as React from 'react';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/ssh-tunnels';
 

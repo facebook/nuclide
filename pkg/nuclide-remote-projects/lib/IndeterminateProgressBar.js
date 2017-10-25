@@ -9,13 +9,13 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 /**
  * Component to entertain the user while he is waiting to hear back from the server.
  */
-export default class IndeterminateProgressBar extends React.Component {
-  render(): React.Element<any> {
+export default class IndeterminateProgressBar extends React.Component<{}> {
+  render(): React.Node {
     return (
       <div className="text-center padded">
         <span className="loading loading-spinner-medium inline-block" />

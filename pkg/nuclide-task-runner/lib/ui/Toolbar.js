@@ -14,11 +14,11 @@ import type {Option} from '../../../nuclide-ui/Dropdown';
 
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import {ProgressBar} from './ProgressBar';
 import {TaskRunnerButton} from './TaskRunnerButton';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
+import FullWidthProgressBar from '../../../nuclide-ui/FullWidthProgressBar';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 
 type Props = {
@@ -26,8 +26,8 @@ type Props = {
   taskRunners: Array<TaskRunner>,
   statesForTaskRunners: Map<TaskRunner, TaskRunnerState>,
   activeTaskRunner: ?TaskRunner,
-  iconComponent: ?ReactClass<any>,
-  extraUiComponent: ?ReactClass<any>,
+  iconComponent: ?React.ComponentType<any>,
+  extraUiComponent: ?React.ComponentType<any>,
   progress: ?number,
   runTask: (taskMeta: TaskMetadata & {taskRunner: TaskRunner}) => void,
   selectTaskRunner: (taskRunner: TaskRunner) => void,
@@ -36,10 +36,8 @@ type Props = {
   runningTaskIsCancelable: boolean | void,
 };
 
-export class Toolbar extends React.Component {
-  props: Props;
-
-  render(): ?React.Element<any> {
+export class Toolbar extends React.Component<Props> {
+  render(): React.Node {
     const className = classnames('nuclide-task-runner-toolbar', {
       disabled: this.props.toolbarDisabled,
     });
@@ -68,12 +66,13 @@ export class Toolbar extends React.Component {
       }
     }
 
-    const ButtonComponent = buttonProps =>
+    const ButtonComponent = buttonProps => (
       <TaskRunnerButton
         {...buttonProps}
         disabled={this.props.taskIsRunning}
         iconComponent={this.props.iconComponent}
-      />;
+      />
+    );
 
     return (
       <div className={`${className} padded`}>
@@ -91,7 +90,7 @@ export class Toolbar extends React.Component {
           </span>
           {taskRunnerSpecificContent}
         </div>
-        <ProgressBar
+        <FullWidthProgressBar
           progress={this.props.progress}
           visible={this.props.taskIsRunning}
         />

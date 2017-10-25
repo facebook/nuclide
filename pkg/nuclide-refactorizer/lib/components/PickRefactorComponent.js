@@ -13,35 +13,29 @@ import type {Store, PickPhase} from '../types';
 
 import type {AvailableRefactoring} from '../..';
 
-import React from 'react';
+import * as React from 'react';
 
 import {Button} from 'nuclide-commons-ui/Button';
 
 import * as Actions from '../refactorActions';
 
-export class PickRefactorComponent extends React.Component {
-  props: {
-    pickPhase: PickPhase,
-    store: Store,
-  };
-
-  render(): React.Element<any> {
+export class PickRefactorComponent extends React.Component<{
+  pickPhase: PickPhase,
+  store: Store,
+}> {
+  render(): React.Node {
     const {availableRefactorings} = this.props.pickPhase;
     if (availableRefactorings.length === 0) {
       return <div>No refactorings available at this location</div>;
     }
 
-    const elements = availableRefactorings.map((r, i) =>
+    const elements = availableRefactorings.map((r, i) => (
       <div key={i} className="nuclide-refactorizer-refactor-option">
         {this._renderRefactorOption(r)}
-      </div>,
-    );
-    // Class used to identify this element in integration tests
-    return (
-      <div className="nuclide-refactorizer-pick-refactor">
-        {elements}
       </div>
-    );
+    ));
+    // Class used to identify this element in integration tests
+    return <div className="nuclide-refactorizer-pick-refactor">{elements}</div>;
   }
 
   _pickRefactor(refactoring: AvailableRefactoring): void {
@@ -90,6 +84,7 @@ export class PickRefactorComponent extends React.Component {
           </div>
         );
       default:
+        (refactoring.kind: empty);
         throw new Error(`Unknown refactoring kind ${refactoring.kind}`);
     }
   }

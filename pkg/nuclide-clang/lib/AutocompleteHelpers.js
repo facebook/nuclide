@@ -63,6 +63,7 @@ function getCompletionBody(
     indentation,
   );
 
+  // flowlint-next-line sketchy-null-string:off
   if (columnOffset + inlineBody.length > MAX_LINE_LENGTH && multiLineBody) {
     return multiLineBody;
   }
@@ -309,6 +310,7 @@ export default class AutocompleteHelpers {
         type,
         leftLabel: completion.result_type,
         rightLabel,
+        // flowlint-next-line sketchy-null-string:off
         description: completion.brief_comment || completion.result_type,
         filterText: completion.typed_name,
       };

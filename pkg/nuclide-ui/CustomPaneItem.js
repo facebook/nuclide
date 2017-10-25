@@ -12,7 +12,7 @@
 /* global HTMLElement */
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 export type CustomPaneItemOptions = {
@@ -28,7 +28,7 @@ export class CustomPaneItem extends HTMLElement {
   _iconName: ?string;
   _uri: ?string;
   _allowSplit: boolean;
-  __component: React.Component<any, any, any>;
+  __component: React.Component<any, any>;
 
   initialize(options: CustomPaneItemOptions) {
     this._title = options.title;
@@ -51,6 +51,7 @@ export class CustomPaneItem extends HTMLElement {
   }
 
   getTitle(): string {
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._title);
     return this._title;
   }

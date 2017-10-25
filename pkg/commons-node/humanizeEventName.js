@@ -20,7 +20,12 @@ function capitalize(word: string): string {
 }
 
 function undasherize(string: string): string {
-  return string ? string.split('-').map(capitalize).join(' ') : '';
+  return string
+    ? string
+        .split('-')
+        .map(capitalize)
+        .join(' ')
+    : '';
 }
 
 function humanizeEventName(eventName: string): string {
@@ -34,5 +39,5 @@ function humanizeEventName(eventName: string): string {
   return `${namespaceDoc}: ${eventDoc}`;
 }
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = humanizeEventName;

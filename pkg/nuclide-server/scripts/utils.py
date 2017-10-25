@@ -14,6 +14,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import traceback
 
 logger = logging.getLogger('utils')
 
@@ -56,18 +57,8 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, ca_cert=Non
     try:
         conn = None
         if key_file is not None and cert_file is not None and ca_cert is not None:
-            if sys.version_info < (2, 7, 9):
-                conn = httplib.HTTPSConnection(
-                    host,
-                    port,
-                    key_file=key_file,
-                    cert_file=cert_file,
-                    timeout=timeout)
-            else:
+            try:
                 ctx = ssl.create_default_context(cafile=ca_cert)
-                # We disable host name validation here so we can ping the server endpoint
-                # using localhost.
-                ctx.check_hostname = False
                 conn = httplib.HTTPSConnection(
                     host,
                     port,
@@ -75,6 +66,13 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, ca_cert=Non
                     cert_file=cert_file,
                     timeout=timeout,
                     context=ctx)
+            except (AttributeError, TypeError):
+                conn = httplib.HTTPSConnection(
+                    host,
+                    port,
+                    key_file=key_file,
+                    cert_file=cert_file,
+                    timeout=timeout)
         else:
             conn = httplib.HTTPConnection(host, port, timeout=timeout)
         conn.request(method, url)
@@ -85,10 +83,7 @@ def http_get(host, port, method, url, key_file=None, cert_file=None, ca_cert=Non
         else:
             return None
     except ssl.SSLError as e:
-        if sys.version_info < (2, 7, 9):
-            logger.error("An SSL Error occurred")
-        else:
-            logger.error("An SSL Error occurred: %s" % e.reason)
+        logger.error('An SSL Error occurred: %s' % traceback.format_exc())
         return None
     except socket.error:
         return None

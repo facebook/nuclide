@@ -9,16 +9,14 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Webview} from '../../../nuclide-ui/Webview';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/react-inspector';
 
 type Props = {||};
 
-export default class Inspector extends React.Component {
-  props: Props;
-
+export default class Inspector extends React.Component<Props> {
   getTitle(): string {
     return 'React Inspector';
   }
@@ -31,7 +29,7 @@ export default class Inspector extends React.Component {
     return WORKSPACE_VIEW_URI;
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <Webview
         style={{width: '100%', height: '100%'}}

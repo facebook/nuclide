@@ -1,0 +1,7 @@
+// Prevent status bar from scrolling due to badly behaved status bar items
+// TODO: (wbinnssmith) T22263246 remove when https://github.com/atom/status-bar/pull/211
+// lands in Atom
+.status-bar-left,
+.status-bar-right {
+  overflow-y: hidden;
+}

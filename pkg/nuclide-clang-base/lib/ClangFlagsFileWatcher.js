@@ -24,7 +24,7 @@ export class ClangFlagsFileWatcher {
   constructor(host: string) {
     this._watchedFilesObservablesCache = new SharedObservableCache(buildFile =>
       getFileWatcherServiceByNuclideUri(host)
-        .watchFileWithNode(buildFile)
+        .watchWithNode(buildFile)
         .refCount()
         .share()
         .take(1),

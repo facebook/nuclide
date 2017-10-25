@@ -16,8 +16,6 @@ import {getFileBasename, isHeaderFile, isSourceFile} from './utils';
 import {Observable} from 'rxjs';
 import {observeProcess} from 'nuclide-commons/process';
 
-const INCLUDE_SEARCH_TIMEOUT = 15000;
-
 async function searchFileWithBasename(
   dir: string,
   basename: string,
@@ -32,19 +30,19 @@ async function searchFileWithBasename(
   return null;
 }
 
-function getFrameworkStructure(
+function getFrameworkStructureFromSourceDir(
   dir: string,
 ): ?{frameworkPath: string, frameworkName: string, frameworkSubFolder: string} {
   const paths = nuclideUri.split(dir).reverse();
-  const sourcesIndex = paths.findIndex(folderName => folderName === 'Sources');
-  if (sourcesIndex === -1) {
+  const rootIndex = paths.findIndex(folderName => folderName === 'Sources');
+  if (rootIndex === -1) {
     return null;
   }
-  const frameworkName = paths[sourcesIndex + 1];
+  const frameworkName = paths[rootIndex + 1];
   const frameworkPath = nuclideUri.join(
-    ...paths.slice(sourcesIndex + 1).reverse(),
+    ...paths.slice(rootIndex + 1).reverse(),
   );
-  const frameworkSubPaths = paths.slice(0, sourcesIndex);
+  const frameworkSubPaths = paths.slice(0, rootIndex);
   const frameworkSubFolder =
     frameworkSubPaths.length === 0
       ? ''
@@ -56,10 +54,37 @@ function getFrameworkStructure(
   };
 }
 
+function getFrameworkStructureFromHeaderDir(
+  dir: string,
+): ?{frameworkPath: string, frameworkName: string, frameworkSubFolder: string} {
+  const paths = nuclideUri.split(dir).reverse();
+  const rootIndex = paths.findIndex(folderName =>
+    ['Headers', 'PrivateHeaders'].includes(folderName),
+  );
+  if (rootIndex === -1) {
+    return null;
+  }
+  const frameworkName = paths[rootIndex + 1];
+  const frameworkPath = nuclideUri.join(
+    ...paths.slice(rootIndex + 1).reverse(),
+  );
+  const frameworkSubPaths = paths.slice(0, rootIndex - 1);
+  const frameworkSubFolder =
+    frameworkSubPaths.length === 0
+      ? ''
+      : nuclideUri.join(...frameworkSubPaths.reverse());
+  return {
+    frameworkPath,
+    frameworkName,
+    frameworkSubFolder,
+  };
+}
 async function getRelatedHeaderForSourceFromFramework(
   src: string,
 ): Promise<?string> {
-  const frameworkStructure = getFrameworkStructure(nuclideUri.dirname(src));
+  const frameworkStructure = getFrameworkStructureFromSourceDir(
+    nuclideUri.dirname(src),
+  );
   if (frameworkStructure == null) {
     return null;
   }
@@ -82,6 +107,23 @@ async function getRelatedHeaderForSourceFromFramework(
   return headers.find(file => file != null);
 }
 
+async function getRelatedSourceForHeaderFromFramework(
+  header: string,
+): Promise<?string> {
+  const frameworkStructure = getFrameworkStructureFromHeaderDir(
+    nuclideUri.dirname(header),
+  );
+  if (frameworkStructure == null) {
+    return null;
+  }
+  const {frameworkPath, frameworkSubFolder} = frameworkStructure;
+  return searchFileWithBasename(
+    nuclideUri.join(frameworkPath, 'Sources', frameworkSubFolder),
+    getFileBasename(header),
+    isSourceFile,
+  );
+}
+
 export async function getRelatedHeaderForSource(src: string): Promise<?string> {
   // search in folder
   const header = await searchFileWithBasename(
@@ -96,26 +138,18 @@ export async function getRelatedHeaderForSource(src: string): Promise<?string> {
   return getRelatedHeaderForSourceFromFramework(src);
 }
 
-export async function findSourceFileForHeader(
-  header: string,
-  projectRoot: string,
-): Promise<?string> {
-  // Basic implementation: look at files in the same directory for paths
-  // with matching file names.
+export async function getRelatedSourceForHeader(src: string): Promise<?string> {
+  // search in folder
   const source = await searchFileWithBasename(
-    nuclideUri.dirname(header),
-    getFileBasename(header),
+    nuclideUri.dirname(src),
+    getFileBasename(src),
     isSourceFile,
   );
   if (source != null) {
     return source;
   }
-  // Try searching all subdirectories for source files that include this header.
-  // Give up after INCLUDE_SEARCH_TIMEOUT.
-  return findIncludingSourceFile(header, projectRoot)
-    .timeout(INCLUDE_SEARCH_TIMEOUT)
-    .catch(() => Observable.of(null))
-    .toPromise();
+  // special case for obj-c frameworks
+  return getRelatedSourceForHeaderFromFramework(src);
 }
 
 /**

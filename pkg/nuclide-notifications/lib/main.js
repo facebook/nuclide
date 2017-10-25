@@ -11,17 +11,17 @@
 
 import invariant from 'assert';
 import electron from 'electron';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {Disposable} from 'atom';
 
 const {remote} = electron;
 invariant(remote != null);
 
-let subscriptions: CompositeDisposable = (null: any);
+let subscriptions: UniversalDisposable = (null: any);
 
 export function activate(state: ?Object): void {
-  subscriptions = new CompositeDisposable(
+  subscriptions = new UniversalDisposable(
     // Listen for Atom notifications:
     atom.notifications.onDidAddNotification(proxyToNativeNotification),
   );

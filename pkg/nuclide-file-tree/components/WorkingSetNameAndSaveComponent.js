@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 
@@ -25,10 +25,10 @@ type State = {
   name: string,
 };
 
-export class WorkingSetNameAndSaveComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class WorkingSetNameAndSaveComponent extends React.Component<
+  Props,
+  State,
+> {
   constructor(props: Props) {
     super(props);
 

@@ -11,8 +11,8 @@
 
 import {DebuggerPaneViewModel} from './DebuggerPaneViewModel';
 import DebuggerModel from './DebuggerModel';
-import invariant from 'invariant';
-import React from 'react';
+import invariant from 'assert';
+import * as React from 'react';
 import TabBarView from '../../nuclide-ui/VendorLib/atom-tabs/lib/tab-bar-view';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {View} from '../../nuclide-ui/View';
@@ -293,6 +293,7 @@ export class DebuggerPaneContainerViewModel {
   }
 
   getPreferredWidth(): number {
+    // flowlint-next-line sketchy-null-number:off
     return this._preferredWidth || this._debuggerModel.getPreferredWidth();
   }
 

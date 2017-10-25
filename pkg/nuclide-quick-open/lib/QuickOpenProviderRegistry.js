@@ -11,6 +11,7 @@
 
 import type {
   Provider,
+  ProviderResult,
   DirectoryProviderType,
   GlobalProviderType,
 } from './types';
@@ -21,8 +22,8 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 export default class QuickOpenProviderRegistry {
   _emitter: Emitter;
   _subscriptions: UniversalDisposable;
-  _directoryProviders: Map<string, DirectoryProviderType>;
-  _globalProviders: Map<string, GlobalProviderType>;
+  _directoryProviders: Map<string, DirectoryProviderType<*>>;
+  _globalProviders: Map<string, GlobalProviderType<*>>;
 
   constructor() {
     this._emitter = new Emitter();
@@ -31,33 +32,33 @@ export default class QuickOpenProviderRegistry {
     this._globalProviders = new Map();
   }
 
-  getProviders(): Array<Provider> {
+  getProviders(): Array<Provider<ProviderResult>> {
     return [
       ...this._globalProviders.values(),
       ...this._directoryProviders.values(),
     ];
   }
 
-  getGlobalProviders(): Array<GlobalProviderType> {
+  getGlobalProviders(): Array<GlobalProviderType<*>> {
     return [...this._globalProviders.values()];
   }
 
-  getDirectoryProviders(): Array<DirectoryProviderType> {
+  getDirectoryProviders(): Array<DirectoryProviderType<*>> {
     return [...this._directoryProviders.values()];
   }
 
-  getProviderByName(serviceName: string): ?Provider {
+  getProviderByName(serviceName: string): ?Provider<ProviderResult> {
     return (
       this._globalProviders.get(serviceName) ||
       this._directoryProviders.get(serviceName)
     );
   }
 
-  getGlobalProviderByName(serviceName: string): ?GlobalProviderType {
+  getGlobalProviderByName(serviceName: string): ?GlobalProviderType<*> {
     return this._globalProviders.get(serviceName);
   }
 
-  getDirectoryProviderByName(serviceName: string): ?DirectoryProviderType {
+  getDirectoryProviderByName(serviceName: string): ?DirectoryProviderType<*> {
     return this._directoryProviders.get(serviceName);
   }
 
@@ -65,22 +66,28 @@ export default class QuickOpenProviderRegistry {
     return this._globalProviders.has(serviceName);
   }
 
-  observeProviders(callback: (service: Provider) => void): IDisposable {
+  observeProviders(
+    callback: (service: Provider<ProviderResult>) => void,
+  ): IDisposable {
     for (const provider of this.getProviders()) {
       callback(provider);
     }
     return this.onDidAddProvider(callback);
   }
 
-  onDidAddProvider(callback: (service: Provider) => void): IDisposable {
+  onDidAddProvider(
+    callback: (service: Provider<ProviderResult>) => void,
+  ): IDisposable {
     return this._emitter.on('did-add-provider', callback);
   }
 
-  onDidRemoveProvider(callback: (service: Provider) => void): IDisposable {
+  onDidRemoveProvider(
+    callback: (service: Provider<ProviderResult>) => void,
+  ): IDisposable {
     return this._emitter.on('did-remove-provider', callback);
   }
 
-  addProvider(service: Provider): IDisposable {
+  addProvider(service: Provider<any>): IDisposable {
     if (service.providerType === 'GLOBAL') {
       this._globalProviders.set(service.name, service);
     } else {

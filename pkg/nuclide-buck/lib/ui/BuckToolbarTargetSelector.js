@@ -11,7 +11,7 @@
 
 import type {AppState} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 
 import {Combobox} from '../../../nuclide-ui/Combobox';
@@ -29,9 +29,7 @@ type Props = {
   setBuildTarget(buildTarget: string): void,
 };
 
-export default class BuckToolbarTargetSelector extends React.Component {
-  props: Props;
-
+export default class BuckToolbarTargetSelector extends React.Component<Props> {
   // Querying Buck can be slow, so cache aliases by project.
   // Putting the cache here allows the user to refresh it by toggling the UI.
   _projectAliasesCache: Map<string, Promise<Array<string>>>;
@@ -140,7 +138,7 @@ export default class BuckToolbarTargetSelector extends React.Component {
     this.props.setBuildTarget(trimmed);
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <Combobox
         // Hack to forcibly refresh the combobox when the target changes.

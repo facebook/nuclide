@@ -17,7 +17,7 @@ import {runCommand} from 'nuclide-commons/process';
 import MockHgService from '../../nuclide-hg-rpc/spec/MockHgService';
 import {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 describe('repositoryContainsPath', () => {
   let tempFolder: string = (null: any);

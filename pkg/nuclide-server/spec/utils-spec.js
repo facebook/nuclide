@@ -51,8 +51,11 @@ describe('NuclideServer utils test', () => {
   it('parses the request body', () => {
     const bodyHandler = jasmine.createSpy();
     customHandler = (req, res) => {
-      // $FlowFixMe(asuarez): Use Flow builtin defs for IncomingMessage.
-      utils.parseRequestBody(req).then(bodyHandler).then(() => res.end());
+      utils
+        // $FlowFixMe(asuarez): Use Flow builtin defs for IncomingMessage.
+        .parseRequestBody(req)
+        .then(bodyHandler)
+        .then(() => res.end());
     };
     utils.asyncRequest({
       uri: 'http://127.0.0.1:36845/abc',

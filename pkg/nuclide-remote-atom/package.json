@@ -14,6 +14,12 @@
         "type": "boolean",
         "default": true,
         "description": "Show a notification when a file is opened locally and the command line is waiting for the file to be closed."
+      },
+      "enableLocalCommandService": {
+        "title": "Runs a local service so that other programs on your machine can talk to Atom programmatically.",
+        "type": "boolean",
+        "default": "false",
+        "description": "For example, this makes it possible to talk to your local Atom instance via the command line. Note this adds a small startup cost to Atom."
       }
     }
   }

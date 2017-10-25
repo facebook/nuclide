@@ -1,29 +1,38 @@
 {
   "atom": {
     "clientOnly": true,
-    "version-cmd": ["atom", "--version"],
-    "version-output": "Atom    : 1.18.0\nElectron: 1.3.15\nChrome  : 52.0.2743.82\nNode    : 6.5.0",
-    "url": "https://github.com/atom/atom/releases/download/v1.18.0/atom-mac.zip",
-    "shasum": "cb3ffecc68bd170525d854ededcef6840f74a17f251536101cca5dcad94a459b"
+    "version-cmd": [
+      "atom",
+      "--version"
+    ],
+    "version-output": "Atom    : 1.21.1\nElectron: 1.6.15\nChrome  : 56.0.2924.87\nNode    : 7.4.0",
+    "url": "https://github.com/atom/atom/releases/download/v1.21.1/atom-mac.zip",
+    "shasum": "f8e76f487f347b05ae693e2b9f903656473da3aec75c3647caba0e2b6cea9d62"
   },
   "flow": {
     "clientOnly": false,
     "version-cmd": ["flow", "version"],
-    "version-output": "Flow, a static type checker for JavaScript, version 0.52.0",
+    "version-output": "Flow, a static type checker for JavaScript, version 0.57.3",
     "url": null,
     "shasum": null
   },
   "node": {
     "clientOnly": false,
-    "version-cmd": ["node", "--version"],
-    "version-output": "v6.5.0",
-    "url": "https://nodejs.org/dist/v6.5.0/node-v6.5.0-darwin-x64.tar.gz",
-    "shasum": "352cee438dc55942aebac054e8a2e14b6784056c66465105e2b3bfc55832927f"
+    "version-cmd": [
+      "node",
+      "--version"
+    ],
+    "version-output": "v7.4.0",
+    "url": "https://nodejs.org/dist/v7.4.0/node-v7.4.0-darwin-x64.tar.gz",
+    "shasum": "72158cac53f01d1794fa56e75c8c637a9ae3072b339d9221a2bbf7f0744c80bb"
   },
   "npm": {
     "clientOnly": false,
-    "version-cmd": ["npm", "--version"],
-    "version-output": "3.10.3",
+    "version-cmd": [
+      "npm",
+      "--version"
+    ],
+    "version-output": "4.0.5",
     "url": null,
     "shasum": null
   }

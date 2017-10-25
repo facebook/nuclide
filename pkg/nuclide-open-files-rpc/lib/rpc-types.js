@@ -38,18 +38,29 @@ export type FileEditEvent = {
   newText: string,
 };
 
+export type FileSaveEvent = {
+  kind: 'save',
+  fileVersion: FileVersion,
+};
+
 // TODO: Save Events?
 export type FileEvent =
   | FileOpenEvent
   | FileCloseEvent
   | FileEditEvent
+  | FileSaveEvent
   | FileSyncEvent;
 
-export type LocalFileEvent = FileOpenEvent | FileCloseEvent | FileEditEvent;
+export type LocalFileEvent =
+  | FileOpenEvent
+  | FileCloseEvent
+  | FileEditEvent
+  | FileSaveEvent;
 
 export interface FileNotifier {
   onFileEvent(event: FileEvent): Promise<void>,
   onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void>,
+  getTotalBufferSize(): Promise<number>,
   dispose(): void,
 }
 

@@ -10,17 +10,15 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   onClick: () => mixed,
   visible: boolean,
 };
 
-export default class NewMessagesNotification extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class NewMessagesNotification extends React.Component<Props> {
+  render(): React.Node {
     const className = classnames(
       'nuclide-console-new-messages-notification',
       'badge',

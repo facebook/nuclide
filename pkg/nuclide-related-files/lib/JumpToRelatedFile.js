@@ -30,6 +30,7 @@ export default class JumpToRelatedFile {
           return;
         }
         const path = editor.getPath();
+        // flowlint-next-line sketchy-null-string:off
         if (path) {
           trackTiming(
             'nuclide-related-files:switch-between-header-source',
@@ -43,6 +44,7 @@ export default class JumpToRelatedFile {
           return;
         }
         const path = editor.getPath();
+        // flowlint-next-line sketchy-null-string:off
         if (path) {
           trackTiming(
             'nuclide-related-files:jump-to-next-related-file',
@@ -56,6 +58,7 @@ export default class JumpToRelatedFile {
           return;
         }
         const path = editor.getPath();
+        // flowlint-next-line sketchy-null-string:off
         if (path) {
           trackTiming(
             'nuclide-related-files:jump-to-previous-related-file',

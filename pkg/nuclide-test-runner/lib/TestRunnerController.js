@@ -16,7 +16,7 @@ import type {Observable} from 'rxjs';
 import invariant from 'assert';
 import Ansi from './Ansi';
 import {TextBuffer} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import TestRunModel from './TestRunModel';
 import TestRunnerPanel from './ui/TestRunnerPanel';
@@ -63,6 +63,15 @@ export class TestRunnerController {
     this._renderPanel();
   }
 
+  // Atom expects us to return a new instance of this class every time it's shown in the
+  // workspace. For historical reasons, we always use the same one. This is bad because it means
+  // that our `destroy()` will be called multiple times, and that this instance needs to be
+  // reusable after it's destroyed. To work around this for the time being, we call this method to
+  // reinitialize the view when we should really be creating a new instance.
+  reinitialize(): void {
+    this._renderPanel();
+  }
+
   clearOutput = () => {
     this._buffer.setText('');
     this._path = undefined;
@@ -82,13 +91,13 @@ export class TestRunnerController {
   }
 
   /**
-   * @return A Promise that resolves when testing has succesfully started.
+   * @return A Promise that resolves when testing has successfully started.
    */
   async runTests(path?: string): Promise<void> {
     this._runningTest = true;
 
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    atom.workspace.open(WORKSPACE_VIEW_URI);
+    // eslint-disable-next-line rulesdir/atom-apis
+    atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
 
     // Get selected test runner when Flow knows `this._testRunnerPanel` is defined.
     const selectedTestRunner = this._testRunnerPanel.getSelectedTestRunner();
@@ -117,6 +126,7 @@ export class TestRunnerController {
       testPath = activeTextEditor.getPath();
     }
 
+    // flowlint-next-line sketchy-null-string:off
     if (!testPath) {
       logger.warn('Attempted to run tests on an editor with no path.');
       return;
@@ -204,7 +214,7 @@ export class TestRunnerController {
     this._renderPanel();
   };
 
-  _handleClickRun = (event: SyntheticMouseEvent): void => {
+  _handleClickRun = (event: SyntheticMouseEvent<>): void => {
     // Don't pass a reference to `runTests` directly because the callback receives a mouse event as
     // its argument. `runTests` needs to be called with no arguments.
     this.runTests();

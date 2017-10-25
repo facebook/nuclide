@@ -4,16 +4,16 @@
     "name": "AdbService"
   },
   {
-    "implementation": "../nuclide-arcanist-rpc/lib/ArcanistService.js",
-    "name": "ArcanistService"
-  },
-  {
     "implementation": "../nuclide-buck-rpc/lib/BuckService.js",
     "name": "BuckService"
   },
   {
     "implementation": "../nuclide-clang-rpc/lib/ClangService.js",
     "name": "ClangService"
+  },
+  {
+    "implementation": "../nuclide-code-search-rpc/lib/CodeSearchService.js",
+    "name": "CodeSearchService"
   },
   {
     "implementation": "../nuclide-ctags-rpc/lib/CtagsService.js",
@@ -48,6 +48,10 @@
     "name": "GrepService"
   },
   {
+    "implementation": "../nuclide-generated-files-rpc/lib/GeneratedFileService.js",
+    "name": "GeneratedFileService"
+  },
+  {
     "implementation": "../nuclide-hack-rpc/lib/HackService.js",
     "name": "HackService"
   },
@@ -58,6 +62,10 @@
   {
     "implementation": "./lib/services/InfoService.js",
     "name": "InfoService"
+  },
+  {
+    "implementation": "../nuclide-js-imports-client-rpc/lib/JsImportsService.js",
+    "name": "JSAutoImportsService"
   },
   {
     "implementation": "../nuclide-ocaml-rpc/lib/MerlinService.js",
@@ -75,6 +83,10 @@
   {
     "implementation": "../nuclide-debugger-php-rpc/lib/PhpDebuggerService.js",
     "name": "PhpDebuggerService"
+  },
+  {
+    "implementation": "../nuclide-pty-rpc/lib/PtyService.js",
+    "name": "PtyService"
   },
   {
     "implementation": "../nuclide-python-rpc/lib/PythonService.js",

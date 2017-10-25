@@ -52,8 +52,8 @@ that have been modified since the last commit.
 
 To enable this setting:
 
-1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.  
-2. Select **Packages** from the list at the left, and search for `nuclide`.  
+1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
+2. Select **Packages** from the list at the left, and search for `nuclide`.
 3. Click on the **Settings** button for the `nuclide` package.
 4. Scroll down until you find `nuclide-hg-repository`, and select the **Enables `git-diff` and `status-bar` diff stats to display added, changed, or removed lines in the editor gutter and status bar** checkbox.
 

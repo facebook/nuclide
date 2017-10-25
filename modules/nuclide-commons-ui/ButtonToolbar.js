@@ -11,7 +11,7 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   className?: string,
@@ -24,8 +24,7 @@ type Props = {
 export const ButtonToolbar = (props: Props) => {
   const {children, className} = props;
   return (
-    <div className={classnames('btn-toolbar', className)}>
-      {children}
-    </div>
+    // $FlowFixMe(>=0.53.0) Flow suppress
+    <div className={classnames('btn-toolbar', className)}>{children}</div>
   );
 };

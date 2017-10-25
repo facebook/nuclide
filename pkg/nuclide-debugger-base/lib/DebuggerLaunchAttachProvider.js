@@ -9,6 +9,7 @@
  * @format
  */
 
+// $FlowFixMe(>=0.53.0) Flow suppress
 import type React from 'react';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {DebuggerConfigAction} from './types';

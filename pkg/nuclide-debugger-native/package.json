@@ -68,6 +68,12 @@
         "type": "string",
         "default": "",
         "description": "The port used by debugger UI connecting with backend"
+      },
+      "useTerminal": {
+        "title": "Launch in terminal",
+        "type": "boolean",
+        "default": "true",
+        "description": "If checked, when launching a native binary, Nuclide will redirect the target's STDIN and STDOUT streams to a new Nuclide terminal pane."
       }
     },
     "packageType": "Atom",

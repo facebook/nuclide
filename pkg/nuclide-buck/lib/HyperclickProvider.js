@@ -38,12 +38,14 @@ export async function parseTarget(
   filePath: ?NuclideUri,
   buckRoot: string,
 ): Promise<?Target> {
+  // flowlint-next-line sketchy-null-string:off
   if (!match || !filePath) {
     return null;
   }
 
   let path;
   const fullTarget = match[1];
+  // flowlint-next-line sketchy-null-string:off
   if (fullTarget) {
     // Strip off the leading slashes from the fully-qualified build target.
     const basePath = fullTarget.substring('//'.length);
@@ -55,6 +57,7 @@ export async function parseTarget(
     path = filePath;
   }
   const name = match[2];
+  // flowlint-next-line sketchy-null-string:off
   if (!name) {
     return null;
   }
@@ -117,6 +120,7 @@ export async function getSuggestion(
   }
 
   const buckRoot = await getBuckProjectRoot(absolutePath);
+  // flowlint-next-line sketchy-null-string:off
   if (!buckRoot) {
     return null;
   }
@@ -136,7 +140,7 @@ export async function getSuggestion(
     return {
       range: match.range,
       callback() {
-        goToLocation(match.path, match.line, match.column);
+        goToLocation(match.path, {line: match.line, column: match.column});
       },
     };
   } else {

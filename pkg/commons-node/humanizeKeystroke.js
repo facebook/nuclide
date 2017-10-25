@@ -118,6 +118,7 @@ export default function humanizeKeystroke(
   if (!keystroke) {
     return keystroke;
   }
+  // flowlint-next-line sketchy-null-string:off
   platform = platform || process.platform;
   const separator = platform === 'darwin' ? '' : '+';
   let key;

@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 
 type SectionSize = 'large' | 'medium' | 'small';
@@ -39,10 +39,7 @@ type State = {
  * collapses the component children. Optionally specify collapsedByDefault
  * (defaults to false)
  */
-export class Section extends React.Component {
-  props: Props;
-  state: State;
-
+export class Section extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     const initialIsCollapsed: boolean =
@@ -67,7 +64,7 @@ export class Section extends React.Component {
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const collapsable: boolean =
       this.props.collapsable != null ? this.props.collapsable : false;
     const collapsed =

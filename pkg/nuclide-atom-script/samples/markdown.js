@@ -50,7 +50,7 @@ export default (async function runCommand(
   const markdownFile = resolvePath(argv._[0]);
 
   // don't want to pull in too many Nuclide dependencies here
-  // eslint-disable-next-line nuclide-internal/atom-apis
+  // eslint-disable-next-line rulesdir/atom-apis
   const textEditor = await atom.workspace.open(markdownFile);
   await atom.packages.activatePackage('markdown-preview');
 
@@ -113,6 +113,7 @@ export default (async function runCommand(
 function resolvePath(fileName): string {
   if (!nuclideUri.isAbsolute(fileName)) {
     const pwd = process.env.PWD;
+    // flowlint-next-line sketchy-null-string:off
     invariant(pwd);
     return nuclideUri.join(pwd, fileName);
   } else {

@@ -1,45 +1,67 @@
 @import 'ui-variables';
 
-.nuclide-outline-view {
-  flex: 1;
-  /* Prevents this element from shrinking smaller than the width of its content */
-  min-width: min-content;
+.outline-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
-.nuclide-outline-view-loading {
-  text-align: center;
-}
-
-.nuclide-outline-view-item {
-  cursor: pointer;
+.outline-view-core {
+  display: flex;
+  flex-direction: column;
+  // Default font - this is overridden by the editor settings
   font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
-  padding: 0 @component-padding;
+  height: 100%;
+  width: 100%;
 }
 
-.panel-heading .nuclide-outline-view-close-button {
+.outline-view-trees-scroller {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.outline-view-item {
+  padding: 0 @component-padding / 2;
+}
+
+.outline-view-trees {
+  display: inline-block; // so background doesn't get clipped and overflows
+  min-width: 100%;
+}
+
+.outline-view-loading {
+  margin: auto;
+}
+
+.outline-view-item {
+  padding: 0 @component-padding / 2;
+}
+
+.panel-heading .outline-view-close-button {
   top: -0.25em;
 }
 
-.atom-ide-outline-view-search-bar {
+.outline-view-search-bar {
   align-items: center;
   display: flex;
+  flex: 0 0 auto;
   flex-direction: row;
   justify-content: space-between;
   margin: @component-icon-padding;
   position: relative;
 }
 
-.atom-ide-outline-view-search-pane {
+.outline-view-search-pane {
   flex-grow: 1;
 }
 
-.atom-ide-outline-view-search-clear {
-  cursor: pointer;
+.outline-view-search-clear {
   position: absolute;
   right: 0;
 }
 
-.atom-ide-outline-view-match{
+.outline-view-match {
   font-weight: bolder;
-  -webkit-filter: brightness(1.25);
+  filter: brightness(1.25);
 }

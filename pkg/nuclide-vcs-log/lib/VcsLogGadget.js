@@ -9,17 +9,15 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   title: string,
   iconName: string,
-  component: ReactClass<any>,
+  component: React.ComponentType<any>,
 };
 
-export default class VcsLogGadget extends React.Component {
-  props: Props;
-
+export default class VcsLogGadget extends React.Component<Props> {
   getTitle(): string {
     return this.props.title;
   }
@@ -28,7 +26,7 @@ export default class VcsLogGadget extends React.Component {
     return this.props.iconName;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {component: Component} = this.props;
     return <Component />;
   }

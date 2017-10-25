@@ -58,6 +58,7 @@ describe('BreakpointDisplayController', () => {
 
       editor = await utils.createEditorWithUniquePath();
       const editorPath = editor.getPath();
+      // flowlint-next-line sketchy-null-string:off
       invariant(editorPath);
       testFilePath = editorPath;
 

@@ -17,16 +17,17 @@ export function createEmptyAppState(): AppState {
   return {
     hosts: [''],
     host: '',
-    devices: Expect.value([]),
+    devices: Expect.pendingValue([]),
     deviceType: null,
     deviceTypes: [],
     device: null,
     deviceTasks: [],
-    infoTables: new Map(),
-    processes: [],
+    infoTables: Expect.pendingValue(new Map()),
+    processes: Expect.pendingValue([]),
     processTasks: [],
     isDeviceConnected: false,
     supportedPidsPerTask: new Map(),
     deviceTypeTasks: [],
+    isPollingDevices: false,
   };
 }

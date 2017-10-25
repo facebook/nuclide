@@ -16,7 +16,6 @@
  * To make sure we only have one instance of log4js logger initialized globally, we save the logger
  * to `global` object.
  */
-import type {AdditionalLogFile} from './config';
 
 import log4js from 'log4js';
 
@@ -26,8 +25,6 @@ import {
   getPathToLogFile,
   FileAppender,
   getServerLogAppenderConfig,
-  addAdditionalLogFile,
-  getAdditionalLogFiles,
 } from './config';
 
 export {
@@ -35,10 +32,7 @@ export {
   getPathToLogFile,
   FileAppender,
   getServerLogAppenderConfig,
-  addAdditionalLogFile,
-  getAdditionalLogFiles,
 };
-export type {AdditionalLogFile};
 
 export function flushLogsAndExit(exitCode: number): void {
   log4js.shutdown(() => process.exit(exitCode));

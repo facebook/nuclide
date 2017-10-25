@@ -22,13 +22,14 @@ function getOpenTabsMatching(query: string): Array<FileResult> {
     ),
   );
   return matcher.match(query, {recordMatchIndexes: true}).map(result => ({
+    resultType: 'FILE',
     path: result.value,
     score: result.score,
     matchIndexes: result.matchIndexes,
   }));
 }
 
-const OpenFileListProvider: Provider = {
+const OpenFileListProvider: Provider<FileResult> = {
   providerType: 'GLOBAL',
   name: 'OpenFileListProvider',
   debounceDelay: 0,
@@ -52,5 +53,5 @@ const OpenFileListProvider: Provider = {
   },
 };
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = OpenFileListProvider;

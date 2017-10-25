@@ -12,7 +12,7 @@
 /* eslint
   comma-dangle: [1, always-multiline],
   prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
+  rulesdir/no-commonjs: 0,
   */
 
 /* eslint-disable no-var */
@@ -57,7 +57,7 @@
     suffix = node.getAttribute('id').match(/-[0-9]+$/);
     // If the -1, etc. suffix exists, make sure someone didn't purposely put the suffix there
     // by checking against the actual text associated with the node
-    if (suffix !== null &&
+    if (suffix != null &&
         node.getAttribute('id').substring(0, suffix.index) === node.textContent.toLowerCase()) {
       node.setAttribute('id', node.textContent.toLowerCase());
     }

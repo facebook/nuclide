@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 type Props = {
@@ -24,8 +24,7 @@ type Props = {
  * Renders a single React element into a different part of the DOM. This allows you to maintain the
  * declarative nature of React components.
  */
-export class Portal extends React.Component {
-  props: Props;
+export class Portal extends React.Component<Props> {
   _container: HTMLElement;
   _renderedChildren: ?React.Element<any>;
 

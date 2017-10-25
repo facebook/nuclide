@@ -8,22 +8,20 @@
  * @flow
  * @format
  */
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   filteredRecordCount: number,
   onReset: () => void,
 };
 
-export default class FilteredMessagesReminder extends React.Component {
-  props: Props;
-
-  handleClick = (e: SyntheticEvent) => {
+export default class FilteredMessagesReminder extends React.Component<Props> {
+  handleClick = (e: SyntheticEvent<>) => {
     e.preventDefault();
     this.props.onReset();
   };
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {filteredRecordCount} = this.props;
     if (filteredRecordCount === 0) {
       return null;

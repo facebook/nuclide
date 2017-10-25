@@ -17,10 +17,3 @@ export type SettingsData = {
   title: string,
   value: ?any,
 };
-
-export type SettingsPropsDefault = {
-  title: string,
-  description: string,
-  keyPath: string,
-  onChange: (value: any) => mixed,
-};

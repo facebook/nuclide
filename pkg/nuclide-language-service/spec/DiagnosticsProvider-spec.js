@@ -9,13 +9,18 @@
  * @format
  */
 
-import typeof * as DiagnosticsProviderFile from '../lib/DiagnosticsProvider';
-import type {FileDiagnosticsProvider} from '../lib/DiagnosticsProvider';
-import type {LanguageService} from '../lib/LanguageService';
+import type {ConnectableObservable} from 'rxjs';
+import type {FileDiagnosticMap, LanguageService} from '../lib/LanguageService';
 
-import {clearRequireCache, uncachedRequire} from '../../nuclide-test-helpers';
+import {getLogger} from 'log4js';
+import {Observable} from 'rxjs';
+import {ConnectionCache} from '../../nuclide-remote-connection';
+import {
+  FileDiagnosticsProvider,
+  ObservableDiagnosticProvider,
+} from '../lib/DiagnosticsProvider';
 
-describe('DiagnosticsProvider', () => {
+describe('FileDiagnosticsProvider', () => {
   let diagnosticsProvider: FileDiagnosticsProvider<
     LanguageService,
   > = (null: any);
@@ -24,16 +29,12 @@ describe('DiagnosticsProvider', () => {
     class FakeProviderBase {
       dispose() {}
     }
-    const file: DiagnosticsProviderFile = (uncachedRequire(
-      require,
-      '../lib/DiagnosticsProvider',
-    ): any);
     const busySignalProvider = {
       reportBusyWhile<T>(message, f: () => Promise<T>): Promise<T> {
         return f();
       },
     };
-    diagnosticsProvider = new file.FileDiagnosticsProvider(
+    diagnosticsProvider = new FileDiagnosticsProvider(
       'Hack',
       ['text.html.hack', 'text.html.php'],
       false,
@@ -42,10 +43,6 @@ describe('DiagnosticsProvider', () => {
       busySignalProvider,
       (FakeProviderBase: any),
     );
-  });
-
-  afterEach(() => {
-    clearRequireCache(require, '../lib/DiagnosticsProvider');
   });
 
   describe('invalidateProjectPath', () => {
@@ -71,6 +68,51 @@ describe('DiagnosticsProvider', () => {
       expect(
         diagnosticsProvider._projectRootToFilePaths.get('/hack/root2'),
       ).toEqual(new Set(root2Paths));
+    });
+  });
+});
+
+describe('ObservableDiagnosticsProvider', () => {
+  let connectionCache;
+  let diagnosticsProvider;
+
+  const TEST_FILE = 'test.txt';
+  const mockLanguageService: LanguageService = ({
+    observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
+      return Observable.of(new Map([[TEST_FILE, []]])).publish();
+    },
+  }: any);
+
+  beforeEach(() => {
+    connectionCache = new ConnectionCache(
+      () => Promise.resolve(mockLanguageService),
+      /* lazy */ true,
+    );
+    diagnosticsProvider = new ObservableDiagnosticProvider(
+      'Test',
+      ['text.plain.null-grammar'],
+      getLogger('DiagnosticsProvider-spec'),
+      connectionCache,
+    );
+  });
+
+  afterEach(() => {
+    diagnosticsProvider.dispose();
+  });
+
+  it('starts a language server upon file open', () => {
+    waitsForPromise(async () => {
+      expect(connectionCache.getExistingForUri(TEST_FILE)).toBeNull();
+
+      const updates = diagnosticsProvider.updates.take(1).toPromise();
+
+      await atom.workspace.open(TEST_FILE);
+
+      expect(await connectionCache.getExistingForUri(TEST_FILE)).toBe(
+        mockLanguageService,
+      );
+
+      expect(await updates).toEqual(new Map([[TEST_FILE, []]]));
     });
   });
 });

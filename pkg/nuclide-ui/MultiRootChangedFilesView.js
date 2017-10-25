@@ -24,10 +24,10 @@ import {openFileInDiffView} from '../commons-atom/open-in-diff-view';
 import {track} from '../nuclide-analytics';
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ChangedFilesList from './ChangedFilesList';
-import {TreeList, TreeItem} from './Tree';
+import {TreeList, TreeItem} from 'nuclide-commons-ui/Tree';
 
 type Props = {
   // Used to identify which surface (e.g. file tree vs SCM side bar) was used to trigger an action.
@@ -46,6 +46,7 @@ type Props = {
   // Callback when a file's checkbox is toggled
   onFileChecked?: (filePath: NuclideUri) => void,
   onFileChosen: (filePath: NuclideUri) => void,
+  onMarkFileResolved?: (filePath: NuclideUri) => void,
   getRevertTargetRevision?: () => ?string,
   openInDiffViewOption?: boolean,
 };
@@ -58,8 +59,7 @@ type DefaultProps = {
 const ANALYTICS_PREFIX = 'changed-files-view';
 const DEFAULT_ANALYTICS_SOURCE_KEY = 'command';
 
-export class MultiRootChangedFilesView extends React.PureComponent {
-  props: Props;
+export class MultiRootChangedFilesView extends React.PureComponent<Props> {
   _subscriptions: UniversalDisposable;
 
   static defaultProps: DefaultProps = {
@@ -322,7 +322,7 @@ export class MultiRootChangedFilesView extends React.PureComponent {
     });
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       checkedFiles: checkedFilesByRoot,
       commandPrefix,
@@ -333,6 +333,7 @@ export class MultiRootChangedFilesView extends React.PureComponent {
       hideEmptyFolders,
       onFileChecked,
       onFileChosen,
+      onMarkFileResolved,
       openInDiffViewOption,
       selectedFile,
     } = this.props;
@@ -356,6 +357,7 @@ export class MultiRootChangedFilesView extends React.PureComponent {
           const checkedFiles =
             checkedFilesByRoot == null ? null : checkedFilesByRoot.get(root);
           return (
+            // $FlowFixMe(>=0.53.0) Flow suppress
             <ChangedFilesList
               checkedFiles={checkedFiles}
               commandPrefix={commandPrefix}
@@ -370,6 +372,7 @@ export class MultiRootChangedFilesView extends React.PureComponent {
               onFileChecked={onFileChecked}
               onFileChosen={onFileChosen}
               onForgetFile={this._handleForgetFile}
+              onMarkFileResolved={onMarkFileResolved}
               onOpenFileInDiffView={this._handleOpenFileInDiffView}
               openInDiffViewOption={openInDiffViewOption || false}
               onRevertFile={this._handleRevertFile}

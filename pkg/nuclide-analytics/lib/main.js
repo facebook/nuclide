@@ -14,8 +14,8 @@ import type {Observable} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {isPromise} from 'nuclide-commons/promise';
 import performanceNow from 'nuclide-commons/performanceNow';
-import {track as rawTrack} from './track';
 
+import {track as rawTrack} from './track';
 export {HistogramTracker} from './HistogramTracker';
 
 export type TrackingEvent = {
@@ -64,14 +64,22 @@ export function trackEvents(events: Observable<TrackingEvent>): IDisposable {
 }
 
 const PERFORMANCE_EVENT = 'performance';
-
+const canMeasure = typeof performance !== 'undefined';
 export class TimingTracker {
+  static eventCount = 0;
+
   _eventName: string;
   _startTime: number;
+  _startMark: string;
 
   constructor(eventName: string) {
     this._eventName = eventName;
+    this._startMark = `${this._eventName}_${TimingTracker.eventCount++}_start`;
     this._startTime = performanceNow();
+    if (canMeasure) {
+      // eslint-disable-next-line no-undef
+      performance.mark(this._startMark);
+    }
   }
 
   onError(error: Error): void {
@@ -83,6 +91,18 @@ export class TimingTracker {
   }
 
   _trackTimingEvent(exception: ?Error): void {
+    if (canMeasure) {
+      /* eslint-disable no-undef */
+      // call measure to add this information to the devtools timeline in the
+      // case the profiler is running.
+      performance.measure(this._eventName, this._startMark);
+      // then clear all the marks and measurements to avoid growing the
+      // performance entry buffer
+      performance.clearMarks(this._startMark);
+      performance.clearMeasures(this._eventName);
+      /* eslint-enable no-undef */
+    }
+
     track(PERFORMANCE_EVENT, {
       duration: Math.round(performanceNow() - this._startTime).toString(),
       eventName: this._eventName,

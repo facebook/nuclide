@@ -16,6 +16,7 @@ import type MessageRangeTracker from '../MessageRangeTracker';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 
 import invariant from 'assert';
+import {getLogger} from 'log4js';
 import {applyTextEdits} from 'nuclide-commons-atom/text-edit';
 import {Observable} from 'rxjs';
 import * as Actions from './Actions';
@@ -113,4 +114,56 @@ export function notifyOfFixFailures(
       );
     })
     .ignoreElements();
+}
+
+function forkJoinArray<T>(
+  sources: Array<Observable<T> | Promise<T>>,
+): Observable<Array<T>> {
+  // $FlowFixMe: Needs a specialization for arrays
+  return Observable.forkJoin(...sources);
+}
+
+export function fetchCodeActions(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  // TODO(hansonw): Until we have have a UI for it, only handle one request at a time.
+  return actions.ofType(Actions.FETCH_CODE_ACTIONS).switchMap(action => {
+    invariant(action.type === Actions.FETCH_CODE_ACTIONS);
+    const {codeActionFetcher} = store.getState();
+    if (codeActionFetcher == null) {
+      return Observable.empty();
+    }
+    const {messages, editor} = action.payload;
+    return forkJoinArray(
+      messages.map(message =>
+        Observable.defer(() =>
+          codeActionFetcher.getCodeActionForDiagnostic(message, editor),
+        )
+          .switchMap(codeActions => {
+            return codeActions.length === 0
+              ? // forkJoin emits nothing for empty arrays.
+                Observable.of([])
+              : forkJoinArray(
+                  // Eagerly fetch the titles so that they're immediately usable in a UI.
+                  codeActions.map(async codeAction => [
+                    await codeAction.getTitle(),
+                    codeAction,
+                  ]),
+                );
+          })
+          .map(codeActions => [message, new Map(codeActions)]),
+      ),
+    )
+      .map(codeActionsForMessage =>
+        Actions.setCodeActions(new Map(codeActionsForMessage)),
+      )
+      .catch(err => {
+        getLogger('atom-ide-diagnostics').error(
+          `Error fetching code actions for ${messages[0].filePath}`,
+          err,
+        );
+        return Observable.empty();
+      });
+  });
 }

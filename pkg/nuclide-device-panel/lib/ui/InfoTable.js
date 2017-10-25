@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Table} from 'nuclide-commons-ui/Table';
 
 type Props = {|
@@ -17,10 +17,8 @@ type Props = {|
   title: string,
 |};
 
-export class InfoTable extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export class InfoTable extends React.Component<Props> {
+  render(): React.Node {
     const rows = Array.from(this.props.table.entries()).map(([key, value]) => ({
       data: {property: key, value},
     }));

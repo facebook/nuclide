@@ -11,7 +11,7 @@
 
 import type {HandlesByType, ChildProcessInfo} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 import BasicStatsSectionComponent from './sections/BasicStatsSectionComponent';
 import ActiveHandlesSectionComponent from './sections/ActiveHandlesSectionComponent';
 import ChildProcessTreeComponent from './sections/ChildProcessTreeComponent';
@@ -29,10 +29,8 @@ type Props = {
   childProcessesTree: ?ChildProcessInfo,
 };
 
-export default class HealthPaneItemComponent extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class HealthPaneItemComponent extends React.Component<Props> {
+  render(): React.Node {
     const sections = {
       Stats: <BasicStatsSectionComponent {...this.props} />,
       Subprocesses: (
@@ -51,16 +49,12 @@ export default class HealthPaneItemComponent extends React.Component {
     // For each section, we use settings-view to get a familiar look for table cells.
     return (
       <div>
-        {Object.keys(sections).map((title, s) =>
+        {Object.keys(sections).map((title, s) => (
           <div className="nuclide-health-pane-item-section" key={s}>
-            <h2>
-              {title}
-            </h2>
-            <div className="settings-view">
-              {sections[title]}
-            </div>
-          </div>,
-        )}
+            <h2>{title}</h2>
+            <div className="settings-view">{sections[title]}</div>
+          </div>
+        ))}
       </div>
     );
   }

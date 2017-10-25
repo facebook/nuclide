@@ -9,16 +9,20 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {ConnectableObservable} from 'rxjs';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {
   FileVersion,
   FileNotifier,
@@ -28,12 +32,9 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
@@ -73,6 +74,7 @@ export type FlowSettings = {
   functionSnippetShouldIncludeArguments: boolean,
   stopFlowOnExit: boolean,
   lazyServer: boolean,
+  ideLazyMode: boolean,
 };
 
 export type {FlowLocNoSource} from './flowOutputTypes';
@@ -178,9 +180,9 @@ class FlowLanguageService extends MultiProjectLanguageService<
 
 // Unfortunately we have to duplicate a lot of things here to make FlowLanguageService remotable.
 export interface FlowLanguageServiceType {
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap>,
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
@@ -207,6 +209,10 @@ export interface FlowLanguageServiceType {
     range: atom$Range,
     diagnostics: Array<FileDiagnosticMessage>,
   ): Promise<Array<CodeAction>>,
+
+  getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>>,
 
   typeHint(fileVersion: FileVersion, position: atom$Point): Promise<?TypeHint>,
 
@@ -256,6 +262,17 @@ export interface FlowLanguageServiceType {
   getServerStatusUpdates(): ConnectableObservable<ServerStatusUpdate>,
 
   allowServerRestart(): Promise<void>,
+
+  getExpandedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range>,
+
+  getCollapsedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range>,
 
   dispose(): void,
 }

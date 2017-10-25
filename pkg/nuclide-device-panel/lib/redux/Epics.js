@@ -11,7 +11,7 @@
 
 import {Observable} from 'rxjs';
 import * as Actions from './Actions';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {getProviders} from '../providers';
 import {DeviceTask} from '../DeviceTask';
 import {Cache} from '../../../commons-node/cache';
@@ -37,6 +37,7 @@ export function pollDevicesEpic(
         isActiveA === isActiveB,
     )
     .switchMap(([state, isActive]) => {
+      // eslint-disable-next-line eqeqeq
       if (state.deviceType === null || !isActive) {
         return Observable.empty();
       }
@@ -78,7 +79,7 @@ export function pollProcessesEpic(
       );
       if (providers[0] != null) {
         return providers[0]
-          .observe(state.host, device.name)
+          .observe(state.host, device)
           .map(processes => Actions.setProcesses(processes));
       }
       return Observable.empty();
@@ -106,6 +107,22 @@ export function setDeviceEpic(
   });
 }
 
+export function setDeviceTypesEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions.ofType(Actions.SET_DEVICE_TYPES).switchMap(action => {
+    invariant(action.type === Actions.SET_DEVICE_TYPES);
+    const state = store.getState();
+    const deviceType =
+      state.deviceType != null ? state.deviceType : state.deviceTypes[0];
+    return Observable.merge(
+      Observable.of(Actions.setDeviceType(deviceType)),
+      Observable.of(Actions.toggleDevicePolling(state.isPollingDevices)),
+    );
+  });
+}
+
 const deviceTypeTaskCache = new Cache({
   keyFactory: ([state: AppState, providerName: string]) =>
     JSON.stringify([state.host, state.deviceType, providerName]),
@@ -129,7 +146,11 @@ export function setDeviceTypeEpic(
               ),
           ),
         ),
-    ).map(tasks => Actions.setDeviceTypeTasks(tasks));
+    ).map(tasks =>
+      Actions.setDeviceTypeTasks(
+        tasks.sort((a, b) => a.getName().localeCompare(b.getName())),
+      ),
+    );
   });
 }
 
@@ -163,7 +184,7 @@ function getInfoTables(
             if (!isSupported) {
               return Observable.empty();
             }
-            return provider.fetch(state.host, device.name).map(list => ({
+            return provider.fetch(state.host, device).map(list => ({
               title: provider.getTitle(),
               list,
               priority:
@@ -193,13 +214,13 @@ function getProcessTasks(state: AppState): Observable<ProcessTask[]> {
     ...Array.from(getProviders().processTask)
       .filter(provider => provider.getType() === state.deviceType)
       .map(provider => {
+        const processes = state.processes.isError ? [] : state.processes.value;
         return provider
-          .getSupportedPIDs(state.host, device.name, state.processes)
+          .getSupportedPIDs(state.host, device, processes)
           .map(supportedSet => {
             return {
               type: provider.getTaskType(),
-              run: (proc: Process) =>
-                provider.run(state.host, device.name, proc),
+              run: (proc: Process) => provider.run(state.host, device, proc),
               isSupported: (proc: Process) => supportedSet.has(proc.pid),
               name: provider.getName(),
             };
@@ -234,7 +255,7 @@ function getDeviceTasks(state: AppState): Observable<DeviceTask[]> {
                 [state, provider.getName()],
                 () =>
                   new DeviceTask(
-                    () => provider.getTask(state.host, device.name),
+                    () => provider.getTask(state.host, device),
                     provider.getName(),
                   ),
               ),

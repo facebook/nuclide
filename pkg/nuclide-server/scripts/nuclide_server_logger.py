@@ -40,7 +40,7 @@ class NuclideCircularBufferHandler(BufferingHandler):
         if len(self._buffer) < self._capacity:
             self._buffer.append(self.format(record))
         else:
-            self._buffer[self._position] = record
+            self._buffer[self._position] = self.format(record)
         self._position = (self._position + 1) % self._capacity
 
     def flush(self):

@@ -92,7 +92,7 @@ function areAllTheSame(values: Array<string>): boolean {
   return values.every(value => value === values[0]);
 }
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   aggregateTable,
   avg,

@@ -10,11 +10,11 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import {Highlight, HighlightColors} from './Highlight';
 
-const HighlightExample = (): React.Element<any> =>
+const HighlightExample = (): React.Element<any> => (
   <div>
     <Block>
       <Highlight>Default</Highlight>
@@ -31,7 +31,8 @@ const HighlightExample = (): React.Element<any> =>
     <Block>
       <Highlight color={HighlightColors.error}>Error</Highlight>
     </Block>
-  </div>;
+  </div>
+);
 
 export const HighlightExamples = {
   sectionName: 'Highlight',

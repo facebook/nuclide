@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 import type {EvaluationResult} from '../nuclide-debugger/lib/types';
 
@@ -18,11 +18,7 @@ export function TextRenderer(
 ): ?React.Element<any> {
   const {type, value} = evaluationResult;
   if (type === 'text') {
-    return (
-      <span>
-        {value}
-      </span>
-    );
+    return <span>{value}</span>;
   } else {
     return null;
   }

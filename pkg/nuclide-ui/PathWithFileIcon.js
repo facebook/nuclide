@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {getLogger} from 'log4js';
@@ -62,7 +62,7 @@ type FileIconsAddItemToElementFn = (
 
 type Props = {
   className?: string,
-  children?: React.Element<any> | Array<?React.Element<any>>,
+  children?: React.Node,
   // Optional <Icon /> element. If set, will render a small version of
   // the decorationIcon on top of the file icon.
   decorationIcon?: WarningIconWithShadow | ErrorIconWithShadow,
@@ -70,8 +70,7 @@ type Props = {
   path: string,
 };
 
-export default class PathWithFileIcon extends React.Component {
-  props: Props;
+export default class PathWithFileIcon extends React.Component<Props> {
   _disposables: UniversalDisposable;
   _fileIconsDisposable: ?IDisposable;
   _addItemToElement: ?FileIconsAddItemToElementFn;
@@ -185,7 +184,7 @@ export default class PathWithFileIcon extends React.Component {
     this._mounted = false;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       className,
       children,
@@ -197,12 +196,12 @@ export default class PathWithFileIcon extends React.Component {
     } = this.props;
     const displayPath = children == null ? path : children;
     const decoration =
-      DecorationIcon == null
-        ? null
-        : <div className="nuclide-ui-path-with-file-icon-decoration-icon">
-            {/* $FlowIssue "expected React component instead of prototype" */}
-            <DecorationIcon />
-          </div>;
+      DecorationIcon == null ? null : (
+        <div className="nuclide-ui-path-with-file-icon-decoration-icon">
+          {/* $FlowIssue "expected React component instead of prototype" */}
+          <DecorationIcon />
+        </div>
+      );
     return (
       <div
         className={this._getDefaultClassName()}

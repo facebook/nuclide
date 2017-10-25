@@ -23,13 +23,13 @@ import {Icon} from 'nuclide-commons-ui/Icon';
 import {debug} from './HhvmDebug';
 import HhvmToolbar from './HhvmToolbar';
 import ProjectStore from './ProjectStore';
-import React from 'react';
+import * as React from 'react';
 
 export default class HhvmBuildSystem {
   id: string;
   name: string;
   _projectStore: ProjectStore;
-  _extraUi: ?ReactClass<any>;
+  _extraUi: ?React.ComponentType<any>;
 
   constructor() {
     this.id = 'hhvm';
@@ -41,7 +41,7 @@ export default class HhvmBuildSystem {
     this._projectStore.dispose();
   }
 
-  getExtraUi(): ReactClass<any> {
+  getExtraUi(): React.ComponentType<any> {
     if (this._extraUi == null) {
       const projectStore = this._projectStore;
       const subscription = observableFromSubscribeFunction(
@@ -59,9 +59,10 @@ export default class HhvmBuildSystem {
     return 1; // Take precedence over the Arcanist build toolbar.
   }
 
-  getIcon(): ReactClass<any> {
-    return () =>
-      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />;
+  getIcon(): React.ComponentType<any> {
+    return () => (
+      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />
+    );
   }
 
   runTask(taskName: string): Task {
@@ -71,6 +72,8 @@ export default class HhvmBuildSystem {
           this._projectStore.getDebugMode(),
           this._projectStore.getProjectRoot(),
           this._projectStore.getDebugTarget(),
+          this._projectStore.getUseTerminal(),
+          this._projectStore.getScriptArguments(),
         ),
       ).ignoreElements(),
     );
@@ -88,6 +91,7 @@ export default class HhvmBuildSystem {
       .map(() => this._projectStore)
       .filter(
         store =>
+          // eslint-disable-next-line eqeqeq
           store.getProjectRoot() === path && store.isHHVMProject() !== null,
       )
       .map(store => store.isHHVMProject() === true)

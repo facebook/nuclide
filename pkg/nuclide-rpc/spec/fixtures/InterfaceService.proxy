@@ -45,19 +45,15 @@ module.exports = _client => {
     }
 
     len() {
-      return _client.marshalArguments(Array.from(arguments), []).then(args => {
-        return _client.marshal(this, {
-          kind: "named",
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 1
-          },
-          name: "Vector2"
-        }).then(id => {
-          return _client.callRemoteMethod(id, "len", "promise", args);
-        });
-      }).then(value => {
+      return Promise.all([_client.marshalArguments(Array.from(arguments), []), _client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 1
+        },
+        name: "Vector2"
+      })]).then(([args, id]) => _client.callRemoteMethod(id, "len", "promise", args)).then(value => {
         return _client.unmarshal(value, {
           kind: "number"
         });
@@ -65,19 +61,15 @@ module.exports = _client => {
     }
 
     watchChanges() {
-      return Observable.fromPromise(_client.marshalArguments(Array.from(arguments), []).then(args => {
-        return _client.marshal(this, {
-          kind: "named",
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 1
-          },
-          name: "Vector2"
-        }).then(id => {
-          return _client.callRemoteMethod(id, "watchChanges", "observable", args);
-        });
-      })).concatMap(id => id).concatMap(value => {
+      return Observable.fromPromise(Promise.all([_client.marshalArguments(Array.from(arguments), []), _client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 1
+        },
+        name: "Vector2"
+      })])).switchMap(([args, id]) => _client.callRemoteMethod(id, "watchChanges", "observable", args)).concatMap(value => {
         return _client.unmarshal(value, {
           kind: "number"
         });
@@ -103,24 +95,20 @@ module.exports = _client => {
 
   remoteModule.Iface = class {
     p(arg0) {
-      return _client.marshalArguments(Array.from(arguments), [{
+      return Promise.all([_client.marshalArguments(Array.from(arguments), [{
         name: "a",
         type: {
           kind: "number"
         }
-      }]).then(args => {
-        return _client.marshal(this, {
-          kind: "named",
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 30
-          },
-          name: "Iface"
-        }).then(id => {
-          return _client.callRemoteMethod(id, "p", "promise", args);
-        });
-      }).then(value => {
+      }]), _client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      })]).then(([args, id]) => _client.callRemoteMethod(id, "p", "promise", args)).then(value => {
         return _client.unmarshal(value, {
           kind: "number"
         });
@@ -128,35 +116,27 @@ module.exports = _client => {
     }
 
     f() {
-      return _client.marshalArguments(Array.from(arguments), []).then(args => {
-        return _client.marshal(this, {
-          kind: "named",
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 30
-          },
-          name: "Iface"
-        }).then(id => {
-          return _client.callRemoteMethod(id, "f", "void", args);
-        });
-      });
+      return Promise.all([_client.marshalArguments(Array.from(arguments), []), _client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      })]).then(([args, id]) => _client.callRemoteMethod(id, "f", "void", args));
     }
 
     o() {
-      return Observable.fromPromise(_client.marshalArguments(Array.from(arguments), []).then(args => {
-        return _client.marshal(this, {
-          kind: "named",
-          location: {
-            type: "source",
-            fileName: "InterfaceService.def",
-            line: 30
-          },
-          name: "Iface"
-        }).then(id => {
-          return _client.callRemoteMethod(id, "o", "observable", args);
-        });
-      })).concatMap(id => id).concatMap(value => {
+      return Observable.fromPromise(Promise.all([_client.marshalArguments(Array.from(arguments), []), _client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      })])).switchMap(([args, id]) => _client.callRemoteMethod(id, "o", "observable", args)).concatMap(value => {
         return _client.unmarshal(value, {
           kind: "string"
         });

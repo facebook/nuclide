@@ -10,12 +10,10 @@
  */
 
 import type {ClangCompilationDatabase} from '../../nuclide-clang-rpc/lib/rpc-types';
-import {findArcProjectIdOfPath} from '../../nuclide-arcanist-rpc';
 import type {CompilationDatabaseParams} from '../../nuclide-buck/lib/types';
 
 import * as ClangService from '../../nuclide-clang-rpc';
 import * as BuckService from './BuckServiceImpl';
-import fsPromise from 'nuclide-commons/fsPromise';
 import {getLogger} from 'log4js';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Cache} from '../../commons-node/cache';
@@ -120,37 +118,17 @@ class BuckClangCompilationDatabaseHandler {
     );
   }
 
-  async _addMode(
-    root: string,
-    mode: string,
-    args: Array<string>,
+  async _getExtraArguments(
+    buckRoot: string,
+    target: string,
   ): Promise<Array<string>> {
-    if (await fsPromise.exists(nuclideUri.join(root, mode))) {
-      return args.concat(['@' + mode]);
-    }
-    return args;
-  }
-
-  // Many Android/iOS targets require custom flags to build with Buck.
-  // TODO: Share this code with the client-side Buck modifiers!
-  async _getFallbackArgs(root: string): Promise<Array<string>> {
-    const projectId = await findArcProjectIdOfPath(root);
-    let customMode = null;
-    if (projectId === 'fbobjc' && process.platform === 'linux') {
-      customMode = 'mode/iphonesimulator';
-    } else if (
-      projectId === 'facebook-fbandroid' &&
-      process.platform === 'linux'
-    ) {
-      customMode = 'mode/server';
-    }
-    if (customMode == null) {
+    try {
+      // $FlowFB
+      const {getExtraArguments} = require('./fb/getExtraArguments');
+      return await getExtraArguments(buckRoot, target);
+    } catch (e) {
       return [];
     }
-    if (await fsPromise.exists(nuclideUri.join(root, customMode))) {
-      return ['@' + customMode];
-    }
-    return [];
   }
 
   async _loadCompilationDatabaseForBuckTarget(
@@ -165,7 +143,7 @@ class BuckClangCompilationDatabaseHandler {
     ];
     const allArgs =
       this._params.args.length === 0
-        ? await this._getFallbackArgs(buckProjectRoot)
+        ? await this._getExtraArguments(buckProjectRoot, target)
         : this._params.args;
     const buildTarget = target + '#' + allFlavors.join(',');
     const buildReport = await BuckService.build(

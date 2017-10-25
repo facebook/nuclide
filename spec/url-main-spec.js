@@ -11,8 +11,8 @@
 
 import electron from 'electron';
 import fs from 'fs';
-import invariant from 'invariant';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+import invariant from 'assert';
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 import temp from 'temp';
 import {__test__} from '../lib/url-main';
@@ -116,9 +116,8 @@ describe('acquireLock/releaseLock', () => {
   });
 
   it('expires after a timeout', () => {
-    const dateSpy = spyOn(Date, 'now').andReturn(0);
     expect(acquireLock()).toBe(true);
-    dateSpy.andReturn(10000);
+    advanceClock(10000);
     expect(acquireLock()).toBe(true);
   });
 });

@@ -12,7 +12,7 @@
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import {Icon} from 'nuclide-commons-ui/Icon';
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 import nullthrows from 'nullthrows';
 
@@ -31,9 +31,7 @@ type Props = {
   triggeringEvent: string,
 };
 
-export default class Tabs extends React.Component {
-  props: Props;
-
+export default class Tabs extends React.Component<Props> {
   static defaultProps = {
     closeable: false,
     triggeringEvent: 'onClick',
@@ -48,9 +46,9 @@ export default class Tabs extends React.Component {
   };
 
   _renderTabMenu = (): React.Element<any> => {
-    const closeButton = this.props.closeable
-      ? <div className="close-icon" onClick={this.props.onClose} />
-      : null;
+    const closeButton = this.props.closeable ? (
+      <div className="close-icon" onClick={this.props.onClose} />
+    ) : null;
     const tabs = this.props.tabs.map(tab => {
       const icon = tab.icon == null ? null : <Icon icon={tab.icon} />;
       const handler = {};
@@ -74,18 +72,10 @@ export default class Tabs extends React.Component {
         </li>
       );
     });
-    return (
-      <ul className="tab-bar list-inline inset-panel">
-        {tabs}
-      </ul>
-    );
+    return <ul className="tab-bar list-inline inset-panel">{tabs}</ul>;
   };
 
-  render(): React.Element<any> {
-    return (
-      <div className="nuclide-tabs">
-        {this._renderTabMenu()}
-      </div>
-    );
+  render(): React.Node {
+    return <div className="nuclide-tabs">{this._renderTabMenu()}</div>;
   }
 }

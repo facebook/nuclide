@@ -21,6 +21,7 @@ import {
 } from 'nuclide-commons/process';
 import {Observable, Subject} from 'rxjs';
 import idx from 'idx';
+import {getOriginalEnvironment} from 'nuclide-commons/process';
 
 export interface AdapterExitedEvent extends DebugProtocol.base$Event {
   event: 'adapter-exited',
@@ -62,6 +63,7 @@ export default class VsDebugSession extends V8Protocol {
   _onDidOutput: Subject<DebugProtocol.OutputEvent>;
   _onDidBreakpoint: Subject<DebugProtocol.BreakpointEvent>;
   _onDidModule: Subject<DebugProtocol.ModuleEvent>;
+  _onDidLoadSource: Subject<DebugProtocol.LoadedSourceEvent>;
   _onDidEvent: Subject<DebugProtocol.Event | AdapterExitedEvent>;
 
   constructor(
@@ -84,6 +86,7 @@ export default class VsDebugSession extends V8Protocol {
     this._onDidOutput = new Subject();
     this._onDidBreakpoint = new Subject();
     this._onDidModule = new Subject();
+    this._onDidLoadSource = new Subject();
     this._onDidEvent = new Subject();
   }
 
@@ -125,6 +128,10 @@ export default class VsDebugSession extends V8Protocol {
 
   observeModuleEvents(): Observable<DebugProtocol.ModuleEvent> {
     return this._onDidModule.asObservable();
+  }
+
+  observeSourceLoadedEvents(): Observable<DebugProtocol.LoadedSourceEvent> {
+    return this._onDidLoadSource.asObservable();
   }
 
   observeAllEvents(): Observable<DebugProtocol.Event | AdapterExitedEvent> {
@@ -215,6 +222,9 @@ export default class VsDebugSession extends V8Protocol {
         break;
       case 'module':
         this._onDidModule.next(event);
+        break;
+      case 'loadedSource':
+        this._onDidLoadSource.next(event);
         break;
       default:
         this._logger.error('Unknonwn event type:', event);
@@ -453,11 +463,9 @@ export default class VsDebugSession extends V8Protocol {
         'pipe', // stdout
         'pipe', // stderr
       ],
-      env: {
-        ...process.env,
-        // RN debugger can't be used in `production` environment.
-        NODE_ENV: 'development',
-      },
+      // RN debugger can't be used in `production` environment.
+      // NODE_ENV: 'development',
+      env: await getOriginalEnvironment(),
     };
     const serverProcess = (this._serverProcess = child_process.spawn(
       command,

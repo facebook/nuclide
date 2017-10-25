@@ -37,9 +37,11 @@ export type PhpDebuggerSessionConfig = {
   targetUri: string,
   phpRuntimePath: string,
   phpRuntimeArgs: string,
+  scriptArguments: Array<string>,
   dummyRequestFilePath: string,
   stopOneStopAll: boolean,
   launchWrapperCommand?: string,
+  deferLaunch: boolean,
 };
 
 // Connection states
@@ -138,7 +140,7 @@ export class PhpDebuggerService {
   }
 
   async sendCommand(message: string): Promise<void> {
-    logger.info('Recieved command: ' + message);
+    logger.info('Received command: ' + message);
     if (this._translator) {
       this._translator.processCommand(JSON.parse(message));
     }

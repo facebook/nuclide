@@ -27,10 +27,10 @@ export type Task = {
   cancel: () => void,
   onDidComplete: (callback: () => mixed) => IDisposable,
   onDidError: (callback: (err: Error) => mixed) => IDisposable,
-  onMessage?: (callback: (message: Message) => mixed) => IDisposable,
-  onProgress?: (callback: (progress: ?number) => mixed) => IDisposable,
-  onResult?: (callback: (result: mixed) => mixed) => IDisposable,
-  onStatusChange?: (callback: (status: ?string) => mixed) => IDisposable,
+  +onMessage?: (callback: (message: Message) => mixed) => IDisposable,
+  +onProgress?: (callback: (progress: ?number) => mixed) => IDisposable,
+  +onResult?: (callback: (result: mixed) => mixed) => IDisposable,
+  +onStatusChange?: (callback: (status: ?string) => mixed) => IDisposable,
 };
 
 /**
@@ -203,6 +203,7 @@ export function createStep(
 ): Observable<TaskEvent> {
   return Observable.concat(
     Observable.of({type: 'progress', progress: null}),
+    // flowlint-next-line sketchy-null-string:off
     stepName
       ? Observable.of({type: 'status', status: stepName})
       : Observable.empty(),

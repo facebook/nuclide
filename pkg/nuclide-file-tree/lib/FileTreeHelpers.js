@@ -31,11 +31,20 @@ import featureConfig from 'nuclide-commons-atom/feature-config';
 import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 import {Observable} from 'rxjs';
 import passesGK from '../../commons-node/passesGK';
+import invariant from 'assert';
 import crypto from 'crypto';
+import os from 'os';
+import {ROOT_ARCHIVE_FS} from '../../nuclide-fs-atom';
 
 export type Directory = LocalDirectory | RemoteDirectory;
 type File = LocalFile | RemoteFile;
 type Entry = LocalDirectory | RemoteDirectory | LocalFile | RemoteFile;
+
+export type SelectionMode =
+  | 'single-select'
+  | 'multi-select'
+  | 'range-select'
+  | 'invalid-select';
 
 function dirPathToKey(path: string): string {
   return nuclideUri.ensureTrailingSeparator(
@@ -43,8 +52,11 @@ function dirPathToKey(path: string): string {
   );
 }
 
-function isDirKey(key: string): boolean {
-  return nuclideUri.endsWithSeparator(key);
+function isDirOrArchiveKey(key: string): boolean {
+  return (
+    nuclideUri.endsWithSeparator(key) ||
+    nuclideUri.hasKnownArchiveExtension(key)
+  );
 }
 
 function keyToName(key: string): string {
@@ -81,7 +93,11 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
       entries = entries || [];
       const keys = entries.map(entry => {
         const path = entry.getPath();
-        return entry.isDirectory() ? dirPathToKey(path) : path;
+        if (entry.isDirectory()) {
+          return dirPathToKey(path);
+        } else {
+          return path;
+        }
       });
       resolve(keys);
     });
@@ -90,22 +106,30 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
 
 function getDirectoryByKey(key: string): ?Directory {
   const path = keyToPath(key);
-  if (!isDirKey(key)) {
+  if (!isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
     if (connection == null) {
       return null;
     }
-    return connection.createDirectory(path);
-  } else {
+    if (nuclideUri.hasKnownArchiveExtension(key)) {
+      return connection.createFileAsDirectory(path);
+    } else {
+      return connection.createDirectory(path);
+    }
+  } else if (nuclideUri.hasKnownArchiveExtension(key)) {
+    return ROOT_ARCHIVE_FS.newArchiveFileAsDirectory(path);
+  } else if (!nuclideUri.isInArchive(path)) {
     return new LocalDirectory(path);
+  } else {
+    return ROOT_ARCHIVE_FS.newArchiveDirectory(path);
   }
 }
 
 function getFileByKey(key: string): ?File {
   const path = keyToPath(key);
-  if (isDirKey(key)) {
+  if (isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
@@ -113,8 +137,10 @@ function getFileByKey(key: string): ?File {
       return null;
     }
     return connection.createFile(path);
-  } else {
+  } else if (!nuclideUri.isInArchive(path)) {
     return new LocalFile(path);
+  } else {
+    return ROOT_ARCHIVE_FS.newArchiveFile(path);
   }
 }
 
@@ -151,7 +177,7 @@ function isLocalEntry(entry: Entry): boolean {
   return !('getLocalPath' in entry);
 }
 
-function isContextClick(event: SyntheticMouseEvent): boolean {
+function isContextClick(event: SyntheticMouseEvent<>): boolean {
   return (
     event.button === 2 ||
     (event.button === 0 &&
@@ -161,7 +187,10 @@ function isContextClick(event: SyntheticMouseEvent): boolean {
 }
 
 function buildHashKey(nodeKey: string): string {
-  return crypto.createHash('MD5').update(nodeKey).digest('base64');
+  return crypto
+    .createHash('MD5')
+    .update(nodeKey)
+    .digest('base64');
 }
 
 function observeUncommittedChangesKindConfigKey(): Observable<
@@ -200,9 +229,14 @@ function updatePathInOpenedEditors(
     if (nuclideUri.contains(oldPath, bufferPath)) {
       const relativeToOld = nuclideUri.relative(oldPath, bufferPath);
       const newBufferPath = nuclideUri.join(newPath, relativeToOld);
-      // setPath will append the hostname when given the local path, so we
-      // strip off the hostname here to avoid including it twice in the path.
-      buffer.setPath(nuclideUri.getPath(newBufferPath));
+      // setPath() doesn't work correctly with remote files.
+      // We need to create a new remote file and reset the underlying file.
+      const file = getFileByKey(newBufferPath);
+      invariant(
+        file != null,
+        `Could not update open file ${oldPath} to ${newBufferPath}`,
+      );
+      buffer.setFile(file);
     }
   });
 }
@@ -211,9 +245,28 @@ function areStackChangesEnabled(): Promise<boolean> {
   return passesGK('nuclide_file_tree_stack_changes');
 }
 
+function getSelectionMode(event: SyntheticMouseEvent<>): SelectionMode {
+  if (
+    (os.platform() === 'darwin' && event.metaKey && event.button === 0) ||
+    (os.platform() !== 'darwin' && event.ctrlKey && event.button === 0)
+  ) {
+    return 'multi-select';
+  }
+  if (os.platform() === 'darwin' && event.ctrlKey && event.button === 0) {
+    return 'single-select';
+  }
+  if (event.shiftKey && event.button === 0) {
+    return 'range-select';
+  }
+  if (!event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    return 'single-select';
+  }
+  return 'invalid-select';
+}
+
 export default {
   dirPathToKey,
-  isDirKey,
+  isDirOrArchiveKey,
   keyToName,
   keyToPath,
   getParentKey,
@@ -229,4 +282,5 @@ export default {
   observeUncommittedChangesKindConfigKey,
   updatePathInOpenedEditors,
   areStackChangesEnabled,
+  getSelectionMode,
 };

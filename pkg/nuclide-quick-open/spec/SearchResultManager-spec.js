@@ -9,10 +9,10 @@
  * @format
  */
 
-import type {Provider} from '../lib/types';
+import type {GlobalProviderType, FileResult, Provider} from '../lib/types';
 import type {ProviderSpec} from '../lib/SearchResultManager';
 import type {
-  ProviderResult,
+  ProviderResults,
   GroupedResult,
   GroupedResults,
 } from '../lib/searchResultHelpers';
@@ -23,16 +23,13 @@ import SearchResultManager from '../lib/SearchResultManager';
 import QuickOpenProviderRegistry from '../lib/QuickOpenProviderRegistry';
 
 import {__test__} from '../lib/SearchResultManager';
-const {
-  _getOmniSearchProviderSpec,
-  UPDATE_DIRECTORIES_DEBOUNCE_DELAY,
-} = __test__;
+const {_getOmniSearchProviderSpec} = __test__;
 
 const PROJECT_ROOT1 = nuclideUri.join(__dirname, 'fixtures/root1');
 const PROJECT_ROOT2 = nuclideUri.join(__dirname, 'fixtures/root2');
 const PROJECT_ROOT3 = nuclideUri.join(__dirname, 'fixtures/root3');
 
-const FakeProvider: Provider = {
+const FakeProvider: GlobalProviderType<FileResult> = {
   providerType: 'GLOBAL',
   name: 'FakeProvider',
   display: {
@@ -55,7 +52,7 @@ const FakeProviderSpec: ProviderSpec = Object.freeze({
 });
 
 const TEST_STRINGS = ['yolo', 'foo', 'bar'];
-const ExactStringMatchProvider: Provider = Object.freeze({
+const ExactStringMatchProvider: Provider<FileResult> = Object.freeze({
   providerType: 'GLOBAL',
   name: 'ExactStringMatchProvider',
   display: {
@@ -65,7 +62,10 @@ const ExactStringMatchProvider: Provider = Object.freeze({
   isEligibleForDirectories: directories => Promise.resolve(true),
   executeQuery: (query, directories) =>
     Promise.resolve(
-      TEST_STRINGS.filter(s => s === query).map(s => ({path: s})),
+      TEST_STRINGS.filter(s => s === query).map(s => ({
+        resultType: 'FILE',
+        path: s,
+      })),
     ),
 });
 
@@ -103,8 +103,8 @@ function queryOmniSearchProvider(
 
 // Helper to construct expected result objects for a global provider.
 function constructSingleProviderResult(
-  provider: Provider,
-  result: ProviderResult,
+  provider: Provider<any>,
+  result: ProviderResults,
 ): GroupedResults {
   const groupResult: GroupedResult = {
     priority:
@@ -121,10 +121,15 @@ function constructSingleProviderResult(
 describe('SearchResultManager', () => {
   let searchResultManager: SearchResultManager = (null: any);
   let quickOpenProviderRegistry: QuickOpenProviderRegistry = (null: any);
+  let providersChanged: Promise<void>;
 
   beforeEach(() => {
+    jasmine.useRealClock();
     quickOpenProviderRegistry = new QuickOpenProviderRegistry();
     searchResultManager = new SearchResultManager(quickOpenProviderRegistry);
+    providersChanged = new Promise(resolve => {
+      return searchResultManager.onProvidersChanged(resolve);
+    });
   });
 
   afterEach(() => {
@@ -151,22 +156,15 @@ describe('SearchResultManager', () => {
   describe('provider/directory cache', () => {
     it('updates the cache when providers become (un)available', () => {
       waitsForPromise(async () => {
-        spyOn(Date, 'now').andCallFake(() => global.now); // needed to mock debounce
         let providersChangedCallCount = 0;
-        const providersChanged = new Promise(resolve => {
-          searchResultManager.onProvidersChanged(() => {
-            providersChangedCallCount++;
-            resolve();
-          });
+        searchResultManager.onProvidersChanged(() => {
+          providersChangedCallCount++;
         });
 
         const fakeProviderDisposable = quickOpenProviderRegistry.addProvider(
           FakeProvider,
         );
 
-        // The 'addProvider' call above will debounce and then call the async
-        // method updateDirectories. We need to advanceClock to satisfy debounce.
-        advanceClock(UPDATE_DIRECTORIES_DEBOUNCE_DELAY);
         // We want to await until updateDirectories has finished, but we don't
         // have access to its returned Promise. So instead we'll await until
         // it finally emits 'providers-changed'.
@@ -191,7 +189,7 @@ describe('SearchResultManager', () => {
     it('queries providers asynchronously, emits change events and returns filtered results', () => {
       waitsForPromise(async () => {
         quickOpenProviderRegistry.addProvider(ExactStringMatchProvider);
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await querySingleProvider(
             searchResultManager,
@@ -202,6 +200,7 @@ describe('SearchResultManager', () => {
           constructSingleProviderResult(ExactStringMatchProvider, {
             results: [
               {
+                resultType: 'FILE',
                 path: 'yolo',
                 sourceProvider: 'ExactStringMatchProvider',
               },
@@ -216,7 +215,7 @@ describe('SearchResultManager', () => {
     it('ignores trailing whitespace in querystring.', () => {
       waitsForPromise(async () => {
         quickOpenProviderRegistry.addProvider(ExactStringMatchProvider);
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         await Promise.all(
           ['   yolo', 'yolo   ', '   yolo   \n '].map(async query => {
             expect(
@@ -229,6 +228,7 @@ describe('SearchResultManager', () => {
               constructSingleProviderResult(ExactStringMatchProvider, {
                 results: [
                   {
+                    resultType: 'FILE',
                     path: query.trim(),
                     sourceProvider: 'ExactStringMatchProvider',
                   },
@@ -244,21 +244,21 @@ describe('SearchResultManager', () => {
   });
 
   describe('OmniSearch provider sorting', () => {
-    const FirstProvider: Provider = {
+    const FirstProvider: Provider<FileResult> = {
       providerType: 'GLOBAL',
       name: 'FirstProvider',
       priority: 1,
       isEligibleForDirectories: directories => Promise.resolve(true),
       executeQuery: (query, directories) => Promise.resolve([]),
     };
-    const SecondProvider: Provider = {
+    const SecondProvider: Provider<FileResult> = {
       providerType: 'GLOBAL',
       name: 'SecondProvider',
       priority: 2,
       isEligibleForDirectories: directories => Promise.resolve(true),
       executeQuery: (query, directories) => Promise.resolve([]),
     };
-    const ThirdProvider: Provider = {
+    const ThirdProvider: Provider<FileResult> = {
       providerType: 'GLOBAL',
       name: 'ThirdProvider',
       priority: 3,
@@ -291,7 +291,7 @@ describe('SearchResultManager', () => {
       quickOpenProviderRegistry.addProvider(ThirdProvider);
       quickOpenProviderRegistry.addProvider(SecondProvider);
       waitsForPromise(async () => {
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await queryOmniSearchProvider(
             quickOpenProviderRegistry,
@@ -307,7 +307,7 @@ describe('SearchResultManager', () => {
       quickOpenProviderRegistry.addProvider(SecondProvider);
       quickOpenProviderRegistry.addProvider(FirstProvider);
       waitsForPromise(async () => {
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await queryOmniSearchProvider(
             quickOpenProviderRegistry,
@@ -330,9 +330,7 @@ describe('SearchResultManager', () => {
         atom.project.addPath(PROJECT_ROOT2);
         atom.project.addPath(PROJECT_ROOT3);
 
-        // Call _updateDirectories immediately here because it is debounced by default, so it won't
-        // execute for a little while.
-        await searchResultManager._updateDirectories();
+        await providersChanged;
       });
     });
 

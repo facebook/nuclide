@@ -11,13 +11,13 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type MessageType = 'default' | 'info' | 'success' | 'warning' | 'error';
 
 type Props = {
   className?: string,
-  children?: ?(React.Element<any> | Array<?React.Element<any>>),
+  children?: React.Node,
   type?: MessageType,
 };
 
@@ -45,9 +45,5 @@ export const Message = (props: Props) => {
     'nuclide-ui-message',
     MessageTypeClassNames[resolvedType],
   );
-  return (
-    <div className={newClassName}>
-      {children}
-    </div>
-  );
+  return <div className={newClassName}>{children}</div>;
 };

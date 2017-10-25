@@ -17,14 +17,15 @@ import type {
 import {WatchExpressionStore} from './WatchExpressionStore';
 import type {Observable} from 'rxjs';
 
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
+import {Icon} from 'nuclide-commons-ui/Icon';
 
-type WatchExpressionComponentProps = {
+type Props = {
   watchExpressions: EvaluatedExpressionList,
   onAddWatchExpression: (expression: string) => void,
   onRemoveWatchExpression: (index: number) => void,
@@ -32,18 +33,21 @@ type WatchExpressionComponentProps = {
   watchExpressionStore: WatchExpressionStore,
 };
 
-export class WatchExpressionComponent extends React.Component {
-  props: WatchExpressionComponentProps;
-  state: {
-    rowBeingEdited: ?number,
-  };
+type State = {
+  rowBeingEdited: ?number,
+};
+
+export class WatchExpressionComponent extends React.PureComponent<
+  Props,
+  State,
+> {
   coreCancelDisposable: ?IDisposable;
   _expansionStates: Map<
     string /* expression */,
     /* unique reference for expression */ Object,
   >;
 
-  constructor(props: WatchExpressionComponentProps) {
+  constructor(props: Props) {
     super(props);
     this._expansionStates = new Map();
     this.state = {
@@ -81,14 +85,6 @@ export class WatchExpressionComponent extends React.Component {
     this._resetExpressionEditState();
   }
 
-  _onEditorCancel = (): void => {
-    this._resetExpressionEditState();
-  };
-
-  _onEditorBlur = (): void => {
-    this._resetExpressionEditState();
-  };
-
   _setRowBeingEdited(index: number): void {
     this.setState({
       rowBeingEdited: index,
@@ -99,11 +95,6 @@ export class WatchExpressionComponent extends React.Component {
     this.coreCancelDisposable = atom.commands.add('atom-workspace', {
       'core:cancel': () => this._resetExpressionEditState(),
     });
-    setTimeout(() => {
-      if (this.refs.editExpressionEditor) {
-        this.refs.editExpressionEditor.focus();
-      }
-    }, 16);
   }
 
   _resetExpressionEditState = (): void => {
@@ -124,10 +115,12 @@ export class WatchExpressionComponent extends React.Component {
       return (
         <AtomInput
           className="nuclide-debugger-watch-expression-input"
+          autofocus={true}
+          startSelected={true}
           key={index}
           onConfirm={this._onConfirmExpressionEdit.bind(this, index)}
-          onCancel={this._onEditorCancel}
-          onBlur={this._onEditorBlur}
+          onCancel={this._resetExpressionEditState}
+          onBlur={this._resetExpressionEditState}
           ref="editExpressionEditor"
           size="sm"
           initialValue={expression}
@@ -160,15 +153,23 @@ export class WatchExpressionComponent extends React.Component {
             )}
           />
         </div>
-        <i
-          className="icon icon-x nuclide-debugger-watch-expression-xout"
-          onClick={this.removeExpression.bind(this, index)}
-        />
+        <div className="nuclide-debugger-watch-expression-controls">
+          <Icon
+            icon="pencil"
+            className="nuclide-debugger-watch-expression-control"
+            onClick={this._setRowBeingEdited.bind(this, index)}
+          />
+          <Icon
+            icon="x"
+            className="nuclide-debugger-watch-expression-control"
+            onClick={this.removeExpression.bind(this, index)}
+          />
+        </div>
       </div>
     );
   };
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {watchExpressions, watchExpressionStore} = this.props;
     const fetchChildren = watchExpressionStore.getProperties.bind(
       watchExpressionStore,
@@ -185,7 +186,7 @@ export class WatchExpressionComponent extends React.Component {
         onConfirm={this._onConfirmNewExpression}
         ref="newExpressionEditor"
         size="sm"
-        placeholderText="add new watch expression"
+        placeholderText="Add new watch expression"
       />
     );
     return (

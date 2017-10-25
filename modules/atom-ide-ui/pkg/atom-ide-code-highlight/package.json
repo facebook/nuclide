@@ -1,10 +1,11 @@
 {
   "name": "atom-ide-code-highlight",
+  "displayName": "Code Highlighting",
   "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "description": "Provides a code-highlighting provider API",
-  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "description": "Provides language-aware code highlighting",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
   "consumedServices": {
     "code-highlight": {
       "versions": {

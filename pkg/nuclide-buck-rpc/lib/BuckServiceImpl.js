@@ -111,10 +111,12 @@ export function _translateOptionsToBuckBuildArgs(
   if (!run) {
     args.push('--keep-going');
   }
+  // flowlint-next-line sketchy-null-string:off
   if (pathToBuildReport) {
     args = args.concat(['--build-report', pathToBuildReport]);
   }
   if (doInstall) {
+    // flowlint-next-line sketchy-null-string:off
     if (simulator) {
       args.push('--udid');
       args.push(simulator);

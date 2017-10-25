@@ -10,7 +10,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   children?: mixed,
@@ -18,8 +18,7 @@ type Props = {
 
 export const ToolbarRight = (props: Props) => {
   return (
-    <div className="nuclide-ui-toolbar__right">
-      {props.children}
-    </div>
+    // $FlowFixMe(>=0.53.0) Flow suppress
+    <div className="nuclide-ui-toolbar__right">{props.children}</div>
   );
 };

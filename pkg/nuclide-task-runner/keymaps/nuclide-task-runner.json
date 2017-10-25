@@ -3,12 +3,14 @@
     "cmd-b b": "nuclide-task-runner:build",
     "cmd-b t": "nuclide-task-runner:test",
     "cmd-b r": "nuclide-task-runner:run",
-    "cmd-b d": "nuclide-task-runner:debug"
+    "cmd-b d": "nuclide-task-runner:debug",
+    "cmd-b s": "nuclide-task-runner:stop-task"
   },
   ".platform-linux atom-workspace, .platform-win32 atom-workspace": {
     "alt-b b": "nuclide-task-runner:build",
     "alt-b t": "nuclide-task-runner:test",
     "alt-b r": "nuclide-task-runner:run",
-    "alt-b d": "nuclide-task-runner:debug"
+    "alt-b d": "nuclide-task-runner:debug",
+    "alt-b s": "nuclide-task-runner:stop-task"
   }
 }

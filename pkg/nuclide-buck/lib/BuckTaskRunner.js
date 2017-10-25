@@ -41,7 +41,7 @@ import * as Epics from './redux/Epics';
 import Reducers from './redux/Reducers';
 import BuckToolbar from './BuckToolbar';
 import observeBuildCommands from './observeBuildCommands';
-import React from 'react';
+import * as React from 'react';
 import {arrayEqual} from 'nuclide-commons/collection';
 import shallowequal from 'shallowequal';
 
@@ -90,7 +90,7 @@ function shouldEnableTask(taskType: TaskType, ruleType: string): boolean {
 export class BuckTaskRunner {
   _store: Store;
   _disposables: UniversalDisposable;
-  _extraUi: ?ReactClass<any>;
+  _extraUi: ?React.ComponentType<any>;
   id: string;
   name: string;
   _serializedState: ?SerializedState;
@@ -106,7 +106,7 @@ export class BuckTaskRunner {
     this._platformService = new PlatformService();
   }
 
-  getExtraUi(): ReactClass<any> {
+  getExtraUi(): React.ComponentType<any> {
     if (this._extraUi == null) {
       const store = this._getStore();
       const boundActions = {
@@ -119,16 +119,19 @@ export class BuckTaskRunner {
       };
       this._extraUi = bindObservableAsProps(
         // $FlowFixMe: type symbol-observable
-        Observable.from(store).map(appState => ({appState, ...boundActions})),
+        Observable.from(store)
+          .map(appState => ({appState, ...boundActions}))
+          .filter(props => props.appState.buckRoot != null),
         BuckToolbar,
       );
     }
     return this._extraUi;
   }
 
-  getIcon(): ReactClass<any> {
-    return () =>
-      <Icon icon="nuclicon-buck" className="nuclide-buck-task-runner-icon" />;
+  getIcon(): React.ComponentType<any> {
+    return () => (
+      <Icon icon="nuclicon-buck" className="nuclide-buck-task-runner-icon" />
+    );
   }
 
   getBuildSystem(): BuckBuildSystem {
@@ -213,6 +216,7 @@ export class BuckTaskRunner {
         platformService: this._platformService,
         projectRoot: null,
         buckRoot: null,
+        buckversionFileContents: null,
         isLoadingBuckProject: false,
         isLoadingRule: false,
         isLoadingPlatforms: false,
@@ -221,7 +225,11 @@ export class BuckTaskRunner {
         selectedDeploymentTarget: null,
         taskSettings: this._serializedState.taskSettings || {},
         platformProviderUi: null,
+        lastSessionPlatformGroupName: this._serializedState
+          .selectedPlatformGroupName,
         lastSessionPlatformName: this._serializedState.selectedPlatformName,
+        lastSessionDeviceGroupName: this._serializedState
+          .selectedDeviceGroupName,
         lastSessionDeviceName: this._serializedState.selectedDeviceName,
       };
       const epics = Object.keys(Epics)
@@ -266,8 +274,8 @@ export class BuckTaskRunner {
       'Invalid task type',
     );
 
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    atom.workspace.open(CONSOLE_VIEW_URI);
+    // eslint-disable-next-line rulesdir/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI, {searchAllPanes: true});
 
     const state = this._getStore().getState();
     const {
@@ -277,7 +285,7 @@ export class BuckTaskRunner {
       selectedDeploymentTarget,
       taskSettings,
     } = state;
-    invariant(buckRoot);
+    invariant(buckRoot != null);
     invariant(buildRuleType);
 
     const deploymentString = formatDeploymentTarget(selectedDeploymentTarget);
@@ -333,34 +341,46 @@ export class BuckTaskRunner {
       return;
     }
     const state = this._store.getState();
-    const {buildTarget, taskSettings, selectedDeploymentTarget} = state;
+    const {buildTarget, taskSettings} = state;
+    const target = state.selectedDeploymentTarget;
+    let selectedPlatformGroupName;
     let selectedPlatformName;
+    let selectedDeviceGroupName;
     let selectedDeviceName;
-    if (selectedDeploymentTarget) {
-      selectedPlatformName = selectedDeploymentTarget.platform.name;
-      selectedDeviceName = selectedDeploymentTarget.device
-        ? selectedDeploymentTarget.device.name
-        : null;
+    if (target != null) {
+      selectedPlatformGroupName = target.platformGroup.name;
+      selectedPlatformName = target.platform.name;
+      selectedDeviceGroupName =
+        target.deviceGroup != null ? target.deviceGroup.name : null;
+      selectedDeviceName = target.device != null ? target.device.name : null;
     } else {
       // In case the user quits before the session is restored, forward the session restoration.
+      selectedPlatformGroupName = state.lastSessionPlatformGroupName;
       selectedPlatformName = state.lastSessionPlatformName;
+      selectedDeviceGroupName = state.lastSessionDeviceGroupName;
       selectedDeviceName = state.lastSessionDeviceName;
     }
 
     return {
       buildTarget,
       taskSettings,
+      selectedPlatformGroupName,
       selectedPlatformName,
+      selectedDeviceGroupName,
       selectedDeviceName,
     };
   }
 }
 
 function formatDeploymentTarget(deploymentTarget: ?DeploymentTarget): string {
-  if (!deploymentTarget) {
+  if (deploymentTarget == null) {
     return '';
   }
-  const {device, platform} = deploymentTarget;
-  const deviceString = device ? `: ${device.name}` : '';
-  return ` on "${platform.name}${deviceString}"`;
+  const {device, deviceGroup, platform, platformGroup} = deploymentTarget;
+  const deviceString = device != null ? `: ${device.name}` : '';
+  const deviceGroupString =
+    deviceGroup != null && deviceGroup.name !== ''
+      ? ` (${deviceGroup.name})`
+      : '';
+  return ` on "${platformGroup.name} ${platform.name}${deviceString}${deviceGroupString}"`;
 }

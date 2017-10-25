@@ -40,6 +40,7 @@ export type RemoteConnectionConfiguration = {
   certificateAuthorityCertificate?: Buffer, // certificate of certificate authority.
   clientCertificate?: Buffer, // client certificate for https connection.
   clientKey?: Buffer, // key for https connection.
+  promptReconnectOnFailure?: boolean, // open a connection dialog prompt if the reconnect fails
 };
 
 // A RemoteConnection represents a directory which has been opened in Nuclide on a remote machine.
@@ -55,6 +56,7 @@ export class RemoteConnection {
   _connection: ServerConnection;
   _displayTitle: string;
   _alwaysShutdownIfLast: boolean;
+  _promptReconnectOnFailure: boolean;
 
   static _emitter = new Emitter();
 
@@ -66,6 +68,7 @@ export class RemoteConnection {
       serverConnection,
       config.cwd,
       config.displayTitle,
+      config.promptReconnectOnFailure,
     );
   }
 
@@ -73,23 +76,31 @@ export class RemoteConnection {
     serverConnection: ServerConnection,
     cwd: NuclideUri,
     displayTitle: string,
+    promptReconnectOnFailure: boolean = true,
   ): Promise<RemoteConnection> {
     const connection = new RemoteConnection(
       serverConnection,
       cwd,
       displayTitle,
+      promptReconnectOnFailure,
     );
     return connection._initialize();
   }
 
   // Do NOT call this directly. Use findOrCreate instead.
-  constructor(connection: ServerConnection, cwd: string, displayTitle: string) {
+  constructor(
+    connection: ServerConnection,
+    cwd: string,
+    displayTitle: string,
+    promptReconnectOnFailure: boolean,
+  ) {
     this._cwd = cwd;
     this._subscriptions = new UniversalDisposable();
     this._hgRepositoryDescription = null;
     this._connection = connection;
     this._displayTitle = displayTitle;
     this._alwaysShutdownIfLast = false;
+    this._promptReconnectOnFailure = promptReconnectOnFailure;
   }
 
   static _createInsecureConnectionForTesting(
@@ -115,13 +126,19 @@ export class RemoteConnection {
     hostOrIp: string,
     cwd: string,
     displayTitle: string,
+    promptReconnectOnFailure: boolean = true,
   ): Promise<?RemoteConnection> {
     const connectionConfig = getConnectionConfig(hostOrIp);
     if (!connectionConfig) {
       return null;
     }
     try {
-      const config = {...connectionConfig, cwd, displayTitle};
+      const config = {
+        ...connectionConfig,
+        cwd,
+        displayTitle,
+        promptReconnectOnFailure,
+      };
       return await RemoteConnection.findOrCreate(config);
     } catch (e) {
       const log =
@@ -317,6 +334,7 @@ export class RemoteConnection {
       ...this._connection.getConfig(),
       cwd: this._cwd,
       displayTitle: this._displayTitle,
+      promptReconnectOnFailure: this._promptReconnectOnFailure,
     };
   }
 

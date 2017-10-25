@@ -30,9 +30,9 @@
 //
 // ## Why observables?
 //
-// Unlike Promises, observables have a standardized, composable cancelation mechanism _today_.
+// Unlike Promises, observables have a standardized, composable cancellation mechanism _today_.
 // Moreover, observables integrate nicely with Atom's callback + IDisposable formula for cancelable,
-// async APIs. Along with React, [RxJS] is one of the core libaries utilized by Nuclide.
+// async APIs. Along with React, [RxJS] is one of the core libraries utilized by Nuclide.
 //
 // ## Why errors?
 //
@@ -50,8 +50,9 @@
 
 import child_process from 'child_process';
 import idx from 'idx';
+import {getLogger} from 'log4js';
 import invariant from 'assert';
-import {Observable, TimeoutError} from 'rxjs';
+import {Observable} from 'rxjs';
 
 import UniversalDisposable from './UniversalDisposable';
 import nuclideUri from './nuclideUri';
@@ -62,8 +63,7 @@ import {observeStream} from './stream';
 import {splitStream, takeWhileInclusive} from './observable';
 import {shellQuote} from './string';
 
-// TODO(T17266325): Replace this in favor of `atom.whenShellEnvironmentLoaded()` when it lands
-import atomWhenShellEnvironmentLoaded from './whenShellEnvironmentLoaded';
+const logger = getLogger('nuclide-commons/process');
 
 /**
  * Run a command, accumulate the output. Errors are surfaced as stream errors and unsubscribing will
@@ -163,6 +163,12 @@ export function observeProcess(
   );
 }
 
+export type DetailedProcessResult = {
+  stdout: string,
+  stderr: string,
+  exitCode: ?number,
+};
+
 /**
  * Identical to `runCommand()`, but instead of only emitting the accumulated stdout, the returned
  * observable emits an object containing the accumulated stdout, the accumulated stderr, and the
@@ -176,7 +182,7 @@ export function runCommandDetailed(
   args?: Array<string> = [],
   options?: ObserveProcessOptions = {},
   rest: void,
-): Observable<{stdout: string, stderr: string, exitCode: ?number}> {
+): Observable<DetailedProcessResult> {
   const maxBuffer = idx(options, _ => _.maxBuffer) || DEFAULT_MAX_BUFFER;
   return observeProcess(command, args, {...options, maxBuffer})
     .catch(error => {
@@ -205,6 +211,7 @@ export function runCommandDetailed(
               acc.stdout,
             );
           default:
+            (event.kind: empty);
             throw new Error(`Invalid event kind: ${event.kind}`);
         }
       },
@@ -310,15 +317,13 @@ export function getOutputStream(
 
     // Accumulate the first `exitErrorBufferSize` bytes of stderr so that we can give feedback about
     // about exit errors (then stop so we don't fill up memory with it).
-    const accumulatedStderr = takeWhileInclusive(
-      stderrEvents
-        .scan(
-          (acc, event) => (acc + event.data).slice(0, exitErrorBufferSize),
-          '',
-        )
-        .startWith(''),
-      acc => acc.length < exitErrorBufferSize,
-    );
+    const accumulatedStderr = stderrEvents
+      .scan(
+        (acc, event) => (acc + event.data).slice(0, exitErrorBufferSize),
+        '',
+      )
+      .startWith('')
+      .let(takeWhileInclusive(acc => acc.length < exitErrorBufferSize));
 
     // We need to start listening for the exit event immediately, but defer emitting it until the
     // (buffered) output streams end.
@@ -350,19 +355,23 @@ export function getOutputStream(
       .publishReplay();
     const exitSub = closeEvents.connect();
 
-    return takeWhileInclusive(
-      Observable.merge(stdoutEvents, stderrEvents).concat(closeEvents),
-      event => event.kind !== 'error' && event.kind !== 'exit',
-    ).finally(() => {
-      exitSub.unsubscribe();
-    });
+    return Observable.merge(stdoutEvents, stderrEvents)
+      .concat(closeEvents)
+      .let(
+        takeWhileInclusive(
+          event => event.kind !== 'error' && event.kind !== 'exit',
+        ),
+      )
+      .finally(() => {
+        exitSub.unsubscribe();
+      });
   });
 }
 
 //
 // # Miscellaneous Utilities
 //
-// The following utilites don't spawn processes or necessarily use observables. Instead, they're
+// The following utilities don't spawn processes or necessarily use observables. Instead, they're
 // used to format arguments to the above functions or for acting on already-spawned processes.
 //
 
@@ -388,10 +397,11 @@ export function scriptifyCommand<T>(
     return ['script', ['-q', '/dev/null', command].concat(args), options];
   } else {
     // On Linux, script takes the command to run as the -c parameter so we have to combine all of
-    // the arguments into a single string. Apparently, because of how `script` works, however, we
-    // wind up with double escapes. So we just strip one level of them.
-    const joined = shellQuote([command, ...args]).replace(/\\\\/g, '\\');
+    // the arguments into a single string.
+    const joined = shellQuote([command, ...args]);
+    // flowlint-next-line sketchy-null-mixed:off
     const opts = options || {};
+    // flowlint-next-line sketchy-null-mixed:off
     const env = opts.env || {};
     return [
       'script',
@@ -455,6 +465,10 @@ export async function getOriginalEnvironment(): Promise<Object> {
           envVar.substring(0, equalIndex)
         ] = envVar.substring(equalIndex + 1);
       }
+    }
+    // Guard against invalid original environments.
+    if (!Object.keys(cachedOriginalEnvironment).length) {
+      cachedOriginalEnvironment = process.env;
     }
   } else {
     cachedOriginalEnvironment = process.env;
@@ -761,35 +775,36 @@ export class ProcessTimeoutError extends Error {
 const DEFAULT_MAX_BUFFER = 100 * 1024 * 1024;
 
 const MAX_LOGGED_CALLS = 100;
-const PREVERVED_HISTORY_CALLS = 50;
+const NUM_PRESERVED_HISTORY_CALLS = 50;
 
 const noopDisposable = {dispose: () => {}};
 const whenShellEnvironmentLoaded =
-  typeof atom !== 'undefined' &&
-  atomWhenShellEnvironmentLoaded &&
-  !atom.inSpecMode()
-    ? atomWhenShellEnvironmentLoaded
+  typeof atom !== 'undefined' && !atom.inSpecMode()
+    ? atom.whenShellEnvironmentLoaded.bind(atom)
     : cb => {
         cb();
         return noopDisposable;
       };
 
 export const loggedCalls = [];
-function logCall(duration, command, args) {
+function logCall(duration: number, command: string, args: Array<string>) {
   // Trim the history once in a while, to avoid doing expensive array
   // manipulation all the time after we reached the end of the history
   if (loggedCalls.length > MAX_LOGGED_CALLS) {
-    loggedCalls.splice(0, loggedCalls.length - PREVERVED_HISTORY_CALLS, {
-      time: new Date(),
-      duration: 0,
+    loggedCalls.splice(0, loggedCalls.length - NUM_PRESERVED_HISTORY_CALLS, {
       command: '... history stripped ...',
+      duration: 0,
+      time: new Date(),
     });
   }
+
+  const fullCommand = [command, ...args].join(' ');
   loggedCalls.push({
+    command: fullCommand,
     duration,
-    command: [command, ...args].join(' '),
     time: new Date(),
   });
+  logger.info(`${duration}ms: ${fullCommand}`);
 }
 
 function logError(...args) {
@@ -829,11 +844,10 @@ function createProcessStream(
     .take(1)
     .switchMap(() => {
       const {dontLogInNuclide, killTreeWhenDone, timeout} = options;
+      // flowlint-next-line sketchy-null-number:off
       const enforceTimeout = timeout
         ? x =>
-            // TODO: Use `timeoutWith()` when we upgrade to an RxJS that has it.
-            timeoutWith(
-              x,
+            x.timeoutWith(
               timeout,
               Observable.throw(new ProcessTimeoutError(timeout, proc)),
             )
@@ -841,7 +855,7 @@ function createProcessStream(
       const proc = child_process[type](
         nuclideUri.expandHomeDir(commandOrModulePath),
         args,
-        // $FlowFixMe: child_process$spawnOpts and child_process$forkOpts have incompatable stdio types.
+        // $FlowFixMe: child_process$spawnOpts and child_process$forkOpts have incompatible stdio types.
         {...options},
       );
 
@@ -942,6 +956,7 @@ function createProcessStream(
           throw err;
         })
         .finally(() => {
+          // flowlint-next-line sketchy-null-mixed:off
           if (!proc.wasKilled && !finished) {
             killProcess(proc, Boolean(killTreeWhenDone));
           }
@@ -1017,23 +1032,6 @@ function limitBufferSize(
       }
     });
   });
-}
-
-// TODO: Use `Observable::timeoutWith()` when we upgrade RxJS
-function timeoutWith<T>(
-  source: Observable<T>,
-  time: number,
-  other: Observable<T>,
-): Observable<T> {
-  return (
-    source
-      .timeout(time)
-      // Technically we could catch other TimeoutErrors here. `Observable::timeoutWith()` won't have
-      // this problem.
-      .catch(
-        err => (err instanceof TimeoutError ? other : Observable.throw(err)),
-      )
-  );
 }
 
 /**

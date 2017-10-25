@@ -118,6 +118,7 @@ export default class FindReferencesModel {
   }
 
   getPreviewContext(): number {
+    // flowlint-next-line sketchy-null-number:off
     return this._options.previewContext || 1;
   }
 
@@ -179,6 +180,7 @@ export default class FindReferencesModel {
     const uri = fileReferences[0];
     let refGroups = fileReferences[1];
     const fileContents = await readFileContents(uri);
+    // flowlint-next-line sketchy-null-string:off
     if (!fileContents) {
       return null;
     }

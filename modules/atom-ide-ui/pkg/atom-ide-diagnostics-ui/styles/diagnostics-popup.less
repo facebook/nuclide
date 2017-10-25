@@ -1,0 +1,57 @@
+@import "ui-variables";
+
+// Styles for popup triggered by both gutter glyphs and datatips.
+
+.diagnostics-popup {
+  background: @app-background-color;
+  padding-right: 10px;
+  padding-left: 10px;
+  max-width: 500px;
+  white-space: normal;
+  word-wrap: break-word;
+
+  // Many themes set the editor's scrollbars to z-index: 3. We wish to appear
+  // above the scrollbars because we appear at the atom-workspace's root, which
+  // means we may span multiple panes and hence overlap the leftmost scrollbar.
+  z-index: 4;
+}
+
+.diagnostics-gutter-popup .diagnostics-popup {
+  box-shadow: 0px 1px 4px 0px rgba(0,0,0,1);
+}
+
+.diagnostics-popup-header {
+  display: flex;
+  justify-content: space-between;
+  margin-left: -10px;
+  margin-right: -10px;
+  padding: 4px 10px;
+}
+
+.diagnostics-popup-diagnostic {
+  color: @text-color;
+  font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+}
+
+.diagnostics-popup-error
+  .diagnostics-popup-header {
+    background-color: fade(@text-color-error, 20%);
+}
+
+.diagnostics-popup-warning
+  .diagnostics-popup-header {
+    background-color: fade(@text-color-warning, 20%);
+}
+
+.diagnostics-popup-info
+  .diagnostics-popup-header {
+    background-color: fade(@text-color-info, 20%);
+}
+
+.diagnostics-popup-message {
+  padding: 4px 0;
+}
+
+.diagnostics-popup-trace {
+  padding-bottom: 4px;
+}

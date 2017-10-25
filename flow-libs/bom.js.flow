@@ -1,0 +1,61 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ * @format
+ */
+
+declare type PerformanceEntry$EntryType =
+  | 'frame'
+  | 'longtask'
+  | 'mark'
+  | 'measure'
+  | 'navigation'
+  | 'paint'
+  | 'resource';
+
+declare type PerformanceObserverInit = {|
+  entryTypes: Array<PerformanceEntry$EntryType>,
+|};
+
+declare type PerformanceEntryFilterOptions = {|
+  name?: string,
+  entryType?: PerformanceEntry$EntryType,
+  initiatorType?: string,
+|};
+
+declare type PerformanceObserverEntryList = {|
+  getEntries(
+    filterOptions?: PerformanceEntryFilterOptions,
+  ): Array<PerformanceEntry>,
+  getEntriesByName(
+    name: string,
+    type: PerformanceEntry$EntryType,
+  ): Array<PerformanceEntry>,
+  getEntriesByType(type: PerformanceEntry$EntryType): Array<PerformanceEntry>,
+|};
+
+declare type ResizeObserverEntry = {|
+  target: HTMLElement,
+  contentRect: DOMRectReadOnly,
+|};
+
+declare class PerformanceObserver {
+  constructor(
+    callback: (entries: PerformanceObserverEntryList) => void,
+    observer: this,
+  ): void,
+  observe(options: PerformanceObserverInit): void,
+  disconnect(): void,
+}
+
+declare class ResizeObserver {
+  constructor(callback: (entries: Array<ResizeObserverEntry>) => void): void,
+  observe(target: HTMLElement): void,
+  unobserve(target: HTMLElement): void,
+  disconnect(): void,
+}

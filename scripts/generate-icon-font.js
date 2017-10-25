@@ -13,7 +13,7 @@
 /* eslint
   comma-dangle: [1, always-multiline],
   prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
+  rulesdir/no-commonjs: 0,
   */
 
 const webfontsGenerator = require('webfonts-generator');
@@ -23,7 +23,7 @@ const fs = require('fs');
 
 const basedir = path.join(__dirname, '..');
 const nucliconsDir = path.join(basedir, 'resources/nuclicons');
-const stylesDir = path.join(basedir, 'pkg/nuclide-ui/styles');
+const stylesDir = path.join(basedir, 'modules/nuclide-commons-ui/styles');
 const svgs = glob.sync(path.join(basedir, 'resources/nuclicons/*.svg'));
 
 webfontsGenerator(

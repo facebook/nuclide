@@ -10,7 +10,7 @@
  */
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 import {findIncludingSourceFile} from '../lib/RelatedFileFinder';
 

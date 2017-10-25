@@ -150,6 +150,7 @@ function decryptConfig(
     sha1sum,
   );
 
+  // flowlint-next-line sketchy-null-string:off
   if (!password) {
     throw new Error('Cannot find password for encrypted client key');
   }
@@ -159,6 +160,7 @@ function decryptConfig(
     clientCertificate,
     clientKey,
   } = remoteProjectConfig;
+  // flowlint-next-line sketchy-null-string:off
   invariant(clientKey);
   const [encryptedString, salt] = clientKey.split('.');
 
@@ -176,7 +178,9 @@ function decryptConfig(
     );
   }
 
+  // flowlint-next-line sketchy-null-string:off
   invariant(certificateAuthorityCertificate);
+  // flowlint-next-line sketchy-null-string:off
   invariant(clientCertificate);
   return {
     host: remoteProjectConfig.host,

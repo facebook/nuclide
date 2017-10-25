@@ -179,6 +179,10 @@
       background-color: @nuclide-console-record-border-color-warning;
     }
 
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-warning;
+    }
+
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-warning;
     }
@@ -193,6 +197,10 @@
       background-color: @nuclide-console-record-border-color-success;
     }
 
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-success;
+    }
+
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-success;
     }
@@ -205,6 +213,10 @@
   &.level-error {
     &::before {
       background-color: @nuclide-console-record-border-color-error;
+    }
+
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-error;
     }
 
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
@@ -223,12 +235,20 @@
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-red;
     }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-red;
+      color: @nuclide-console-record-background-color-red;
+    }
   }
 
   &.level-orange {
     background-color: @nuclide-console-record-background-color-orange;
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-orange;
+    }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-orange;
+      color: @nuclide-console-record-background-color-orange;
     }
   }
 
@@ -237,12 +257,20 @@
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-yellow;
     }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-yellow;
+      color: @nuclide-console-record-background-color-yellow;
+    }
   }
 
   &.level-green {
     background-color: @nuclide-console-record-background-color-green;
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-green;
+    }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-green;
+      color: @nuclide-console-record-background-color-green;
     }
   }
 
@@ -251,6 +279,10 @@
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-blue;
     }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-blue;
+      color: @nuclide-console-record-background-color-blue;
+    }
   }
 
   &.level-purple {
@@ -258,12 +290,20 @@
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-console-lazy-nested-value span {
       color: @nuclide-console-record-text-color-purple;
     }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-purple;
+      color: @nuclide-console-record-background-color-purple;
+    }
   }
 
   &.level-violet {
     background-color: @nuclide-console-record-background-color-violet;
     pre, pre a, .nuclide-console-lazy-nested-value div, .nuclide-ui-lazy-nested-value span {
       color: @nuclide-console-record-text-color-violet;
+    }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-violet;
+      color: @nuclide-console-record-background-color-violet;
     }
   }
 
@@ -287,6 +327,10 @@
     .list-group li.list-nested-item > .list-item,
     .list-tree li.list-nested-item > .list-item {
       color: @nuclide-console-record-text-color-rainbow;
+    }
+    .nuclide-console-record-duplicate-number {
+      background-color: @nuclide-console-record-text-color-rainbow;
+      color: #fff,
     }
   }
 
@@ -331,6 +375,26 @@
       line-height: inherit;
     }
   }
+}
+
+.nuclide-console-record-duplicate-number {
+  background: @nuclide-console-record-text-color-normal;
+  border-radius: 1em;
+  color: @nuclide-console-record-background-color-normal;
+  display: flex;
+  flex-direction: column;
+  font-size: @nuclide-console-record-font-size;
+  font-weight: bold;
+  height: 1.4em;
+  justify-content: center;
+  margin-right: @component-padding / 2;
+  min-width: 1.4em;
+  padding: 0 0.4em;
+  text-align: center;
+}
+
+.nuclide-console-record-content {
+  flex: 1;
 }
 
 .nuclide-console-record-source-label,
@@ -431,43 +495,11 @@
   }
 }
 
-// Target the filter field, making sure that we have a great enough specificity.
-atom-text-editor[mini].nuclide-console-filter-field {
-  // Make it butt up against the button.
-  float: left;
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 0;
-
-  &.is-focused {
-    // When focused, layer this on top of the regexp button so that the outline
-    // overlays it.
-    z-index: 1;
-  }
-
-  &.invalid {
-    background-color: lighten(@background-color-error, 25%);
-    color: @nuclide-console-record-text-color-error;
-    border-color: @nuclide-console-record-border-color-error;
-  }
-}
-
-.btn.nuclide-console-filter-regexp-button {
-  position: relative;
-  left: -1px;
-  font-weight: bold;
-  font-family: Menlo, monospace;
-}
-
-.nuclide-console-header-icon-fill {
-  fill: @text-color;
-}
-
 .nuclide-console-header-filter-icon {
   display: flex;
-}
-
-.nuclide-console-header-funnel-icon {
-  height: 12px;
+  .icon-nuclicon-funnel::before {
+    margin: 0;
+  }
 }
 
 .nuclide-console-filtered-reminder {
@@ -477,4 +509,12 @@ atom-text-editor[mini].nuclide-console-filter-field {
   a {
     text-decoration: underline;
   }
+}
+
+// This is for T21237354
+// There is an issue with chrome rendering where the button is not redrawn when
+// its surrounding <li> is selected. This causes the background color of the
+// <li> to cover up the button. This is a workaround that forces a redraw
+.nuclide-console-process-control-button {
+  transform: translate3d(0,0,0);
 }

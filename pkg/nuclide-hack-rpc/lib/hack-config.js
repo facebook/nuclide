@@ -64,6 +64,7 @@ export async function getHackExecOptions(
     hackCommand,
     findHackConfigDir(localFile),
   ]);
+  // flowlint-next-line sketchy-null-string:off
   if (hackRoot && currentHackCommand) {
     return {hackRoot, hackCommand: currentHackCommand};
   } else {

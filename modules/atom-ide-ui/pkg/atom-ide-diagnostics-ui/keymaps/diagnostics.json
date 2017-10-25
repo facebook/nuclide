@@ -1,6 +1,7 @@
 {
   ".platform-darwin, .platform-linux, .platform-win32": {
     "alt-shift-d": "diagnostics:toggle-table",
+    "alt-a": "diagnostics:show-actions-at-position",
     "alt-shift-a": "diagnostics:fix-all-in-current-file",
     "alt-ctrl-<": "diagnostics:go-to-first-diagnostic",
     "alt-ctrl->": "diagnostics:go-to-last-diagnostic",

@@ -12,7 +12,7 @@
 import type {Option} from './Dropdown';
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Dropdown} from './Dropdown';
@@ -24,7 +24,7 @@ invariant(remote != null);
 type ButtonSize = 'EXTRA_SMALL' | 'SMALL' | 'LARGE';
 
 type Props = {
-  buttonComponent?: ReactClass<any>,
+  buttonComponent?: React.ComponentType<any>,
   changeDisabled?: boolean,
   className?: string,
   confirmDisabled?: boolean,
@@ -35,10 +35,8 @@ type Props = {
   value: any,
 };
 
-export class SplitButtonDropdown extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export class SplitButtonDropdown extends React.Component<Props> {
+  render(): React.Node {
     const {
       buttonComponent,
       changeDisabled,
@@ -53,6 +51,7 @@ export class SplitButtonDropdown extends React.Component {
     const selectedOption = this._findSelectedOption(options) || options[0];
     invariant(selectedOption.type !== 'separator');
     const ButtonComponent = buttonComponent || Button;
+    // $FlowFixMe(>=0.53.0) Flow suppress
     const dropdownOptions = options.map(option => ({
       ...option,
       selectedLabel: '',
@@ -66,7 +65,8 @@ export class SplitButtonDropdown extends React.Component {
           disabled={confirmDisabled === true}
           icon={selectedOption.icon || undefined}
           onClick={onConfirm}>
-          {selectedOption.selectedLabel || selectedOption.label || ''}
+          {// flowlint-next-line sketchy-null-mixed:off, sketchy-null-string:off
+          selectedOption.selectedLabel || selectedOption.label || ''}
         </ButtonComponent>
         <Dropdown
           size={this._getDropdownSize(size)}

@@ -35,6 +35,10 @@ export type Action =
       buckRoot: ?string,
     |}
   | {|
+      type: 'SET_BUCKVERSION_FILE_CONTENTS',
+      contents: ?(string | Error),
+    |}
+  | {|
       type: 'SET_RULE_TYPE',
       ruleType: ?ResolvedRuleType,
     |}
@@ -48,6 +52,7 @@ export const SET_BUILD_TARGET = 'SET_BUILD_TARGET';
 export const SET_DEPLOYMENT_TARGET = 'SET_DEPLOYMENT_TARGET';
 export const SET_TASK_SETTINGS = 'SET_TASK_SETTINGS';
 export const SET_BUCK_ROOT = 'SET_BUCK_ROOT';
+export const SET_BUCKVERSION_FILE_CONTENTS = 'SET_BUCKVERSION_FILE_CONTENTS';
 export const SET_PLATFORM_GROUPS = 'SET_PLATFORM_GROUPS';
 export const SET_RULE_TYPE = 'SET_RULE_TYPE';
 
@@ -57,6 +62,12 @@ export function setProjectRoot(projectRoot: ?string): Action {
 
 export function setBuckRoot(buckRoot: ?string): Action {
   return {type: SET_BUCK_ROOT, buckRoot};
+}
+
+export function setBuckversionFileContents(
+  contents: ?(string | Error),
+): Action {
+  return {type: SET_BUCKVERSION_FILE_CONTENTS, contents};
 }
 
 export function setBuildTarget(buildTarget: string): Action {

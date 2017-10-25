@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {relativeDate} from 'nuclide-commons/string';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 
@@ -32,8 +32,7 @@ const DEFAULT_RERENDER_DELAY = 10000; // ms
  *
  * Does not respond to changes to the initial `delay` for simplicity's sake.
  */
-export default class RelativeDate extends React.Component {
-  props: Props;
+export default class RelativeDate extends React.Component<Props> {
   _interval: ?number;
 
   static defaultProps: DefaultProps = {
@@ -53,7 +52,7 @@ export default class RelativeDate extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       date,
       // eslint-disable-next-line no-unused-vars

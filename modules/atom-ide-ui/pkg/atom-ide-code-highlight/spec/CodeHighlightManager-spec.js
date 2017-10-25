@@ -10,7 +10,10 @@
  * @format
  */
 
+import os from 'os';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Point, Range} from 'atom';
+
 import CodeHighlightManager from '../lib/CodeHighlightManager';
 
 describe('CodeHighlightManager', () => {
@@ -18,8 +21,13 @@ describe('CodeHighlightManager', () => {
   let provider;
   let editor;
   beforeEach(() => {
-    jasmine.Clock.useMock();
+    jasmine.useMockClock();
     waitsForPromise(async () => {
+      editor = await atom.workspace.open(
+        nuclideUri.join(os.tmpdir(), 'test.txt'),
+      );
+      editor.setText('abc\ndef\nghi');
+
       manager = new CodeHighlightManager();
       provider = {
         priority: 1,
@@ -27,8 +35,6 @@ describe('CodeHighlightManager', () => {
         highlight: (_editor, position) => Promise.resolve([]),
       };
       manager.addProvider(provider);
-      editor = await atom.workspace.open('test.txt');
-      editor.setText('abc\ndef\nghi');
     });
   });
 
@@ -38,7 +44,8 @@ describe('CodeHighlightManager', () => {
 
     // Just opening the editor should trigger highlights.
     runs(() => {
-      jasmine.Clock.tick(300);
+      advanceClock(1); // editor debounce
+      advanceClock(300);
       expect(spy).toHaveBeenCalled();
     });
 
@@ -50,7 +57,7 @@ describe('CodeHighlightManager', () => {
       editor.setCursorBufferPosition(new Point(1, 0));
       // Old markers should be cleared immediately.
       expect(manager._markers.length).toBe(0);
-      jasmine.Clock.tick(300); // trigger debounce
+      advanceClock(300); // trigger debounce
       expect(spy.callCount).toBe(2);
     });
 
@@ -62,11 +69,13 @@ describe('CodeHighlightManager', () => {
       expect(spy.callCount).toBe(2);
     });
 
-    waitsForPromise(() => atom.workspace.open('test2.txt'));
+    waitsForPromise(() =>
+      atom.workspace.open(nuclideUri.join(os.tmpdir(), 'test2.txt')),
+    );
 
     runs(() => {
       // Opening a new editor should clear out old markers.
-      jasmine.Clock.tick(1);
+      advanceClock(1);
       expect(manager._markers.length).toBe(0);
     });
   });
@@ -76,8 +85,9 @@ describe('CodeHighlightManager', () => {
     const spy = spyOn(provider, 'highlight').andReturn(ranges);
 
     runs(() => {
+      advanceClock(1);
       editor.insertText('a');
-      jasmine.Clock.tick(300); // trigger debounce
+      advanceClock(300); // trigger debounce
       expect(spy).toHaveBeenCalled();
     });
 

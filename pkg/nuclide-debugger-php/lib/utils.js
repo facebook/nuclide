@@ -66,10 +66,12 @@ export function getSessionConfig(
     endDebugWhenNoRequests: false,
     phpRuntimePath: config.phpRuntimePath,
     phpRuntimeArgs: config.phpRuntimeArgs,
+    scriptArguments: [],
     dummyRequestFilePath: 'php_only_xdebug_request.php',
     stopOneStopAll: config.stopOneStopAll,
     attachScriptRegex: config.attachScriptRegex,
     idekeyRegex: config.idekeyRegex,
+    deferLaunch: config.deferLaunch || false,
   };
   if (isLaunch) {
     sessionConfig.xdebugAttachPort = config.xdebugLaunchingPort;

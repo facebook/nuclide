@@ -10,7 +10,7 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 import ignoreTextSelectionEvents from 'nuclide-commons-ui/ignoreTextSelectionEvents';
 
@@ -24,15 +24,12 @@ type ListViewItemProps = {
 /**
  * Use ListViewItem in conjunction with ListView.
  */
-export class ListViewItem extends React.Component {
-  // $FlowIssue `index` and `onSelect` are injected by the surrounding `ListView` component.
-  props: ListViewItemProps;
-
-  _select(value: ?Object, index: number, event: SyntheticMouseEvent): void {
+export class ListViewItem extends React.Component<ListViewItemProps> {
+  _select(value: ?Object, index: number, event: SyntheticMouseEvent<>): void {
     this.props.onSelect(value, index);
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {children, index, value, ...remainingProps} = this.props;
     return (
       <div
@@ -64,20 +61,18 @@ type ListViewProps = {
   onSelect?: (selectedIndex: number, selectedData: ?Object) => mixed,
 };
 
-export class ListView extends React.Component {
-  props: ListViewProps;
-
+export class ListView extends React.Component<ListViewProps> {
   _handleSelect = (
     value: ?Object,
     index: number,
-    event: SyntheticMouseEvent,
+    event: SyntheticMouseEvent<>,
   ): void => {
     if (this.props.selectable && this.props.onSelect != null) {
       this.props.onSelect(index, value);
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {children, alternateBackground, selectable} = this.props;
     const renderedItems = React.Children.map(
       children,

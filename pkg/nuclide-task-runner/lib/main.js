@@ -47,6 +47,7 @@ import {
   createStore,
 } from 'redux';
 import {Observable} from 'rxjs';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 // TODO: use a more general versioning mechanism.
 // Perhaps Atom should provide packages with some way of doing this.
@@ -219,6 +220,29 @@ class Activation {
         .subscribe(visible => {
           this._panelRenderer.render({visible});
         }),
+      // Add a "stop" command when a task is running.
+      states
+        .map(state => state.runningTask != null)
+        .distinctUntilChanged()
+        .switchMap(
+          taskIsRunning =>
+            taskIsRunning
+              ? Observable.create(
+                  () =>
+                    new UniversalDisposable(
+                      atom.commands.add(
+                        'atom-workspace',
+                        // eslint-disable-next-line rulesdir/atom-apis
+                        'nuclide-task-runner:stop-task',
+                        () => {
+                          this._actionCreators.stopTask();
+                        },
+                      ),
+                    ),
+                )
+              : Observable.empty(),
+        )
+        .subscribe(),
     );
   }
 
@@ -239,13 +263,15 @@ class Activation {
     toolBar.addSpacer({
       priority: 400,
     });
-    const {element} = toolBar.addButton({
-      callback: 'nuclide-task-runner:toggle-toolbar-visibility',
-      tooltip: 'Toggle Task Runner Toolbar',
-      iconset: 'ion',
-      icon: 'play',
-      priority: 401,
-    });
+    const {element} = toolBar.addButton(
+      makeToolbarButtonSpec({
+        callback: 'nuclide-task-runner:toggle-toolbar-visibility',
+        tooltip: 'Toggle Task Runner Toolbar',
+        iconset: 'ion',
+        icon: 'play',
+        priority: 401,
+      }),
+    );
     element.className += ' nuclide-task-runner-tool-bar-button';
 
     const buttonUpdatesDisposable = new UniversalDisposable(
@@ -332,6 +358,7 @@ class Activation {
 createPackage(module.exports, Activation);
 
 function activateInitialPackagesObservable(): Observable<void> {
+  // flowlint-next-line sketchy-null-mixed:off
   if (atom.packages.hasActivatedInitialPackages) {
     return Observable.of(undefined);
   }

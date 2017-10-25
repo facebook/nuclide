@@ -14,13 +14,13 @@ const TIMEOUT = 30 * 1000;
 const REPETITIONS = 3;
 
 import invariant from 'assert';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 import {timedAsync} from '../benchmarker-utils';
 
 const isNotTheme = pkg => pkg.getType !== 'theme';
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   description:
     'times how long it takes to activate packages for Atom & Nuclide',

@@ -19,17 +19,19 @@ import type {
   Record,
   Source,
   Store,
+  WatchEditorFunction,
 } from '../types';
 import type {CreatePasteFunction} from '../../../nuclide-paste-base';
+import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
 import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactElement';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
+import {getFilterPattern} from 'nuclide-commons-ui/RegExpFilter';
 import getCurrentExecutorId from '../getCurrentExecutorId';
 import * as Actions from '../redux/Actions';
 import Console from './Console';
-import escapeStringRegexp from 'escape-string-regexp';
-import React from 'react';
+import * as React from 'react';
 import {Observable, Subject} from 'rxjs';
 
 type Props = {
@@ -45,6 +47,7 @@ type State = {
   //
 
   createPasteFunction: ?CreatePasteFunction,
+  watchEditor: ?WatchEditorFunction,
   currentExecutor: ?Executor,
   providers: Map<string, OutputProvider>,
   providerStatuses: Map<string, OutputProviderStatus>,
@@ -73,13 +76,12 @@ type BoundActionCreators = {
 // needs to be changed, grep for CONSOLE_VIEW_URI and ensure that the URIs match.
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/console';
 
+const ERROR_TRANSCRIBING_MESSAGE =
+  "// Nuclide couldn't find the right text to display";
 const INITIAL_RECORD_HEIGHT = 21;
 
 // NOTE: We're not accounting for the "store" prop being changed.
-export class ConsoleContainer extends React.Component {
-  props: Props;
-  state: State;
-
+export class ConsoleContainer extends React.Component<Props, State> {
   _actionCreators: BoundActionCreators;
 
   // Associates Records with their display state (height, expansionStateId).
@@ -100,6 +102,7 @@ export class ConsoleContainer extends React.Component {
     this.state = {
       ready: false,
       createPasteFunction: null,
+      watchEditor: null,
       currentExecutor: null,
       providers: new Map(),
       providerStatuses: new Map(),
@@ -170,6 +173,7 @@ export class ConsoleContainer extends React.Component {
             : null;
         this.setState({
           createPasteFunction: state.createPasteFunction,
+          watchEditor: state.watchEditor,
           ready: true,
           currentExecutor,
           executors: state.executors,
@@ -217,7 +221,7 @@ export class ConsoleContainer extends React.Component {
 
   _resetAllFilters = (): void => {
     this._selectSources(this.state.sources.map(s => s.id));
-    this._updateFilterText('');
+    this.setState({filterText: ''});
   };
 
   _createPaste = async (): Promise<void> => {
@@ -239,7 +243,11 @@ export class ConsoleContainer extends React.Component {
         const level =
           record.level != null ? record.level.toString().toUpperCase() : 'LOG';
         const timestamp = record.timestamp.toLocaleString();
-        return `[${level}][${record.sourceId}][${timestamp}]\t ${record.text}`;
+        const text =
+          record.text ||
+          (record.data && record.data.value) ||
+          ERROR_TRANSCRIBING_MESSAGE;
+        return `[${level}][${record.sourceId}][${timestamp}]\t ${text}`;
       })
       .join('\n');
 
@@ -265,11 +273,11 @@ export class ConsoleContainer extends React.Component {
   };
 
   _getFilterInfo(): {
-    isValid: boolean,
+    invalid: boolean,
     selectedSourceIds: Array<string>,
     displayableRecords: Array<DisplayableRecord>,
   } {
-    const {pattern, isValid} = this._getFilterPattern(
+    const {pattern, invalid} = getFilterPattern(
       this.state.filterText,
       this.state.enableRegExpFilter,
     );
@@ -288,20 +296,20 @@ export class ConsoleContainer extends React.Component {
     );
 
     return {
-      isValid,
+      invalid,
       selectedSourceIds,
       displayableRecords,
     };
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     if (!this.state.ready) {
       return <span />;
     }
 
     const actionCreators = this._getBoundActionCreators();
     const {
-      isValid,
+      invalid,
       selectedSourceIds,
       displayableRecords,
     } = this._getFilterInfo();
@@ -311,13 +319,16 @@ export class ConsoleContainer extends React.Component {
     const createPaste =
       this.state.createPasteFunction != null ? this._createPaste : null;
 
+    const watchEditor = this.state.watchEditor;
+
     return (
       <Console
-        invalidFilterInput={!isValid}
+        invalidFilterInput={invalid}
         execute={actionCreators.execute}
         selectExecutor={actionCreators.selectExecutor}
         clearRecords={actionCreators.clearRecords}
         createPaste={createPaste}
+        watchEditor={watchEditor}
         currentExecutor={this.state.currentExecutor}
         unselectedSourceIds={this.state.unselectedSourceIds}
         filterText={this.state.filterText}
@@ -330,8 +341,7 @@ export class ConsoleContainer extends React.Component {
         selectSources={this._selectSources}
         executors={this.state.executors}
         getProvider={id => this.state.providers.get(id)}
-        toggleRegExpFilter={this._toggleRegExpFilter}
-        updateFilterText={this._updateFilterText}
+        updateFilter={this._updateFilter}
         onDisplayableRecordHeightChange={
           this._handleDisplayableRecordHeightChange
         }
@@ -358,34 +368,13 @@ export class ConsoleContainer extends React.Component {
     this.setState({unselectedSourceIds});
   };
 
-  _toggleRegExpFilter = (): void => {
-    this.setState({enableRegExpFilter: !this.state.enableRegExpFilter});
+  _updateFilter = (change: RegExpFilterChange): void => {
+    const {text, isRegExp} = change;
+    this.setState({
+      filterText: text,
+      enableRegExpFilter: isRegExp,
+    });
   };
-
-  _updateFilterText = (filterText: string): void => {
-    this.setState({filterText});
-  };
-
-  _getFilterPattern(
-    filterText: string,
-    isRegExp: boolean,
-  ): {pattern: ?RegExp, isValid: boolean} {
-    if (filterText === '') {
-      return {pattern: null, isValid: true};
-    }
-    const source = isRegExp ? filterText : escapeStringRegexp(filterText);
-    try {
-      return {
-        pattern: new RegExp(source, 'i'),
-        isValid: true,
-      };
-    } catch (err) {
-      return {
-        pattern: null,
-        isValid: false,
-      };
-    }
-  }
 
   _handleDisplayableRecordHeightChange = (
     recordId: number,

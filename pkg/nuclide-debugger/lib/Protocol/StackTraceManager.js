@@ -10,7 +10,7 @@
  */
 
 import type {CallFrame} from '../../../nuclide-debugger-base/lib/protocol-types';
-import type {Callstack} from '../types';
+import type {Callstack, CallstackItem} from '../types';
 import type DebuggerDomainDispatcher from './DebuggerDomainDispatcher';
 
 import invariant from 'assert';
@@ -87,7 +87,7 @@ export default class StackTraceManager {
 
   _parseCallstack(): Callstack {
     return this._currentThreadFrames.map(frame => {
-      return {
+      const result = ({
         name: frame.functionName, // TODO: format
         location: {
           path: this._debuggerDispatcher.getFileUriFromScriptId(
@@ -97,7 +97,14 @@ export default class StackTraceManager {
           column: frame.location.columnNumber,
           hasSource: frame.hasSource,
         },
-      };
+      }: CallstackItem);
+      if (frame.disassembly != null) {
+        result.disassembly = frame.disassembly;
+      }
+      if (frame.registers != null) {
+        result.registers = frame.registers;
+      }
+      return result;
     });
   }
 

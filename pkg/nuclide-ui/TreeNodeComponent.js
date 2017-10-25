@@ -11,7 +11,7 @@
 
 import type {LazyTreeNode} from './LazyTreeNode';
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
@@ -31,10 +31,10 @@ type Props = {
   labelElement?: ?React.Element<any>,
   labelClassName: string,
   node: LazyTreeNode,
-  onClickArrow: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onClick: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onDoubleClick: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onMouseDown: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
+  onClickArrow: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onClick: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onDoubleClick: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onMouseDown: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
   path: string,
   rowClassName: string,
 };
@@ -42,11 +42,8 @@ type Props = {
 /**
  * Represents one entry in a TreeComponent.
  */
-export class TreeNodeComponent extends React.PureComponent {
-  props: Props;
-  state: void;
-
-  render(): React.Element<any> {
+export class TreeNodeComponent extends React.PureComponent<Props, void> {
+  render(): React.Node {
     const rowClassNameObj: {[key: string]: ?boolean} = {
       // Support for selectors in the "file-icons" package.
       // @see {@link https://atom.io/packages/file-icons|file-icons}
@@ -89,21 +86,23 @@ export class TreeNodeComponent extends React.PureComponent {
         <span className="nuclide-tree-component-item-arrow" ref="arrow">
           {arrow}
         </span>
-        {this.props.labelElement != null
-          ? this.props.labelElement
-          : <span
-              className={this.props.labelClassName}
-              // `data-name` is support for selectors in the "file-icons" package.
-              // @see {@link https://atom.io/packages/file-icons|file-icons}
-              data-name={this.props.label}
-              data-path={this.props.path}>
-              {this.props.label}
-            </span>}
+        {this.props.labelElement != null ? (
+          this.props.labelElement
+        ) : (
+          <span
+            className={this.props.labelClassName}
+            // `data-name` is support for selectors in the "file-icons" package.
+            // @see {@link https://atom.io/packages/file-icons|file-icons}
+            data-name={this.props.label}
+            data-path={this.props.path}>
+            {this.props.label}
+          </span>
+        )}
       </div>
     );
   }
 
-  _onClick = (event: SyntheticMouseEvent): void => {
+  _onClick = (event: SyntheticMouseEvent<>): void => {
     // $FlowFixMe
     if (ReactDOM.findDOMNode(this.refs.arrow).contains(event.target)) {
       this.props.onClickArrow(event, this.props.node);
@@ -112,11 +111,11 @@ export class TreeNodeComponent extends React.PureComponent {
     }
   };
 
-  _onDoubleClick = (event: SyntheticMouseEvent): void => {
+  _onDoubleClick = (event: SyntheticMouseEvent<>): void => {
     this.props.onDoubleClick(event, this.props.node);
   };
 
-  _onMouseDown = (event: SyntheticMouseEvent): void => {
+  _onMouseDown = (event: SyntheticMouseEvent<>): void => {
     this.props.onMouseDown(event, this.props.node);
   };
 }

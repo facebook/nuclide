@@ -15,7 +15,7 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ExampleGadgetA, WORKSPACE_VIEW_URI_A} from './ExampleGadgetA';
 import {ExampleGadgetB, WORKSPACE_VIEW_URI_B} from './ExampleGadgetB';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 
 let disposables: ?UniversalDisposable = null;
 

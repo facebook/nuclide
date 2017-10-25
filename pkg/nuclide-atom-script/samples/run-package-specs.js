@@ -15,7 +15,7 @@ import type {ExitCode} from '../lib/types';
 
 import invariant from 'assert';
 import electron from 'electron';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 
 const {ipcRenderer, remote} = electron;

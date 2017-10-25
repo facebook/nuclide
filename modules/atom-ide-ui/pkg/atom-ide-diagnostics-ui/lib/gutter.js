@@ -11,22 +11,26 @@
  */
 
 import type {
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
+  DiagnosticUpdater,
+  DiagnosticMessage,
+  DiagnosticMessages,
 } from '../../atom-ide-diagnostics/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import classnames from 'classnames';
 
+import classnames from 'classnames';
 import {Range} from 'atom';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {goToLocation as atomGoToLocation} from 'nuclide-commons-atom/go-to-location';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import analytics from 'nuclide-commons-atom/analytics';
-import {DiagnosticsPopup} from './DiagnosticsPopup';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {DiagnosticsPopup} from './ui/DiagnosticsPopup';
+import * as GroupUtils from './GroupUtils';
 
-const GUTTER_ID = 'nuclide-diagnostics-gutter';
+const GUTTER_ID = 'diagnostics-gutter';
 
 // Needs to be the same as glyph-height in gutter.atom-text-editor.less.
 const GLYPH_HEIGHT = 15; // px
@@ -43,21 +47,28 @@ const POPUP_DISPOSE_TIMEOUT = 100;
 // might have to listen for mouseover events on TextEditor and then use its own APIs, such as
 // decorationsForScreenRowRange(), to see if there is a hit target instead. Since this will be
 // happening onmousemove, we also have to be careful to make sure this is not expensive.
-const HIGHLIGHT_CSS = 'nuclide-diagnostics-gutter-ui-highlight';
+const HIGHLIGHT_CSS = 'diagnostics-gutter-ui-highlight';
 
-const ERROR_HIGHLIGHT_CSS = 'nuclide-diagnostics-gutter-ui-highlight-error';
-const WARNING_HIGHLIGHT_CSS = 'nuclide-diagnostics-gutter-ui-highlight-warning';
+const HIGHLIGHT_CSS_LEVELS = {
+  Error: 'diagnostics-gutter-ui-highlight-error',
+  Warning: 'diagnostics-gutter-ui-highlight-warning',
+  Info: 'diagnostics-gutter-ui-highlight-info',
+};
 
-const ERROR_GUTTER_CSS = 'nuclide-diagnostics-gutter-ui-gutter-error';
-const WARNING_GUTTER_CSS = 'nuclide-diagnostics-gutter-ui-gutter-warning';
+const GUTTER_CSS_GROUPS = {
+  review: 'diagnostics-gutter-ui-gutter-review',
+  errors: 'diagnostics-gutter-ui-gutter-error',
+  warnings: 'diagnostics-gutter-ui-gutter-warning',
+  info: 'diagnostics-gutter-ui-gutter-info',
+};
 
 const editorToMarkers: WeakMap<TextEditor, Set<atom$Marker>> = new WeakMap();
 const itemToEditor: WeakMap<HTMLElement, TextEditor> = new WeakMap();
 
 export function applyUpdateToEditor(
   editor: TextEditor,
-  update: FileDiagnosticMessages,
-  fixer: (message: FileDiagnosticMessage) => void,
+  update: DiagnosticMessages,
+  diagnosticUpdater: DiagnosticUpdater,
 ): void {
   let gutter = editor.gutterWithName(GUTTER_ID);
   if (!gutter) {
@@ -90,8 +101,8 @@ export function applyUpdateToEditor(
     markers = new Set();
   }
 
-  const rowToMessage: Map<number, Array<FileDiagnosticMessage>> = new Map();
-  function addMessageForRow(message: FileDiagnosticMessage, row: number) {
+  const rowToMessage: Map<number, Array<DiagnosticMessage>> = new Map();
+  function addMessageForRow(message: DiagnosticMessage, row: number) {
     let messages = rowToMessage.get(row);
     if (!messages) {
       messages = [];
@@ -109,7 +120,7 @@ export function applyUpdateToEditor(
 
     const highlightCssClass = classnames(
       HIGHLIGHT_CSS,
-      message.type === 'Error' ? ERROR_HIGHLIGHT_CSS : WARNING_HIGHLIGHT_CSS,
+      HIGHLIGHT_CSS_LEVELS[message.type],
     );
 
     let highlightMarker;
@@ -164,18 +175,8 @@ export function applyUpdateToEditor(
 
   // Find all of the gutter markers for the same row and combine them into one marker/popup.
   for (const [row, messages] of rowToMessage.entries()) {
-    // If at least one of the diagnostics is an error rather than the warning,
-    // display the glyph in the gutter to represent an error rather than a warning.
-    const gutterMarkerCssClass = messages.some(msg => msg.type === 'Error')
-      ? ERROR_GUTTER_CSS
-      : WARNING_GUTTER_CSS;
-
     // This marker adds some UI to the gutter.
-    const {item, dispose} = createGutterItem(
-      messages,
-      gutterMarkerCssClass,
-      fixer,
-    );
+    const {item, dispose} = createGutterItem(messages, diagnosticUpdater);
     itemToEditor.set(item, editor);
     const gutterMarker = editor.markBufferPosition([row, 0]);
     gutter.decorateMarker(gutterMarker, {item});
@@ -193,16 +194,28 @@ export function applyUpdateToEditor(
 }
 
 function createGutterItem(
-  messages: Array<FileDiagnosticMessage>,
-  gutterMarkerCssClass: string,
-  fixer: (message: FileDiagnosticMessage) => void,
+  messages: Array<DiagnosticMessage>,
+  diagnosticUpdater: DiagnosticUpdater,
 ): {item: HTMLElement, dispose: () => void} {
+  // Determine which group to display.
+  const messageGroups = new Set();
+  messages.forEach(msg => messageGroups.add(GroupUtils.getGroup(msg)));
+  const group = GroupUtils.getHighestPriorityGroup(messageGroups);
+
   const item = document.createElement('a');
-  item.className = gutterMarkerCssClass;
+  const groupClassName = GUTTER_CSS_GROUPS[group];
+  item.className = `diagnostics-gutter-ui-item ${groupClassName || ''}`;
+
+  // Add the icon
+  const icon = document.createElement('span');
+  icon.className = `icon icon-${GroupUtils.getIcon(group)}`;
+  item.appendChild(icon);
+
   let popupElement = null;
   let paneItemSubscription = null;
   let disposeTimeout = null;
   const clearDisposeTimeout = () => {
+    // flowlint-next-line sketchy-null-number:off
     if (disposeTimeout) {
       clearTimeout(disposeTimeout);
     }
@@ -224,13 +237,18 @@ function createGutterItem(
     // Before we jump to the location, we want to close the popup.
     dispose();
     const column = 0;
-    atomGoToLocation(path, line, column);
+    atomGoToLocation(path, {line, column});
   };
   item.addEventListener('mouseenter', (event: MouseEvent) => {
     // If there was somehow another popup for this gutter item, dispose it. This can happen if the
     // user manages to scroll and escape disposal.
     dispose();
-    popupElement = showPopupFor(messages, item, goToLocation, fixer);
+    popupElement = showPopupFor(
+      messages,
+      item,
+      goToLocation,
+      diagnosticUpdater,
+    );
     popupElement.addEventListener('mouseleave', dispose);
     popupElement.addEventListener('mouseenter', clearDisposeTimeout);
     // This makes sure that the popup disappears when you ctrl+tab to switch tabs.
@@ -250,15 +268,16 @@ function createGutterItem(
  * Shows a popup for the diagnostic just below the specified item.
  */
 function showPopupFor(
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
   item: HTMLElement,
   goToLocation: (filePath: NuclideUri, line: number) => mixed,
-  fixer: (message: FileDiagnosticMessage) => void,
+  diagnosticUpdater: DiagnosticUpdater,
 ): HTMLElement {
   // The popup will be an absolutely positioned child element of <atom-workspace> so that it appears
   // on top of everything.
   const workspaceElement = atom.views.getView((atom.workspace: Object));
   const hostElement = document.createElement('div');
+  hostElement.classList.add('diagnostics-gutter-popup');
   // $FlowFixMe check parentNode for null
   workspaceElement.parentNode.appendChild(hostElement);
 
@@ -266,7 +285,7 @@ function showPopupFor(
   const {top, left} = item.getBoundingClientRect();
 
   const trackedFixer = (...args) => {
-    fixer(...args);
+    diagnosticUpdater.applyFix(...args);
     analytics.track('diagnostics-gutter-autofix');
   };
   const trackedGoToLocation = (filePath: NuclideUri, line: number) => {
@@ -274,20 +293,26 @@ function showPopupFor(
     analytics.track('diagnostics-gutter-goto-location');
   };
 
-  ReactDOM.render(
-    <DiagnosticsPopup
-      left={left}
-      top={top}
-      messages={messages}
-      fixer={trackedFixer}
-      goToLocation={trackedGoToLocation}
-    />,
-    hostElement,
-  );
-  // Check to see whether the popup is within the bounds of the TextEditor. If not, display it above
-  // the glyph rather than below it.
   const editor = itemToEditor.get(item);
   invariant(editor != null);
+  diagnosticUpdater.fetchCodeActions(editor, messages);
+
+  const BoundPopup = bindObservableAsProps(
+    observableFromSubscribeFunction(cb =>
+      diagnosticUpdater.observeCodeActionsForMessage(cb),
+    ).map(codeActionsForMessage => ({
+      style: {left, top, position: 'absolute'},
+      messages,
+      fixer: trackedFixer,
+      goToLocation: trackedGoToLocation,
+      codeActionsForMessage,
+    })),
+    DiagnosticsPopup,
+  );
+  ReactDOM.render(<BoundPopup />, hostElement);
+
+  // Check to see whether the popup is within the bounds of the TextEditor. If not, display it above
+  // the glyph rather than below it.
   const editorElement = atom.views.getView(editor);
   const {
     top: editorTop,
@@ -311,6 +336,7 @@ function showPopupFor(
     messages.forEach(message => {
       analytics.track('diagnostics-gutter-show-popup', {
         'diagnostics-provider': message.providerName,
+        // flowlint-next-line sketchy-null-string:off
         'diagnostics-message': message.text || message.html || '',
       });
     });

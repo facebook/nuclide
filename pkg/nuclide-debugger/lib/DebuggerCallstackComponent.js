@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import type {Callstack, CallstackItem} from './types';
 import type DebuggerActions from './DebuggerActions';
 import type CallstackStore from './CallstackStore';
@@ -32,9 +32,10 @@ type DebuggerCallstackComponentState = {
   selectedCallFrameIndex: number,
 };
 
-export class DebuggerCallstackComponent extends React.Component {
-  props: DebuggerCallstackComponentProps;
-  state: DebuggerCallstackComponentState;
+export class DebuggerCallstackComponent extends React.Component<
+  DebuggerCallstackComponentProps,
+  DebuggerCallstackComponentState,
+> {
   _disposables: UniversalDisposable;
 
   constructor(props: DebuggerCallstackComponentProps) {
@@ -47,6 +48,7 @@ export class DebuggerCallstackComponent extends React.Component {
   }
 
   _locationComponent = (props: {
+    // eslint-disable-next-line react/no-unused-prop-types
     data: {
       path: string,
       line: number,
@@ -56,18 +58,18 @@ export class DebuggerCallstackComponent extends React.Component {
   }): React.Element<any> => {
     const missingSourceItem =
       this.props.callstackStore.getDebuggerStore().getCanSetSourcePaths() &&
-      !props.data.hasSource
-        ? <span
-            className={classnames('text-error', 'icon', 'icon-alert')}
-            onClick={() => this.props.actions.configureSourcePaths()}
-            ref={addTooltip({
-              title:
-                'Source file not found! Some debugger features will not work without source.' +
-                '<br/><br/>' +
-                'Click to configure source file paths...',
-            })}
-          />
-        : null;
+      !props.data.hasSource ? (
+        <span
+          className={classnames('text-error', 'icon', 'icon-alert')}
+          onClick={() => this.props.actions.configureSourcePaths()}
+          ref={addTooltip({
+            title:
+              'Source file not found! Some debugger features will not work without source.' +
+              '<br/><br/>' +
+              'Click to configure source file paths...',
+          })}
+        />
+      ) : null;
 
     // Callstack paths may have a format like file://foo/bar, or
     // lldb://asm/0x1234. These are not valid paths that can be used to
@@ -112,7 +114,7 @@ export class DebuggerCallstackComponent extends React.Component {
     this.props.actions.setSelectedCallFrameIndex(callFrameIndex);
   };
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {callstack} = this.state;
     const rows =
       callstack == null
@@ -154,10 +156,11 @@ export class DebuggerCallstackComponent extends React.Component {
       },
     ];
 
-    const emptyComponent = () =>
+    const emptyComponent = () => (
       <div className="nuclide-debugger-callstack-list-empty">
         callstack unavailable
-      </div>;
+      </div>
+    );
 
     return (
       <Table

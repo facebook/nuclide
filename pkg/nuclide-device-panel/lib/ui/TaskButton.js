@@ -10,7 +10,7 @@
  */
 
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
-import React from 'react';
+import * as React from 'react';
 
 export type Props = {|
   name: string,
@@ -20,9 +20,7 @@ export type Props = {|
   isRunning: boolean,
 |};
 
-export class TaskButton extends React.Component {
-  props: Props;
-
+export class TaskButton extends React.Component<Props> {
   _getLabel(): string | React.Element<any> {
     if (!this.props.isRunning) {
       return this.props.name;
@@ -38,7 +36,7 @@ export class TaskButton extends React.Component {
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <Button
         size={ButtonSizes.SMALL}

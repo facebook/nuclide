@@ -19,7 +19,6 @@ import {RemoteDirectory} from './RemoteDirectory';
 import {RemoteFile} from './RemoteFile';
 import {ServerConnection} from './ServerConnection';
 import {ConnectionCache} from './ConnectionCache';
-import NuclideTextBuffer from './NuclideTextBuffer';
 
 import {
   SshHandshake,
@@ -30,6 +29,7 @@ import {
   getService,
   getServiceByConnection,
   getServiceByNuclideUri,
+  awaitServiceByNuclideUri,
   getlocalService,
 } from './service-manager';
 
@@ -42,7 +42,6 @@ export {
   ServerConnection,
   ConnectionCache,
   SshHandshake,
-  NuclideTextBuffer,
   decorateSshConnectionDelegateWithTracking,
   getService,
   getServiceByConnection,
@@ -54,19 +53,19 @@ export {
   bufferForUri,
   existingBufferForUri,
   loadBufferForUri,
-  saveBuffer,
 } from './remote-text-buffer';
 
 import typeof * as AdbService from '../../nuclide-adb-sdb-rpc/lib/AdbService';
-import typeof * as ArcanistService from '../../nuclide-arcanist-rpc';
 import typeof * as BuckService from '../../nuclide-buck-rpc';
 import typeof * as ClangService from '../../nuclide-clang-rpc';
+import typeof * as CodeSearchService from '../../nuclide-code-search-rpc/lib/CodeSearchService';
 import typeof * as CtagsService from '../../nuclide-ctags-rpc';
 import typeof * as DefinitionPreviewService from '../../nuclide-definition-preview-rpc';
 import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
 import typeof * as FileWatcherService from '../../nuclide-filewatcher-rpc';
 import typeof * as FlowService from '../../nuclide-flow-rpc';
 import typeof * as FuzzyFileSearchService from '../../nuclide-fuzzy-file-search-rpc';
+import typeof * as GeneratedFileService from '../../nuclide-generated-files-rpc';
 import typeof * as GrepService from '../../nuclide-grep-rpc';
 import typeof * as HackService from '../../nuclide-hack-rpc';
 import typeof * as HgService from '../../nuclide-hg-rpc/lib/HgService';
@@ -75,6 +74,7 @@ import typeof * as MerlinService from '../../nuclide-ocaml-rpc/lib/MerlinService
 import typeof * as NativeDebuggerService from '../../nuclide-debugger-native-rpc';
 import typeof * as OpenFilesService from '../../nuclide-open-files-rpc/lib/OpenFilesService';
 import typeof * as PhpDebuggerService from '../../nuclide-debugger-php-rpc';
+import typeof * as PtyService from '../../nuclide-pty-rpc';
 import typeof * as PythonService from '../../nuclide-python-rpc';
 import typeof * as ReasonService from '../../nuclide-ocaml-rpc/lib/ReasonService';
 import typeof * as RemoteCommandService from '../../nuclide-remote-atom-rpc';
@@ -87,18 +87,18 @@ export function getAdbServiceByNuclideUri(uri: NuclideUri): AdbService {
   return nullthrows(getServiceByNuclideUri('AdbService', uri));
 }
 
-export function getArcanistServiceByNuclideUri(
-  uri: NuclideUri,
-): ArcanistService {
-  return nullthrows(getServiceByNuclideUri('ArcanistService', uri));
-}
-
 export function getBuckServiceByNuclideUri(uri: NuclideUri): BuckService {
   return nullthrows(getServiceByNuclideUri('BuckService', uri));
 }
 
 export function getClangServiceByNuclideUri(uri: NuclideUri): ClangService {
   return nullthrows(getServiceByNuclideUri('ClangService', uri));
+}
+
+export function getCodeSearchServiceByNuclideUri(
+  uri: NuclideUri,
+): CodeSearchService {
+  return nullthrows(getServiceByNuclideUri('CodeSearchService', uri));
 }
 
 export function getCtagsServiceByNuclideUri(uri: NuclideUri): CtagsService {
@@ -131,6 +131,12 @@ export function getFuzzyFileSearchServiceByNuclideUri(
   uri: NuclideUri,
 ): FuzzyFileSearchService {
   return nullthrows(getServiceByNuclideUri('FuzzyFileSearchService', uri));
+}
+
+export function awaitGeneratedFileServiceByNuclideUri(
+  uri: NuclideUri,
+): Promise<GeneratedFileService> {
+  return awaitServiceByNuclideUri('GeneratedFileService', uri).then(nullthrows);
 }
 
 export function getGrepServiceByNuclideUri(uri: NuclideUri): GrepService {
@@ -169,6 +175,10 @@ export function getPhpDebuggerServiceByNuclideUri(
   uri: NuclideUri,
 ): PhpDebuggerService {
   return nullthrows(getServiceByNuclideUri('PhpDebuggerService', uri));
+}
+
+export function getPtyServiceByNuclideUri(uri: NuclideUri): PtyService {
+  return nullthrows(getServiceByNuclideUri('PtyService', uri));
 }
 
 export function getPythonServiceByNuclideUri(uri: NuclideUri): PythonService {

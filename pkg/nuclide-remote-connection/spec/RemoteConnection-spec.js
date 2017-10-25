@@ -29,7 +29,7 @@ describe('RemoteConnection', () => {
       port: 8192,
     });
     testConnections.set(testHostname, server);
-    testConnection = new RemoteConnection(server, testPath, '');
+    testConnection = new RemoteConnection(server, testPath, '', true);
     server.addConnection(testConnection);
   });
 

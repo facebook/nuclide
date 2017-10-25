@@ -11,17 +11,17 @@
 
 import type {HandlesByType} from '../../types';
 
-import React from 'react';
+import * as React from 'react';
 import HandlesTableComponent from './HandlesTableComponent';
 
 type Props = {
   activeHandlesByType: HandlesByType,
 };
 
-export default class ActiveHandlesSectionComponent extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class ActiveHandlesSectionComponent extends React.Component<
+  Props,
+> {
+  render(): React.Node {
     if (
       !this.props.activeHandlesByType ||
       Object.keys(this.props.activeHandlesByType).length === 0

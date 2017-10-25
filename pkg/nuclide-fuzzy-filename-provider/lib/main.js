@@ -136,7 +136,7 @@ class Activation {
     }
   }
 
-  registerProvider(): Provider {
+  registerProvider(): Provider<FileResult> {
     return {
       ...FuzzyFileNameProvider,
       executeQuery: async (query: string, directory: atom$Directory) => {

@@ -46,7 +46,10 @@ type atom$Octicon = 'alert' | 'alignment-align' | 'alignment-aligned-to' | 'alig
   'shield' | 'sign-in' | 'sign-out' | 'smiley' | 'split' | 'squirrel' | 'star' | 'star-add' |
   'star-delete' | 'steps' | 'stop' | 'sync' | 'tag' | 'tag-add' | 'tag-remove' | 'tasklist' |
   'telescope' | 'terminal' | 'text-size' | 'three-bars' | 'thumbsdown' | 'thumbsup' | 'tools' |
-  'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'unfold' |
+  'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'type-array'|
+  'type-boolean'| 'type-class'| 'type-constant'| 'type-constructor'| 'type-enum'| 'type-field'|
+  'type-file'| 'type-function'| 'type-interface'| 'type-method'| 'type-module'| 'type-namespace'|
+  'type-number'| 'type-package'| 'type-property'| 'type-string'| 'type-variable' | 'unfold' |
   'unmute' | 'unverified' | 'verified' | 'versions' | 'watch' | 'x' | 'zap';
 
 type atom$PaneLocation = 'left' | 'right' | 'bottom' | 'center';
@@ -77,24 +80,37 @@ declare class atom$Package {
  * Essential Classes
  */
 
-declare class atom$CustomEvent extends Event {
-  constructor(type: string, eventInitDict?: CustomEvent$Init): void;
-  detail: any;
-  originalEvent: ?Event;
+declare type atom$CustomEvent  = CustomEvent & {
+  originalEvent?: Event;
 }
 
 type atom$CommandCallback = (event: atom$CustomEvent) => mixed;
+
+type atom$CommandDescriptor = {
+  name: string,
+  displayName: string,
+  description?: string,
+  tags?: Array<string>,
+};
+
+type atom$CommandListener = atom$CommandCallback | {
+  displayName?: string,
+  description?: string,
+  didDispatch: atom$CommandCallback,
+};
 
 declare class atom$CommandRegistry {
   // Methods
   add(
     target: string | HTMLElement,
-    commandNameOrCommands: string | {[commandName: string]: atom$CommandCallback},
-    callback?: atom$CommandCallback
+    commandNameOrCommands: string | {[commandName: string]: atom$CommandListener},
+    listener?: atom$CommandListener,
+    throwOnInvalidSelector?: boolean,
   ): IDisposable,
   dispatch(target: HTMLElement, commandName: string, detail?: Object): void,
-  onDidDispatch(callback: (event: Event) => mixed): IDisposable,
-  onWillDispatch(callback: (event: Event) => mixed): IDisposable,
+  onDidDispatch(callback: (event: atom$CustomEvent) => mixed): IDisposable,
+  onWillDispatch(callback: (event: atom$CustomEvent) => mixed): IDisposable,
+  findCommands(opts: {target: Node}): Array<atom$CommandDescriptor>,
 }
 
 declare class atom$CompositeDisposable {
@@ -113,7 +129,7 @@ type atom$ConfigType =
 type atom$ConfigSchema = {
   default?: mixed,
   description?: string,
-  enum?: Array<mixed>,
+  enum?: Array<string | {value: string, description: string}>,
   maximum?: number,
   minimum?: number,
   properties?: Object,
@@ -469,6 +485,8 @@ declare class atom$PaneAxis {
 }
 
 // Undocumented class
+// Note that this is not the same object returned by `atom.workspace.getPaneContainers()`. (Those
+// are typed here as AbstractPaneContainers and, in the current implementation, wrap these.)
 declare class atom$PaneContainer {
   constructor({
     config: atom$Config,
@@ -536,8 +554,8 @@ declare class atom$Point {
   translate(other: atom$PointLike): atom$Point,
 
   // Conversion
-  serialize(): Array<number>,
-  toArray(): Array<number>,
+  serialize(): [number, number],
+  toArray(): [number, number],
 }
 
 type atom$RangeObject = {
@@ -604,9 +622,7 @@ declare class atom$TextEditorRegistry {
   add(editor: atom$TextEditor): IDisposable,
   remove(editor: atom$TextEditor): boolean,
   observe(callback: (editor: atom$TextEditor) => void): IDisposable,
-
-  // Added in 1.11.0 (These are typed optional until older Atoms are dropped)
-  build?: (params: atom$TextEditorParams) => atom$TextEditor,
+  build: (params: atom$TextEditorParams) => atom$TextEditor,
 
   // Private
   editors: Set<atom$TextEditor>,
@@ -726,6 +742,14 @@ type MarkerOptions = {|
   exclusive?: boolean,
 |};
 
+type ChangeSelectionRangeEvent = {|
+  oldBufferRange: atom$Range,
+  oldScreenRange: atom$Range,
+  newBufferRange: atom$Range,
+  newScreenRange: atom$Range,
+  selection: atom$Selection,
+|};
+
 declare class atom$TextEditor extends atom$Model {
   id: number,
 
@@ -744,6 +768,8 @@ declare class atom$TextEditor extends atom$Model {
   // Note that the range property of the event is undocumented.
   onDidInsertText(callback: (event: {text: string, range: atom$Range}) => mixed): IDisposable,
   onDidChangeSoftWrapped(callback: (softWrapped: boolean) => mixed): IDisposable,
+  onDidChangeSelectionRange(callback: (event: ChangeSelectionRangeEvent) => mixed): IDisposable,
+  observeSelections(callback: (selection: atom$Selection) => mixed): IDisposable,
 
   // File Details
   getTitle: () => string,
@@ -764,8 +790,9 @@ declare class atom$TextEditor extends atom$Model {
   getSoftTabs(): boolean,
 
   // File Operations
-  save(): void,
-  saveAs(filePath: string): void,
+  save(): Promise<void>,
+  // DO NOT USE: Doesn't work with remote text buffers!
+  // saveAs(filePath: string): void,
 
   // Reading Text
   getText(): string,
@@ -810,6 +837,7 @@ declare class atom$TextEditor extends atom$Model {
       screenLine?: boolean,
     },
   ): atom$Point,
+  getEofBufferPosition(): atom$Point,
   getVisibleRowRange(): ?[number, number],
 
   // Decorations
@@ -838,12 +866,20 @@ declare class atom$TextEditor extends atom$Model {
       screenLine?: boolean,
     }): void,
   getCursorBufferPosition(): atom$Point,
+  getCursorBufferPositions(): Array<atom$Point>,
   getCursorScreenPosition(): atom$Point,
   getCursorScreenPositions(): Array<atom$Point>,
   getLastCursor(): atom$Cursor,
+  addCursorAtBufferPosition(point: atom$PointLike): atom$Cursor,
   moveToBeginningOfLine(): void,
   moveToEndOfLine(): void,
   moveToBottom(): void,
+
+  // Folds
+  foldCurrentRow(): void,
+  unfoldCurrentRow(): void,
+  foldBufferRow(bufferRow: number): void,
+  unfoldBufferRow(bufferRow: number): void,
 
   // Selections
   getSelectedText(): string,
@@ -853,7 +889,7 @@ declare class atom$TextEditor extends atom$Model {
   getSelections(): Array<atom$Selection>,
   selectToBufferPosition(point: atom$Point): void,
   setSelectedBufferRange(
-    bufferRange: atom$Range,
+    bufferRange: atom$RangeLike,
     options?: {
       reversed?: boolean,
       preserveFolds?: boolean,
@@ -934,6 +970,9 @@ declare class atom$TextEditor extends atom$Model {
     position: atom$Point | [?number, ?number],
     options?: {center?: boolean}
   ): void,
+  scrollToCursorPosition(
+    options?: {center?: boolean}
+  ): void,
   scrollToBottom(): void,
   scrollToTop(): void,
 
@@ -951,6 +990,7 @@ declare class atom$TextEditor extends atom$Model {
   getLastBufferRow(): number,
 
   // Undocumented Methods
+  getElement(): atom$TextEditorElement,
   getDefaultCharWidth(): number,
   getLineHeightInPixels(): number,
   moveToTop(): void,
@@ -1036,6 +1076,7 @@ declare class atom$TextEditorElement extends HTMLElement {
   getScrollLeft(): number,
 
   getScrollHeight(): number,
+  getHeight(): number,
 
   onDidChangeScrollTop(callback: (scrollTop: number) => mixed): IDisposable,
   onDidChangeScrollLeft(callback: (scrollLeft: number) => mixed): IDisposable,
@@ -1046,6 +1087,9 @@ declare class atom$TextEditorElement extends HTMLElement {
   onDidDetach(callback: () => mixed): IDisposable,
 
   // Undocumented Methods
+
+  // Returns a promise that resolves after the next update.
+  getNextUpdatePromise(): Promise<void>,
 
   // `undefined` means no explicit width. `null` sets a zero width (which is almost certainly a
   // mistake) so we don't allow it.
@@ -1130,12 +1174,12 @@ declare class atom$Workspace {
   open(
     uri?: string,
     options?: {
-      activePane?: boolean,
-      initialLine?: number,
-      initialColumn?: number,
-      pending?: boolean,
-      split?: string,
-      searchAllPanes?: boolean,
+      activatePane?: ?boolean,
+      initialLine?: ?number,
+      initialColumn?: ?number,
+      pending?: ?boolean,
+      split?: ?string,
+      searchAllPanes?: ?boolean,
     }
   ): Promise<atom$TextEditor>,
   openURIInPane(
@@ -1159,8 +1203,8 @@ declare class atom$Workspace {
   toggle(uriOrItem: string | Object): void,
 
   // Pane Containers
-  getPaneContainers(): Array<atom$PaneContainer>,
-  paneContainerForItem(item: ?mixed): ?atom$PaneContainer,
+  getPaneContainers(): Array<atom$AbstractPaneContainer>,
+  paneContainerForItem(item: ?mixed): ?atom$AbstractPaneContainer,
 
   // Pane Items
   getPaneItems(): Array<Object>,
@@ -1178,7 +1222,6 @@ declare class atom$Workspace {
 
   // Panels
   panelContainers: {[location: string]: atom$PanelContainer},
-  getElement(): HTMLElement,
   getBottomPanels(): Array<atom$Panel>,
   addBottomPanel(options: atom$WorkspaceAddPanelOptions): atom$Panel,
   getLeftPanels(): Array<atom$Panel>,
@@ -1196,18 +1239,45 @@ declare class atom$Workspace {
   getCenter(): atom$WorkspaceCenter,
 
   // Searching and Replacing
+  scan(
+    regex: RegExp,
+    options: {
+      paths?: Array<string>,
+      onPathsSearched?: (numSearched: number) => mixed,
+      leadingContextLineCount?: number,
+      trailingContextLineCount?: number,
+    },
+    iterator: (
+      ?{
+        filePath: string,
+        matches: Array<{
+          leadingContextLines: Array<string>,
+          lineText: string,
+          lineTextOffset: number,
+          range: atom$RangeLike,
+          matchText: string,
+          trailingContextLines: Array<string>,
+        }>,
+      },
+      Error,
+    ) => mixed,
+  ): Promise<?string>,
 
   destroyActivePaneItemOrEmptyPane(): void,
   destroyActivePaneItem(): void,
 }
 
 declare class atom$AbstractPaneContainer {
+  activate(): void,
+  getLocation(): atom$PaneLocation,
+  getElement(): HTMLElement,
   isVisible(): boolean,
   show(): void,
   hide(): void,
   getActivePane(): atom$Pane,
   getPanes(): Array<atom$Pane>,
   onDidAddPaneItem((item: {item: Object}) => void): IDisposable,
+  observePanes(cb: (pane: atom$Pane) => void): IDisposable,
   state: {
     size: number,
   }
@@ -1336,7 +1406,25 @@ declare class atom$Directory {
   contains(path: string): boolean,
 }
 
-declare class atom$File {
+// These are the methods called on a file by atom-text-buffer
+interface atom$Fileish {
+  existsSync(): boolean,
+  setEncoding(encoding: string): void,
+  getEncoding(): ?string,
+
+  onDidRename(callback: () => void): IDisposable,
+  onDidDelete(callback: () => void): IDisposable,
+  onDidChange(callback: () => void): IDisposable,
+  onWillThrowWatchError(callback: () => mixed): IDisposable,
+
+  getPath(): string,
+  getBaseName(): string,
+
+  createReadStream(): stream$Readable,
+  createWriteStream(): stream$Writable,
+}
+
+declare class atom$File /* implements atom$Fileish */ {
   constructor(filePath?: string, symlink?: boolean): atom$File,
 
   symlink: boolean,
@@ -1344,13 +1432,11 @@ declare class atom$File {
   // Construction
   create(): Promise<boolean>,
 
-  // Event Subscription
-  onDidChange(callback: () => mixed): IDisposable,
-
   // File Metadata
   isFile(): boolean,
   isDirectory(): boolean,
-  exists(): boolean,
+  exists(): Promise<boolean>,
+  existsSync(): boolean,
   setEncoding(encoding: string): void,
   getEncoding(): string,
 
@@ -1358,6 +1444,7 @@ declare class atom$File {
   onDidRename(callback: () => void): IDisposable,
   onDidDelete(callback: () => void): IDisposable,
   onDidChange(callback: () => void): IDisposable,
+  onWillThrowWatchError(callback: () => mixed): IDisposable,
 
   // Managing Paths
   getPath(): string,
@@ -1370,6 +1457,8 @@ declare class atom$File {
   read(flushCache?: boolean): Promise<string>,
   write(text: string): Promise<void>,
   writeSync(text: string): void,
+  createReadStream(): stream$Readable,
+  createWriteStream(): stream$Writable,
 }
 
 declare class atom$GitRepository extends atom$Repository {
@@ -1404,10 +1493,36 @@ declare class atom$GrammarRegistry {
   clear(): IDisposable,
 }
 
-type atom$KeyBinding = Object;
+declare class atom$HistoryManager {
+  removeProject(paths: Array<string>): void,
+  getProjects(): Array<atom$HistoryProject>,
+}
+
+declare class atom$HistoryProject {
+  get paths(): Array<string>;
+  get lastOpened(): Date;
+}
+
+// https://github.com/atom/atom-keymap/blob/18f00ac307de5770bb8f98958bd9a13ecffa9e68/src/key-binding.coffee
+declare class atom$KeyBinding {
+  cachedKeyups: ?Array<string>,
+  command: string,
+  index: number,
+  keystrokeArray : Array<string>,
+  keystrokeCount: number,
+  keystrokes: string,
+  priority: number,
+  selector: string,
+  source: string,
+  specificity: number,
+
+  matches(keystroke: string): boolean,
+  compare(keybinding: atom$KeyBinding): number,
+  getKeyups(): ?Array<string>,
+  matchesKeystrokes(userKeystrokes: Array<string>): boolean | 'exact' | 'partial' | 'pendingKeyup',
+}
 
 declare class atom$KeymapManager {
-
   // Event Subscription
   onDidMatchBinding(callback: (event: {
     keystrokes: string,
@@ -1520,6 +1635,10 @@ type atom$TextEditEvent = {
   newText: string,
 };
 
+type atom$AggregatedTextEditEvent = {
+  changes: Array<atom$TextEditEvent>,
+};
+
 declare class atom$TextBuffer {
   constructor(text?: string): atom$TextBuffer,
   constructor(params?: {
@@ -1531,10 +1650,14 @@ declare class atom$TextBuffer {
 
   // Mixin
   static deserialize: (state: Object, params: Object) => mixed,
+  static load: (file: string | atom$Fileish, params: Object) => Promise<atom$TextBuffer>,
+
+  setFile(file: atom$Fileish): void,
 
   // Events
   onWillChange(callback: (event: atom$TextEditEvent) => mixed): IDisposable,
   onDidChange(callback: (event: atom$TextEditEvent) => mixed): IDisposable,
+  onDidChangeText(callback: (event: atom$AggregatedTextEditEvent) => mixed): IDisposable,
   onDidStopChanging(callback: () => mixed): IDisposable,
   onDidConflict(callback: () => mixed): IDisposable,
   onDidChangeModified(callback: () => mixed): IDisposable,
@@ -1551,7 +1674,8 @@ declare class atom$TextBuffer {
   onWillThrowWatchError(callback: () => mixed): IDisposable,
 
   // File Details
-  setPath(filePath: string): void,
+  // DO NOT USE (T21363106): Doesn't work with remote text buffers!
+  // setPath(filePath: string): void,
   getPath(): ?string,
   setEncoding(encoding: string): void,
   getEncoding(): string,
@@ -1620,7 +1744,7 @@ declare class atom$TextBuffer {
   // Buffer Operations
   reload(): void,
   load(): Promise<void>,
-  save(): void,
+  save(): Promise<void>,
 
   isInConflict(): boolean,
   isModified(): boolean,
@@ -1727,6 +1851,7 @@ type AtomGlobal = {
   applicationDelegate: atom$applicationDelegate,
   deserializers: atom$DeserializerManager,
   grammars: atom$GrammarRegistry,
+  history: atom$HistoryManager,
   keymaps: atom$KeymapManager,
   menu: atom$MenuManager,
   notifications: atom$NotificationManager,
@@ -1743,6 +1868,7 @@ type AtomGlobal = {
   // Event Subscription
   onWillThrowError(callback: (event: atom$UnhandledErrorEvent) => mixed): IDisposable,
   onDidThrowError(callback: (event: atom$UnhandledErrorEvent) => mixed): IDisposable,
+  whenShellEnvironmentLoaded(callback: () => mixed): IDisposable,
 
   // Atom Details
   inDevMode(): boolean,
@@ -1805,6 +1931,7 @@ declare class atom$Repository {
   getWorkingDirectory: () => string,
   isProjectAtRoot: () => boolean,
   relativize: (aPath: string) => string,
+  getOriginURL: (aPath: ?string) => ?string,
 
   // Reading Status
   isPathModified: (aPath: string) => boolean,
@@ -1866,16 +1993,16 @@ type atom$AutocompleteRequest = {
 };
 
 type atom$AutocompleteProvider = {
-  selector: string,
-  getSuggestions: (
+  +selector: string,
+  +getSuggestions: (
     request: atom$AutocompleteRequest,
   ) => Promise<?Array<atom$AutocompleteSuggestion>>,
-  onDidInsertSuggestion?: (
+  +onDidInsertSuggestion?: (
     insertedSuggestion: atom$SuggestionInsertedRequest,
   ) => void,
-  disableForSelector?: string,
-  inclusionPriority?: number,
-  excludeLowerPriority?: boolean,
+  +disableForSelector?: string,
+  +inclusionPriority?: number,
+  +excludeLowerPriority?: boolean,
 };
 
 type atom$SuggestionInsertedRequest = {

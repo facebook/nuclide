@@ -10,12 +10,13 @@
  */
 
 import {Range} from 'atom';
+import fsPromise from 'nuclide-commons/fsPromise';
 import {dispatchKeyboardEvent, rangeMatchers} from '../testHelpers';
 
 describe('dispatchKeyboardEvent', () => {
   it('sends copy and paste', () => {
     waitsForPromise(async () => {
-      const editor = await atom.workspace.open('file.txt');
+      const editor = await atom.workspace.open(await fsPromise.tempfile());
       jasmine.attachToDOM(atom.views.getView(atom.workspace));
       editor.insertText('text');
       const events = [];
@@ -35,7 +36,7 @@ describe('dispatchKeyboardEvent', () => {
 
   it('sends escape', () => {
     waitsForPromise(async () => {
-      await atom.workspace.open('file.txt');
+      await atom.workspace.open(await fsPromise.tempfile());
       jasmine.attachToDOM(atom.views.getView(atom.workspace));
       const events = [];
       atom.keymaps.onDidMatchBinding(event => events.push(event));

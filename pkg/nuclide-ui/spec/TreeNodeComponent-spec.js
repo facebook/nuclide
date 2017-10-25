@@ -9,10 +9,12 @@
  * @format
  */
 
+/* global Element */
+
 import {LazyTestTreeNode} from './LazyTestTreeNode';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
-import TestUtils from 'react-addons-test-utils';
+import TestUtils from 'react-dom/test-utils';
 import {TreeNodeComponent} from '../TreeNodeComponent';
 import invariant from 'assert';
 
@@ -79,6 +81,7 @@ describe('TreeNodeComponent', () => {
   describe('clicking a node', () => {
     it('calls its `onClick` callback', () => {
       const domNode = ReactDOM.findDOMNode(treeNodeComponent);
+      invariant(domNode instanceof Element);
 
       TestUtils.Simulate.click(domNode);
       invariant(props);
@@ -92,6 +95,7 @@ describe('TreeNodeComponent', () => {
         treeNodeComponent,
         'nuclide-tree-component-item-arrow',
       );
+      invariant(arrow instanceof Element);
 
       TestUtils.Simulate.click(arrow);
       invariant(props);
@@ -103,6 +107,7 @@ describe('TreeNodeComponent', () => {
   describe('double clicking a node', () => {
     it('calls its `onDoubleClick` callback', () => {
       const domNode = ReactDOM.findDOMNode(treeNodeComponent);
+      invariant(domNode instanceof Element);
 
       TestUtils.Simulate.doubleClick(domNode);
       invariant(props);

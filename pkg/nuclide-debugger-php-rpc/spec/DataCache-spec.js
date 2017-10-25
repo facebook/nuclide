@@ -13,7 +13,7 @@ import type {DataCache as DataCacheType} from '../lib/DataCache';
 import type {DbgpSocket as DbgpSocketType} from '../lib/DbgpSocket';
 
 import invariant from 'assert';
-import {uncachedRequire} from '../../nuclide-test-helpers';
+import {uncachedRequire} from 'nuclide-commons/test-helpers';
 import {
   remoteObjectIdOfObjectId,
   createContextObjectId,

@@ -12,7 +12,7 @@
 import type {NavigationStackController} from '../lib/NavigationStackController';
 import typeof * as ModuleType from '../lib/NavigationStackController';
 
-import {uncachedRequire, clearRequireCache} from '../../nuclide-test-helpers';
+import {uncachedRequire, clearRequireCache} from 'nuclide-commons/test-helpers';
 
 describe('NavigationStackController test suite', () => {
   let setPositionAndScroll: any;

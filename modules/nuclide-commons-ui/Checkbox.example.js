@@ -10,13 +10,13 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import {Checkbox} from './Checkbox';
 
 const NOOP = () => {};
 
-const CheckboxExample = (): React.Element<any> =>
+const CheckboxExample = (): React.Element<any> => (
   <div>
     <Block>
       <Checkbox
@@ -61,7 +61,8 @@ const CheckboxExample = (): React.Element<any> =>
         label="An indeterminate Checkbox."
       />
     </Block>
-  </div>;
+  </div>
+);
 
 export const CheckboxExamples = {
   sectionName: 'Checkbox',

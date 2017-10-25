@@ -52,17 +52,25 @@ export function watchFile(
   return watchEntity(filePath, true).publish();
 }
 
-export function watchFileWithNode(
-  filePath: NuclideUri,
+export function watchWithNode(
+  watchedPath: NuclideUri,
+  isDirectory?: boolean,
 ): ConnectableObservable<WatchResult> {
   return Observable.create(observer => {
-    const watcher = fs.watch(filePath, {persistent: false}, eventType => {
-      if (eventType === 'rename') {
-        observer.next({path: filePath, type: 'delete'});
-      } else {
-        observer.next({path: filePath, type: 'change'});
-      }
-    });
+    const watcher = fs.watch(
+      watchedPath,
+      {persistent: false},
+      (eventType, fileName) => {
+        const path = isDirectory
+          ? nuclideUri.join(watchedPath, fileName)
+          : watchedPath;
+        if (eventType === 'rename') {
+          observer.next({path, type: 'delete'});
+        } else {
+          observer.next({path, type: 'change'});
+        }
+      },
+    );
     return () => watcher.close();
   }).publish();
 }
@@ -96,13 +104,8 @@ async function getRealPath(
   entityPath: string,
   isFile: boolean,
 ): Promise<string> {
-  let stat;
-  try {
-    stat = await fsPromise.stat(entityPath);
-  } catch (e) {
-    // Atom watcher behavior compatibility.
-    throw new Error(`Can't watch a non-existing entity: ${entityPath}`);
-  }
+  // NOTE: this will throw when trying to watch non-existent entities.
+  const stat = await fsPromise.stat(entityPath);
   if (stat.isFile() !== isFile) {
     getLogger('nuclide-filewatcher-rpc').warn(
       `FileWatcherService: expected ${entityPath} to be a ${isFile

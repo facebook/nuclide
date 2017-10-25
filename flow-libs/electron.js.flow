@@ -366,7 +366,17 @@ declare class electron$BrowserWindow {
  * https://github.com/electron/electron/blob/master/docs/api/content-tracing.md
  */
 
-type electron$contentTracing = {};
+type electron$contentTracing = {
+  startRecording(
+    options: {categoryFilter: string, traceOptions: string},
+    callback: () => mixed,
+  ): boolean,
+
+  stopRecording(
+    resultFilePath: ?string,
+    callback: (resultFilePath: string) => mixed,
+  ): void,
+};
 
 /**
  * https://github.com/electron/electron/blob/master/docs/api/dialog.md
@@ -789,7 +799,9 @@ type electron$remote = {
  * https://github.com/electron/electron/blob/master/docs/api/web-frame.md
  */
 
-type electron$webFrame = {};
+type electron$webFrame = {
+  registerURLSchemeAsBypassingCSP(scheme: string): void,
+};
 
 
 //------------------------------------------------------------------------------

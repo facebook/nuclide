@@ -16,7 +16,7 @@ import type {
   OutlineProvider,
 } from 'atom-ide-ui';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {getOutline} from './JSONOutlineProvider';
 import {getNPMHyperclickProvider} from './NPMHyperclickProvider';
@@ -24,10 +24,10 @@ import {getNPMHyperclickProvider} from './NPMHyperclickProvider';
 import CodeFormatHelpers from './CodeFormatHelpers';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(state: ?Object) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   dispose(): void {

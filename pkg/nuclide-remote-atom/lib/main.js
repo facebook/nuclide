@@ -82,11 +82,17 @@ class Activation {
     };
 
     this._disposables = new ConnectionCache(async connection => {
-      // Return a dummy object for the 'null' local connection.
-      // This doesn't have much utility locally.
-      if (connection == null) {
+      // If connection is null, this indicates a local connection. Because usage
+      // of the local command server is low and it introduces the cost of
+      // starting an extra process when Atom starts up, only enable it if the
+      // user has explicitly opted-in.
+      if (
+        connection == null &&
+        !featureConfig.get('nuclide-remote-atom.enableLocalCommandService')
+      ) {
         return {dispose: () => {}};
       }
+
       const service: RemoteCommandServiceType = getServiceByConnection(
         REMOTE_COMMAND_SERVICE,
         connection,
@@ -111,7 +117,7 @@ function openFile(
   isWaiting: boolean,
 ): ConnectableObservable<AtomFileEvent> {
   return Observable.fromPromise(
-    goToLocation(uri, line, column).then(editor => {
+    goToLocation(uri, {line, column}).then(editor => {
       atom.applicationDelegate.focusWindow();
 
       if (

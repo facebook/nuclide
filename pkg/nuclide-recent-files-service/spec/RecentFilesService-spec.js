@@ -9,63 +9,66 @@
  * @format
  */
 
+import invariant from 'assert';
+import fsPromise from 'nuclide-commons/fsPromise';
+
 import RecentFilesService from '../lib/RecentFilesService';
 
-import invariant from 'assert';
-
-const ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS = 101;
-const FILE_PATH_1 = 'foo/bar/foo.js';
-const FILE_PATH_2 = 'foo/bar/bar.js';
-const FILE_PATH_3 = 'foo/bar/baz.js';
-
 describe('RecentFilesService', () => {
+  let filePath1;
+  let filePath2;
+  let filePath3;
   let recentFilesService: any;
 
   beforeEach(() => {
     recentFilesService = new RecentFilesService();
+
+    waitsForPromise(async () => {
+      [filePath1, filePath2, filePath3] = await Promise.all([
+        fsPromise.tempfile('1'),
+        fsPromise.tempfile('2'),
+        fsPromise.tempfile('3'),
+      ]);
+    });
   });
 
   describe('getRecentFiles', () => {
     it('returns a reverse-chronological list of recently opened files', () => {
       waitsForPromise(async () => {
         let mostRecentFiles;
-        let previousTimestamp = 0;
+        let previousTimestamp = Date.now();
         expect(recentFilesService.getRecentFiles().length).toEqual(0);
 
-        await atom.workspace.open(FILE_PATH_1);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath1);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(1);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_1)).toBe(true);
-        expect(mostRecentFiles[0].timestamp).toBeGreaterThan(previousTimestamp);
+        expect(mostRecentFiles[0].path.endsWith(filePath1)).toBe(true);
+        expect(mostRecentFiles[0].timestamp).toBe(previousTimestamp);
         previousTimestamp = mostRecentFiles[0].timestamp;
 
-        await atom.workspace.open(FILE_PATH_2);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath2);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(2);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_2)).toBe(true);
-        expect(mostRecentFiles[0].timestamp).toBeGreaterThan(previousTimestamp);
+        expect(mostRecentFiles[0].path.endsWith(filePath2)).toBe(true);
+        expect(mostRecentFiles[0].timestamp).toBe(previousTimestamp);
 
         previousTimestamp = mostRecentFiles[0].timestamp;
-        await atom.workspace.open(FILE_PATH_3);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath3);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(3);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_3)).toBe(true);
-        expect(mostRecentFiles[0].timestamp).toBeGreaterThan(previousTimestamp);
+        expect(mostRecentFiles[0].path.endsWith(filePath3)).toBe(true);
+        expect(mostRecentFiles[0].timestamp).toBe(previousTimestamp);
       });
     });
 
     it('returns paths and timestamps of recently opened files', () => {
       waitsForPromise(async () => {
-        await atom.workspace.open(FILE_PATH_1);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath1);
         const recentFiles = recentFilesService.getRecentFiles();
         const mostRecentFile = recentFiles[0];
-        expect(Object.keys(mostRecentFile).length).toEqual(2);
+        expect(Object.keys(mostRecentFile).length).toEqual(3);
         expect(typeof mostRecentFile.timestamp === 'number').toBe(true);
-        expect(mostRecentFile.path.endsWith(FILE_PATH_1)).toBe(true);
+        expect(mostRecentFile.path.endsWith(filePath1)).toBe(true);
       });
     });
 
@@ -74,31 +77,27 @@ describe('RecentFilesService', () => {
         let mostRecentFiles;
         expect(recentFilesService.getRecentFiles().length).toEqual(0);
 
-        await atom.workspace.open(FILE_PATH_1);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath1);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(1);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_1)).toBe(true);
+        expect(mostRecentFiles[0].path.endsWith(filePath1)).toBe(true);
 
-        await atom.workspace.open(FILE_PATH_2);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath2);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(2);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_2)).toBe(true);
+        expect(mostRecentFiles[0].path.endsWith(filePath2)).toBe(true);
 
-        await atom.workspace.open(FILE_PATH_1);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath1);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(2);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_1)).toBe(true);
-        expect(mostRecentFiles[1].path.endsWith(FILE_PATH_2)).toBe(true);
+        expect(mostRecentFiles[0].path.endsWith(filePath1)).toBe(true);
+        expect(mostRecentFiles[1].path.endsWith(filePath2)).toBe(true);
 
-        await atom.workspace.open(FILE_PATH_2);
-        advanceClock(ON_DID_CHANGE_ACTIVE_PANE_ITEM_DEBOUNCE_MS);
+        await atom.workspace.open(filePath2);
         mostRecentFiles = recentFilesService.getRecentFiles();
         expect(mostRecentFiles.length).toEqual(2);
-        expect(mostRecentFiles[0].path.endsWith(FILE_PATH_2)).toBe(true);
-        expect(mostRecentFiles[1].path.endsWith(FILE_PATH_1)).toBe(true);
+        expect(mostRecentFiles[0].path.endsWith(filePath2)).toBe(true);
+        expect(mostRecentFiles[1].path.endsWith(filePath1)).toBe(true);
       });
     });
   });
@@ -107,9 +106,9 @@ describe('RecentFilesService', () => {
     it('correctly restores itself from serialized state', () => {
       const serializedState = {
         filelist: [
-          {path: FILE_PATH_1, timestamp: 100},
-          {path: FILE_PATH_2, timestamp: 200},
-          {path: FILE_PATH_3, timestamp: 300},
+          {resultType: 'FILE', path: filePath1, timestamp: 100},
+          {resultType: 'FILE', path: filePath2, timestamp: 200},
+          {resultType: 'FILE', path: filePath3, timestamp: 300},
         ],
       };
       const restoredRecentFilesService = new RecentFilesService(

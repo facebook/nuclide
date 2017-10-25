@@ -79,14 +79,15 @@ export class WorkingSetsStore {
   }
 
   updateDefinitions(definitions: Array<WorkingSetDefinition>): void {
-    const {applicable, notApplicable} = this._sortOutApplicability(definitions);
+    if (arrayEqual(this._definitions, definitions)) {
+      return;
+    }
+    const {applicable, notApplicable} = sortOutApplicability(definitions);
     this._setDefinitions(applicable, notApplicable, definitions);
   }
 
   updateApplicability(): void {
-    const {applicable, notApplicable} = this._sortOutApplicability(
-      this._definitions,
-    );
+    const {applicable, notApplicable} = sortOutApplicability(this._definitions);
     this._setDefinitions(applicable, notApplicable, this._definitions);
   }
 
@@ -205,7 +206,7 @@ export class WorkingSetsStore {
 
   deactivateAll(): void {
     const definitions = this.getDefinitions().map(d => {
-      if (!this._isApplicable(d)) {
+      if (!isApplicable(d)) {
         return d;
       }
 
@@ -231,48 +232,49 @@ export class WorkingSetsStore {
   }
 
   _saveDefinitions(definitions: Array<WorkingSetDefinition>): void {
+    this.updateDefinitions(definitions);
     this._emitter.emit(SAVE_DEFINITIONS_EVENT, definitions);
   }
+}
 
-  _sortOutApplicability(
-    definitions: Array<WorkingSetDefinition>,
-  ): ApplicabilitySortedDefinitions {
-    const applicable = [];
-    const notApplicable = [];
+function sortOutApplicability(
+  definitions: Array<WorkingSetDefinition>,
+): ApplicabilitySortedDefinitions {
+  const applicable = [];
+  const notApplicable = [];
 
-    definitions.forEach(def => {
-      if (this._isApplicable(def)) {
-        applicable.push(def);
-      } else {
-        notApplicable.push(def);
-      }
-    });
+  definitions.forEach(def => {
+    if (isApplicable(def)) {
+      applicable.push(def);
+    } else {
+      notApplicable.push(def);
+    }
+  });
 
-    return {applicable, notApplicable};
-  }
+  return {applicable, notApplicable};
+}
 
-  _isApplicable(definition: WorkingSetDefinition): boolean {
-    const workingSet = new WorkingSet(definition.uris);
-    const dirs = atom.project.getDirectories().filter(dir => {
-      // Apparently sometimes Atom supplies an invalid directory, or a directory with an
-      // invalid paths. See https://github.com/facebook/nuclide/issues/416
-      if (dir == null) {
-        const logger = getLogger('nuclide-working-sets');
+function isApplicable(definition: WorkingSetDefinition): boolean {
+  const workingSet = new WorkingSet(definition.uris);
+  const dirs = atom.project.getDirectories().filter(dir => {
+    // Apparently sometimes Atom supplies an invalid directory, or a directory with an
+    // invalid paths. See https://github.com/facebook/nuclide/issues/416
+    if (dir == null) {
+      const logger = getLogger('nuclide-working-sets');
 
-        logger.warn('Received a null directory from Atom');
-        return false;
-      }
-      try {
-        nuclideUri.parse(dir.getPath());
-        return true;
-      } catch (e) {
-        const logger = getLogger('nuclide-working-sets');
+      logger.warn('Received a null directory from Atom');
+      return false;
+    }
+    try {
+      nuclideUri.parse(dir.getPath());
+      return true;
+    } catch (e) {
+      const logger = getLogger('nuclide-working-sets');
 
-        logger.warn('Failed to parse path supplied by Atom', dir.getPath());
-        return false;
-      }
-    });
+      logger.warn('Failed to parse path supplied by Atom', dir.getPath());
+      return false;
+    }
+  });
 
-    return dirs.some(dir => workingSet.containsDir(dir.getPath()));
-  }
+  return dirs.some(dir => workingSet.containsDir(dir.getPath()));
 }

@@ -9,13 +9,13 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
-import {Toggle} from './Toggle';
+import {Toggle} from 'nuclide-commons-ui/Toggle';
 
 const NOOP = () => {};
 
-const ToggleExample = (): React.Element<any> =>
+const ToggleExample = (): React.Element<any> => (
   <div>
     <Block>
       <Toggle
@@ -51,7 +51,8 @@ const ToggleExample = (): React.Element<any> =>
         label="A disabled, toggled Toggle."
       />
     </Block>
-  </div>;
+  </div>
+);
 
 export const ToggleExamples = {
   sectionName: 'Toggle',

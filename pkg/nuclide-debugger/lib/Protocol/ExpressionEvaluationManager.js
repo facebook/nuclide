@@ -219,6 +219,7 @@ export default class ExpressionEvaluationManager {
       return {
         name: scope.object.description,
         scopeVariables,
+        scopeObjectId,
       };
     });
 

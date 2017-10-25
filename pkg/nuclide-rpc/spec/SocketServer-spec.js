@@ -17,7 +17,7 @@ import {SocketServer} from '../lib/SocketServer';
 import {SocketTransport} from '../lib/SocketTransport';
 import {RpcConnection} from '../lib/RpcConnection';
 import loadServicesConfig from '../lib/loadServicesConfig';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 import {ServiceRegistry} from '../lib/ServiceRegistry';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -46,6 +46,7 @@ describe('SocketServer', () => {
 
   it('connect and send message', () => {
     waitsForPromise(async () => {
+      // flowlint-next-line sketchy-null-string:off
       invariant(configPath);
       const services = loadServicesConfig(configPath);
       const registry = new ServiceRegistry(

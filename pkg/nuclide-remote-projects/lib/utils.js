@@ -15,8 +15,8 @@ import type {RemoteConnectionConfiguration} from '../../nuclide-remote-connectio
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
-const NUCLIDE_PROTOCOL_PREFIX = 'nuclide:/';
-const NUCLIDE_PROTOCOL_PREFIX_WIN = 'nuclide:\\';
+export const NUCLIDE_PROTOCOL_PREFIX = 'nuclide:/';
+export const NUCLIDE_PROTOCOL_PREFIX_WIN = 'nuclide_\\';
 const NUCLIDE_PROTOCOL_PREFIX_LENGTH = NUCLIDE_PROTOCOL_PREFIX.length;
 
 export type OpenFileEditorInstance = {
@@ -69,7 +69,7 @@ export function* getOpenFileEditorForRemoteProject(
     const paneItems = pane.getItems();
     for (const paneItem of paneItems) {
       // Here, we're explicitly looking for broken nuclide:/ editors.
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       if (!atom.workspace.isTextEditor(paneItem) || !paneItem.getURI()) {
         // Ignore non-text editors and new editors with empty uris / paths.
         continue;
@@ -77,6 +77,7 @@ export function* getOpenFileEditorForRemoteProject(
       const uri = sanitizeNuclideUri(paneItem.getURI());
       const {hostname: fileHostname, path: filePath} = nuclideUri.parse(uri);
       if (fileHostname === connectionConfig.host) {
+        // flowlint-next-line sketchy-null-string:off
         invariant(fileHostname);
         yield {
           pane,

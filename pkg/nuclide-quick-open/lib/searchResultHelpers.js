@@ -10,23 +10,23 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {FileResult} from './types';
+import type {ProviderResult} from './types';
 
-export type ProviderResult = {
+export type ProviderResults = {
   error: ?Object,
   loading: boolean,
-  results: Array<FileResult>,
+  results: Array<ProviderResult>,
 };
 
 export type OuterResults = {
   serviceName: string,
   directoryName: NuclideUri,
-  results: Array<FileResult>,
+  results: Array<ProviderResult>,
 };
 
 export type GroupedResult = {
   priority: number,
-  results: {[key: NuclideUri]: ProviderResult},
+  results: {[key: NuclideUri]: ProviderResults},
   title: string,
   totalResults: number,
 };
@@ -58,7 +58,7 @@ export function filterEmptyResults(
 
 export function flattenResults(
   resultsGroupedByService: GroupedResults,
-): Array<FileResult> {
+): Array<ProviderResult> {
   const items = [];
   for (const serviceName in resultsGroupedByService) {
     for (const dirName in resultsGroupedByService[serviceName].results) {

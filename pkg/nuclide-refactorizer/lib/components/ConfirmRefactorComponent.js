@@ -11,12 +11,12 @@
 
 import type {Store, ConfirmPhase} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 
 import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
 import {pluralize} from 'nuclide-commons/string';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
-import {TreeList, TreeItem} from '../../../nuclide-ui/Tree';
+import {TreeList, TreeItem} from 'nuclide-commons-ui/Tree';
 import PathWithFileIcon from '../../../nuclide-ui/PathWithFileIcon';
 
 import * as Actions from '../refactorActions';
@@ -26,14 +26,12 @@ type Props = {
   store: Store,
 };
 
-export class ConfirmRefactorComponent extends React.PureComponent {
-  props: Props;
-
+export class ConfirmRefactorComponent extends React.PureComponent<Props> {
   _execute = () => {
     this.props.store.dispatch(Actions.apply(this.props.phase.response));
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {response} = this.props.phase;
     const editCount = new Map();
     for (const [path, edits] of response.edits) {
@@ -48,7 +46,7 @@ export class ConfirmRefactorComponent extends React.PureComponent {
           className="nuclide-refactorizer-confirm-list native-key-bindings"
           tabIndex={-1}>
           <TreeList>
-            {Array.from(editCount).map(([path, count]) =>
+            {Array.from(editCount).map(([path, count]) => (
               <TreeItem key={path}>
                 <PathWithFileIcon path={path}>
                   <span className="nuclide-refactorizer-confirm-list-path">
@@ -56,8 +54,8 @@ export class ConfirmRefactorComponent extends React.PureComponent {
                   </span>{' '}
                   ({count} {pluralize('change', count)})
                 </PathWithFileIcon>
-              </TreeItem>,
-            )}
+              </TreeItem>
+            ))}
           </TreeList>
         </div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>

@@ -26,7 +26,7 @@ const fsService = {
     return true;
   },
   rmdir(uri) {
-    return fsPromise.rmdir(nuclideUri.getPath(uri));
+    return fsPromise.rimraf(nuclideUri.getPath(uri));
   },
   exists(uri) {
     return fsPromise.exists(nuclideUri.getPath(uri));
@@ -56,5 +56,5 @@ const connectionMock: ServerConnection & {getFsService(): Object} = ({
   },
 }: any);
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = connectionMock;

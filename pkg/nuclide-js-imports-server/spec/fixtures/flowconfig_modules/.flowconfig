@@ -1,0 +1,6 @@
+[options]
+
+; based on Nuclide's config
+module.system.node.resolve_dirname=node_modules
+module.system.node.resolve_dirname=modules
+

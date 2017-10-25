@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 import {nextAnimationFrame} from 'nuclide-commons/observable';
 
@@ -36,8 +36,7 @@ const EXPANSION_BUFFER = 50;
  *
  * This strategy is derived from https://github.com/wnr/element-resize-detector
  */
-class ResizeSensor extends React.Component {
-  props: SensorProps;
+class ResizeSensor extends React.Component<SensorProps> {
   _expand: ?HTMLElement;
   _shrink: ?HTMLElement;
 
@@ -80,7 +79,7 @@ class ResizeSensor extends React.Component {
     this._shrink = el;
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {targetWidth, targetHeight} = this.props;
     const expandInnerStyle = {
       width: targetWidth + EXPANSION_BUFFER,
@@ -92,6 +91,7 @@ class ResizeSensor extends React.Component {
         className="nuclide-resize-sensitive-container-sensor"
         onAnimationStart={this._handleScroll}>
         <div
+          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={this._handleExpandRef}
           className="nuclide-resize-sensitive-container-expand"
           onScroll={this._handleScroll}>
@@ -101,6 +101,7 @@ class ResizeSensor extends React.Component {
           />
         </div>
         <div
+          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={this._handleShrinkRef}
           className="nuclide-resize-sensitive-container-shrink"
           onScroll={this._handleScroll}>
@@ -132,10 +133,7 @@ type State = {
  *       changes as a result of a DOM mutation, use MeasuredComponent
  *       instead.
  */
-export class ResizeSensitiveContainer extends React.Component {
-  props: Props;
-  state: State;
-
+export class ResizeSensitiveContainer extends React.Component<Props, State> {
   _container: ?HTMLElement;
   _rafDisposable: ?rxjs$Subscription;
 
@@ -189,7 +187,7 @@ export class ResizeSensitiveContainer extends React.Component {
     );
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {children, className, tabIndex} = this.props;
     const {height, width} = this.state;
     const containerClasses = classnames(
@@ -204,13 +202,13 @@ export class ResizeSensitiveContainer extends React.Component {
           tabIndex={tabIndex}>
           {children}
         </div>
-        {this._containerRendered()
-          ? <ResizeSensor
-              targetHeight={height}
-              targetWidth={width}
-              onDetectedResize={this._handleResize}
-            />
-          : null}
+        {this._containerRendered() ? (
+          <ResizeSensor
+            targetHeight={height}
+            targetWidth={width}
+            onDetectedResize={this._handleResize}
+          />
+        ) : null}
       </div>
     );
   }

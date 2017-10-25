@@ -4,13 +4,14 @@
 
 .nuclide-debugger-breakpoint-icon,
 .nuclide-debugger-shadow-breakpoint-icon {
-  // Needs to match .nuclide-diagnostics-gutter-ui-gutter-error
+  // Needs to match .diagnostics-gutter-ui-gutter-error
   .octicon(primitive-dot, @size: 130%);
 }
 
 .nuclide-debugger-breakpoint-icon,
 .nuclide-debugger-breakpoint-icon-disabled,
 .nuclide-debugger-breakpoint-icon-unresolved,
+.nuclide-debugger-breakpoint-icon-conditional,
 .nuclide-debugger-shadow-breakpoint-icon {
   text-align: center;
   display: block;
@@ -18,12 +19,15 @@
   cursor: pointer;
 }
 
-.nuclide-debugger-breakpoint-icon {
+.nuclide-debugger-breakpoint-icon-nonconditional {
   color: @text-color-info;
 }
 
+.nuclide-debugger-breakpoint-icon-conditional {
+  color: @text-color-warning;
+}
+
 .nuclide-debugger-breakpoint-icon-disabled {
-  color: @text-color-info;
   .octicon(circle-slash, @size: 78%);
   position: relative;
   top: -4px;
@@ -31,7 +35,6 @@
 }
 
 .nuclide-debugger-breakpoint-icon-unresolved {
-  color: @text-color-info;
   .octicon(unverified, @size: 80%);
   position: relative;
   top: -2px;

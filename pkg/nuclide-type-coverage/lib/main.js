@@ -13,7 +13,7 @@ import type {CoverageProvider} from './types';
 import type {CoverageResult} from './rpc-types';
 import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 import {Disposable} from 'atom';
@@ -82,8 +82,7 @@ class Activation {
   }
 
   consumeStatusBar(statusBar: atom$StatusBar): IDisposable {
-    const item = document.createElement('div');
-    item.className = 'inline-block';
+    const item = document.createElement('span');
 
     const statusBarTile = statusBar.addLeftTile({
       item,

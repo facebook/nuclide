@@ -27,7 +27,7 @@ describe('blocked()', () => {
   });
 
   afterEach(() => {
-    clearInterval(intervalHandler);
+    intervalHandler.dispose();
   });
 
   it('reports blocking events over the threshold', () => {

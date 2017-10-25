@@ -14,6 +14,12 @@ import type {Observable} from 'rxjs';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {IndieLinterDelegate} from './services/IndieLinterRegistry';
+import type {
+  CodeAction,
+  CodeActionFetcher,
+} from '../../atom-ide-code-actions/lib/types';
+
+export type UiConfig = Array<{providerName: string, settings: Array<string>}>;
 
 export type DiagnosticProvider =
   | CallbackDiagnosticProvider
@@ -33,8 +39,11 @@ export type DiagnosticInvalidationCallback = (
 ) => mixed;
 
 export type ObservableDiagnosticProvider = {
+  +name?: string, // TODO: This should probably be required. It is by the Indie API and is very useful.
   updates: Observable<DiagnosticProviderUpdate>,
   invalidations: Observable<DiagnosticInvalidationMessage>,
+  +supportedMessageKinds?: Array<DiagnosticMessageKind>,
+  +uiSettings?: Array<string>,
 };
 
 export type DiagnosticInvalidationMessage =
@@ -43,28 +52,23 @@ export type DiagnosticInvalidationMessage =
       filePaths: Array<NuclideUri>,
     }
   | {
-      scope: 'project',
-    }
-  | {
       scope: 'all',
     };
 
-// Implicit invalidation semantics:
-//
-// - Previous 'file' scope messages are invalidated if and only if
-// filePathToMessages contains their key as a path.
-//
-// - All previous 'project' scope messages are invalidated whenever
-// projectMessages is populated.
-export type DiagnosticProviderUpdate = {
-  filePathToMessages?: Map<NuclideUri, Array<FileDiagnosticMessage>>,
-  projectMessages?: Array<ProjectDiagnosticMessage>,
-};
+/**
+ * Note: All provided map keys will be automatically invalidated on update.
+ */
+export type DiagnosticProviderUpdate = Map<
+  NuclideUri,
+  Array<DiagnosticMessage>,
+>;
 
+export type DiagnosticMessageKind = 'lint' | 'review';
 export type DiagnosticMessageType = 'Error' | 'Warning' | 'Info';
 
 export type DiagnosticTrace = {
   type: 'Trace',
+  // At least one of text/html must be provided.
   text?: string,
   html?: string,
   filePath?: NuclideUri,
@@ -80,44 +84,34 @@ export type DiagnosticFix = TextEdit & {
   title?: string,
 };
 
-export type FileDiagnosticMessage = {
-  scope: 'file',
+export type DiagnosticAction = {
+  apply: () => mixed,
+  title: string,
+};
+
+export type DiagnosticMessage = {|
+  kind?: DiagnosticMessageKind,
   providerName: string,
-  type: DiagnosticMessageType,
+  type: DiagnosticMessageType, // TODO: Rename to severity.
   filePath: NuclideUri,
   text?: string,
   html?: string,
   range?: atom$Range,
   trace?: Array<DiagnosticTrace>,
   fix?: DiagnosticFix,
+  // Actions will be displayed below the description in the popup.
+  +actions?: Array<DiagnosticAction>,
   // Indicates that the message should still be displayed, but there should be some UI indicating
   // that it is out of date. TODO(matthewwithanm) implement this UI.
   stale?: boolean,
-};
+|};
 
-export type ProjectDiagnosticMessage = {
-  scope: 'project',
-  providerName: string,
-  type: DiagnosticMessageType,
-  text?: string,
-  html?: string,
-  range?: atom$Range,
-  trace?: Array<DiagnosticTrace>,
-  stale?: boolean,
-};
-
-export type FileDiagnosticMessages = {
+export type DiagnosticMessages = {
   filePath: NuclideUri,
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
 };
 
-export type DiagnosticMessage =
-  | FileDiagnosticMessage
-  | ProjectDiagnosticMessage;
-
-export type {
-  default as ObservableDiagnosticUpdater,
-} from './services/ObservableDiagnosticUpdater';
+export type {default as DiagnosticUpdater} from './services/DiagnosticUpdater';
 
 //
 //
@@ -130,11 +124,12 @@ export type LinterTrace = {
   text?: string,
   html?: string,
   filePath: string,
-  range?: atom$Range,
+  range?: atom$RangeLike,
 };
 
 export type LinterMessageV1 = {
-  type: 'Error' | 'Warning' | 'Info',
+  // Should be Error / Warning / Info, but no guarantees.
+  type: string,
   text?: string,
   html?: string,
   /*
@@ -206,7 +201,21 @@ export type LinterProvider = {
   lint: (textEditor: TextEditor) => ?Promise<?Array<LinterMessage>>,
 };
 
-export type RegisterIndieLinter = ({name: string}) => IndieLinterDelegate;
+export type LinterConfig = {
+  name: string,
+
+  // Optional, extended fields.
+
+  // What kinds of messages can this provider emit? This helps as when creating the UI as we won't,
+  // for example, show the "review" filter button unless there's a provider that supports review
+  // messages.
+  supportedMessageKinds?: Array<DiagnosticMessageKind>,
+
+  // Important settings for this provider that should be surfaced by the primary UI.
+  uiSettings?: Array<string>,
+};
+export type RegisterIndieLinter = (config: LinterConfig) => IndieLinterDelegate;
+export type {IndieLinterDelegate} from './services/IndieLinterRegistry';
 
 //
 //
@@ -216,18 +225,17 @@ export type RegisterIndieLinter = ({name: string}) => IndieLinterDelegate;
 
 export type AppState = {
   messages: MessagesState,
-  projectMessages: ProjectMessagesState,
+  codeActionFetcher: ?CodeActionFetcher,
+  codeActionsForMessage: CodeActionsState,
+  providers: Set<ObservableDiagnosticProvider>,
 };
 
 export type MessagesState = Map<
   ObservableDiagnosticProvider,
-  Map<NuclideUri, Array<FileDiagnosticMessage>>,
+  Map<NuclideUri, Array<DiagnosticMessage>>,
 >;
 
-export type ProjectMessagesState = Map<
-  ObservableDiagnosticProvider,
-  Array<ProjectDiagnosticMessage>,
->;
+export type CodeActionsState = Map<DiagnosticMessage, Map<string, CodeAction>>;
 
 export type Store = {
   getState(): AppState,
@@ -245,11 +253,25 @@ export type Action =
     payload: {provider: ObservableDiagnosticProvider},
   }
 
+  // Code Actions
+  | {
+    type: 'SET_CODE_ACTION_FETCHER',
+    payload: {codeActionFetcher: ?CodeActionFetcher},
+  }
+  | {
+    type: 'FETCH_CODE_ACTIONS',
+    payload: {editor: atom$TextEditor, messages: Array<DiagnosticMessage>},
+  }
+  | {
+    type: 'SET_CODE_ACTIONS',
+    payload: {codeActionsForMessage: CodeActionsState},
+  }
+
   // Fixes
   | {
     type: 'APPLY_FIX',
     payload: {
-      message: FileDiagnosticMessage,
+      message: DiagnosticMessage,
     },
   }
   | {
@@ -263,7 +285,7 @@ export type Action =
     type: 'FIXES_APPLIED',
     payload: {
       filePath: NuclideUri,
-      messages: Set<FileDiagnosticMessage>,
+      messages: Set<DiagnosticMessage>,
     },
   }
 

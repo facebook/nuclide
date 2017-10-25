@@ -13,10 +13,10 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Tab} from '../../nuclide-ui/Tabs';
 import type QuickSelectionActions from './QuickSelectionActions';
 
-import type {FileResult} from './types';
+import type {FileResult, ProviderResult} from './types';
 import type SearchResultManager, {ProviderSpec} from './SearchResultManager';
 import type {
-  ProviderResult,
+  ProviderResults,
   GroupedResult,
   GroupedResults,
 } from './searchResultHelpers';
@@ -28,7 +28,7 @@ type ResultContext = {
   currentService: GroupedResult,
   directoryNames: Array<NuclideUri>,
   currentDirectoryIndex: number,
-  currentDirectory: ProviderResult,
+  currentDirectory: ProviderResults,
 };
 
 export type SelectionIndex = {
@@ -41,13 +41,14 @@ import {Observable, Scheduler} from 'rxjs';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button} from 'nuclide-commons-ui/Button';
 import {Icon} from 'nuclide-commons-ui/Icon';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 import Tabs from '../../nuclide-ui/Tabs';
 import {Badge, BadgeSizes} from '../../nuclide-ui/Badge';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import humanizeKeystroke from '../../commons-node/humanizeKeystroke';
-import {throttle, microtask} from 'nuclide-commons/observable';
-import React from 'react';
+import {fastDebounce, throttle, microtask} from 'nuclide-commons/observable';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -76,7 +77,7 @@ type Props = {|
   quickSelectionActions: QuickSelectionActions,
   onCancellation: () => void,
   onSelection: (
-    selections: Array<FileResult>,
+    selections: Array<ProviderResult>,
     providerName: string,
     query: string,
   ) => void,
@@ -99,10 +100,10 @@ type State = {
   initialQuery: string,
 };
 
-export default class QuickSelectionComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export default class QuickSelectionComponent extends React.Component<
+  Props,
+  State,
+> {
   _subscriptions: UniversalDisposable;
 
   constructor(props: Props) {
@@ -242,13 +243,13 @@ export default class QuickSelectionComponent extends React.Component {
         this._handleDocumentMouseDown,
       ),
       // The text editor often changes during dispatches, so wait until the next tick.
-      throttle(
-        observableFromSubscribeFunction(cb =>
-          this._getTextEditor().onDidChange(cb),
-        ),
-        microtask,
-        {leading: false},
-      ).subscribe(this._handleTextInputChange),
+      observableFromSubscribeFunction(cb =>
+        this._getTextEditor()
+          .getBuffer()
+          .onDidChangeText(cb),
+      )
+        .let(throttle(microtask, {leading: false}))
+        .subscribe(this._handleTextInputChange),
       observableFromSubscribeFunction(cb =>
         this.props.searchResultManager.onProvidersChanged(cb),
       )
@@ -257,7 +258,7 @@ export default class QuickSelectionComponent extends React.Component {
       observableFromSubscribeFunction(cb =>
         this.props.searchResultManager.onResultsChanged(cb),
       )
-        .debounceTime(50)
+        .let(fastDebounce(50))
         // debounceTime seems to have issues canceling scheduled work. So
         // schedule it after we've debounced the events. See
         // https://github.com/ReactiveX/rxjs/pull/2135
@@ -280,7 +281,7 @@ export default class QuickSelectionComponent extends React.Component {
     }
   };
 
-  _handleKeyPress = (e: SyntheticKeyboardEvent): void => {
+  _handleKeyPress = (e: SyntheticKeyboardEvent<>): void => {
     if (e.shiftKey && e.key === 'Enter') {
       if (this.state.activeTab.canOpenAll) {
         this._openAll();
@@ -565,8 +566,7 @@ export default class QuickSelectionComponent extends React.Component {
     // Passing false causes the minimum necessary scroll to occur, so the selection sticks to the
     // top/bottom.
     if (selectedNode) {
-      // $FlowFixMe
-      selectedNode.scrollIntoViewIfNeeded(false);
+      scrollIntoViewIfNeeded(selectedNode, false);
     }
   }
 
@@ -600,7 +600,7 @@ export default class QuickSelectionComponent extends React.Component {
     serviceName: string,
     directory: string,
     itemIndex: number,
-  ): ?FileResult {
+  ): ?ProviderResult {
     if (
       itemIndex === -1 ||
       !this.state.resultsByService[serviceName] ||
@@ -617,15 +617,21 @@ export default class QuickSelectionComponent extends React.Component {
   }
 
   _componentForItem(
-    item: any,
+    item: ProviderResult,
     serviceName: string,
     dirName: string,
   ): React.Element<any> {
-    return this.props.searchResultManager.getRendererForProvider(serviceName)(
-      item,
+    if (item.resultType === 'FILE') {
+      (item: FileResult);
+      return this.props.searchResultManager.getRendererForProvider(
+        serviceName,
+        item,
+      )(item, serviceName, dirName);
+    }
+    return this.props.searchResultManager.getRendererForProvider(
       serviceName,
-      dirName,
-    );
+      item,
+    )(item, serviceName, dirName);
   }
 
   _getSelectedIndex(): SelectionIndex {
@@ -687,11 +693,7 @@ export default class QuickSelectionComponent extends React.Component {
         ? _findKeybindingForAction(tab.action, workspace)
         : '';
       if (humanizedKeybinding !== '') {
-        keyBinding = (
-          <kbd className="key-binding">
-            {humanizedKeybinding}
-          </kbd>
-        );
+        keyBinding = <kbd className="key-binding">{humanizedKeybinding}</kbd>;
       }
       return {
         name: tab.name,
@@ -721,7 +723,7 @@ export default class QuickSelectionComponent extends React.Component {
     this.props.onSelection(selections, providerName, query);
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     let numTotalResultsRendered = 0;
     const isOmniSearchActive =
       this.state.activeTab.name === 'OmniSearchResultProvider';
@@ -816,9 +818,7 @@ export default class QuickSelectionComponent extends React.Component {
             key={dirName}>
             {directoryLabel}
             {message}
-            <ul className="list-tree">
-              {itemComponents}
-            </ul>
+            <ul className="list-tree">{itemComponents}</ul>
           </li>
         );
       });
@@ -842,9 +842,7 @@ export default class QuickSelectionComponent extends React.Component {
         return (
           <li className="list-nested-item" key={serviceName}>
             {serviceLabel}
-            <ul className="list-tree">
-              {directoriesForService}
-            </ul>
+            <ul className="list-tree">{directoriesForService}</ul>
           </li>
         );
       }

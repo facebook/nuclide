@@ -31,10 +31,13 @@ export type OutlineTree = {
   // Must be one or the other. If both are present, tokenizedText is preferred.
   plainText?: string,
   tokenizedText?: TokenizedText,
+
+  // If user has atom-ide-outline-view.nameOnly then representativeName is used instead.
   representativeName?: string,
 
   startPosition: atom$Point,
   endPosition?: atom$Point,
+  landingPosition?: atom$Point,
   children: Array<OutlineTree>,
 };
 

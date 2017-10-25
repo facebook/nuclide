@@ -11,15 +11,15 @@
  */
 
 import {
-  createAdapters,
+  createAdapter,
   validateLinter,
 } from '../lib/services/LinterAdapterFactory';
 
 const grammar = 'testgrammar';
 
-describe('createAdapters', () => {
-  function createAdaptersWithMock(linterProviders) {
-    return createAdapters(linterProviders);
+describe('createAdapter', () => {
+  function createAdapterWithMock(linterProviders) {
+    return createAdapter(linterProviders, jasmine.createSpy());
   }
 
   let fakeLinter: any;
@@ -48,11 +48,7 @@ describe('createAdapters', () => {
   });
 
   it('should return a linter adapter', () => {
-    expect(createAdaptersWithMock(fakeLinter).size).toBe(1);
-  });
-
-  it('should return multiple adapters if it is passed an array', () => {
-    expect(createAdaptersWithMock([fakeLinter, fakeLinter]).size).toBe(2);
+    expect(createAdapterWithMock(fakeLinter)).not.toBe(null);
   });
 });
 
@@ -84,5 +80,11 @@ describe('validateLinter', () => {
   it('should return errors for a linter where lint is not a function', () => {
     linter.lint = [];
     expect(validateLinter(linter)).toEqual(['lint must be a function']);
+  });
+
+  it('it should use a default name if not provided', () => {
+    linter.name = null;
+    expect(validateLinter(linter).length).toBe(0);
+    expect(linter.name).toBe('Linter');
   });
 });

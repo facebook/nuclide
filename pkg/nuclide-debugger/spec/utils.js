@@ -39,9 +39,17 @@ export function getBreakpointDecorationInRow(
       const {gutterName, item} = decorations[i].getProperties();
       if (
         gutterName === 'nuclide-breakpoint' &&
-        (item.className === 'nuclide-debugger-breakpoint-icon' ||
-          item.className === 'nuclide-debugger-breakpoint-icon-unresolved' ||
-          item.className === 'nuclide-debugger-breakpoint-icon-disabled')
+        ((item.className.includes('nuclide-debugger-breakpoint-icon') ||
+          item.className.includes(
+            'nuclide-debugger-breakpoint-icon-unresolved',
+          ) ||
+          item.className.includes(
+            'nuclide-debugger-breakpoint-icon-disabled',
+          ) ||
+          item.className.includes(
+            'nuclide-debugger-breakpoint-icon-conditional',
+          )) &&
+          !item.className.includes('nuclide-debugger-shadow-breakpoint-icon'))
       ) {
         return decorations[i];
       }

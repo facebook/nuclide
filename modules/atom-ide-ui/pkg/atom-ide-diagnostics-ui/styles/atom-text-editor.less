@@ -3,17 +3,21 @@
 // TODO: Use border-image to support a wavy line instead of dashed.
 // See http://stackoverflow.com/a/17277997/396304.
 
-atom-text-editor .nuclide-diagnostics-gutter-ui-highlight-error > .region {
+atom-text-editor .diagnostics-gutter-ui-highlight-error > .region {
   border-bottom: 1px dashed @text-color-error;
 }
 
-atom-text-editor .nuclide-diagnostics-gutter-ui-highlight-warning > .region {
+atom-text-editor .diagnostics-gutter-ui-highlight-warning > .region {
   border-bottom: 1px dashed @text-color-warning;
+}
+
+atom-text-editor .diagnostics-gutter-ui-highlight-info > .region {
+  border-bottom: 1px dashed @text-color-info;
 }
 
 // This prevents underlines that expand to the end of the buffer from appearing
 // We ensure that this can only happen when the user is typing over a lint rule
 // and therefore likely making the lint rule invalid anyway.
-atom-text-editor .nuclide-diagnostics-gutter-ui-highlight > .region {
+atom-text-editor .diagnostics-gutter-ui-highlight > .region {
   right: auto !important;
 }

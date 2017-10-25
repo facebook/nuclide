@@ -21,7 +21,8 @@ export function createMessageStream(
   line$: Observable<string>,
 ): Observable<Message> {
   // Group the lines into valid plist strings.
-  const messages = bufferUntil(line$, line => line.trim() === '</plist>')
+  const messages = line$
+    .let(bufferUntil(line => line.trim() === '</plist>'))
     // Don't include empty buffers. This happens if the stream completes since we opened a new
     // buffer when the previous record ended.
     .filter(lines => lines.length > 1)

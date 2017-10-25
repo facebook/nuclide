@@ -39,6 +39,7 @@ export default (typeof requestIdleCallback !== 'undefined'
       options?: OptionsT = {},
     ): IDisposable {
       const afterRemainingTime = options.afterRemainingTime || 49;
+      // flowlint-next-line sketchy-null-number:off
       const timeout = options.timeout || 500;
       let callback = callback_;
       let id;

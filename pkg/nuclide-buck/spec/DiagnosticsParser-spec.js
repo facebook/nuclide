@@ -46,7 +46,6 @@ describe('DiagnosticsProvider', () => {
         await diagnosticsParser.getDiagnostics(message, 'error', '/'),
       ).toEqual([
         {
-          scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: '/good_file.cpp',
@@ -68,7 +67,6 @@ describe('DiagnosticsProvider', () => {
           ],
         },
         {
-          scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: '/good_file2.cpp',
@@ -94,7 +92,6 @@ describe('DiagnosticsProvider', () => {
         await diagnosticsParser.getDiagnostics(message, 'error', '/root'),
       ).toEqual([
         {
-          scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: '/a/good_file.cpp',
@@ -143,7 +140,6 @@ describe('DiagnosticsProvider', () => {
         [],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BarTests.m',
@@ -205,7 +201,6 @@ describe('DiagnosticsProvider', () => {
         [],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BarTests.m',
@@ -224,7 +219,6 @@ describe('DiagnosticsProvider', () => {
         ],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BarTests.m',
@@ -243,7 +237,6 @@ describe('DiagnosticsProvider', () => {
         ],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BarTests.m',
@@ -310,7 +303,6 @@ describe('DiagnosticsProvider', () => {
         [],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BarTests.m',
@@ -331,7 +323,6 @@ describe('DiagnosticsProvider', () => {
         [],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/QuxTests.m',
@@ -350,7 +341,6 @@ describe('DiagnosticsProvider', () => {
         ],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/QuxTests.m',
@@ -391,7 +381,6 @@ describe('DiagnosticsProvider', () => {
       expect(await diagnostics).toEqual([
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/FooTests.m',
@@ -410,7 +399,6 @@ describe('DiagnosticsProvider', () => {
         ],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/good/path/to/BazTests.m',
@@ -452,7 +440,6 @@ describe('DiagnosticsProvider', () => {
       expect(await diagnostics).toEqual([
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/a/good_file.ml',
@@ -471,7 +458,6 @@ describe('DiagnosticsProvider', () => {
         ],
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
             filePath: '/a/good_file2.ml',
@@ -502,7 +488,6 @@ describe('DiagnosticsProvider', () => {
         await diagnosticsParser.getDiagnostics(message, 'warning', '/'),
       ).toEqual([
         {
-          scope: 'file',
           providerName: 'Buck',
           type: 'Warning',
           filePath: '/a/good_file.ml',
@@ -528,17 +513,17 @@ describe('DiagnosticsProvider', () => {
             '\n' +
             'error: aborting due to previous error',
           'error',
-          '/',
+          '/ROOT/PATH',
         ),
       ]);
 
       expect(await diagnostics).toEqual([
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Error',
-            filePath: '/good/path/to/hello.rs',
+            filePath:
+              '/ROOT/PATH/buck-out/foo/bar#some-container/good/path/to/hello.rs',
             text:
               'error: expected one of `.`, `;`, `?`, `}`, or an operator, found `breakage`',
             range: {
@@ -562,7 +547,7 @@ describe('DiagnosticsProvider', () => {
       const diagnostics = Promise.all([
         diagnosticsParser.getDiagnostics(
           'warning: unused variable: `unused`\n' +
-            '  --> buck-out/foo/bar#some-container/good/path/to/hello.rs:10:9\n' +
+            '  --> some-container/good/path/to/hello.rs:10:9\n' +
             '   |\n' +
             '10 |     let unused = 44;\n' +
             '   |         ^^^^^^\n' +
@@ -570,17 +555,16 @@ describe('DiagnosticsProvider', () => {
             '   = note: #[warn(unused_variables)] on by default' +
             'error: aborting due to previous error',
           'error',
-          '/',
+          '/ROOT/PATH',
         ),
       ]);
 
       expect(await diagnostics).toEqual([
         [
           {
-            scope: 'file',
             providerName: 'Buck',
             type: 'Warning',
-            filePath: '/good/path/to/hello.rs',
+            filePath: '/ROOT/PATH/some-container/good/path/to/hello.rs',
             text: 'warning: unused variable: `unused`',
             range: {
               start: {

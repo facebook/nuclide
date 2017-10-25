@@ -4,13 +4,14 @@
 ; ignore module source to prefer declaration
 <PROJECT_ROOT>/node_modules/classnames/.*
 <PROJECT_ROOT>/node_modules/lru-cache/.*
+<PROJECT_ROOT>/node_modules/prop-types/.*
 <PROJECT_ROOT>/node_modules/react/.*
 <PROJECT_ROOT>/node_modules/rxjs/.*
 <PROJECT_ROOT>/node_modules/semver/.*
 <PROJECT_ROOT>/node_modules/jest-validate/.*
 ; annotated with `@flow` but have errors
-<PROJECT_ROOT>/node_modules/fbjs/lib/.*
-<PROJECT_ROOT>/pkg/nuclide-node-transpiler/spec/fixtures/.*
+<PROJECT_ROOT>/node_modules/\(.*/\)*fbjs/lib/.*
+<PROJECT_ROOT>/modules/nuclide-node-transpiler/spec/fixtures/.*
 ; large dirs that are not imported
 <PROJECT_ROOT>/docs/.*
 <PROJECT_ROOT>/pkg/nuclide-debugger/VendorLib/devtools/.*
@@ -37,5 +38,8 @@ suppress_comment=.*\\$FlowIgnore.*
 [lints]
 untyped-type-import=error
 
+sketchy-null=error
+sketchy-null-bool=off
+
 [version]
-0.52.0
+0.57.3

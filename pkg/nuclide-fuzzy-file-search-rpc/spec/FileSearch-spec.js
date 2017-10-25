@@ -13,7 +13,7 @@ import invariant from 'assert';
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {runCommand} from 'nuclide-commons/process';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 import {fileSearchForDirectory} from '../lib/process/FileSearch';
 import * as watchmanHelpers from '../../nuclide-watchman-helpers';
 

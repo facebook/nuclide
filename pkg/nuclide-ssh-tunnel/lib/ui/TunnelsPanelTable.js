@@ -12,17 +12,15 @@ import type {OpenTunnel, Tunnel} from '../types';
 
 import TunnelCloseButton from './TunnelCloseButton';
 import {Table} from 'nuclide-commons-ui/Table';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   tunnels: Array<[Tunnel, OpenTunnel]>,
   closeTunnel: (tunnel: Tunnel) => void,
 };
 
-export class TunnelsPanelTable extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export class TunnelsPanelTable extends React.Component<Props> {
+  render(): React.Node {
     const columns = [
       {
         title: 'From',
@@ -65,10 +63,11 @@ export class TunnelsPanelTable extends React.Component {
     });
     return (
       <Table
-        emptyComponent={() =>
+        emptyComponent={() => (
           <div className="nuclide-ssh-tunnels-table-empty-message">
             No SSH tunnels are open.
-          </div>}
+          </div>
+        )}
         className="nuclide-ssh-tunnels-table"
         rows={rows}
         columns={columns}

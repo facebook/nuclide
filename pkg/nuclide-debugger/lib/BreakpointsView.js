@@ -11,21 +11,19 @@
 
 import classnames from 'classnames';
 import type DebuggerModel from './DebuggerModel';
-import React from 'react';
+import * as React from 'react';
 import {BreakpointListComponent} from './BreakpointListComponent';
 
 type Props = {
   model: DebuggerModel,
 };
 
-export class BreakpointsView extends React.PureComponent {
-  props: Props;
-
+export class BreakpointsView extends React.PureComponent<Props> {
   constructor(props: Props) {
     super(props);
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {model} = this.props;
     const actions = model.getActions();
 

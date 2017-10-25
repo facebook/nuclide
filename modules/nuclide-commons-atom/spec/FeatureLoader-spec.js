@@ -12,7 +12,7 @@
 
 import idx from 'idx';
 import fs from 'fs';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 
 import FeatureLoader from '../FeatureLoader';

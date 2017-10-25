@@ -16,6 +16,7 @@ import type {
   ClangRequestSettings,
 } from './rpc-types';
 
+import {Observable} from 'rxjs';
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {shellParse} from 'nuclide-commons/string';
@@ -33,11 +34,13 @@ import {
 } from './utils';
 import {
   getRelatedHeaderForSource,
-  findSourceFileForHeader,
+  getRelatedSourceForHeader,
+  findIncludingSourceFile,
 } from './RelatedFileFinder';
 
 const logger = getLogger('nuclide-clang-rpc');
 
+const INCLUDE_SEARCH_TIMEOUT = 15000;
 const COMPILATION_DATABASE_FILE = 'compile_commands.json';
 const PROJECT_CLANG_FLAGS_FILE = '.nuclide_clang_config.json';
 
@@ -289,13 +292,17 @@ export default class ClangFlagsManager {
   }
 
   async _getRelatedSrcFileForHeader(
-    src: string,
+    header: string,
     dbFlags: ?Map<string, ClangFlags>,
     projectRoot: ?string,
   ): Promise<?string> {
+    const source = await getRelatedSourceForHeader(header);
+    if (source != null) {
+      return source;
+    }
     if (dbFlags != null) {
       const sourceFile = this._findSourceFileForHeaderFromCompilationDatabase(
-        src,
+        header,
         dbFlags,
       );
       if (sourceFile != null) {
@@ -303,7 +310,12 @@ export default class ClangFlagsManager {
       }
     }
     if (projectRoot != null) {
-      return findSourceFileForHeader(src, projectRoot);
+      // Try searching all subdirectories for source files that include this header.
+      // Give up after INCLUDE_SEARCH_TIMEOUT.
+      return findIncludingSourceFile(header, projectRoot)
+        .timeout(INCLUDE_SEARCH_TIMEOUT)
+        .catch(() => Observable.of(null))
+        .toPromise();
     }
     return null;
   }
@@ -322,6 +334,7 @@ export default class ClangFlagsManager {
       return this._getRelatedSrcFileForHeader(
         src,
         dbFlags,
+        // flowlint-next-line sketchy-null-string:off
         projectRoot || dbDir,
       );
     }
@@ -347,6 +360,7 @@ export default class ClangFlagsManager {
       const sourceFile = await this._getRelatedSrcFileForHeader(
         src,
         dbFlags,
+        // flowlint-next-line sketchy-null-string:off
         requestSettings.projectRoot || dbDir,
       );
       if (sourceFile != null) {
@@ -442,6 +456,7 @@ export default class ClangFlagsManager {
                 directory,
                 arguments: entry.arguments,
               },
+              // flowlint-next-line sketchy-null-string:off
               flagsFile: flagsFile || dbFile,
             };
             flags.set(realpath, result);

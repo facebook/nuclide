@@ -10,10 +10,11 @@
  * @format
  */
 
-import nuclideUri from 'nuclide-commons/nuclideUri';
+import nuclideUri from '../nuclideUri';
 import dedent from 'dedent';
 import {Point} from 'simple-text-buffer';
 import {getDefinitionPreview} from '../symbol-definition-preview';
+import invariant from 'assert';
 
 function javascriptFixtureDefinitionWithPoint(point: Point) {
   return {
@@ -47,7 +48,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(11, 6)),
         );
 
-        expect(preview).toEqual('const A_CONSTANT = 42;');
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual('const A_CONSTANT = 42;');
       });
     });
 
@@ -57,7 +60,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(15, 6)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`const A_MULTILINE_CONST = \`
             hey look I span
               multiple
@@ -75,7 +80,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(21, 5)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`type Something = {
             name: string,
             age?: number,
@@ -90,7 +97,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(44, 4)),
         );
 
-        expect(preview).toEqual('name: string,');
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual('name: string,');
       });
     });
 
@@ -100,7 +109,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(43, 2)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`properties: {
             name: string,
             age?: number,
@@ -117,7 +128,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(26, 16)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           'export function aSingleLineFunctionSignature() {',
         );
       });
@@ -129,7 +142,9 @@ describe('getDefinitionPreview', () => {
           pythonFixtureDefinitionWithPoint(new Point(7, 4)),
         );
 
-        expect(preview).toEqual('def foo(bar=27):');
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual('def foo(bar=27):');
       });
     });
 
@@ -139,7 +154,9 @@ describe('getDefinitionPreview', () => {
           pythonFixtureDefinitionWithPoint(new Point(11, 4)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`def baz(test={
             'one': 'two'
           }):`,
@@ -153,7 +170,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(36, 18)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`
               export function aPoorlyIndentedFunction(
             aReallyReallyLongArgumentNameThatWouldRequireThisToBreakAcrossMultipleLines: Something,
@@ -169,7 +188,9 @@ describe('getDefinitionPreview', () => {
           javascriptFixtureDefinitionWithPoint(new Point(30, 16)),
         );
 
-        expect(preview).toEqual(
+        expect(preview).not.toBeNull();
+        invariant(preview != null);
+        expect(preview.contents).toEqual(
           dedent`
             export function aMultiLineFunctionSignature(
               aReallyReallyLongArgumentNameThatWouldRequireThisToBreakAcrossMultipleLines: Something,

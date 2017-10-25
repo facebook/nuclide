@@ -101,7 +101,10 @@ export class RemoteFile {
         }
       },
       error => {
-        logger.error('Failed to subscribe RemoteFile:', this._path, error);
+        // In the case of new files, it's normal for the remote file to not exist yet.
+        if (error.code !== 'ENOENT') {
+          logger.error('Failed to subscribe RemoteFile:', this._path, error);
+        }
         this._watchSubscription = null;
       },
       () => {
@@ -197,20 +200,24 @@ export class RemoteFile {
   }
 
   getDigestSync(): string {
+    // flowlint-next-line sketchy-null-string:off
     if (!this._digest) {
       // File's `getDigestSync()` calls `readSync()`, which we don't implement.
       // However, we mimic it's behavior for when a file does not exist.
       this._setDigest('');
     }
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._digest);
     return this._digest;
   }
 
   async getDigest(): Promise<string> {
+    // flowlint-next-line sketchy-null-string:off
     if (this._digest) {
       return this._digest;
     }
     await this.read();
+    // flowlint-next-line sketchy-null-string:off
     invariant(this._digest);
     return this._digest;
   }
@@ -244,6 +251,7 @@ export class RemoteFile {
   }
 
   getRealPathSync(): string {
+    // flowlint-next-line sketchy-null-string:off
     return this._realpath || this._path;
   }
 

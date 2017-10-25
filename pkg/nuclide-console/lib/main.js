@@ -20,6 +20,7 @@ import type {
   OutputService,
   Record,
   RegisterExecutorFunction,
+  WatchEditorFunction,
   Store,
 } from './types';
 import type {CreatePasteFunction} from '../../nuclide-paste-base';
@@ -37,11 +38,14 @@ import * as Epics from './redux/Epics';
 import Reducers from './redux/Reducers';
 import {ConsoleContainer, WORKSPACE_VIEW_URI} from './ui/ConsoleContainer';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {applyMiddleware, createStore} from 'redux';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 const MAXIMUM_SERIALIZED_MESSAGES_CONFIG =
   'nuclide-console.maximumSerializedMessages';
+const MAXIMUM_SERIALIZED_HISTORY_CONFIG =
+  'nuclide-console.maximumSerializedHistory';
 
 class Activation {
   _disposables: UniversalDisposable;
@@ -107,12 +111,14 @@ class Activation {
 
   consumeToolBar(getToolBar: toolbar$GetToolbar): void {
     const toolBar = getToolBar('nuclide-console');
-    toolBar.addButton({
-      icon: 'terminal',
-      callback: 'nuclide-console:toggle',
-      tooltip: 'Toggle Console',
-      priority: 700,
-    });
+    toolBar.addButton(
+      makeToolbarButtonSpec({
+        icon: 'terminal',
+        callback: 'nuclide-console:toggle',
+        tooltip: 'Toggle Console',
+        priority: 700,
+      }),
+    );
     this._disposables.add(() => {
       toolBar.removeItems();
     });
@@ -126,6 +132,32 @@ class Activation {
         this._getStore().dispatch(Actions.setCreatePasteFunction(null));
       }
     });
+  }
+
+  consumeWatchEditor(watchEditor: WatchEditorFunction): IDisposable {
+    this._getStore().dispatch(Actions.setWatchEditor(watchEditor));
+    return new UniversalDisposable(() => {
+      if (this._getStore().getState().watchEditor === watchEditor) {
+        this._getStore().dispatch(Actions.setWatchEditor(null));
+      }
+    });
+  }
+
+  provideAutocomplete(): atom$AutocompleteProvider {
+    const activation = this;
+    return {
+      labels: ['nuclide-console'],
+      selector: '*',
+      // Copies Chrome devtools and puts history suggestions at the bottom.
+      suggestionPriority: -1,
+      filterSuggestions: true,
+      async getSuggestions(request) {
+        const history = activation._getStore().getState().history;
+        // Use a set to remove duplicates.
+        const seen = new Set(history);
+        return Array.from(seen).map(text => ({text}));
+      },
+    };
   }
 
   _registerCommandAndOpener(): UniversalDisposable {
@@ -204,6 +236,7 @@ class Activation {
               sourceId: sourceInfo.id,
               kind: message.kind || 'message',
               timestamp: new Date(), // TODO: Allow this to come with the message?
+              repeatCount: 1,
             }),
           );
         },
@@ -281,8 +314,12 @@ class Activation {
     const maximumSerializedMessages: number = (featureConfig.get(
       MAXIMUM_SERIALIZED_MESSAGES_CONFIG,
     ): any);
+    const maximumSerializedHistory: number = (featureConfig.get(
+      MAXIMUM_SERIALIZED_HISTORY_CONFIG,
+    ): any);
     return {
       records: this._store.getState().records.slice(-maximumSerializedMessages),
+      history: this._store.getState().history.slice(-maximumSerializedHistory),
     };
   }
 }
@@ -296,7 +333,7 @@ function deserializeAppState(rawState: ?Object): AppState {
       rawState && rawState.records
         ? rawState.records.map(deserializeRecord)
         : [],
-    history: [],
+    history: rawState && rawState.history ? rawState.history : [],
     providers: new Map(),
     providerStatuses: new Map(),
 

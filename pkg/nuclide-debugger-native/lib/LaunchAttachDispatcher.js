@@ -23,6 +23,7 @@ export const ActionTypes = Object.freeze({
 });
 
 // Flow hack: Every LaunchAttachAction actionType must be in ActionTypes.
+// $FlowFixMe(>=0.55.0) Flow suppress
 (('': $PropertyType<LaunchAttachAction, 'actionType'>): $Keys<
   typeof ActionTypes,
 >);

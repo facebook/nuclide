@@ -23,7 +23,7 @@ describe('CounterService', () => {
         [
           {
             name: 'CounterService',
-            definition: nuclideUri.join(__dirname, 'CounterService.def'),
+            definition: nuclideUri.join(__dirname, 'CounterService.js'),
             implementation: nuclideUri.join(__dirname, 'CounterService.js'),
           },
         ],
@@ -41,28 +41,34 @@ describe('CounterService', () => {
       invariant(service);
 
       let watchedCounters = 0;
-      service.Counter.watchNewCounters().refCount().subscribe(async counter => {
-        await counter.getCount();
-        ++watchedCounters;
-      });
+      service.Counter
+        .watchNewCounters()
+        .refCount()
+        .subscribe(async counter => {
+          await counter.getCount();
+          ++watchedCounters;
+        });
 
       // Create two services.
-      const counter1 = new service.Counter(3);
-      const counter2 = new service.Counter(5);
+      const counter1 = await service.Counter.createCounter(3);
+      const counter2 = await service.Counter.createCounter(5);
 
       // Subscribe to events from counter1.
       let completed1 = false;
-      counter1.watchChanges().refCount().subscribe(
-        event => {
-          expect(event.type).toBe('add');
-          expect(event.oldValue).toBe(3);
-          expect(event.newValue).toBe(4);
-        },
-        () => {},
-        () => {
-          completed1 = true;
-        },
-      );
+      counter1
+        .watchChanges()
+        .refCount()
+        .subscribe(
+          event => {
+            expect(event.type).toBe('add');
+            expect(event.oldValue).toBe(3);
+            expect(event.newValue).toBe(4);
+          },
+          () => {},
+          () => {
+            completed1 = true;
+          },
+        );
 
       // Confirm their initial value.
       expect(await counter1.getCount()).toBe(3);
@@ -122,13 +128,13 @@ describe('CounterService', () => {
       });
 
       // Create two services.
-      const counter1 = new service.Counter(3);
+      const counter1 = await service.Counter.createCounter(3);
       await counter1.getCount();
 
-      const counter2 = new service.Counter(5);
+      const counter2 = await service.Counter.createCounter(5);
       await counter2.getCount();
 
-      const counter3 = new service.Counter(7);
+      const counter3 = await service.Counter.createCounter(7);
       await counter3.getCount();
 
       expect(watchedCounters1).toBe(1);

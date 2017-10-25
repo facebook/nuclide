@@ -17,12 +17,11 @@ import type {
 } from './types';
 import type {Option} from '../../nuclide-ui/Dropdown';
 
-import React from 'react';
+import * as React from 'react';
 import shallowequal from 'shallowequal';
 
 import BuckToolbarSettings from './ui/BuckToolbarSettings';
 import BuckToolbarTargetSelector from './ui/BuckToolbarTargetSelector';
-import {maybeToString} from 'nuclide-commons/string';
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
 import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
@@ -51,28 +50,23 @@ function hasMobilePlatform(platformGroups: Array<PlatformGroup>): boolean {
   );
 }
 
-export default class BuckToolbar extends React.Component {
-  props: Props;
-  state: State;
+export default class BuckToolbar extends React.Component<Props, State> {
+  state = {settingsVisible: false};
 
-  constructor(props: Props) {
-    super(props);
-    this.state = {settingsVisible: false};
-  }
-
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       buildRuleType,
       buildTarget,
       buckRoot,
+      buckversionFileContents,
       isLoadingRule,
       isLoadingPlatforms,
       platformGroups,
       platformProviderUi,
-      projectRoot,
       selectedDeploymentTarget,
       taskSettings,
     } = this.props.appState;
+    invariant(buckRoot != null);
     const extraToolbarUi =
       platformProviderUi != null ? platformProviderUi.toolbar : null;
     const extraSettings =
@@ -92,25 +86,15 @@ export default class BuckToolbar extends React.Component {
         </div>
       );
     } else if (buildTarget && buildRuleType == null) {
-      let title;
-      if (buckRoot == null) {
-        if (projectRoot != null) {
-          title = `No Buck project found in the Current Working Root:<br />${projectRoot}`;
-        } else {
-          title = 'No Current Working Root.';
-        }
-      } else {
-        title =
-          `Rule "${buildTarget}" could not be found in ${buckRoot}.<br />` +
-          `Check your Current Working Root: ${maybeToString(projectRoot)}`;
-      }
-
-      title += '<br />Click icon to retry';
-
       status = (
         <span
           className="icon icon-alert"
-          ref={addTooltip({title, delay: 0})}
+          ref={addTooltip({
+            title:
+              `'${buildTarget}' could not be found in ${buckRoot}.<br />` +
+              'Check your Current Working Root or click to retry',
+            delay: 0,
+          })}
           onClick={() => this.props.setBuildTarget(buildTarget)}
         />
       );
@@ -158,15 +142,16 @@ export default class BuckToolbar extends React.Component {
           onClick={() => this._showSettings()}
         />
         {widgets}
-        {this.state.settingsVisible
-          ? <BuckToolbarSettings
-              currentBuckRoot={buckRoot}
-              settings={taskSettings}
-              platformProviderSettings={extraSettings}
-              onDismiss={() => this._hideSettings()}
-              onSave={settings => this._saveSettings(settings)}
-            />
-          : null}
+        {this.state.settingsVisible ? (
+          <BuckToolbarSettings
+            buckRoot={buckRoot}
+            buckversionFileContents={buckversionFileContents}
+            settings={taskSettings}
+            platformProviderSettings={extraSettings}
+            onDismiss={() => this._hideSettings()}
+            onSave={settings => this._saveSettings(settings)}
+          />
+        ) : null}
       </div>
     );
   }
@@ -193,7 +178,11 @@ export default class BuckToolbar extends React.Component {
   ): Array<Option> {
     return platformGroups.reduce((options, platformGroup) => {
       let dropdownGroup = null;
-      if (platformGroup.platforms.length === 1) {
+      if (
+        platformGroup.platforms.length === 1 &&
+        platformGroup.platforms[0].isMobile &&
+        platformGroup.platforms[0].deviceGroups.length < 2
+      ) {
         dropdownGroup = this._turnDevicesIntoSelectableOptions(platformGroup);
       } else {
         dropdownGroup = this._putDevicesIntoSubmenus(platformGroup);
@@ -212,6 +201,7 @@ export default class BuckToolbar extends React.Component {
     let header;
     invariant(platform.isMobile);
 
+    const headerLabel = `${platformGroup.name} ${platform.name}`;
     if (platform.deviceGroups.length === 0) {
       header = {
         label: platformGroup.name,
@@ -221,22 +211,22 @@ export default class BuckToolbar extends React.Component {
       selectableOptions = [
         {
           label: `  ${platform.name}`,
-          selectedLabel: platform.name,
-          value: {platform, device: null},
+          selectedLabel: headerLabel,
+          value: {platformGroup, platform, deviceGroup: null, device: null},
         },
       ];
     } else {
-      const headerLabel = `${platformGroup.name} ${platform.name}`;
       header = {
         label: headerLabel,
         value: platform.name,
         disabled: true,
       };
-      selectableOptions = platform.deviceGroups[0].devices.map(device => {
+      const deviceGroup = platform.deviceGroups[0];
+      selectableOptions = deviceGroup.devices.map(device => {
         return {
           label: `  ${device.name}`,
           selectedLabel: `${headerLabel}: ${device.name}`,
-          value: {platform, device},
+          value: {platformGroup, platform, deviceGroup, device},
         };
       });
     }
@@ -254,11 +244,12 @@ export default class BuckToolbar extends React.Component {
     const selectableOptions = [];
 
     for (const platform of platformGroup.platforms) {
+      const headerLabel = `${platformGroup.name} ${platform.name}`;
       if (platform.isMobile && platform.deviceGroups.length) {
         const submenu = [];
 
         for (const deviceGroup of platform.deviceGroups) {
-          if (deviceGroup.name != null) {
+          if (deviceGroup.name !== '') {
             submenu.push({
               label: deviceGroup.name,
               value: deviceGroup.name,
@@ -269,12 +260,12 @@ export default class BuckToolbar extends React.Component {
           for (const device of deviceGroup.devices) {
             submenu.push({
               label: `  ${device.name}`,
-              selectedLabel: `${platformGroup.name} ${platform.name}: ${device.name}`,
-              value: {platform, device},
+              selectedLabel: `${headerLabel}: ${device.name}`,
+              value: {platformGroup, platform, deviceGroup, device},
             });
           }
 
-          if (deviceGroup.name == null) {
+          if (deviceGroup.name === '') {
             submenu.push({type: 'separator'});
           }
         }
@@ -287,8 +278,8 @@ export default class BuckToolbar extends React.Component {
       } else {
         selectableOptions.push({
           label: `  ${platform.name}`,
-          selectedLabel: platform.name,
-          value: {platform, device: null},
+          selectedLabel: headerLabel,
+          value: {platformGroup, platform, deviceGroup: null, device: null},
         });
       }
     }

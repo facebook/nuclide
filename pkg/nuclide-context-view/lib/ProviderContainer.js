@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Section} from '../../nuclide-ui/Section';
 import {track} from '../../nuclide-analytics';
 
@@ -25,10 +25,7 @@ type State = {
 /**
  * Each context provider view is rendered inside a ProviderContainer.
  */
-export class ProviderContainer extends React.Component {
-  props: Props;
-  state: State;
-
+export class ProviderContainer extends React.Component<Props, State> {
   constructor(props: Props): void {
     super(props);
     this.state = {
@@ -36,7 +33,7 @@ export class ProviderContainer extends React.Component {
     };
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <div className="nuclide-context-view-provider-container">
         <Section
@@ -44,9 +41,7 @@ export class ProviderContainer extends React.Component {
           collapsable={true}
           onChange={this._setCollapsed}
           collapsed={this.state.collapsed}>
-          <div className="padded">
-            {this.props.children}
-          </div>
+          <div className="padded">{this.props.children}</div>
         </Section>
       </div>
     );

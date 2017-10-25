@@ -228,7 +228,10 @@ describe('FlowProcess', () => {
     it('should ping the server after it is started', () => {
       waitsForPromise(async () => {
         jasmine.useRealClock();
-        const states = statusUpdates.take(4).toArray().toPromise();
+        const states = statusUpdates
+          .take(4)
+          .toArray()
+          .toPromise();
         fakeRunCommandDetailed = () => {
           switch (currentStatus) {
             case 'unknown':

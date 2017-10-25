@@ -69,6 +69,22 @@ If your project contains [Hack](/docs/languages/hack) code, you will get Hack la
 search options. Here you can search based on function (`@function-name`), class (`#class-name`), or
 constant (`%constant-name`) symbols in your project.
 
-To access this feature, click on the **Hack Symbols** tab in the **Quick Open** window.  
+To access this feature, click on the **Hack Symbols** tab in the **Quick Open** window.
 
 ![](/static/images/docs/feature-quick-open-toggle-hack-symbols.png)
+
+## Code Search
+
+*Keyboard Shortcut*: `Option-Cmd-K` (`Alt-Ctrl-K` Linux)
+
+The Code Search tab will help you find a piece of code within all the source files in your projects.
+Internally it uses either [ripgrep](https://github.com/BurntSushi/ripgrep) (rg),
+[silversearcher](https://github.com/ggreer/the_silver_searcher) (ag) or
+[ack](https://beyondgrep.com/).
+
+By default, Nuclide will use any available tool in your PATH.
+However, you can specify a default one in the *nuclide-code-search* tab in the Nuclide package
+settings. We recommend ripgrep and ag because they are blazing fast. Sadly, only ripgrep works
+properly on Windows.
+
+![](/static/images/blog/2017-08-31/quick-open.png)

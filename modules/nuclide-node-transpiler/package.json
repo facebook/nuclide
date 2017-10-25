@@ -1,0 +1,41 @@
+{
+  "name": "nuclide-node-transpiler",
+  "version": "0.4.0",
+  "description": "Transpiles JavaScript files",
+  "main": "./lib/main.js",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-node-transpiler",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "npm"
+  },
+  "scripts": {
+    "test": "../../node_modules/.bin/jasmine-node spec"
+  },
+  "dependencies": {
+    "glob": "7.1.1",
+    "mkdirp": "0.5.1",
+    "uuid": "3.0.1"
+  },
+  "devDependencies": {
+    "babel-core": "6.26.0",
+    "babel-plugin-idx": "1.4.0",
+    "babel-plugin-istanbul": "4.1.5",
+    "babel-plugin-relay": "1.4.1",
+    "babel-plugin-syntax-flow": "6.18.0",
+    "babel-plugin-transform-async-to-module-method": "6.24.1",
+    "babel-plugin-transform-class-properties": "6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.26.0",
+    "babel-plugin-transform-flow-strip-types": "6.22.0",
+    "babel-plugin-transform-inline-imports-commonjs": "1.2.0",
+    "babel-plugin-transform-object-rest-spread": "6.26.0",
+    "babel-plugin-transform-react-display-name": "6.25.0",
+    "babel-plugin-transform-react-jsx": "6.24.1",
+    "babel-plugin-transform-strict-mode": "6.24.1",
+    "dedent": "0.6.0",
+    "jasmine-node": "1.14.5",
+    "yargs": "3.32.0"
+  },
+  "private": true
+}

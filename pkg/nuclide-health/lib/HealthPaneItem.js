@@ -13,7 +13,7 @@ import type {PaneItemState} from './types';
 import type {Observable} from 'rxjs';
 
 import HealthPaneItemComponent from './ui/HealthPaneItemComponent';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   stateStream: Observable<?PaneItemState>,
@@ -21,10 +21,10 @@ type Props = {
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/health';
 
-export default class HealthPaneItem extends React.Component {
-  props: Props;
-  state: PaneItemState;
-
+export default class HealthPaneItem extends React.Component<
+  Props,
+  PaneItemState,
+> {
   _stateSubscription: rxjs$ISubscription;
 
   constructor(props: Props) {
@@ -84,6 +84,7 @@ export default class HealthPaneItem extends React.Component {
         // Need native-key-bindings and tabIndex={-1} to be able to copy paste
         className="pane-item padded nuclide-health-pane-item native-key-bindings"
         tabIndex={-1}>
+        {/* $FlowFixMe(>=0.53.0) Flow suppress */}
         <HealthPaneItemComponent
           toolbarJewel={toolbarJewel}
           updateToolbarJewel={updateToolbarJewel}

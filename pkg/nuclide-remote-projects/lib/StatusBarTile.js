@@ -15,17 +15,15 @@ import {
   notifyConnectedRemoteFile,
   notifyDisconnectedRemoteFile,
 } from './notification';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   connectionState: number,
   fileUri?: string,
 };
 
-export default class StatusBarTile extends React.Component {
-  props: Props;
-
-  render(): ?React.Element<any> {
+export default class StatusBarTile extends React.Component<Props> {
+  render(): React.Node {
     let iconName = null;
     switch (this.props.connectionState) {
       case ConnectionState.NONE:
@@ -51,6 +49,7 @@ export default class StatusBarTile extends React.Component {
   }
 
   _onStatusBarTileClicked = (): void => {
+    // flowlint-next-line sketchy-null-string:off
     if (!this.props.fileUri) {
       return;
     }

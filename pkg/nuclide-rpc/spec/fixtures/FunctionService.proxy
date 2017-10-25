@@ -29,9 +29,9 @@ module.exports = _client => {
   };
 
   remoteModule.TestFunctionB = function () {
-    return Observable.fromPromise(_client.marshalArguments(Array.from(arguments), []).then(args => {
+    return Observable.fromPromise(_client.marshalArguments(Array.from(arguments), [])).switchMap(args => {
       return _client.callRemoteFunction("FunctionService/TestFunctionB", "observable", args);
-    })).concatMap(id => id).concatMap(value => {
+    }).concatMap(value => {
       return _client.unmarshal(value, {
         kind: "number"
       });

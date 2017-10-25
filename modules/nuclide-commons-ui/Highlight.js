@@ -11,7 +11,7 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 export type HighlightColor =
   | 'default'
@@ -23,7 +23,7 @@ export type HighlightColor =
 type Props = {
   className?: string,
   color?: HighlightColor,
-  children?: ?React.Element<any>,
+  children: React.Node,
 };
 
 export const HighlightColors = Object.freeze({

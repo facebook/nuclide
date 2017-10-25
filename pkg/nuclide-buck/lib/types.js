@@ -21,7 +21,7 @@ import type {
   ResolvedRuleType,
 } from '../../nuclide-buck-rpc/lib/types';
 
-import React from 'react';
+import * as React from 'react';
 
 export type TaskType = 'build' | 'run' | 'test' | 'debug';
 
@@ -37,6 +37,7 @@ export type AppState = {
   platformService: PlatformService,
   projectRoot: ?string,
   buckRoot: ?string,
+  buckversionFileContents: ?(string | Error),
   isLoadingBuckProject: boolean,
   isLoadingRule: boolean,
   isLoadingPlatforms: boolean,
@@ -46,7 +47,9 @@ export type AppState = {
   taskSettings: TaskSettings,
   platformProviderUi: ?PlatformProviderUi,
 
+  lastSessionPlatformGroupName: ?string,
   lastSessionPlatformName: ?string,
+  lastSessionDeviceGroupName: ?string,
   lastSessionDeviceName: ?string,
 };
 
@@ -58,7 +61,9 @@ export type Store = {
 export type SerializedState = {
   buildTarget: ?string,
   taskSettings?: ?TaskSettings,
+  selectedPlatformGroupName: ?string,
   selectedPlatformName: ?string,
+  selectedDeviceGroupName: ?string,
   selectedDeviceName: ?string,
 };
 
@@ -120,7 +125,7 @@ export type DesktopPlatform = {
 export type Platform = MobilePlatform | DesktopPlatform;
 
 export type DeviceGroup = {
-  name: ?string,
+  name: string,
   devices: Array<Device>,
 };
 
@@ -129,7 +134,9 @@ export type Device = {
 };
 
 export type DeploymentTarget = {
+  platformGroup: PlatformGroup,
   platform: Platform,
+  deviceGroup: ?DeviceGroup,
   device: ?Device,
 };
 

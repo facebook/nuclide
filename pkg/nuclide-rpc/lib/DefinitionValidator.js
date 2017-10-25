@@ -126,6 +126,7 @@ export function validateDefinitions(definitions: Definitions): void {
         }
         break;
       default:
+        (type: empty);
         throw new Error(JSON.stringify(type));
     }
   }
@@ -299,7 +300,7 @@ export function validateDefinitions(definitions: Definitions): void {
         }
         break;
       case 'named':
-        // No need to recurse, as the target alias definition will get validated seperately.
+        // No need to recurse, as the target alias definition will get validated separately.
         break;
       default:
         validateType(type);
@@ -502,12 +503,12 @@ export function validateDefinitions(definitions: Definitions): void {
       case 'string-literal':
       case 'boolean-literal':
       case 'number-literal':
-        break;
       case 'void':
+        break;
       case 'promise':
       case 'observable':
         throw error(
-          'Promise, void and Observable types may only be used as return types',
+          'Promise and Observable types may only be used as return types',
         );
       case 'array':
         validateType(type.type);

@@ -64,6 +64,7 @@ export function getBuildFileName(buckRoot: string): Promise<string> {
       );
       return null;
     })
+    // flowlint-next-line sketchy-null-string:off
     .then(result => result || DEFAULT_BUILD_FILE_NAME);
   buildFileNameCache.set(buckRoot, buildFileName);
   return buildFileName;

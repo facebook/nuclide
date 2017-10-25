@@ -1,0 +1,14 @@
+{
+  ".platform-darwin atom-workspace": {
+    "ctrl-shift-t": "nuclide-terminal:new-terminal"
+  },
+  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
+    "alt-shift-t": "nuclide-terminal:new-terminal"
+  },
+  ".platform-darwin .terminal-pane": {
+    "cmd-right": "window:focus-pane-on-right",
+    "cmd-left": "window:focus-pane-on-left",
+    "cmd-up": "window:focus-pane-above",
+    "cmd-down": "window:focus-pane-below"
+  }
+}

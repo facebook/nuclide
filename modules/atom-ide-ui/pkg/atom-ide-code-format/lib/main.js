@@ -10,6 +10,7 @@
  * @format
  */
 
+import type {BusySignalService} from '../../atom-ide-busy-signal/lib/types';
 import type {
   CodeFormatProvider,
   RangeCodeFormatProvider,
@@ -63,6 +64,10 @@ class Activation {
 
   consumeOnSaveProvider(provider: OnSaveCodeFormatProvider): IDisposable {
     return this.codeFormatManager.addOnSaveProvider(provider);
+  }
+
+  consumeBusySignal(busySignalService: BusySignalService): IDisposable {
+    return this.codeFormatManager.consumeBusySignal(busySignalService);
   }
 
   dispose() {

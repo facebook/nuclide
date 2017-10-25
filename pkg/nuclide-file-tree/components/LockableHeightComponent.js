@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type State = {
   lockedHeight: ?number,
@@ -19,9 +19,7 @@ type Props = {
   children: any,
 };
 
-export class LockableHeight extends React.Component {
-  props: Props;
-  state: State;
+export class LockableHeight extends React.Component<Props, State> {
   _root: HTMLElement;
 
   constructor(props: Props) {
@@ -49,7 +47,7 @@ export class LockableHeight extends React.Component {
     return computedStyle.height;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     let style = {};
     let className = null;
     if (this.props.isLocked) {
@@ -63,6 +61,7 @@ export class LockableHeight extends React.Component {
         style={style}
         className={className}
         ref={node => {
+          // $FlowFixMe(>=0.53.0) Flow suppress
           this._root = node;
         }}>
         {this.props.children}

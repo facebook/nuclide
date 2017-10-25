@@ -12,6 +12,7 @@
 import type {DeviceInfoProvider} from '../../../nuclide-device-panel/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Bridge} from '../types';
+import type {Device} from '../../../nuclide-device-panel/lib/types';
 
 import {Observable} from 'rxjs';
 
@@ -26,7 +27,7 @@ export class ATDeviceInfoProvider implements DeviceInfoProvider {
     return this._bridge.name;
   }
 
-  fetch(host: NuclideUri, device: string): Observable<Map<string, string>> {
+  fetch(host: NuclideUri, device: Device): Observable<Map<string, string>> {
     return this._bridge
       .getService(host)
       .getDeviceInfo(device)

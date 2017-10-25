@@ -125,3 +125,13 @@ declare module 'module' {
 declare module 'console' {
   declare var exports: any;
 }
+
+declare interface net$ListenOptions {
+  port?: number,
+  host?: string,
+  backlog?: number,
+  path?: string,
+  exclusive?: boolean,
+}
+
+declare export var module: module$Module;

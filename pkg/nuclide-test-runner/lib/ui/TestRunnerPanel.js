@@ -12,7 +12,6 @@
 import type TestSuiteModel from '../TestSuiteModel';
 import type {TestRunner} from '../types';
 
-import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import Console from './Console';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
@@ -22,7 +21,7 @@ import {ToolbarRight} from 'nuclide-commons-ui/ToolbarRight';
 import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import {Button, ButtonSizes, ButtonTypes} from 'nuclide-commons-ui/Button';
 import createPaneContainer from '../../../commons-atom/create-pane-container';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import TestClassTree from './TestClassTree';
 
@@ -30,9 +29,9 @@ type Props = {
   attachDebuggerBeforeRunning: ?boolean,
   buffer: Object,
   executionState: number,
-  onClickClear: (event: SyntheticMouseEvent) => mixed,
-  onClickRun: (event: SyntheticMouseEvent) => mixed,
-  onClickStop: (event: SyntheticMouseEvent) => mixed,
+  onClickClear: (event: SyntheticMouseEvent<>) => mixed,
+  onClickRun: (event: SyntheticMouseEvent<>) => mixed,
+  onClickStop: (event: SyntheticMouseEvent<>) => mixed,
   onDebuggerCheckboxChanged: (isChecked: boolean) => mixed,
   path: ?string,
   progressValue: ?number,
@@ -43,16 +42,13 @@ type Props = {
 
 type State = {
   selectedTestRunnerIndex: number,
+  consoleContainer: ?HTMLElement,
+  treeContainer: ?HTMLElement,
 };
 
-export default class TestRunnerPanel extends React.Component {
-  props: Props;
-  state: State;
+export default class TestRunnerPanel extends React.Component<Props, State> {
   _paneContainer: Object;
-  _leftPane: atom$Pane;
-  _rightPane: atom$Pane;
   _textEditorModel: TextEditor;
-  _tree: TestClassTree;
 
   // Bound Functions for use as callbacks.
   setSelectedTestRunnerIndex: Function;
@@ -66,6 +62,8 @@ export default class TestRunnerPanel extends React.Component {
     super(props);
     this.state = {
       roots: [],
+      treeContainer: null,
+      consoleContainer: null,
       // If there are test runners, start with the first one selected. Otherwise store -1 to
       // later indicate there were no active test runners.
       selectedTestRunnerIndex: props.testRunners.length > 0 ? 0 : -1,
@@ -74,8 +72,8 @@ export default class TestRunnerPanel extends React.Component {
 
   componentDidMount() {
     this._paneContainer = createPaneContainer();
-    this._leftPane = this._paneContainer.getActivePane();
-    this._rightPane = this._leftPane.splitRight({
+    const leftPane = this._paneContainer.getActivePane();
+    const rightPane = leftPane.splitRight({
       // Prevent Atom from cloning children on splitting; this panel wants an empty container.
       copyActiveItem: false,
       // Make the right pane 2/3 the width of the parent since console output is generally wider
@@ -83,17 +81,17 @@ export default class TestRunnerPanel extends React.Component {
       flexScale: 2,
     });
 
-    this.renderTree();
-    this.renderConsole();
-
     // $FlowFixMe
     ReactDOM.findDOMNode(this.refs.paneContainer).appendChild(
       atom.views.getView(this._paneContainer),
     );
-  }
 
-  componentDidUpdate() {
-    this.renderTree();
+    this.setState({
+      treeContainer: atom.views.getView(leftPane).querySelector('.item-views'),
+      consoleContainer: atom.views
+        .getView(rightPane)
+        .querySelector('.item-views'),
+    });
   }
 
   componentWillReceiveProps(nextProps: Object) {
@@ -106,12 +104,6 @@ export default class TestRunnerPanel extends React.Component {
   }
 
   componentWillUnmount() {
-    ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._rightPane).querySelector('.item-views'),
-    );
-    ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._leftPane).querySelector('.item-views'),
-    );
     this._paneContainer.destroy();
   }
 
@@ -149,6 +141,7 @@ export default class TestRunnerPanel extends React.Component {
     // Assign `value` only when needed so a null/undefined value will show an indeterminate
     // progress bar.
     let progressAttrs: ?{[key: string]: mixed} = undefined;
+    // flowlint-next-line sketchy-null-number:off
     if (this.props.progressValue) {
       // `key` is set to force React to treat this as a new element when the `value` attr should be
       // removed. Currently it just sets `value="0"`, which is styled differently from no `value`
@@ -163,6 +156,7 @@ export default class TestRunnerPanel extends React.Component {
     let runMsg;
     if (this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING) {
       runMsg = <span className="inline-block">Running</span>;
+      // flowlint-next-line sketchy-null-number:off
     } else if (this.props.runDuration) {
       runMsg = (
         <span className="inline-block">
@@ -172,6 +166,7 @@ export default class TestRunnerPanel extends React.Component {
     }
 
     let pathMsg;
+    // flowlint-next-line sketchy-null-string:off
     if (this.props.path) {
       pathMsg = (
         <span title={this.props.path}>
@@ -222,17 +217,43 @@ export default class TestRunnerPanel extends React.Component {
     const running =
       this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING;
 
-    const progressBar = running
-      ? <progress
-          className="inline-block"
-          max="100"
-          title="Test progress"
-          {...progressAttrs}
-        />
-      : null;
+    const progressBar = running ? (
+      <progress
+        className="inline-block"
+        max="100"
+        title="Test progress"
+        {...progressAttrs}
+      />
+    ) : null;
+
+    const tree =
+      this.state.treeContainer == null
+        ? null
+        : // $FlowIssue: This API isn't known by our current version of Flow.
+          ReactDOM.createPortal(
+            <TestClassTree
+              isRunning={
+                this.props.executionState ===
+                TestRunnerPanel.ExecutionState.RUNNING
+              }
+              testSuiteModel={this.props.testSuiteModel}
+            />,
+            this.state.treeContainer,
+          );
+
+    const console =
+      this.state.consoleContainer == null
+        ? null
+        : // $FlowIssue: This API isn't known by our current version of Flow.
+          ReactDOM.createPortal(
+            <Console textBuffer={this.props.buffer} />,
+            this.state.consoleContainer,
+          );
 
     return (
       <div className="nuclide-test-runner-panel">
+        {tree}
+        {console}
         <Toolbar location="top">
           <ToolbarLeft>
             {dropdown}
@@ -270,26 +291,5 @@ export default class TestRunnerPanel extends React.Component {
     if (selectedTestRunnerIndex >= 0) {
       return this.props.testRunners[selectedTestRunnerIndex];
     }
-  }
-
-  renderTree() {
-    const component = ReactDOM.render(
-      <TestClassTree
-        isRunning={
-          this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING
-        }
-        testSuiteModel={this.props.testSuiteModel}
-      />,
-      atom.views.getView(this._leftPane).querySelector('.item-views'),
-    );
-    invariant(component instanceof TestClassTree);
-    this._tree = component;
-  }
-
-  renderConsole() {
-    ReactDOM.render(
-      <Console textBuffer={this.props.buffer} />,
-      atom.views.getView(this._rightPane).querySelector('.item-views'),
-    );
   }
 }

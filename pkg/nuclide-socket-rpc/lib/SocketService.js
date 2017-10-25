@@ -13,111 +13,142 @@ import type {ConnectableObservable} from 'rxjs';
 
 import {Observable} from 'rxjs';
 import net from 'net';
+import {getLogger} from 'log4js';
+import {getAvailableServerPort as _getAvailableServerPort} from '../../commons-node/serverPort';
 
 export type SocketEvent =
   | {type: 'server_started'}
   | {type: 'server_stopping'}
   | {
       type: 'client_connected',
+      clientPort: number,
     }
-  | {type: 'client_disconnected'}
-  | {type: 'data', data: Buffer};
+  | {type: 'client_disconnected', clientPort: number}
+  | {type: 'data', clientPort: number, data: Buffer};
 
 type ServerSocket = {
-  clients: Array<net.Socket>,
+  clients: Map<number, net.Socket>,
   server: net.Server,
   observer: rxjs$Observer<SocketEvent>,
 };
 
-const socketsForPorts: Map<number, ServerSocket> = new Map();
+const serverSockets: Map<number, ServerSocket> = new Map();
 
 export function startListening(
-  port: number,
+  serverPort: number,
+  family: 4 | 6 = 6,
 ): ConnectableObservable<SocketEvent> {
   return Observable.create(observer => {
-    if (socketsForPorts.get(port) != null) {
-      throw new Error(`Socket on port ${port} already bound`);
+    trace(`rpc: start server (server: ${serverPort})`);
+    if (serverSockets.get(serverPort) != null) {
+      observer.error(new Error(`Socket on port ${serverPort} already bound`));
+      return;
     }
 
-    const clients = [];
+    const clients = new Map();
 
-    const server = net.createServer(socket => {
-      clients.push(socket);
-      observer.next({type: 'client_connected'});
-      socket.on('data', data => {
-        observer.next({type: 'data', data});
+    const server = net.createServer(clientSocket => {
+      const clientPort = clientSocket.remotePort;
+      trace(`client: connect (server: ${serverPort}, client: ${clientPort})`);
+      clients.set(clientPort, clientSocket);
+      observer.next({type: 'client_connected', clientPort});
+      clientSocket.on('data', data => {
+        observer.next({type: 'data', clientPort, data});
       });
-      socket.on('close', hadError => {
-        clients.splice(clients.indexOf(socket), 1);
-        observer.next({type: 'client_disconnected'});
+      clientSocket.on('close', hadError => {
+        trace(`client: close (server: ${serverPort}, client: ${clientPort})`);
+        clients.delete(clientPort);
+        observer.next({type: 'client_disconnected', clientPort});
       });
-      socket.on('error', error => {
-        socket.end();
+      clientSocket.on('error', error => {
+        trace(
+          `client: error (server: ${serverPort}, client: ${clientPort}): ${error}`,
+        );
+        clientSocket.end();
       });
-      socket.on('timeout', () => {
-        socket.end();
+      clientSocket.on('timeout', () => {
+        trace(`client: timeout (server: ${serverPort}, client: ${clientPort})`);
+        clientSocket.end();
       });
     });
     server.on('error', error => {
-      stopListening(port);
+      _stopListening(serverPort);
       observer.error(error);
     });
-    server.maxConnections = 1;
-    server.listen({port}, () => {
-      observer.next({type: 'server_started'});
-    });
-    socketsForPorts.set(port, {clients, server, observer});
+    server.listen(
+      {host: family === 6 ? '::' : '0.0.0.0', port: serverPort},
+      () => {
+        observer.next({type: 'server_started'});
+      },
+    );
+    serverSockets.set(serverPort, {clients, server, observer});
   }).publish();
 }
 
-export function stopListening(port: number): void {
-  const openSocket = getOpenSocket(port);
-  const {clients, server, observer} = openSocket;
+export function stopListening(serverPort: number): void {
+  trace(`rpc: stop server (server: ${serverPort})`);
+  _stopListening(serverPort);
+}
+
+function _stopListening(serverPort: number): void {
+  const serverSocket = getServerSocket(serverPort);
+  const {clients, server, observer} = serverSocket;
   clients.forEach(client => client.destroy());
   observer.next({type: 'server_stopping'});
   server.close(() => {
-    socketsForPorts.delete(port);
+    serverSockets.delete(serverPort);
     observer.complete();
   });
 }
 
-export function writeToClient(port: number, data: Buffer): void {
-  const openSocket = getOpenSocket(port);
-  if (openSocket.clients.length === 1) {
-    openSocket.clients[0].write(data);
-  } else {
-    openSocket.observer.error(
-      `Tried to write on port ${port}, but no client found.`,
-    );
+export function writeToClient(
+  serverPort: number,
+  clientPort: number,
+  data: Buffer,
+): void {
+  const serverSocket = getServerSocket(serverPort);
+  const clientSocket = serverSocket.clients.get(clientPort);
+  if (clientSocket != null) {
+    clientSocket.write(data);
   }
 }
 
-export function clientError(port: number, error: string): void {
-  const openSocket = getOpenSocket(port);
-  if (openSocket.clients.length === 1) {
-    openSocket.clients[0].destroy(new Error(error));
-  } else {
-    openSocket.observer.error(
-      `Tried to send an error on port ${port}, but no client found.`,
-    );
+export function clientError(
+  serverPort: number,
+  clientPort: number,
+  error: string,
+): void {
+  const serverSocket = getServerSocket(serverPort);
+  const clientSocket = serverSocket.clients.get(clientPort);
+  trace(
+    `rpc: client error (server: ${serverPort}, client: ${clientPort}): ${error}`,
+  );
+  if (clientSocket != null) {
+    clientSocket.destroy(new Error(error));
   }
 }
 
-export function closeClient(port: number): void {
-  const openSocket = getOpenSocket(port);
-  if (openSocket.clients.length > 0) {
-    openSocket.clients[0].end();
-  } else {
-    openSocket.observer.error(
-      `Tried to close client on port ${port}, but no client found.`,
-    );
+export function closeClient(serverPort: number, clientPort: number): void {
+  trace(`rpc: close client (server: ${serverPort}, client: ${clientPort})`);
+  const serverSocket = getServerSocket(serverPort);
+  const clientSocket = serverSocket.clients.get(clientPort);
+  if (clientSocket != null) {
+    clientSocket.end();
   }
 }
 
-function getOpenSocket(port: number): ServerSocket {
-  const openSocket = socketsForPorts.get(port);
-  if (openSocket == null) {
-    throw new Error(`Server on port ${port} not started`);
+function getServerSocket(serverPort: number): ServerSocket {
+  const socket = serverSockets.get(serverPort);
+  if (socket == null) {
+    throw new Error(`Server on port ${serverPort} not started`);
   }
-  return openSocket;
+  return socket;
+}
+
+function trace(message: string) {
+  getLogger('SocketService').trace(message);
+}
+
+export async function getAvailableServerPort(): Promise<number> {
+  return _getAvailableServerPort();
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg
+  version="1.1"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  x="0px"
+  y="0px"
+  viewBox="0 0 16 16"
+  enable-background="new 0 0 16 16"
+  xml:space="preserve"
+>
+  <path d="M7.1,5.1h1.8c0.4,0,0.8,0.4,0.8,0.8v7.3c0,0.4-0.4,0.8-0.8,0.8H7.1c-0.4,0-0.8-0.4-0.8-0.8V5.9C6.3,5.4,6.7,5.1,7.1,5.1z" />
+  <path d="M1.9,3.7l5.5,5.4c0.4,0.4,1,0.4,1.4,0l5.4-5.4c0.4-0.4,0.4-1,0-1.4C13.9,2.1,13.7,2,13.4,2L2.6,2c-0.5,0-1,0.4-1,1 C1.6,3.2,1.7,3.5,1.9,3.7z" />
+</svg>

@@ -103,6 +103,10 @@ describe('RemoteDirectory::relativize()', () => {
     expect(remoteDirectory.relativize('nuclide://example.com/foo/bar')).toBe(
       'foo/bar',
     );
+    // Should not relativize paths from other hosts.
+    expect(remoteDirectory.relativize('nuclide://example2.com/foo/bar')).toBe(
+      'nuclide://example2.com/foo/bar',
+    );
   });
 });
 

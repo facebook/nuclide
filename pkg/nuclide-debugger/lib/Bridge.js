@@ -48,8 +48,15 @@ export default class Bridge {
   constructor(debuggerModel: DebuggerModel) {
     this._debuggerModel = debuggerModel;
     this._suppressBreakpointSync = false;
-    this._commandDispatcher = new CommandDispatcher(() =>
-      debuggerModel.getStore().getIsReadonlyTarget(),
+    this._commandDispatcher = new CommandDispatcher(
+      () => debuggerModel.getStore().getIsReadonlyTarget(),
+      pausedEvent => {
+        const info = debuggerModel.getStore().getDebugProcessInfo();
+        if (info != null) {
+          return info.shouldFilterBreak(pausedEvent);
+        }
+        return false;
+      },
     );
     this._consoleEvent$ = new Subject();
     this._disposables = new UniversalDisposable(
@@ -160,12 +167,39 @@ export default class Bridge {
     );
   }
 
+  setShowDisassembly(disassembly: boolean): void {
+    this._commandDispatcher.send('setShowDisassembly', disassembly);
+  }
+
   selectThread(threadId: string): void {
     this._commandDispatcher.send('selectThread', threadId);
     const threadNo = parseInt(threadId, 10);
     if (!isNaN(threadNo)) {
       this._debuggerModel.getActions().updateSelectedThread(threadNo);
     }
+  }
+
+  sendSetVariableCommand(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._commandDispatcher.send(
+      'setVariable',
+      scopeObjectId,
+      expression,
+      newValue,
+      callback,
+    );
+  }
+
+  sendCompletionsCommand(
+    text: string,
+    column: number,
+    callback: Function,
+  ): void {
+    this._commandDispatcher.send('completions', text, column, callback);
   }
 
   sendEvaluationCommand(
@@ -295,7 +329,10 @@ export default class Bridge {
   _updateDebuggerSettings(): void {
     this._commandDispatcher.send(
       'UpdateSettings',
-      this._debuggerModel.getStore().getSettings().getSerializedData(),
+      this._debuggerModel
+        .getStore()
+        .getSettings()
+        .getSerializedData(),
     );
   }
 
@@ -304,6 +341,7 @@ export default class Bridge {
     this.setPauseOnException(store.getTogglePauseOnException());
     this.setPauseOnCaughtException(store.getTogglePauseOnCaughtException());
     this.setSingleThreadStepping(store.getEnableSingleThreadStepping());
+    this.setShowDisassembly(store.getShowDisassembly());
   }
 
   _handleDebuggerPaused(
@@ -373,6 +411,7 @@ export default class Bridge {
     const {sourceURL, lineNumber, condition, enabled} = breakpoint;
     const path = nuclideUri.uriToNuclideUri(sourceURL);
     // only handle real files for now.
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       try {
         this._suppressBreakpointSync = true;
@@ -392,6 +431,7 @@ export default class Bridge {
     const {breakpoint, hitCount} = params;
     const {sourceURL, lineNumber} = breakpoint;
     const path = nuclideUri.uriToNuclideUri(sourceURL);
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       this._debuggerModel
         .getActions()
@@ -401,8 +441,15 @@ export default class Bridge {
 
   _removeBreakpoint(breakpoint: IPCBreakpoint) {
     const {sourceURL, lineNumber} = breakpoint;
-    const path = nuclideUri.uriToNuclideUri(sourceURL);
+    let path = nuclideUri.uriToNuclideUri(sourceURL);
+    // For address based breakpoints handled by the backend, do not require
+    // a parsable file path here.
+    if (path != null && path === '/') {
+      path = sourceURL.replace('file://', '');
+    }
+
     // only handle real files for now.
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       try {
         this._suppressBreakpointSync = true;

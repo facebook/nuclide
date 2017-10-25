@@ -9,9 +9,12 @@
  * @format
  */
 
-import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient';
 import type {IconName} from 'nuclide-commons-ui/Icon';
+import type {
+  MergeConflictStatusValue,
+  StatusCodeNumberValue,
+} from '../../nuclide-hg-rpc/lib/HgService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {arrayCompact, mapFilter} from 'nuclide-commons/collection';
@@ -31,7 +34,7 @@ type VcsInfo = {
   root: string,
 };
 
-const {StatusCodeNumber: HgStatusCodeNumber} = hgConstants;
+const {StatusCodeNumber: HgStatusCodeNumber, MergeConflictStatus} = hgConstants;
 const vcsInfoCache: {[dir: string]: VcsInfo} = {};
 
 async function findVcsHelper(dir: string): Promise<VcsInfo> {
@@ -72,7 +75,7 @@ export async function findVcs(dir: string): Promise<VcsInfo> {
   return vcsInfo;
 }
 
-export type FileChangeStatusValue = 1 | 2 | 3 | 4 | 5;
+export type FileChangeStatusValue = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export const FileChangeStatus = Object.freeze({
   ADDED: 1,
@@ -80,6 +83,8 @@ export const FileChangeStatus = Object.freeze({
   MISSING: 3,
   REMOVED: 4,
   UNTRACKED: 5,
+  BOTH_CHANGED: 6,
+  CHANGE_DELETE: 7,
 });
 
 (FileChangeStatus: {[key: string]: FileChangeStatusValue});
@@ -93,6 +98,14 @@ export const HgStatusToFileChangeStatus: {
   [HgStatusCodeNumber.REMOVED]: FileChangeStatus.REMOVED,
   [HgStatusCodeNumber.UNTRACKED]: FileChangeStatus.UNTRACKED,
 });
+
+export const MergeConflictStatusToNumber: {
+  [key: MergeConflictStatusValue]: FileChangeStatusValue,
+} = {
+  [MergeConflictStatus.BOTH_CHANGED]: FileChangeStatus.BOTH_CHANGED,
+  [MergeConflictStatus.DELETED_IN_THEIRS]: FileChangeStatus.CHANGE_DELETE,
+  [MergeConflictStatus.DELETED_IN_OURS]: FileChangeStatus.CHANGE_DELETE,
+};
 
 export const FileChangeStatusToPrefix: {
   [key: FileChangeStatusValue]: string,
@@ -112,6 +125,8 @@ export const FileChangeStatusToIcon: {
   [FileChangeStatus.MISSING]: 'stop',
   [FileChangeStatus.REMOVED]: 'diff-removed',
   [FileChangeStatus.UNTRACKED]: 'question',
+  [FileChangeStatus.BOTH_CHANGED]: 'alignment-unalign ',
+  [FileChangeStatus.CHANGE_DELETE]: 'x ',
 });
 
 export const FileChangeStatusToTextColor: {
@@ -122,6 +137,8 @@ export const FileChangeStatusToTextColor: {
   [FileChangeStatus.MISSING]: 'text-error',
   [FileChangeStatus.REMOVED]: 'text-error',
   [FileChangeStatus.UNTRACKED]: 'text-error',
+  [FileChangeStatus.BOTH_CHANGED]: 'text-warning',
+  [FileChangeStatus.CHANGE_DELETE]: 'text-warning',
 });
 
 export const FileChangeStatusToLabel: {
@@ -132,6 +149,8 @@ export const FileChangeStatusToLabel: {
   [FileChangeStatus.MISSING]: 'Missing',
   [FileChangeStatus.REMOVED]: 'Removed',
   [FileChangeStatus.UNTRACKED]: 'Untracked',
+  [FileChangeStatus.BOTH_CHANGED]: 'Both Changed',
+  [FileChangeStatus.CHANGE_DELETE]: 'Deleted',
 });
 
 export const RevertibleStatusCodes = [
@@ -172,6 +191,7 @@ export function forgetPath(nodePath: ?NuclideUri): Promise<void> {
     'forget',
     'Forgot',
     async (hgRepository: HgRepositoryClient) => {
+      // flowlint-next-line sketchy-null-string:off
       invariant(nodePath);
       track('hg-repository-forget', {nodePath});
       await hgRepository.forget([nodePath]);
@@ -185,6 +205,7 @@ export function addPath(nodePath: ?NuclideUri): Promise<void> {
     'add',
     'Added',
     async (hgRepository: HgRepositoryClient) => {
+      // flowlint-next-line sketchy-null-string:off
       invariant(nodePath);
       track('hg-repository-add', {nodePath});
       await hgRepository.addAll([nodePath]);
@@ -201,6 +222,7 @@ export function revertPath(
     'revert',
     'Reverted',
     async (hgRepository: HgRepositoryClient) => {
+      // flowlint-next-line sketchy-null-string:off
       invariant(nodePath);
       track('hg-repository-revert', {nodePath});
       await hgRepository.revert([nodePath], toRevision);
@@ -274,9 +296,9 @@ export function getHgRepositoriesStream(): Observable<Set<HgRepositoryClient>> {
 }
 
 export function getHgRepositoryStream(): Observable<HgRepositoryClient> {
-  return diffSets(getHgRepositoriesStream()).flatMap(repoDiff =>
-    Observable.from(repoDiff.added),
-  );
+  return getHgRepositoriesStream()
+    .let(diffSets())
+    .flatMap(repoDiff => Observable.from(repoDiff.added));
 }
 
 /**

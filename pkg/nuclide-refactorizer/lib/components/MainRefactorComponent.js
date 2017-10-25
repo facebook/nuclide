@@ -11,7 +11,7 @@
 
 import type {Store, RefactorState} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 
 import {Button} from 'nuclide-commons-ui/Button';
@@ -28,8 +28,7 @@ type Props = {
   store: Store,
 };
 
-export class MainRefactorComponent extends React.Component {
-  props: Props;
+export class MainRefactorComponent extends React.Component<Props> {
   render(): React.Element<any> | null {
     if (this.props.appState.type === 'closed') {
       return null;

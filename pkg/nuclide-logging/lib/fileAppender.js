@@ -9,7 +9,7 @@
  * @format
  */
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 const fileAppender = require('log4js/lib/appenders/file');
 
 // The log4js file appender shutdown function doesn't wait for writes to complete.
@@ -17,5 +17,5 @@ const fileAppender = require('log4js/lib/appenders/file');
 // TODO(hansonw): remove this when log4js 2.x is released.
 fileAppender.shutdown = cb => setTimeout(cb, 100);
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = fileAppender;

@@ -36,12 +36,15 @@ type ParsedPath = {
 };
 
 import invariant from 'assert';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import pathModule from 'path';
 
 import url from 'url';
 import os from 'os';
 import {maybeToString} from './string';
+
+const ARCHIVE_SEPARATOR = '!';
+const KNOWN_ARCHIVE_EXTENSIONS = ['.jar', '.zip'];
 
 const REMOTE_PATH_URI_PREFIX = 'nuclide://';
 // TODO(ljw): following regex is incorrect. A URI scheme must start with
@@ -55,8 +58,9 @@ function isRemote(uri: NuclideUri): boolean {
 // When restoring Atom state on load, Atom mangles our remote URIs by
 // removing one of the '/'s. These TextBuffers/TextEditors live for a short time
 // and are destroyed during Nuclide startup.
+// On Windows, we further mangle the colon into an underscore to avoid an invalid drive prefix.
 function isBrokenDeserializedUri(uri: ?NuclideUri): boolean {
-  return uri != null && uri.match(/nuclide:[\\/][^/]/) != null;
+  return uri != null && uri.match(/nuclide[:_][\\/][^/]/) != null;
 }
 
 // Atom often puts its URIs in places where we'd expect to see Nuclide URIs (or plain paths)
@@ -78,6 +82,35 @@ function createRemoteUri(hostname: string, remotePath: string): string {
     'NuclideUri must include a path.',
   );
   return `nuclide://${hostname}${remotePath}`;
+}
+
+function isInArchive(uri: NuclideUri): boolean {
+  if (isAtomUri(uri) || uri.indexOf(ARCHIVE_SEPARATOR) < 0) {
+    return false;
+  }
+  for (
+    let i = uri.indexOf(ARCHIVE_SEPARATOR);
+    i >= 0;
+    i = uri.indexOf(ARCHIVE_SEPARATOR, i + 1)
+  ) {
+    if (_isArchiveSeparator(uri, i)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function ancestorOutsideArchive(uri: NuclideUri): NuclideUri {
+  for (
+    let i = uri.indexOf(ARCHIVE_SEPARATOR);
+    i >= 0;
+    i = uri.indexOf(ARCHIVE_SEPARATOR, i + 1)
+  ) {
+    if (_isArchiveSeparator(uri, i)) {
+      return uri.substring(0, i);
+    }
+  }
+  return uri;
 }
 
 /**
@@ -106,6 +139,10 @@ function parse(uri: NuclideUri): ParsedUrl {
     );
 
     const path = hostAndPath.substr(hostSep);
+    invariant(
+      !_endsWithArchiveSeparator(uri),
+      `Path cannot end with archive separator. Failed to parse ${uri}`,
+    );
     return {hostname, path};
   }
 
@@ -113,7 +150,10 @@ function parse(uri: NuclideUri): ParsedUrl {
     uri.indexOf('://') === -1,
     'Nuclide URI must be either local file names or URLs starting with nuclide://',
   );
-
+  invariant(
+    !_endsWithArchiveSeparator(uri),
+    `Path cannot end with archive separator. Failed to parse ${uri}`,
+  );
   return {hostname: null, path: uri};
 }
 
@@ -123,6 +163,7 @@ function parseRemoteUri(remoteUri: NuclideUri): ParsedRemoteUrl {
   }
   const parsedUri = parse(remoteUri);
   invariant(
+    // flowlint-next-line sketchy-null-string:off
     parsedUri.hostname,
     `Remote Nuclide URIs must contain hostnames, '${maybeToString(
       parsedUri.hostname,
@@ -154,29 +195,49 @@ function getHostnameOpt(remoteUri: ?NuclideUri): ?string {
 }
 
 function join(uri: NuclideUri, ...relativePath: Array<string>): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   if (isRemote(uri)) {
     const {hostname, path} = parseRemoteUri(uri);
     relativePath.splice(0, 0, path);
-    return createRemoteUri(
-      hostname,
-      uriPathModule.join.apply(null, relativePath),
+    _archiveEncodeArrayInPlace(uriPathModule, relativePath);
+    return _archiveDecode(
+      uriPathModule,
+      createRemoteUri(hostname, uriPathModule.join.apply(null, relativePath)),
     );
   } else {
     relativePath.splice(0, 0, uri);
-    return uriPathModule.join.apply(null, relativePath);
+    _archiveEncodeArrayInPlace(uriPathModule, relativePath);
+    return _archiveDecode(
+      uriPathModule,
+      uriPathModule.join.apply(null, relativePath),
+    );
   }
 }
 
+function archiveJoin(uri: NuclideUri, path: string): NuclideUri {
+  _testForIllegalUri(uri);
+  if (!KNOWN_ARCHIVE_EXTENSIONS.some(ext => uri.endsWith(ext))) {
+    throw new Error(`Cannot archiveJoin with non-archive ${uri} and ${path}`);
+  }
+  return uri + ARCHIVE_SEPARATOR + path;
+}
+
 function normalize(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   if (isRemote(uri)) {
     const {hostname, path} = parseRemoteUri(uri);
-    return createRemoteUri(hostname, uriPathModule.normalize(path));
+    const normal = _archiveDecode(
+      uriPathModule,
+      uriPathModule.normalize(_archiveEncode(uriPathModule, path)),
+    );
+    return createRemoteUri(hostname, normal);
   } else {
-    return uriPathModule.normalize(uri);
+    return _archiveDecode(
+      uriPathModule,
+      uriPathModule.normalize(_archiveEncode(uriPathModule, uri)),
+    );
   }
 }
 
@@ -190,7 +251,7 @@ function getParent(uri: NuclideUri): NuclideUri {
 }
 
 function relative(uri: NuclideUri, other: NuclideUri): string {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   const remote = isRemote(uri);
   if (
@@ -201,38 +262,60 @@ function relative(uri: NuclideUri, other: NuclideUri): string {
       `Cannot relative urls on different hosts: ${uri} and ${other}`,
     );
   }
-  if (remote) {
-    return uriPathModule.relative(getPath(uri), getPath(other));
-  } else {
-    return uriPathModule.relative(uri, other);
-  }
+  const uriEncode = _archiveEncode(uriPathModule, remote ? getPath(uri) : uri);
+  const otherEncode = _archiveEncode(
+    uriPathModule,
+    remote ? getPath(other) : other,
+  );
+  return _archiveDecode(
+    uriPathModule,
+    uriPathModule.relative(
+      _matchTrailingArchive(uriEncode, otherEncode),
+      _matchTrailingArchive(otherEncode, uriEncode),
+    ),
+  );
 }
 
 function basename(uri: NuclideUri, ext: string = ''): string {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
-  return uriPathModule.basename(getPath(uri), ext);
+  return _archiveDecode(
+    uriPathModule,
+    uriPathModule.basename(_archiveEncode(uriPathModule, getPath(uri)), ext),
+  );
 }
 
 function dirname(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   if (isRemote(uri)) {
     const {hostname, path} = parseRemoteUri(uri);
-    return createRemoteUri(hostname, uriPathModule.dirname(path));
+    return createRemoteUri(
+      hostname,
+      _archiveDecode(
+        uriPathModule,
+        uriPathModule.dirname(_archiveEncode(uriPathModule, path)),
+      ),
+    );
   } else {
-    return uriPathModule.dirname(uri);
+    return _archiveDecode(
+      uriPathModule,
+      uriPathModule.dirname(_archiveEncode(uriPathModule, uri)),
+    );
   }
 }
 
 function extname(uri: NuclideUri): string {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
-  return uriPathModule.extname(getPath(uri));
+  return _archiveDecode(
+    uriPathModule,
+    uriPathModule.extname(_archiveEncode(uriPathModule, getPath(uri))),
+  );
 }
 
 function stripExtension(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const ext = extname(uri);
   if (ext.length === 0) {
     return uri;
@@ -266,6 +349,7 @@ function uriToNuclideUri(uri: string): ?string {
   // two-slash file URLs of the form "file://c:\path". But those are invalid
   // file URLs, and indeed it fails to %-escape "file://c:\My%20Documents".
   const windowsPathFromUri = _getWindowsPathFromWindowsFileUri(uri);
+  // flowlint-next-line sketchy-null-string:off
   if (windowsPathFromUri) {
     // If the specified URI is a local file:// URI to a Windows path,
     // handle specially first. url.parse() gets confused by the "X:"
@@ -275,6 +359,7 @@ function uriToNuclideUri(uri: string): ?string {
   }
 
   const urlParts = url.parse(_escapeSpecialCharacters(uri), false);
+  // flowlint-next-line sketchy-null-string:off
   if (urlParts.protocol === 'file:' && urlParts.path) {
     // only handle real files for now.
     return urlParts.path;
@@ -289,7 +374,7 @@ function uriToNuclideUri(uri: string): ?string {
  * Converts local paths to file: URI's. Leaves remote URI's alone.
  */
 function nuclideUriToUri(uri: NuclideUri): string {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   if (isRemote(uri)) {
     return uri;
   } else {
@@ -301,8 +386,8 @@ function nuclideUriToUri(uri: NuclideUri): string {
  * Returns true if child is equal to, or is a proper child of parent.
  */
 function contains(parent: NuclideUri, child: NuclideUri): boolean {
-  _testForAtomUri(parent);
-  _testForAtomUri(child);
+  _testForIllegalUri(parent);
+  _testForIllegalUri(child);
 
   // Can't just do startsWith here. If this directory is "www" and you
   // are trying to check "www-base", just using startsWith would return
@@ -327,7 +412,10 @@ function contains(parent: NuclideUri, child: NuclideUri): boolean {
       return false;
     }
 
-    return endsWithSeparator(parent) && parent.startsWith(child);
+    return (
+      parent.startsWith(child) &&
+      (endsWithSeparator(parent) || _isArchiveSeparator(child, parent.length))
+    );
   }
 
   if (!child.startsWith(parent)) {
@@ -339,7 +427,11 @@ function contains(parent: NuclideUri, child: NuclideUri): boolean {
   }
 
   const uriPathModule = _pathModuleFor(child);
-  return child.slice(parent.length).startsWith(uriPathModule.sep);
+
+  return (
+    _isArchiveSeparator(child, parent.length) ||
+    child.slice(parent.length).startsWith(uriPathModule.sep)
+  );
 }
 
 /**
@@ -374,11 +466,12 @@ function registerHostnameFormatter(formatter: HostnameFormatter): IDisposable {
  * This function returns a human usable string.
  */
 function nuclideUriToDisplayString(uri: NuclideUri): string {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   if (isRemote(uri)) {
     let hostname = getHostname(uri);
     for (const formatter of hostFormatters) {
       const formattedHostname = formatter(hostname);
+      // flowlint-next-line sketchy-null-string:off
       if (formattedHostname) {
         hostname = formattedHostname;
         break;
@@ -391,7 +484,7 @@ function nuclideUriToDisplayString(uri: NuclideUri): string {
 }
 
 function ensureTrailingSeparator(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   if (uri.endsWith(uriPathModule.sep)) {
     return uri;
@@ -401,7 +494,7 @@ function ensureTrailingSeparator(uri: NuclideUri): NuclideUri {
 }
 
 function trimTrailingSeparator(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   let stripped = uri;
 
@@ -413,13 +506,13 @@ function trimTrailingSeparator(uri: NuclideUri): NuclideUri {
 }
 
 function endsWithSeparator(uri: NuclideUri): boolean {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   return uri.endsWith(uriPathModule.sep);
 }
 
 function isAbsolute(uri: NuclideUri): boolean {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   if (isRemote(uri)) {
     return true;
   } else {
@@ -429,20 +522,28 @@ function isAbsolute(uri: NuclideUri): boolean {
 }
 
 function resolve(uri: NuclideUri, ...paths: Array<string>): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
   if (isRemote(uri)) {
     const {hostname, path} = parseRemoteUri(uri);
     paths.splice(0, 0, path);
-    return createRemoteUri(hostname, uriPathModule.resolve.apply(null, paths));
+    _archiveEncodeArrayInPlace(uriPathModule, paths);
+    return createRemoteUri(
+      hostname,
+      _archiveDecode(uriPathModule, uriPathModule.resolve.apply(null, paths)),
+    );
   } else {
     paths.splice(0, 0, uri);
-    return uriPathModule.resolve.apply(null, paths);
+    _archiveEncodeArrayInPlace(uriPathModule, paths);
+    return _archiveDecode(
+      uriPathModule,
+      uriPathModule.resolve.apply(null, paths),
+    );
   }
 }
 
 function expandHomeDir(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
 
   // Do not expand non home relative uris
   if (!uri.startsWith('~')) {
@@ -511,7 +612,7 @@ function joinPathList(paths: Array<NuclideUri>): string {
  * which is `./` on *nix and .\ on Windows
  */
 function ensureLocalPrefix(uri: NuclideUri): NuclideUri {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
 
   invariant(!isRemote(uri), 'Local prefix can not be added to a remote path');
@@ -529,14 +630,27 @@ function ensureLocalPrefix(uri: NuclideUri): NuclideUri {
 }
 
 function isRoot(uri: NuclideUri): boolean {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   return dirname(uri) === uri;
 }
 
 function parsePath(uri: NuclideUri): ParsedPath {
-  _testForAtomUri(uri);
+  _testForIllegalUri(uri);
   const uriPathModule = _pathModuleFor(uri);
-  return uriPathModule.parse(getPath(uri));
+  if (!isInArchive(uri)) {
+    return uriPathModule.parse(getPath(uri));
+  } else {
+    const parsed = uriPathModule.parse(
+      _archiveEncode(uriPathModule, getPath(uri)),
+    );
+    return {
+      root: _archiveDecode(uriPathModule, parsed.root),
+      dir: _archiveDecode(uriPathModule, parsed.dir),
+      base: _archiveDecode(uriPathModule, parsed.base),
+      ext: _archiveDecode(uriPathModule, parsed.ext),
+      name: _archiveDecode(uriPathModule, parsed.name),
+    };
+  }
 }
 
 function pathSeparatorFor(uri: NuclideUri): string {
@@ -562,7 +676,15 @@ function split(uri: NuclideUri): Array<string> {
   return parts;
 }
 
+function hasKnownArchiveExtension(uri: NuclideUri): boolean {
+  return KNOWN_ARCHIVE_EXTENSIONS.some(ext => uri.endsWith(ext));
+}
+
 function _pathModuleFor(uri: NuclideUri): typeof pathModule {
+  invariant(
+    !_endsWithArchiveSeparator(uri),
+    `Path cannot end with archive separator. Failed to determine path module for ${uri}`,
+  );
   if (uri.startsWith(pathModule.posix.sep)) {
     return pathModule.posix;
   }
@@ -583,6 +705,101 @@ function _pathModuleFor(uri: NuclideUri): typeof pathModule {
   }
 }
 
+// Runs _archiveEncode in-place on array, and returns argument for convenience.
+function _archiveEncodeArrayInPlace(
+  uriPathModule: typeof pathModule,
+  array: Array<NuclideUri>,
+): Array<NuclideUri> {
+  array.forEach((uri, i, a) => (a[i] = _archiveEncode(uriPathModule, uri)));
+  return array;
+}
+
+// This adds a native separator after every archive separator
+// so that the native path handling code sees them.
+function _archiveEncode(
+  uriPathModule: typeof pathModule,
+  uri: NuclideUri,
+): NuclideUri {
+  if (uri.indexOf(ARCHIVE_SEPARATOR) < 0) {
+    return uri;
+  }
+  return KNOWN_ARCHIVE_EXTENSIONS.reduce(
+    (acc, ext) =>
+      acc.replace(
+        `${ext}${ARCHIVE_SEPARATOR}`,
+        `${ext}${ARCHIVE_SEPARATOR}${uriPathModule.sep}`,
+      ),
+    uri,
+  );
+}
+
+// This is the inverse of `encodeArchiveSeparators()` to put things
+// back after the native path handler has run.
+function _archiveDecode(
+  uriPathModule: typeof pathModule,
+  uri: NuclideUri,
+): NuclideUri {
+  if (uri.indexOf(ARCHIVE_SEPARATOR) < 0) {
+    return uri;
+  }
+  return _trimArchiveSuffix(
+    KNOWN_ARCHIVE_EXTENSIONS.reduce(
+      (acc, ext) =>
+        acc.replace(
+          `${ext}${ARCHIVE_SEPARATOR}${uriPathModule.sep}`,
+          `${ext}${ARCHIVE_SEPARATOR}`,
+        ),
+      uri,
+    ),
+  );
+}
+
+// When working with encoded uri's, the archive separator is part of the name
+// so we can manipulate paths with uriPathModule.  However, in `relative` if
+// one uri contains the other, we need the names seen by uriPathModule to agree
+// on whether there is an archive separator or not.  E.g. if we have:
+//    /etc/file.zip
+//    /etc/file.zip!abc
+// When we encode these, we get:
+//    /etc/file.zip
+//    /etc/file.zip!/abc
+// We need to add a trailing '!' to the first one so uriPathModule can see that
+// the first contains the second.
+function _matchTrailingArchive(uri: string, other: string): string {
+  if (
+    uri.length < other.length &&
+    other.startsWith(uri) &&
+    _isArchiveSeparator(other, uri.length)
+  ) {
+    return uri + ARCHIVE_SEPARATOR;
+  } else {
+    return uri;
+  }
+}
+
+function _trimArchiveSuffix(path: string): string {
+  if (_endsWithArchiveSeparator(path)) {
+    return path.substring(0, path.length - ARCHIVE_SEPARATOR.length);
+  } else {
+    return path;
+  }
+}
+
+function _endsWithArchiveSeparator(path: string): boolean {
+  return _isArchiveSeparator(path, path.length - 1);
+}
+
+function _isArchiveSeparator(path: string, index: number): boolean {
+  return (
+    path.length > index &&
+    path.charAt(index) === ARCHIVE_SEPARATOR &&
+    KNOWN_ARCHIVE_EXTENSIONS.some(ext => {
+      const extStart = index - ext.length;
+      return path.indexOf(ext, extStart) === extStart;
+    })
+  );
+}
+
 /**
  * The backslash and percent characters (\ %) are, unfortunately, valid symbols to be used in POSIX
  * paths. They, however, are being automatically "corrected" by node's `url.parse()` method if not
@@ -592,9 +809,16 @@ function _escapeSpecialCharacters(uri: NuclideUri): NuclideUri {
   return uri.replace(/%/g, '%25').replace(/\\/g, '%5C');
 }
 
-function _testForAtomUri(uri: ?NuclideUri): void {
-  if (uri != null && isAtomUri(uri)) {
-    throw new Error(`Path operation invoked on Atom URI ${uri}`);
+function _testForIllegalUri(uri: ?NuclideUri): void {
+  if (uri != null) {
+    if (isAtomUri(uri)) {
+      throw new Error(`Path operation invoked on Atom URI ${uri}`);
+    }
+    if (_endsWithArchiveSeparator(uri)) {
+      throw new Error(
+        `Path operation invoked on URI ending with ${ARCHIVE_SEPARATOR}: ${uri}`,
+      );
+    }
   }
 }
 
@@ -628,6 +852,8 @@ export default {
   isBrokenDeserializedUri,
   isLocal,
   createRemoteUri,
+  isInArchive,
+  ancestorOutsideArchive,
   parse,
   parseRemoteUri,
   validate,
@@ -635,6 +861,7 @@ export default {
   getHostname,
   getHostnameOpt,
   join,
+  archiveJoin,
   relative,
   normalize,
   normalizeDir,
@@ -658,6 +885,9 @@ export default {
   parsePath,
   split,
   pathSeparatorFor,
+  hasKnownArchiveExtension,
+  ARCHIVE_SEPARATOR,
+  KNOWN_ARCHIVE_EXTENSIONS,
   NUCLIDE_URI_TYPE_NAME,
 };
 

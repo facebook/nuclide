@@ -9,8 +9,9 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
-import React from 'react';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 type Props = {
@@ -21,14 +22,14 @@ type Props = {
   style: ?Object,
 };
 
-export class Webview extends React.Component<void, Props, void> {
+export class Webview extends React.Component<Props, void> {
   props: Props;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Object) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   componentDidMount() {
@@ -61,7 +62,7 @@ export class Webview extends React.Component<void, Props, void> {
     this._disposables.dispose();
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <webview className={this.props.className} style={this.props.style} />
     );

@@ -64,21 +64,19 @@ export function clickStatusBarItem(): void {
 function getGutterElement(): ?HTMLElement {
   return atom.views
     .getView(atom.workspace)
-    .querySelector(
-      'atom-workspace /deep/ .nuclide-diagnostics-gutter-ui-gutter-error',
-    );
+    .querySelector('atom-workspace .diagnostics-gutter-ui-gutter-error');
 }
 
 function getPopupElement(): ?HTMLElement {
-  return document.querySelector('.nuclide-diagnostics-gutter-ui-popup');
+  return document.querySelector('.diagnostics-popup');
 }
 
-// Returns the parent element of .nuclide-diagnostics-ui, which is helpful for determining
+// Returns the parent element of .diagnostics-ui, which is helpful for determining
 // whether the diagnostics panel is shown or hidden
 function getDiagnosticsPanelElement(): ?HTMLElement {
   const rootNode = atom.views
     .getView(atom.workspace)
-    .querySelector('.nuclide-diagnostics-ui');
+    .querySelector('.diagnostics-ui');
   return rootNode == null
     ? null
     : ((rootNode.parentElement: any): ?HTMLElement);
@@ -87,7 +85,7 @@ function getDiagnosticsPanelElement(): ?HTMLElement {
 function getStatusBarElement(): ?HTMLElement {
   return atom.views
     .getView(atom.workspace)
-    .querySelector('.nuclide-diagnostics-status-bar-highlight');
+    .querySelector('.diagnostics-status-bar-highlight');
 }
 
 export function getPanelDiagnosticElements(): Array<HTMLElement> {
@@ -95,7 +93,7 @@ export function getPanelDiagnosticElements(): Array<HTMLElement> {
   invariant(panelElement != null);
   return Array.from(
     panelElement.querySelectorAll(
-      '.nuclide-diagnostics-ui-table-container .nuclide-ui-table-body',
+      '.diagnostics-ui-table-container .nuclide-ui-table-body',
     ),
   );
 }

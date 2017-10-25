@@ -23,9 +23,9 @@ export function app(state: AppState, action: Action): AppState {
         ...state,
         deviceType: null,
         device: null,
-        devices: Expect.value([]),
-        infoTables: new Map(),
-        processes: [],
+        devices: Expect.pendingValue([]),
+        infoTables: Expect.pendingValue(new Map()),
+        processes: Expect.pendingValue([]),
         actions: [],
         processTasks: [],
         isDeviceConnected: false,
@@ -38,9 +38,9 @@ export function app(state: AppState, action: Action): AppState {
         ...state,
         deviceType,
         device: null,
-        devices: Expect.value([]),
-        infoTables: new Map(),
-        processes: [],
+        devices: Expect.pendingValue([]),
+        infoTables: Expect.pendingValue(new Map()),
+        processes: Expect.pendingValue([]),
         actions: [],
         processTasks: [],
         isDeviceConnected: false,
@@ -73,14 +73,14 @@ export function app(state: AppState, action: Action): AppState {
       const {infoTables} = action.payload;
       return {
         ...state,
-        infoTables,
+        infoTables: Expect.value(infoTables),
       };
 
     case Actions.SET_PROCESSES:
       const {processes} = action.payload;
       return {
         ...state,
-        processes,
+        processes: Expect.value(processes),
       };
 
     case Actions.SET_PROCESS_TASKS:
@@ -109,6 +109,13 @@ export function app(state: AppState, action: Action): AppState {
       return {
         ...state,
         deviceTypeTasks,
+      };
+
+    case Actions.TOGGLE_DEVICE_POLLING:
+      const {isActive} = action.payload;
+      return {
+        ...state,
+        isPollingDevices: isActive,
       };
 
     default:

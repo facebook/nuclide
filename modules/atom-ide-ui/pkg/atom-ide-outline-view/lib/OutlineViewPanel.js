@@ -12,7 +12,7 @@
 
 import type {OutlineForUi} from './createOutlines';
 
-import React from 'react';
+import * as React from 'react';
 
 import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
@@ -46,7 +46,7 @@ export class OutlineViewPanelState {
   }
 
   getTitle() {
-    return 'Outline View';
+    return 'Outline';
   }
 
   getIconName() {
@@ -73,7 +73,12 @@ export class OutlineViewPanelState {
     const outlines = this._visibility.switchMap(
       visible => (visible ? this._outlines : Observable.of({kind: 'empty'})),
     );
-    return renderReactRoot(<OutlineView outlines={outlines} />);
+    return renderReactRoot(
+      <OutlineView
+        outlines={outlines}
+        visibility={this._visibility.distinctUntilChanged()}
+      />,
+    );
   }
 
   serialize(): SerializedOutlineViewPanelState {
