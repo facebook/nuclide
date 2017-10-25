@@ -31,7 +31,7 @@ export function observeRawStream(stream: stream$Readable): Observable<Buffer> {
 }
 
 /**
- * Write an observed readable stream into a writeable stream. Effectively a pipe() for observables.
+ * Write an observed readable stream into a writable stream. Effectively a pipe() for observables.
  * Returns an observable accumulating the number of bytes processed.
  */
 export function writeToStream(

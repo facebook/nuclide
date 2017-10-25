@@ -45,8 +45,13 @@ export default class BridgeAdapter {
   _engineCreated: boolean;
   _pausedMode: boolean;
   _getIsReadonlyTarget: () => boolean;
+  _shouldFilterBreak: (pausedEvent: PausedEvent) => boolean;
 
-  constructor(dispatchers: Object, getIsReadonlyTarget: () => boolean) {
+  constructor(
+    dispatchers: Object,
+    getIsReadonlyTarget: () => boolean,
+    shouldFilterBreak: (pausedEvent: PausedEvent) => boolean,
+  ) {
     const {debuggerDispatcher, runtimeDispatcher} = dispatchers;
     this._debuggerDispatcher = debuggerDispatcher;
     this._runtimeDispatcher = runtimeDispatcher;
@@ -70,6 +75,7 @@ export default class BridgeAdapter {
       debuggerDispatcher.getEventObservable().subscribe(this._handleDebugEvent),
     );
     this._getIsReadonlyTarget = getIsReadonlyTarget;
+    this._shouldFilterBreak = shouldFilterBreak;
   }
 
   enable(): void {
@@ -178,10 +184,34 @@ export default class BridgeAdapter {
         objectGroup,
       );
     }
+
+    this._updateCurrentScopes();
   }
 
   getProperties(id: number, objectId: string): void {
     this._expressionEvaluationManager.getProperties(id, objectId);
+  }
+
+  setVariable(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._debuggerDispatcher.setVariable(
+      scopeObjectId,
+      expression,
+      newValue,
+      callback,
+    );
+  }
+
+  completions(text: string, column: number, callback: Function): void {
+    const currentFrame = this._stackTraceManager.getCurrentFrame();
+    if (currentFrame != null) {
+      const frameId = Number.parseInt(currentFrame.callFrameId, 10);
+      this._debuggerDispatcher.completions(text, column, frameId, callback);
+    }
   }
 
   selectThread(threadId: string): void {
@@ -194,6 +224,13 @@ export default class BridgeAdapter {
 
   setSingleThreadStepping(enable: boolean): void {
     this._debuggerSettingsManager.setSingleThreadStepping(enable);
+    if (this._engineCreated) {
+      this._debuggerSettingsManager.syncToEngine();
+    }
+  }
+
+  setShowDisassembly(enable: boolean): void {
+    this._debuggerSettingsManager.setShowDisassembly(enable);
     if (this._engineCreated) {
       this._debuggerSettingsManager.syncToEngine();
     }
@@ -262,6 +299,12 @@ export default class BridgeAdapter {
         break;
       case 'Debugger.paused': {
         const params: PausedEvent = event.params;
+        if (this._shouldFilterBreak(params)) {
+          // If the debugger front-end wants to filter out this break,
+          // auto-resume.
+          this._executionManager.resume();
+          break;
+        }
         this._handlePausedEvent(params);
         break;
       }

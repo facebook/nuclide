@@ -11,8 +11,9 @@
 
 import type {Store, BoundActionCreators, PartialAppState} from './types';
 
-import {Disposable, CompositeDisposable} from 'atom';
+import {Disposable} from 'atom';
 import createPackage from 'nuclide-commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {RequestEditDialog} from './RequestEditDialog';
@@ -33,7 +34,7 @@ export type HttpRequestSenderApi = {
 };
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _requestEditDialog: ?atom$Panel;
   _store: Store;
   _actionCreators: BoundActionCreators;
@@ -59,7 +60,7 @@ class Activation {
     );
     this._actionCreators = bindActionCreators(Actions, this._store.dispatch);
     this._requestEditDialog = null;
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       atom.commands.add('atom-workspace', {
         'nuclide-http-request-sender:toggle-http-request-edit-dialog': () => {
           track('nuclide-http-request-sender:toggle-http-request-edit-dialog');

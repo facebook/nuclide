@@ -16,6 +16,7 @@ import Immutable from 'immutable';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {StoreConfigData, NodeCheckedStatus} from './FileTreeStore';
 import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
+import type {GeneratedFileType} from '../../nuclide-generated-files-rpc/lib/GeneratedFileService';
 
 export type FileTreeNodeOptions = {
   uri: NuclideUri,
@@ -28,7 +29,6 @@ export type FileTreeNodeOptions = {
   isLoading?: boolean,
   wasFetched?: boolean,
   isCwd?: boolean,
-  isTracked?: boolean,
   children?: Immutable.OrderedMap<string, FileTreeNode>,
   connectionTitle?: string,
   checkedStatus?: NodeCheckedStatus,
@@ -36,6 +36,7 @@ export type FileTreeNodeOptions = {
   highlightedText?: string,
   matchesFilter?: boolean,
   isPendingLoad?: boolean,
+  generatedStatus?: ?GeneratedFileType,
 };
 
 type DefaultFileTreeNodeOptions = {
@@ -47,13 +48,13 @@ type DefaultFileTreeNodeOptions = {
   isLoading: boolean,
   wasFetched: boolean,
   isCwd: boolean,
-  isTracked: boolean,
   children: Immutable.OrderedMap<string, FileTreeNode>,
   connectionTitle: string,
   subscription: ?IDisposable,
   highlightedText: string,
   matchesFilter: boolean,
   isPendingLoad: boolean,
+  generatedStatus: ?GeneratedFileType,
 };
 
 const DEFAULT_OPTIONS: DefaultFileTreeNodeOptions = {
@@ -65,13 +66,13 @@ const DEFAULT_OPTIONS: DefaultFileTreeNodeOptions = {
   isLoading: false,
   wasFetched: false,
   isCwd: false,
-  isTracked: false,
   children: new Immutable.OrderedMap(),
   connectionTitle: '',
   subscription: null,
   highlightedText: '',
   matchesFilter: true,
   isPendingLoad: false,
+  generatedStatus: null,
 };
 
 export type ImmutableNodeSettableFields = {
@@ -83,12 +84,12 @@ export type ImmutableNodeSettableFields = {
   isLoading?: boolean,
   wasFetched?: boolean,
   isCwd?: boolean,
-  isTracked?: boolean,
   children?: Immutable.OrderedMap<string, FileTreeNode>,
   subscription?: ?IDisposable,
   highlightedText?: string,
   matchesFilter?: boolean,
   isPendingLoad?: boolean,
+  generatedStatus?: ?GeneratedFileType,
 };
 
 /**
@@ -150,13 +151,10 @@ export class FileTreeNode {
   uri: NuclideUri;
   rootUri: NuclideUri;
   isExpanded: boolean;
-  isSelected: boolean;
-  isFocused: boolean;
   isDragHovered: boolean;
   isBeingReordered: boolean;
   isLoading: boolean;
   wasFetched: boolean;
-  isTracked: boolean;
   isCwd: boolean;
   children: Immutable.OrderedMap<string, FileTreeNode>;
   connectionTitle: string;
@@ -164,6 +162,7 @@ export class FileTreeNode {
   highlightedText: string;
   matchesFilter: boolean;
   isPendingLoad: boolean;
+  generatedStatus: ?GeneratedFileType;
 
   // Derived
   isRoot: boolean;
@@ -180,9 +179,7 @@ export class FileTreeNode {
   checkedStatus: NodeCheckedStatus;
 
   // Derived from children
-  containsSelection: boolean;
   containsDragHover: boolean;
-  containsTrackedNode: boolean;
   containsFilterMatches: boolean;
   shownChildrenCount: number;
   containsHidden: boolean;
@@ -228,9 +225,7 @@ export class FileTreeNode {
   *   Additionally calculates the properties derived from children and assigns them to this instance
   */
   _handleChildren(): void {
-    let containsSelection = this.isSelected;
     let containsDragHover = this.isDragHovered;
-    let containsTrackedNode = this.isTracked;
     let containsFilterMatches = this.matchesFilter;
     let containsHidden = !this.shouldBeShown;
     let childrenAreLoading = this.childrenAreLoading || this.isLoading;
@@ -250,16 +245,8 @@ export class FileTreeNode {
         containsFilterMatches = true;
       }
 
-      if (!containsSelection && c.containsSelection) {
-        containsSelection = true;
-      }
-
       if (!containsDragHover && c.containsDragHover) {
         containsDragHover = true;
-      }
-
-      if (!containsTrackedNode && c.containsTrackedNode) {
-        containsTrackedNode = true;
       }
 
       if (this.shouldBeShown && this.isExpanded) {
@@ -278,9 +265,7 @@ export class FileTreeNode {
       prevChild.nextSibling = null;
     }
 
-    this.containsSelection = containsSelection;
     this.containsDragHover = containsDragHover;
-    this.containsTrackedNode = containsTrackedNode;
     this.containsFilterMatches = containsFilterMatches;
     this.containsHidden = containsHidden;
     this.childrenAreLoading = childrenAreLoading;
@@ -298,37 +283,73 @@ export class FileTreeNode {
   * Since in heavy updates, nodes are created by the thousands we need to keep the creation
   * flow performant.
   */
-  _assignOptions(options: Object): void {
-    // Don't pass the 100 chars limit
-    const o = options;
-    const D = DEFAULT_OPTIONS;
-
-    this.uri = o.uri;
-    this.rootUri = o.rootUri;
-    this.isExpanded = o.isExpanded !== undefined ? o.isExpanded : D.isExpanded;
-    this.isSelected = o.isSelected !== undefined ? o.isSelected : D.isSelected;
-    this.isFocused = o.isFocused !== undefined ? o.isFocused : D.isFocused;
+  _assignOptions(options: FileTreeNodeOptions): void {
+    this.uri = options.uri;
+    this.rootUri = options.rootUri;
+    this.isExpanded =
+      options.isExpanded !== undefined
+        ? options.isExpanded
+        : DEFAULT_OPTIONS.isExpanded;
+    const isSelected =
+      options.isSelected !== undefined
+        ? options.isSelected
+        : DEFAULT_OPTIONS.isSelected;
+    if (isSelected) {
+      this.conf.selectionManager.select(this);
+    }
+    const isFocused =
+      options.isFocused !== undefined
+        ? options.isFocused
+        : DEFAULT_OPTIONS.isFocused;
+    if (isFocused) {
+      this.conf.selectionManager.focus(this);
+    }
     this.isDragHovered =
-      o.isDragHovered !== undefined ? o.isDragHovered : D.isDragHovered;
+      options.isDragHovered !== undefined
+        ? options.isDragHovered
+        : DEFAULT_OPTIONS.isDragHovered;
     this.isBeingReordered =
-      o.isBeingReordered !== undefined
-        ? o.isBeingReordered
-        : D.isBeingReordered;
-    this.isLoading = o.isLoading !== undefined ? o.isLoading : D.isLoading;
-    this.wasFetched = o.wasFetched !== undefined ? o.wasFetched : D.wasFetched;
-    this.isTracked = o.isTracked !== undefined ? o.isTracked : D.isTracked;
-    this.isCwd = o.isCwd !== undefined ? o.isCwd : D.isCwd;
-    this.children = o.children !== undefined ? o.children : D.children;
+      options.isBeingReordered !== undefined
+        ? options.isBeingReordered
+        : DEFAULT_OPTIONS.isBeingReordered;
+    this.isLoading =
+      options.isLoading !== undefined
+        ? options.isLoading
+        : DEFAULT_OPTIONS.isLoading;
+    this.wasFetched =
+      options.wasFetched !== undefined
+        ? options.wasFetched
+        : DEFAULT_OPTIONS.wasFetched;
+    this.isCwd =
+      options.isCwd !== undefined ? options.isCwd : DEFAULT_OPTIONS.isCwd;
+    this.children =
+      options.children !== undefined
+        ? options.children
+        : DEFAULT_OPTIONS.children;
     this.connectionTitle =
-      o.connectionTitle !== undefined ? o.connectionTitle : D.connectionTitle;
+      options.connectionTitle !== undefined
+        ? options.connectionTitle
+        : DEFAULT_OPTIONS.connectionTitle;
     this.subscription =
-      o.subscription !== undefined ? o.subscription : D.subscription;
+      options.subscription !== undefined
+        ? options.subscription
+        : DEFAULT_OPTIONS.subscription;
     this.highlightedText =
-      o.highlightedText !== undefined ? o.highlightedText : D.highlightedText;
+      options.highlightedText !== undefined
+        ? options.highlightedText
+        : DEFAULT_OPTIONS.highlightedText;
     this.matchesFilter =
-      o.matchesFilter !== undefined ? o.matchesFilter : D.matchesFilter;
+      options.matchesFilter !== undefined
+        ? options.matchesFilter
+        : DEFAULT_OPTIONS.matchesFilter;
     this.isPendingLoad =
-      o.isPendingLoad !== undefined ? o.isPendingLoad : D.isPendingLoad;
+      options.isPendingLoad !== undefined
+        ? options.isPendingLoad
+        : DEFAULT_OPTIONS.isPendingLoad;
+    this.generatedStatus =
+      options.generatedStatus !== undefined
+        ? options.generatedStatus
+        : DEFAULT_OPTIONS.generatedStatus;
   }
 
   /**
@@ -361,13 +382,12 @@ export class FileTreeNode {
       uri: this.uri,
       rootUri: this.rootUri,
       isExpanded: this.isExpanded,
-      isSelected: this.isSelected,
-      isFocused: this.isFocused,
+      isSelected: this.isSelected(),
+      isFocused: this.isFocused(),
       isDragHovered: this.isDragHovered,
       isBeingReordered: this.isBeingReordered,
       isLoading: this.isLoading,
       wasFetched: this.wasFetched,
-      isTracked: this.isTracked,
       isCwd: this.isCwd,
       children: this.children,
       connectionTitle: this.connectionTitle,
@@ -375,6 +395,7 @@ export class FileTreeNode {
       highlightedText: this.highlightedText,
       matchesFilter: this.matchesFilter,
       isPendingLoad: this.isPendingLoad,
+      generatedStatus: this.generatedStatus,
     };
   }
 
@@ -405,10 +426,6 @@ export class FileTreeNode {
     return this.set({isLoading});
   }
 
-  setIsTracked(isTracked: boolean): FileTreeNode {
-    return this.set({isTracked});
-  }
-
   setIsCwd(isCwd: boolean): FileTreeNode {
     return this.set({isCwd});
   }
@@ -417,13 +434,17 @@ export class FileTreeNode {
     return this.set({children});
   }
 
+  setGeneratedStatus(generatedStatus: GeneratedFileType): FileTreeNode {
+    return this.set({generatedStatus});
+  }
+
   /**
   * Notifies the node about the change that happened in the configuration object. Will trigger
   * the complete reconstruction of the entire tree branch
   */
   updateConf(): FileTreeNode {
     const children = this.children.map(c => c.updateConf(this.conf));
-    return this.newNode({children}, this.conf);
+    return this._newNode({children}, this.conf);
   }
 
   /**
@@ -433,10 +454,31 @@ export class FileTreeNode {
   */
   set(props: ImmutableNodeSettableFields): FileTreeNode {
     if (this._propsAreTheSame(props)) {
+      // Prevent an expensive operation on a very frequent update (selection)
+      if (
+        props.isSelected !== undefined &&
+        this.isSelected() !== props.isSelected
+      ) {
+        if (props.isSelected) {
+          this.conf.selectionManager.select(this);
+        } else {
+          this.conf.selectionManager.unselect(this);
+        }
+      }
+      if (
+        props.isFocused !== undefined &&
+        this.isFocused() !== props.isFocused
+      ) {
+        if (props.isFocused) {
+          this.conf.selectionManager.focus(this);
+        } else {
+          this.conf.selectionManager.unfocus(this);
+        }
+      }
       return this;
     }
 
-    return this.newNode(props, this.conf);
+    return this._newNode(props, this.conf);
   }
 
   /**
@@ -651,15 +693,6 @@ export class FileTreeNode {
 
   _propsAreTheSame(props: Object): boolean {
     if (
-      props.isSelected !== undefined &&
-      this.isSelected !== props.isSelected
-    ) {
-      return false;
-    }
-    if (props.isFocused !== undefined && this.isFocused !== props.isFocused) {
-      return false;
-    }
-    if (
       props.isDragHovered !== undefined &&
       this.isDragHovered !== props.isDragHovered
     ) {
@@ -669,9 +702,6 @@ export class FileTreeNode {
       props.isBeingReordered !== undefined &&
       this.isBeingReordered !== props.isBeingReordered
     ) {
-      return false;
-    }
-    if (props.isTracked !== undefined && this.isTracked !== props.isTracked) {
       return false;
     }
     if (
@@ -726,21 +756,67 @@ export class FileTreeNode {
       return false;
     }
 
+    if (
+      props.generatedStatus !== undefined &&
+      props.generatedStatus !== this.generatedStatus
+    ) {
+      return false;
+    }
+
     return true;
   }
 
-  newNode(
+  _newNode(
     props: ImmutableNodeSettableFields,
     conf: StoreConfigData,
   ): FileTreeNode {
+    const options = this._buildOptions();
+    if (props.children !== undefined) {
+      this._handleChildrenChange(this.children, props.children);
+    }
+    this.conf.selectionManager.unselect(this);
+    this.conf.selectionManager.unfocus(this);
+
     return new FileTreeNode(
       {
-        ...this._buildOptions(),
+        ...options,
         ...props,
       },
       conf,
       this._deriver,
     );
+  }
+
+  _handleChildrenChange(
+    oldChildren: Immutable.OrderedMap<string, FileTreeNode>,
+    newChildren: Immutable.OrderedMap<string, FileTreeNode>,
+  ): void {
+    if (oldChildren === newChildren) {
+      return;
+    }
+    const childrenToUnselect = new Set();
+    const childrenToUnfocus = new Set();
+
+    oldChildren.forEach(node => {
+      const newChild = newChildren.get(node.name);
+      if (newChild === node) {
+        return;
+      }
+
+      childrenToUnselect.add(node);
+      childrenToUnfocus.add(node);
+
+      if (newChild != null) {
+        this._handleChildrenChange(node.children, newChild.children);
+      } else {
+        this._handleChildrenChange(node.children, new Immutable.OrderedMap());
+      }
+    });
+
+    childrenToUnselect.forEach(node =>
+      this.conf.selectionManager.unselect(node),
+    );
+    childrenToUnfocus.forEach(node => this.conf.selectionManager.unfocus(node));
   }
 
   _findLastByNamePath(childNamePath: Array<string>): FileTreeNode {
@@ -754,5 +830,51 @@ export class FileTreeNode {
     }
 
     return child._findLastByNamePath(childNamePath.slice(1));
+  }
+
+  isSelected(): boolean {
+    return this.conf.selectionManager.isSelected(this);
+  }
+
+  isFocused(): boolean {
+    return this.conf.selectionManager.isFocused(this);
+  }
+
+  collectDebugState(): Object {
+    return {
+      uri: this.uri,
+      rootUri: this.rootUri,
+      isExpanded: this.isExpanded,
+      isDragHovered: this.isDragHovered,
+      isBeingReordered: this.isBeingReordered,
+      isLoading: this.isLoading,
+      wasFetched: this.wasFetched,
+      isCwd: this.isCwd,
+      connectionTitle: this.connectionTitle,
+      highlightedText: this.highlightedText,
+      matchesFilter: this.matchesFilter,
+      isPendingLoad: this.isPendingLoad,
+      generatedStatus: this.generatedStatus,
+      isRoot: this.isRoot,
+      name: this.name,
+      hashKey: this.hashKey,
+      relativePath: this.relativePath,
+      localPath: this.localPath,
+      isContainer: this.isContainer,
+      shouldBeShown: this.shouldBeShown,
+      shouldBeSoftened: this.shouldBeSoftened,
+      vcsStatusCode: this.vcsStatusCode,
+      isIgnored: this.isIgnored,
+      checkedStatus: this.checkedStatus,
+      containsDragHover: this.containsDragHover,
+      containsFilterMatches: this.containsFilterMatches,
+      shownChildrenCount: this.shownChildrenCount,
+      containsHidden: this.containsHidden,
+      childrenAreLoading: this.childrenAreLoading,
+
+      children: Array.from(this.children.values()).map(child =>
+        child.collectDebugState(),
+      ),
+    };
   }
 }

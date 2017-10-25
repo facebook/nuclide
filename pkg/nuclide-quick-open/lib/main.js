@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {FileResult, Provider} from './types';
+import type {ProviderResult, Provider} from './types';
 import type {HomeFragments} from '../../nuclide-home/lib/types';
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {
@@ -98,27 +98,37 @@ class Activation {
   }
 
   _handleSelection(
-    selections: Array<FileResult>,
+    selections: Array<ProviderResult>,
     providerName: string,
     query: string,
   ): void {
     for (let i = 0; i < selections.length; i++) {
       const selection = selections[i];
-      if (selection.callback != null) {
+      // TODO: Having a callback to call shouldn't necessarily preclude
+      // jumping to a location, but things like the grep provider currently depend on this
+      // since they provide bogus values for row/column, breaking goToLocation below
+      // Can possibly be resolved with a first-class "LINK" or similar resultType
+      if (typeof selection.callback === 'function') {
         selection.callback();
-      } else {
-        goToLocation(selection.path, selection.line, selection.column);
+      } else if (
+        selection.resultType === 'FILE' ||
+        selection.resultType === 'SYMBOL'
+      ) {
+        goToLocation(selection.path, {
+          line: selection.line,
+          column: selection.column,
+        });
+        track('quickopen-select-file', {
+          'quickopen-filepath': selection.path,
+          'quickopen-query': query,
+          // The currently open "tab".
+          'quickopen-provider': providerName,
+          'quickopen-session': this._analyticsSessionId || '',
+          // Because the `provider` is usually OmniSearch, also track the original provider.
+          // flowlint-next-line sketchy-null-mixed:off
+          'quickopen-provider-source': selection.sourceProvider || '',
+        });
       }
-      track('quickopen-select-file', {
-        'quickopen-filepath': selection.path,
-        'quickopen-query': query,
-        // The currently open "tab".
-        'quickopen-provider': providerName,
-        'quickopen-session': this._analyticsSessionId || '',
-        // Because the `provider` is usually OmniSearch, also track the original provider.
-        // flowlint-next-line sketchy-null-mixed:off
-        'quickopen-provider-source': selection.sourceProvider || '',
-      });
     }
     this._closeSearchPanel();
   }
@@ -250,7 +260,7 @@ class Activation {
     }
   }
 
-  registerProvider(service: Provider): IDisposable {
+  registerProvider(service: Provider<ProviderResult>): IDisposable {
     const subscriptions = new UniversalDisposable(
       this._quickOpenProviderRegistry.addProvider(service),
     );
@@ -318,7 +328,9 @@ export function deactivate(): void {
   activation = null;
 }
 
-export function registerProvider(service: Provider): IDisposable {
+export function registerProvider(
+  service: Provider<ProviderResult>,
+): IDisposable {
   invariant(activation != null);
   return activation.registerProvider(service);
 }

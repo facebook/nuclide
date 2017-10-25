@@ -73,6 +73,7 @@ export function executeEpic(
           text: code,
           scopeName: executor.scopeName,
           data: null,
+          repeatCount: 1,
         }),
       )
         // Execute the code as a side-effect.

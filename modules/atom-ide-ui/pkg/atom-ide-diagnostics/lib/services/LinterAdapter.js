@@ -15,82 +15,108 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   DiagnosticInvalidationMessage,
   DiagnosticMessage,
+  DiagnosticMessageType,
   DiagnosticProviderUpdate,
-  FileDiagnosticMessage,
+  DiagnosticTrace,
   LinterMessage,
   LinterMessageV1,
   LinterMessageV2,
   LinterProvider,
-  ProjectDiagnosticMessage,
+  LinterTrace,
 } from '../types';
 
 import {Point, Range} from 'atom';
+import {getAtomProjectRootPath} from 'nuclide-commons-atom/projects';
 import {Observable, Subject} from 'rxjs';
 import {observeTextEditorEvents} from 'nuclide-commons-atom/text-event';
 import {getLogger} from 'log4js';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 // Exported for testing.
 export function linterMessageToDiagnosticMessage(
   msg: LinterMessageV1,
   providerName: string,
+  currentPath: ?string,
 ): DiagnosticMessage {
   // The types are slightly different, so we need to copy to make Flow happy. Basically, a Trace
   // does not need a filePath property, but a LinterTrace does. Trace is a subtype of LinterTrace,
   // so copying works but aliasing does not. For a detailed explanation see
   // https://github.com/facebook/flow/issues/908
-  const trace = msg.trace
-    ? msg.trace.map(component => ({...component}))
-    : undefined;
-  // flowlint-next-line sketchy-null-string:off
-  if (msg.filePath) {
-    const {fix} = msg;
-    return ({
-      scope: 'file',
-      providerName: msg.name != null ? msg.name : providerName,
-      type: msg.type,
-      filePath: msg.filePath,
-      text: msg.text,
-      html: msg.html,
-      range: msg.range && Range.fromObject(msg.range),
-      trace,
-      fix:
-        fix == null
-          ? undefined
-          : {
-              oldRange: Range.fromObject(fix.range),
-              oldText: fix.oldText,
-              newText: fix.newText,
-            },
-    }: FileDiagnosticMessage);
-  } else {
-    return ({
-      scope: 'project',
-      providerName: msg.name != null ? msg.name : providerName,
-      type: msg.type,
-      text: msg.text,
-      html: msg.html,
-      range: msg.range && Range.fromObject(msg.range),
-      trace,
-    }: ProjectDiagnosticMessage);
-  }
+  const trace = msg.trace ? msg.trace.map(convertLinterTrace) : undefined;
+  const type = convertLinterType(msg.type);
+  const {fix} = msg;
+  return {
+    providerName: msg.name != null ? msg.name : providerName,
+    type,
+    filePath: getFilePath(msg.filePath, currentPath),
+    text: msg.text,
+    html: msg.html,
+    range: msg.range && Range.fromObject(msg.range),
+    trace,
+    fix:
+      fix == null
+        ? undefined
+        : {
+            oldRange: Range.fromObject(fix.range),
+            oldText: fix.oldText,
+            newText: fix.newText,
+          },
+  };
 }
 
-const LinterSeverityMap = {
-  error: 'Error',
-  warning: 'Warning',
-  info: 'Info',
-};
+// They're almost the same.. except that we always want a real range.
+function convertLinterTrace(trace: LinterTrace): DiagnosticTrace {
+  return {
+    type: trace.type,
+    text: trace.text,
+    html: trace.html,
+    filePath: trace.filePath,
+    range: trace.range != null ? Range.fromObject(trace.range) : undefined,
+  };
+}
+
+function getFilePath(filePath: ?string, currentPath: ?string) {
+  // Model project-level diagnostics with the project root as the path.
+  if (filePath != null) {
+    return filePath;
+  }
+  if (currentPath != null) {
+    const rootPath = getAtomProjectRootPath(currentPath);
+    if (rootPath != null) {
+      return nuclideUri.ensureTrailingSeparator(rootPath);
+    }
+  }
+  // It's unclear what to do in the remaining cases.
+  // We'll just use the root filesystem directory.
+  return nuclideUri.ensureTrailingSeparator('');
+}
+
+// Be flexible in accepting various linter types/severities.
+function convertLinterType(type: string): DiagnosticMessageType {
+  switch (type) {
+    case 'Error':
+    case 'error':
+      return 'Error';
+    case 'Warning':
+    case 'warning':
+      return 'Warning';
+    case 'Info':
+    case 'info':
+      return 'Info';
+  }
+  return 'Error';
+}
 
 // Version 2 only handles file-level diagnostics.
 export function linterMessageV2ToDiagnosticMessage(
   msg: LinterMessageV2,
   providerName: string,
-): FileDiagnosticMessage {
+): DiagnosticMessage {
   let trace;
   if (msg.trace != null) {
-    trace = msg.trace.map(component => ({...component}));
+    trace = msg.trace.map(convertLinterTrace);
   } else if (msg.reference != null) {
     const point =
       msg.reference.position != null
@@ -99,25 +125,37 @@ export function linterMessageV2ToDiagnosticMessage(
     trace = [
       {
         type: 'Trace',
+        text: 'Reference',
         filePath: msg.reference.file,
         range: point ? new Range(point, point) : undefined,
       },
     ];
   }
-  // TODO: handle multiple solutions and priority.
   let fix;
+  const actions = [];
   const {solutions} = msg;
-  if (solutions != null) {
-    const solution = solutions[0];
-    if (solution.replaceWith !== undefined) {
-      fix = {
-        oldRange: Range.fromObject(solution.position),
-        oldText: solution.currentText,
-        newText: solution.replaceWith,
-        title: solution.title,
-      };
-    }
-    // TODO: support the callback version.
+  if (solutions != null && solutions.length > 0) {
+    const sortedSolutions = Array.from(solutions).sort(
+      (a, b) => (a.priority || 0) - (b.priority || 0),
+    );
+    sortedSolutions.forEach((solution, i) => {
+      if (solution.replaceWith !== undefined) {
+        // TODO: support multiple fixes.
+        if (fix == null) {
+          fix = {
+            oldRange: Range.fromObject(solution.position),
+            oldText: solution.currentText,
+            newText: solution.replaceWith,
+            title: solution.title,
+          };
+        }
+      } else {
+        actions.push({
+          title: solution.title != null ? solution.title : `Solution ${i + 1}`,
+          apply: solution.apply.bind(solution),
+        });
+      }
+    });
   }
   let text = msg.excerpt;
   // TODO: use markdown + handle callback-based version.
@@ -125,15 +163,15 @@ export function linterMessageV2ToDiagnosticMessage(
     text = text + '\n' + msg.description;
   }
   return {
-    scope: 'file',
     // flowlint-next-line sketchy-null-string:off
     providerName: msg.linterName || providerName,
-    type: LinterSeverityMap[msg.severity],
+    type: convertLinterType(msg.severity),
     filePath: msg.location.file,
     text,
     range: Range.fromObject(msg.location.position),
     trace,
     fix,
+    actions,
   };
 }
 
@@ -144,7 +182,7 @@ export function linterMessagesToDiagnosticUpdate(
 ): DiagnosticProviderUpdate {
   const filePathToMessages: Map<
     NuclideUri,
-    Array<FileDiagnosticMessage>,
+    Array<DiagnosticMessage>,
   > = new Map();
   // flowlint-next-line sketchy-null-string:off
   if (currentPath) {
@@ -153,29 +191,20 @@ export function linterMessagesToDiagnosticUpdate(
     // linters regularly return messages for other files.
     filePathToMessages.set(currentPath, []);
   }
-  const projectMessages = [];
   for (const msg of msgs) {
     const diagnosticMessage =
       msg.type === undefined
         ? linterMessageV2ToDiagnosticMessage(msg, providerName)
-        : linterMessageToDiagnosticMessage(msg, providerName);
-    if (diagnosticMessage.scope === 'file') {
-      const path = diagnosticMessage.filePath;
-      let messages = filePathToMessages.get(path);
-      if (messages == null) {
-        messages = [];
-        filePathToMessages.set(path, messages);
-      }
-      messages.push(diagnosticMessage);
-    } else {
-      // Project scope.
-      projectMessages.push(diagnosticMessage);
+        : linterMessageToDiagnosticMessage(msg, providerName, currentPath);
+    const path = diagnosticMessage.filePath;
+    let messages = filePathToMessages.get(path);
+    if (messages == null) {
+      messages = [];
+      filePathToMessages.set(path, messages);
     }
+    messages.push(diagnosticMessage);
   }
-  return {
-    filePathToMessages,
-    projectMessages,
-  };
+  return filePathToMessages;
 }
 
 /**
@@ -192,7 +221,7 @@ export class LinterAdapter {
   _updates: Subject<DiagnosticProviderUpdate>;
   _invalidations: Subject<DiagnosticInvalidationMessage>;
 
-  constructor(provider: LinterProvider) {
+  constructor(provider: LinterProvider, busyReporter: string => IDisposable) {
     this._provider = provider;
     this._updates = new Subject();
     this._invalidations = new Subject();
@@ -211,9 +240,7 @@ export class LinterAdapter {
           editor => editor.getBuffer(),
           editor => editor,
           grouped =>
-            // $FlowFixMe: add durationSelector to groupBy
             observableFromSubscribeFunction(cb =>
-              // $FlowFixMe
               grouped.key.onDidDestroy(cb),
             ).take(1),
         )
@@ -225,10 +252,23 @@ export class LinterAdapter {
             Observable.of(null),
           )
             // switchMap ensures that earlier lints are overridden by later ones.
-            .switchMap(
-              editor =>
-                editor == null ? Observable.of(null) : this._runLint(editor),
-            )
+            .switchMap(editor => {
+              if (editor == null) {
+                return Observable.of(null);
+              }
+              const path = editor.getPath();
+              const basename =
+                path == null ? '(untitled)' : nuclideUri.basename(path);
+              return Observable.using(
+                () =>
+                  new UniversalDisposable(
+                    busyReporter(
+                      `${this._provider.name}: running on "${basename}"`,
+                    ),
+                  ),
+                () => this._runLint(editor),
+              );
+            })
             // Track the previous update so we can invalidate its results.
             // (Prevents dangling diagnostics when a linter affects multiple files).
             .scan((acc, update) => ({update, lastUpdate: acc.update}), {
@@ -273,10 +313,10 @@ export class LinterAdapter {
     update: ?DiagnosticProviderUpdate,
     lastUpdate: ?DiagnosticProviderUpdate,
   ): void {
-    if (lastUpdate != null && lastUpdate.filePathToMessages != null) {
+    if (lastUpdate != null) {
       this._invalidations.next({
         scope: 'file',
-        filePaths: Array.from(lastUpdate.filePathToMessages.keys()),
+        filePaths: Array.from(lastUpdate.keys()),
       });
     }
     if (update != null) {

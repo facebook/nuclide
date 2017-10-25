@@ -106,7 +106,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
     waitsFor('error to show up in diagnostics', 10000, () => {
       const errors = atom.views
         .getView(atom.workspace)
-        .querySelector('.nuclide-diagnostics-status-bar-highlight');
+        .querySelector('.diagnostics-status-bar-highlight');
       if (errors instanceof HTMLElement) {
         const innerText = errors.innerText;
         invariant(innerText != null);
@@ -123,7 +123,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
     waitsFor('outline view to load', 10000, () => {
       names = atom.views
         .getView(atom.workspace)
-        .querySelectorAll('.nuclide-outline-view-item .syntax--name');
+        .querySelectorAll('.outline-view-item .syntax--name');
       return names.length > 0;
     });
 
@@ -157,7 +157,7 @@ describeRemotableTest('Clang Integration Test (C++)', context => {
     waitsFor('datatip to appear for TestClass', () => {
       datatip = atom.views
         .getView(atom.workspace)
-        .querySelector('.nuclide-datatip-content atom-text-editor');
+        .querySelector('.datatip-content atom-text-editor');
       return datatip;
     });
 

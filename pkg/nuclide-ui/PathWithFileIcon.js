@@ -196,12 +196,12 @@ export default class PathWithFileIcon extends React.Component<Props> {
     } = this.props;
     const displayPath = children == null ? path : children;
     const decoration =
-      DecorationIcon == null
-        ? null
-        : <div className="nuclide-ui-path-with-file-icon-decoration-icon">
-            {/* $FlowIssue "expected React component instead of prototype" */}
-            <DecorationIcon />
-          </div>;
+      DecorationIcon == null ? null : (
+        <div className="nuclide-ui-path-with-file-icon-decoration-icon">
+          {/* $FlowIssue "expected React component instead of prototype" */}
+          <DecorationIcon />
+        </div>
+      );
     return (
       <div
         className={this._getDefaultClassName()}

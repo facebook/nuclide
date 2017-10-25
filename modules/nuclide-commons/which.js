@@ -21,12 +21,20 @@ import {runCommand} from './process';
  * We ran into problems with the npm `which` package (the nature of which I unfortunately don't
  * remember) so we can use this for now.
  */
+
+function sanitizePathForWindows(path: string): string {
+  if (nuclideUri.basename(path) === path) {
+    // simple binary in $PATH like `flow`
+    return path;
+  } else {
+    return `${nuclideUri.dirname(path)}:${nuclideUri.basename(path)}`;
+  }
+}
+
 export default (async function which(path: string): Promise<?string> {
   const isWindows = process.platform === 'win32';
   const whichCommand = isWindows ? 'where' : 'which';
-  const searchPath = isWindows
-    ? `${nuclideUri.dirname(path)}:${nuclideUri.basename(path)}`
-    : path;
+  const searchPath = isWindows ? sanitizePathForWindows(path) : path;
   try {
     const result = await runCommand(whichCommand, [searchPath]).toPromise();
     return result.split(os.EOL)[0];

@@ -88,9 +88,11 @@ function renderRowWithLinks(
   });
 
   return (
-    <div key={rowIndex}>
+    // We need to use a span here instead of a div so that `text-overflow: ellipsis` works.
+    <span key={rowIndex}>
       {parts}
-    </div>
+      <br />
+    </span>
   );
 }
 
@@ -108,11 +110,7 @@ export const DiagnosticsMessageText = (props: DiagnosticsMessageTextProps) => {
       props.preserveNewlines !== false
         ? message.text.split('\n')
         : [message.text];
-    return (
-      <span title={message.text}>
-        {rows.map(renderRowWithLinks)}
-      </span>
-    );
+    return <span title={message.text}>{rows.map(renderRowWithLinks)}</span>;
   } else {
     return <span>Diagnostic lacks message.</span>;
   }

@@ -28,6 +28,7 @@ export default function accumulateState(
       return {
         ...state,
         projectRoot: action.projectRoot,
+        buckversionFileContents: null,
         isLoadingBuckProject: true,
       };
     case Actions.SET_BUCK_ROOT:
@@ -35,6 +36,11 @@ export default function accumulateState(
         ...state,
         buckRoot: action.buckRoot,
         isLoadingBuckProject: false,
+      };
+    case Actions.SET_BUCKVERSION_FILE_CONTENTS:
+      return {
+        ...state,
+        buckversionFileContents: action.contents,
       };
     case Actions.SET_BUILD_TARGET:
       // We are nulling out the deployment target while platforms are loaded

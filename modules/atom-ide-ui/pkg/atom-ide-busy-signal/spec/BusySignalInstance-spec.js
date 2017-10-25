@@ -12,6 +12,7 @@
 
 import type {BusySignalOptions} from '../lib/types';
 
+import fsPromise from 'nuclide-commons/fsPromise';
 import {MessageStore} from '../lib/MessageStore';
 import BusySignalSingleton from '../lib/BusySignalSingleton';
 
@@ -25,19 +26,22 @@ describe('BusySignalSingleton', () => {
     messageStore = new MessageStore();
     singleton = new BusySignalSingleton(messageStore);
     messages = [];
-    messageStore.getMessageStream().skip(1).subscribe(elements => {
-      const strings = [...elements].map(element => {
-        const titleElement = element.getTitleElement();
-        const child =
-          titleElement != null && titleElement.childNodes.length >= 1
-            ? titleElement.childNodes[0]
-            : {};
-        return child.data != null && typeof child.data === 'string'
-          ? child.data
-          : '';
+    messageStore
+      .getMessageStream()
+      .skip(1)
+      .subscribe(elements => {
+        const strings = [...elements].map(element => {
+          const titleElement = element.getTitleElement();
+          const child =
+            titleElement != null && titleElement.childNodes.length >= 1
+              ? titleElement.childNodes[0]
+              : {};
+          return child.data != null && typeof child.data === 'string'
+            ? child.data
+            : '';
+        });
+        messages.push(strings);
       });
-      messages.push(strings);
-    });
   });
 
   it('should record messages before and after a call', () => {
@@ -52,11 +56,9 @@ describe('BusySignalSingleton', () => {
   });
 
   it("should send the 'done' message even if the promise rejects", () => {
-    singleton.reportBusyWhile(
-      'foo',
-      () => Promise.reject(new Error()),
-      options,
-    );
+    singleton
+      .reportBusyWhile('foo', () => Promise.reject(new Error()), options)
+      .catch(() => {});
     expect(messages.length).toBe(1);
     waitsFor(
       () => messages.length === 2,
@@ -87,11 +89,13 @@ describe('BusySignalSingleton', () => {
     let editor1: atom$TextEditor = (null: any);
     let editor2: atom$TextEditor = (null: any);
     let editor3: atom$TextEditor = (null: any);
+    let file2;
 
     beforeEach(() => {
       waitsForPromise(async () => {
-        editor1 = await atom.workspace.open('/file1.txt');
-        editor2 = await atom.workspace.open('/file2.txt');
+        editor1 = await atom.workspace.open(await fsPromise.tempfile());
+        file2 = await fsPromise.tempfile();
+        editor2 = await atom.workspace.open(file2);
         editor3 = await atom.workspace.open();
       });
     });
@@ -104,7 +108,7 @@ describe('BusySignalSingleton', () => {
       atom.workspace.getActivePane().activateItem(editor1);
 
       const disposable = singleton.reportBusy('foo', {
-        onlyForFile: '/file2.txt',
+        onlyForFile: file2,
         ...options,
       });
       expect(messages).toEqual([]);
@@ -124,6 +128,38 @@ describe('BusySignalSingleton', () => {
       disposable.dispose();
       expect(messages.length).toBe(4);
       expect(messages[3]).toEqual([]);
+    });
+  });
+
+  it('should clear revealTooltip after the initial display', () => {
+    waitsForPromise(async () => {
+      function getCurrentMessages() {
+        return messageStore
+          .getMessageStream()
+          .take(1)
+          .toPromise();
+      }
+
+      const dispose1 = singleton.reportBusy('foo', {
+        debounce: false,
+        revealTooltip: true,
+      });
+      let curMessages = await getCurrentMessages();
+      expect(curMessages.length).toBe(1);
+      expect(curMessages[0].shouldRevealTooltip()).toBe(true);
+
+      const dispose2 = singleton.reportBusy('foo', {
+        debounce: false,
+        revealTooltip: true,
+      });
+      curMessages = await getCurrentMessages();
+      expect(curMessages.length).toBe(2);
+      expect(curMessages[0].shouldRevealTooltip()).toBe(false);
+      expect(curMessages[1].shouldRevealTooltip()).toBe(true);
+
+      dispose1.dispose();
+      dispose2.dispose();
+      expect(await getCurrentMessages()).toEqual([]);
     });
   });
 });

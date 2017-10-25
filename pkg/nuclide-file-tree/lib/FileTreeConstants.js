@@ -10,5 +10,6 @@
  */
 
 export const EVENT_HANDLER_SELECTOR = '.nuclide-file-tree';
-export const OPEN_FILES_MENU_SELECTOR = '.nuclide-file-tree-open-files';
+export const OPEN_FILES_MENU_SELECTOR =
+  '.nuclide-file-tree-open-files.doNotMatch';
 export const COMMANDS_SELECTOR = '.nuclide-file-tree-toolbar-container';

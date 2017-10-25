@@ -69,7 +69,7 @@ export type Result<T, V> =
       // The editor that the result was computed from
       editor: atom$TextEditor,
       // The provider that computed the result
-      // TODO Use a type paramater for this type
+      // TODO Use a type parameter for this type
       provider: T,
     };
 

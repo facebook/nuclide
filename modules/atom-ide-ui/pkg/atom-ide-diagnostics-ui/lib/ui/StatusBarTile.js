@@ -18,12 +18,14 @@ import type {
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import classnames from 'classnames';
+import {fastDebounce} from 'nuclide-commons/observable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import analytics from 'nuclide-commons-atom/analytics';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import featureConfig from 'nuclide-commons-atom/feature-config';
 
 type DiagnosticCount = {
   errorCount: number,
@@ -63,7 +65,7 @@ export default class StatusBarTile {
     this._diagnosticUpdaters.set(diagnosticUpdater, diagnosticCount);
     this._subscriptions.add(
       observableFromSubscribeFunction(diagnosticUpdater.observeMessages)
-        .debounceTime(RENDER_DEBOUNCE_TIME)
+        .let(fastDebounce(RENDER_DEBOUNCE_TIME))
         .subscribe(
           this._onAllMessagesDidUpdate.bind(this, diagnosticUpdater),
           null,
@@ -82,9 +84,20 @@ export default class StatusBarTile {
     const item = (this._item = document.createElement('div'));
     item.className = 'inline-block';
     this._render();
-    this._tile = statusBar.addLeftTile({
+
+    const statusBarPosition = featureConfig.get(
+      'atom-ide-diagnostics-ui.statusBarPosition',
+    );
+    const statusBarPositionMethod =
+      statusBarPosition === 'left'
+        ? statusBar.addLeftTile
+        : statusBar.addRightTile;
+    // negate the priority for better visibility on the right side
+    const statusBarPriority =
+      statusBarPosition === 'left' ? STATUS_BAR_PRIORITY : -STATUS_BAR_PRIORITY;
+    this._tile = statusBarPositionMethod({
       item,
-      priority: STATUS_BAR_PRIORITY,
+      priority: statusBarPriority,
     });
   }
 
@@ -162,18 +175,12 @@ class StatusBarTileComponent extends React.Component<Props> {
     const warningCount = this.props.warningCount;
     const hasErrors = errorCount > 0;
     const hasWarnings = warningCount > 0;
-    const errorClassName = classnames(
-      'nuclide-diagnostics-status-bar-highlight',
-      {
-        'text-error': hasErrors,
-      },
-    );
-    const warningClassName = classnames(
-      'nuclide-diagnostics-status-bar-highlight',
-      {
-        'text-warning': hasWarnings,
-      },
-    );
+    const errorClassName = classnames('diagnostics-status-bar-highlight', {
+      'text-error': hasErrors,
+    });
+    const warningClassName = classnames('diagnostics-status-bar-highlight', {
+      'text-warning': hasWarnings,
+    });
     const errorLabel = hasErrors ? errorCount : 'No';
     const errorSuffix = errorCount !== 1 ? 's' : '';
     const warningLabel = hasWarnings ? warningCount : 'No';
@@ -184,23 +191,21 @@ class StatusBarTileComponent extends React.Component<Props> {
         <a
           className={errorClassName}
           onClick={this._onClick}
-          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={addTooltip({
             title: `${errorLabel} error${errorSuffix}`,
             placement: 'top',
           })}>
-          <Icon icon="stop" />
+          <Icon icon="nuclicon-error" />
           {errorCount}
         </a>
         <a
           className={warningClassName}
           onClick={this._onClick}
-          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={addTooltip({
             title: `${warningLabel} warning${warningSuffix}`,
             placement: 'top',
           })}>
-          <Icon icon="alert" />
+          <Icon icon="nuclicon-warning" />
           {warningCount}
         </a>
       </span>

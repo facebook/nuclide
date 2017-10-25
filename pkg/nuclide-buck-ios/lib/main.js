@@ -44,6 +44,9 @@ function provideIosPlatformGroup(
   if (!SUPPORTED_RULE_TYPES.has(ruleType)) {
     return Observable.of(null);
   }
+  if (ruleType === 'apple_binary' && buildTarget.endsWith('AppleMac')) {
+    return Observable.of(null);
+  }
 
   return Observable.fromPromise(
     fsPromise.exists(nuclideUri.join(buckRoot, 'mode', 'oculus-mobile')),

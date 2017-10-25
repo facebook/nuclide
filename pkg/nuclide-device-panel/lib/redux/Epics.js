@@ -11,7 +11,7 @@
 
 import {Observable} from 'rxjs';
 import * as Actions from './Actions';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {getProviders} from '../providers';
 import {DeviceTask} from '../DeviceTask';
 import {Cache} from '../../../commons-node/cache';
@@ -37,6 +37,7 @@ export function pollDevicesEpic(
         isActiveA === isActiveB,
     )
     .switchMap(([state, isActive]) => {
+      // eslint-disable-next-line eqeqeq
       if (state.deviceType === null || !isActive) {
         return Observable.empty();
       }

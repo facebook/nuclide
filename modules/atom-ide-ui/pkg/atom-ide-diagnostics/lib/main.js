@@ -18,14 +18,17 @@ import type {
   Store,
 } from './types';
 import type {LinterAdapter} from './services/LinterAdapter';
+import type {BusySignalService} from '../../atom-ide-busy-signal/lib/types';
+import type {CodeActionFetcher} from '../../atom-ide-code-actions/lib/types';
 
+import invariant from 'assert';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import MessageRangeTracker from './MessageRangeTracker';
 import DiagnosticUpdater from './services/DiagnosticUpdater';
 import IndieLinterRegistry from './services/IndieLinterRegistry';
-import {createAdapters} from './services/LinterAdapterFactory';
+import {createAdapter} from './services/LinterAdapterFactory';
 import * as Actions from './redux/Actions';
 import createStore from './redux/createStore';
 
@@ -33,6 +36,7 @@ class Activation {
   _disposables: UniversalDisposable;
   _allLinterAdapters: Set<LinterAdapter>;
   _store: Store;
+  _busySignalService: ?BusySignalService;
 
   constructor() {
     this._allLinterAdapters = new Set();
@@ -70,12 +74,38 @@ class Activation {
     };
   }
 
+  consumeBusySignal(service: BusySignalService): IDisposable {
+    this._busySignalService = service;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
+  }
+
+  _reportBusy(title: string): IDisposable {
+    if (this._busySignalService != null) {
+      return this._busySignalService.reportBusy(title);
+    }
+    return new UniversalDisposable();
+  }
+
+  consumeCodeActionFetcher(fetcher: CodeActionFetcher): IDisposable {
+    this._store.dispatch(Actions.setCodeActionFetcher(fetcher));
+    return new UniversalDisposable(() => {
+      invariant(this._store.getState().codeActionFetcher === fetcher);
+      this._store.dispatch(Actions.setCodeActionFetcher(null));
+    });
+  }
+
   consumeLinterProvider(
-    provider: LinterProvider | Array<LinterProvider>,
+    providers_: LinterProvider | Array<LinterProvider>,
   ): IDisposable {
-    const newAdapters = createAdapters(provider);
+    const providers = Array.isArray(providers_) ? providers_ : [providers_];
     const adapterDisposables = new UniversalDisposable();
-    for (const adapter of newAdapters) {
+    for (const provider of providers) {
+      const adapter = createAdapter(provider, title => this._reportBusy(title));
+      if (adapter == null) {
+        continue;
+      }
       this._allLinterAdapters.add(adapter);
       const diagnosticDisposable = this.consumeDiagnosticsProviderV2({
         updates: adapter.getUpdates(),

@@ -83,7 +83,7 @@ describe('ImportFormatter', () => {
         '/Users/login/home/root/subdirectory/file.js',
         suggestedImport,
       ),
-    ).toBe("import {SomeSymbol} from '../someFile'");
+    ).toBe("import {SomeSymbol} from '../someFile';");
   });
   it('Should properly format import statement for types', () => {
     const suggestedImport: JSExport = {
@@ -99,7 +99,7 @@ describe('ImportFormatter', () => {
         '/Users/login/home/root/subdirectory/file.js',
         suggestedImport,
       ),
-    ).toBe("import type {SomeType} from '../someFile'");
+    ).toBe("import type {SomeType} from '../someFile';");
   });
   it('Should properly format import statement for default exports', () => {
     const suggestedImport: JSExport = {
@@ -115,7 +115,7 @@ describe('ImportFormatter', () => {
         '/Users/login/home/root/subdirectory/file.js',
         suggestedImport,
       ),
-    ).toBe("import SomeSymbol from '../someFile'");
+    ).toBe("import SomeSymbol from '../someFile';");
   });
   it('Should provide a relative import for files within the same module', () => {
     const suggestedImport: JSExport = {
@@ -130,7 +130,7 @@ describe('ImportFormatter', () => {
         '/Users/modules/atom-ide-ui/aDifferentPackage/lib/anotherFile.js',
         suggestedImport,
       ),
-    ).toBe("import SomeSymbol from '../../somePackage/someFile'");
+    ).toBe("import SomeSymbol from '../../somePackage/someFile';");
   });
   it('Should NOT provide a relative import for files NOT within the same module', () => {
     const suggestedImport: JSExport = {
@@ -145,12 +145,13 @@ describe('ImportFormatter', () => {
         '/Users/modules/nuclide-commons/aDifferentPackage/lib/anotherFile.js',
         suggestedImport,
       ),
-    ).toBe("import SomeSymbol from 'atom-ide-ui/somePackage/someFile'");
+    ).toBe("import SomeSymbol from 'atom-ide-ui/somePackage/someFile';");
   });
   it('Should correctly handle haste formatting with JS files', () => {
     const suggestedImport: JSExport = {
       id: 'SomeSymbol',
       uri: '/Users/modules/somePackage/somePackage/AutoImportsManager.js',
+      hasteName: 'AutoImportsManagerHaste',
       isTypeExport: false,
       isDefault: true,
     };
@@ -160,21 +161,6 @@ describe('ImportFormatter', () => {
         '/Users/modules/somePackage/somePackage/AutoImportsManager.js',
         suggestedImport,
       ),
-    ).toBe('AutoImportsManager');
-  });
-  it('Should correctly handle haste formatting with React files', () => {
-    const suggestedImport: JSExport = {
-      id: 'SomeSymbol',
-      uri: '/Users/modules/somePackage/somePackage/AutoImportsManager.react.js',
-      isTypeExport: false,
-      isDefault: true,
-    };
-    const formatter = new ImportFormatter([], true);
-    expect(
-      formatter.formatImportFile(
-        '/Users/modules/somePackage/somePackage/AutoImportsManager.react.js',
-        suggestedImport,
-      ),
-    ).toBe('AutoImportsManager.react');
+    ).toBe('AutoImportsManagerHaste');
   });
 });

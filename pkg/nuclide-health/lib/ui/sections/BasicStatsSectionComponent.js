@@ -83,12 +83,8 @@ export default class BasicStatsSectionComponent extends React.Component<Props> {
             }
             return (
               <tr {...props} key={s}>
-                <th>
-                  {stat.name}
-                </th>
-                <td>
-                  {stat.value}
-                </td>
+                <th>{stat.name}</th>
+                <td>{stat.value}</td>
                 <td className="text-right">
                   <Button
                     size={ButtonSizes.EXTRA_SMALL}

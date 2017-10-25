@@ -43,14 +43,14 @@
 
 export function scrollIntoView(el: Element, alignToTop?: boolean): void {
   const scrollTops = getOverflowHiddenScrollTops(el);
-  el.scrollIntoView(alignToTop); // eslint-disable-line nuclide-internal/dom-apis
+  el.scrollIntoView(alignToTop); // eslint-disable-line rulesdir/dom-apis
   restoreScrollTops(scrollTops);
 }
 
 export function scrollIntoViewIfNeeded(el: Element, center?: boolean): void {
   const scrollTops = getOverflowHiddenScrollTops(el);
   // $FlowIgnore: This should be added to the element type.
-  el.scrollIntoViewIfNeeded(center); // eslint-disable-line nuclide-internal/dom-apis
+  el.scrollIntoViewIfNeeded(center); // eslint-disable-line rulesdir/dom-apis
   restoreScrollTops(scrollTops);
 }
 

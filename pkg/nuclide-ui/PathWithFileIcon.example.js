@@ -16,9 +16,7 @@ import PathWithFileIcon, {DecorationIcons} from './PathWithFileIcon';
 function ListItem(props: {children?: mixed}): React.Element<any> {
   return (
     // $FlowFixMe(>=0.53.0) Flow suppress
-    <div className="list-item">
-      {props.children}
-    </div>
+    <div className="list-item">{props.children}</div>
   );
 }
 

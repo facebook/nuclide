@@ -190,6 +190,45 @@ describe('nuclide-open-files', () => {
       });
     });
 
+    it('save', () => {
+      const buffer = new TextBuffer({filePath: 'f1', text: 'contents1'});
+      runs(() => {
+        atom.project.addBuffer(buffer);
+      });
+      waitsFor(() => eventCount >= 1);
+
+      runs(() => {
+        buffer.save();
+      });
+      waitsFor(() => eventCount >= 2);
+
+      runs(() => {
+        buffer.destroy();
+      });
+      waitsFor(() => eventCount >= 3);
+
+      waitsForPromise(async () => {
+        expect(await finishEvents()).toEqual([
+          {
+            kind: 'open',
+            filePath: 'f1',
+            changeCount: 1,
+            contents: 'contents1',
+          },
+          {
+            kind: 'save',
+            filePath: 'f1',
+            changeCount: 1,
+          },
+          {
+            kind: 'close',
+            filePath: 'f1',
+            changeCount: 1,
+          },
+        ]);
+      });
+    });
+
     it('rename', () => {
       let waiting = true;
       const buffer = new TextBuffer({filePath: 'f1', text: 'contents1'});
@@ -537,14 +576,14 @@ describe('nuclide-open-files', () => {
         invariant(serverBuffer != null);
         expect(serverBuffer.getText()).toEqual('contents3');
 
-        const recievedClose = (await getFileCache())
+        const receivedClose = (await getFileCache())
           .observeFileEvents()
           .filter(event => event.kind === 'close')
           .take(1)
           .toArray()
           .toPromise();
         buffer.destroy();
-        await recievedClose;
+        await receivedClose;
 
         const buffer2 = new TextBuffer({filePath: 'f3', text: 'contents4'});
         atom.project.addBuffer(buffer2);

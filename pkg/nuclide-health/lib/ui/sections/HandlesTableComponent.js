@@ -55,18 +55,16 @@ export default class HandlesTableComponent<T: Object> extends React.Component<
     const handleSummaries = this.getHandleSummaries(this.props.handles);
     const component = (
       <div>
-        <h3>
-          {this.props.title}
-        </h3>
+        <h3>{this.props.title}</h3>
         <table className="table">
           <thead>
             <tr>
               <th width="10%">ID</th>
-              {this.props.columns.map((column, c) =>
+              {this.props.columns.map((column, c) => (
                 <th key={c} width={`${column.widthPercentage}%`}>
                   {column.title}
-                </th>,
-              )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -77,9 +75,7 @@ export default class HandlesTableComponent<T: Object> extends React.Component<
                 <tr
                   key={key}
                   className={previousHandle ? '' : 'nuclide-health-handle-new'}>
-                  <th>
-                    {key}
-                  </th>
+                  <th>{key}</th>
                   {this.props.columns.map((column, c) => {
                     let className = '';
                     if (

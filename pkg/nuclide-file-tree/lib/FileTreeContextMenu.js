@@ -21,8 +21,8 @@ import {
   OPEN_FILES_MENU_SELECTOR,
   COMMANDS_SELECTOR,
 } from './FileTreeConstants';
-import FileTreeHelpers from './FileTreeHelpers';
 import {FileTreeStore} from './FileTreeStore';
+import FileTreeHelpers from '../../nuclide-file-tree/lib/FileTreeHelpers';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
@@ -99,10 +99,10 @@ const SHOW_IN_MENU_PRIORITY = 7000;
  * import {CompositeDisposable, Disposable} from 'atom';
  * import invariant from 'assert';
  *
- * let disposables: ?CompositeDisposable = null;
+ * let disposables: ?UniversalDisposable = null;
  *
  * export function activate(state: ?Object): void {
- *   disposables = new CompositeDisposable();
+ *   disposables = new UniversalDisposable();
  * }
  *
  * export function deactivate(): void {
@@ -281,8 +281,11 @@ export default class FileTreeContextMenu {
         label: 'Duplicate',
         command: 'nuclide-file-tree:duplicate-selection',
         shouldDisplay: () => {
-          const node = this.getSingleSelectedNode();
-          return node != null && !node.isContainer;
+          const nodes = this.getSelectedNodes();
+          return (
+            nodes.size > 0 &&
+            nodes.every(node => node != null && !node.isContainer)
+          );
         },
       },
       {
@@ -391,12 +394,14 @@ export default class FileTreeContextMenu {
     // priority, we add them twice. Ideally, these menu items wouldn't be in the file tree package
     // at all, but for historical reasons they are. Someday maybe we can pull them out.
     const showInXItems = [
+      // $FlowFixMe (v0.54.1 <)
       {
         label: 'Copy Full Path',
         command: 'file:copy-full-path',
         shouldDisplay: event =>
           getElementFilePath(((event.target: any): HTMLElement)) != null,
       },
+      // $FlowFixMe (v0.54.1 <)
       {
         label: `Show in ${getFileManagerName()}`,
         command: 'file:show-in-file-manager',
@@ -405,6 +410,7 @@ export default class FileTreeContextMenu {
           return path != null && !nuclideUri.isRemote(path);
         },
       },
+      // $FlowFixMe (v0.54.1 <)
       {
         label: 'Search in Directory',
         command: 'nuclide-file-tree:search-in-directory',

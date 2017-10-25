@@ -1,0 +1,19 @@
+{
+  "name": "nuclide-syntactic-selection",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides support for Syntax-aware selection control.",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "consumedServices": {
+    "nuclide-syntactic-selection": {
+      "versions": {
+        "0.1.0": "consumeSyntacticSelectionProvider"
+      }
+    }
+  }
+}

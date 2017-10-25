@@ -9,7 +9,7 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import * as React from 'react';
 import SettingsCategory from './SettingsCategory';
@@ -17,15 +17,13 @@ import SettingsCategory from './SettingsCategory';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Section} from '../../nuclide-ui/Section';
 
-import {matchesFilter} from './settings-utils';
-
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/settings';
 
 export default class NuclideSettingsPaneItem extends React.Component<
   Object,
   Object,
 > {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Object) {
     super(props);
@@ -39,7 +37,7 @@ export default class NuclideSettingsPaneItem extends React.Component<
     // Only need to add config listeners once.
     let disposables = null;
     if (!this._disposables) {
-      this._disposables = disposables = new CompositeDisposable();
+      this._disposables = disposables = new UniversalDisposable();
     }
 
     const configData = {};
@@ -154,18 +152,20 @@ export default class NuclideSettingsPaneItem extends React.Component<
     const elements = [];
 
     const configData = this._getConfigData();
-    Object.keys(configData).sort().forEach(categoryName => {
-      const packages = configData[categoryName];
-      if (Object.keys(packages).length > 0) {
-        elements.push(
-          <SettingsCategory
-            key={categoryName}
-            name={categoryName}
-            packages={packages}
-          />,
-        );
-      }
-    });
+    Object.keys(configData)
+      .sort()
+      .forEach(categoryName => {
+        const packages = configData[categoryName];
+        if (Object.keys(packages).length > 0) {
+          elements.push(
+            <SettingsCategory
+              key={categoryName}
+              name={categoryName}
+              packages={packages}
+            />,
+          );
+        }
+      });
     const settings = elements.length === 0 ? null : elements;
     return (
       <div className="pane-item padded settings-gadgets-pane">
@@ -237,4 +237,19 @@ function getTitle(schema: atom$ConfigSchema, settingName: string): string {
 
 function getDescription(schema: atom$ConfigSchema): string {
   return schema.description || '';
+}
+
+// Remove spaces and hypens
+function strip(str: string): string {
+  return str.replace(/\s+/g, '').replace(/-+/g, '');
+}
+
+/** Returns true if filter matches search string. Return true if filter is empty. */
+function matchesFilter(filter: string, searchString: string): boolean {
+  if (filter.length === 0) {
+    return true;
+  }
+  const needle = strip(filter.toLowerCase());
+  const hay = strip(searchString.toLowerCase());
+  return hay.indexOf(needle) !== -1;
 }

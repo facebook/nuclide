@@ -12,27 +12,60 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {CodeSearchResult} from './types';
 
-import {findArcProjectIdOfPath} from '../../nuclide-arcanist-rpc';
 import {search as agAckSearch} from './AgAckService';
 import {search as rgSearch} from './RgService';
 import {ConnectableObservable, Observable} from 'rxjs';
+import {hasCommand} from 'nuclide-commons/hasCommand';
+import {asyncFind} from 'nuclide-commons/promise';
+import {
+  isNfs,
+  isFuse,
+} from '../../nuclide-server/lib/services/FileSystemService';
+import os from 'os';
+
+const WINDOWS_TOOLS = ['rg'];
+const POSIX_TOOLS = ['ag', 'rg', 'ack'];
+
+async function resolveTool(tool: ?string): Promise<?string> {
+  if (tool != null) {
+    return tool;
+  }
+  return asyncFind(os.platform() === 'win32' ? WINDOWS_TOOLS : POSIX_TOOLS, t =>
+    hasCommand(t).then(has => (has ? t : null)),
+  );
+}
+
+async function isFbManaged(rootDirectory: NuclideUri): Promise<boolean> {
+  try {
+    // $FlowFB
+    const {findArcProjectIdOfPath} = require('../../fb-arcanist-rpc');
+    const projectId = await findArcProjectIdOfPath(rootDirectory);
+    if (projectId == null) {
+      return false;
+    }
+    // $FlowFB
+    const bigGrep = require('../../commons-atom/fb-biggrep-query'); // eslint-disable-line rulesdir/no-cross-atom-imports
+    const corpus = bigGrep.ARC_PROJECT_CORPUS[projectId];
+    if (corpus != null) {
+      return true;
+    }
+  } catch (err) {}
+  return false;
+}
 
 export async function isEligibleForDirectory(
   rootDirectory: NuclideUri,
 ): Promise<boolean> {
-  const projectId = await findArcProjectIdOfPath(rootDirectory);
-  if (projectId == null) {
-    return true;
+  const checks = await Promise.all([
+    resolveTool(null).then(tool => tool == null),
+    isFbManaged(rootDirectory),
+    isNfs(rootDirectory),
+    isFuse(rootDirectory),
+  ]);
+  if (checks.some(x => x)) {
+    return false;
   }
 
-  try {
-    // $FlowFB
-    const bigGrep = require('../../commons-atom/fb-biggrep-query'); // eslint-disable-line nuclide-internal/no-cross-atom-imports
-    const corpus = bigGrep.ARC_PROJECT_CORPUS[projectId];
-    if (corpus != null) {
-      return false;
-    }
-  } catch (err) {}
   return true;
 }
 
@@ -49,14 +82,18 @@ const searchToolHandlers = new Map([
 ]);
 
 export function searchWithTool(
-  tool: string,
+  tool: ?string,
   directory: NuclideUri,
   query: string,
   maxResults: number,
 ): ConnectableObservable<CodeSearchResult> {
-  const handler = searchToolHandlers.get(tool);
-  if (handler != null) {
-    return handler(directory, query).take(maxResults).publish();
-  }
-  return Observable.empty().publish();
+  return Observable.defer(() => resolveTool(tool))
+    .switchMap(actualTool => {
+      const handler = searchToolHandlers.get(actualTool);
+      if (handler != null) {
+        return handler(directory, query).take(maxResults);
+      }
+      return Observable.empty();
+    })
+    .publish();
 }

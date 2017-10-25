@@ -140,7 +140,7 @@ export async function getSuggestion(
     return {
       range: match.range,
       callback() {
-        goToLocation(match.path, match.line, match.column);
+        goToLocation(match.path, {line: match.line, column: match.column});
       },
     };
   } else {

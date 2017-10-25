@@ -9,10 +9,11 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable, Emitter} from 'atom';
+import {Disposable, Emitter} from 'atom';
 
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import {arrayCompact} from 'nuclide-commons/collection';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {isGkEnabled, onceGkInitialized} from '../../commons-node/passesGK';
 import {maybeToString} from 'nuclide-commons/string';
 
@@ -35,7 +36,7 @@ const logger = getLogger('nuclide-nux');
 
 export class NuxManager {
   _nuxStore: NuxStore;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _emitter: atom$Emitter;
   _activeNuxTour: ?NuxTour;
   // Maps a NUX's unique ID to its corresponding NuxTour
@@ -51,7 +52,7 @@ export class NuxManager {
     this._syncCompletedNux = syncCompletedNux;
 
     this._emitter = new Emitter();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._pendingNuxes = new Map();
     this._readyToDisplayNuxes = [];

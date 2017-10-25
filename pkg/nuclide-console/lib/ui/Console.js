@@ -15,12 +15,14 @@ import type {
   OutputProvider,
   RecordHeightChangeHandler,
   Source,
+  WatchEditorFunction,
 } from '../types';
 import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import debounce from 'nuclide-commons/debounce';
 import * as React from 'react';
+import {Observable} from 'rxjs';
 import FilteredMessagesReminder from './FilteredMessagesReminder';
 import OutputTable from './OutputTable';
 import ConsoleHeader from './ConsoleHeader';
@@ -36,6 +38,7 @@ type Props = {
   history: Array<string>,
   clearRecords: () => void,
   createPaste: ?() => Promise<void>,
+  watchEditor: ?WatchEditorFunction,
   execute: (code: string) => void,
   currentExecutor: ?Executor,
   executors: Map<string, Executor>,
@@ -57,9 +60,19 @@ type State = {
   unseenMessages: boolean,
 };
 
+// Maximum time (ms) for the console to try scrolling to the bottom.
+const MAXIMUM_SCROLLING_TIME = 3000;
+
 export default class Console extends React.Component<Props, State> {
   _disposables: UniversalDisposable;
   _isScrolledNearBottom: boolean;
+
+  // Used when _scrollToBottom is called. The console optimizes message loading
+  // so scrolling to the bottom once doesn't always scroll to the bottom since
+  // more messages can be loaded after.
+  _isScrollingToBottom: boolean;
+  _scrollingThrottle: rxjs$Subscription;
+
   _outputTable: ?OutputTable;
 
   constructor(props: Props) {
@@ -69,6 +82,7 @@ export default class Console extends React.Component<Props, State> {
     };
     this._disposables = new UniversalDisposable();
     this._isScrolledNearBottom = true;
+    this._isScrollingToBottom = false;
     (this: any)._handleScrollEnd = debounce(this._handleScrollEnd, 100);
   }
 
@@ -77,7 +91,7 @@ export default class Console extends React.Component<Props, State> {
     // re-measuring; Otherwise, the scrolled location will be inaccurate, preventing the Console
     // from auto-scrolling.
     const immediate = setImmediate(() => {
-      this._scrollToBottom();
+      this._startScrollToBottom();
     });
     this._disposables.add(() => {
       clearImmediate(immediate);
@@ -98,7 +112,7 @@ export default class Console extends React.Component<Props, State> {
         this.props.displayableRecords,
       )
     ) {
-      this._scrollToBottom();
+      this._startScrollToBottom();
     }
   }
 
@@ -195,10 +209,11 @@ export default class Console extends React.Component<Props, State> {
               onDisplayableRecordHeightChange={
                 this.props.onDisplayableRecordHeightChange
               }
+              shouldScrollToBottom={this._shouldScrollToBottom}
             />
             <NewMessagesNotification
               visible={this.state.unseenMessages}
-              onClick={this._scrollToBottom}
+              onClick={this._startScrollToBottom}
             />
           </div>
           {this._renderPrompt()}
@@ -217,12 +232,19 @@ export default class Console extends React.Component<Props, State> {
         {this._renderPromptButton()}
         <InputArea
           scopeName={currentExecutor.scopeName}
-          onSubmit={this.props.execute}
+          onSubmit={this._executePrompt}
           history={this.props.history}
+          watchEditor={this.props.watchEditor}
         />
       </div>
     );
   }
+
+  _executePrompt = (code: string): void => {
+    this.props.execute(code);
+    // Makes the console to scroll to the bottom.
+    this._isScrolledNearBottom = true;
+  };
 
   _handleScroll = (
     offsetHeight: number,
@@ -237,14 +259,22 @@ export default class Console extends React.Component<Props, State> {
     scrollHeight: number,
     scrollTop: number,
   ): void {
-    this._isScrolledNearBottom = this._isScrolledToBottom(
+    const isScrolledToBottom = this._isScrolledToBottom(
       offsetHeight,
       scrollHeight,
       scrollTop,
     );
-    this.setState({
-      unseenMessages: this.state.unseenMessages && !this._isScrolledNearBottom,
-    });
+
+    if (this._isScrollingToBottom && !isScrolledToBottom) {
+      this._scrollToBottom();
+    } else {
+      this._isScrolledNearBottom = isScrolledToBottom;
+      this._stopScrollToBottom();
+      this.setState({
+        unseenMessages:
+          this.state.unseenMessages && !this._isScrolledNearBottom,
+      });
+    }
   }
 
   _handleOutputTable = (ref: OutputTable): void => {
@@ -255,7 +285,32 @@ export default class Console extends React.Component<Props, State> {
     if (!this._outputTable) {
       return;
     }
+
     this._outputTable.scrollToBottom();
+
     this.setState({unseenMessages: false});
+  };
+
+  _startScrollToBottom = (): void => {
+    if (!this._isScrollingToBottom) {
+      this._isScrollingToBottom = true;
+
+      this._scrollingThrottle = Observable.timer(
+        MAXIMUM_SCROLLING_TIME,
+      ).subscribe(() => {
+        this._isScrollingToBottom = false;
+      });
+    }
+
+    this._scrollToBottom();
+  };
+
+  _stopScrollToBottom = (): void => {
+    this._isScrollingToBottom = false;
+    this._scrollingThrottle.unsubscribe();
+  };
+
+  _shouldScrollToBottom = (): boolean => {
+    return this._isScrolledNearBottom || this._isScrollingToBottom;
   };
 }

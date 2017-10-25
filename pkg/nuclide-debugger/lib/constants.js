@@ -35,4 +35,5 @@ export const AnalyticsEvents = Object.freeze({
   DEBUGGER_WATCH_ADD_EXPRESSION: 'debugger-watch-add-expression',
   DEBUGGER_WATCH_REMOVE_EXPRESSION: 'debugger-watch-remove-expression',
   DEBUGGER_WATCH_UPDATE_EXPRESSION: 'debugger-watch-update-expression',
+  DEBUGGER_EDIT_BREAKPOINT_FROM_ICON: 'debugger-edit-breakpoint-from-icon',
 });

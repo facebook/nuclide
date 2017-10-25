@@ -13,17 +13,17 @@ import invariant from 'assert';
 import electron from 'electron';
 import {DebuggerStore, DebuggerMode} from './DebuggerStore';
 import {getNotificationService} from '../../nuclide-debugger-base';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const {remote} = electron;
 invariant(remote != null);
 
 export class DebuggerPauseController {
   _store: DebuggerStore;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(store: DebuggerStore) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._store = store;
     store.onDebuggerModeChange(() => this._handleChange());
   }

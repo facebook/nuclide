@@ -64,9 +64,11 @@ class UnresolvedBreakpointsComponent extends React.Component<Props, State> {
     });
     return (
       <ol className="breakpoint-list">
-        {this.state.breakpoints.length > 0
-          ? children
-          : <div className="info">None</div>}
+        {this.state.breakpoints.length > 0 ? (
+          children
+        ) : (
+          <div className="info">None</div>
+        )}
       </ol>
     );
   }

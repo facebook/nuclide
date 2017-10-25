@@ -94,15 +94,18 @@ function findTargetPane(
   const predicate = createPredicate(operation, activeRect);
 
   const paneToRect: WeakMap<atom$Pane, ClientRect> = new WeakMap();
-  const candidatePanes = activePane.getContainer().getPanes().filter(pane => {
-    if (pane === activePane) {
-      return false;
-    } else {
-      const rect = atom.views.getView(pane).getBoundingClientRect();
-      paneToRect.set(pane, rect);
-      return predicate(rect);
-    }
-  });
+  const candidatePanes = activePane
+    .getContainer()
+    .getPanes()
+    .filter(pane => {
+      if (pane === activePane) {
+        return false;
+      } else {
+        const rect = atom.views.getView(pane).getBoundingClientRect();
+        paneToRect.set(pane, rect);
+        return predicate(rect);
+      }
+    });
 
   if (candidatePanes.length === 1) {
     return candidatePanes[0];

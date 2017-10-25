@@ -16,7 +16,7 @@ import {GRAMMARS, EXTENSIONS} from './constants';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {getMerlinServiceByNuclideUri} from '../../nuclide-remote-connection';
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   priority: 20,
   providerName: 'nuclide-ocaml',
@@ -58,11 +58,10 @@ module.exports = {
         return {
           range,
           callback() {
-            return goToLocation(
-              location.file,
-              location.pos.line - 1,
-              location.pos.col,
-            );
+            return goToLocation(location.file, {
+              line: location.pos.line - 1,
+              column: location.pos.col,
+            });
           },
         };
       }

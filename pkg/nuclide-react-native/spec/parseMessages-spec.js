@@ -29,7 +29,9 @@ describe('parseMessages', () => {
 
       it('parses the preamble (skipping the ceremony)', () => {
         waitsForPromise(async () => {
-          const output = await parseMessages(lines).toArray().toPromise();
+          const output = await parseMessages(lines)
+            .toArray()
+            .toPromise();
           expect((output[0]: any).message.text).toBe(
             'Running packager on port 8081.',
           );
@@ -38,7 +40,9 @@ describe('parseMessages', () => {
 
       it('finds the ready line', () => {
         waitsForPromise(async () => {
-          const output = await parseMessages(lines).toArray().toPromise();
+          const output = await parseMessages(lines)
+            .toArray()
+            .toPromise();
           const readyLines = output.filter(
             line => (line: any).kind === 'ready',
           );

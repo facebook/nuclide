@@ -36,6 +36,7 @@ type Props = {
   /** Allows specifying an element other than `button` to be used as the wrapper node. */
   wrapperElement?: ButtonNodeName,
   tooltip?: atom$TooltipsAddOptions,
+  disabled?: boolean,
 };
 
 export const ButtonSizes = Object.freeze({
@@ -94,7 +95,8 @@ export class Button extends React.Component<Props> {
     const sizeClassname = size == null ? '' : ButtonSizeClassnames[size] || '';
     const buttonTypeClassname =
       buttonType == null ? '' : ButtonTypeClassnames[buttonType] || '';
-    const ref = tooltip ? addTooltip(tooltip) : null;
+    const ref = tooltip && !this.props.disabled ? addTooltip(tooltip) : null;
+    const titleToolTip = tooltip && this.props.disabled ? tooltip.title : null;
     const newClassName = classnames(className, 'btn', {
       [`icon icon-${maybeToString(icon)}`]: icon != null,
       [sizeClassname]: size != null,
@@ -104,7 +106,11 @@ export class Button extends React.Component<Props> {
     const Wrapper = wrapperElement == null ? 'button' : wrapperElement;
     return (
       // $FlowFixMe(>=0.53.0) Flow suppress
-      <Wrapper className={newClassName} ref={ref} {...remainingProps}>
+      <Wrapper
+        className={newClassName}
+        ref={ref}
+        {...remainingProps}
+        title={titleToolTip}>
         {children}
       </Wrapper>
     );

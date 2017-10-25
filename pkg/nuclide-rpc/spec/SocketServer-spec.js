@@ -17,7 +17,7 @@ import {SocketServer} from '../lib/SocketServer';
 import {SocketTransport} from '../lib/SocketTransport';
 import {RpcConnection} from '../lib/RpcConnection';
 import loadServicesConfig from '../lib/loadServicesConfig';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 import {ServiceRegistry} from '../lib/ServiceRegistry';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
 import nuclideUri from 'nuclide-commons/nuclideUri';

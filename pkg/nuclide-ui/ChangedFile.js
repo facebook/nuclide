@@ -33,9 +33,13 @@ const LF = '\u000A';
 type Props = {
   commandPrefix: string,
   // whether files can be expanded to reveal a diff of changes. Requires passing `fileChanges`.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   enableFileExpansion: boolean,
   enableInlineActions: boolean,
   // `null` values for FileDiffs for a given key are assumed to be in "loading" state.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   fileChanges: ?diffparser$FileDiff,
   filePath: NuclideUri,
   fileStatus: FileChangeStatusValue,
@@ -87,7 +91,6 @@ export default class ChangedFile extends React.Component<Props> {
         className="nuclide-changed-file-action"
         key={key}
         onClick={onClick}
-        // $FlowFixMe(>=0.53.0) Flow suppress
         ref={addTooltip({
           delay: 300,
           placement: 'top',
@@ -218,22 +221,20 @@ export default class ChangedFile extends React.Component<Props> {
           break;
       }
       actions = (
-        <div className="nuclide-changed-file-actions">
-          {eligibleActions}
-        </div>
+        <div className="nuclide-changed-file-actions">{eligibleActions}</div>
       );
     }
     const statusName = FileChangeStatusToLabel[fileStatus];
     const projectRelativePath =
       getAtomProjectRelativePath(filePath) || filePath;
     const checkbox =
-      isChecked != null
-        ? <Checkbox
-            className="nuclide-changed-file-checkbox"
-            checked={isChecked}
-            onChange={this._onCheckboxChange}
-          />
-        : null;
+      isChecked != null ? (
+        <Checkbox
+          className="nuclide-changed-file-checkbox"
+          checked={isChecked}
+          onChange={this._onCheckboxChange}
+        />
+      ) : null;
     return (
       <li
         data-name={baseName}

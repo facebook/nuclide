@@ -9,9 +9,10 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import invariant from 'assert';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {NuxManager} from './NuxManager';
 import {NuxStore} from './NuxStore';
 
@@ -22,13 +23,13 @@ export type TriggerNux = (id: number) => void;
 export type SyncCompletedNux = (id: number) => void;
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _nuxStore: NuxStore;
   _nuxManager: NuxManager;
   _syncCompletedNuxService: SyncCompletedNux;
 
   constructor(): void {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._nuxStore = new NuxStore();
     this._nuxManager = new NuxManager(
       this._nuxStore,

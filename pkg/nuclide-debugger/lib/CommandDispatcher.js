@@ -10,8 +10,9 @@
  */
 
 import type {IPCEvent} from './types';
+import type {PausedEvent} from '../../nuclide-debugger-base/lib/protocol-types';
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 require('./Protocol/Object');
 import InspectorBackendClass from './Protocol/NuclideProtocolParser';
 
@@ -34,10 +35,15 @@ export default class CommandDispatcher {
   _bridgeAdapter: ?BridgeAdapter;
   _useNewChannel: boolean;
   _getIsReadonlyTarget: () => boolean;
+  _shouldFilterBreak: (pausedEvent: PausedEvent) => boolean;
 
-  constructor(getIsReadonlyTarget: () => boolean) {
+  constructor(
+    getIsReadonlyTarget: () => boolean,
+    shouldFilterBreak: (pausedEvent: PausedEvent) => boolean,
+  ) {
     this._useNewChannel = false;
     this._getIsReadonlyTarget = getIsReadonlyTarget;
+    this._shouldFilterBreak = shouldFilterBreak;
   }
 
   isNewChannel(): boolean {
@@ -96,6 +102,7 @@ export default class CommandDispatcher {
       this._bridgeAdapter = new BridgeAdapter(
         dispatchers,
         this._getIsReadonlyTarget,
+        this._shouldFilterBreak,
       );
       invariant(this._sessionSubscriptions != null);
       this._sessionSubscriptions.add(() => {
@@ -192,6 +199,12 @@ export default class CommandDispatcher {
       case 'runtimeEvaluate':
         this._bridgeAdapter.evaluateExpression(args[1], args[2], 'console');
         break;
+      case 'setVariable':
+        this._bridgeAdapter.setVariable(args[1], args[2], args[3], args[4]);
+        break;
+      case 'completions':
+        this._bridgeAdapter.completions(args[1], args[2], args[3]);
+        break;
       case 'getProperties':
         this._bridgeAdapter.getProperties(args[1], args[2]);
         break;
@@ -206,6 +219,9 @@ export default class CommandDispatcher {
         break;
       case 'setSingleThreadStepping':
         this._bridgeAdapter.setSingleThreadStepping(args[1]);
+        break;
+      case 'setShowDisassembly':
+        this._bridgeAdapter.setShowDisassembly(args[1]);
         break;
       default:
         reportError(`Command ${args[0]} is not implemented yet.`);

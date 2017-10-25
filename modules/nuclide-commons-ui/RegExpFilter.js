@@ -22,7 +22,7 @@ import * as React from 'react';
 type Size = 'xs' | 'sm' | 'lg';
 
 type Props = {
-  value: Value,
+  value: RegExpFilterValue,
   inputWidth?: number,
   inputClassName?: string,
   onChange: (value: RegExpFilterChange) => mixed,
@@ -35,7 +35,7 @@ type State = {
   invalid: boolean,
 };
 
-type Value = {
+export type RegExpFilterValue = {
   text: string,
   isRegExp: boolean,
   invalid: boolean,
@@ -52,7 +52,7 @@ export type RegExpFilterChange = {
 };
 
 export default class RegExpFilter extends React.Component<Props, State> {
-  _currentValue: Value;
+  _currentValue: RegExpFilterValue;
   _input: ?AtomInput;
 
   constructor(props: Props) {
@@ -136,6 +136,7 @@ function getButtonSize(size: Size): ButtonSize {
     case 'lg':
       return ButtonSizes.LARGE;
     default:
+      (size: empty);
       throw new Error(`Invalid size: ${size}`);
   }
 }

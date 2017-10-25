@@ -52,7 +52,7 @@ function waitForStopChanging() {
 
 function goTo(fullFile, shortFile, line, column, waitForActivate) {
   runs(() => {
-    goToLocation(fullFile(), line, column);
+    goToLocation(fullFile(), {line, column});
   });
   if (waitForActivate) {
     waitForStopChanging();

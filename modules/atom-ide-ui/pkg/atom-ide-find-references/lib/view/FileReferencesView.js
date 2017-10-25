@@ -43,7 +43,10 @@ export default class FileReferencesView extends React.Component<Props, State> {
   }
 
   _onRefClick(evt: SyntheticEvent<>, ref: Reference) {
-    goToLocation(this.props.uri, ref.range.start.row, ref.range.start.column);
+    goToLocation(this.props.uri, {
+      line: ref.range.start.row,
+      column: ref.range.start.column,
+    });
     evt.stopPropagation();
   }
 
@@ -55,7 +58,7 @@ export default class FileReferencesView extends React.Component<Props, State> {
   }
 
   _onFileNameClick(evt: SyntheticEvent<>, line?: number) {
-    goToLocation(this.props.uri, line);
+    goToLocation(this.props.uri, {line});
     evt.stopPropagation();
   }
 
@@ -69,16 +72,17 @@ export default class FileReferencesView extends React.Component<Props, State> {
       if (firstRef.name && firstRef.name === lastRef.name) {
         caller = (
           <span>
-            {' '}in <code>{firstRef.name}</code>
+            {' '}
+            in <code>{firstRef.name}</code>
           </span>
         );
       }
       const startRange = firstRef.range.start;
       const endRange = lastRef.range.end;
       return (
-        <li key={group.startLine} className="atom-ide-find-references-ref">
+        <li key={group.startLine} className="find-references-ref">
           <div
-            className="atom-ide-find-references-ref-name"
+            className="find-references-ref-name"
             onClick={evt => this._onRefClick(evt, firstRef)}>
             {'Line '}
             {startRange.row + 1}
@@ -100,31 +104,26 @@ export default class FileReferencesView extends React.Component<Props, State> {
         </li>
       );
     });
-    const outerClassName = classnames(
-      'atom-ide-find-references-file list-nested-item',
-      {
-        collapsed: !this.state.isExpanded,
-        expanded: this.state.isExpanded,
-        selected: this.props.isSelected,
-      },
-    );
+    const outerClassName = classnames('find-references-file list-nested-item', {
+      collapsed: !this.state.isExpanded,
+      expanded: this.state.isExpanded,
+      selected: this.props.isSelected,
+    });
 
     return (
       <li className={`${outerClassName}`}>
         <div
-          className="atom-ide-find-references-filename list-item"
+          className="find-references-filename list-item"
           onClick={this._onFileClick}>
           <span className="icon-file-text icon" />
           <a onClick={this._onFileNameClick}>
             {nuclideUri.relative(this.props.basePath, this.props.uri)}
           </a>
-          <span className="atom-ide-find-references-ref-count badge badge-small">
+          <span className="find-references-ref-count badge badge-small">
             {groups.length}
           </span>
         </div>
-        <ul className="atom-ide-find-references-refs list-tree">
-          {groups}
-        </ul>
+        <ul className="find-references-refs list-tree">{groups}</ul>
       </li>
     );
   }

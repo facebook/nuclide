@@ -10,13 +10,12 @@
  */
 
 /* eslint-env browser */
-/* global PerformanceObserver */
 
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
 import {remote} from 'electron';
-import {getLogger} from 'log4js';
 import {Observable} from 'rxjs';
+import {PerformanceObservable} from 'nuclide-commons-ui/observable-dom';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {HistogramTracker} from '../../nuclide-analytics';
@@ -40,27 +39,7 @@ const BLOCKED_MAX = 600000;
 const BLOCKED_RANGE_PADDING = 15;
 
 export default function trackStalls(): IDisposable {
-  const disposables = new UniversalDisposable();
-
-  let blockedDelay = setTimeout(() => {
-    disposables.add(trackStallsImpl());
-    blockedDelay = null;
-  }, BLOCKED_GRACE_PERIOD);
-
-  disposables.add(() => {
-    if (blockedDelay != null) {
-      clearTimeout(blockedDelay);
-    }
-  });
-
-  return disposables;
-}
-
-function trackStallsImpl(): IDisposable {
-  if (!supportsPerformanceObserversWithLongTasks()) {
-    return new UniversalDisposable();
-  }
-
+  const trackStart = performance.now();
   const browserWindow = remote.getCurrentWindow();
   const histogram = new HistogramTracker(
     'event-loop-blocked',
@@ -73,56 +52,40 @@ function trackStallsImpl(): IDisposable {
     intentionalBlockTime = performance.now();
   };
 
-  // $FlowFixMe No definition for PerformanceObserver
-  const longTaskObserver = new PerformanceObserver(list => {
-    if (!document.hasFocus()) {
-      return;
-    }
-
-    const entries = list.getEntries();
-    for (const entry of entries) {
-      let duration;
-      let startTime;
-      if (CHROME_VERSION <= 56) {
-        // Old versions of chrome implement longtask perf observers,
-        // but their duration is in units of whole *microseconds* instead of
-        // *milliseconds* with fractional units
-        duration = entry.duration / 1000;
-        startTime = entry.startTime / 1000;
-      } else {
-        duration = entry.duration;
-        startTime = entry.startTime;
-      }
-
-      const withinReasonableWindow =
-        duration > BLOCKED_MIN && duration < BLOCKED_MAX;
-
-      // did the intentionalblocktime occur between the start and end,
-      // accounting for some extra padding?
-      const wasBlockedIntentionally =
-        intentionalBlockTime > startTime - BLOCKED_RANGE_PADDING &&
-        intentionalBlockTime < startTime + duration + BLOCKED_RANGE_PADDING;
-
-      if (withinReasonableWindow && !wasBlockedIntentionally) {
-        histogram.track(duration);
-        getLogger('nuclide-health').warn(
-          `Event loop was blocked for ${duration} ms`,
-        );
-      }
-    }
-  });
-
-  function startBlockedCheck() {
-    longTaskObserver.observe({entryTypes: ['longtask']});
-  }
-
-  function stopBlockedCheck() {
-    longTaskObserver.disconnect();
-  }
-
-  if (document.hasFocus()) {
-    startBlockedCheck();
-  }
+  const blockedEvents = new PerformanceObservable({entryTypes: ['longtask']})
+    .flattenEntries()
+    // only count if the window is focused when the task ran long
+    .filter(() => document.hasFocus())
+    // discard early longtasks as the app is booting
+    .filter(() => performance.now() - trackStart > BLOCKED_GRACE_PERIOD)
+    // early versions of chromium report times in *microseconds* instead of
+    // milliseconds!
+    .map(
+      entry =>
+        CHROME_VERSION <= 56
+          ? {
+              duration: entry.duration / 1000,
+              startTime: entry.startTime / 1000,
+            }
+          : entry,
+    )
+    // discard durations that are unrealistically long, or those that aren't
+    // meaningful enough
+    .filter(
+      entry => entry.duration > BLOCKED_MIN && entry.duration < BLOCKED_MAX,
+    )
+    // discard events that result from user interaction actually blocking the
+    // thread when there is no other option (e.g. context menus)
+    .filter(
+      entry =>
+        // did the intentionalblocktime occur between the start and end,
+        // accounting for some extra padding?
+        !(
+          intentionalBlockTime > entry.startTime - BLOCKED_RANGE_PADDING &&
+          intentionalBlockTime <
+            entry.startTime + entry.duration + BLOCKED_RANGE_PADDING
+        ),
+    );
 
   return new UniversalDisposable(
     histogram,
@@ -137,27 +100,16 @@ function trackStallsImpl(): IDisposable {
       // https://github.com/facebook/nuclide/issues/1246
       .takeUntil(Observable.fromEvent(browserWindow, 'close'))
       .subscribe(onIntentionalBlock),
-    Observable.fromEvent(browserWindow, 'focus').subscribe(startBlockedCheck),
-    Observable.fromEvent(browserWindow, 'blur').subscribe(stopBlockedCheck),
-    () => stopBlockedCheck(),
+    Observable.merge(
+      // kick off subscription with a one-time query on start
+      Observable.of(document.hasFocus()),
+      Observable.fromEvent(browserWindow, 'focus').mapTo(true),
+      Observable.fromEvent(browserWindow, 'blur').mapTo(false),
+    )
+      .distinctUntilChanged()
+      .switchMap(isFocused => (isFocused ? blockedEvents : Observable.empty()))
+      .subscribe(entry => {
+        histogram.track(entry.duration);
+      }),
   );
-}
-
-function supportsPerformanceObserversWithLongTasks() {
-  let testObserver;
-  let failed;
-
-  try {
-    // $FlowFixMe No definition for PerformanceObserver
-    testObserver = new PerformanceObserver(() => {});
-    testObserver.observe({entryTypes: ['longtask']});
-  } catch (e) {
-    failed = true;
-  } finally {
-    if (testObserver != null) {
-      testObserver.disconnect();
-    }
-  }
-
-  return !failed;
 }

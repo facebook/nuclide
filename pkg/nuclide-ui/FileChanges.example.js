@@ -68,14 +68,10 @@ index abc123..cde456 100644
 class FileChangesExample extends React.Component<{}> {
   render(): React.Node {
     const diff = parse(sampleUnifiedDiff);
-    const changes = diff.map(file =>
-      <FileChanges diff={file} key={`${file.from}:${file.to}`} />,
-    );
-    return (
-      <div>
-        {changes}
-      </div>
-    );
+    const changes = diff.map(file => (
+      <FileChanges diff={file} key={`${file.from}:${file.to}`} />
+    ));
+    return <div>{changes}</div>;
   }
 }
 

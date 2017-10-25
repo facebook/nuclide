@@ -19,6 +19,7 @@
  * This file provides methods to do this.
  */
 
+import {fastDebounce} from 'nuclide-commons/observable';
 import {Observable} from 'rxjs';
 
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
@@ -37,7 +38,7 @@ export function observeActivePaneItemDebounced(
       return atom.workspace.getCenter().observeActivePaneItem(callback);
     }
     return atom.workspace.observeActivePaneItem(callback);
-  }).debounceTime(debounceInterval);
+  }).let(fastDebounce(debounceInterval));
 }
 
 export function observeActiveEditorsDebounced(
@@ -58,10 +59,12 @@ export function editorChangesDebounced(
   debounceInterval: number = DEFAULT_EDITOR_DEBOUNCE_INTERVAL_MS,
 ): Observable<void> {
   return (
-    observableFromSubscribeFunction(callback => editor.onDidChange(callback))
+    observableFromSubscribeFunction(callback =>
+      editor.getBuffer().onDidChangeText(() => callback()),
+    )
       // Debounce manually rather than using editor.onDidStopChanging so that the debounce time is
       // configurable.
-      .debounceTime(debounceInterval)
+      .let(fastDebounce(debounceInterval))
   );
 }
 
@@ -71,7 +74,7 @@ export function editorScrollTopDebounced(
 ): Observable<number> {
   return observableFromSubscribeFunction(callback =>
     atom.views.getView(editor).onDidChangeScrollTop(callback),
-  ).debounceTime(debounceInterval);
+  ).let(fastDebounce(debounceInterval));
 }
 
 export type EditorPosition = {
@@ -91,7 +94,7 @@ export function observeTextEditorsPositions(
     return editor == null
       ? Observable.of(null)
       : getCursorPositions(editor)
-          .debounceTime(positionDebounceInterval)
+          .let(fastDebounce(positionDebounceInterval))
           .map(position => {
             invariant(editor != null);
             return {editor, position};

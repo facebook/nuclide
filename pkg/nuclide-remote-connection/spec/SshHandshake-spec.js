@@ -13,8 +13,9 @@ import type {SshConnectionConfiguration} from '../lib/SshHandshake';
 
 import EventEmitter from 'events';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {clearRequireCache, uncachedRequire} from '../../nuclide-test-helpers';
+import {clearRequireCache, uncachedRequire} from 'nuclide-commons/test-helpers';
 import {SshHandshake} from '../lib/SshHandshake';
+import type {ExecOptions, SFTPWrapper, ClientChannel} from 'ssh2';
 
 const pathToFakePk = nuclideUri.join(__dirname, 'fakepk');
 
@@ -22,6 +23,27 @@ describe('SshHandshake', () => {
   class MockSshConnection extends EventEmitter {
     connect(config) {}
     end() {}
+    exec(
+      command: string,
+      options?: ExecOptions,
+      callback: (err: Error, channel: ClientChannel) => void | Promise<void>,
+    ): boolean {
+      return false;
+    }
+    sftp(
+      callback: (err: Error, sftp: SFTPWrapper) => void | Promise<void>,
+    ): boolean {
+      return false;
+    }
+    forwardOut(
+      srcIP: string,
+      srcPort: number,
+      dstIP: string,
+      dstPort: number,
+      callback: (err: Error, channel: ClientChannel) => void | Promise<void>,
+    ): boolean {
+      return false;
+    }
   }
 
   let dns;
@@ -52,7 +74,7 @@ describe('SshHandshake', () => {
   describe('connect()', () => {
     it('calls delegates onError when ssh connection fails', () => {
       const mockError = new Error('mock error');
-      const sshConnection = new MockSshConnection();
+      const sshConnection: any = new MockSshConnection();
       const sshHandshake = new SshHandshake(handshakeDelegate, sshConnection);
       const config: SshConnectionConfiguration = ({
         pathToPrivateKey: pathToFakePk,
@@ -72,7 +94,7 @@ describe('SshHandshake', () => {
     });
 
     it('calls delegates onError when private key does not exist', () => {
-      const sshConnection = new MockSshConnection();
+      const sshConnection: any = new MockSshConnection();
       const sshHandshake = new SshHandshake(handshakeDelegate, sshConnection);
       const config: SshConnectionConfiguration = ({
         pathToPrivateKey: pathToFakePk + '.oops',
@@ -102,7 +124,7 @@ describe('SshHandshake', () => {
     it('retries with a password when authentication fails', () => {
       const mockError = new Error();
       (mockError: any).level = 'client-authentication';
-      const sshConnection = new MockSshConnection();
+      const sshConnection: any = new MockSshConnection();
       const sshHandshake = new SshHandshake(handshakeDelegate, sshConnection);
       const config: SshConnectionConfiguration = ({
         password: 'test',
@@ -134,7 +156,7 @@ describe('SshHandshake', () => {
 
   describe('cancel()', () => {
     it('calls SshConnection.end()', () => {
-      const sshConnection = new MockSshConnection();
+      const sshConnection: any = new MockSshConnection();
       const sshHandshake = new SshHandshake(handshakeDelegate, sshConnection);
       const config: SshConnectionConfiguration = ({
         pathToPrivateKey: pathToFakePk,

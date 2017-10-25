@@ -37,11 +37,19 @@ describe('FileTreeHelpers', () => {
   });
 
   it('should determine if a key represents a directory', () => {
-    expect(FileTreeHelpers.isDirKey('/a/b/foo')).toBe(false);
-    expect(FileTreeHelpers.isDirKey('/a/b/')).toBe(true);
-    expect(FileTreeHelpers.isDirKey('/a/b//')).toBe(true);
-    expect(FileTreeHelpers.isDirKey('nuclide://host/a/b')).toBe(false);
-    expect(FileTreeHelpers.isDirKey('nuclide://host/a/b/')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('/a/b/foo')).toBe(false);
+    expect(FileTreeHelpers.isDirOrArchiveKey('/a/b/')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('/a/b//')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('nuclide://host/a/b')).toBe(false);
+    expect(FileTreeHelpers.isDirOrArchiveKey('nuclide://host/a/b/')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('/a.zip')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('/a.zip/')).toBe(true);
+    expect(FileTreeHelpers.isDirOrArchiveKey('nuclide://host/a.zip')).toBe(
+      true,
+    );
+    expect(FileTreeHelpers.isDirOrArchiveKey('nuclide://host/a.zip/')).toBe(
+      true,
+    );
   });
 
   it('should instantiate a local directory from a key', () => {
@@ -96,9 +104,11 @@ describe('FileTreeHelpers', () => {
     });
 
     it('should determine if a key represents a directory', () => {
-      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\foo')).toBe(false);
-      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\')).toBe(true);
-      expect(FileTreeHelpers.isDirKey('c:\\a\\b\\\\')).toBe(true);
+      expect(FileTreeHelpers.isDirOrArchiveKey('c:\\a\\b\\foo')).toBe(false);
+      expect(FileTreeHelpers.isDirOrArchiveKey('c:\\a\\b\\')).toBe(true);
+      expect(FileTreeHelpers.isDirOrArchiveKey('c:\\a\\b\\\\')).toBe(true);
+      expect(FileTreeHelpers.isDirOrArchiveKey('c:\\a.zip')).toBe(true);
+      expect(FileTreeHelpers.isDirOrArchiveKey('c:\\a.zip\\')).toBe(true);
     });
 
     it('should instantiate a local directory from a key', () => {

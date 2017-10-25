@@ -73,11 +73,7 @@ export default class RecordView extends React.Component<Props> {
       // TODO: We really want to use a text editor to render this so that we can get syntax
       // highlighting, but they're just too expensive. Figure out a less-expensive way to get syntax
       // highlighting.
-      return (
-        <pre>
-          {record.text || ' '}
-        </pre>
-      );
+      return <pre>{record.text || ' '}</pre>;
     } else if (record.kind === 'response') {
       const executor = this.props.getExecutor(record.sourceId);
       return this._renderNestedValueComponent(displayableRecord, executor);
@@ -87,11 +83,7 @@ export default class RecordView extends React.Component<Props> {
     } else {
       // If there's not text, use a space to make sure the row doesn't collapse.
       const text = record.text || ' ';
-      return (
-        <pre>
-          {parseText(text)}
-        </pre>
-      );
+      return <pre>{parseText(text)}</pre>;
     }
   }
 
@@ -136,14 +128,14 @@ export default class RecordView extends React.Component<Props> {
     const iconName = getIconName(record);
     // flowlint-next-line sketchy-null-string:off
     const icon = iconName ? <span className={`icon icon-${iconName}`} /> : null;
-    const sourceLabel = this.props.showSourceLabel
-      ? <span
-          className={`nuclide-console-record-source-label ${getHighlightClassName(
-            level,
-          )}`}>
-          {sourceId}
-        </span>
-      : null;
+    const sourceLabel = this.props.showSourceLabel ? (
+      <span
+        className={`nuclide-console-record-source-label ${getHighlightClassName(
+          level,
+        )}`}>
+        {sourceId}
+      </span>
+    ) : null;
     let renderedTimestamp;
     if (timestamp != null) {
       const timestampLabel =
@@ -151,9 +143,7 @@ export default class RecordView extends React.Component<Props> {
           ? timestamp.toLocaleString()
           : timestamp.toLocaleTimeString();
       renderedTimestamp = (
-        <div className="nuclide-console-record-timestamp">
-          {timestampLabel}
-        </div>
+        <div className="nuclide-console-record-timestamp">{timestampLabel}</div>
       );
     }
     return (
@@ -163,7 +153,14 @@ export default class RecordView extends React.Component<Props> {
         <div ref={this._handleRecordWrapper} className={classNames}>
           {icon}
           <div className="nuclide-console-record-content-wrapper">
-            {this._renderContent(displayableRecord)}
+            {displayableRecord.record.repeatCount > 1 && (
+              <div className="nuclide-console-record-duplicate-number">
+                {displayableRecord.record.repeatCount}
+              </div>
+            )}
+            <div className="nuclide-console-record-content">
+              {this._renderContent(displayableRecord)}
+            </div>
           </div>
           {sourceLabel}
           {renderedTimestamp}
@@ -289,11 +286,13 @@ function parseText(text: string): Array<string | React.Element<any>> {
 
     chunks.push(
       // flowlint-next-line sketchy-null-string:off
-      href
-        ? <a key={`r${index}`} href={href} target="_blank">
-            {matchedText}
-          </a>
-        : matchedText,
+      href ? (
+        <a key={`r${index}`} href={href} target="_blank">
+          {matchedText}
+        </a>
+      ) : (
+        matchedText
+      ),
     );
 
     index++;

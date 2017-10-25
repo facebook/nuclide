@@ -11,11 +11,11 @@
 
 import type {RemoteConnection} from '../../nuclide-remote-connection';
 import type {NuclideRemoteConnectionProfile} from './connection-types';
-// eslint-disable-next-line nuclide-internal/import-type-style
+// eslint-disable-next-line rulesdir/import-type-style
 import type {Props as RemoteProjectConnectionModalProps} from './RemoteProjectConnectionModal';
 
 import Model from 'nuclide-commons/Model';
-import showModal from '../../nuclide-ui/showModal';
+import showModal from 'nuclide-commons-ui/showModal';
 import {
   getDefaultConnectionProfile,
   getOfficialRemoteServerCommand,

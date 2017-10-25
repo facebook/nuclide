@@ -122,6 +122,7 @@ export default class RemoteProjectConnectionModal extends React.Component<
           />
         );
       default:
+        (this.props.screen: empty);
         throw new Error(`Invalid screen: ${this.props.screen}`);
     }
   }

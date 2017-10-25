@@ -14,23 +14,23 @@ import type {SwiftPMTaskRunner as SwiftPMTaskRunnerType} from './taskrunner/Swif
 import type {SwiftPMTaskRunnerStoreState} from './taskrunner/SwiftPMTaskRunnerStoreState';
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
 import {SwiftPMTaskRunner} from './taskrunner/SwiftPMTaskRunner';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
-let _disposables: ?CompositeDisposable = null;
+let _disposables: ?UniversalDisposable = null;
 let _taskRunner: ?SwiftPMTaskRunnerType = null;
 let _initialState: ?Object = null;
 
 export function activate(rawState: ?Object): void {
   invariant(_disposables == null);
   _initialState = rawState;
-  _disposables = new CompositeDisposable(
-    new Disposable(() => {
+  _disposables = new UniversalDisposable(
+    () => {
       _taskRunner = null;
-    }),
-    new Disposable(() => {
+    },
+    () => {
       _initialState = null;
-    }),
+    },
   );
 }
 

@@ -15,6 +15,7 @@
  * Each individual loaded package's config is a subconfig of the root package.
  */
 
+import invariant from 'assert';
 import {Observable} from 'rxjs';
 
 let packageName = null;
@@ -25,6 +26,11 @@ let packageName = null;
  */
 function setPackageName(name: string): void {
   packageName = name;
+}
+
+function getPackageName(): string {
+  invariant(packageName != null, 'No package name available');
+  return packageName;
 }
 
 function formatKeyPath(keyPath: string): string {
@@ -182,7 +188,9 @@ function isFeatureDisabled(name: string): boolean {
 }
 
 export default {
+  formatKeyPath,
   setPackageName,
+  getPackageName,
   get,
   getWithDefaults,
   getSchema,

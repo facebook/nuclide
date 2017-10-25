@@ -119,7 +119,6 @@ export class FlowIDEConnection {
         Array<LocalFileEvent>,
       > = this._fileCache
         .observeFileEvents()
-        // $FlowFixMe (bufferTime isn't in the libdef for rxjs)
         .bufferTime(100 /* ms */)
         .filter(fileEvents => fileEvents.length !== 0);
 
@@ -137,6 +136,9 @@ export class FlowIDEConnection {
               break;
             case FileEventKind.EDIT:
               // TODO: errors-as-you-type
+              break;
+            case FileEventKind.SAVE:
+              // TODO: handle saves correctly
               break;
             default:
               (fileEvent.kind: empty);

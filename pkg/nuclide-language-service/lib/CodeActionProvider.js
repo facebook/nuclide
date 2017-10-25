@@ -11,9 +11,9 @@
 
 import type {LanguageService} from './LanguageService';
 import type {
-  FileDiagnosticMessage,
   CodeAction,
   CodeActionProvider as CodeActionProviderType,
+  DiagnosticMessage,
 } from 'atom-ide-ui';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
@@ -24,6 +24,7 @@ export type CodeActionConfig = {|
   version: '0.1.0',
   priority: number,
   analyticsEventName: string,
+  applyAnalyticsEventName: string,
 |};
 
 export class CodeActionProvider<T: LanguageService> {
@@ -31,19 +32,20 @@ export class CodeActionProvider<T: LanguageService> {
   priority: number;
   name: string;
   _analyticsEventName: string;
+  _applyAnalyticsEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
 
   constructor(
     name: string,
     grammarScopes: Array<string>,
-    priority: number,
-    analyticsEventName: string,
+    config: CodeActionConfig,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
     this.name = name;
     this.grammarScopes = grammarScopes;
-    this.priority = priority;
-    this._analyticsEventName = analyticsEventName;
+    this.priority = config.priority;
+    this._analyticsEventName = config.analyticsEventName;
+    this._applyAnalyticsEventName = config.applyAnalyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
   }
 
@@ -59,8 +61,7 @@ export class CodeActionProvider<T: LanguageService> {
       new CodeActionProvider(
         name,
         grammarScopes,
-        config.priority,
-        config.analyticsEventName,
+        config,
         connectionToLanguageService,
       ),
     );
@@ -69,7 +70,7 @@ export class CodeActionProvider<T: LanguageService> {
   getCodeActions(
     editor: atom$TextEditor,
     range: atom$Range,
-    diagnostics: Array<FileDiagnosticMessage>,
+    diagnostics: Array<DiagnosticMessage>,
   ): Promise<Array<CodeAction>> {
     return trackTiming(this._analyticsEventName, async () => {
       const fileVersion = await getFileVersionOfEditor(editor);
@@ -80,11 +81,27 @@ export class CodeActionProvider<T: LanguageService> {
         return [];
       }
 
-      return (await languageService).getCodeActions(
+      const codeActions = await (await languageService).getCodeActions(
         fileVersion,
         range,
-        diagnostics,
+        // $FlowIssue: Flow doesn't understand this.
+        diagnostics.map(d => ({...d, actions: undefined})),
       );
+
+      return codeActions.map(action => ({
+        apply: () => {
+          return trackTiming(
+            this._applyAnalyticsEventName,
+            action.apply.bind(action),
+          );
+        },
+        getTitle() {
+          return action.getTitle();
+        },
+        dispose() {
+          return action.dispose();
+        },
+      }));
     });
   }
 }

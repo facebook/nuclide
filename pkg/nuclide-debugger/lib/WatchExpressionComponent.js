@@ -19,14 +19,13 @@ import type {Observable} from 'rxjs';
 
 import * as React from 'react';
 import classnames from 'classnames';
-import debounce from 'nuclide-commons/debounce';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 import {Icon} from 'nuclide-commons-ui/Icon';
 
-type WatchExpressionComponentProps = {
+type Props = {
   watchExpressions: EvaluatedExpressionList,
   onAddWatchExpression: (expression: string) => void,
   onRemoveWatchExpression: (index: number) => void,
@@ -34,27 +33,22 @@ type WatchExpressionComponentProps = {
   watchExpressionStore: WatchExpressionStore,
 };
 
-const EDIT_WATCH_EXPRESSION_BLUR_DEBOUNCE_MS = 50;
+type State = {
+  rowBeingEdited: ?number,
+};
 
 export class WatchExpressionComponent extends React.PureComponent<
-  WatchExpressionComponentProps,
-  {
-    rowBeingEdited: ?number,
-  },
+  Props,
+  State,
 > {
   coreCancelDisposable: ?IDisposable;
   _expansionStates: Map<
     string /* expression */,
     /* unique reference for expression */ Object,
   >;
-  _debouncedEditorBlur: () => void;
 
-  constructor(props: WatchExpressionComponentProps) {
+  constructor(props: Props) {
     super(props);
-    this._debouncedEditorBlur = debounce(
-      this._onEditorBlur.bind(this),
-      EDIT_WATCH_EXPRESSION_BLUR_DEBOUNCE_MS,
-    );
     this._expansionStates = new Map();
     this.state = {
       rowBeingEdited: null,
@@ -91,19 +85,6 @@ export class WatchExpressionComponent extends React.PureComponent<
     this._resetExpressionEditState();
   }
 
-  _onEditorCancel = (): void => {
-    this._resetExpressionEditState();
-  };
-
-  _onEditorBlur(): void {
-    if (this.refs.editExpressionEditor == null) {
-      return;
-    }
-    if (!this.refs.editExpressionEditor.getTextEditorElement().hasFocus()) {
-      this._resetExpressionEditState();
-    }
-  }
-
   _setRowBeingEdited(index: number): void {
     this.setState({
       rowBeingEdited: index,
@@ -138,8 +119,8 @@ export class WatchExpressionComponent extends React.PureComponent<
           startSelected={true}
           key={index}
           onConfirm={this._onConfirmExpressionEdit.bind(this, index)}
-          onCancel={this._onEditorCancel}
-          onBlur={this._debouncedEditorBlur}
+          onCancel={this._resetExpressionEditState}
+          onBlur={this._resetExpressionEditState}
           ref="editExpressionEditor"
           size="sm"
           initialValue={expression}
@@ -205,7 +186,7 @@ export class WatchExpressionComponent extends React.PureComponent<
         onConfirm={this._onConfirmNewExpression}
         ref="newExpressionEditor"
         size="sm"
-        placeholderText="add new watch expression"
+        placeholderText="Add new watch expression"
       />
     );
     return (

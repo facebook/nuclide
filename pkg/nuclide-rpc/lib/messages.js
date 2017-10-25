@@ -67,6 +67,7 @@ export type ErrorResponseMessage = {
   protocol: string,
   type: 'error-response',
   id: number,
+  responseId: number,
   error: any,
 };
 
@@ -74,6 +75,7 @@ export type PromiseResponseMessage = {
   protocol: string,
   type: 'response',
   id: number,
+  responseId: number,
   result: any,
 };
 
@@ -81,12 +83,14 @@ export type NextMessage = {
   protocol: string,
   type: 'next',
   id: number,
+  responseId: number,
   value: any,
 };
 
 export type CompleteMessage = {
   protocol: string,
   type: 'complete',
+  responseId: number,
   id: number,
 };
 
@@ -94,8 +98,11 @@ export type ErrorMessage = {
   protocol: string,
   type: 'error',
   id: number,
+  responseId: number,
   error: any,
 };
+
+const ERROR_MESSAGE_LIMIT = 1000;
 
 // TODO: This should be a custom marshaller registered in the TypeRegistry
 export function decodeError(
@@ -104,10 +111,15 @@ export function decodeError(
 ): ?(Error | string) {
   if (encodedError != null && typeof encodedError === 'object') {
     const resultError = new Error();
+    let messageStr = JSON.stringify(message);
+    if (messageStr.length > ERROR_MESSAGE_LIMIT) {
+      messageStr =
+        messageStr.substr(0, ERROR_MESSAGE_LIMIT) +
+        `<${messageStr.length - ERROR_MESSAGE_LIMIT} bytes>`;
+    }
     resultError.message =
-      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(
-        message,
-      )}\n` + JSON.stringify(encodedError.stack);
+      `Remote Error: ${encodedError.message} processing message ${messageStr}\n` +
+      JSON.stringify(encodedError.stack);
     // $FlowIssue - some Errors (notably file operations) have a code.
     resultError.code = encodedError.code;
     resultError.stack = encodedError.stack;
@@ -167,12 +179,14 @@ export function createNewObjectMessage(
 export function createPromiseMessage(
   protocol: string,
   id: number,
+  responseId: number,
   result: any,
 ): PromiseResponseMessage {
   return {
     protocol,
     type: 'response',
     id,
+    responseId,
     result,
   };
 }
@@ -180,12 +194,14 @@ export function createPromiseMessage(
 export function createNextMessage(
   protocol: string,
   id: number,
+  responseId: number,
   value: any,
 ): NextMessage {
   return {
     protocol,
     type: 'next',
     id,
+    responseId,
     value,
   };
 }
@@ -193,23 +209,27 @@ export function createNextMessage(
 export function createCompleteMessage(
   protocol: string,
   id: number,
+  responseId: number,
 ): CompleteMessage {
   return {
     protocol,
     type: 'complete',
     id,
+    responseId,
   };
 }
 
 export function createObserveErrorMessage(
   protocol: string,
   id: number,
+  responseId: number,
   error: any,
 ): ErrorMessage {
   return {
     protocol,
     type: 'error',
     id,
+    responseId,
     error: formatError(error),
   };
 }
@@ -241,12 +261,14 @@ export function createUnsubscribeMessage(
 export function createErrorResponseMessage(
   protocol: string,
   id: number,
+  responseId: number,
   error: any,
 ): ErrorResponseMessage {
   return {
     protocol,
     type: 'error-response',
     id,
+    responseId,
     error: formatError(error),
   };
 }

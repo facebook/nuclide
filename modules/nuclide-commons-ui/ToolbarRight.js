@@ -19,8 +19,6 @@ type Props = {
 export const ToolbarRight = (props: Props) => {
   return (
     // $FlowFixMe(>=0.53.0) Flow suppress
-    <div className="nuclide-ui-toolbar__right">
-      {props.children}
-    </div>
+    <div className="nuclide-ui-toolbar__right">{props.children}</div>
   );
 };

@@ -66,12 +66,13 @@ export class Toolbar extends React.Component<Props> {
       }
     }
 
-    const ButtonComponent = buttonProps =>
+    const ButtonComponent = buttonProps => (
       <TaskRunnerButton
         {...buttonProps}
         disabled={this.props.taskIsRunning}
         iconComponent={this.props.iconComponent}
-      />;
+      />
+    );
 
     return (
       <div className={`${className} padded`}>

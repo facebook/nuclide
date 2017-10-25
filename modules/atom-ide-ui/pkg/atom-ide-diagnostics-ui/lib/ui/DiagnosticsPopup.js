@@ -11,26 +11,27 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {FileDiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
+import type {DiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
 import type {CodeAction} from '../../../atom-ide-code-actions/lib/types';
 
 import * as React from 'react';
 import classnames from 'classnames';
+import {mapUnion} from 'nuclide-commons/collection';
 import {DiagnosticsMessage} from './DiagnosticsMessage';
 import DiagnosticsCodeActions from './DiagnosticsCodeActions';
 
 type DiagnosticsPopupProps = {
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
   goToLocation: (filePath: NuclideUri, line: number) => mixed,
-  fixer: (message: FileDiagnosticMessage) => void,
-  codeActionsForMessage?: Map<FileDiagnosticMessage, Map<string, CodeAction>>,
+  fixer: (message: DiagnosticMessage) => void,
+  codeActionsForMessage?: Map<DiagnosticMessage, Map<string, CodeAction>>,
 };
 
 function renderMessage(
-  fixer: (message: FileDiagnosticMessage) => void,
+  fixer: (message: DiagnosticMessage) => void,
   goToLocation: (filePath: NuclideUri, line: number) => mixed,
-  codeActionsForMessage: ?Map<FileDiagnosticMessage, Map<string, CodeAction>>,
-  message: FileDiagnosticMessage,
+  codeActionsForMessage: ?Map<DiagnosticMessage, Map<string, CodeAction>>,
+  message: DiagnosticMessage,
   index: number,
 ): React.Element<any> {
   const className = classnames(
@@ -43,21 +44,53 @@ function renderMessage(
       'diagnostics-popup-info': message.type === 'Info',
     },
   );
-  const codeActions =
-    codeActionsForMessage && codeActionsForMessage.get(message);
+  const codeActions = getCodeActions(message, codeActionsForMessage);
   return (
     <div className={className} key={index} tabIndex={-1}>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <DiagnosticsMessage
         fixer={fixer}
         goToLocation={goToLocation}
         message={message}>
-        {codeActions && codeActions.size
-          ? <DiagnosticsCodeActions codeActions={codeActions} />
-          : null}
+        {codeActions && codeActions.size ? (
+          <DiagnosticsCodeActions codeActions={codeActions} />
+        ) : null}
       </DiagnosticsMessage>
     </div>
   );
+}
+
+function getCodeActions(
+  message: DiagnosticMessage,
+  codeActionsForMessage: ?Map<DiagnosticMessage, Map<string, CodeAction>>,
+): ?Map<string, CodeAction> {
+  const codeActionMaps = [];
+  if (message.actions != null && message.actions.length > 0) {
+    codeActionMaps.push(
+      new Map(
+        message.actions.map(action => {
+          return [
+            action.title,
+            {
+              async getTitle() {
+                return action.title;
+              },
+              async apply() {
+                action.apply();
+              },
+              dispose() {},
+            },
+          ];
+        }),
+      ),
+    );
+  }
+  if (codeActionsForMessage) {
+    const actions = codeActionsForMessage.get(message);
+    if (actions != null) {
+      codeActionMaps.push(actions);
+    }
+  }
+  return codeActionMaps.length > 0 ? mapUnion(...codeActionMaps) : null;
 }
 
 // TODO move LESS styles to nuclide-ui

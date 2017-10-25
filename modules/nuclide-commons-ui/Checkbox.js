@@ -11,7 +11,6 @@
  */
 
 import * as React from 'react';
-import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import addTooltip from './addTooltip';
 
@@ -76,10 +75,7 @@ export class Checkbox extends React.PureComponent<Props> {
    * @see https://www.w3.org/TR/html5/forms.html#the-input-element
    */
   _setIndeterminate(): void {
-    // $FlowFixMe
-    ReactDOM.findDOMNode(
-      this.refs.input,
-    ).indeterminate = this.props.indeterminate;
+    this.refs.input.indeterminate = this.props.indeterminate;
   }
 
   render(): React.Node {
@@ -98,17 +94,14 @@ export class Checkbox extends React.PureComponent<Props> {
 
     const ref = tooltip ? addTooltip(tooltip) : null;
     const text =
-      label === ''
-        ? null
-        : <span className="nuclide-ui-checkbox-label-text">
-            {' '}{label}
-          </span>;
+      label === '' ? null : (
+        <span className="nuclide-ui-checkbox-label-text"> {label}</span>
+      );
     return (
       <label
         className={classnames(className, 'nuclide-ui-checkbox-label', {
           'nuclide-ui-checkbox-disabled': disabled,
         })}
-        // $FlowFixMe(>=0.53.0) Flow suppress
         ref={ref}
         onClick={onClick && ignoreTextSelectionEvents(onClick)}
         title={title}>

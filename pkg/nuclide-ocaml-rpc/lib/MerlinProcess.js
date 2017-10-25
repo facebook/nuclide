@@ -452,6 +452,7 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   const flags = getMerlinFlags();
 
   const version = await getMerlinVersion(merlinPath);
+  // eslint-disable-next-line eqeqeq
   if (version === null) {
     return null;
   }
@@ -475,9 +476,13 @@ export async function getInstance(file: NuclideUri): Promise<?MerlinProcess> {
   processStream.connect();
   const process = await processPromise;
   // Turns 2.5.1 into 2.5
-  const majorMinor = version.split('.').slice(0, 2).join('.');
+  const majorMinor = version
+    .split('.')
+    .slice(0, 2)
+    .join('.');
   switch (majorMinor) {
     case '2.5':
+    case '3.0':
       merlinProcessInstance = new MerlinProcessV2_5(process);
       break;
     case '2.3':

@@ -22,7 +22,7 @@ import classnames from 'classnames';
 import ConnectionDetailsForm from './ConnectionDetailsForm';
 import {getIPsForHosts} from './connection-profile-utils';
 import {getUniqueHostsForProfiles} from './connection-profile-utils';
-import {HR} from '../../nuclide-ui/HR';
+import {HR} from 'nuclide-commons-ui/HR';
 import {MutableListSelector} from '../../nuclide-ui/MutableListSelector';
 import * as React from 'react';
 
@@ -234,7 +234,6 @@ export default class ConnectionDetailsPrompt extends React.Component<
               onDoubleClick={this.props.onConfirm}>
               <span
                 className="icon icon-info pull-right connection-details-icon-info"
-                // $FlowFixMe(>=0.53.0) Flow suppress
                 ref={addTooltip({
                   // Intentionally *not* an arrow function so the jQuery Tooltip plugin can set the
                   // context to the Tooltip instance.
@@ -274,6 +273,7 @@ export default class ConnectionDetailsPrompt extends React.Component<
       this.props.selectedProfileIndex == null
         ? null
         : this.props.selectedProfileIndex - 1;
+    // eslint-disable-next-line eqeqeq
     if (idOfSelectedItem === null || idOfSelectedItem < 0) {
       idOfSelectedItem = null;
     } else {
@@ -286,7 +286,6 @@ export default class ConnectionDetailsPrompt extends React.Component<
         <span
           style={{paddingLeft: 10}}
           className="icon icon-info pull-right nuclide-remote-projects-tooltip-warning"
-          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={addTooltip({
             // Intentionally *not* an arrow function so the jQuery
             // Tooltip plugin can set the context to the Tooltip

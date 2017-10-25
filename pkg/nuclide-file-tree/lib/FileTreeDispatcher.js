@@ -104,6 +104,10 @@ export type FileTreeAction =
       usePreviewTabs: boolean,
     }
   | {
+      actionType: 'SET_FOCUS_EDITOR_ON_FILE_SELECTION',
+      focusEditorOnFileSelection: boolean,
+    }
+  | {
       actionType: 'SET_USE_PREFIX_NAV',
       usePrefixNav: boolean,
     }
@@ -264,6 +268,7 @@ export const ActionTypes = Object.freeze({
   SET_USE_PREVIEW_TABS: 'SET_USE_PREVIEW_TABS',
   SET_USE_PREFIX_NAV: 'SET_USE_PREFIX_NAV',
   SET_AUTO_EXPAND_SINGLE_CHILD: 'SET_AUTO_EXPAND_SINGLE_CHILD',
+  SET_FOCUS_EDITOR_ON_FILE_SELECTION: 'SET_FOCUS_EDITOR_ON_FILE_SELECTION',
   SET_VCS_STATUSES: 'SET_VCS_STATUSES',
   SET_REPOSITORIES: 'SET_REPOSITORIES',
   SET_WORKING_SET: 'SET_WORKING_SET',

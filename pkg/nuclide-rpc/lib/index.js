@@ -53,3 +53,37 @@ export type Transport = {
   close(): void,
   isClosed(): boolean,
 };
+
+// An unreliable transport for sending JSON formatted messages
+// onClose handlers are guaranteed to be called exactly once.
+// onMessage handlers are guaranteed to not be called after onClose has been called.
+// send(data) yields false if the message failed to send, true on success.
+// (note that successfull sending doesn't imply successfull delivery...)
+// onClose handlers will be called before close() returns.
+// May not call send() after transport has closed..
+export type UnreliableTransport = {
+  send(message: string): Promise<boolean>,
+  onClose(callback: () => mixed): IDisposable,
+  onMessage(): Observable<string>,
+  onError(callback: (error: Object) => mixed): IDisposable,
+  close(): void,
+  isClosed(): boolean,
+};
+
+// There are two implementation attempts at a reliable transport that satisfy
+// the following interface - QueuedTransport (known to be unreliable in cases),
+// and QueuedAckTransport (new as of Oct2017, not greatly tested). The GK
+// 'nuclide_connection_ack' will opt you into the latter. If it proves itself
+// then we can deleted QueuedTransport and the following interface entirely.
+export type ReliableTransport = {
+  send(message: string): void,
+  onMessage(): Observable<string>,
+  close(): void,
+  isClosed(): boolean,
+  getState(): 'open' | 'disconnected' | 'closed',
+  reconnect(transport: UnreliableTransport): void,
+  getLastStateChangeTime(): number,
+  id: string,
+};
+
+(((null: any): ReliableTransport): Transport);

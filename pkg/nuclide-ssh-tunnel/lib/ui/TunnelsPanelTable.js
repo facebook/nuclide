@@ -63,10 +63,11 @@ export class TunnelsPanelTable extends React.Component<Props> {
     });
     return (
       <Table
-        emptyComponent={() =>
+        emptyComponent={() => (
           <div className="nuclide-ssh-tunnels-table-empty-message">
             No SSH tunnels are open.
-          </div>}
+          </div>
+        )}
         className="nuclide-ssh-tunnels-table"
         rows={rows}
         columns={columns}

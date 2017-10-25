@@ -165,7 +165,7 @@ export class NavigationStackController {
 
   onOptInNavigation(editor: atom$TextEditor): void {
     log(`onOptInNavigation ${maybeToString(editor.getPath())}`);
-    // Opt-in navigation is handled in the same way as a file open with no preceeding activation
+    // Opt-in navigation is handled in the same way as a file open with no preceding activation
     this.onOpen(editor);
   }
 

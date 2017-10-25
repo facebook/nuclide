@@ -83,7 +83,6 @@ export class LoadingSpinner extends React.Component<
         : LoadingSpinnerSizes.MEDIUM;
     const sizeClassname = LoadingSpinnerClassnames[safeSize];
     const newClassName = classnames(className, 'loading', sizeClassname);
-    // $FlowFixMe(>=0.53.0) Flow suppress
     return <div className={newClassName} ref={ref} />;
   }
 }

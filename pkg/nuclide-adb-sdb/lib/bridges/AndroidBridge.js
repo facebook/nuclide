@@ -15,6 +15,7 @@ import type {Store} from '../types';
 import type {DebugBridgeFullConfig} from '../../../nuclide-adb-sdb-rpc/lib/types';
 import type {Expected} from '../../../commons-node/expected';
 import type {Device} from '../../../nuclide-device-panel/lib/types';
+import type {DeviceTypeAndroid} from '../types';
 
 import * as Actions from '../redux/Actions';
 import {getAdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
@@ -23,7 +24,7 @@ import {Observable} from 'rxjs';
 
 export class AndroidBridge {
   debugBridge: 'adb' = 'adb';
-  name: 'Android' = 'Android';
+  name: DeviceTypeAndroid = 'Android';
 
   _store: Store;
 

@@ -9,7 +9,10 @@
  * @format
  */
 
+import type {RemoteObjectId} from '../../nuclide-debugger-base/lib/protocol-types';
+import type ScopesStore from './ScopesStore';
 import type {EvaluationResult, ExpansionResult, ScopeSection} from './types';
+import invariant from 'assert';
 import {WatchExpressionStore} from './WatchExpressionStore';
 import type {Observable} from 'rxjs';
 
@@ -18,22 +21,23 @@ import {LazyNestedValueComponent} from '../../nuclide-ui/LazyNestedValueComponen
 import SimpleValueComponent from '../../nuclide-ui/SimpleValueComponent';
 import {Section} from '../../nuclide-ui/Section';
 
-type ScopesComponentProps = {
-  scopes: Array<ScopeSection>,
-  watchExpressionStore: WatchExpressionStore,
-};
+type Props = {|
+  +scopes: Array<ScopeSection>,
+  +watchExpressionStore: WatchExpressionStore,
+  scopesStore: ScopesStore,
+|};
 
 function isLocalScopeName(scopeName: string): boolean {
   return ['Local', 'Locals'].indexOf(scopeName) !== -1;
 }
 
-export class ScopesComponent extends React.Component<ScopesComponentProps> {
+export class ScopesComponent extends React.Component<Props> {
   _expansionStates: Map<
     string /* expression */,
-    /* unique reference for expression */ Object,
+    Object /* unique reference for expression */,
   >;
 
-  constructor(props: ScopesComponentProps) {
+  constructor(props: Props) {
     super(props);
     this._expansionStates = new Map();
   }
@@ -47,8 +51,27 @@ export class ScopesComponent extends React.Component<ScopesComponentProps> {
     return expansionStateId;
   }
 
+  _setVariable = (
+    scopeObjectId: RemoteObjectId,
+    scopeNumber: number,
+    expression: ?string,
+    newValue: ?string,
+  ): void => {
+    if (Boolean(expression) && Boolean(newValue)) {
+      invariant(expression != null);
+      invariant(newValue != null);
+      this.props.scopesStore.sendSetVariableRequest(
+        scopeNumber,
+        Number(scopeObjectId),
+        expression,
+        newValue,
+      );
+    }
+  };
+
   _renderExpression = (
     fetchChildren: (objectId: string) => Observable<?ExpansionResult>,
+    setVariable: ?(expression: ?string, newValue: ?string) => void,
     binding: {
       name: string,
       value: EvaluationResult,
@@ -60,6 +83,7 @@ export class ScopesComponent extends React.Component<ScopesComponentProps> {
       return null;
     }
     const {name, value} = binding;
+
     return (
       <div className="nuclide-debugger-expression-value-row" key={index}>
         <div className="nuclide-debugger-expression-value-content">
@@ -69,6 +93,7 @@ export class ScopesComponent extends React.Component<ScopesComponentProps> {
             fetchChildren={fetchChildren}
             simpleValueComponent={SimpleValueComponent}
             expansionStateId={this._getExpansionStateIdForExpression(name)}
+            setVariable={setVariable}
           />
         </div>
       </div>
@@ -78,28 +103,35 @@ export class ScopesComponent extends React.Component<ScopesComponentProps> {
   _renderScopeSection(
     fetchChildren: (objectId: string) => Observable<?ExpansionResult>,
     scope: ScopeSection,
+    scopeNumber: number,
   ): ?React.Element<any> {
+    const {scopesStore} = this.props;
+    const {name, scopeObjectId, scopeVariables} = scope;
     // Non-local scopes should be collapsed by default since users typically care less about them.
-    const collapsedByDefault = !isLocalScopeName(scope.name);
+    const collapsedByDefault = !isLocalScopeName(name);
     const noLocals =
-      collapsedByDefault || scope.scopeVariables.length > 0
-        ? null
-        : <div className="nuclide-debugger-expression-value-row">
-            <span className="nuclide-debugger-expression-value-content">
-              (no variables)
-            </span>
-          </div>;
+      collapsedByDefault || scopeVariables.length > 0 ? null : (
+        <div className="nuclide-debugger-expression-value-row">
+          <span className="nuclide-debugger-expression-value-content">
+            (no variables)
+          </span>
+        </div>
+      );
+
+    const setVariableHandler = scopesStore.supportsSetVariable()
+      ? this._setVariable.bind(this, scopeObjectId, scopeNumber)
+      : null;
 
     return (
       // $FlowFixMe(>=0.53.0) Flow suppress
       <Section
         collapsable={true}
-        headline={scope.name}
+        headline={name}
         size="small"
         collapsedByDefault={collapsedByDefault}>
         {noLocals}
-        {scope.scopeVariables.map(
-          this._renderExpression.bind(this, fetchChildren),
+        {scopeVariables.map(
+          this._renderExpression.bind(this, fetchChildren, setVariableHandler),
         )}
       </Section>
     );

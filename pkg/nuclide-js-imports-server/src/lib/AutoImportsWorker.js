@@ -13,6 +13,7 @@ import os from 'os';
 import fs from 'fs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {compact} from 'nuclide-commons/observable';
 import {getExportsFromAst, idFromFileName} from './ExportManager';
 import {Observable} from 'rxjs';
 import {parseFile} from './AutoImportsManager';
@@ -20,11 +21,12 @@ import {initializeLoggerForWorker} from '../../logging/initializeLogging';
 import {WatchmanClient} from '../../../nuclide-watchman-helpers/lib/main';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getConfigFromFlow} from '../getConfig';
-import {Settings} from '../Settings';
 import {niceSafeSpawn} from 'nuclide-commons/nice';
 import invariant from 'assert';
+import {getHasteName, hasteReduceName} from './HasteUtils';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {HasteSettings} from '../getConfig';
 import type {JSExport} from './types';
 import type {FileChange} from '../../../nuclide-watchman-helpers/lib/WatchmanClient';
 import type {WatchmanSubscriptionOptions} from '../../../nuclide-watchman-helpers/lib/WatchmanSubscription';
@@ -34,7 +36,6 @@ const logger = initializeLoggerForWorker('DEBUG');
 
 // TODO: index the entry points of node_modules
 const TO_IGNORE = ['**/node_modules/**', '**/VendorLib/**', '**/flow-typed/**'];
-let toIgnoreRegex = '';
 
 const CONCURRENCY = 1;
 
@@ -43,7 +44,6 @@ const BATCH_SIZE = 500;
 const MIN_FILES_PER_WORKER = 100;
 
 const disposables = new UniversalDisposable();
-const updatedFiles: Set<NuclideUri> = new Set();
 
 // Directory ==> Main File. Null indicates no package.json file.
 const mainFilesCache: Map<NuclideUri, ?NuclideUri> = new Map();
@@ -66,37 +66,26 @@ function main() {
   }
   const root = process.argv[2];
   const {hasteSettings} = getConfigFromFlow(root);
-  const shouldIndexDefaultExportForEachFile =
-    hasteSettings.isHaste &&
-    Settings.hasteSettings.shouldAddAllFilesAsDefaultExport;
-
-  toIgnoreRegex = hasteSettings.blacklistedDirs.join('|');
 
   // Listen for open files that should be indexed immediately
-  setupParentMessagesHandler();
+  setupParentMessagesHandler(hasteSettings);
 
   // Listen for file changes with Watchman that should update the index.
-  watchDirectoryRecursively(root);
+  watchDirectoryRecursively(root, hasteSettings);
 
   // Build up the initial index with all files recursively from the root.
-  indexDirectoryAndSendExportsToParent(
-    root,
-    shouldIndexDefaultExportForEachFile,
-  ).then(() => {
-    if (Settings.indexNodeModulesWhiteList.find(regex => regex.test(root))) {
-      logger.debug('Indexing node modules.');
-      return indexNodeModulesAndSendToParent(root);
-    }
-  });
+  indexDirectoryAndSendExportsToParent(root, hasteSettings);
+
+  indexNodeModulesAndSendToParent(root);
 }
 
 // Function should be called once when the server is initialized.
 function indexDirectoryAndSendExportsToParent(
   root: NuclideUri,
-  shouldIndexDefaultExportForEachFile?: boolean,
+  hasteSettings: HasteSettings,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    indexDirectory(root, shouldIndexDefaultExportForEachFile).subscribe({
+    indexDirectory(root, hasteSettings).subscribe({
       next: exportForFile => {
         sendExportUpdateToParent(exportForFile);
       },
@@ -113,7 +102,10 @@ function indexDirectoryAndSendExportsToParent(
 }
 
 // Watches a directory for changes and reindexes files as needed.
-function watchDirectoryRecursively(root: NuclideUri) {
+function watchDirectoryRecursively(
+  root: NuclideUri,
+  hasteSettings: HasteSettings,
+) {
   logger.debug('Watching the directory', root);
   const watchmanClient = new WatchmanClient();
   disposables.add(watchmanClient);
@@ -130,7 +122,7 @@ function watchDirectoryRecursively(root: NuclideUri) {
         .switchMap(x => Observable.from(x)) // convert to Observable<FileChange>
         .mergeMap(
           (fileChange: FileChange) =>
-            handleFileChange(watchmanRoot, fileChange),
+            handleFileChange(watchmanRoot, fileChange, hasteSettings),
           CONCURRENCY,
         )
         .subscribe(() => {});
@@ -143,11 +135,15 @@ function watchDirectoryRecursively(root: NuclideUri) {
 async function handleFileChange(
   root: NuclideUri,
   fileChange: FileChange,
+  hasteSettings: HasteSettings,
 ): Promise<void> {
-  updatedFiles.add(nuclideUri.resolve(root, fileChange.name));
   if (fileChange.exists) {
     // File created or modified
-    const exportForFile = await addFileToIndex(root, fileChange.name);
+    const exportForFile = await addFileToIndex(
+      root,
+      fileChange.name,
+      hasteSettings,
+    );
     if (exportForFile) {
       sendExportUpdateToParent([exportForFile]);
     }
@@ -188,28 +184,21 @@ function listNodeModulesWithGlob(root: NuclideUri): Promise<Array<string>> {
 // Exported for testing purposes.
 export function indexDirectory(
   root: NuclideUri,
-  shouldIndexDefaultExportForEachFile?: boolean,
+  hasteSettings: HasteSettings,
   maxWorkers?: number = Math.round(os.cpus().length / 2),
 ): Observable<Array<ExportUpdateForFile>> {
   return Observable.fromPromise(
     listFilesWithWatchman(root).catch(() => listFilesWithGlob(root)),
   )
-    .map(files =>
-      // Filter out blacklisted files
-      files.filter(
-        file =>
-          toIgnoreRegex.length === 0 ||
-          !nuclideUri.join(root, file).match(toIgnoreRegex),
-      ),
-    )
     .do(files => {
       logger.info(`Indexing ${files.length} files`);
     })
     .do(files => {
-      if (shouldIndexDefaultExportForEachFile) {
-        logger.debug('Adding all files');
-        addDefaultExportForEachFile(root, files);
-        logger.debug('Sent all files');
+      // As an optimization, we can send up the Haste reduced name as a default export.
+      if (hasteSettings.isHaste && hasteSettings.useNameReducers) {
+        logger.debug('Adding Haste default exports');
+        addHasteNames(root, files, hasteSettings);
+        logger.debug('Sent all Haste default exports');
       }
     })
     .switchMap(files => {
@@ -220,7 +209,6 @@ export function indexDirectory(
         maxWorkers,
       );
       const filesPerWorker = Math.floor(files.length / numWorkers);
-      // $FlowIgnore TODO: add Observable.range to flow-typed
       return Observable.range(0, numWorkers)
         .mergeMap(workerId => {
           return niceSafeSpawn(
@@ -229,7 +217,6 @@ export function indexDirectory(
               nuclideUri.join(__dirname, 'AutoImportsWorker-entry.js'),
               '--child',
               root,
-              shouldIndexDefaultExportForEachFile ? 'true' : 'false',
             ],
             {
               stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
@@ -279,6 +266,7 @@ async function checkIfMain(
       return null;
     }
     const cachedMain = mainFilesCache.get(currDir);
+    // eslint-disable-next-line eqeqeq
     if (cachedMain === null) {
       // The directory doesn't have a package.json with a main.
       continue;
@@ -318,10 +306,11 @@ async function checkIfMain(
 function addFileToIndex(
   root: NuclideUri,
   fileRelative: NuclideUri,
+  hasteSettings: HasteSettings,
 ): Promise<?ExportUpdateForFile> {
   const file = nuclideUri.join(root, fileRelative);
   return Promise.all([
-    getExportsForFile(file),
+    getExportsForFile(file, null, hasteSettings),
     checkIfMain(file),
   ]).then(([data, directoryForMainFile]) => {
     return data
@@ -332,14 +321,30 @@ function addFileToIndex(
 
 async function getExportsForFile(
   file: NuclideUri,
+  fileContents_: ?string,
+  hasteSettings: HasteSettings,
 ): Promise<?ExportUpdateForFile> {
   try {
-    const fileContents = await fsPromise.readFile(file, 'utf8');
+    const fileContents =
+      fileContents_ != null
+        ? fileContents_
+        : await fsPromise.readFile(file, 'utf8');
     const ast = parseFile(fileContents);
     if (ast == null) {
       return null;
     }
+    const hasteName = getHasteName(file, ast, hasteSettings);
+    // TODO(hansonw): Support mixed-mode haste + non-haste imports.
+    // For now, if Haste is enabled, we'll only suggest Haste imports.
+    if (hasteSettings.isHaste && hasteName == null) {
+      return null;
+    }
     const exports = getExportsFromAst(file, ast);
+    if (hasteName != null) {
+      exports.forEach(jsExport => {
+        jsExport.hasteName = hasteName;
+      });
+    }
     return {file, exports, updateType: 'setExports'};
   } catch (err) {
     logger.warn(
@@ -368,7 +373,7 @@ function setupDisconnectedParentHandler(): void {
   });
 }
 
-function setupParentMessagesHandler(): void {
+function setupParentMessagesHandler(hasteSettings: HasteSettings): void {
   process.on('message', async message => {
     const {fileUri, fileContents} = message;
     if (fileUri == null || fileContents == null) {
@@ -378,47 +383,52 @@ function setupParentMessagesHandler(): void {
       return;
     }
     try {
-      const ast = parseFile(fileContents);
-      if (ast == null) {
-        return null;
+      const exportUpdate = await getExportsForFile(
+        fileUri,
+        fileContents,
+        hasteSettings,
+      );
+      if (exportUpdate != null) {
+        sendExportUpdateToParent([exportUpdate]);
       }
-      updatedFiles.add(fileUri);
-      sendExportUpdateToParent([
-        decorateExportUpdateWithMainDirectory(
-          {
-            file: fileUri,
-            exports: getExportsFromAst(fileUri, ast),
-            updateType: 'setExports',
-          },
-          await checkIfMain(fileUri, /* readFileSync */ true),
-        ),
-      ]);
     } catch (error) {
       logger.error(`Could not index file ${fileUri}. Error: ${error}`);
     }
   });
 }
 
-function addDefaultExportForEachFile(root: NuclideUri, files: Array<string>) {
+function addHasteNames(
+  root: NuclideUri,
+  files: Array<string>,
+  hasteSettings: HasteSettings,
+) {
   sendExportUpdateToParent(
-    files.map((file): ExportUpdateForFile => {
-      return {
-        file,
-        updateType: 'setExports',
-        exports: [
-          {
-            id: idFromFileName(file),
-            uri: nuclideUri.join(root, file),
-            isTypeExport: false,
-            isDefault: true,
-          },
-        ],
-      };
-    }),
+    files
+      .map((file): ?ExportUpdateForFile => {
+        const hasteName = hasteReduceName(file, hasteSettings);
+        if (hasteName == null) {
+          return null;
+        }
+        return {
+          file,
+          updateType: 'setExports',
+          exports: [
+            {
+              id: idFromFileName(hasteName),
+              uri: nuclideUri.join(root, file),
+              hasteName,
+              isTypeExport: false,
+              isDefault: true,
+            },
+          ],
+        };
+      })
+      .filter(Boolean),
   );
 }
 function indexNodeModulesAndSendToParent(root: NuclideUri): Promise<void> {
   return new Promise((resolve, reject) => {
+    logger.info('Indexing node modules.');
     indexNodeModules(root).subscribe({
       next: exportForFile => {
         if (exportForFile) {
@@ -459,7 +469,15 @@ async function handleNodeModule(
     const entryPoint = require.resolve(
       nuclideUri.join(nuclideUri.dirname(file), packageJson.main || ''),
     );
-    const update = await getExportsForFile(entryPoint);
+    // TODO(hansonw): How do we handle haste modules inside Node modules?
+    // For now we'll just treat them as usual.
+    const update = await getExportsForFile(entryPoint, null, {
+      isHaste: false,
+      useNameReducers: false,
+      nameReducers: [],
+      nameReducerBlacklist: [],
+      nameReducerWhitelist: [],
+    });
     return update
       ? decorateExportUpdateWithMainDirectory(
           update,
@@ -525,38 +543,35 @@ function runChild() {
   const SEND_CONCURRENCY = 10;
 
   setupDisconnectedParentHandler();
-  if (process.argv.length !== 5) {
+  if (process.argv.length !== 4) {
     logger.debug('Child started with incorrect number of arguments');
     return;
   }
   const root: NuclideUri = process.argv[3];
-  const shouldAddAllFilesAsDefaultExport = process.argv[4] === 'true';
+  const {hasteSettings} = getConfigFromFlow(root);
   process.on('message', message => {
     const {files} = message;
     Observable.from(files)
       .concatMap((file, index) => {
-        return addFileToIndex(root, file);
+        return addFileToIndex(root, file, hasteSettings);
       })
+      .let(compact)
       .filter(
-        exportForFile =>
-          exportForFile != null &&
-          (!shouldAddAllFilesAsDefaultExport ||
-            !isOnlyDefaultExportForFile(exportForFile.exports)),
+        // Optimization: we already added default exports for all name-reduced Haste modules.
+        exportForFile => !isDefaultExportHasteName(exportForFile.exports),
       )
-      // $FlowIgnore TODO: Add .bufferCount to rxjs flow-typed
       .bufferCount(BATCH_SIZE)
       .mergeMap(sendExportUpdateToParent, SEND_CONCURRENCY)
       .subscribe({complete: exitCleanly});
   });
 }
 
-function isOnlyDefaultExportForFile(exportsForFile: Array<JSExport>): boolean {
-  return (
-    exportsForFile.length === 1 &&
-    exportsForFile[0].isDefault &&
-    !exportsForFile[0].isTypeExport &&
-    exportsForFile[0].id === idFromFileName(exportsForFile[0].uri)
-  );
+function isDefaultExportHasteName(exportsForFile: Array<JSExport>): boolean {
+  if (exportsForFile.length !== 1) {
+    return false;
+  }
+  const {hasteName, id, isDefault, isTypeExport} = exportsForFile[0];
+  return id === hasteName && isDefault && !isTypeExport;
 }
 
 function shuffle(array) {

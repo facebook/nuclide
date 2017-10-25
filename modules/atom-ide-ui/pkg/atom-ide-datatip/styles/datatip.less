@@ -1,7 +1,7 @@
 @import "ui-variables";
 @import "syntax-variables";
 
-.nuclide-datatip-overlay {
+.datatip-overlay {
   background: @app-background-color;
   box-shadow: 0px 1px 4px 0px rgba(0,0,0,1);
   color: @syntax-text-color;
@@ -12,15 +12,15 @@
   white-space: nowrap;
 }
 
-.nuclide-datatip-dragging {
+.datatip-dragging {
   cursor: -webkit-grabbing;
 }
 
-.nuclide-datatip-pinned {
+.datatip-pinned {
   cursor: -webkit-grab;
 }
 
-.nuclide-datatip-container {
+.datatip-container {
   background-color: @syntax-background-color;
   display: flex;
   position: relative;
@@ -34,7 +34,7 @@
   }
 }
 
-.nuclide-datatip-content {
+.datatip-content {
   flex-grow: 1;
 
   // Allow higher-level component to override the cursor property on certain children.
@@ -43,7 +43,7 @@
   }
 }
 
-.nuclide-datatip-pin-button {
+.datatip-pin-button {
   align-items: center;
   border-left: 1px solid fade(@syntax-cursor-color, 10%);
   cursor: pointer;
@@ -57,7 +57,7 @@
   }
 }
 
-.nuclide-datatip-marked-text-editor {
+.datatip-marked-text-editor {
   .cursors {
     display: none;
   }
@@ -65,11 +65,11 @@
 
 atom-text-editor {
 
-  .nuclide-datatip-highlight-region > .region {
+  .datatip-highlight-region > .region {
     background: @syntax-selection-color;
   }
 
-  .nuclide-datatip-highlight-region-active > .region {
+  .datatip-highlight-region-active > .region {
     // Animations such as `RotatingBackground` must be defined in a `*.atom-text-editor.less` file.
     animation: RotatingBackground 1s ease-in-out infinite reverse;
     background: linear-gradient(

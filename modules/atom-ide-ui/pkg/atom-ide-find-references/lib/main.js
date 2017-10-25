@@ -12,8 +12,11 @@
 
 /* global getSelection */
 
+import type {BusySignalService} from '../../atom-ide-busy-signal/lib/types';
 import type {FindReferencesProvider, FindReferencesReturn} from './types';
 
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {asyncFind} from 'nuclide-commons/promise';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import ContextMenu from 'nuclide-commons-atom/ContextMenu';
 import {bufferPositionForMouseEvent} from 'nuclide-commons-atom/mouse-to-position';
@@ -30,38 +33,28 @@ function showWarning(message: string): void {
   });
 }
 
-async function tryCreateView(
-  data: ?FindReferencesReturn,
-): Promise<?FindReferencesViewModel> {
-  try {
-    if (data == null) {
-      showWarning('Symbol references are not available for this project.');
-    } else if (data.type === 'error') {
-      analytics.track('find-references:error', {message: data.message});
-      showWarning(data.message);
-    } else if (!data.references.length) {
-      analytics.track('find-references:success', {resultCount: '0'});
-      showWarning('No references found.');
-    } else {
-      const {baseUri, referencedSymbolName, references} = data;
-      analytics.track('find-references:success', {
-        baseUri,
-        referencedSymbolName,
-        resultCount: references.length.toString(),
-      });
-      const model = new FindReferencesModel(
-        baseUri,
-        referencedSymbolName,
-        references,
-      );
-      return new FindReferencesViewModel(model);
-    }
-  } catch (e) {
-    // TODO(peterhal): Remove this when unhandled rejections have a default handler.
-    getLogger('find-references').error('Erorr finding references', e);
-    atom.notifications.addError(`Find References: ${e}`, {
-      dismissable: true,
+function tryCreateView(data: ?FindReferencesReturn): ?FindReferencesViewModel {
+  if (data == null) {
+    showWarning('Symbol references are not available for this project.');
+  } else if (data.type === 'error') {
+    analytics.track('find-references:error', {message: data.message});
+    showWarning(data.message);
+  } else if (!data.references.length) {
+    analytics.track('find-references:success', {resultCount: '0'});
+    showWarning('No references found.');
+  } else {
+    const {baseUri, referencedSymbolName, references} = data;
+    analytics.track('find-references:success', {
+      baseUri,
+      referencedSymbolName,
+      resultCount: references.length.toString(),
     });
+    const model = new FindReferencesModel(
+      baseUri,
+      referencedSymbolName,
+      references,
+    );
+    return new FindReferencesViewModel(model);
   }
 }
 
@@ -82,16 +75,24 @@ class Activation {
     TextEditor,
     Array<FindReferencesProvider>,
   > = new Map();
+  _busySignalService: ?BusySignalService;
 
   constructor(state: ?any): void {
     this._subscriptions = new UniversalDisposable();
-    // Add this seperately as registerOpenerAndCommand requires
+    // Add this separately as registerOpenerAndCommand requires
     // this._subscriptions to be initialized for observeTextEditors function.
     this._subscriptions.add(this.registerOpenerAndCommand());
   }
 
   dispose(): void {
     this._subscriptions.dispose();
+  }
+
+  consumeBusySignal(busySignalService: BusySignalService): IDisposable {
+    this._busySignalService = busySignalService;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
   }
 
   consumeProvider(provider: FindReferencesProvider): IDisposable {
@@ -127,7 +128,7 @@ class Activation {
         'atom-text-editor',
         'find-references:activate',
         async event => {
-          const view = await tryCreateView(
+          const view = tryCreateView(
             await this._getProviderData(
               ContextMenu.isEventFromContextMenu(event) ? lastMouseEvent : null,
             ),
@@ -139,7 +140,7 @@ class Activation {
               }
             });
             // not a file URI
-            // eslint-disable-next-line nuclide-internal/atom-apis
+            // eslint-disable-next-line rulesdir/atom-apis
             atom.workspace.open(view.getURI());
             // The new tab opens instantly, so this is no longer needed.
             disposable.dispose();
@@ -221,10 +222,24 @@ class Activation {
     if (!supported) {
       return null;
     }
-    const providerData = await Promise.all(
-      supported.map(provider => provider.findReferences(editor, point)),
+    const resultPromise = asyncFind(
+      supported.map(provider =>
+        provider.findReferences(editor, point).catch(err => {
+          getLogger('find-references').error('Error finding references', err);
+          return null;
+        }),
+      ),
+      x => x,
     );
-    return providerData.filter(x => Boolean(x))[0];
+    const busySignalService = this._busySignalService;
+    if (busySignalService != null) {
+      const displayPath = nuclideUri.basename(path);
+      return busySignalService.reportBusyWhile(
+        `Finding references for ${displayPath}:${point.row}:${point.column}`,
+        () => resultPromise,
+      );
+    }
+    return resultPromise;
   }
 
   // Returns true if this adds the first provider for the editor.

@@ -28,7 +28,7 @@ describe('AutoImportsManager', () => {
   });
   it('Can provide a basic missing type import', () => {
     const file1 = "export type MyType = 'string' ";
-    const file2 = "const val: MyType = 'something'";
+    const file2 = "const val: MyType = 'something'; MyType();";
     const autoImportsManager = new AutoImportsManager([]);
     autoImportsManager.indexFile('file1.js', file1);
     const missingImports = autoImportsManager.findMissingImports(

@@ -43,11 +43,11 @@
         "default": false,
         "description": "If checked, only autocomplete results from Flow will appear in JS files. Not recommended. Requires restart to take effect."
       },
-      "enableReferencesHighlight": {
-        "title": "Highlight identifier references (requires restart)",
+      "enableFindReferences": {
+        "title": "Enable global find references (requires restart)",
         "type": "boolean",
         "default": false,
-        "description": "EXPERIMENTAL: This feature requires flow >=0.38.0, but it is still under-development, so the results may not be what you expect."
+        "description": "EXPERIMENTAL: Has limited support and requires using an unreleased version of Flow"
       },
       "enableTypeHints": {
         "title": "Enable Type Hints",

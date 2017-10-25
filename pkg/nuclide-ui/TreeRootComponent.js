@@ -12,7 +12,8 @@
 /* globals Element */
 
 import invariant from 'assert';
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {LazyTreeNode} from './LazyTreeNode';
 import {TreeNodeComponent} from './TreeNodeComponent';
 import {forEachCachedNode} from './tree-node-traversals';
@@ -104,7 +105,7 @@ export class TreeRootComponent extends React.Component<Props, State> {
   _isMounted: boolean;
   _keyToNode: ?{[key: string]: LazyTreeNode};
   _rejectDidUpdateListenerPromise: ?() => void;
-  _subscriptions: ?CompositeDisposable;
+  _subscriptions: ?UniversalDisposable;
 
   static defaultProps: DefaultProps = {
     elementToRenderWhenEmpty: null,
@@ -371,11 +372,7 @@ export class TreeRootComponent extends React.Component<Props, State> {
 
     this._allKeys = allKeys;
     this._keyToNode = keyToNode;
-    return (
-      <div className="nuclide-tree-root">
-        {children}
-      </div>
-    );
+    return <div className="nuclide-tree-root">{children}</div>;
   }
 
   componentWillMount(): void {
@@ -388,7 +385,7 @@ export class TreeRootComponent extends React.Component<Props, State> {
       keyToNode[rootKey] = root;
     });
 
-    const subscriptions = new CompositeDisposable();
+    const subscriptions = new UniversalDisposable();
     subscriptions.add(
       atom.commands.add(this.props.eventHandlerSelector, {
         // Expand and collapse.

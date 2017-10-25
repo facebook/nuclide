@@ -1,5 +1,5 @@
-// flow-typed signature: 6c70b54deb7f68a246ffb76a0bff389e
-// flow-typed version: cbb363d9d1/semver_v5.1.x/flow_>=v0.19.x
+// flow-typed signature: 1d1f54a0e3983f7bd1d91411d7e64f22
+// flow-typed version: 99dfe36842/semver_v5.1.x/flow_>=v0.20.x
 
 declare module 'semver' {
   declare type Release =

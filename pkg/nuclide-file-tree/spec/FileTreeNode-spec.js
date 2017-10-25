@@ -12,6 +12,7 @@
 import {FileTreeNode} from '../lib/FileTreeNode';
 import Immutable from 'immutable';
 import {WorkingSet} from '../../nuclide-working-sets-common';
+import {FileTreeSelectionManager} from '../lib/FileTreeSelectionManager';
 
 const CONF = {
   vcsStatuses: new Immutable.Map(),
@@ -19,14 +20,15 @@ const CONF = {
   workingSet: new WorkingSet(),
   editedWorkingSet: new WorkingSet(),
   hideIgnoredNames: true,
-  isCalculatingChanges: false,
   excludeVcsIgnoredPaths: true,
   ignoredPatterns: new Immutable.Set(),
   repositories: new Immutable.Set(),
   usePreviewTabs: true,
+  focusEditorOnFileSelection: false,
   isEditingWorkingSet: false,
   openFilesWorkingSet: new WorkingSet(),
   reposByRoot: {},
+  selectionManager: new FileTreeSelectionManager(() => {}),
 };
 
 describe('FileTreeNode', () => {
@@ -42,10 +44,9 @@ describe('FileTreeNode', () => {
     expect(node.uri).toBe('/abc/def');
     expect(node.rootUri).toBe('/abc/');
     expect(node.isExpanded).toBe(false);
-    expect(node.isSelected).toBe(false);
+    expect(node.isSelected()).toBe(false);
     expect(node.isLoading).toBe(false);
     expect(node.isCwd).toBe(false);
-    expect(node.isTracked).toBe(false);
     expect(node.children.isEmpty()).toBe(true);
     expect(node.highlightedText).toEqual('');
     expect(node.matchesFilter).toBeTruthy();
@@ -61,7 +62,6 @@ describe('FileTreeNode', () => {
         isSelected: true,
         isLoading: true,
         isCwd: true,
-        isTracked: true,
         children,
       },
       CONF,
@@ -70,10 +70,9 @@ describe('FileTreeNode', () => {
     expect(node.uri).toBe('/abc/def');
     expect(node.rootUri).toBe('/abc/');
     expect(node.isExpanded).toBe(true);
-    expect(node.isSelected).toBe(true);
+    expect(node.isSelected()).toBe(true);
     expect(node.isLoading).toBe(true);
     expect(node.isCwd).toBe(true);
-    expect(node.isTracked).toBe(true);
     expect(node.children).toBe(children);
     expect(node.highlightedText).toEqual('');
     expect(node.matchesFilter).toBeTruthy();
@@ -129,7 +128,6 @@ describe('FileTreeNode', () => {
         isSelected: false,
         isLoading: false,
         isCwd: true,
-        isTracked: false,
         children,
       },
       CONF,
@@ -144,8 +142,6 @@ describe('FileTreeNode', () => {
     expect(updatedNode).toBe(node);
     updatedNode = node.setIsCwd(true);
     expect(updatedNode).toBe(node);
-    updatedNode = node.setIsTracked(false);
-    expect(updatedNode).toBe(node);
     updatedNode = node.setChildren(new Immutable.OrderedMap(children));
     expect(updatedNode).toBe(node);
     updatedNode = node.setRecursive(null, child => child.setIsSelected(false));
@@ -154,16 +150,14 @@ describe('FileTreeNode', () => {
     expect(updatedNode).toBe(node);
     updatedNode = node.set({
       isExpanded: true,
-      isSelected: false,
       isLoading: false,
       isCwd: true,
-      isTracked: false,
       children,
     });
     expect(updatedNode).toBe(node);
 
     updatedNode = node.updateChild(child2.setIsSelected(true));
-    expect(updatedNode).not.toBe(node);
+    expect(updatedNode).toBe(node);
   });
 
   it('finds nodes', () => {

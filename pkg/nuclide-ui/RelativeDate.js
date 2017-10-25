@@ -66,8 +66,7 @@ export default class RelativeDate extends React.Component<Props> {
         {...remainingProps}
         ref={
           withToolip
-            ? // $FlowFixMe(>=0.53.0) Flow suppress
-              addTooltip({
+            ? addTooltip({
                 title: date.toLocaleString(),
                 delay: 200,
                 placement: 'top',

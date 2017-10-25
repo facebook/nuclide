@@ -161,7 +161,7 @@ async function run() {
         'Address family for connecting to nuclide. Either "IPv4" or "IPv6".',
       type: 'string',
     });
-  if (argv.port == null !== (argv.family == null)) {
+  if ((argv.port == null) !== (argv.family == null)) {
     process.stderr.write(
       'Invalid options. Both port and family must be specified.\n',
     );

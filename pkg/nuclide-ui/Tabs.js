@@ -46,9 +46,9 @@ export default class Tabs extends React.Component<Props> {
   };
 
   _renderTabMenu = (): React.Element<any> => {
-    const closeButton = this.props.closeable
-      ? <div className="close-icon" onClick={this.props.onClose} />
-      : null;
+    const closeButton = this.props.closeable ? (
+      <div className="close-icon" onClick={this.props.onClose} />
+    ) : null;
     const tabs = this.props.tabs.map(tab => {
       const icon = tab.icon == null ? null : <Icon icon={tab.icon} />;
       const handler = {};
@@ -72,18 +72,10 @@ export default class Tabs extends React.Component<Props> {
         </li>
       );
     });
-    return (
-      <ul className="tab-bar list-inline inset-panel">
-        {tabs}
-      </ul>
-    );
+    return <ul className="tab-bar list-inline inset-panel">{tabs}</ul>;
   };
 
   render(): React.Node {
-    return (
-      <div className="nuclide-tabs">
-        {this._renderTabMenu()}
-      </div>
-    );
+    return <div className="nuclide-tabs">{this._renderTabMenu()}</div>;
   }
 }

@@ -9,12 +9,22 @@
  * @format
  */
 
+import {getLogger} from 'log4js';
 import * as SocketService from '../lib/SocketService';
 import net from 'net';
+import invariant from 'assert';
 
 const TEST_PORT = 5000;
 
 describe('SocketService', () => {
+  beforeEach(() => {
+    getLogger('SocketService-spec').debug('--SPEC START--');
+  });
+
+  afterEach(() => {
+    getLogger('SocketService-spec').debug('--SPEC END--');
+  });
+
   it('completes the observable when listening is done', () => {
     waitsForPromise(async () => {
       const observable = SocketService.startListening(TEST_PORT);
@@ -30,13 +40,14 @@ describe('SocketService', () => {
 
   it('throws an error if the port is already bound', () => {
     const observable = SocketService.startListening(TEST_PORT);
+    const serverStart = observable
+      .filter(value => value.type === 'server_started')
+      .take(1)
+      .toPromise();
     observable.connect();
 
     waitsForPromise(async () => {
-      await observable
-        .filter(value => value.type === 'server_started')
-        .take(1)
-        .toPromise();
+      await serverStart;
     });
 
     waitsForPromise({shouldReject: true}, async () => {
@@ -79,11 +90,12 @@ describe('SocketService', () => {
       observable.connect();
 
       const client = net.connect(TEST_PORT);
-      await observable
+      const connectEvent = await observable
         .filter(value => value.type === 'client_connected')
         .take(1)
         .toPromise();
       client.end();
+      invariant(connectEvent.type === 'client_connected');
       await observable
         .takeWhile(value => value.type === 'client_disconnected')
         .take(1)
@@ -92,8 +104,8 @@ describe('SocketService', () => {
       SocketService.stopListening(TEST_PORT);
       expect(await events).toEqual([
         {type: 'server_started'},
-        {type: 'client_connected'},
-        {type: 'client_disconnected'},
+        {type: 'client_connected', clientPort: connectEvent.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent.clientPort},
         {type: 'server_stopping'},
       ]);
     });
@@ -106,11 +118,12 @@ describe('SocketService', () => {
       observable.connect();
 
       net.connect(TEST_PORT);
-      await observable
+      const connectEvent = await observable
         .filter(value => value.type === 'client_connected')
         .take(1)
         .toPromise();
-      SocketService.closeClient(TEST_PORT);
+      invariant(connectEvent.type === 'client_connected');
+      SocketService.closeClient(TEST_PORT, connectEvent.clientPort);
       await observable
         .takeWhile(value => value.type === 'client_disconnected')
         .take(1)
@@ -119,8 +132,51 @@ describe('SocketService', () => {
       SocketService.stopListening(TEST_PORT);
       expect(await events).toEqual([
         {type: 'server_started'},
-        {type: 'client_connected'},
-        {type: 'client_disconnected'},
+        {type: 'client_connected', clientPort: connectEvent.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent.clientPort},
+        {type: 'server_stopping'},
+      ]);
+    });
+  });
+
+  it('can connect multiple clients', () => {
+    waitsForPromise(async () => {
+      const observable = SocketService.startListening(TEST_PORT);
+      const events = observable.toArray().toPromise();
+      observable.connect();
+
+      net.connect(TEST_PORT);
+      const connectEvent1 = await observable
+        .filter(value => value.type === 'client_connected')
+        .take(1)
+        .toPromise();
+      invariant(connectEvent1.type === 'client_connected');
+
+      net.connect(TEST_PORT);
+      const connectEvent2 = await observable
+        .filter(value => value.type === 'client_connected')
+        .take(1)
+        .toPromise();
+      invariant(connectEvent2.type === 'client_connected');
+
+      SocketService.closeClient(TEST_PORT, connectEvent2.clientPort);
+      await observable
+        .takeWhile(value => value.type === 'client_disconnected')
+        .take(1)
+        .toPromise();
+      SocketService.closeClient(TEST_PORT, connectEvent1.clientPort);
+      await observable
+        .takeWhile(value => value.type === 'client_disconnected')
+        .take(1)
+        .toPromise();
+
+      SocketService.stopListening(TEST_PORT);
+      expect(await events).toEqual([
+        {type: 'server_started'},
+        {type: 'client_connected', clientPort: connectEvent1.clientPort},
+        {type: 'client_connected', clientPort: connectEvent2.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent2.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent1.clientPort},
         {type: 'server_stopping'},
       ]);
     });
@@ -133,11 +189,12 @@ describe('SocketService', () => {
       observable.connect();
 
       net.connect(TEST_PORT);
-      await observable
+      const connectEvent = await observable
         .filter(value => value.type === 'client_connected')
         .take(1)
         .toPromise();
-      SocketService.clientError(TEST_PORT, 'shucks');
+      invariant(connectEvent.type === 'client_connected');
+      SocketService.clientError(TEST_PORT, connectEvent.clientPort, 'shucks');
       await observable
         .takeWhile(value => value.type === 'client_disconnected')
         .take(1)
@@ -146,8 +203,8 @@ describe('SocketService', () => {
       SocketService.stopListening(TEST_PORT);
       expect(await events).toEqual([
         {type: 'server_started'},
-        {type: 'client_connected'},
-        {type: 'client_disconnected'},
+        {type: 'client_connected', clientPort: connectEvent.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent.clientPort},
         {type: 'server_stopping'},
       ]);
     });
@@ -161,10 +218,11 @@ describe('SocketService', () => {
 
       const client = net.connect(TEST_PORT);
       client.on('error', error => {});
-      await observable
+      const connectEvent = await observable
         .filter(value => value.type === 'client_connected')
         .take(1)
         .toPromise();
+      invariant(connectEvent.type === 'client_connected');
       client.destroy(new Error('boom'));
       await observable
         .takeWhile(value => value.type === 'client_disconnected')
@@ -174,8 +232,8 @@ describe('SocketService', () => {
       SocketService.stopListening(TEST_PORT);
       expect(await events).toEqual([
         {type: 'server_started'},
-        {type: 'client_connected'},
-        {type: 'client_disconnected'},
+        {type: 'client_connected', clientPort: connectEvent.clientPort},
+        {type: 'client_disconnected', clientPort: connectEvent.clientPort},
         {type: 'server_stopping'},
       ]);
     });

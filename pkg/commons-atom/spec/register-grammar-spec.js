@@ -9,6 +9,7 @@
  * @format
  */
 
+import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import registerGrammar from '../register-grammar';
 
@@ -19,7 +20,9 @@ describe('registerGrammar', () => {
         nuclideUri.join(__dirname, 'grammars/javascript.cson'),
       );
       registerGrammar('source.js', ['cats']);
-      const textEditor = await atom.workspace.open('file.cats');
+      const textEditor = await atom.workspace.open(
+        `${await fsPromise.tempfile()}.js`,
+      );
       expect(textEditor.getGrammar().scopeName).toBe('source.js');
       textEditor.destroy();
     });

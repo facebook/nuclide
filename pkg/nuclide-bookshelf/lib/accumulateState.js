@@ -173,8 +173,8 @@ function accumulateUpdatePaneItemState(
       Array.from(
         state.repositoryPathToState.entries(),
       ).map(([repositoryPath, repositoryState]) => {
-        const fileList = (repositoryPathToEditors.get(repositoryPath) || [])
-          .map(textEditor => textEditor.getPath() || '');
+        const fileList = (repositoryPathToEditors.get(repositoryPath) || []
+        ).map(textEditor => textEditor.getPath() || '');
         return [
           repositoryPath,
           accumulateRepositoryStateUpdatePaneItemState(

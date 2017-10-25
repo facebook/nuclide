@@ -39,6 +39,7 @@ export default class Hasher<K> {
   }
 
   getHash(item: K): string | number {
+    // eslint-disable-next-line eqeqeq
     if (item === null) {
       return 'null';
     }

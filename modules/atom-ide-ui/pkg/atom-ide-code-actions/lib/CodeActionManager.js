@@ -29,8 +29,10 @@ export class CodeActionManager {
     this._disposables.dispose();
   }
 
-  addProvider(provider: CodeActionProvider) {
-    this._disposables.add(this._providerRegistry.addProvider(provider));
+  addProvider(provider: CodeActionProvider): IDisposable {
+    const disposable = this._providerRegistry.addProvider(provider);
+    this._disposables.add(disposable);
+    return disposable;
   }
 
   createCodeActionFetcher(): CodeActionFetcher {

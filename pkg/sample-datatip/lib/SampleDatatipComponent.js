@@ -22,9 +22,5 @@ export function makeSampleDatatipComponent(
 }
 
 const SampleDatatipComponent = (props: DatatipComponentProps) => {
-  return (
-    <div>
-      I am a Datatip for "{props.word}"
-    </div>
-  );
+  return <div>I am a Datatip for "{props.word}"</div>;
 };

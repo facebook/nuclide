@@ -13,11 +13,28 @@
       "default": [],
       "description": "If the working directory matches any of these regexes, then diagnostics will be provided. If the array is empty, diagnostics will be provided for all directories."
     },
-    "autocompleteWhitelist": {
-      "title": "Directories for which the JS-Autoimports server should provide autocomplete",
+    "requiresWhitelist": {
+      "title": "Directories for which the JS-Autoimports server should use requires, not imports",
       "type": "array",
+      "items": {"type": "string"},
       "default": [],
-      "description": "If the working directory matches any of these regexes, then autocomplete will be provided. If the array is empty, autocomplete will be provided for all directories."
+      "description": "If the working directory matches any of these regexes, then suggestions will use requires rather than imports."
+    },
+    "logLevel": {
+      "title": "Log Level",
+      "type": "string",
+      "default": "INFO",
+      "description": "Specify that level of logging.",
+      "enum": [
+        "ALL",
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL",
+        "OFF"
+      ]
     }
   },
   "nuclide": {

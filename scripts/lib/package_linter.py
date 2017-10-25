@@ -18,7 +18,7 @@ DEPENDENCIES_FIELDS = [
 ]
 EXACT_SEMVER_RE = re.compile(r'^\d+\.\d+\.\d+$')
 
-# Detects errors in Nuclide pacakge.json files.
+# Detects errors in Nuclide package.json files.
 #  - missing/empty description
 #  - missing/incorrect repository
 #  - missing/incorrect version

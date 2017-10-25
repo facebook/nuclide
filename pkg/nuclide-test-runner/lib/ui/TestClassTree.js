@@ -49,9 +49,7 @@ export default class TestClassTree extends React.Component<Props> {
         <ol>
           <li>Open the file you want to test</li>
           <li>Choose the appropriate runner from the dropdown</li>
-          <li>
-            {'Click "Test" to run tests for that file\'s directory'}
-          </li>
+          <li>{'Click "Test" to run tests for that file\'s directory'}</li>
         </ol>
       </div>
     );

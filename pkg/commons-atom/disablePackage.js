@@ -9,22 +9,25 @@
  * @format
  */
 
-function disablePackage(name) {
-  if (!atom.packages.isPackageDisabled(name)) {
-    // Calling `disablePackage` on a package first *loads* the package. This step must come
-    // before calling `unloadPackage`.
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+
+function deactivateAndUnloadPackage(name) {
+  if (atom.packages.initialPackagesActivated === true) {
+    const packageName = featureConfig.getPackageName();
+    atom.notifications.addWarning(`Incompatible Package: ${name}`, {
+      description:
+        `${name} can't be enabled because it's incompatible with ${packageName}. ` +
+        `If you need to use this package, you must first disable ${packageName}.`,
+    });
+  }
+
+  const deactivationPromise =
+    atom.packages.deactivatePackage(name) || Promise.resolve();
+  deactivationPromise.then(() => {
     atom.packages.disablePackage(name);
-  }
-
-  if (atom.packages.isPackageLoaded(name)) {
-    if (atom.packages.isPackageActive(name)) {
-      // Only *inactive* packages can be unloaded. Attempting to unload an active package is
-      // considered an exception. Deactivating must come before unloading.
-      atom.packages.deactivatePackage(name);
-    }
-
     atom.packages.unloadPackage(name);
-  }
+  });
 
   // This is a horrible hack to work around the fact that preloaded packages can sometimes be loaded
   // twice. See also atom/atom#14837
@@ -32,27 +35,31 @@ function disablePackage(name) {
   delete atom.packages.preloadedPackages[name];
 }
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = function(name: string) {
-  // Disable Atom's bundled package. If this activation is happening during the
-  // normal startup activation, the `onDidActivateInitialPackages` handler below must unload the
-  // package because it will have been loaded during startup.
-  disablePackage(name);
+  const initiallyDisabled = atom.packages.isPackageDisabled(name);
+  if (!initiallyDisabled) {
+    // If it wasn't activated yet, maybe we can prevent the activation altogether
+    atom.packages.disablePackage(name);
+  }
 
-  // Disabling and unloading Atom's bundled package must happen after activation because this
-  // package's `activate` is called during an traversal of all initial packages to activate.
-  // Disabling a package during the traversal has no effect if this is a startup load because
-  // `PackageManager` does not re-load the list of packages to activate after each iteration.
-  const disposable = atom.packages.onDidActivateInitialPackages(() => {
-    disablePackage(name);
+  if (atom.packages.isPackageActive(name)) {
+    deactivateAndUnloadPackage(name);
+  }
+
+  const activationMonitor = atom.packages.onDidActivatePackage(pack => {
+    if (pack.name === name) {
+      deactivateAndUnloadPackage(name);
+    }
   });
 
-  return () => {
+  const stateRestorer = () => {
     // Re-enable Atom's bundled package to leave the user's environment the way
     // this package found it.
-    if (atom.packages.isPackageDisabled(name)) {
+    if (!initiallyDisabled) {
       atom.packages.enablePackage(name);
     }
-    disposable.dispose();
   };
+
+  return new UniversalDisposable(activationMonitor, stateRestorer);
 };

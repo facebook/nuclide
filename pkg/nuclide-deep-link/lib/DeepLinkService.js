@@ -12,7 +12,7 @@
 import type {DeepLinkParams} from './types';
 
 import electron from 'electron';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Observable} from 'rxjs';
 import querystring from 'querystring';
 import url from 'url';

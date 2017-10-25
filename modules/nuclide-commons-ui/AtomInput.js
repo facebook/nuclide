@@ -10,13 +10,14 @@
  * @format
  */
 
-import classNames from 'classnames';
-
-import {CompositeDisposable} from 'atom';
 import * as React from 'react';
-import ReactDOM from 'react-dom';
+import classNames from 'classnames';
+import invariant from 'assert';
 
 import {maybeToString} from 'nuclide-commons/string';
+import {microtask} from 'nuclide-commons/observable';
+import debounce from 'nuclide-commons/debounce';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 type DefaultProps = {
   disabled: boolean,
@@ -37,6 +38,7 @@ type Props = {
   disabled: boolean,
   autofocus: boolean,
   startSelected: boolean,
+  startSelectedRange?: ?[number, number],
   initialValue: string,
   placeholderText?: string,
   tabIndex: string,
@@ -59,11 +61,17 @@ type State = {
   value: string,
 };
 
+const BLUR_FOCUS_DEBOUNCE_DELAY = 100;
+
 /**
  * An input field rendered as an <atom-text-editor mini />.
  */
 export class AtomInput extends React.Component<Props, State> {
-  _disposables: ?CompositeDisposable;
+  _disposables: ?UniversalDisposable;
+  _rootNode: ?HTMLElement;
+  _debouncedEditorBlur: (blurEvent: Event) => void;
+  _debouncedEditorFocus: () => void;
+  _isFocussed: boolean;
 
   static defaultProps: DefaultProps = {
     disabled: false,
@@ -85,10 +93,18 @@ export class AtomInput extends React.Component<Props, State> {
     this.state = {
       value,
     };
+    this._debouncedEditorFocus = debounce(
+      this._onEditorFocus,
+      BLUR_FOCUS_DEBOUNCE_DELAY,
+    );
+    this._debouncedEditorBlur = debounce(
+      this._onEditorBlur,
+      BLUR_FOCUS_DEBOUNCE_DELAY,
+    );
   }
 
   componentDidMount(): void {
-    const disposables = (this._disposables = new CompositeDisposable());
+    const disposables = (this._disposables = new UniversalDisposable());
 
     // There does not appear to be any sort of infinite loop where calling
     // setState({value}) in response to onDidChange() causes another change
@@ -98,14 +114,38 @@ export class AtomInput extends React.Component<Props, State> {
     if (this.props.autofocus) {
       this.focus();
     }
+
+    invariant(
+      !(this.props.startSelected && this.props.startSelectedRange != null),
+      'cannot have both startSelected (all) and startSelectedRange',
+    );
+
     if (this.props.startSelected) {
       // For some reason, selectAll() has no effect if called right now.
-      process.nextTick(() => {
-        if (!textEditor.isDestroyed()) {
-          textEditor.selectAll();
-        }
-      });
+      disposables.add(
+        microtask.subscribe(() => {
+          if (!textEditor.isDestroyed()) {
+            textEditor.selectAll();
+          }
+        }),
+      );
     }
+
+    const startSelectedRange = this.props.startSelectedRange;
+    if (startSelectedRange != null) {
+      // For some reason, selectAll() has no effect if called right now.
+      disposables.add(
+        microtask.subscribe(() => {
+          if (!textEditor.isDestroyed()) {
+            textEditor.setSelectedBufferRange([
+              [0, startSelectedRange[0]],
+              [0, startSelectedRange[1]],
+            ]);
+          }
+        }),
+      );
+    }
+
     disposables.add(
       atom.commands.add(textEditorElement, {
         'core:confirm': () => {
@@ -189,6 +229,26 @@ export class AtomInput extends React.Component<Props, State> {
     }
   }
 
+  _onEditorFocus = (): void => {
+    if (this.isFocussed() && !this._isFocussed) {
+      this._isFocussed = true;
+      this.props.onFocus && this.props.onFocus();
+    }
+  };
+
+  _onEditorBlur = (blurEvent: Event): void => {
+    if (!this.isFocussed() && this._isFocussed) {
+      this._isFocussed = false;
+      this.props.onBlur && this.props.onBlur(blurEvent);
+    }
+  };
+
+  isFocussed(): boolean {
+    return (
+      this._rootNode != null && this._rootNode.contains(document.activeElement)
+    );
+  }
+
   render(): React.Node {
     const className = classNames(this.props.className, {
       'atom-text-editor-unstyled': this.props.unstyled,
@@ -204,9 +264,10 @@ export class AtomInput extends React.Component<Props, State> {
       <atom-text-editor
         class={className}
         mini
+        ref={rootNode => (this._rootNode = rootNode)}
         onClick={this.props.onClick}
-        onFocus={this.props.onFocus}
-        onBlur={this.props.onBlur}
+        onFocus={this._debouncedEditorFocus}
+        onBlur={this._debouncedEditorBlur}
         style={this.props.style}
       />
     );
@@ -225,12 +286,15 @@ export class AtomInput extends React.Component<Props, State> {
   }
 
   onDidChange(callback: () => any): IDisposable {
-    return this.getTextEditor().onDidChange(callback);
+    return this.getTextEditor()
+      .getBuffer()
+      .onDidChangeText(callback);
   }
 
   getTextEditorElement(): atom$TextEditorElement {
+    invariant(this._rootNode != null);
     // $FlowFixMe
-    return ReactDOM.findDOMNode(this);
+    return this._rootNode;
   }
 
   _updateWidth(prevWidth?: number): void {

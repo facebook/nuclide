@@ -10,12 +10,8 @@
  * @format
  */
 
-import {
-  observeStream,
-  observeRawStream,
-  writeToStream,
-} from 'nuclide-commons/stream';
-import fsPromise from 'nuclide-commons/fsPromise';
+import {observeStream, observeRawStream, writeToStream} from '../stream';
+import fsPromise from '../fsPromise';
 import Stream from 'stream';
 import fs from 'fs';
 
@@ -24,7 +20,9 @@ describe('commons-node/stream', () => {
     waitsForPromise(async () => {
       const input = ['foo\nbar', '\n', '\nba', 'z', '\nblar'];
       const stream = new Stream.PassThrough();
-      const promise = observeStream(stream).toArray().toPromise();
+      const promise = observeStream(stream)
+        .toArray()
+        .toPromise();
       input.forEach(value => {
         stream.write(value, 'utf8');
       });

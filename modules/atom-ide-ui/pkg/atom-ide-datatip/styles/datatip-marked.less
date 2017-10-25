@@ -1,11 +1,11 @@
 @import "ui-variables";
 @import "syntax-variables";
 
-.nuclide-datatip-marked > div:not(:last-child) {
+.datatip-marked > div:not(:last-child) {
   border-bottom: 1px solid fade(@syntax-cursor-color, 10%);
 }
 
-.nuclide-datatip-marked-container {
+.datatip-marked-container {
   color: @syntax-text-color;
   font-family: @font-family;
   max-height: 300px;
@@ -24,16 +24,17 @@
   }
 }
 
-.nuclide-datatip-marked-text-editor-container {
+.datatip-marked-text-editor-container {
   padding: 2px 0 2px 4px;
 }
 
-.nuclide-datatip-marked-text-editor {
+.datatip-marked-text-editor {
+  max-width: 500px;
   max-height: 300px;
-  overflow-y: auto;
+  overflow: auto;
 }
 
-.nuclide-datatip-marked-text-editor atom-text-editor {
+.datatip-marked-text-editor atom-text-editor {
   background-color: transparent;
   min-width: 1em; // Hack to force the AtomTextEditor to properly size itself
 

@@ -10,7 +10,13 @@
  * @format
  */
 
-import type {Action, MessagesState, ProjectMessagesState} from '../types';
+import type {
+  Action,
+  CodeActionsState,
+  MessagesState,
+  ObservableDiagnosticProvider,
+} from '../types';
+import type {CodeActionFetcher} from '../../../atom-ide-code-actions/lib/types';
 
 import * as Actions from './Actions';
 
@@ -20,10 +26,7 @@ export function messages(
 ): MessagesState {
   switch (action.type) {
     case Actions.UPDATE_MESSAGES: {
-      const {provider, update: {filePathToMessages}} = action.payload;
-      if (filePathToMessages == null) {
-        return state;
-      }
+      const {provider, update} = action.payload;
       const nextState = new Map(state);
       // Override the messages we already have for each path.
       const prevMessages = nextState.get(provider) || new Map();
@@ -31,17 +34,12 @@ export function messages(
       // we'd like to keep this immutable and we're also accumulating the messages, (and therefore
       // already O(n^2)). So, for now, we'll accept that and revisit if it proves to be a
       // bottleneck.
-      const nextMessages = new Map([...prevMessages, ...filePathToMessages]);
+      const nextMessages = new Map([...prevMessages, ...update]);
       nextState.set(provider, nextMessages);
       return nextState;
     }
     case Actions.INVALIDATE_MESSAGES: {
       const {provider, invalidation} = action.payload;
-
-      // We don't do anything for file messages when the project is invalidated.
-      if (invalidation.scope === 'project') {
-        return state;
-      }
 
       // If there aren't any messages for this provider, there's nothing to do.
       const filesToMessages = state.get(provider);
@@ -76,6 +74,7 @@ export function messages(
           return nextState;
         }
         default:
+          (invalidation.scope: empty);
           throw new Error(`Invalid scope: ${invalidation.scope}`);
       }
     }
@@ -119,43 +118,45 @@ export function messages(
   return state;
 }
 
-export function projectMessages(
-  state: ProjectMessagesState = new Map(),
+export function codeActionFetcher(
+  state: ?CodeActionFetcher = null,
   action: Action,
-): ProjectMessagesState {
+): ?CodeActionFetcher {
+  if (action.type === 'SET_CODE_ACTION_FETCHER') {
+    return action.payload.codeActionFetcher;
+  }
+  return state;
+}
+
+export function codeActionsForMessage(
+  state: CodeActionsState = new Map(),
+  action: Action,
+): CodeActionsState {
+  if (action.type === 'SET_CODE_ACTIONS') {
+    state.forEach(codeActions => {
+      codeActions.forEach(codeAction => codeAction.dispose());
+    });
+    return action.payload.codeActionsForMessage;
+  }
+  return state;
+}
+
+export function providers(
+  state: Set<ObservableDiagnosticProvider> = new Set(),
+  action: Action,
+): Set<ObservableDiagnosticProvider> {
   switch (action.type) {
-    case Actions.UPDATE_MESSAGES: {
-      const {provider, update} = action.payload;
-      const {projectMessages: newProjectMessages} = update;
-      if (newProjectMessages == null) {
-        return state;
-      }
-      const nextState = new Map(state);
-      nextState.set(provider, newProjectMessages);
-      return nextState;
-    }
-    case Actions.INVALIDATE_MESSAGES: {
-      const {provider, invalidation: {scope}} = action.payload;
-      if (scope !== 'project' && scope !== 'all') {
-        return state;
-      }
-
-      const messagesForProvider = state.get(provider);
-
-      // If we don't have any project messages for this provider, we don't need to do anything.
-      if (messagesForProvider == null || messagesForProvider.length === 0) {
-        return state;
-      }
-
-      const nextState = new Map(state);
-      nextState.set(provider, []);
+    case Actions.ADD_PROVIDER: {
+      const nextState = new Set(state);
+      nextState.add(action.payload.provider);
       return nextState;
     }
     case Actions.REMOVE_PROVIDER: {
-      return mapDelete(state, action.payload.provider);
+      const nextState = new Set(state);
+      nextState.delete(action.payload.provider);
+      return nextState;
     }
   }
-
   return state;
 }
 

@@ -14,7 +14,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {TaskEvent} from 'nuclide-commons/process';
 import type {Bridge} from '../types';
 
-import showModal from '../../../nuclide-ui/showModal';
+import showModal from 'nuclide-commons-ui/showModal';
 import {ATCustomDBPathModal} from './ui/ATCustomDBPathModal';
 import {Observable} from 'rxjs';
 import * as React from 'react';
@@ -40,17 +40,17 @@ export class ATConfigurePathTaskProvider implements DeviceTypeTaskProvider {
     ).switchMap(fullConfig => {
       return Observable.create(observer => {
         const disposable = showModal(
-          dismiss =>
+          dismiss => (
             <ATCustomDBPathModal
               dismiss={dismiss}
               activePath={fullConfig.active}
-              activePort={fullConfig.ports[fullConfig.ports.length - 1]}
               currentCustomPath={this._bridge.getCustomDebugBridgePath(host)}
               registeredPaths={fullConfig.all}
               setCustomPath={customPath =>
                 this._bridge.setCustomDebugBridgePath(host, customPath)}
               type={this._bridge.debugBridge}
-            />,
+            />
+          ),
           {
             className: 'nuclide-adb-sdb-custom-path-modal',
             onDismiss: () => {

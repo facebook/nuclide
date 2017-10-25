@@ -16,12 +16,14 @@ import type {
 } from '../nuclide-debugger/lib/types';
 import type {Observable} from 'rxjs';
 
+import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import * as React from 'react';
 import invariant from 'assert';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {highlightOnUpdate} from './highlightOnUpdate';
+import {STRING_REGEX} from './SimpleValueComponent';
 import {ValueComponentClassNames} from './ValueComponentClassNames';
-import {TreeList, TreeItem, NestedTreeItem} from './Tree';
+import {TreeList, TreeItem, NestedTreeItem} from 'nuclide-commons-ui/Tree';
 import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 import ignoreTextSelectionEvents from 'nuclide-commons-ui/ignoreTextSelectionEvents';
 import classnames from 'classnames';
@@ -77,7 +79,7 @@ const LoadableValueComponent = (props: LoadableValueComponentProps) => {
   }
   return (
     <span>
-      {children.map(child =>
+      {children.map(child => (
         <TreeItem key={child.name}>
           <ValueComponent
             evaluationResult={child.value}
@@ -91,8 +93,8 @@ const LoadableValueComponent = (props: LoadableValueComponentProps) => {
             getCachedChildren={getCachedChildren}
             setCachedChildren={setCachedChildren}
           />
-        </TreeItem>,
-      )}
+        </TreeItem>
+      ))}
     </span>
   );
 };
@@ -104,9 +106,7 @@ function renderValueLine(
 ): React.Element<any> {
   if (expression == null) {
     return (
-      <div className="nuclide-ui-lazy-nested-value-container">
-        {value}
-      </div>
+      <div className="nuclide-ui-lazy-nested-value-container">{value}</div>
     );
   } else {
     // TODO @jxg use a text editor to apply proper syntax highlighting for expressions (t11408154)
@@ -124,6 +124,7 @@ function renderValueLine(
 type LazyNestedValueComponentProps = {
   evaluationResult: ?EvaluationResult,
   fetchChildren: ?(objectId: string) => Observable<?ExpansionResult>,
+  setVariable?: ?(expression: ?string, newValue: ?string) => void,
   expression: ?string,
   isRoot?: boolean,
   expandedValuePaths: Map<string, NodeData>,
@@ -138,6 +139,8 @@ type LazyNestedValueComponentProps = {
 type LazyNestedValueComponentState = {
   isExpanded: boolean,
   children: ?Observable<?ExpansionResult>,
+  isBeingEdited: boolean,
+  newValueForExpression: ?string,
 };
 
 /**
@@ -155,11 +158,35 @@ class ValueComponent extends React.Component<
     this.state = {
       isExpanded: false,
       children: null,
+      isBeingEdited: false,
+      newValueForExpression: null,
     };
     (this: any)._toggleExpandFiltered = ignoreTextSelectionEvents(
       this._toggleExpand.bind(this),
     );
   }
+
+  _showSetVariableDisplay = (_: SyntheticMouseEvent<>): void => {
+    const {isRoot, setVariable} = this.props;
+    if (isRoot && setVariable) {
+      this.setState({isBeingEdited: true});
+    }
+  };
+
+  _hideSetVariableDisplay = (): void => {
+    this.setState({
+      isBeingEdited: false,
+      newValueForExpression: null,
+    });
+  };
+
+  _setVariable = (): void => {
+    const {setVariable, expression} = this.props;
+    if (setVariable) {
+      setVariable(expression, this.state.newValueForExpression);
+      this.setState({isBeingEdited: false});
+    }
+  };
 
   componentDidMount(): void {
     this.setState(this._getNextState(this.props));
@@ -199,12 +226,12 @@ class ValueComponent extends React.Component<
     props: LazyNestedValueComponentProps,
     toggleExpansion?: boolean,
   ): LazyNestedValueComponentState {
+    const {evaluationResult, expandedValuePaths, fetchChildren, path} = props;
     let isExpanded = false;
     let children = null;
     // The value of isExpanded is taken from its cached value in nodeData
     // unless it is being toggled. In that case, we toggle the current value.
     if (!toggleExpansion) {
-      const {path, expandedValuePaths} = props;
       const nodeData = expandedValuePaths.get(path);
       isExpanded = nodeData != null && nodeData.isExpanded;
     } else {
@@ -213,13 +240,60 @@ class ValueComponent extends React.Component<
     // Children are loaded if the component will be expanded
     // and other conditions (see shouldFetchChildren()) are true
     if (isExpanded && shouldFetchChildren(props)) {
-      invariant(props.fetchChildren != null);
-      invariant(props.evaluationResult != null);
-      invariant(props.evaluationResult.objectId != null);
-      children = props.fetchChildren(props.evaluationResult.objectId);
+      invariant(fetchChildren != null);
+      invariant(evaluationResult != null);
+      invariant(evaluationResult.objectId != null);
+      children = fetchChildren(evaluationResult.objectId);
     }
 
-    return {isExpanded, children};
+    return {
+      isExpanded,
+      children,
+      isBeingEdited: false,
+      newValueForExpression: null,
+    };
+  }
+
+  _getStringRepresentationForEvaluationResult(
+    evaluationResult: ?EvaluationResult,
+  ): string {
+    if (evaluationResult) {
+      if (evaluationResult.value != null) {
+        if (
+          evaluationResult.type === 'string' &&
+          !STRING_REGEX.test(evaluationResult.value)
+        ) {
+          return '"' + evaluationResult.value + '"';
+        } else {
+          return evaluationResult.value;
+        }
+      } else if (evaluationResult.description != null) {
+        return evaluationResult.description;
+      }
+    }
+    return '';
+  }
+
+  _renderEditView(): React.Element<any> {
+    return (
+      <div className="nuclide-ui-lazy-nested-value-container">
+        <AtomInput
+          className="nuclide-debugger-watch-expression-input"
+          size="sm"
+          autofocus={true}
+          startSelected={true}
+          initialValue={this._getStringRepresentationForEvaluationResult(
+            this.props.evaluationResult,
+          )}
+          onDidChange={newValueForExpression => {
+            this.setState({newValueForExpression});
+          }}
+          onConfirm={this._setVariable}
+          onCancel={this._hideSetVariableDisplay}
+          onBlur={this._hideSetVariableDisplay}
+        />
+      </div>
+    );
   }
 
   render(): React.Node {
@@ -239,19 +313,24 @@ class ValueComponent extends React.Component<
     if (evaluationResult == null) {
       return renderValueLine(expression, NOT_AVAILABLE_MESSAGE);
     }
+
     if (!isObjectValue(evaluationResult)) {
-      const simpleValueElement = (
-        <SimpleValueComponent
-          expression={expression}
-          evaluationResult={evaluationResult}
-          simpleValueComponent={SimpleValueComponent}
-        />
+      const simpleValueElement = this.state.isBeingEdited ? (
+        this._renderEditView()
+      ) : (
+        <div onDoubleClick={this._showSetVariableDisplay}>
+          <SimpleValueComponent
+            expression={expression}
+            evaluationResult={evaluationResult}
+            simpleValueComponent={SimpleValueComponent}
+          />
+        </div>
       );
-      return isRoot
-        ? simpleValueElement
-        : <TreeItem>
-            {simpleValueElement}
-          </TreeItem>;
+      return isRoot ? (
+        simpleValueElement
+      ) : (
+        <TreeItem>{simpleValueElement}</TreeItem>
+      );
     }
     const description =
       // flowlint-next-line sketchy-null-string:off
@@ -297,14 +376,19 @@ class ValueComponent extends React.Component<
         );
       }
     }
-    const title = renderValueLine(expression, description);
+    const title = this.state.isBeingEdited
+      ? this._renderEditView()
+      : renderValueLine(expression, description);
     return (
       <TreeList
         showArrows={true}
         className="nuclide-ui-lazy-nested-value-treelist">
         <NestedTreeItem
           collapsed={!this.state.isExpanded}
-          onClick={this._toggleExpandFiltered}
+          onConfirm={this._showSetVariableDisplay}
+          onSelect={
+            this.state.isBeingEdited ? () => {} : this._toggleExpandFiltered
+          }
           title={title}>
           {childListElement}
         </NestedTreeItem>
@@ -335,6 +419,7 @@ type TopLevelValueComponentProps = {
   className?: string,
   evaluationResult: ?EvaluationResult,
   fetchChildren: ?(objectId: string) => Observable<?ExpansionResult>,
+  setVariable?: ?(expression: ?string, newValue: ?string) => void,
   expression?: string,
   simpleValueComponent: React.ComponentType<any>,
   shouldCacheChildren?: boolean,
@@ -423,7 +508,6 @@ class TopLevelLazyNestedValueComponent extends React.PureComponent<
 
   render(): React.Node {
     const className = classnames(this.props.className, {
-      'native-key-bindings': true,
       // Note(vjeux): the following line should probably be `: true`
       'nuclide-ui-lazy-nested-value': this.props.className == null,
     });

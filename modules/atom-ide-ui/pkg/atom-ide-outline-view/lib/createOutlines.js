@@ -37,6 +37,7 @@ export type OutlineTreeForUi = {
 
   startPosition: atom$Point,
   endPosition?: atom$Point,
+  landingPosition?: atom$Point,
   children: Array<OutlineTreeForUi>,
   highlighted: boolean,
 };
@@ -129,7 +130,7 @@ function highlightedOutlines(
   outline: Outline,
   editor: atom$TextEditor,
 ): Observable<OutlineForUi> {
-  const nameOnly = featureConfig.get('nuclide-outline-view.nameOnly');
+  const nameOnly = featureConfig.get('atom-ide-outline-view.nameOnly');
   const outlineForUi = {
     kind: 'outline',
     outlineTrees: outline.outlineTrees.map(outlineTree =>
@@ -157,6 +158,7 @@ function treeToUiTree(
     tokenizedText: shortName ? undefined : outlineTree.tokenizedText,
     startPosition: outlineTree.startPosition,
     endPosition: outlineTree.endPosition,
+    landingPosition: outlineTree.landingPosition,
     highlighted: false,
     children: outlineTree.children.map(tree => treeToUiTree(tree, nameOnly)),
   };

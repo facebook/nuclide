@@ -11,18 +11,19 @@
 
 import * as React from 'react';
 import BreakpointStore from './BreakpointStore.js';
-import DebuggerInspector from './DebuggerInspector';
 import {DebuggerStore} from './DebuggerStore';
 import Bridge from './Bridge';
 import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
-import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
 
 type Props = {
+  // TODO Remove disable
+  /* eslint-disable react/no-unused-prop-types */
   breakpointStore: BreakpointStore,
   store: DebuggerStore,
   bridge: Bridge,
   openDevTools: () => void,
   stopDebugging: () => void,
+  /* eslint-enable react/no-unused-prop-types */
 };
 
 type State = {
@@ -75,16 +76,6 @@ export default class DebuggerControllerView extends React.Component<
   }
 
   render(): React.Node {
-    // flowlint-next-line sketchy-null-string:off
-    if (this.state.processSocket && __DEV__) {
-      return (
-        <DebuggerInspector
-          breakpointStore={this.props.breakpointStore}
-          openDevTools={this.props.openDevTools}
-          stopDebugging={this.props.stopDebugging}
-        />
-      );
-    }
     if (this.props.store.getDebuggerMode() === 'starting') {
       return (
         <div className="nuclide-debugger-starting-message">

@@ -74,10 +74,9 @@ export default class BigDigServer {
     this._logger.info(`Ignored HTTPS request for ${request.url}`);
   }
 
-  _onWebSocketConnection(ws: WS) {
+  _onWebSocketConnection(ws: WS, req: http$IncomingMessage) {
     // Note that in ws@3.0.0, the upgradeReq property of ws has been removed:
     // it is passed as the second argument to this callback instead.
-    const req = ws.upgradeReq;
     const {pathname} = url.parse(req.url);
     if (pathname !== '/v1') {
       this._logger.info(`Ignored WSS connection for ${String(pathname)}`);

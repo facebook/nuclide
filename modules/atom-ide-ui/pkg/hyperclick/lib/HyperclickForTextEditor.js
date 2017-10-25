@@ -15,10 +15,11 @@
 import type {HyperclickSuggestion} from './types';
 import type Hyperclick from './Hyperclick';
 
-import {CompositeDisposable, Disposable, Point} from 'atom';
+import {Disposable, Point} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {isPositionInRange} from 'nuclide-commons/range';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import showTriggerConflictWarning from './showTriggerConflictWarning';
 import invariant from 'assert';
 
@@ -44,7 +45,7 @@ export default class HyperclickForTextEditor {
   _onMouseDown: (event: Event) => void;
   _onKeyDown: (event: Event) => void;
   _onKeyUp: (event: Event) => void;
-  _subscriptions: atom$CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _isDestroyed: boolean;
   _isLoading: boolean;
   _triggerKeys: Set<'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'>;
@@ -65,7 +66,7 @@ export default class HyperclickForTextEditor {
     this._navigationMarkers = null;
 
     this._lastWordRange = null;
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
 
     this._onMouseMove = this._onMouseMove.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);
@@ -104,19 +105,10 @@ export default class HyperclickForTextEditor {
   }
 
   _setupMouseListeners(): void {
-    const getLinesDomNode = (): ?HTMLElement => {
-      const {component} = this._textEditorView;
-      invariant(component);
-      if (component.refs != null) {
-        return component.refs.lineTiles;
-      } else {
-        return component.linesComponent.getDomNode();
-      }
-    };
     const addMouseListeners = () => {
       const {component} = this._textEditorView;
       invariant(component);
-      const linesDomNode = getLinesDomNode();
+      const linesDomNode = component.refs.lineTiles;
       if (linesDomNode == null) {
         return;
       }
@@ -270,7 +262,6 @@ export default class HyperclickForTextEditor {
 
     if (this._lastSuggestionAtMouse != null) {
       const {range} = this._lastSuggestionAtMouse;
-      invariant(range, 'Hyperclick result must have a valid Range');
       if (isPositionInRange(position, range)) {
         return;
       }
@@ -282,7 +273,7 @@ export default class HyperclickForTextEditor {
     // we might be able to reuse it below.
     if (
       !this._lastPosition ||
-      !this._lastSuggestionAtMouse ||
+      !this._lastSuggestionAtMousePromise ||
       position.compare(this._lastPosition) !== 0
     ) {
       this._isLoading = true;
@@ -347,7 +338,6 @@ export default class HyperclickForTextEditor {
       return false;
     }
     const {range} = this._lastSuggestionAtMouse;
-    invariant(range, 'Hyperclick result must have a valid Range');
     return isPositionInRange(this._getMousePositionAsBufferPosition(), range);
   }
 

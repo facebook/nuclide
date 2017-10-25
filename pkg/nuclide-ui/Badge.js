@@ -64,9 +64,5 @@ export const Badge = (props: Props) => {
     [colorClassName]: color != null,
     [`icon icon-${maybeToString(icon)}`]: icon != null,
   });
-  return (
-    <span className={newClassName}>
-      {value}
-    </span>
-  );
+  return <span className={newClassName}>{value}</span>;
 };

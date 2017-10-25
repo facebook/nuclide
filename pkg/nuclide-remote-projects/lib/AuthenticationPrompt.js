@@ -9,7 +9,7 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {getNotificationService} from './AtomNotifications';
 
@@ -23,11 +23,11 @@ type Props = {
 export default class AuthenticationPrompt extends React.Component<Props, void> {
   props: Props;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   componentDidMount(): void {

@@ -13,7 +13,7 @@ import invariant from 'assert';
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {runCommand} from 'nuclide-commons/process';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 import {__test__} from '../lib/process/PathSetFactory';
 const {getFilesFromGit, getFilesFromHg} = __test__;

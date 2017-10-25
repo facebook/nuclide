@@ -25,40 +25,20 @@ const dummyProviderA: any = {};
 const dummyProviderB: any = {};
 
 const fileMessageA = {
-  scope: 'file',
   providerName: 'dummyProviderA',
   type: 'Error',
   filePath: 'fileA',
 };
 const fileMessageA2 = {
   // Warning instead of Error
-  scope: 'file',
   providerName: 'dummyProviderA',
   type: 'Warning',
   filePath: 'fileA',
 };
 const fileMessageB = {
-  scope: 'file',
   providerName: 'dummyProviderB',
   type: 'Error',
   filePath: 'fileB',
-};
-
-const projectMessageA = {
-  scope: 'project',
-  providerName: 'dummyProviderA',
-  type: 'Error',
-};
-const projectMessageA2 = {
-  // Warning instead of Error
-  scope: 'project',
-  providerName: 'dummyProviderA',
-  type: 'Warning',
-};
-const projectMessageB = {
-  scope: 'project',
-  providerName: 'dummyProviderB',
-  type: 'Error',
 };
 
 describe('createStore', () => {
@@ -68,8 +48,6 @@ describe('createStore', () => {
   let spy_fileA_subscription;
   let spy_fileB: any;
   let spy_fileB_subscription;
-  let spy_project: any;
-  let spy_project_subscription;
   let spy_allMessages: any;
   let spy_allMessages_subscription;
 
@@ -80,9 +58,6 @@ describe('createStore', () => {
     if (spy_fileB_subscription) {
       spy_fileB_subscription.dispose();
     }
-    if (spy_project_subscription) {
-      spy_project_subscription.dispose();
-    }
     if (spy_allMessages_subscription) {
       spy_allMessages_subscription.dispose();
     }
@@ -91,36 +66,25 @@ describe('createStore', () => {
   const setSpies = () => {
     spy_fileA = jasmine.createSpy();
     spy_fileB = jasmine.createSpy();
-    spy_project = jasmine.createSpy();
     spy_allMessages = jasmine.createSpy();
 
     spy_fileA_subscription = updater.observeFileMessages('fileA', spy_fileA);
     spy_fileB_subscription = updater.observeFileMessages('fileB', spy_fileB);
-    spy_project_subscription = updater.observeProjectMessages(spy_project);
     spy_allMessages_subscription = updater.observeMessages(spy_allMessages);
   };
 
   const addUpdateA = () => {
-    const updateA = {
-      filePathToMessages: new Map([['fileA', [fileMessageA]]]),
-      projectMessages: [projectMessageA],
-    };
+    const updateA = new Map([['fileA', [fileMessageA]]]);
     store.dispatch(Actions.updateMessages(dummyProviderA, updateA));
   };
 
   const addUpdateB = () => {
-    const updateB = {
-      filePathToMessages: new Map([['fileB', [fileMessageB]]]),
-      projectMessages: [projectMessageB],
-    };
+    const updateB = new Map([['fileB', [fileMessageB]]]);
     store.dispatch(Actions.updateMessages(dummyProviderB, updateB));
   };
 
   const addUpdateA2 = () => {
-    const updateA2 = {
-      filePathToMessages: new Map([['fileA', [fileMessageA2]]]),
-      projectMessages: [projectMessageA2],
-    };
+    const updateA2 = new Map([['fileA', [fileMessageA2]]]);
     store.dispatch(Actions.updateMessages(dummyProviderA, updateA2));
   };
 
@@ -138,12 +102,10 @@ describe('createStore', () => {
     addUpdateB();
     let state = store.getState();
     expect(state.messages.size).toBe(2);
-    expect(state.projectMessages.size).toBe(2);
 
     store.dispatch(Actions.removeProvider(dummyProviderA));
     state = store.getState();
     expect(state.messages.size).toBe(1);
-    expect(state.projectMessages.size).toBe(1);
   });
 
   it('An updates only notifies listeners for the scope(s) of the update.', () => {
@@ -151,10 +113,9 @@ describe('createStore', () => {
     setSpies();
     expect(spy_fileA.callCount).toBe(1);
     expect(spy_fileB.callCount).toBe(1);
-    expect(spy_project.callCount).toBe(1);
     expect(spy_allMessages.callCount).toBe(1);
 
-    // Test 1. Add file and project messages from one provider.
+    // Test 1. Add file messages from one provider.
     addUpdateA();
 
     // Expect all spies except spy_fileB to have been called.
@@ -164,24 +125,15 @@ describe('createStore', () => {
     expect(spy_fileA.mostRecentCall.args).toEqual([
       {filePath: 'fileA', messages: [fileMessageA]},
     ]);
-    expect(spy_project.callCount).toBe(2);
-    expect(spy_project.mostRecentCall.args).toEqual([[projectMessageA]]);
     expect(spy_allMessages.calls.length).toBe(2);
-    expect(spy_allMessages.mostRecentCall.args[0].length).toBe(2);
-    expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageA);
-    expect(spy_allMessages.mostRecentCall.args[0]).toContain(projectMessageA);
+    expect(spy_allMessages.mostRecentCall.args[0]).toEqual([fileMessageA]);
 
     // Expect the getter methods on DiagnosticStore to return correct info.
     expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual([
       fileMessageA,
     ]);
-    expect(Selectors.getProjectMessages(store.getState())).toEqual([
-      projectMessageA,
-    ]);
     const allMessages = Selectors.getMessages(store.getState());
-    expect(allMessages.length).toBe(2);
-    expect(allMessages).toContain(fileMessageA);
-    expect(allMessages).toContain(projectMessageA);
+    expect(allMessages).toEqual([fileMessageA]);
   });
 
   it(
@@ -201,15 +153,10 @@ describe('createStore', () => {
       });
       expect(spy_fileB.callCount).toBe(1);
       expect(spy_fileB).toHaveBeenCalledWith({filePath: 'fileB', messages: []});
-      expect(spy_project.calls.length).toBe(1);
-      expect(spy_project.mostRecentCall.args[0].length).toBe(1);
-      expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageA);
       expect(spy_allMessages.calls.length).toBe(1);
-      expect(spy_allMessages.mostRecentCall.args[0].length).toBe(2);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageA);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(projectMessageA);
+      expect(spy_allMessages.mostRecentCall.args[0]).toEqual([fileMessageA]);
 
-      // Test 2. Add file and project messages from a second provider.
+      // Test 2. Add file messages from a second provider.
       // They should not interfere with messages from the first provider.
       addUpdateB();
 
@@ -222,18 +169,12 @@ describe('createStore', () => {
         {filePath: 'fileB', messages: [fileMessageB]},
       ]);
 
-      // spy_project and spy_allMessages are called from data from the initial state
-      // and from updateB.
-      expect(spy_project.calls.length).toBe(2);
-      expect(spy_project.mostRecentCall.args[0].length).toBe(2);
-      expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageA);
-      expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageB);
+      // spy_allMessages is called from data from the initial state and from updateB.
       expect(spy_allMessages.calls.length).toBe(2);
-      expect(spy_allMessages.mostRecentCall.args[0].length).toBe(4);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageA);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(projectMessageA);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageB);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(projectMessageB);
+      expect(spy_allMessages.mostRecentCall.args[0]).toEqual([
+        fileMessageA,
+        fileMessageB,
+      ]);
 
       // Expect the getter methods on DiagnosticStore to return correct data.
       expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual([
@@ -242,16 +183,8 @@ describe('createStore', () => {
       expect(Selectors.getFileMessages(store.getState(), 'fileB')).toEqual([
         fileMessageB,
       ]);
-      const projectMessages = Selectors.getProjectMessages(store.getState());
-      expect(projectMessages.length).toBe(2);
-      expect(projectMessages).toContain(projectMessageA);
-      expect(projectMessages).toContain(projectMessageB);
       const allMessages = Selectors.getMessages(store.getState());
-      expect(allMessages.length).toBe(4);
-      expect(allMessages).toContain(fileMessageA);
-      expect(allMessages).toContain(projectMessageA);
-      expect(allMessages).toContain(fileMessageB);
-      expect(allMessages).toContain(projectMessageB);
+      expect(allMessages).toEqual([fileMessageA, fileMessageB]);
     },
   );
 
@@ -275,24 +208,17 @@ describe('createStore', () => {
       // spy_fileB is called with data from the initial state.
       expect(spy_fileB.calls.length).toBe(1);
 
-      // spy_fileA, spy_project, and spy_allMessages are called with data from the
+      // spy_fileA and spy_allMessages are called with data from the
       // initial state and updateA2.
       expect(spy_fileA.calls.length).toBe(2);
       expect(spy_fileA.mostRecentCall.args).toEqual([
         {filePath: 'fileA', messages: [fileMessageA2]},
       ]);
-      expect(spy_project.calls.length).toBe(2);
-      expect(spy_project.mostRecentCall.args[0].length).toBe(2);
-      expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageA2);
-      expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageB);
       expect(spy_allMessages.calls.length).toBe(2);
-      expect(spy_allMessages.mostRecentCall.args[0].length).toBe(4);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageA2);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(
-        projectMessageA2,
-      );
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageB);
-      expect(spy_allMessages.mostRecentCall.args[0]).toContain(projectMessageB);
+      expect(spy_allMessages.mostRecentCall.args[0]).toEqual([
+        fileMessageA2,
+        fileMessageB,
+      ]);
 
       // Expect the getter methods on DiagnosticStore to return the correct info.
       expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual([
@@ -301,16 +227,8 @@ describe('createStore', () => {
       expect(Selectors.getFileMessages(store.getState(), 'fileB')).toEqual([
         fileMessageB,
       ]);
-      const projectMessages = Selectors.getProjectMessages(store.getState());
-      expect(projectMessages.length).toBe(2);
-      expect(projectMessages).toContain(projectMessageA2);
-      expect(projectMessages).toContain(projectMessageB);
       const allMessages = Selectors.getMessages(store.getState());
-      expect(allMessages.length).toBe(4);
-      expect(allMessages).toContain(fileMessageA2);
-      expect(allMessages).toContain(projectMessageA2);
-      expect(allMessages).toContain(fileMessageB);
-      expect(allMessages).toContain(projectMessageB);
+      expect(allMessages).toEqual([fileMessageA2, fileMessageB]);
     },
   );
 
@@ -336,24 +254,15 @@ describe('createStore', () => {
         // Expect spy_fileA and spy_allMessages to have been called from the
         // invalidation message.
         // File messages from ProviderA should be gone, but no other changes.
-        // At this point, there should be ProviderA project messages, and ProviderB
-        // file and project messages.
+        // At this point, there should only be ProviderB file messages.
         expect(spy_fileB.calls.length).toBe(1);
-        expect(spy_project.calls.length).toBe(1);
 
         expect(spy_fileA.calls.length).toBe(2);
         expect(spy_fileA.mostRecentCall.args).toEqual([
           {filePath: 'fileA', messages: []},
         ]);
         expect(spy_allMessages.calls.length).toBe(2);
-        expect(spy_allMessages.mostRecentCall.args[0].length).toBe(3);
-        expect(spy_allMessages.mostRecentCall.args[0]).toContain(
-          projectMessageA2,
-        );
-        expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageB);
-        expect(spy_allMessages.mostRecentCall.args[0]).toContain(
-          projectMessageB,
-        );
+        expect(spy_allMessages.mostRecentCall.args[0]).toEqual([fileMessageB]);
 
         // Expect the getter methods on DiagnosticStore to return the correct info.
         expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual(
@@ -362,78 +271,8 @@ describe('createStore', () => {
         expect(Selectors.getFileMessages(store.getState(), 'fileB')).toEqual([
           fileMessageB,
         ]);
-        const projectMessages = Selectors.getProjectMessages(store.getState());
-        expect(projectMessages.length).toBe(2);
-        expect(projectMessages).toContain(projectMessageA2);
-        expect(projectMessages).toContain(projectMessageB);
         const allMessages = Selectors.getMessages(store.getState());
-        expect(allMessages.length).toBe(3);
-        expect(allMessages).toContain(projectMessageA2);
-        expect(allMessages).toContain(fileMessageB);
-        expect(allMessages).toContain(projectMessageB);
-      },
-    );
-
-    it(
-      'if specifying project scope, it should only invalidate project-scope messages from that' +
-        ' provider.',
-      () => {
-        // Set up the state of the store.
-        addUpdateB();
-        addUpdateA2();
-        const fileInvalidationMessage = {scope: 'file', filePaths: ['fileA']};
-        store.dispatch(
-          Actions.invalidateMessages(dummyProviderA, fileInvalidationMessage),
-        );
-
-        // Register spies. All spies expect spy_fileA should be called immediately
-        // because there is relevant data in the store.
-        setSpies();
-
-        // Test 4B. Invalidate project messages from ProviderA.
-        const projectInvalidationMessage = {scope: 'project'};
-        store.dispatch(
-          Actions.invalidateMessages(
-            dummyProviderA,
-            projectInvalidationMessage,
-          ),
-        );
-
-        // Expect spy_project and spy_allMessages to have been called from the
-        // invalidation message.
-        // At this point, there should be no ProviderA messages, and ProviderB file
-        // and project messages.
-        expect(spy_fileA.callCount).toBe(1);
-        expect(spy_fileA).toHaveBeenCalledWith({
-          filePath: 'fileA',
-          messages: [],
-        });
-        expect(spy_fileB.callCount).toBe(1);
-
-        expect(spy_project.calls.length).toBe(2);
-        expect(spy_project.mostRecentCall.args[0].length).toBe(1);
-        expect(spy_project.mostRecentCall.args[0]).toContain(projectMessageB);
-        expect(spy_allMessages.calls.length).toBe(2);
-        expect(spy_allMessages.mostRecentCall.args[0].length).toBe(2);
-        expect(spy_allMessages.mostRecentCall.args[0]).toContain(fileMessageB);
-        expect(spy_allMessages.mostRecentCall.args[0]).toContain(
-          projectMessageB,
-        );
-
-        // Expect the getter methods on DiagnosticStore to return the correct info.
-        expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual(
-          [],
-        );
-        expect(Selectors.getFileMessages(store.getState(), 'fileB')).toEqual([
-          fileMessageB,
-        ]);
-        const projectMessages = Selectors.getProjectMessages(store.getState());
-        expect(projectMessages.length).toBe(1);
-        expect(projectMessages).toContain(projectMessageB);
-        const allMessages = Selectors.getMessages(store.getState());
-        expect(allMessages.length).toBe(2);
-        expect(allMessages).toContain(fileMessageB);
-        expect(allMessages).toContain(projectMessageB);
+        expect(allMessages).toEqual([fileMessageB]);
       },
     );
   });
@@ -447,15 +286,12 @@ describe('createStore', () => {
     setSpies();
     expect(spy_fileA.callCount).toBe(1);
     expect(spy_fileB.callCount).toBe(1);
-    expect(spy_project.callCount).toBe(1);
     expect(spy_allMessages.callCount).toBe(1);
 
     // Test 5. Remove listeners, then invalidate all messages from ProviderB.
     // We don't need to remove spy_fileA_subscription -- it shouldn't be called anyway.
     invariant(spy_fileB_subscription);
     spy_fileB_subscription.dispose();
-    invariant(spy_project_subscription);
-    spy_project_subscription.dispose();
     invariant(spy_allMessages_subscription);
     spy_allMessages_subscription.dispose();
 
@@ -468,19 +304,16 @@ describe('createStore', () => {
     // There should have been no additional calls on the spies.
     expect(spy_fileA.callCount).toBe(1);
     expect(spy_fileB.callCount).toBe(1);
-    expect(spy_project.callCount).toBe(1);
     expect(spy_allMessages.callCount).toBe(1);
 
     // Expect the getter methods on DiagnosticStore to return the correct info.
     expect(Selectors.getFileMessages(store.getState(), 'fileA')).toEqual([]);
     expect(Selectors.getFileMessages(store.getState(), 'fileB')).toEqual([]);
-    expect(Selectors.getProjectMessages(store.getState()).length).toBe(0);
     expect(Selectors.getMessages(store.getState()).length).toBe(0);
   });
 
   describe('autofix', () => {
     const messageWithAutofix = {
-      scope: 'file',
       providerName: 'dummyProviderA',
       type: 'Error',
       filePath: '/tmp/fileA',
@@ -497,10 +330,10 @@ describe('createStore', () => {
         editor = await atom.workspace.open('/tmp/fileA');
         editor.setText('foobar\n');
         store.dispatch(
-          Actions.updateMessages(dummyProviderA, {
-            filePathToMessages: new Map([['/tmp/fileA', [messageWithAutofix]]]),
-            projectMessages: [],
-          }),
+          Actions.updateMessages(
+            dummyProviderA,
+            new Map([['/tmp/fileA', [messageWithAutofix]]]),
+          ),
         );
       });
     });

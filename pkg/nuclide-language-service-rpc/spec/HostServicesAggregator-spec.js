@@ -26,6 +26,8 @@ describe('HostServicesAggregator', () => {
       'consoleNotification',
       'dialogNotification',
       'dialogRequest',
+      'showProgress',
+      'syncProgress',
       'dispose',
       'childRegister',
     ]);
@@ -33,6 +35,8 @@ describe('HostServicesAggregator', () => {
       'consoleNotification',
       'dialogNotification',
       'dialogRequest',
+      'showProgress',
+      'syncProgress',
       'dispose',
       'childRegister',
     ]);
@@ -178,6 +182,73 @@ describe('HostServicesAggregator', () => {
       expect(aggregator.dispose.callCount).toEqual(1);
       expect(hostRelay.dispose.callCount).toEqual(1);
       expect(host.dispose.callCount).toEqual(0);
+    });
+  });
+
+  it('relays progress to parent', () => {
+    waitsForPromise(async () => {
+      const wrapper1 = jasmine.createSpyObj('w1', ['setTitle', 'dispose']);
+      const wrapper2 = jasmine.createSpyObj('w2', ['setTitle', 'dispose']);
+      const wrappers = [wrapper1, wrapper2];
+      hostRelayObj.showProgress = jasmine
+        .createSpy('showProgress')
+        .andCallFake(() => wrappers.shift());
+      const child = await forkHostServices(host, logger);
+
+      const p1 = await child.showProgress('ping1');
+      p1.setTitle('a');
+      expect(wrapper1.setTitle.mostRecentCall.args[0]).toEqual('a');
+      expect(hostRelay.syncProgress.callCount).toEqual(1);
+      const syncB = [...hostRelay.syncProgress.mostRecentCall.args[0]];
+      expect(syncB.length).toEqual(1);
+      syncB[0].setTitle('b');
+      expect(wrapper1.setTitle.mostRecentCall.args[0]).toEqual('b');
+
+      const p2 = await child.showProgress('ping2');
+      p2.setTitle('c');
+      expect(wrapper2.setTitle.mostRecentCall.args[0]).toEqual('c');
+      expect(hostRelay.syncProgress.callCount).toEqual(2);
+      const syncD = [...hostRelay.syncProgress.mostRecentCall.args[0]];
+      expect(syncD.length).toEqual(2);
+      syncD[0].setTitle('d');
+      syncD[1].setTitle('d');
+      expect(wrapper1.setTitle.mostRecentCall.args[0]).toEqual('d');
+      expect(wrapper2.setTitle.mostRecentCall.args[0]).toEqual('d');
+
+      expect(wrapper2.dispose.callCount).toEqual(0);
+      p2.dispose();
+      expect(wrapper2.dispose.callCount).toEqual(1);
+      expect(hostRelay.syncProgress.callCount).toEqual(3);
+      const syncE = [...hostRelay.syncProgress.mostRecentCall.args[0]];
+      expect(syncE.length).toEqual(1);
+      syncE[0].setTitle('e');
+      expect(wrapper1.setTitle.mostRecentCall.args[0]).toEqual('e');
+      expect(wrapper2.setTitle.mostRecentCall.args[0]).toEqual('d');
+
+      expect(wrapper1.dispose.callCount).toEqual(0);
+      p1.dispose();
+      expect(wrapper1.dispose.callCount).toEqual(1);
+      expect(hostRelay.syncProgress.callCount).toEqual(4);
+      const syncF = [...hostRelay.syncProgress.mostRecentCall.args[0]];
+      expect(syncF.length).toEqual(0);
+    });
+  });
+
+  it('disposes progress cleanly', () => {
+    waitsForPromise(async () => {
+      const wrapper = jasmine.createSpyObj('wrapper', ['setTitle', 'dispose']);
+      hostRelayObj.showProgress = jasmine
+        .createSpy('showProgress')
+        .andReturn(wrapper);
+
+      const child = await forkHostServices(host, logger);
+      const p = await child.showProgress('ping');
+      child.dispose();
+      expect(wrapper.dispose.callCount).toEqual(1);
+      p.setTitle('a');
+      expect(wrapper.setTitle.callCount).toEqual(0);
+      p.dispose();
+      expect(wrapper.dispose.callCount).toEqual(1);
     });
   });
 

@@ -86,9 +86,7 @@ function SVGButton(props: {
       onClick={props.onClick}
       disabled={props.disabled}
       tooltip={props.tooltip}>
-      <div>
-        {props.icon}
-      </div>
+      <div>{props.icon}</div>
     </Button>
   );
 }
@@ -180,44 +178,44 @@ export class DebuggerSteppingComponent extends React.Component<
     const isPaused = debuggerMode === DebuggerMode.PAUSED;
     const isStopped = debuggerMode === DebuggerMode.STOPPED;
     const isPausing = debuggerMode === DebuggerMode.RUNNING && waitingForPause;
-    const playPauseIcon = isPausing
-      ? null
-      : <span
-          className={isPaused ? 'icon-playback-play' : 'icon-playback-pause'}
-        />;
+    const playPauseIcon = isPausing ? null : (
+      <span
+        className={isPaused ? 'icon-playback-play' : 'icon-playback-pause'}
+      />
+    );
 
-    const loadingIndicator = !isPausing
-      ? null
-      : <LoadingSpinner
-          className="nuclide-debugger-stepping-playpause-button-loading"
-          size={LoadingSpinnerSizes.EXTRA_SMALL}
-        />;
+    const loadingIndicator = !isPausing ? null : (
+      <LoadingSpinner
+        className="nuclide-debugger-stepping-playpause-button-loading"
+        size={LoadingSpinnerSizes.EXTRA_SMALL}
+      />
+    );
 
     // "Set Source Paths" is only available if the current debugger provides
     // this functionality.
-    const setSourcePathsButton = !this.props.debuggerStore.getCanSetSourcePaths()
-      ? null
-      : <Button
-          className="nuclide-debugger-set-source-path-button"
-          icon="file-code"
-          title="Configure source file paths"
-          onClick={() => actions.configureSourcePaths()}
-        />;
+    const setSourcePathsButton = !this.props.debuggerStore.getCanSetSourcePaths() ? null : (
+      <Button
+        className="nuclide-debugger-set-source-path-button"
+        icon="file-code"
+        title="Configure source file paths"
+        onClick={() => actions.configureSourcePaths()}
+      />
+    );
 
-    const restartDebuggerButton = !this.props.debuggerStore.getCanRestartDebugger()
-      ? null
-      : <Button
-          icon="sync"
-          className="nuclide-debugger-stepping-button-separated"
-          disabled={isStopped}
-          tooltip={{
-            ...defaultTooltipOptions,
-            title:
-              'Restart the debugger using the same settings as the current debug session',
-            keyBindingCommand: 'nuclide-debugger:restart-debugging',
-          }}
-          onClick={() => actions.restartDebugger()}
-        />;
+    const restartDebuggerButton = !this.props.debuggerStore.getCanRestartDebugger() ? null : (
+      <Button
+        icon="sync"
+        className="nuclide-debugger-stepping-button-separated"
+        disabled={isStopped}
+        tooltip={{
+          ...defaultTooltipOptions,
+          title:
+            'Restart the debugger using the same settings as the current debug session',
+          keyBindingCommand: 'nuclide-debugger:restart-debugging',
+        }}
+        onClick={() => actions.restartDebugger()}
+      />
+    );
 
     const DebuggerStepButton = (props: {
       icon: React.Element<any>,
@@ -225,7 +223,7 @@ export class DebuggerSteppingComponent extends React.Component<
       keyBindingCommand: string,
       disabled: boolean,
       action: string,
-    }) =>
+    }) => (
       <SVGButton
         icon={props.icon}
         disabled={props.disabled}
@@ -235,7 +233,8 @@ export class DebuggerSteppingComponent extends React.Component<
           keyBindingCommand: props.keyBindingCommand,
         }}
         onClick={actions.triggerDebuggerAction.bind(actions, props.action)}
-      />;
+      />
+    );
 
     return (
       <div className="nuclide-debugger-stepping-component">
@@ -292,9 +291,15 @@ export class DebuggerSteppingComponent extends React.Component<
           {setSourcePathsButton}
         </ButtonGroup>
         <ButtonGroup className="nuclide-debugger-stepping-buttongroup">
-          {customControlButtons.map((specification, i) =>
-            <Button {...specification} key={i} />,
-          )}
+          {customControlButtons.map((specification, i) => {
+            const buttonProps = {
+              ...specification,
+              tooltip: {
+                title: specification.title,
+              },
+            };
+            return <Button {...buttonProps} key={i} />;
+          })}
         </ButtonGroup>
         <Checkbox
           className="nuclide-debugger-exception-checkbox"
@@ -326,16 +331,16 @@ export class DebuggerSteppingComponent extends React.Component<
               </span>,
             ]
           : null}
-        {allowSingleThreadStepping
-          ? <Checkbox
-              disabled={isStopped || isReadonlyTarget}
-              className="nuclide-debugger-exception-checkbox"
-              onChange={() =>
-                actions.toggleSingleThreadStepping(!enableSingleThreadStepping)}
-              checked={enableSingleThreadStepping}
-              label={'Single Thread Stepping'}
-            />
-          : null}
+        {allowSingleThreadStepping ? (
+          <Checkbox
+            disabled={isStopped || isReadonlyTarget}
+            className="nuclide-debugger-exception-checkbox"
+            onChange={() =>
+              actions.toggleSingleThreadStepping(!enableSingleThreadStepping)}
+            checked={enableSingleThreadStepping}
+            label={'Single Thread Stepping'}
+          />
+        ) : null}
       </div>
     );
   }

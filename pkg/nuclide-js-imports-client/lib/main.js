@@ -47,7 +47,7 @@ async function connectToJSImportsService(
   return jsService.initializeLsp(
     ['.flowconfig'],
     ['.js'],
-    'INFO',
+    (featureConfig.get('nuclide-js-imports-client.logLevel'): any),
     fileNotifier,
     host,
     getAutoImportSettings(),
@@ -77,6 +77,7 @@ async function createLanguageService(): Promise<
     version: '0.1.0',
     priority: 0,
     analyticsEventName: 'jsimports.codeAction',
+    applyAnalyticsEventName: 'jsimports.applyCodeAction',
   };
 
   const atomConfig: AtomLanguageServiceConfig = {
@@ -99,8 +100,8 @@ function getAutoImportSettings() {
     diagnosticsWhitelist: featureConfig.get(
       'nuclide-js-imports-client.diagnosticsWhitelist',
     ),
-    autocompleteWhitelist: featureConfig.get(
-      'nuclide-js-imports-client.autocompleteWhitelist',
+    requiresWhitelist: featureConfig.get(
+      'nuclide-js-imports-client.requiresWhitelist',
     ),
   };
 }

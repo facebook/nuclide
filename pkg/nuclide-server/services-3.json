@@ -4,10 +4,6 @@
     "name": "AdbService"
   },
   {
-    "implementation": "../nuclide-arcanist-rpc/lib/ArcanistService.js",
-    "name": "ArcanistService"
-  },
-  {
     "implementation": "../nuclide-buck-rpc/lib/BuckService.js",
     "name": "BuckService"
   },
@@ -52,6 +48,10 @@
     "name": "GrepService"
   },
   {
+    "implementation": "../nuclide-generated-files-rpc/lib/GeneratedFileService.js",
+    "name": "GeneratedFileService"
+  },
+  {
     "implementation": "../nuclide-hack-rpc/lib/HackService.js",
     "name": "HackService"
   },
@@ -83,6 +83,10 @@
   {
     "implementation": "../nuclide-debugger-php-rpc/lib/PhpDebuggerService.js",
     "name": "PhpDebuggerService"
+  },
+  {
+    "implementation": "../nuclide-pty-rpc/lib/PtyService.js",
+    "name": "PtyService"
   },
   {
     "implementation": "../nuclide-python-rpc/lib/PythonService.js",

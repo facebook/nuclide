@@ -13,12 +13,13 @@ import type {
   Expression,
   EvaluatedExpression,
   EvaluatedExpressionList,
+  SerializedWatchExpression,
 } from './types';
 import type {WatchExpressionStore} from './WatchExpressionStore';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {Observable} from 'rxjs';
 
-import {Disposable, CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {BehaviorSubject} from 'rxjs';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
@@ -34,15 +35,27 @@ export class WatchExpressionListStore {
   constructor(
     watchExpressionStore: WatchExpressionStore,
     dispatcher: DebuggerDispatcher,
+    initialWatchExpressions: ?Array<SerializedWatchExpression>,
   ) {
     this._watchExpressionStore = watchExpressionStore;
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._watchExpressions = new BehaviorSubject([]);
+    if (initialWatchExpressions) {
+      this._deserializeWatchExpressions(initialWatchExpressions);
+    }
+  }
+
+  _deserializeWatchExpressions(
+    watchExpressions: Array<SerializedWatchExpression>,
+  ): void {
+    this._watchExpressions.next(
+      watchExpressions.map(expression =>
+        this._getExpressionEvaluationFor(expression),
+      ),
+    );
   }
 
   _handlePayload(payload: DebuggerAction) {
@@ -80,7 +93,16 @@ export class WatchExpressionListStore {
     return this._watchExpressions.asObservable();
   }
 
+  getSerializedWatchExpressions(): Array<SerializedWatchExpression> {
+    return this._watchExpressions
+      .getValue()
+      .map(evaluatedExpression => evaluatedExpression.expression);
+  }
+
   _addWatchExpression(expression: Expression): void {
+    if (expression === '') {
+      return;
+    }
     this._watchExpressions.next([
       ...this._watchExpressions.getValue(),
       this._getExpressionEvaluationFor(expression),
@@ -94,6 +116,9 @@ export class WatchExpressionListStore {
   }
 
   _updateWatchExpression(index: number, newExpression: Expression): void {
+    if (newExpression === '') {
+      return this._removeWatchExpression(index);
+    }
     const watchExpressions = this._watchExpressions.getValue().slice();
     watchExpressions[index] = this._getExpressionEvaluationFor(newExpression);
     this._watchExpressions.next(watchExpressions);

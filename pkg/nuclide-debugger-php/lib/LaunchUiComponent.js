@@ -23,27 +23,29 @@ import {
   serializeDebuggerConfig,
   deserializeDebuggerConfig,
 } from '../../nuclide-debugger-base';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 const MAX_RECENTLY_LAUNCHED = 5;
 
-type PropsType = {
+type Props = {
   targetUri: NuclideUri,
   configIsValidChanged: (valid: boolean) => void,
 };
 
-type StateType = {
+type State = {
   recentlyLaunchedScripts: Array<{label: string, value: string}>,
   recentlyLaunchedScript: ?string,
+  runInTerminal: boolean,
 };
 
-export class LaunchUiComponent extends React.Component<PropsType, StateType> {
-  props: PropsType;
-  state: StateType;
+export class LaunchUiComponent extends React.Component<Props, State> {
+  props: Props;
+  state: State;
   _disposables: UniversalDisposable;
 
-  constructor(props: PropsType) {
+  constructor(props: Props) {
     super(props);
     this._disposables = new UniversalDisposable();
     this.state = {
@@ -51,6 +53,7 @@ export class LaunchUiComponent extends React.Component<PropsType, StateType> {
       pathMenuItems: this._getPathMenuItems(),
       recentlyLaunchedScripts: this._getRecentlyLaunchedScripts(),
       recentlyLaunchedScript: null,
+      runInTerminal: false,
     };
   }
 
@@ -123,6 +126,13 @@ export class LaunchUiComponent extends React.Component<PropsType, StateType> {
           initialValue={this._getActiveFilePath()}
           value={this.state.recentlyLaunchedScript || ''}
           onDidChange={value => this.setState({recentlyLaunchedScript: value})}
+        />
+        <Checkbox
+          checked={this.state.runInTerminal}
+          label="Run in Terminal"
+          ref="runInTerminal"
+          onChange={checked => this.setState({runInTerminal: checked})}
+          title="When checked, the target script's STDIN and STDOUT will be redirected to a new Nuclide Terminal pane"
         />
       </div>
     );
@@ -198,7 +208,12 @@ export class LaunchUiComponent extends React.Component<PropsType, StateType> {
       this.state.recentlyLaunchedScripts,
     );
 
-    const processInfo = new LaunchProcessInfo(this.props.targetUri, scriptPath);
+    const processInfo = new LaunchProcessInfo(
+      this.props.targetUri,
+      scriptPath,
+      null,
+      this.state.runInTerminal,
+    );
     consumeFirstProvider('nuclide-debugger.remote').then(debuggerService =>
       debuggerService.startDebugging(processInfo),
     );

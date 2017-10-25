@@ -29,6 +29,7 @@ export default class BatchProcessedQueue<T> {
 
   add(item: T): void {
     this._items.push(item);
+    // eslint-disable-next-line eqeqeq
     if (this._timeoutId === null) {
       this._timeoutId = setTimeout(() => {
         this._handleBatch();
@@ -44,6 +45,7 @@ export default class BatchProcessedQueue<T> {
   }
 
   dispose(): void {
+    // eslint-disable-next-line eqeqeq
     if (this._timeoutId !== null) {
       clearTimeout(this._timeoutId);
       this._handleBatch();

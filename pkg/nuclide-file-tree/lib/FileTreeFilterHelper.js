@@ -46,20 +46,12 @@ export function filterName(
         if (matchesFilter(text, filter)) {
           return (
             <span key={filter + i}>
-              <span className={classes}>
-                {text.substr(0, filter.length)}
-              </span>
-              <span>
-                {text.substr(filter.length)}
-              </span>
+              <span className={classes}>{text.substr(0, filter.length)}</span>
+              <span>{text.substr(filter.length)}</span>
             </span>
           );
         }
-        return (
-          <span key={filter + i}>
-            {text}
-          </span>
-        );
+        return <span key={filter + i}>{text}</span>;
       });
   }
   return name;

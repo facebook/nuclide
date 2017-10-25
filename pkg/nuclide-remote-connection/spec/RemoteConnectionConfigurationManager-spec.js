@@ -12,7 +12,7 @@
 const {
   encryptString,
   decryptString,
-  // eslint-disable-next-line nuclide-internal/no-commonjs
+  // eslint-disable-next-line rulesdir/no-commonjs
 } = require('../lib/RemoteConnectionConfigurationManager').__test__;
 
 describe('RemoteConnectionConfigurationManager', () => {

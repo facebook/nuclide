@@ -30,10 +30,6 @@ export default class FileTreeSidebarFilterComponent extends React.Component<
     });
     const text = `search for: ${filter}`;
 
-    return (
-      <div className={classes}>
-        {text}
-      </div>
-    );
+    return <div className={classes}>{text}</div>;
   }
 }

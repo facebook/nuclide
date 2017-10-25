@@ -29,9 +29,7 @@ export function TaskRunnerButton(props: Props): React.Element<any> {
   delete buttonProps.iconComponent;
   return (
     <Button {...buttonProps} className="nuclide-task-runner-task-runner-button">
-      <div className="nuclide-task-runner-task-runner-icon-wrapper">
-        {icon}
-      </div>
+      <div className="nuclide-task-runner-task-runner-icon-wrapper">{icon}</div>
       {props.children}
     </Button>
   );

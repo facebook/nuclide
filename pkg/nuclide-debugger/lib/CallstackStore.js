@@ -11,9 +11,10 @@
 
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {Callstack} from './types';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {DebuggerStore} from './DebuggerStore';
 
-import {Disposable, CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ActionTypes} from './DebuggerDispatcher';
 import debounce from 'nuclide-commons/debounce';
@@ -28,11 +29,9 @@ export default class CallstackStore {
 
   constructor(dispatcher: DebuggerDispatcher, debuggerStore: DebuggerStore) {
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._debuggerStore = debuggerStore;
     this._callstack = null;
     this._selectedCallFrameIndex = 0;
@@ -97,7 +96,7 @@ export default class CallstackStore {
   }
 
   _openPathInEditor(path: string): Promise<atom$TextEditor> {
-    // eslint-disable-next-line nuclide-internal/atom-apis
+    // eslint-disable-next-line rulesdir/atom-apis
     return atom.workspace.open(path, {
       searchAllPanes: true,
       pending: true,

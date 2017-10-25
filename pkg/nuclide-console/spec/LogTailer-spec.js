@@ -95,7 +95,7 @@ describe('LogTailer', () => {
     expect(atom.notifications.addError).toHaveBeenCalled();
   });
 
-  it('invokes the running callback with a cancelation error when stopped before ready', () => {
+  it('invokes the running callback with a cancellation error when stopped before ready', () => {
     const logTailer = new LogTailer({
       name: 'test',
       messages: Observable.never(),

@@ -27,7 +27,13 @@ export function getSimulatorPlatform(
   ) => Observable<BuckEvent>,
 ): Observable<Platform> {
   return fbsimctl.getDevices().map(devices => {
-    const simulators = devices.filter(device => device.type === 'simulator');
+    let simulators;
+    if (devices instanceof Error) {
+      // TODO: Come up with a way to surface the error in UI
+      simulators = [];
+    } else {
+      simulators = devices.filter(device => device.type === 'simulator');
+    }
     let deviceGroups;
     if (simulators.length === 0) {
       deviceGroups = NO_SIMULATORS_FOUND_GROUPS;
@@ -90,21 +96,24 @@ export function getDevicePlatform(
   ) => Observable<BuckEvent>,
 ): Observable<Platform> {
   return fbsimctl.getDevices().map(devices => {
-    const physicalDevices = devices.filter(
-      device => device.type === 'physical_device',
-    );
     const deviceGroups = [];
 
-    if (physicalDevices.length > 0) {
-      deviceGroups.push({
-        name: 'Connected',
-        devices: physicalDevices.map(device => ({
-          name: device.name,
-          udid: device.udid,
-          arch: device.arch,
-          type: 'device',
-        })),
-      });
+    if (devices instanceof Array) {
+      const physicalDevices = devices.filter(
+        device => device.type === 'physical_device',
+      );
+
+      if (physicalDevices.length > 0) {
+        deviceGroups.push({
+          name: 'Connected',
+          devices: physicalDevices.map(device => ({
+            name: device.name,
+            udid: device.udid,
+            arch: device.arch,
+            type: 'device',
+          })),
+        });
+      }
     }
 
     deviceGroups.push(BUILD_ONLY_DEVICES_GROUP);

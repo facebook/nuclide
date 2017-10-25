@@ -115,40 +115,46 @@ export class DefinitionPreviewView extends React.Component<
     const atMinHeight =
       this.state.editorHeight - EDITOR_HEIGHT_DELTA < MINIMUM_EDITOR_HEIGHT;
     // Show either a "No definition" message or the definition in an editors
-    return definition == null
-      ? <ContextViewMessage message={ContextViewMessage.NO_DEFINITION} />
-      : <div className="pane-item nuclide-definition-preview">
-          <div
-            className="nuclide-definition-preview-editor"
-            style={{height: `${this.state.editorHeight}em`}}>
-            <AtomTextEditor
-              ref="editor"
-              gutterHidden={true}
-              lineNumberGutterVisible={false}
-              path={definition.path}
-              // Should be readonly, but can't because we can only make buffers readonly,
-              // We can't do readonly on editor granularity.
-              readOnly={false}
-              textBuffer={this.state.buffer}
-              syncTextContents={false}
-            />
-            <ButtonContainer
-              _openCurrentDefinitionInMainEditor={
-                this._openCurrentDefinitionInMainEditor
-              }
-              _increaseEditorHeight={this._increaseEditorHeight}
-              _decreaseEditorHeight={this._decreaseEditorHeight}
-              atMinHeight={atMinHeight}
-            />
-          </div>
-        </div>;
+    return definition == null ? (
+      <ContextViewMessage message={ContextViewMessage.NO_DEFINITION} />
+    ) : (
+      <div className="pane-item nuclide-definition-preview">
+        <div
+          className="nuclide-definition-preview-editor"
+          style={{height: `${this.state.editorHeight}em`}}>
+          <AtomTextEditor
+            ref="editor"
+            gutterHidden={true}
+            lineNumberGutterVisible={false}
+            path={definition.path}
+            // Should be readonly, but can't because we can only make buffers readonly,
+            // We can't do readonly on editor granularity.
+            readOnly={false}
+            textBuffer={this.state.buffer}
+            syncTextContents={false}
+          />
+          <ButtonContainer
+            _openCurrentDefinitionInMainEditor={
+              this._openCurrentDefinitionInMainEditor
+            }
+            _increaseEditorHeight={this._increaseEditorHeight}
+            _decreaseEditorHeight={this._decreaseEditorHeight}
+            atMinHeight={atMinHeight}
+          />
+        </div>
+      </div>
+    );
   }
 
   _openCurrentDefinitionInMainEditor = (): void => {
     analytics.track('nuclide-definition-preview:openInMainEditor');
     const def = this.props.definition;
     if (def != null) {
-      goToLocation(def.path, def.position.row, def.position.column, true);
+      goToLocation(def.path, {
+        line: def.position.row,
+        column: def.position.column,
+        center: true,
+      });
     }
   };
 

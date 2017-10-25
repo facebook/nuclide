@@ -14,7 +14,7 @@ import * as React from 'react';
 
 type Props = {
   title: string,
-  message: string,
+  message: React$Node,
 };
 
 export class EmptyState extends React.Component<Props> {
@@ -22,9 +22,7 @@ export class EmptyState extends React.Component<Props> {
     return (
       <div className="nuclide-ui-empty-state-container">
         <div className="nuclide-ui-empty-state-message">
-          <h1>
-            {this.props.title}
-          </h1>
+          <h1>{this.props.title}</h1>
           {this.props.message}
         </div>
       </div>

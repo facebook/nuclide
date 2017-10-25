@@ -46,7 +46,7 @@ export class OutlineViewPanelState {
   }
 
   getTitle() {
-    return 'Outline View';
+    return 'Outline';
   }
 
   getIconName() {
@@ -73,7 +73,12 @@ export class OutlineViewPanelState {
     const outlines = this._visibility.switchMap(
       visible => (visible ? this._outlines : Observable.of({kind: 'empty'})),
     );
-    return renderReactRoot(<OutlineView outlines={outlines} />);
+    return renderReactRoot(
+      <OutlineView
+        outlines={outlines}
+        visibility={this._visibility.distinctUntilChanged()}
+      />,
+    );
   }
 
   serialize(): SerializedOutlineViewPanelState {

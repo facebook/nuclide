@@ -15,6 +15,7 @@ import type {CodeHighlightProvider} from './types';
 import {getLogger} from 'log4js';
 import {Observable} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {fastDebounce} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import {observeActiveEditorsDebounced} from 'nuclide-commons-atom/debounced';
@@ -62,15 +63,12 @@ export default class CodeHighlightManager {
           Observable.merge(changeCursorEvents, changeEvents)
             // Destroy old markers immediately - never show stale results.
             .do(() => this._destroyMarkers())
-            .switchMap(position => {
-              return Observable.timer(
-                HIGHLIGHT_DELAY_MS,
-              ).switchMap(async () => {
-                return {
-                  editor,
-                  ranges: await this._getHighlightedRanges(editor, position),
-                };
-              });
+            .let(fastDebounce(HIGHLIGHT_DELAY_MS))
+            .switchMap(async position => {
+              return {
+                editor,
+                ranges: await this._getHighlightedRanges(editor, position),
+              };
             })
             .takeUntil(destroyEvents)
         );
@@ -105,7 +103,7 @@ export default class CodeHighlightManager {
     this._markers.forEach(marker => {
       editor.decorateMarker(marker, {
         type: 'highlight',
-        class: 'atom-ide-code-highlight-marker',
+        class: 'code-highlight-marker',
       });
     });
   }

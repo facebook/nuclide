@@ -58,6 +58,7 @@ export default class BuckToolbar extends React.Component<Props, State> {
       buildRuleType,
       buildTarget,
       buckRoot,
+      buckversionFileContents,
       isLoadingRule,
       isLoadingPlatforms,
       platformGroups,
@@ -77,7 +78,6 @@ export default class BuckToolbar extends React.Component<Props, State> {
         ? 'Loading target build rule...'
         : 'Loading available platforms...';
       status = (
-        // $FlowFixMe(>=0.53.0) Flow suppress
         <div ref={addTooltip({title, delay: 0})}>
           <LoadingSpinner
             className="inline-block buck-spinner"
@@ -89,8 +89,7 @@ export default class BuckToolbar extends React.Component<Props, State> {
       status = (
         <span
           className="icon icon-alert"
-          ref={// $FlowFixMe(v>=0.53.0)
-          addTooltip({
+          ref={addTooltip({
             title:
               `'${buildTarget}' could not be found in ${buckRoot}.<br />` +
               'Check your Current Working Root or click to retry',
@@ -143,15 +142,16 @@ export default class BuckToolbar extends React.Component<Props, State> {
           onClick={() => this._showSettings()}
         />
         {widgets}
-        {this.state.settingsVisible
-          ? <BuckToolbarSettings
-              buckRoot={buckRoot}
-              settings={taskSettings}
-              platformProviderSettings={extraSettings}
-              onDismiss={() => this._hideSettings()}
-              onSave={settings => this._saveSettings(settings)}
-            />
-          : null}
+        {this.state.settingsVisible ? (
+          <BuckToolbarSettings
+            buckRoot={buckRoot}
+            buckversionFileContents={buckversionFileContents}
+            settings={taskSettings}
+            platformProviderSettings={extraSettings}
+            onDismiss={() => this._hideSettings()}
+            onSave={settings => this._saveSettings(settings)}
+          />
+        ) : null}
       </div>
     );
   }

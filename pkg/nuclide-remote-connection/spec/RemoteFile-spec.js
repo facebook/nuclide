@@ -446,7 +446,9 @@ describe('RemoteFile', () => {
 
         const file = new RemoteFile(connectionMock, filePath);
         const readStream = file.createReadStream();
-        const data = await observeStream(readStream).toArray().toPromise();
+        const data = await observeStream(readStream)
+          .toArray()
+          .toPromise();
         expect(data).toEqual(['test1234']);
       });
     });

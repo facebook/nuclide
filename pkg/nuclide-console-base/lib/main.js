@@ -20,7 +20,7 @@ const CONSOLE_VIEW_URI = 'atom://nuclide/console';
 export function changeConsoleVisibility(visible: boolean): void {
   switch (visible) {
     case true:
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.workspace.open(CONSOLE_VIEW_URI, {searchAllPanes: true});
       return;
     case false:

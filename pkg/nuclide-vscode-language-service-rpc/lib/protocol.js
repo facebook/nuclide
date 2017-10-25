@@ -400,6 +400,15 @@ export type ServerCapabilities = {
   renameProvider?: boolean,
   // The server provides type coverage support.
   typeCoverageProvider?: boolean,
+  // The server responds to rage requests
+  rageProvider?: boolean,
+};
+
+export type RageItem = {
+  // Title convention is [host:]/path/file[:meta] - if ommitted, client picks
+  title?: string,
+  // Arbitrary text for the rage report
+  data: string,
 };
 
 // Document
@@ -898,7 +907,6 @@ export type ApplyWorkspaceEditResponse = {
 export type TextDocumentEdit = {
   // The text document to change.
   textDocument: VersionedTextDocumentIdentifier,
-
   // The edits to be applied.
   edits: TextEdit[],
 };

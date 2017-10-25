@@ -94,7 +94,8 @@ class DevicePoller {
 
     const displayName = (device.name.startsWith('emulator')
       ? device.name
-      : device.model).concat(` (${displayArch}, API ${device.apiVersion})`);
+      : device.model
+    ).concat(` (${displayArch}, API ${device.apiVersion})`);
 
     return {
       name: device.name,

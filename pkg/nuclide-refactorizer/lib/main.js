@@ -115,7 +115,7 @@ class Activation {
       atom.commands.add(
         'atom-text-editor',
         // We don't actually want people calling this directly.
-        // eslint-disable-next-line nuclide-internal/atom-commands
+        // eslint-disable-next-line rulesdir/atom-commands
         'nuclide-refactorizer:refactorize-from-context-menu',
         () => {
           const mouseEvent = lastMouseEvent;

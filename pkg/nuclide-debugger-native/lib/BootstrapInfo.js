@@ -64,7 +64,10 @@ export class BootstrapInfo extends DebuggerProcessInfo {
       rpcService.getOutputWindowObservable().refCount(),
     );
     try {
-      await rpcService.bootstrap(this._bootstrapInfo).refCount().toPromise();
+      await rpcService
+        .bootstrap(this._bootstrapInfo)
+        .refCount()
+        .toPromise();
       // Start websocket server with Chrome after launch completed.
       invariant(outputDisposable);
       debugSession = new DebuggerInstance(

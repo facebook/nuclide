@@ -9,7 +9,7 @@
  * @format
  */
 
-/* eslint-disable nuclide-internal/no-commonjs */
+/* eslint-disable rulesdir/no-commonjs */
 
 const fileAppender = require('log4js/lib/appenders/file');
 

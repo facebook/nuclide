@@ -27,7 +27,7 @@ export class HhvmLaunchAttachProvider extends DebuggerLaunchAttachProvider {
       /**
        * Whether this provider is enabled or not.
        */
-      isEnabled: () => {
+      isEnabled: (): Promise<boolean> => {
         return Promise.resolve(true);
       },
 

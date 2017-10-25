@@ -13,12 +13,11 @@ import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import FullWidthProgressBar from './FullWidthProgressBar';
 
-const Wrapper = ({children}: {children: React.Element<any>}) =>
-  <div style={{position: 'relative', paddingBottom: 5}}>
-    {children}
-  </div>;
+const Wrapper = ({children}: {children: React.Element<any>}) => (
+  <div style={{position: 'relative', paddingBottom: 5}}>{children}</div>
+);
 
-const FullWidthProgressBarExample = (): React.Element<any> =>
+const FullWidthProgressBarExample = (): React.Element<any> => (
   <div>
     0%:
     <Block>
@@ -44,7 +43,8 @@ const FullWidthProgressBarExample = (): React.Element<any> =>
         <FullWidthProgressBar progress={null} visible={true} />
       </Wrapper>
     </Block>
-  </div>;
+  </div>
+);
 
 export const FullWidthProgressBarExamples = {
   sectionName: 'FullWidthProgressBar',

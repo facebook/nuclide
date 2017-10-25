@@ -45,13 +45,13 @@ export default class MarkedStringSnippet extends React.Component<Props, State> {
     }
     return (
       <div
-        className="nuclide-datatip-marked-text-editor-container"
+        className="datatip-marked-text-editor-container"
         onClick={(e: SyntheticEvent<>) => {
           this.setState({isExpanded: !this.state.isExpanded});
           e.stopPropagation();
         }}>
         <AtomTextEditor
-          className="nuclide-datatip-marked-text-editor"
+          className="datatip-marked-text-editor"
           gutterHidden={true}
           readOnly={true}
           syncTextContents={false}

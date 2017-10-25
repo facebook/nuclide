@@ -74,6 +74,22 @@ describe('UndefinedSymbolManager', () => {
     expect(undefinedSymbols[0].id).toBe('iamnotdefined');
     expect(undefinedSymbols[0].type).toBe('value');
   });
+  it('Should allow loose declarations', () => {
+    const manager = new UndefinedSymbolManager([]);
+    const program = 'iamnotdefined = 1; x = iamnotdefined;';
+    const ast = babylon.parse(program, babylonOptions);
+    const undefinedSymbols = manager.findUndefined(ast);
+    expect(undefinedSymbols).toBeDefined();
+    expect(undefinedSymbols.length).toBe(0);
+  });
+  it('Should allow labelled statements', () => {
+    const manager = new UndefinedSymbolManager([]);
+    const program = 'loop: while (true) continue loop;';
+    const ast = babylon.parse(program, babylonOptions);
+    const undefinedSymbols = manager.findUndefined(ast);
+    expect(undefinedSymbols).toBeDefined();
+    expect(undefinedSymbols.length).toBe(0);
+  });
 
   /* Type Tests */
   it('Should find undeclared types in assignment', () => {

@@ -10,7 +10,6 @@
  */
 
 import type {FormatOptions, LanguageService} from './LanguageService';
-import type {BusySignalProvider} from './AtomLanguageService';
 import type {
   RangeCodeFormatProvider,
   FileCodeFormatProvider,
@@ -44,7 +43,6 @@ export class CodeFormatProvider<T: LanguageService> {
   priority: number;
   _analyticsEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
-  _busySignalProvider: BusySignalProvider;
 
   constructor(
     name: string,
@@ -52,14 +50,12 @@ export class CodeFormatProvider<T: LanguageService> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     this.name = name;
     this.grammarScopes = grammarScopes;
     this.priority = priority;
     this._analyticsEventName = analyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
-    this._busySignalProvider = busySignalProvider;
   }
 
   static register(
@@ -67,7 +63,6 @@ export class CodeFormatProvider<T: LanguageService> {
     grammarScopes: Array<string>,
     config: CodeFormatConfig,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ): IDisposable {
     const disposable = new UniversalDisposable(
       config.canFormatRanges
@@ -80,7 +75,6 @@ export class CodeFormatProvider<T: LanguageService> {
               config.priority,
               config.analyticsEventName,
               connectionToLanguageService,
-              busySignalProvider,
             ).provide(),
           )
         : atom.packages.serviceHub.provide(
@@ -92,7 +86,6 @@ export class CodeFormatProvider<T: LanguageService> {
               config.priority,
               config.analyticsEventName,
               connectionToLanguageService,
-              busySignalProvider,
             ).provide(),
           ),
     );
@@ -108,7 +101,6 @@ export class CodeFormatProvider<T: LanguageService> {
             config.priority,
             config.analyticsEventName,
             connectionToLanguageService,
-            busySignalProvider,
           ).provide(),
         ),
       );
@@ -125,7 +117,6 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     super(
       name,
@@ -133,7 +124,6 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
       priority,
       analyticsEventName,
       connectionToLanguageService,
-      busySignalProvider,
     );
   }
 
@@ -147,15 +137,10 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatSource(
-              fileVersion,
-              range,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatSource(
+          fileVersion,
+          range,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;
@@ -182,7 +167,6 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     super(
       name,
@@ -190,7 +174,6 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
       priority,
       analyticsEventName,
       connectionToLanguageService,
-      busySignalProvider,
     );
   }
 
@@ -207,15 +190,10 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatEntireFile(
-              fileVersion,
-              range,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatEntireFile(
+          fileVersion,
+          range,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;
@@ -247,16 +225,11 @@ class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatAtPosition(
-              fileVersion,
-              position,
-              character,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatAtPosition(
+          fileVersion,
+          position,
+          character,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;

@@ -9,12 +9,14 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import invariant from 'assert';
 import analytics from 'nuclide-commons-atom/analytics';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {DistractionFreeMode} from './DistractionFreeMode';
 import {getBuiltinProviders} from './BuiltinProviders';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 export type DistractionFreeModeProvider = {
   // Should be the unique to all providers. Recommended to be the package name. This string is not
@@ -30,11 +32,11 @@ export type DistractionFreeModeState = {
 };
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _tunnelVision: DistractionFreeMode;
 
   constructor(state: ?DistractionFreeModeState) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._tunnelVision = new DistractionFreeMode(state);
     this._disposables.add(
       atom.commands.add(
@@ -64,7 +66,7 @@ class Activation {
     const providers = Array.isArray(providerOrList)
       ? providerOrList
       : [providerOrList];
-    return new CompositeDisposable(
+    return new UniversalDisposable(
       ...providers.map(provider =>
         this._tunnelVision.consumeDistractionFreeModeProvider(provider),
       ),
@@ -76,12 +78,14 @@ class Activation {
     toolBar.addSpacer({
       priority: 900,
     });
-    toolBar.addButton({
-      icon: 'eye',
-      callback: 'nuclide-distraction-free-mode:toggle',
-      tooltip: 'Toggle Distraction-Free Mode',
-      priority: 901,
-    });
+    toolBar.addButton(
+      makeToolbarButtonSpec({
+        icon: 'eye',
+        callback: 'nuclide-distraction-free-mode:toggle',
+        tooltip: 'Toggle Distraction-Free Mode',
+        priority: 901,
+      }),
+    );
     const disposable = new Disposable(() => {
       toolBar.removeItems();
     });

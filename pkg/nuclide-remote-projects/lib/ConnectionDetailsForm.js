@@ -19,10 +19,10 @@ import {getOfficialRemoteServerCommand} from './connection-profile-utils';
 
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getIPsForHosts} from './connection-profile-utils';
 import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
-import RadioGroup from '../../nuclide-ui/RadioGroup';
+import RadioGroup from 'nuclide-commons-ui/RadioGroup';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {SshHandshake} from '../../nuclide-remote-connection';
@@ -68,7 +68,7 @@ export default class ConnectionDetailsForm extends React.Component<
   Props,
   State,
 > {
-  _disposables: ?CompositeDisposable;
+  _disposables: ?UniversalDisposable;
   _promptChanged: boolean;
 
   constructor(props: Props) {
@@ -230,7 +230,6 @@ export default class ConnectionDetailsForm extends React.Component<
           className={
             'icon icon-info pull-right nuclide-remote-projects-tooltip-warning'
           }
-          // $FlowFixMe(>=0.53.0) Flow suppress
           ref={addTooltip({
             // Intentionally *not* an arrow function so the jQuery
             // Tooltip plugin can set the context to the Tooltip
@@ -315,7 +314,7 @@ export default class ConnectionDetailsForm extends React.Component<
   }
 
   componentDidMount() {
-    const disposables = new CompositeDisposable();
+    const disposables = new UniversalDisposable();
     this._disposables = disposables;
     const root = ReactDOM.findDOMNode(this);
 

@@ -10,9 +10,20 @@
  * @format
  */
 
-import {Subject} from 'rxjs';
 import type {Observable} from 'rxjs';
+
+import {Subject} from 'rxjs';
 import invariant from 'assert';
+import idx from 'idx';
+
+type Options = {|
+  line?: number,
+  column?: number,
+  center?: boolean,
+  activateItem?: boolean,
+  activatePane?: boolean,
+  pending?: boolean,
+|};
 
 /**
  * Opens the given file.
@@ -36,35 +47,49 @@ import invariant from 'assert';
  *
  * In these cases, you may disable the lint rule against `atom.workspace.open` by adding the
  * following comment above its use:
- * // eslint-disable-next-line nuclide-internal/atom-apis
+ * // eslint-disable-next-line rulesdir/atom-apis
  */
 export async function goToLocation(
   file: string,
-  line?: number,
-  column?: number,
-  center?: boolean = true,
+  options?: ?Options,
 ): Promise<atom$TextEditor> {
+  const center_ = idx(options, _ => _.center);
+  const center = center_ == null ? true : center_;
+  const activatePane_ = idx(options, _ => _.activatePane);
+  const activatePane = activatePane_ == null ? true : activatePane_;
+  const activateItem = idx(options, _ => _.activateItem);
+  const line = idx(options, _ => _.line);
+  const column = idx(options, _ => _.column);
+  const pending = idx(options, _ => _.pending);
+
   // Prefer going to the current editor rather than the leftmost editor.
   const currentEditor = atom.workspace.getActiveTextEditor();
   if (currentEditor != null && currentEditor.getPath() === file) {
+    const paneContainer = atom.workspace.paneContainerForItem(currentEditor);
+    invariant(paneContainer != null);
+    if (activatePane) {
+      paneContainer.activate();
+    }
     if (line != null) {
-      goToLocationInEditor(
-        currentEditor,
+      goToLocationInEditor(currentEditor, {
         line,
-        column == null ? 0 : column,
+        column: column == null ? 0 : column,
         center,
-      );
+      });
     } else {
       invariant(column == null, 'goToLocation: Cannot specify just column');
     }
     return currentEditor;
   } else {
     // Obviously, calling goToLocation isn't a viable alternative here :P
-    // eslint-disable-next-line nuclide-internal/atom-apis
+    // eslint-disable-next-line rulesdir/atom-apis
     const editor = await atom.workspace.open(file, {
       initialLine: line,
       initialColumn: column,
       searchAllPanes: true,
+      activatePane,
+      activateItem,
+      pending,
     });
 
     if (center && line != null) {
@@ -76,15 +101,22 @@ export async function goToLocation(
 
 const goToLocationSubject = new Subject();
 
+type GotoLocationInEditorOptions = {|
+  line: number,
+  column: number,
+  center?: boolean,
+|};
+
 // Scrolls to the given line/column at the given editor
 // broadcasts the editor instance on an observable (subject) available
 // through the getGoToLocation
 export function goToLocationInEditor(
   editor: atom$TextEditor,
-  line: number,
-  column: number,
-  center: boolean = true,
+  options: GotoLocationInEditorOptions,
 ): void {
+  const center = options.center == null ? true : options.center;
+  const {line, column} = options;
+
   editor.setCursorBufferPosition([line, column]);
   if (center) {
     editor.scrollToBufferPosition([line, column], {center: true});

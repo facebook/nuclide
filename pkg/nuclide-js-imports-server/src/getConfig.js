@@ -22,9 +22,19 @@ type ConfigFromFlow = {
   hasteSettings: HasteSettings,
 };
 
+/**
+ * Haste settings are surprisingly complicated.
+ * - isHaste enables haste modules. All files with a @providesModule docblock may be imported
+ *   via their module name, without using the full path.
+ * - When useNameReducers is enabled, we'll attempt to resolve whitelisted files *without*
+ *   @providesModule purely using their name, excluding files in the blacklist.
+ */
 export type HasteSettings = {
   isHaste: boolean,
-  blacklistedDirs: Array<NuclideUri>,
+  useNameReducers: boolean,
+  nameReducers: Array<{regexp: RegExp, replacement: string}>,
+  nameReducerWhitelist: Array<RegExp>,
+  nameReducerBlacklist: Array<RegExp>,
 };
 
 export function getEslintEnvs(root: NuclideUri): Array<string> {
@@ -39,7 +49,10 @@ export function getConfigFromFlow(root: NuclideUri): ConfigFromFlow {
   let moduleDirs = [];
   let hasteSettings = {
     isHaste: false,
-    blacklistedDirs: [],
+    useNameReducers: false,
+    nameReducers: [],
+    nameReducerWhitelist: [],
+    nameReducerBlacklist: [],
   };
   try {
     const flowFile = nuclideUri.join(root, '.flowconfig');
@@ -72,17 +85,54 @@ function flowConfigToHasteSettings(
   flowFileContents: string,
 ): HasteSettings {
   const isHaste = Boolean(flowFileContents.match(/module.system=haste/));
-  const resolveDirs = flowFileContents.match(
-    /module.system.haste.paths.blacklist=([^\s]+)/g,
+  const useNameReducers = Boolean(
+    flowFileContents.match(/module.system.haste.use_name_reducers=true/),
   );
+  function getPatterns(dirs: Array<string>) {
+    return dirs
+      .map(dirString => dirString.split('=')[1])
+      .map(line => new RegExp(line.replace('<PROJECT_ROOT>', root)));
+  }
+  let nameReducers = [];
+  let nameReducerWhitelist = [];
+  let nameReducerBlacklist = [];
+  if (useNameReducers) {
+    const nameReducerMatches =
+      flowFileContents.match(/module.system.haste.name_reducers=(.+)$/gm) || [];
+    nameReducers = nameReducerMatches.map(line => {
+      const value = line.substr(line.indexOf('=') + 1);
+      // Default reducer (example):
+      // '^.*/\([a-zA-Z0-9$_.-]+\.js\(\.flow\)?\)$' -> '\1'
+      const [regexString, replacementString] = value
+        .split('->')
+        .map(x => x.trim());
+      const regexp = new RegExp(
+        // OCaml regexes escape parentheses.
+        regexString
+          .substr(1, regexString.length - 2)
+          .replace(/\\([()])/g, '$1'),
+      );
+      // OCaml uses \1, \2 while JS uses $1, $2...
+      const replacement = replacementString
+        .substr(1, replacementString.length - 2)
+        .replace(/\\[0-9]/g, '$$1');
+      return {regexp, replacement};
+    });
+    nameReducerWhitelist = getPatterns(
+      flowFileContents.match(/module.system.haste.paths.whitelist=([^\s]+)/g) ||
+        [],
+    );
+    nameReducerBlacklist = getPatterns(
+      flowFileContents.match(/module.system.haste.paths.blacklist=([^\s]+)/g) ||
+        [],
+    );
+  }
   return {
     isHaste,
-    blacklistedDirs:
-      isHaste && resolveDirs
-        ? resolveDirs
-            .map(dirString => dirString.split('=')[1])
-            .map(line => line.replace('<PROJECT_ROOT>', root))
-        : [],
+    useNameReducers,
+    nameReducers,
+    nameReducerWhitelist,
+    nameReducerBlacklist,
   };
 }
 

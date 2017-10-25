@@ -49,11 +49,11 @@ export class DevicePanel extends React.Component<Props> {
     } else {
       return Array.from(
         this.props.infoTables.value.entries(),
-      ).map(([title, infoTable]) =>
+      ).map(([title, infoTable]) => (
         <div className="block" key={title}>
           <InfoTable title={title} table={infoTable} />
-        </div>,
-      );
+        </div>
+      ));
     }
   }
 
@@ -94,9 +94,7 @@ export class DevicePanel extends React.Component<Props> {
       return <StreamedTaskButton key={task.getName()} />;
     });
     return (
-      <div className="block nuclide-device-panel-tasks-container">
-        {tasks}
-      </div>
+      <div className="block nuclide-device-panel-tasks-container">{tasks}</div>
     );
   }
 

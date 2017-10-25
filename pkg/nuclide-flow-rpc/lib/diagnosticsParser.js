@@ -9,13 +9,10 @@
  * @format
  */
 
-import type {
-  DiagnosticFix,
-  DiagnosticTrace,
-  FileDiagnosticMessage,
-} from 'atom-ide-ui';
+import type {DiagnosticFix, DiagnosticTrace} from 'atom-ide-ui';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
+import type {FileDiagnosticMessage} from '../../nuclide-language-service/lib/LanguageService';
 import type {
   FlowStatusOutput,
   FlowStatusError,
@@ -162,7 +159,6 @@ function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
   invariant(path != null, 'Expected path to not be null or undefined');
 
   const diagnosticMessage: FileDiagnosticMessage = {
-    scope: 'file',
     providerName: 'Flow',
     type: flowStatusError.level === 'error' ? 'Error' : 'Warning',
     text: mainMessage.descr,
@@ -201,8 +197,17 @@ function extractTraces(
   }
   const extra = flowStatusError.extra;
   if (extra != null) {
-    const flatExtra = [].concat(...extra.map(({message}) => message));
-    trace.push(...flatExtra.map(flowMessageToTrace));
+    extra.forEach(({message, children}) => {
+      trace.push(...message.map(flowMessageToTrace));
+      if (children != null) {
+        const childrenTraces: Array<DiagnosticTrace> = [].concat(
+          ...children.map(child =>
+            [].concat(child.message.map(flowMessageToTrace)),
+          ),
+        );
+        trace.push(...childrenTraces);
+      }
+    });
   }
 
   if (trace.length > 0) {

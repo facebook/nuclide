@@ -12,7 +12,7 @@
 
 import log4js from 'log4js';
 import os from 'os';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 
 export function setupDefaultLogging(loggingFile: string) {

@@ -14,7 +14,7 @@ import type {Action, Store} from '../types';
 
 import {Observable} from 'rxjs';
 import * as Actions from './Actions';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {getAdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 import {getSdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 

@@ -32,7 +32,7 @@ describe('FileTreeController', () => {
   }
 
   function isSelected(rootKey: string, nodeKey: string): boolean {
-    return getNode(rootKey, nodeKey).isSelected;
+    return getNode(rootKey, nodeKey).isSelected();
   }
 
   function isExpanded(rootKey: string, nodeKey: string): boolean {

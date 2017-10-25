@@ -13,6 +13,7 @@
 
 import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {Observable} from 'rxjs';
+import type {RemoteObjectId} from '../../nuclide-debugger-base/lib/protocol-types';
 
 export type ControlButtonSpecification = {
   icon: IconName,
@@ -38,6 +39,7 @@ export type ExpansionResult = Array<{
 
 export type ScopeSection = {
   name: string,
+  scopeObjectId: RemoteObjectId,
   scopeVariables: ExpansionResult,
 };
 
@@ -48,9 +50,10 @@ export type EvaluatedExpression = {
 };
 export type EvaluatedExpressionList = Array<EvaluatedExpression>;
 export type EvalCommand =
-  | 'runtimeEvaluate'
   | 'evaluateOnSelectedCallFrame'
-  | 'getProperties';
+  | 'getProperties'
+  | 'runtimeEvaluate'
+  | 'setVariable';
 export type ExpressionResult = ChromeProtocolResponse & {
   expression: string,
 };
@@ -95,6 +98,8 @@ export type BreakpointUserChangeArgType = {
   breakpoint: FileLineBreakpoint,
 };
 
+export type SerializedWatchExpression = string;
+
 export type SerializedBreakpoint = {
   line: number,
   sourceURL: string,
@@ -111,7 +116,10 @@ export type CallstackItem = {
     column?: number,
     hasSource?: boolean,
   },
+  disassembly?: FrameDissassembly,
+  registers?: RegisterInfo,
 };
+
 export type Callstack = Array<CallstackItem>;
 
 /* ThreadStore Types */
@@ -150,6 +158,25 @@ export type DebuggerModeType =
   | 'stopped';
 
 export type ObjectGroup = 'watch-group' | 'console';
+
+/* disassembly info */
+export type FrameDissassembly = {
+  frameTitle: string,
+  metadata: Array<{name: string, value: string}>,
+  currentInstructionIndex: number,
+  instructions: Array<{
+    address: string,
+    instruction: string,
+    offset?: string,
+    comment?: string,
+  }>,
+};
+
+/* Register info */
+export type RegisterInfo = Array<{
+  groupName: string,
+  registers: Array<{name: string, value: string}>,
+}>;
 
 /**
  * Interfaces for Chrome Dev Tools internal APIs.

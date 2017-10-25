@@ -9,6 +9,7 @@
  * @format
  */
 
+import idx from 'idx';
 import {
   createConnection,
   CompletionItem,
@@ -30,7 +31,7 @@ import {Completions} from './Completions';
 import {Diagnostics} from './Diagnostics';
 import {Settings} from './Settings';
 import {CodeActions} from './CodeActions';
-import {CommandExecuter} from './CommandExecuter';
+import {CommandExecutor} from './CommandExecutor';
 
 import initializeLogging from '../logging/initializeLogging';
 import {getEslintEnvs, getConfigFromFlow} from './getConfig';
@@ -51,7 +52,6 @@ const documents: TextDocuments = new TextDocuments();
 // This will be set based on initializationOptions.
 const shouldProvideFlags = {
   diagnostics: false,
-  autocomplete: false,
 };
 
 let autoImportsManager = new AutoImportsManager([]);
@@ -60,11 +60,10 @@ let completion = new Completions(
   documents,
   autoImportsManager,
   importFormatter,
-  false,
 );
 let diagnostics = new Diagnostics(autoImportsManager, importFormatter);
 let codeActions = new CodeActions(autoImportsManager, importFormatter);
-let commandExecuter = new CommandExecuter(
+let commandExecuter = new CommandExecutor(
   connection,
   importFormatter,
   documents,
@@ -76,33 +75,16 @@ connection.onInitialize((params): InitializeResult => {
   const envs = getEslintEnvs(root);
   const flowConfig = getConfigFromFlow(root);
   shouldProvideFlags.diagnostics = shouldProvideDiagnostics(params, root);
-  shouldProvideFlags.autocomplete = shouldProvideAutocomplete(params, root);
-  if (!shouldProvideFlags.diagnostics && !shouldProvideFlags.autocomplete) {
-    // We aren't providing autocomplete or diagnostics (+ code actions)
-    return {
-      capabilities: {
-        textDocumentSync: {
-          openClose: false,
-          change: 0, // TextDocuments not synced at all.
-        },
-      },
-    };
-  }
   importFormatter = new ImportFormatter(
     flowConfig.moduleDirs,
-    flowConfig.hasteSettings.isHaste,
+    shouldUseRequires(params, root),
   );
   autoImportsManager = new AutoImportsManager(envs);
   autoImportsManager.indexAndWatchDirectory(root);
-  completion = new Completions(
-    documents,
-    autoImportsManager,
-    importFormatter,
-    flowConfig.hasteSettings.isHaste,
-  );
+  completion = new Completions(documents, autoImportsManager, importFormatter);
   diagnostics = new Diagnostics(autoImportsManager, importFormatter);
   codeActions = new CodeActions(autoImportsManager, importFormatter);
-  commandExecuter = new CommandExecuter(connection, importFormatter, documents);
+  commandExecuter = new CommandExecutor(connection, importFormatter, documents);
   return {
     capabilities: {
       textDocumentSync: documents.syncKind,
@@ -111,7 +93,7 @@ connection.onInitialize((params): InitializeResult => {
         triggerCharacters: getAllTriggerCharacters(),
       },
       codeActionProvider: true,
-      executeCommandProvider: Array.from(Object.keys(CommandExecuter.COMMANDS)),
+      executeCommandProvider: Array.from(Object.keys(CommandExecutor.COMMANDS)),
     },
   };
 });
@@ -158,18 +140,12 @@ function findAndSendDiagnostics(text: string, uri: NuclideUri): void {
 // Code completion:
 connection.onCompletion(
   (textDocumentPosition: TextDocumentPositionParams): Array<CompletionItem> => {
-    if (shouldProvideFlags.autocomplete) {
-      const nuclideFormattedUri = nuclideUri.uriToNuclideUri(
-        textDocumentPosition.textDocument.uri,
-      );
-      return nuclideFormattedUri != null
-        ? completion.provideCompletions(
-            textDocumentPosition,
-            nuclideFormattedUri,
-          )
-        : [];
-    }
-    return [];
+    const nuclideFormattedUri = nuclideUri.uriToNuclideUri(
+      textDocumentPosition.textDocument.uri,
+    );
+    return nuclideFormattedUri != null
+      ? completion.provideCompletions(textDocumentPosition, nuclideFormattedUri)
+      : [];
   },
 );
 
@@ -209,21 +185,15 @@ function getAllTriggerCharacters(): Array<string> {
 }
 
 function shouldProvideDiagnostics(params: Object, root: NuclideUri): boolean {
-  return params.initializationOptions != null &&
-  params.initializationOptions.diagnosticsWhitelist != null &&
-  params.initializationOptions.diagnosticsWhitelist.length !== 0
-    ? params.initializationOptions.diagnosticsWhitelist.some(regex =>
-        root.match(new RegExp(regex)),
-      )
+  const diagnosticsWhitelist =
+    idx(params, _ => _.initializationOptions.diagnosticsWhitelist) || [];
+  return diagnosticsWhitelist.length !== 0
+    ? diagnosticsWhitelist.some(regex => root.match(new RegExp(regex)))
     : Settings.shouldProvideDiagnosticsDefault;
 }
 
-function shouldProvideAutocomplete(params: Object, root: NuclideUri): boolean {
-  return params.initializationOptions != null &&
-  params.initializationOptions.autocompleteWhitelist != null &&
-  params.initializationOptions.diagnosticsWhitelist.length !== 0
-    ? params.initializationOptions.autocompleteWhitelist.some(regex =>
-        root.match(new RegExp(regex)),
-      )
-    : Settings.shouldProvideAutocompleteDefault;
+function shouldUseRequires(params: Object, root: NuclideUri): boolean {
+  const requiresWhitelist =
+    idx(params, _ => _.initializationOptions.requiresWhitelist) || [];
+  return requiresWhitelist.some(regex => root.match(new RegExp(regex)));
 }

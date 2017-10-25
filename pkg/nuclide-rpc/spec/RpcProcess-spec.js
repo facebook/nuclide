@@ -108,7 +108,10 @@ describe('RpcProcess', () => {
 
   it('should reject pending calls upon the child process exiting', () => {
     waitsForPromise(async () => {
-      const message = server.observeExitMessage().take(1).toPromise();
+      const message = server
+        .observeExitMessage()
+        .take(1)
+        .toPromise();
       try {
         await (await getService()).kill();
         invariant(false, 'Fail - expected promise to reject');
@@ -138,6 +141,7 @@ describe('RpcProcess', () => {
       expect(response).toEqual({
         hello: 'Hello World',
       });
+      expect(server.isDisposed()).toBe(false);
     });
   });
 

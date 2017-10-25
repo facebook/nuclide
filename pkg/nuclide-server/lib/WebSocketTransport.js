@@ -53,10 +53,10 @@ export class WebSocketTransport {
       options == null || options.syncCompression !== false;
 
     logger.info('Client #%s connecting with a new socket!', this.id);
-    socket.on('message', (data, flags) => {
+    socket.on('message', data => {
       let message = data;
       // Only compressed data will be sent as binary buffers.
-      if (flags.binary) {
+      if (typeof data !== 'string') {
         message = decompress(data);
       }
       this._onSocketMessage(message);
@@ -66,13 +66,13 @@ export class WebSocketTransport {
       if (this._socket != null) {
         invariant(this._socket === socket);
         logger.info(
-          'Client #%s socket close recieved on open socket!',
+          'Client #%s socket close received on open socket!',
           this.id,
         );
         this._setClosed();
       } else {
         logger.info(
-          'Client #%s recieved socket close on already closed socket!',
+          'Client #%s received socket close on already closed socket!',
           this.id,
         );
       }
@@ -87,7 +87,7 @@ export class WebSocketTransport {
       }
     });
 
-    socket.on('pong', (data, flags) => {
+    socket.on('pong', data => {
       if (this._socket != null) {
         // data may be a Uint8Array
         this._emitter.emit('pong', data != null ? String(data) : data);
@@ -136,11 +136,7 @@ export class WebSocketTransport {
       }
       socket.send(data, {compress: !compressed}, err => {
         if (err != null) {
-          logger.warn(
-            'Failed sending socket message to client:',
-            this.id,
-            JSON.parse(message),
-          );
+          logger.warn(`Failed sending to client:${this.id} message:${message}`);
           resolve(false);
         } else {
           resolve(true);

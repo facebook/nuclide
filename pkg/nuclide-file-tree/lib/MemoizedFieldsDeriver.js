@@ -65,8 +65,8 @@ export class MemoizedFieldsDeriver {
 
     this._isRoot = uri === rootUri;
     this._name = FileTreeHelpers.keyToName(uri);
-    this._isContainer = FileTreeHelpers.isDirKey(uri);
-    this._relativePath = uri.slice(rootUri.length);
+    this._isContainer = FileTreeHelpers.isDirOrArchiveKey(uri);
+    this._relativePath = nuclideUri.relative(rootUri, uri);
     this._localPath = FileTreeHelpers.keyToPath(
       nuclideUri.isRemote(uri) ? nuclideUri.parse(uri).path : uri,
     );

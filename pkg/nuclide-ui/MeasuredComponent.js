@@ -44,10 +44,7 @@ export class MeasuredComponent extends React.Component<Props> {
   };
 
   render(): React.Node {
-    return (
-      <div ref={this._updateDomNode}>
-        {this.props.children}
-      </div>
-    );
+    const {onMeasurementsChanged, ...passThroughProps} = this.props;
+    return <div ref={this._updateDomNode} {...passThroughProps} />;
   }
 }

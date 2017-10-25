@@ -202,13 +202,13 @@ export class ResizeSensitiveContainer extends React.Component<Props, State> {
           tabIndex={tabIndex}>
           {children}
         </div>
-        {this._containerRendered()
-          ? <ResizeSensor
-              targetHeight={height}
-              targetWidth={width}
-              onDetectedResize={this._handleResize}
-            />
-          : null}
+        {this._containerRendered() ? (
+          <ResizeSensor
+            targetHeight={height}
+            targetWidth={width}
+            onDetectedResize={this._handleResize}
+          />
+        ) : null}
       </div>
     );
   }

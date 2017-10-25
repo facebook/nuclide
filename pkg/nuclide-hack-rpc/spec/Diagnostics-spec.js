@@ -29,7 +29,6 @@ describe('Diagnostics', () => {
       ];
 
       const expectedOutput = {
-        scope: 'file',
         providerName: 'Hack: 1234',
         text: 'message',
         type: 'Error',
@@ -62,7 +61,6 @@ describe('Diagnostics', () => {
       ];
 
       const expectedOutput = {
-        scope: 'file',
         providerName: 'Hack: 1234',
         type: 'Error',
         text: 'message',

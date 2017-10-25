@@ -33,7 +33,7 @@ import type {
 
 import {ActionTypes} from './DebuggerDispatcher';
 import {AnalyticsEvents} from './constants';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   beginTimerTracking,
   failTimerTracking,
@@ -41,14 +41,10 @@ import {
 } from './AnalyticsHelper';
 import invariant from 'assert';
 import {DebuggerMode} from './DebuggerStore';
-import passesGK from '../../commons-node/passesGK';
 import {track} from '../../nuclide-analytics';
 import {getLogger} from 'log4js';
 const logger = getLogger('nuclide-debugger');
 import ChromeActionRegistryActions from './ChromeActionRegistryActions';
-
-const GK_DEBUGGER_REQUEST_WINDOW = 'nuclide_debugger_php_request_window';
-const GK_DEBUGGER_REQUEST_SENDER = 'nuclide_debugger_request_sender';
 
 // This must match URI defined in ../../nuclide-console/lib/ui/ConsoleContainer
 const CONSOLE_VIEW_URI = 'atom://nuclide/console';
@@ -57,12 +53,12 @@ const CONSOLE_VIEW_URI = 'atom://nuclide/console';
  * Flux style action creator for actions that affect the debugger.
  */
 export default class DebuggerActions {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _dispatcher: DebuggerDispatcher;
   _store: DebuggerStore;
 
   constructor(dispatcher: DebuggerDispatcher, store: DebuggerStore) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._dispatcher = dispatcher;
     this._store = store;
   }
@@ -78,15 +74,18 @@ export default class DebuggerActions {
     this._handleDebugModeStart();
     this.setDebuggerMode(DebuggerMode.STARTING);
     this.setDebugProcessInfo(processInfo);
+    atom.commands.dispatch(
+      atom.views.getView(atom.workspace),
+      'nuclide-debugger:show',
+    );
+
     try {
       const debuggerCapabilities = processInfo.getDebuggerCapabilities();
       const debuggerProps = processInfo.getDebuggerProps();
       const debuggerInstance = await processInfo.debug();
       await this._store.getBridge().setupNuclideChannel(debuggerInstance);
       this._registerConsole();
-      const supportThreadsWindow =
-        debuggerCapabilities.threads &&
-        (await this._allowThreadsForPhp(processInfo));
+      const supportThreadsWindow = debuggerCapabilities.threads;
       this._store
         .getSettings()
         .set('SupportThreadsWindow', supportThreadsWindow);
@@ -103,16 +102,12 @@ export default class DebuggerActions {
         .getSettings()
         .set('SingleThreadStepping', singleThreadStepping);
       this.toggleSingleThreadStepping(singleThreadStepping);
-      if (
-        processInfo.getServiceName() !== 'hhvm' ||
-        (await passesGK(GK_DEBUGGER_REQUEST_SENDER))
-      ) {
-        const customControlButtons = debuggerProps.customControlButtons;
-        if (customControlButtons.length > 0) {
-          this.updateControlButtons(customControlButtons);
-        } else {
-          this.updateControlButtons([]);
-        }
+
+      const customControlButtons = debuggerProps.customControlButtons;
+      if (customControlButtons.length > 0) {
+        this.updateControlButtons(customControlButtons);
+      } else {
+        this.updateControlButtons([]);
       }
 
       if (debuggerCapabilities.customSourcePaths) {
@@ -123,11 +118,6 @@ export default class DebuggerActions {
         this.updateConfigureSourcePathsCallback(null);
       }
 
-      atom.commands.dispatch(
-        atom.views.getView(atom.workspace),
-        'nuclide-debugger:show',
-      );
-
       await this._waitForChromeConnection(debuggerInstance);
     } catch (err) {
       failTimerTracking(err);
@@ -137,15 +127,6 @@ export default class DebuggerActions {
       atom.notifications.addError(errorMessage);
       this.stopDebugging();
     }
-  }
-
-  async _allowThreadsForPhp(
-    processInfo: DebuggerProcessInfo,
-  ): Promise<boolean> {
-    if (processInfo.getServiceName() === 'hhvm') {
-      return passesGK(GK_DEBUGGER_REQUEST_WINDOW);
-    }
-    return true;
   }
 
   setDebuggerMode(debuggerMode: DebuggerModeType): void {
@@ -427,7 +408,7 @@ export default class DebuggerActions {
         track(AnalyticsEvents.DEBUGGER_STEP_OUT);
         break;
       default:
-        logger.error('Unkown debugger action type', actionId);
+        logger.error('Unknown debugger action type', actionId);
         break;
     }
     this._dispatcher.dispatch({
@@ -721,7 +702,7 @@ export default class DebuggerActions {
 
   _handleDebugModeStart(): void {
     // Open the console window if it's not already opened.
-    // eslint-disable-next-line nuclide-internal/atom-apis
+    // eslint-disable-next-line rulesdir/atom-apis
     atom.workspace.open(CONSOLE_VIEW_URI, {searchAllPanes: true});
   }
 }

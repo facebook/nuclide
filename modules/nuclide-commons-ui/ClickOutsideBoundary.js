@@ -14,7 +14,7 @@ import * as React from 'react';
 import {findDOMNode} from 'react-dom';
 
 type Props = {
-  onClickOutside: ?() => void,
+  onClickOutside: ?() => mixed,
   children: ?React.Element<any>,
 };
 
@@ -36,7 +36,7 @@ export default class ClickOutsideBoundary extends React.Component<Props> {
     window.document.addEventListener('click', this._handleDocumentClick);
     // We use an actual DOM node (via refs) because React does not gaurnetee
     // any particular event ordering between synthentic events and native
-    // events, and we requrie that the internal event fire before the global event.
+    // events, and we require that the internal event fire before the global event.
     // https://discuss.reactjs.org/t/ordering-of-native-and-react-events/829/2
     node.addEventListener('click', this._handleInternalClick);
   }

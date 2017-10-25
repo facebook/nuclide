@@ -1,16 +1,27 @@
 {
   "name": "atom-ide-diagnostics",
+  "displayName": "Diagnostics Services",
   "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "description": "Provides an API to consume diagnostics.",
-  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "description": "Provides an API to consume diagnostics. **Required to use Diagnostics functionality**",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
   "nuclide": {
     "packageType": "Atom",
     "testRunner": "apm"
   },
   "activationCommands": {},
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
+    "code-action-fetcher": {
+      "versions": {
+        "0.1.0": "consumeCodeActionFetcher"
+      }
+    },
     "linter": {
       "versions": {
         "^1.0.0 || ^2.0.0": "consumeLinterProvider"

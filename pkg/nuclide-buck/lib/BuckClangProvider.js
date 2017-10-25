@@ -14,6 +14,7 @@ import type {
   ClangRequestSettings,
 } from '../../nuclide-clang-rpc/lib/rpc-types';
 import type {ClangConfigurationProvider} from '../../nuclide-clang/lib/types';
+import type {BusySignalService} from 'atom-ide-ui';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {CompilationDatabaseParams} from './types';
 
@@ -39,19 +40,43 @@ class Provider {
     this._params = params;
   }
 
-  getCompilationDatabase(src: string): Promise<?ClangCompilationDatabase> {
+  _reportCompilationDBBusySignalWhile(
+    src: string,
+    getBusySignalService: () => ?BusySignalService,
+    dbPromise: Promise<?ClangCompilationDatabase>,
+  ): Promise<?ClangCompilationDatabase> {
+    const busySignal = getBusySignalService();
+    return busySignal == null
+      ? dbPromise
+      : busySignal.reportBusyWhile(
+          'Generating Buck compilation database for "' +
+            nuclideUri.basename(src) +
+            '"',
+          () => dbPromise,
+          {onlyForFile: src},
+        );
+  }
+
+  getCompilationDatabase(
+    src: string,
+    getBusySignalService: () => ?BusySignalService,
+  ): Promise<?ClangCompilationDatabase> {
     return this._compilationDBCache.getOrCreate(src, () => {
-      return getBuckServiceByNuclideUri(this._host)
-        .getCompilationDatabase(src, this._params)
-        .refCount()
-        .do(db => {
-          if (db != null && db.flagsFile != null) {
-            this._flagsFileWatcher.watch(db.flagsFile, src, () =>
-              this.resetForSource(src),
-            );
-          }
-        })
-        .toPromise();
+      return this._reportCompilationDBBusySignalWhile(
+        src,
+        getBusySignalService,
+        getBuckServiceByNuclideUri(this._host)
+          .getCompilationDatabase(src, this._params)
+          .refCount()
+          .do(db => {
+            if (db != null && db.flagsFile != null) {
+              this._flagsFileWatcher.watch(db.flagsFile, src, () =>
+                this.resetForSource(src),
+              );
+            }
+          })
+          .toPromise(),
+      );
     });
   }
 
@@ -99,6 +124,7 @@ const supportsSourceCache: Cache<string, Promise<boolean>> = new Cache();
 
 export function getClangProvider(
   taskRunner: BuckTaskRunner,
+  getBusySignalService: () => ?BusySignalService,
 ): ClangConfigurationProvider {
   return {
     async supportsSource(src: string): Promise<boolean> {
@@ -112,7 +138,7 @@ export function getClangProvider(
       const params = taskRunner.getCompilationDatabaseParamsForCurrentContext();
       const provider = getProvider(src, params);
       const [compilationDatabase, projectRoot] = await Promise.all([
-        provider.getCompilationDatabase(src),
+        provider.getCompilationDatabase(src, getBusySignalService),
         provider.getProjectRoot(src),
       ]);
       if (projectRoot == null) {

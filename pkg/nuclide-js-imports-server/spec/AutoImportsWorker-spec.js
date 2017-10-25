@@ -9,15 +9,24 @@
  * @format
  */
 
+import {generateFixture} from 'nuclide-commons/test-helpers';
 import {indexDirectory, indexNodeModules} from '../src/lib/AutoImportsWorker';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers/lib/fixtures';
+
+const hasteSettings = {
+  isHaste: false,
+  useNameReducers: false,
+  nameReducers: [],
+  nameReducerWhitelist: [],
+  nameReducerBlacklist: [],
+};
 
 describe('AutoImportsWorker', () => {
   it('Should index imports in a directory asynchronously', () => {
     const exports = [];
     indexDirectory(
       nuclideUri.join(__dirname, 'fixtures'),
+      hasteSettings,
     ).subscribe(exportsForFiles => {
       exportsForFiles.forEach(exportsForFile => {
         exportsForFile.exports.forEach(exp => {
@@ -38,6 +47,7 @@ describe('AutoImportsWorker', () => {
     const exports = [];
     indexDirectory(
       nuclideUri.join(__dirname, 'fixtures'),
+      hasteSettings,
     ).subscribe(exportsForFiles => {
       exportsForFiles.forEach(exportsForFile => {
         exportsForFile.exports.forEach(exp => {
@@ -92,7 +102,7 @@ describe('AutoImportsWorker main files indexer', () => {
 
   it('Should correctly mark files as main', () => {
     let found = false;
-    indexDirectory(dirPath).subscribe(exportsForFiles => {
+    indexDirectory(dirPath, hasteSettings).subscribe(exportsForFiles => {
       if (
         exportsForFiles.find(
           exportsForFile =>
@@ -110,7 +120,7 @@ describe('AutoImportsWorker main files indexer', () => {
   });
   it('Should index non-main files correctly', () => {
     let found = false;
-    indexDirectory(dirPath).subscribe(exportsForFiles => {
+    indexDirectory(dirPath, hasteSettings).subscribe(exportsForFiles => {
       if (
         exportsForFiles.find(exportsForFile =>
           exportsForFile.exports.find(exp => exp.directoryForMainFile == null),
@@ -130,7 +140,7 @@ describe('AutoImportsWorker main files indexer', () => {
   });
   it('Should work with complicated file paths', () => {
     let found = false;
-    indexDirectory(dirPath).subscribe(exportsForFiles => {
+    indexDirectory(dirPath, hasteSettings).subscribe(exportsForFiles => {
       if (
         exportsForFiles.find(exportsForFile =>
           exportsForFile.exports.find(exp => exp.directoryForMainFile == null),
@@ -150,7 +160,7 @@ describe('AutoImportsWorker main files indexer', () => {
   });
   it('Should work with main files without an extension', () => {
     let found = false;
-    indexDirectory(dirPath).subscribe(exportsForFiles => {
+    indexDirectory(dirPath, hasteSettings).subscribe(exportsForFiles => {
       if (
         exportsForFiles.find(
           exportsForFile =>
@@ -171,7 +181,7 @@ describe('AutoImportsWorker main files indexer', () => {
   });
   it('Should assume main is index.js by default', () => {
     let found = false;
-    indexDirectory(dirPath).subscribe(exportsForFiles => {
+    indexDirectory(dirPath, hasteSettings).subscribe(exportsForFiles => {
       if (
         exportsForFiles.find(
           exportsForFile =>

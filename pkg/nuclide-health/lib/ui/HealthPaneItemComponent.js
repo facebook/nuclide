@@ -49,16 +49,12 @@ export default class HealthPaneItemComponent extends React.Component<Props> {
     // For each section, we use settings-view to get a familiar look for table cells.
     return (
       <div>
-        {Object.keys(sections).map((title, s) =>
+        {Object.keys(sections).map((title, s) => (
           <div className="nuclide-health-pane-item-section" key={s}>
-            <h2>
-              {title}
-            </h2>
-            <div className="settings-view">
-              {sections[title]}
-            </div>
-          </div>,
-        )}
+            <h2>{title}</h2>
+            <div className="settings-view">{sections[title]}</div>
+          </div>
+        ))}
       </div>
     );
   }

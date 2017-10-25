@@ -31,9 +31,6 @@
     "packageType": "Atom",
     "testRunner": "apm"
   },
-  "activationHooks": [
-    "nuclide_native_notifications:gk:nuclide"
-  ],
   "providedServices": {
     "nuclide-notifications.provideRaiseNativeNotification": {
       "versions": {

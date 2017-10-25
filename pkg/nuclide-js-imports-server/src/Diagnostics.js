@@ -62,7 +62,9 @@ function missingImportToDiagnostic(
         line: symbol.location.end.line - 1,
       },
     },
-    message: `The ${symbol.type} ${symbol.id} is not imported.`,
+    message:
+      `The ${symbol.type} ${symbol.id} is not imported.\n` +
+      'Select a suggestion from the text editor.',
     source: DIAGNOSTIC_SOURCE,
   };
 }

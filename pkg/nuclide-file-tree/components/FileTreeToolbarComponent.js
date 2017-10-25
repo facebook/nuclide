@@ -72,7 +72,7 @@ export class FileTreeToolbarComponent extends React.Component<Props, State> {
       atom.commands.add(
         'atom-workspace',
         // This command is exposed in the nuclide-working-sets menu config.
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'working-sets:select-active',
         this._toggleWorkingSetsSelector,
       ),

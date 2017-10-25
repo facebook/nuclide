@@ -271,9 +271,7 @@ export default class ConnectionDialog extends React.Component<Props, State> {
 
     return (
       <div>
-        <div className="block">
-          {content}
-        </div>
+        <div className="block">{content}</div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           {saveButtonGroup}
           <ButtonGroup>

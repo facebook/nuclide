@@ -52,8 +52,9 @@ export function getDeviceInfo(
 
 export function getProcesses(
   device: DeviceId,
+  timeout: number,
 ): ConnectableObservable<Array<Process>> {
-  return new Processes(new Adb(device)).fetch().publish();
+  return new Processes(new Adb(device)).fetch(timeout).publish();
 }
 
 export async function stopPackage(
@@ -130,6 +131,15 @@ export async function launchMainActivity(
   debug: boolean,
 ): Promise<string> {
   return new Adb(device).launchMainActivity(packageName, debug);
+}
+
+export async function launchService(
+  device: DeviceId,
+  packageName: string,
+  serviceName: string,
+  debug: boolean,
+): Promise<string> {
+  return new Adb(device).launchService(packageName, serviceName, debug);
 }
 
 export async function activityExists(

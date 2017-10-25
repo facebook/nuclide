@@ -12,7 +12,7 @@
 import classnames from 'classnames';
 import type DebuggerModel from './DebuggerModel';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {ScopesComponent} from './ScopesComponent';
@@ -22,23 +22,24 @@ import {DebuggerMode} from './DebuggerStore';
 type Props = {
   model: DebuggerModel,
 };
+type State = {
+  mode: DebuggerModeType,
+};
 
-export class ScopesView extends React.PureComponent<
-  Props,
-  {
-    mode: DebuggerModeType,
-  },
-> {
+export class ScopesView extends React.PureComponent<Props, State> {
   _scopesComponentWrapped: React.ComponentType<any>;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
     this._scopesComponentWrapped = bindObservableAsProps(
-      props.model.getScopesStore().getScopes().map(scopes => ({scopes})),
+      props.model
+        .getScopesStore()
+        .getScopes()
+        .map(scopes => ({scopes})),
       ScopesComponent,
     );
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
       mode: debuggerStore.getDebuggerMode(),
@@ -79,6 +80,7 @@ export class ScopesView extends React.PureComponent<
         <div className="nuclide-debugger-pane-content">
           <ScopesComponentWrapped
             watchExpressionStore={model.getWatchExpressionStore()}
+            scopesStore={model.getScopesStore()}
           />
         </div>
       </div>

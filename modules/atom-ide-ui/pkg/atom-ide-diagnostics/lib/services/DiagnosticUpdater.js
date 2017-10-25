@@ -12,11 +12,12 @@
 
 import type {
   AppState,
+  CodeActionsState,
   DiagnosticMessage,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
-  ProjectDiagnosticMessage,
+  DiagnosticMessages,
   Store,
+  DiagnosticMessageKind,
+  UiConfig,
 } from '../types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
@@ -30,16 +31,11 @@ export default class DiagnosticUpdater {
   _store: Store;
   _states: Observable<AppState>;
   _allMessageUpdates: Observable<Array<DiagnosticMessage>>;
-  _projectMessageUpdates: Observable<Array<ProjectDiagnosticMessage>>;
 
   constructor(store: Store) {
     this._store = store;
     // $FlowIgnore: Flow doesn't know about Symbol.observable
     this._states = Observable.from(store);
-
-    this._projectMessageUpdates = this._states
-      .map(Selectors.getProjectMessages)
-      .distinctUntilChanged();
 
     this._allMessageUpdates = this._states
       .map(Selectors.getMessages)
@@ -50,20 +46,8 @@ export default class DiagnosticUpdater {
     return Selectors.getMessages(this._store.getState());
   };
 
-  getProjectMessages = (): Array<ProjectDiagnosticMessage> => {
-    return Selectors.getProjectMessages(this._store.getState());
-  };
-
-  getFileMessageUpdates = (filePath: NuclideUri): FileDiagnosticMessages => {
+  getFileMessageUpdates = (filePath: NuclideUri): DiagnosticMessages => {
     return Selectors.getFileMessageUpdates(this._store.getState(), filePath);
-  };
-
-  observeProjectMessages = (
-    callback: (messages: Array<ProjectDiagnosticMessage>) => mixed,
-  ): IDisposable => {
-    return new UniversalDisposable(
-      this._projectMessageUpdates.subscribe(callback),
-    );
   };
 
   observeMessages = (
@@ -74,7 +58,7 @@ export default class DiagnosticUpdater {
 
   observeFileMessages = (
     filePath: NuclideUri,
-    callback: (update: FileDiagnosticMessages) => mixed,
+    callback: (update: DiagnosticMessages) => mixed,
   ): IDisposable => {
     return new UniversalDisposable(
       // TODO: As a potential perf improvement, we could cache so the mapping only happens once.
@@ -87,11 +71,43 @@ export default class DiagnosticUpdater {
     );
   };
 
-  applyFix = (message: FileDiagnosticMessage): void => {
+  observeCodeActionsForMessage = (
+    callback: (update: CodeActionsState) => mixed,
+  ): IDisposable => {
+    return new UniversalDisposable(
+      this._states
+        .map(state => state.codeActionsForMessage)
+        .distinctUntilChanged()
+        .subscribe(callback),
+    );
+  };
+
+  observeSupportedMessageKinds = (
+    callback: (kinds: Set<DiagnosticMessageKind>) => mixed,
+  ): IDisposable => {
+    return new UniversalDisposable(
+      this._states.map(Selectors.getSupportedMessageKinds).subscribe(callback),
+    );
+  };
+
+  observeUiConfig = (callback: (config: UiConfig) => mixed): IDisposable => {
+    return new UniversalDisposable(
+      this._states.map(Selectors.getUiConfig).subscribe(callback),
+    );
+  };
+
+  applyFix = (message: DiagnosticMessage): void => {
     this._store.dispatch(Actions.applyFix(message));
   };
 
   applyFixesForFile = (file: NuclideUri): void => {
     this._store.dispatch(Actions.applyFixesForFile(file));
+  };
+
+  fetchCodeActions = (
+    editor: atom$TextEditor,
+    messages: Array<DiagnosticMessage>,
+  ): void => {
+    this._store.dispatch(Actions.fetchCodeActions(editor, messages));
   };
 }

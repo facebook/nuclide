@@ -18,6 +18,7 @@ import ReactDOM from 'react-dom';
 type Props = {
   children?: ?React.Element<any>,
   className?: string,
+  // eslint-disable-next-line react/no-unused-prop-types
   direction: FlexDirection,
 };
 
@@ -136,6 +137,7 @@ export class ResizableFlexContainer extends React.Component<Props> {
 }
 
 type ResizableFlexItemProps = {
+  // eslint-disable-next-line react/no-unused-prop-types
   initialFlexScale: number,
   children?: ?React.Element<any>,
 };

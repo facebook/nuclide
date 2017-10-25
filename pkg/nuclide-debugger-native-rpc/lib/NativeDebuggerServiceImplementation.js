@@ -15,7 +15,9 @@ import type {
   AttachTargetInfo,
   LaunchTargetInfo,
   BootstrapDebuggerInfo,
+  PrepareForLaunchResponse,
 } from './NativeDebuggerServiceInterface.js';
+import type {Socket} from 'net';
 
 import child_process from 'child_process';
 import invariant from 'assert';
@@ -26,6 +28,7 @@ import {splitStream} from 'nuclide-commons/observable';
 import {runCommand} from 'nuclide-commons/process';
 import {Observable} from 'rxjs';
 import {track} from '../../nuclide-analytics';
+import net from 'net';
 
 type AttachInfoArgsType = {
   pid: string,
@@ -64,14 +67,18 @@ export async function getAttachTargetInfoList(
     ['-e', '-o', 'pid,comm'],
     {},
   ).toPromise();
-  processes.toString().split('\n').slice(1).forEach(line => {
-    const words = line.trim().split(' ');
-    const pid = Number(words[0]);
-    const command = words.slice(1).join(' ');
-    const components = command.split('/');
-    const name = components[components.length - 1];
-    pidToName.set(pid, name);
-  });
+  processes
+    .toString()
+    .split('\n')
+    .slice(1)
+    .forEach(line => {
+      const words = line.trim().split(' ');
+      const pid = Number(words[0]);
+      const command = words.slice(1).join(' ');
+      const components = command.split('/');
+      const name = components[components.length - 1];
+      pidToName.set(pid, name);
+    });
   // Get processes list from ps utility.
   // -e: include all processes
   // -ww: provides unlimited width for output and prevents the truncating of command names by ps.
@@ -82,12 +89,16 @@ export async function getAttachTargetInfoList(
     ['-eww', '-o', 'pid,args'],
     {},
   ).toPromise();
-  commands.toString().split('\n').slice(1).forEach(line => {
-    const words = line.trim().split(' ');
-    const pid = Number(words[0]);
-    const command = words.slice(1).join(' ');
-    pidToCommand.set(pid, command);
-  });
+  commands
+    .toString()
+    .split('\n')
+    .slice(1)
+    .forEach(line => {
+      const words = line.trim().split(' ');
+      const pid = Number(words[0]);
+      const command = words.slice(1).join(' ');
+      pidToCommand.set(pid, command);
+    });
   // Filter out processes that have died in between ps calls and zombiue processes.
   // Place pid, process, and command info into AttachTargetInfo objects and return in an array.
   return Array.from(pidToName.entries())
@@ -143,15 +154,31 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     this.getLogger().setLevel(config.logLevel);
   }
 
+  _expandPath(path: string, cwd: ?string): string {
+    // Expand a path to interpret ~/ as home and ./ as relative
+    // to the current working directory.
+    return path.startsWith('./')
+      ? nuclideUri.resolve(
+          cwd != null ? nuclideUri.expandHomeDir(cwd) : '',
+          path.substring(2),
+        )
+      : nuclideUri.expandHomeDir(path);
+  }
+
   attach(attachInfo: AttachTargetInfo): ConnectableObservable<void> {
     this.getLogger().debug(`attach process: ${JSON.stringify(attachInfo)}`);
     const inferiorArguments = {
       pid: String(attachInfo.pid),
-      // flowlint-next-line sketchy-null-string:off
-      basepath: attachInfo.basepath
-        ? attachInfo.basepath
-        : this._config.buckConfigRootFile,
-      lldb_python_path: this._config.lldbPythonPath,
+      basepath: this._expandPath(
+        attachInfo.basepath != null
+          ? attachInfo.basepath
+          : this._config.buckConfigRootFile,
+        null,
+      ),
+      lldb_python_path: this._expandPath(
+        this._config.lldbPythonPath || '',
+        null,
+      ),
     };
     return Observable.fromPromise(
       this._startDebugging(inferiorArguments),
@@ -160,19 +187,30 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
 
   launch(launchInfo: LaunchTargetInfo): ConnectableObservable<void> {
     this.getLogger().debug(`launch process: ${JSON.stringify(launchInfo)}`);
+    const exePath = launchInfo.executablePath.trim();
     const inferiorArguments = {
-      executable_path: launchInfo.executablePath,
+      executable_path: this._expandPath(exePath, launchInfo.workingDirectory),
       launch_arguments: launchInfo.arguments,
       launch_environment_variables: launchInfo.environmentVariables,
       working_directory: launchInfo.workingDirectory,
-      // flowlint-next-line sketchy-null-string:off
-      stdin_filepath: launchInfo.stdinFilePath ? launchInfo.stdinFilePath : '',
-      // flowlint-next-line sketchy-null-string:off
-      basepath: launchInfo.basepath
-        ? launchInfo.basepath
-        : this._config.buckConfigRootFile,
-      lldb_python_path: this._config.lldbPythonPath,
-      core_dump_path: launchInfo.coreDump || '',
+      stdin_filepath: this._expandPath(
+        launchInfo.stdinFilePath != null ? launchInfo.stdinFilePath : '',
+        launchInfo.workingDirectory,
+      ),
+      basepath: this._expandPath(
+        launchInfo.basepath != null
+          ? launchInfo.basepath
+          : this._config.buckConfigRootFile,
+        launchInfo.workingDirectory,
+      ),
+      lldb_python_path: this._expandPath(
+        this._config.lldbPythonPath || '',
+        launchInfo.workingDirectory,
+      ),
+      core_dump_path: this._expandPath(
+        launchInfo.coreDump || '',
+        launchInfo.workingDirectory,
+      ),
     };
 
     if (launchInfo.coreDump != null && launchInfo.coreDump !== '') {
@@ -297,22 +335,24 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     // sending data.
     argumentsStream.write('init\n');
     this.getSubscriptions().add(
-      observeStream(argumentsStream).first().subscribe(
-        text => {
-          if (text.startsWith('ready')) {
-            const args_in_json = JSON.stringify(args);
-            this.getLogger().info(`Sending ${args_in_json} to child_process`);
-            argumentsStream.write(`${args_in_json}\n`);
-          } else {
-            this.getLogger().error(`Get unknown initial data: ${text}.`);
-            child.kill();
-          }
-        },
-        error =>
-          this.getLogger().error(
-            `argumentsStream error: ${JSON.stringify(error)}`,
-          ),
-      ),
+      observeStream(argumentsStream)
+        .first()
+        .subscribe(
+          text => {
+            if (text.startsWith('ready')) {
+              const args_in_json = JSON.stringify(args);
+              this.getLogger().info(`Sending ${args_in_json} to child_process`);
+              argumentsStream.write(`${args_in_json}\n`);
+            } else {
+              this.getLogger().error(`Get unknown initial data: ${text}.`);
+              child.kill();
+            }
+          },
+          error =>
+            this.getLogger().error(
+              `argumentsStream error: ${JSON.stringify(error)}`,
+            ),
+        ),
     );
   }
 
@@ -362,5 +402,109 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
   _handleLLDBExit(): void {
     // Fire and forget.
     this.dispose();
+  }
+
+  // Spawns a TCP socket server to be used to communicate with the python
+  // launch wrapper when launching a process in the terminal. The wrapper
+  // will use this socket to communicate its pid, and wait for us to attach
+  // a debugger before calling execv to load the target image into the process.
+  async _spawnIpcServer(
+    onConnectCallback: (socket: Socket) => void,
+  ): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.on('error', reject);
+      server.on('connection', socket => {
+        socket.on('error', () => server.close);
+        socket.on('end', () => server.close);
+        onConnectCallback(socket);
+        server.close();
+      });
+
+      try {
+        server.listen({host: '127.0.0.1', port: 0}, () =>
+          resolve(server.address().port),
+        );
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  // This callback is invoked when the wrapper process starts up and connects
+  // to our TCP socket. It will send its own pid into the socket and then block
+  // on a read of the socket. We will then attach the debugger to the specified
+  // pid, and issue a write to the socket to indicate to the wrapper that the
+  // attach is complete, and it's now OK to resume execution of the target.
+  async _launchWrapperConnected(
+    socket: Socket,
+    data: string,
+    launchInfo: LaunchTargetInfo,
+  ): Promise<void> {
+    // Expect the python wrapper to send us a pid.
+    const pid = parseInt(data.trim(), 10);
+    if (Number.isNaN(pid)) {
+      throw new Error(
+        'Failed to start debugger: Received invalid process ID from target wrapper',
+      );
+    }
+
+    try {
+      // Attach the debugger to the wrapper script process.
+      await this.attach({
+        pid,
+        name: launchInfo.executablePath,
+        commandName: launchInfo.executablePath,
+        basepath: launchInfo.basepath,
+      })
+        .refCount()
+        .toPromise();
+
+      // Send any data into the socket to unblock the target wrapper
+      // and let it know it's safe to proceed with launching now.
+      socket.end('continue');
+    } catch (e) {
+      this._handleLLDBExit();
+    }
+  }
+
+  async prepareForTerminalLaunch(
+    launchInfo: LaunchTargetInfo,
+  ): Promise<PrepareForLaunchResponse> {
+    // Expand home directory if the launch executable starts with ~/
+    launchInfo.executablePath = nuclideUri.expandHomeDir(
+      launchInfo.executablePath,
+    );
+
+    const pythonBinaryPath =
+      // flowlint-next-line sketchy-null-string:off
+      this._config.pythonBinaryPath ||
+      (await _getDefaultLLDBConfig()).pythonPath;
+
+    // Find the launch wrapper.
+    const wrapperScriptPath = nuclideUri.join(
+      __dirname,
+      '../scripts/launch.py',
+    );
+
+    const ipcPort = await this._spawnIpcServer(socket => {
+      socket.once('data', async data => {
+        this._launchWrapperConnected(socket, data.toString(), launchInfo);
+      });
+    });
+
+    return {
+      launchCommand: pythonBinaryPath,
+      targetExecutable: launchInfo.executablePath,
+      launchCwd: nuclideUri.expandHomeDir(
+        launchInfo.workingDirectory !== '' ? launchInfo.workingDirectory : '~',
+      ),
+      launchArgs: [
+        wrapperScriptPath,
+        String(ipcPort),
+        launchInfo.executablePath,
+        ...launchInfo.arguments,
+      ],
+    };
   }
 }

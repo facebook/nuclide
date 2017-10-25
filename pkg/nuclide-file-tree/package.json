@@ -31,6 +31,12 @@
       "versions": {
         "0.0.0": "getProjectSelectionManagerForFileTree"
       }
+    },
+    "additional-log-files": {
+      "description": "File tree state files",
+      "versions": {
+        "0.0.0": "getFileTreeAdditionalLogFilesProvider"
+      }
     }
   },
   "atomTestRunner": "../../lib/test-runner-entry.js",
@@ -48,7 +54,7 @@
       "revealFileOnSwitch": {
         "title": "Reveal File on Switch",
         "type": "boolean",
-        "default": true,
+        "default": false,
         "description": "Automatically reveal the current file when you switch tabs"
       },
       "hideIgnoredNames": {
@@ -91,6 +97,12 @@
         "type": "boolean",
         "default": true,
         "description": "Automatically expand single child directory when parent is expanded"
+      },
+      "focusEditorOnFileSelection": {
+          "title": "Focus editor on file selection",
+          "type": "boolean",
+          "default": false,
+          "description": "Focuses the editor when a file is selected and previewed"
       }
     },
     "packageType": "Atom",

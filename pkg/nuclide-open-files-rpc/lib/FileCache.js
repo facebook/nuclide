@@ -14,6 +14,7 @@ import type {
   FileOpenEvent,
   FileCloseEvent,
   FileEditEvent,
+  FileSaveEvent,
   FileEvent,
   FileVersion,
   LocalFileEvent,
@@ -53,9 +54,9 @@ export class FileCache {
     this._requests.onEvent(event);
 
     // invariant: because the above two lines have updated both _buffers and _requests,
-    // then getBufferAtVersion will necessarily return immediately and succesfully.
-    // And getBufferForFileEdit will also succeed.
-    invariant(event.kind !== 'edit' || this.getBufferForFileEdit(event));
+    // then getBufferAtVersion will necessarily return immediately and successfully.
+    // And getBufferForFileEvent will also succeed.
+    invariant(event.kind !== 'edit' || this.getBufferForFileEvent(event));
 
     this._fileEvents.next(event);
   }
@@ -86,6 +87,9 @@ export class FileCache {
           return event;
         });
         break;
+      case FileEventKind.SAVE:
+        this._save(filePath, changeCount);
+        break;
       case FileEventKind.SYNC:
         if (buffer == null) {
           this._open(filePath, event.contents, changeCount);
@@ -94,9 +98,15 @@ export class FileCache {
         }
         break;
       default:
+        (event.kind: empty);
         throw new Error(`Unexpected FileEvent.kind: ${event.kind}`);
     }
     return Promise.resolve(undefined);
+  }
+
+  async getTotalBufferSize(): Promise<number> {
+    const addLength = (acc, buffer) => acc + buffer.getText().length;
+    return [...this._buffers.values()].reduce(addLength, 0);
   }
 
   async onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void> {
@@ -154,6 +164,12 @@ export class FileCache {
     buffer.destroy();
   }
 
+  _save(filePath: NuclideUri, changeCount: number): void {
+    this.update(() => {
+      return createSaveEvent(this.createFileVersion(filePath, changeCount));
+    });
+  }
+
   dispose(): void {
     // The _close routine will delete elements from the _buffers map.
     // Per ES6 this is safe to do even while iterating.
@@ -192,11 +208,11 @@ export class FileCache {
       : null;
   }
 
-  // getBufferForFileEdit - this function may be called immediately when an edit event
-  // happens, before any awaits. At that time the buffer is guaranteed to be
+  // getBufferForFileEvent - this function may be called immediately when an edit or save
+  // event happens, before any awaits. At that time the buffer is guaranteed to be
   // available. If called at any other time, the buffer may no longer be available,
   // in which case it may throw.
-  getBufferForFileEdit(fileEvent: FileEditEvent): simpleTextBuffer$TextBuffer {
+  getBufferForFileEvent(fileEvent: FileEvent): simpleTextBuffer$TextBuffer {
     // TODO: change this to return a string, like getBuffer() above.
     const fileVersion = fileEvent.fileVersion;
     invariant(this._requests.isBufferAtVersion(fileVersion));
@@ -265,6 +281,13 @@ function createOpenEvent(
 function createCloseEvent(fileVersion: FileVersion): FileCloseEvent {
   return {
     kind: FileEventKind.CLOSE,
+    fileVersion,
+  };
+}
+
+function createSaveEvent(fileVersion: FileVersion): FileSaveEvent {
+  return {
+    kind: FileEventKind.SAVE,
     fileVersion,
   };
 }

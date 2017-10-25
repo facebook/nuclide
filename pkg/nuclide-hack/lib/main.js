@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {SymbolResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import {HackSymbolProvider} from './HackSymbolProvider';
 import {hackLanguageService, resetHackLanguageService} from './HackLanguage';
@@ -22,6 +22,6 @@ export function deactivate(): void {
   resetHackLanguageService();
 }
 
-export function registerQuickOpenProvider(): Provider {
+export function registerQuickOpenProvider(): Provider<SymbolResult> {
   return HackSymbolProvider;
 }

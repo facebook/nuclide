@@ -41,6 +41,10 @@ export async function echoBoolean(arg: boolean): Promise<boolean> {
 export async function echoDefaultNumber(arg: number = 1): Promise<number> {
   return arg;
 }
+export async function echoVoid(arg: void): Promise<void> {
+  assert(arg === undefined, 'Argument to echoVoid must be undefined');
+  return arg;
+}
 
 // More Complex Objects.
 export async function echoDate(arg: Date): Promise<Date> {

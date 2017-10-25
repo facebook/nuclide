@@ -156,18 +156,10 @@ class ThreadsWindowComponent extends React.Component<mixed, StateType> {
               style={rowStyle}
               // $FlowFixMe(>=0.53.0) Flow suppress
               ref={ref => this._setStoppedThread(ref)}>
-              <td>
-                {indicator}
-              </td>
-              <td>
-                {thread.id}
-              </td>
-              <td>
-                {thread.address}
-              </td>
-              <td>
-                {thread.stopReason}
-              </td>
+              <td>{indicator}</td>
+              <td>{thread.id}</td>
+              <td>{thread.address}</td>
+              <td>{thread.stopReason}</td>
             </tr>,
           );
         } else {
@@ -175,18 +167,10 @@ class ThreadsWindowComponent extends React.Component<mixed, StateType> {
             <tr
               onDoubleClick={this._handleDoubleClick.bind(this, thread)}
               style={rowStyle}>
-              <td>
-                {indicator}
-              </td>
-              <td>
-                {thread.id}
-              </td>
-              <td>
-                {thread.address}
-              </td>
-              <td>
-                {thread.stopReason}
-              </td>
+              <td>{indicator}</td>
+              <td>{thread.id}</td>
+              <td>{thread.address}</td>
+              <td>{thread.stopReason}</td>
             </tr>,
           );
         }
@@ -212,9 +196,7 @@ class ThreadsWindowComponent extends React.Component<mixed, StateType> {
                 <td>Stop Reason</td>
               </tr>
             </thead>
-            <tbody>
-              {children}
-            </tbody>
+            <tbody>{children}</tbody>
           </table>
         </div>
       );

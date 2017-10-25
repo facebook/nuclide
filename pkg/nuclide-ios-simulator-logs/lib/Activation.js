@@ -11,16 +11,16 @@
 
 import type {OutputService} from '../../nuclide-console/lib/types';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import formatEnoentNotification from '../../commons-atom/format-enoent-notification';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {LogTailer} from '../../nuclide-console/lib/LogTailer';
 import {createMessageStream} from './createMessageStream';
 import {createProcessStream} from './createProcessStream';
-import {CompositeDisposable, Disposable} from 'atom';
 import {Observable} from 'rxjs';
 
 export default class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _iosLogTailer: LogTailer;
 
   constructor(state: ?Object) {
@@ -48,10 +48,10 @@ export default class Activation {
       },
     });
 
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
+    this._disposables = new UniversalDisposable(
+      () => {
         this._iosLogTailer.stop();
-      }),
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-ios-simulator-logs:start': () => this._iosLogTailer.start(),
         'nuclide-ios-simulator-logs:stop': () => this._iosLogTailer.stop(),

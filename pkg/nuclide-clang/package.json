@@ -54,11 +54,6 @@
     "language-objective-c:grammar-used"
   ],
   "consumedServices": {
-    "atom-ide-busy-signal": {
-      "versions": {
-        "0.1.0": "consumeBusySignal"
-      }
-    },
     "nuclide.clang.configuration": {
       "versions": {
         "0.0.0": "consumeClangConfigurationProvider"
@@ -79,6 +74,11 @@
     "autocomplete.provider": {
       "versions": {
         "2.0.0": "createAutocompleteProvider"
+      }
+    },
+    "code-actions": {
+      "versions": {
+        "0.1.0": "provideCodeActions"
       }
     },
     "code-format.file": {

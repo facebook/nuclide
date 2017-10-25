@@ -19,6 +19,18 @@ import {jasmineAttachWorkspace} from 'nuclide-commons-atom/test-helpers';
 import Hyperclick from '../lib/Hyperclick';
 import showTriggerConflictWarning from '../lib/showTriggerConflictWarning';
 import invariant from 'assert';
+import {atomConfig} from '../package.json';
+
+beforeEach(() => {
+  Object.keys(atomConfig).forEach(key => {
+    const config = atomConfig[key];
+    atom.config.setSchema(`hyperclick.${key}`, {
+      ...config,
+      // To make testing easier, use metaKey on all platforms.
+      default: 'metaKey',
+    });
+  });
+});
 
 describe('Hyperclick', () => {
   let textEditor: atom$TextEditor = (null: any);

@@ -13,16 +13,16 @@ import type {OutputService} from '../../../nuclide-console/lib/types';
 import type {CwdApi} from '../../../nuclide-current-working-directory/lib/CwdApi';
 import type {PackagerEvent} from './types';
 
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {LogTailer} from '../../../nuclide-console/lib/LogTailer';
 import {getCommandInfo} from '../../../nuclide-react-native-base';
 import {observeProcess} from 'nuclide-commons/process';
 import {shellQuote} from 'nuclide-commons/string';
 import {parseMessages} from './parseMessages';
-import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
 import electron from 'electron';
 import {Observable} from 'rxjs';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 /**
  * Runs the server in the appropriate place. This class encapsulates all the state of the packager
@@ -31,7 +31,7 @@ import {Observable} from 'rxjs';
 export class PackagerActivation {
   _logTailer: LogTailer;
   _projectRootPath: ?string;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
     const packagerEvents = Observable.defer(() =>
@@ -85,10 +85,10 @@ export class PackagerActivation {
       },
     });
 
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
+    this._disposables = new UniversalDisposable(
+      () => {
         this._logTailer.stop();
-      }),
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-react-native:start-packager': event => {
           const detail =

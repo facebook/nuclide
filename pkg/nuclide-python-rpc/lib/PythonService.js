@@ -18,14 +18,15 @@ import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
   DiagnosticMessageType,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
-  FileDiagnosticMessage,
   CodeAction,
 } from 'atom-ide-ui';
-import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {
+  AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
+} from '../../nuclide-language-service/lib/LanguageService';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
@@ -159,11 +160,11 @@ class PythonSingleFileLanguageService {
   getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
-  ): Promise<?DiagnosticProviderUpdate> {
+  ): Promise<?FileDiagnosticMap> {
     throw new Error('Not Yet Implemented');
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     throw new Error('Not Yet Implemented');
   }
 
@@ -340,6 +341,23 @@ class PythonSingleFileLanguageService {
   }
 
   isFileInProject(fileUri: NuclideUri): Promise<boolean> {
+    throw new Error('Not Yet Implemented');
+  }
+
+  getExpandedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range> {
+    throw new Error('Not Yet Implemented');
+  }
+
+  getCollapsedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range> {
     throw new Error('Not Yet Implemented');
   }
 

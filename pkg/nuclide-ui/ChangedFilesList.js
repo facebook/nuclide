@@ -103,41 +103,40 @@ export default class ChangedFilesList extends React.Component<Props, State> {
     });
 
     const showMoreFilesElement =
-      fileStatuses.size > filesToShow
-        ? <div
-            className="icon icon-ellipsis"
-            // $FlowFixMe(>=0.53.0) Flow suppress
-            ref={addTooltip({
-              title: 'Show more files with uncommitted changes',
-              delay: 300,
-              placement: 'bottom',
+      fileStatuses.size > filesToShow ? (
+        <div
+          className="icon icon-ellipsis"
+          ref={addTooltip({
+            title: 'Show more files with uncommitted changes',
+            delay: 300,
+            placement: 'bottom',
+          })}
+          onClick={() =>
+            this.setState({
+              visiblePagesCount: this.state.visiblePagesCount + 1,
             })}
-            onClick={() =>
-              this.setState({
-                visiblePagesCount: this.state.visiblePagesCount + 1,
-              })}
-          />
-        : null;
+        />
+      ) : null;
 
     const isHgRoot = isHgPath(rootPath);
     return (
       <ul className="list-tree has-collapsable-children nuclide-changed-files-list">
         <li className={rootClassName}>
-          {this.props.shouldShowFolderName
-            ? <div
-                className="list-item"
-                key={this.props.rootPath}
-                onClick={() =>
-                  this.setState({isCollapsed: !this.state.isCollapsed})}>
-                <span
-                  className="icon icon-file-directory nuclide-file-changes-root-entry"
-                  data-path={this.props.rootPath}>
-                  {nuclideUri.basename(this.props.rootPath)}
-                </span>
-              </div>
-            : null}
+          {this.props.shouldShowFolderName ? (
+            <div
+              className="list-item"
+              key={this.props.rootPath}
+              onClick={() =>
+                this.setState({isCollapsed: !this.state.isCollapsed})}>
+              <span
+                className="icon icon-file-directory nuclide-file-changes-root-entry"
+                data-path={this.props.rootPath}>
+                {nuclideUri.basename(this.props.rootPath)}
+              </span>
+            </div>
+          ) : null}
           <ul className="list-tree has-flat-children">
-            {sizeLimitedFileChanges.map(([filePath, fileStatus]) =>
+            {sizeLimitedFileChanges.map(([filePath, fileStatus]) => (
               <ChangedFile
                 commandPrefix={commandPrefix}
                 enableFileExpansion={enableFileExpansion}
@@ -163,11 +162,9 @@ export default class ChangedFilesList extends React.Component<Props, State> {
                 openInDiffViewOption={openInDiffViewOption}
                 onRevertFile={onRevertFile}
                 rootPath={rootPath}
-              />,
-            )}
-            <li>
-              {showMoreFilesElement}
-            </li>
+              />
+            ))}
+            <li>{showMoreFilesElement}</li>
           </ul>
         </li>
       </ul>

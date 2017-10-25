@@ -19,8 +19,8 @@ import type {
 } from './types';
 
 import invariant from 'assert';
-import {Disposable, CompositeDisposable} from 'atom';
 import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
 import {DebuggerStore} from './DebuggerStore';
@@ -54,11 +54,9 @@ export default class BreakpointStore {
     debuggerStore: ?DebuggerStore,
   ) {
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._debuggerStore = debuggerStore;
     this._breakpointIdSeed = 0;
     this._breakpoints = new Map();

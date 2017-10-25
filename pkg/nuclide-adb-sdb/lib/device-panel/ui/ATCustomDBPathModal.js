@@ -20,7 +20,6 @@ type Props = {|
   setCustomPath: (path: ?string) => void,
   dismiss: () => mixed,
   activePath: ?string,
-  activePort: ?number,
   currentCustomPath: ?string,
   registeredPaths: string[],
 |};
@@ -48,26 +47,29 @@ export class ATCustomDBPathModal extends React.Component<Props, State> {
     this.setState({customPath: customPath.length === 0 ? null : customPath});
   };
 
+  _handleCopyToClipboard = (): void => {
+    if (this.props.activePath != null) {
+      atom.clipboard.write(this.props.activePath);
+    }
+  };
+
   _getActiveConfig(): React.Element<any> {
     return (
-      <div>
+      <div className="nuclide-adb-sdb-path">
         <label>
           Active {this.props.type} path:{' '}
           <i>
-            <strong>
-              {this.props.activePath}
-            </strong>
+            <strong>{this.props.activePath}</strong>
           </i>
         </label>
-        <label>
-          Active {this.props.type} port:{' '}
-          <i>
-            <strong>
-              {// flowlint-next-line sketchy-null-number:off
-              this.props.activePort || 'default'}
-            </strong>
-          </i>
-        </label>
+        {this.props.activePath == null ? null : (
+          <Button
+            onClick={this._handleCopyToClipboard}
+            size="SMALL"
+            className="nuclide-adb-sdb-copy-path-btn">
+            Copy path to clipboard
+          </Button>
+        )}
       </div>
     );
   }
@@ -129,18 +131,10 @@ export class ATCustomDBPathModal extends React.Component<Props, State> {
   render(): React.Node {
     return (
       <div>
-        <div className="block">
-          {this._getActiveConfig()}
-        </div>
-        <div className="block">
-          {this._getPathSelector()}
-        </div>
-        <div className="block">
-          {this._getInfoBox()}
-        </div>
-        <div className="block">
-          {this._getFooter()}
-        </div>
+        <div className="block">{this._getActiveConfig()}</div>
+        <div className="block">{this._getPathSelector()}</div>
+        <div className="block">{this._getInfoBox()}</div>
+        <div className="block">{this._getFooter()}</div>
       </div>
     );
   }

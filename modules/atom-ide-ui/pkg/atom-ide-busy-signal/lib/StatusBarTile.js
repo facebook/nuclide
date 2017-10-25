@@ -33,23 +33,15 @@ type Props = {
 function StatusBarTileComponent(props: Props) {
   let element;
   if (props.waitingForUser) {
-    element = (
-      <Icon className="atom-ide-busy-signal-status-bar" icon="unverified" />
-    );
+    element = <Icon className="busy-signal-status-bar" icon="unverified" />;
   } else if (props.waitingForComputer) {
-    element = (
-      <div className="atom-ide-busy-signal-status-bar loading-spinner-tiny" />
-    );
+    element = <div className="busy-signal-status-bar loading-spinner-tiny" />;
   } else {
     element = null;
   }
 
   if (props.onDidClick != null) {
-    element = (
-      <a onClick={props.onDidClick}>
-        {element}
-      </a>
-    );
+    element = <a onClick={props.onDidClick}>{element}</a>;
   }
 
   return element;
@@ -128,6 +120,8 @@ export default class StatusBarTile {
       } else {
         this._isMouseOverItem = false;
       }
+    } else if (messages.some(message => message.shouldRevealTooltip())) {
+      this._ensureTooltip();
     }
   }
 

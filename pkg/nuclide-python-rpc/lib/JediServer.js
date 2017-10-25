@@ -57,8 +57,9 @@ async function getServerArgs(src: string) {
   // Append the user's PYTHONPATH if it exists.
   const {PYTHONPATH} = await getOriginalEnvironment();
   if (PYTHONPATH != null && PYTHONPATH.trim() !== '') {
-    overrides.paths = (overrides.paths || [])
-      .concat(nuclideUri.splitPathList(PYTHONPATH));
+    overrides.paths = (overrides.paths || []).concat(
+      nuclideUri.splitPathList(PYTHONPATH),
+    );
   }
 
   return {

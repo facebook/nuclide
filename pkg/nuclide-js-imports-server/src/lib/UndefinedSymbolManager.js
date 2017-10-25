@@ -19,13 +19,13 @@ traverse.Scope.prototype.warnOnFlowBinding = x => x;
 
 import type {UndefinedSymbol} from './types';
 
-const BUILT_IN_FLOW_TYPES = ['Iterator'];
+const BUILT_INS = ['Iterator', '__DEV__'];
 
 export class UndefinedSymbolManager {
   globals: Set<string>;
 
   constructor(envs: Array<string>) {
-    this.globals = new Set(BUILT_IN_FLOW_TYPES);
+    this.globals = new Set(BUILT_INS);
     envs.forEach(env => {
       Object.keys(globalsJSON[env]).forEach(globalVar => {
         this.globals.add(globalVar);
@@ -35,7 +35,7 @@ export class UndefinedSymbolManager {
 
   findUndefined(ast: Object): Array<UndefinedSymbol> {
     try {
-      return traveseTreeForUndefined(ast, this.globals);
+      return traverseTreeForUndefined(ast, this.globals);
     } catch (error) {
       // babel-traverse throws errors when something is imported twice.
       // We try-catch to avoid logging any babel-traverse errors.
@@ -45,12 +45,13 @@ export class UndefinedSymbolManager {
   }
 }
 
-function traveseTreeForUndefined(
+function traverseTreeForUndefined(
   ast: Object,
   globals: Set<string>,
 ): Array<UndefinedSymbol> {
   const undefinedSymbols = [];
   const definedTypes = new Set();
+  const definedValues = new Set();
   traverse(ast, {
     ImportDeclaration: path => {
       saveImports(path, definedTypes);
@@ -81,9 +82,27 @@ function traveseTreeForUndefined(
         findUndefinedTypes(path, undefinedSymbols, globals);
       },
     },
+    Identifier(path) {
+      // Allow identifiers on the LHS of an assignment.
+      // In non-strict JavaScript, this might just be a declaration.
+      if (
+        path.parent.type === 'AssignmentExpression' &&
+        path.node === path.parent.left
+      ) {
+        definedValues.add(path.node.name);
+      }
+    },
+    LabeledStatement(path) {
+      // Create a fake binding for the label.
+      if (path.node.label && path.node.label.name) {
+        definedValues.add(path.node.label.name);
+      }
+    },
   });
   return undefinedSymbols.filter(
-    symbol => symbol.type === 'value' || !definedTypes.has(symbol.id),
+    symbol =>
+      (symbol.type === 'value' && !definedValues.has(symbol.id)) ||
+      (symbol.type === 'type' && !definedTypes.has(symbol.id)),
   );
 }
 

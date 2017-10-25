@@ -17,12 +17,14 @@ import type {
   Record,
   RecordProvider,
   SourceInfo,
+  WatchEditorFunction,
 } from '../types';
 
 import type {CreatePasteFunction} from '../../../nuclide-paste-base';
 
 export const CLEAR_RECORDS = 'CLEAR_RECORDS';
 export const SET_CREATE_PASTE_FUNCTION = 'SET_CREATE_PASTE_FUNCTION';
+export const SET_WATCH_EDITOR_FUNCTION = 'SET_WATCH_EDITOR_FUNCTION';
 export const REGISTER_EXECUTOR = 'REGISTER_EXECUTOR';
 export const EXECUTE = 'EXECUTE';
 export const REGISTER_RECORD_PROVIDER = 'REGISTER_RECORD_PROVIDER';
@@ -71,6 +73,7 @@ export function registerOutputProvider(outputProvider: OutputProvider): Action {
       level: message.level,
       data: message.data,
       tags: message.tags,
+      repeatCount: 1,
 
       kind: 'message',
       sourceId: outputProvider.id,
@@ -148,5 +151,12 @@ export function setCreatePasteFunction(
   return {
     type: SET_CREATE_PASTE_FUNCTION,
     payload: {createPasteFunction},
+  };
+}
+
+export function setWatchEditor(watchEditor: ?WatchEditorFunction): Action {
+  return {
+    type: SET_WATCH_EDITOR_FUNCTION,
+    payload: {watchEditor},
   };
 }

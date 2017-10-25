@@ -2,34 +2,47 @@
 @import "octicon-mixins.less";
 @import "octicon-utf-codes.less";
 
+@gutter-size: 0.7em;
+
 // Styles for gutter glyphs.
 
-.gutter[gutter-name=nuclide-diagnostics-gutter] {
-  min-width: 0.5em;
+.gutter[gutter-name=diagnostics-gutter] {
+  width: @gutter-size;
 }
 
-.nuclide-diagnostics-gutter-ui-gutter-error,
-.nuclide-diagnostics-gutter-ui-gutter-warning,
-.nuclide-diagnostics-gutter-ui-gutter-info {
-  // Needs to match .nuclide-debugger-breakpoint-icon
-  .octicon(triangle-right, @size: 130%);
-  text-align: left;
-  display: block;
-  width: 0.8em;
+// The gutter icon. If you make any edits here, make extra sure that the icon is
+// still vertically centered within the line number and looks good next to the
+// debugger breakpoint icon at all different editor font sizes. Probably,
+// flexbox is the only way to reliably do this.
+.diagnostics-gutter-ui-item {
+  display: flex;
 
-  // Makes it smaller, but respects the line-height :)
-  transform: scale(0.7);
-  transform-origin: left;
-}
+  .icon {
+    display: flex;
 
-.nuclide-diagnostics-gutter-ui-gutter-error {
-  color: @text-color-error;
-}
+    width: @gutter-size;
+    height: @gutter-size;
+    font-size: @gutter-size;
+    align-self: center;
 
-.nuclide-diagnostics-gutter-ui-gutter-warning {
-  color: @text-color-warning;
-}
+    &::before {
+      width: 1em;
+      height: 1em;
+      font-size: 1em;
+      margin: 0;
 
-.nuclide-diagnostics-gutter-ui-gutter-info {
-  color: @text-color-info;
+      align-self: center;
+    }
+  }
+
+  &.diagnostics-gutter-ui-gutter-info,
+  &.diagnostics-gutter-ui-gutter-review {
+    color: @text-color-info;
+  }
+  &.diagnostics-gutter-ui-gutter-error {
+    color: @text-color-error;
+  }
+  &.diagnostics-gutter-ui-gutter-warning {
+    color: @text-color-warning;
+  }
 }

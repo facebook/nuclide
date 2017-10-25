@@ -14,7 +14,8 @@
 
 import type SuggestionListType from './SuggestionList';
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import invariant from 'assert';
@@ -58,7 +59,7 @@ type State = {
 class SuggestionList extends React.Component<Props, State> {
   _items: Array<{rightLabel?: string, title: string, callback: () => mixed}>;
   _textEditor: ?atom$TextEditor;
-  _subscriptions: atom$CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _boundConfirm: () => void;
 
   constructor(props: Props) {
@@ -66,7 +67,7 @@ class SuggestionList extends React.Component<Props, State> {
     this.state = {
       selectedIndex: 0,
     };
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._boundConfirm = this._confirm.bind(this);
   }
 
@@ -96,23 +97,15 @@ class SuggestionList extends React.Component<Props, State> {
       }),
     );
 
-    this._subscriptions.add(textEditor.onDidChange(boundClose));
+    this._subscriptions.add(textEditor.getBuffer().onDidChangeText(boundClose));
     this._subscriptions.add(textEditor.onDidChangeCursorPosition(boundClose));
 
     // Prevent scrolling the editor when scrolling the suggestion list.
     const stopPropagation = event => event.stopPropagation();
-    // $FlowFixMe
-    ReactDOM.findDOMNode(this.refs.scroller).addEventListener(
-      'mousewheel',
-      stopPropagation,
-    );
+    this.refs.scroller.addEventListener('mousewheel', stopPropagation);
     this._subscriptions.add(
       new Disposable(() => {
-        // $FlowFixMe
-        ReactDOM.findDOMNode(this.refs.scroller).removeEventListener(
-          'mousewheel',
-          stopPropagation,
-        );
+        this.refs.scroller.removeEventListener('mousewheel', stopPropagation);
       }),
     );
 
@@ -144,9 +137,7 @@ class SuggestionList extends React.Component<Props, State> {
           onMouseDown={this._boundConfirm}
           onMouseEnter={this._setSelectedIndex.bind(this, index)}>
           {item.title}
-          <span className="right-label">
-            {item.rightLabel}
-          </span>
+          <span className="right-label">{item.rightLabel}</span>
         </li>
       );
     });
@@ -224,8 +215,7 @@ class SuggestionList extends React.Component<Props, State> {
   }
 
   _updateScrollPosition() {
-    const listNode = ReactDOM.findDOMNode(this.refs.selectionList);
-    // $FlowFixMe
+    const listNode = this.refs.selectionList;
     const selectedNode = listNode.getElementsByClassName('selected')[0];
     scrollIntoViewIfNeeded(selectedNode, false);
   }

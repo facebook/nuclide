@@ -10,103 +10,88 @@
  * @format
  */
 
-/* eslint-disable nuclide-internal/no-commonjs */
+export type {
+  BusySignalOptions,
+  BusySignalService,
+} from './pkg/atom-ide-busy-signal/lib/types';
 
-import fs from 'fs';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
-import path from 'path';
-import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import FeatureLoader from 'nuclide-commons-atom/FeatureLoader';
+export type {
+  CodeAction,
+  CodeActionProvider,
+} from './pkg/atom-ide-code-actions/lib/types';
 
-const HIDE_WARNING_KEY = 'atom-ide-ui.hideNuclideWarning';
+export type {
+  CodeFormatProvider,
+  RangeCodeFormatProvider,
+  FileCodeFormatProvider,
+  OnTypeCodeFormatProvider,
+  OnSaveCodeFormatProvider,
+} from './pkg/atom-ide-code-format/lib/types';
 
-function displayNuclideWarning() {
-  if (!atom.config.get(HIDE_WARNING_KEY)) {
-    const notification = atom.notifications.addInfo(
-      'Atom IDE UI is bundled with Nuclide',
-      {
-        description:
-          '`atom-ide-ui` will be deactivated in favor of Nuclide.<br>' +
-          'Please disable Nuclide if you only want to use `atom-ide-ui`.',
-        dismissable: true,
-        buttons: [
-          {
-            text: 'Disable Nuclide and reload',
-            onDidClick() {
-              atom.packages.disablePackage('nuclide');
-              atom.reload();
-              notification.dismiss();
-            },
-          },
-          {
-            text: "Don't warn me again",
-            onDidClick() {
-              atom.config.set(HIDE_WARNING_KEY, true);
-              notification.dismiss();
-            },
-          },
-        ],
-      },
-    );
-  }
-}
+export type {
+  CodeHighlightProvider,
+} from './pkg/atom-ide-code-highlight/lib/types';
 
-if (
-  !atom.packages.isPackageDisabled('nuclide') &&
-  atom.packages.getAvailablePackageNames().includes('nuclide')
-) {
-  displayNuclideWarning();
-} else {
-  const featureDir = path.join(__dirname, 'pkg');
-  const features = fs
-    .readdirSync(featureDir)
-    .map(item => {
-      const dirname = path.join(featureDir, item);
-      try {
-        const pkgJson = fs.readFileSync(
-          path.join(dirname, 'package.json'),
-          'utf8',
-        );
-        return {
-          dirname,
-          pkg: JSON.parse(pkgJson),
-        };
-      } catch (err) {
-        if (err.code !== 'ENOENT') {
-          throw err;
-        }
-      }
-    })
-    .filter(Boolean);
-  let disposables: ?UniversalDisposable;
-  const featureLoader = new FeatureLoader({
-    pkgName: 'atom-ide-ui',
-    config: {},
-    features,
-  });
-  featureLoader.load();
-  module.exports = {
-    config: featureLoader.getConfig(),
-    activate() {
-      disposables = new UniversalDisposable(
-        require('nuclide-commons-ui'),
-        atom.packages.onDidActivatePackage(pkg => {
-          if (pkg.name === 'nuclide') {
-            displayNuclideWarning();
-          }
-        }),
-      );
-      featureLoader.activate();
-    },
-    deactivate() {
-      featureLoader.deactivate();
-      if (disposables != null) {
-        disposables.dispose();
-        disposables = null;
-      }
-    },
-    serialize() {
-      featureLoader.serialize();
-    },
-  };
-}
+export type {
+  Datatip,
+  DatatipProvider,
+  DatatipService,
+  MarkedString,
+  ModifierDatatipProvider,
+  ModifierKey,
+} from './pkg/atom-ide-datatip/lib/types';
+
+export type {
+  Definition,
+  DefinitionProvider,
+  DefinitionPreviewProvider,
+  DefinitionQueryResult,
+} from './pkg/atom-ide-definitions/lib/types';
+
+export type {
+  CallbackDiagnosticProvider,
+  DiagnosticFix,
+  DiagnosticInvalidationCallback,
+  DiagnosticInvalidationMessage,
+  DiagnosticMessage,
+  DiagnosticMessages,
+  DiagnosticMessageKind,
+  DiagnosticMessageType,
+  DiagnosticProvider,
+  DiagnosticProviderUpdate,
+  DiagnosticTrace,
+  DiagnosticUpdateCallback,
+  IndieLinterDelegate,
+  LinterMessage,
+  LinterMessageV1,
+  LinterMessageV2,
+  LinterProvider,
+  LinterTrace,
+  ObservableDiagnosticProvider,
+  RegisterIndieLinter,
+} from './pkg/atom-ide-diagnostics/lib/types';
+
+export type {
+  FindReferencesProvider,
+  FindReferencesReturn,
+  Reference,
+} from './pkg/atom-ide-find-references/lib/types';
+
+export type {
+  Outline,
+  OutlineProvider,
+  OutlineTree,
+  ResultsStreamProvider,
+} from './pkg/atom-ide-outline-view/lib/types';
+
+export type {
+  Signature,
+  SignatureHelp,
+  SignatureHelpProvider,
+  SignatureParameter,
+} from './pkg/atom-ide-signature-help/lib/types';
+
+export type {
+  HyperclickProvider,
+  HyperclickSuggestion,
+} from './pkg/hyperclick/lib/types';

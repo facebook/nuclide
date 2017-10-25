@@ -10,24 +10,25 @@
  */
 
 import invariant from 'assert';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ServerConnection} from '../../nuclide-remote-connection';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import StatusBarTile from './StatusBarTile';
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import ConnectionState from './ConnectionState';
 
 export default class RemoteProjectsController {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _statusBarDiv: ?HTMLElement;
   _statusBarTile: ?StatusBarTile;
   _statusSubscription: ?IDisposable;
 
   constructor() {
     this._statusBarTile = null;
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._statusSubscription = null;
     this._disposables.add(

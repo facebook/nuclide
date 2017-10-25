@@ -21,6 +21,8 @@ import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 type Props = {|
   setDevice: (?Device) => void,
   devices: Expected<Device[]>,
+  // TODO Remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   device: ?Device,
 |};
 
@@ -39,9 +41,11 @@ export class DeviceTable extends React.Component<Props> {
       }
       return (
         <div className="padded">
-          {this.props.devices.isPending
-            ? <LoadingSpinner size="EXTRA_SMALL" />
-            : 'No devices connected'}
+          {this.props.devices.isPending ? (
+            <LoadingSpinner size="EXTRA_SMALL" />
+          ) : (
+            'No devices connected'
+          )}
         </div>
       );
     };
@@ -76,14 +80,14 @@ export class DeviceTable extends React.Component<Props> {
         data: {
           name: _device.displayName,
           actions:
-            actions.length === 0
-              ? null
-              : <DeviceTaskButton
-                  actions={actions}
-                  device={_device}
-                  icon="device-mobile"
-                  title="Device actions"
-                />,
+            actions.length === 0 ? null : (
+              <DeviceTaskButton
+                actions={actions}
+                device={_device}
+                icon="device-mobile"
+                title="Device actions"
+              />
+            ),
         },
       };
     });
@@ -126,16 +130,26 @@ export class DeviceTable extends React.Component<Props> {
   _handleDeviceWillSelect = (
     item: any,
     selectedIndex: number,
-    event: SyntheticMouseEvent<>,
+    event: Event | SyntheticEvent<*>,
   ): boolean => {
-    let element = ((event.target: any): HTMLElement);
-    while (element != null) {
-      if (
-        element.classList.contains('nuclide-device-panel-device-action-button')
-      ) {
-        return false;
+    if (event != null) {
+      let element = ((event.target: any): HTMLElement);
+      while (element != null) {
+        if (
+          element.classList.contains(
+            'nuclide-device-panel-device-action-button',
+          )
+        ) {
+          return false;
+        }
+        element = element.parentElement;
       }
-      element = element.parentElement;
+    }
+    if (
+      !this.props.devices.isError &&
+      this.props.devices.value[selectedIndex].ignoresSelection
+    ) {
+      return false;
     }
     return true;
   };

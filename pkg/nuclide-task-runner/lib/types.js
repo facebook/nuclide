@@ -52,6 +52,7 @@ export type TaskStatus = {
   metadata: TaskMetadata,
   task: Task,
   progress: ?number,
+  startDate: Date,
 };
 
 export type TaskMetadata = {

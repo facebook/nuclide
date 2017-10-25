@@ -14,6 +14,7 @@ import type {SshTunnelService, Store} from './types';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {getSocketServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {TunnelsPanel, WORKSPACE_VIEW_URI} from './ui/TunnelsPanel';
 import * as Actions from './redux/Actions';
 import * as Epics from './redux/Epics';
@@ -73,6 +74,11 @@ class Activation {
         return new Disposable(() =>
           this._store.dispatch(Actions.closeTunnel(tunnel)),
         );
+      },
+      getAvailableServerPort: async nuclideUri => {
+        return getSocketServiceByNuclideUri(
+          nuclideUri,
+        ).getAvailableServerPort();
       },
     };
   }

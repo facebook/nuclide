@@ -233,6 +233,9 @@
             'match': '([-+])?([A-Za-z_][A-Za-z0-9_]*)(?:\\s+(as|super)\\s+([A-Za-z_][A-Za-z0-9_]*))?'
             'name': 'storage.type.php'
           }
+          {
+            'include': '#type-annotation'
+          }
         ]
       }
     ]
@@ -320,9 +323,47 @@
             'include': '#comments'
           }
           {
+            'include': '#type-annotation'
+          }
+          {
             'include': '#class-name'
           }
         ]
+      }
+    ]
+  'type-annotation':
+    'name': 'storage.type.php'
+    'patterns': [
+      {
+        'match': 'array'
+        'name': 'storage.type.array.php'
+      }
+      {
+        'match': 'bool|int|float|string|array|resource|mixed'
+        'name': 'storage.type.php'
+      }
+      {
+        'begin': 'shape\\('
+        'end': '\\)'
+        'name': 'storage.type.shape.php'
+        'patterns': [
+          {
+            'include': '#strings'
+          }
+          {
+            'include': '#constants'
+          }
+          {
+            'match': '=>'
+            'name': 'keyword.operator.key.php'
+          }
+          {
+            'include': '#type-annotation'
+          }
+        ]
+      }
+      {
+        'include': '#class-name'
       }
     ]
   'function-arguments':
@@ -331,177 +372,30 @@
         'include': '#comments'
       }
       {
-        'begin': '''(?x)
-          \\s*(array)   # Typehint
-          \\s*(&)?      # Reference
-          \\s*((\\$+)[a-zA-Z_\\x{7f}-\\x{ff}][a-zA-Z0-9_\\x{7f}-\\x{ff}]*)  # The variable name
-          \\s*(=)       # A default value
-          \\s*(array)\\s*(\\()
-        '''
-        'beginCaptures':
-          '1':
-            'name': 'storage.type.php'
-          '2':
-            'name': 'storage.modifier.reference.php'
-          '3':
-            'name': 'variable.other.php'
-          '4':
-            'name': 'punctuation.definition.variable.php'
-          '5':
-            'name': 'keyword.operator.assignment.php'
-          '6':
-            'name': 'support.function.construct.php'
-          '7':
-            'name': 'punctuation.definition.array.begin.php'
-        'contentName': 'meta.array.php'
-        'end': '\\)'
-        'endCaptures':
-          '0':
-            'name': 'punctuation.definition.array.end.php'
-        'name': 'meta.function.argument.array.php'
-        'patterns': [
-          {
-            'include': '#comments'
-          }
-          {
-            'include': '#strings'
-          }
-          {
-            'include': '#numbers'
-          }
-        ]
+        'include': '#type-annotation'
       }
       {
-        'begin': '''(?x)
-          \\s*(array)   # Typehint
-          \\s*(&)?      # Reference
-          \\s*((\\$+)[a-zA-Z_\\x{7f}-\\x{ff}][a-zA-Z0-9_\\x{7f}-\\x{ff}]*)  # The variable name
-          \\s*(=)       # A default value
-          \\s*()\\s*(\\\[)
-          '''
-        'beginCaptures':
-          '1':
-            'name': 'storage.type.php'
-          '2':
-            'name': 'storage.modifier.reference.php'
-          '3':
-            'name': 'variable.other.php'
-          '4':
-            'name': 'punctuation.definition.variable.php'
-          '5':
-            'name': ''
-          '6':
-            'name': 'support.function.construct.php'
-          '7':
-            'name': 'punctuation.definition.short.array.begin.php'
-        'contentName': 'meta.short.array.php'
-        'end': '(\\\])'
-        'endCaptures':
-          '0':
-            'name': 'punctuation.definition.short.array.end.php'
-        'name': 'meta.function.argument.short.array.php'
-        'patterns': [
-          {
-            'include': '#comments'
-          }
-          {
-            'include': '#strings'
-          }
-          {
-            'include': '#numbers'
-          }
-        ]
-      }
-      {
-        'captures':
-          '1':
-            'name': 'storage.type.php'
-          '2':
-            'name': 'storage.modifier.reference.php'
-          '3':
-            'name': 'variable.other.php'
-          '4':
-            'name': 'punctuation.definition.variable.php'
-          '5':
-            'name': 'keyword.operator.assignment.php'
-          '6':
-            'name': 'constant.language.php'
-          '7':
-            'name': 'invalid.illegal.non-null-typehinted.php'
-        'match': '''(?xi)
-          \\s*(array)   # Typehint
+        'begin': '''(?xi)
           \\s*(&)?      # Reference
           \\s*((\\$+)[a-z_\\x{7f}-\\x{ff}][a-z0-9_\\x{7f}-\\x{ff}]*)  # The variable name
-          (?:           # A default value
-            \\s*(?:(=)\\s*(?:(null|(?:\\S*?))|(\\S*?\\(\\))))
-          )?
+          '''
+        'end': '''(?xi)
           \\s*(?=,|\\)|/[/*]|\\#|$) # A closing parentheses (end of argument list) or a comma or a comment
           '''
-        'name': 'meta.function.argument.array.php'
-      }
-      {
-        'begin': '(?i)(?=[a-z_0-9\\\\]*[a-z_][a-z_0-9]*\\s*&?\\s*\\$)'
-        'end': '(?=,|\\)|/[/*]|\\#|$)'
-        'name': 'meta.function.argument.typehinted.php'
+        'beginCaptures':
+          '1':
+            'name': 'storage.modifier.reference.php'
+          '2':
+            'name': 'variable.other.php'
+          '3':
+            'name': 'punctuation.definition.variable.php'
         'patterns': [
           {
-            'include': '#class-name'
-          }
-          {
-            'captures':
-              '1':
-                'name': 'support.class.php'
-              '2':
-                'name': 'storage.modifier.reference.php'
-              '3':
-                'name': 'variable.other.php'
-              '4':
-                'name': 'punctuation.definition.variable.php'
-              '5':
-                'name': 'keyword.operator.assignment.php'
-              '6':
-                'name': 'constant.language.php'
-              '7':
-                'name': 'invalid.illegal.non-null-typehinted.php'
-            'match': '''(?xi)
-              \\s*([a-z_][a-z_0-9]*)?   # Typehinted class name
-              \\s*(&)?                  # Reference
-              \\s*((\\$+)[a-z_\\x{7f}-\\x{ff}][a-z0-9_\\x{7f}-\\x{ff}]*)  # The variable name
-              (?:
-                \\s*(?:(=)\\s*(?:(null|(?:\\S*?))|(\\S*?\\(\\))))     # A default value
-              )?
-              \\s*(?=,|\\)|/[/*]|\\#|$) # A closing parentheses (end of argument list) or a comma
-              '''
-          }
-        ]
-      }
-      {
-        'captures':
-          '1':
-            'name': 'storage.modifier.reference.php'
-          '2':
-            'name': 'variable.other.php'
-          '3':
-            'name': 'punctuation.definition.variable.php'
-        'match': '(?:\\s*(&))?\\s*((\\$+)[a-zA-Z_\\x{7f}-\\x{ff}][a-zA-Z0-9_\\x{7f}-\\x{ff}]*)\\s*(?=,|\\)|/[/*]|\\#)'
-        'name': 'meta.function.argument.no-default.php'
-      }
-      {
-        'begin': '(?:\\s*(&))?\\s*((\\$+)[a-zA-Z_\\x{7f}-\\x{ff}][a-zA-Z0-9_\\x{7f}-\\x{ff}]*)(?:\\s*(=)\\s*)\\s*'
-        'captures':
-          '1':
-            'name': 'storage.modifier.reference.php'
-          '2':
-            'name': 'variable.other.php'
-          '3':
-            'name': 'punctuation.definition.variable.php'
-          '4':
+            'match': '='
             'name': 'keyword.operator.assignment.php'
-        'end': '(?=,|\\)|/[/*]|\\#)'
-        'name': 'meta.function.argument.default.php'
-        'patterns': [
+          }
           {
-            'include': '#parameter-default-types'
+            'include': '#language'
           }
         ]
       }
@@ -571,7 +465,7 @@
         'beginCaptures':
           '2':
             'name': 'keyword.operator.heredoc.php'
-        'end': '^(\\2)\\b'
+        'end': '^(\\2)(?=;$)'
         'endCaptures':
           '1':
             'name': 'keyword.operator.heredoc.php'
@@ -587,7 +481,7 @@
         'beginCaptures':
           '2':
             'name': 'keyword.operator.heredoc.php'
-        'end': '^(\\2)\\b'
+        'end': '^(\\2)(?=;$)'
         'endCaptures':
           '1':
             'name': 'keyword.operator.heredoc.php'
@@ -1170,6 +1064,14 @@
       {
         'match': '=>'
         'name': 'keyword.operator.key.php'
+      }
+      {
+        'match': '==>'
+        'name': 'keyword.operator.lambda.php'
+      }
+      {
+        'match': '\\|>'
+        'name': 'keyword.operator.pipe.php'
       }
       {
         'captures':

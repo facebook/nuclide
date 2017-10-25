@@ -9,11 +9,11 @@
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import ExampleProvider from './ExampleProvider';
 
-export function registerProvider(): Provider {
+export function registerProvider(): Provider<FileResult> {
   return ExampleProvider;
 }
 

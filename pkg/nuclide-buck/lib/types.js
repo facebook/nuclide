@@ -37,6 +37,7 @@ export type AppState = {
   platformService: PlatformService,
   projectRoot: ?string,
   buckRoot: ?string,
+  buckversionFileContents: ?(string | Error),
   isLoadingBuckProject: boolean,
   isLoadingRule: boolean,
   isLoadingPlatforms: boolean,

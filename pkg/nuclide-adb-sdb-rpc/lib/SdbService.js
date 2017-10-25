@@ -11,7 +11,12 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
-import type {DeviceDescription, DebugBridgeFullConfig, DeviceId} from './types';
+import type {
+  DeviceDescription,
+  DebugBridgeFullConfig,
+  DeviceId,
+  Process,
+} from './types';
 
 import {getStore} from './common/Store';
 import {ConnectableObservable} from 'rxjs';
@@ -84,4 +89,11 @@ export function uninstallPackage(
 ): ConnectableObservable<LegacyProcessMessage> {
   // TODO(T17463635)
   return new Sdb(device).uninstallPackage(packageName).publish();
+}
+
+export function getProcesses(
+  device: DeviceId,
+  timeout: number,
+): ConnectableObservable<Array<Process>> {
+  return new Processes(new Sdb(device)).fetch(timeout).publish();
 }

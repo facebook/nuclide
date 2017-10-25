@@ -183,7 +183,7 @@ export class DbgpSocket {
 
   _onData(data: Buffer | string): void {
     const message = data.toString();
-    logger.debug('Recieved data: ' + message);
+    logger.debug('Received data: ' + message);
     let responses = [];
     try {
       responses = this._messageHandler.parseMessages(message);

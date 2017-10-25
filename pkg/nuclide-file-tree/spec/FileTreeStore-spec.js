@@ -123,10 +123,10 @@ describe('FileTreeStore', () => {
     actions.setRootKeys([dir1]);
     actions.setSelectedNode(dir1, dir1);
     let node = getNode(dir1, dir1);
-    expect(node.isSelected).toBe(true);
+    expect(node.isSelected()).toBe(true);
     actions.unselectNode(dir1, dir1);
     node = getNode(dir1, dir1);
-    expect(node.isSelected).toBe(false);
+    expect(node.isSelected()).toBe(false);
   });
 
   it('deselects items in other roots when a single node is selected', () => {
@@ -136,15 +136,15 @@ describe('FileTreeStore', () => {
     let node2 = getNode(dir2, dir2);
 
     // Node 1 is selected, node 2 is not selected
-    expect(node1.isSelected).toBe(true);
-    expect(node2.isSelected).toBe(false);
+    expect(node1.isSelected()).toBe(true);
+    expect(node2.isSelected()).toBe(false);
 
     // Selecting a single node, node2, deselects nodes in all other roots
     actions.setSelectedNode(dir2, dir2);
     node1 = getNode(dir1, dir1);
     node2 = getNode(dir2, dir2);
-    expect(node1.isSelected).toBe(false);
-    expect(node2.isSelected).toBe(true);
+    expect(node1.isSelected()).toBe(false);
+    expect(node2.isSelected()).toBe(true);
   });
 
   describe('getSelectedNodes', () => {

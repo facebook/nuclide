@@ -99,6 +99,7 @@ function getPreferred<T: PlatformGroup | Platform | DeviceGroup | Device>(
   }
   let match;
   // We want === in case of an empty string
+  // eslint-disable-next-line eqeqeq
   if (name === null || chooseFirst) {
     match = null;
   } else {

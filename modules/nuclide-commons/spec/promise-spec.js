@@ -23,24 +23,11 @@ import {
   lastly,
   retryLimit,
   RequestSerializer,
+  TimedOutError,
   timeoutPromise,
 } from '../promise';
 import invariant from 'assert';
-
-// TODO(hansonw): unify this once nuclide-test-helpers is in modules/
-async function expectAsyncFailure(
-  promise: Promise<any>,
-  verify: (error: Error) => void,
-): Promise<any> {
-  try {
-    await promise;
-    return Promise.reject(
-      new Error('Promise should have failed, but did not.'),
-    );
-  } catch (e) {
-    verify(e);
-  }
-}
+import {expectAsyncFailure} from '../test-helpers';
 
 describe('promises::asyncFind()', () => {
   it('Empty list of items should resolve to null.', () => {
@@ -643,9 +630,7 @@ describe('timeoutPromise', () => {
         value => value,
       );
       advanceClock(1500);
-      expect(await outputPromise).toEqual(
-        new Error('Promise timed out after 1000 ms'),
-      );
+      expect(await outputPromise).toEqual(new TimedOutError(1000));
     });
   });
 });

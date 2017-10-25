@@ -16,6 +16,7 @@ const config: FlowSettings = {
   functionSnippetShouldIncludeArguments: true,
   stopFlowOnExit: true,
   lazyServer: false,
+  ideLazyMode: false,
 };
 
 export function getConfig(key: $Keys<typeof config>): mixed {

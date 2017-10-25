@@ -114,7 +114,7 @@ export class LspTester {
   _startServer = (commandString: string): void => {
     this._stopServer();
     const [command, ...args] = shellParse(commandString);
-    const events = takeWhileInclusive(
+    const events =
       // Use the async scheduler so that `disposable.dispose()` can still be called in
       // error/complete handlers.
       spawn(command, args)
@@ -128,9 +128,13 @@ export class LspTester {
             /* TODO(T17353599) */ isExitError: () => false,
           }),
         )
-        .subscribeOn(Scheduler.async),
-      event => event.kind !== 'error' && event.kind !== 'exit',
-    ).share();
+        .subscribeOn(Scheduler.async)
+        .let(
+          takeWhileInclusive(
+            event => event.kind !== 'error' && event.kind !== 'exit',
+          ),
+        )
+        .share();
     const responses = parseResponses(
       events
         .catch(() => Observable.empty()) // We'll handle them on the "other" stream.
@@ -223,7 +227,8 @@ function parseChunks(chunks: Array<string>): ?{header: string, body: mixed} {
 
 function parseResponses(raw: Observable<string>): Observable<string> {
   // TODO: We're parsing twice out of laziness here: once for validation, then for usage.
-  return bufferUntil(raw, (_, chunks) => parseChunks(chunks) != null)
+  return raw
+    .let(bufferUntil((_, chunks) => parseChunks(chunks) != null))
     .map(chunks => {
       const parsed = parseChunks(chunks);
       invariant(parsed != null);

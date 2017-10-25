@@ -19,11 +19,7 @@ import groupMatchIndexes from 'nuclide-commons/groupMatchIndexes';
 type Key = number | string;
 
 function renderSubsequence(seq: string, props: Object): ?React.Element<any> {
-  return seq.length === 0
-    ? null
-    : <span {...props}>
-        {seq}
-      </span>;
+  return seq.length === 0 ? null : <span {...props}>{seq}</span>;
 }
 
 function renderUnmatchedSubsequence(

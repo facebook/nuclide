@@ -27,7 +27,7 @@ class Activation {
   }
 
   consumeCodeActionProvider(provider: CodeActionProvider) {
-    this._codeActionManager.addProvider(provider);
+    return this._codeActionManager.addProvider(provider);
   }
 
   provideCodeActionFetcher(): CodeActionFetcher {

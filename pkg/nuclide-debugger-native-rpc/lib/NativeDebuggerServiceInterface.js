@@ -11,6 +11,7 @@
 
 import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 export type AttachTargetInfo = {
   pid: number,
@@ -45,6 +46,13 @@ export type DebuggerConfig = {
   envPythonPath: string, // sets the PYTHONPATH env var when spawning the lldb server
 };
 
+export type PrepareForLaunchResponse = {
+  launchCommand: string,
+  launchCwd: NuclideUri,
+  targetExecutable: NuclideUri,
+  launchArgs: Array<string>,
+};
+
 export async function getAttachTargetInfoList(
   targetPid: ?number,
 ): Promise<Array<AttachTargetInfo>> {
@@ -67,6 +75,12 @@ export class NativeDebuggerService {
   }
 
   launch(launchInfo: LaunchTargetInfo): ConnectableObservable<void> {
+    throw new Error('Not implemented');
+  }
+
+  prepareForTerminalLaunch(
+    launchInfo: LaunchTargetInfo,
+  ): Promise<PrepareForLaunchResponse> {
     throw new Error('Not implemented');
   }
 

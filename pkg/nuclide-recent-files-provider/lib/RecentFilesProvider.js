@@ -60,6 +60,7 @@ function getRecentFilesMatching(query: string): Array<FileResult> {
     matcher
       .match(query, {recordMatchIndexes: true})
       .map(result => ({
+        resultType: 'FILE',
         path: result.value,
         score: result.score,
         matchIndexes: result.matchIndexes,
@@ -102,7 +103,7 @@ function opacityForTimestamp(timestamp: number): number {
   );
 }
 
-export const RecentFilesProvider: Provider = {
+export const RecentFilesProvider: Provider<FileResult> = {
   providerType: 'GLOBAL',
   name: 'RecentFilesProvider',
   debounceDelay: 0,
@@ -129,6 +130,7 @@ export const RecentFilesProvider: Provider = {
     const filename = nuclideUri.basename(item.path);
     const filePath = item.path.substring(0, item.path.lastIndexOf(filename));
     const date = item.timestamp == null ? null : new Date(item.timestamp);
+    // eslint-disable-next-line eqeqeq
     const datetime = date === null ? '' : date.toLocaleString();
     return (
       <div
@@ -142,13 +144,11 @@ export const RecentFilesProvider: Provider = {
             path={filename}>
             {filePath}
           </PathWithFileIcon>
-          <span className="recent-files-provider-file-name">
-            {filename}
-          </span>
+          <span className="recent-files-provider-file-name">{filename}</span>
         </div>
         <div className="recent-files-provider-datetime-container">
           <span className="recent-files-provider-datetime-label">
-            {date === null ? 'At some point' : relativeDate(date)}
+            {date == null ? 'At some point' : relativeDate(date)}
           </span>
         </div>
       </div>

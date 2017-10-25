@@ -1,0 +1,36 @@
+{
+  "name": "nuclide-infer-al",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides support for Infer AL in Nuclide",
+  "activationCommands": {},
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "Language",
+        "Infer AL"
+      ]
+    },
+    "config": {
+      "pathToInfer": {
+        "title": "Path to Infer Executable. Note that Atom configs aren't used for remote Nuclide.",
+        "type": "string",
+        "default": "infer"
+      }
+    },
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "providedServices": {
+    "linter": {
+      "versions": {
+        "1.0.0": "provideLint"
+      }
+    }
+  },
+  "activationHooks": [
+    "nuclide-language-infer-al:grammar-used"
+  ]
+}

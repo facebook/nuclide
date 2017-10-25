@@ -94,11 +94,7 @@ export default class HomePaneItem extends React.Component<
     sortedHomeFragments.forEach(fragment => {
       const {welcome, feature} = fragment;
       if (welcome) {
-        welcomes.push(
-          <div key={welcomes.length}>
-            {welcome}
-          </div>,
-        );
+        welcomes.push(<div key={welcomes.length}>{welcome}</div>);
       }
       if (feature) {
         features.push(

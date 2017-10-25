@@ -37,10 +37,13 @@ type StateType = {
   selectedAttachTarget: ?AttachTargetInfo,
   filterText: string,
   sortDescending: boolean,
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
+  attachSourcePath: string,
 };
 
-function getColumns(): Array<Column> {
+type ColumnName = 'process' | 'pid' | 'command';
+
+function getColumns(): Array<Column<*>> {
   return [
     {
       title: 'Process Name',
@@ -61,7 +64,7 @@ function getColumns(): Array<Column> {
 }
 
 function getCompareFunction(
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
   sortDescending: boolean,
 ): (a: AttachTargetInfo, b: AttachTargetInfo) => number {
   switch (sortedColumn) {
@@ -91,6 +94,25 @@ function getCompareFunction(
   return () => 0;
 }
 
+function filterTargetInfos(
+  attachTargetInfos: Array<AttachTargetInfo>,
+  filterText: string,
+) {
+  // Show all results if invalid regex
+  let filterRegex;
+  try {
+    filterRegex = new RegExp(filterText, 'i');
+  } catch (e) {
+    filterRegex = new RegExp('.*', 'i');
+  }
+  return attachTargetInfos.filter(
+    item =>
+      filterRegex.test(item.name) ||
+      filterRegex.test(item.pid.toString()) ||
+      filterRegex.test(item.commandName),
+  );
+}
+
 export class AttachUIComponent extends React.Component<PropsType, StateType> {
   props: PropsType;
   state: StateType;
@@ -114,6 +136,7 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
       filterText: '',
       sortDescending: false,
       sortedColumn: null,
+      attachSourcePath: '',
     };
   }
 
@@ -174,8 +197,21 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
               target.name === transientSettings.attachName,
           );
           filterText = transientSettings.filterText;
+          this.setState({
+            attachSourcePath: savedSettings.attachSourcePath || '',
+          });
         },
       );
+    }
+
+    const filteredAttachTargetInfos = filterTargetInfos(
+      this.state.attachTargetInfos,
+      filterText || this.state.filterText,
+    );
+
+    // Select only option if filtered to one result
+    if (filteredAttachTargetInfos.length === 1) {
+      newSelectedTarget = filteredAttachTargetInfos[0];
     }
 
     if (newSelectedTarget == null) {
@@ -201,7 +237,7 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
     return null;
   }
 
-  _handleSort = (sortedColumn: ?string, sortDescending: boolean): void => {
+  _handleSort = (sortedColumn: ?ColumnName, sortDescending: boolean): void => {
     this.setState({
       sortedColumn,
       sortDescending,
@@ -209,18 +245,11 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
   };
 
   render(): React.Node {
-    const filterRegex = new RegExp(this.state.filterText, 'i');
     const {attachTargetInfos, sortedColumn, sortDescending} = this.state;
     const compareFn = getCompareFunction(sortedColumn, sortDescending);
     const {selectedAttachTarget} = this.state;
     let selectedIndex = null;
-    const rows = attachTargetInfos
-      .filter(
-        item =>
-          filterRegex.test(item.name) ||
-          filterRegex.test(item.pid.toString()) ||
-          filterRegex.test(item.commandName),
-      )
+    const rows = filterTargetInfos(attachTargetInfos, this.state.filterText)
       .sort(compareFn)
       .map((item, index) => {
         const row = {
@@ -261,13 +290,31 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
           onSelect={this._handleSelectTableRow}
           collapsable={true}
         />
+        <label>Source path: </label>
+        <AtomInput
+          ref="attachSourcePath"
+          placeholderText="Optional base path for sources"
+          value={this.state.attachSourcePath}
+          onDidChange={value => this.setState({attachSourcePath: value})}
+        />
       </div>
     );
   }
 
   _handleFilterTextChange = (text: string): void => {
+    // Check if we've filtered down to one option and select if so
+    let newSelectedTarget = this.state.selectedAttachTarget;
+    const filteredAttachTargetInfos = filterTargetInfos(
+      this.state.attachTargetInfos,
+      text,
+    );
+    if (filteredAttachTargetInfos.length === 1) {
+      newSelectedTarget = filteredAttachTargetInfos[0];
+    }
+
     this.setState({
       filterText: text,
+      selectedAttachTarget: newSelectedTarget,
     });
   };
 
@@ -301,10 +348,15 @@ export class AttachUIComponent extends React.Component<PropsType, StateType> {
     const attachTarget = this.state.selectedAttachTarget;
     if (attachTarget != null) {
       // Fire and forget.
+      if (this.state.attachSourcePath !== '') {
+        attachTarget.basepath = this.state.attachSourcePath;
+      }
       this.props.actions.attachDebugger(attachTarget);
       serializeDebuggerConfig(
         ...this._getSerializationArgs(),
-        {},
+        {
+          attachSourcePath: this.state.attachSourcePath,
+        },
         {
           attachPid: attachTarget.pid,
           attachName: attachTarget.name,

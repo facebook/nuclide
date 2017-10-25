@@ -22,5 +22,5 @@ function appender(config: {connection: IConnection}) {
   };
 }
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports.configure = module.exports.appender = appender;

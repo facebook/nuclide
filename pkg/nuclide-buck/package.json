@@ -35,6 +35,11 @@
     }
   },
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
     "nuclide.task-runner": {
       "versions": {
         "0.0.0": "consumeTaskRunnerServiceApi"

@@ -27,6 +27,7 @@ export const ActionTypes = Object.freeze({
 });
 
 // Flow hack: Every QuickSelectionAction actionType must be in ActionTypes.
+// $FlowFixMe(>=0.55.0) Flow suppress
 (('': $PropertyType<QuickSelectionAction, 'actionType'>): $Keys<
   typeof ActionTypes,
 >);

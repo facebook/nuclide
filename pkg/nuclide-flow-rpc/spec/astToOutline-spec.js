@@ -29,6 +29,7 @@ import exportDefaultArrowFuncAST34 from './fixtures/export-default-arrow-func-v0
 import exportDefaultAnonymousFuncAST34 from './fixtures/export-default-anonymous-func-v0.34.json';
 import typesASTOld from './fixtures/types-ast-old.json';
 import typesAST34 from './fixtures/types-ast-v0.34.json';
+import declareAST from './fixtures/declare-ast.json';
 
 const expectedClassOutline: Array<OutlineTree> = [
   {
@@ -449,6 +450,232 @@ const expectedTypesOutline: Array<OutlineTree> = [
   },
 ];
 
+const expectedDeclareOutline: Array<OutlineTree> = [
+  {
+    kind: 'function',
+    tokenizedText: [
+      {
+        kind: 'keyword',
+        value: 'function',
+      },
+      {
+        kind: 'whitespace',
+        value: ' ',
+      },
+      {
+        kind: 'method',
+        value: 'foo',
+      },
+      {
+        kind: 'plain',
+        value: '(',
+      },
+      {
+        kind: 'param',
+        value: 'a',
+      },
+      {
+        kind: 'plain',
+        value: ')',
+      },
+    ],
+    representativeName: 'foo',
+    children: [],
+    startPosition: new Point(0, 0),
+    endPosition: new Point(0, 40),
+  },
+  {
+    kind: 'variable',
+    tokenizedText: [
+      {
+        kind: 'keyword',
+        value: 'var',
+      },
+      {
+        kind: 'whitespace',
+        value: ' ',
+      },
+      {
+        kind: 'method',
+        value: 'PI',
+      },
+    ],
+    representativeName: 'PI',
+    children: [],
+    startPosition: new Point(1, 0),
+    endPosition: new Point(1, 23),
+  },
+  {
+    kind: 'class',
+    tokenizedText: [
+      {
+        kind: 'keyword',
+        value: 'class',
+      },
+      {
+        kind: 'whitespace',
+        value: ' ',
+      },
+      {
+        kind: 'class-name',
+        value: 'Path',
+      },
+    ],
+    representativeName: 'Path',
+    children: [
+      {
+        kind: 'property',
+        tokenizedText: [
+          {
+            kind: 'method',
+            value: 'someString',
+          },
+        ],
+        representativeName: 'someString',
+        children: [],
+        startPosition: new Point(3, 2),
+        endPosition: new Point(3, 19),
+      },
+      {
+        kind: 'function',
+        tokenizedText: [
+          {
+            kind: 'keyword',
+            value: 'function',
+          },
+          {
+            kind: 'whitespace',
+            value: ' ',
+          },
+          {
+            kind: 'method',
+            value: 'toString',
+          },
+          {
+            kind: 'plain',
+            value: '(',
+          },
+          {
+            kind: 'plain',
+            value: ')',
+          },
+        ],
+        representativeName: 'toString',
+        children: [],
+        startPosition: new Point(4, 2),
+        endPosition: new Point(4, 20),
+      },
+      {
+        kind: 'function',
+        tokenizedText: [
+          {
+            kind: 'keyword',
+            value: 'function',
+          },
+          {
+            kind: 'whitespace',
+            value: ' ',
+          },
+          {
+            kind: 'method',
+            value: 'otherMethod',
+          },
+          {
+            kind: 'plain',
+            value: '(',
+          },
+          {
+            kind: 'param',
+            value: 'input',
+          },
+          {
+            kind: 'plain',
+            value: ')',
+          },
+        ],
+        representativeName: 'otherMethod',
+        children: [],
+        startPosition: new Point(5, 2),
+        endPosition: new Point(5, 32),
+      },
+    ],
+    startPosition: new Point(2, 0),
+    endPosition: new Point(6, 1),
+  },
+  {
+    kind: 'interface',
+    tokenizedText: [
+      {
+        kind: 'keyword',
+        value: 'module',
+      },
+      {
+        kind: 'whitespace',
+        value: ' ',
+      },
+      {
+        kind: 'class-name',
+        value: 'some-es-module',
+      },
+    ],
+    representativeName: 'some-es-module',
+    children: [
+      {
+        kind: 'class',
+        tokenizedText: [
+          {
+            kind: 'keyword',
+            value: 'class',
+          },
+          {
+            kind: 'whitespace',
+            value: ' ',
+          },
+          {
+            kind: 'class-name',
+            value: 'Path',
+          },
+        ],
+        representativeName: 'Path',
+        children: [
+          {
+            kind: 'function',
+            tokenizedText: [
+              {
+                kind: 'keyword',
+                value: 'function',
+              },
+              {
+                kind: 'whitespace',
+                value: ' ',
+              },
+              {
+                kind: 'method',
+                value: 'toString',
+              },
+              {
+                kind: 'plain',
+                value: '(',
+              },
+              {
+                kind: 'plain',
+                value: ')',
+              },
+            ],
+            representativeName: 'toString',
+            children: [],
+            startPosition: new Point(9, 4),
+            endPosition: new Point(9, 22),
+          },
+        ],
+        startPosition: new Point(8, 2),
+        endPosition: new Point(10, 3),
+      },
+    ],
+    startPosition: new Point(7, 0),
+    endPosition: new Point(11, 1),
+  },
+];
 const expectedExportDefaultArrowFuncOutline: Array<OutlineTree> = [
   {
     children: [],
@@ -469,7 +696,6 @@ const expectedExportDefaultArrowFuncOutline: Array<OutlineTree> = [
     ],
   },
 ];
-
 const expectedExportDefaultAnonymousFuncOutline: Array<OutlineTree> = [
   {
     children: [],
@@ -553,6 +779,11 @@ describe('astToOutline', () => {
   it('should provide an outline for export default function() {}', () => {
     expect(astToOutline(exportDefaultAnonymousFuncAST34).outlineTrees).diffJson(
       expectedExportDefaultAnonymousFuncOutline,
+    );
+  });
+  it('should provide an outline for declare class, declare module and declare function', () => {
+    expect(astToOutline(declareAST).outlineTrees).diffJson(
+      expectedDeclareOutline,
     );
   });
 });

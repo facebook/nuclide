@@ -9,21 +9,26 @@
  * @format
  */
 
+/* global Element */
+
 import FileTreeActions from '../lib/FileTreeActions';
 import {FileTreeNode} from '../lib/FileTreeNode';
 import {FileTreeEntryComponent} from '../components/FileTreeEntryComponent';
 import {WorkingSet} from '../../nuclide-working-sets-common';
-import Immutable from 'immutable';
 
+import invariant from 'assert';
+import Immutable from 'immutable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
-import TestUtils from 'react-addons-test-utils';
+import TestUtils from 'react-dom/test-utils';
+import {FileTreeSelectionManager} from '../lib/FileTreeSelectionManager';
 
 function renderEntryComponentIntoDocument(
   componentKlass: Object,
   props: Object = {},
   conf: Object = {},
 ): HTMLElement {
+  const selectionManager = new FileTreeSelectionManager(() => {});
   const nodeProps = {
     isExpanded: false,
     isLoading: false,
@@ -41,15 +46,21 @@ function renderEntryComponentIntoDocument(
     ignoredPatterns: new Immutable.Set(),
     repositories: new Immutable.Set(),
     usePreviewTabs: true,
+    focusEditorOnFileSelection: false,
     isEditingWorkingSet: false,
     openFilesWorkingSet: new WorkingSet(),
     reposByRoot: {},
+    selectionManager,
     ...conf,
   };
 
   const node = new FileTreeNode(nodeProps, nodeConf);
   return TestUtils.renderIntoDocument(
-    React.createElement(componentKlass, {node}),
+    React.createElement(componentKlass, {
+      node,
+      selectedNodes: selectionManager.selectedNodes(),
+      focusedNodes: selectionManager.focusedNodes(),
+    }),
   );
 }
 
@@ -100,6 +111,7 @@ describe('File FileTreeEntryComponent', () => {
         },
       );
       const domNode = ReactDOM.findDOMNode(nodeComponent);
+      invariant(domNode instanceof Element);
       TestUtils.Simulate.click(domNode);
       expect(actions.expandNode).not.toHaveBeenCalled();
     });
@@ -122,6 +134,7 @@ describe('File FileTreeEntryComponent', () => {
         },
       );
       const domNode = ReactDOM.findDOMNode(nodeComponent);
+      invariant(domNode instanceof Element);
       TestUtils.Simulate.click(domNode);
       expect(actions.confirmNode).toHaveBeenCalled();
     });

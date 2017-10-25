@@ -40,7 +40,7 @@ export type HyperclickProvider = {
 
 export type HyperclickSuggestion = {
   // The range(s) to underline to provide as a visual cue for clicking.
-  range: ?atom$Range | ?Array<atom$Range>,
+  range: atom$Range | Array<atom$Range>,
 
   // The function to call when the underlined text is clicked.
   callback:

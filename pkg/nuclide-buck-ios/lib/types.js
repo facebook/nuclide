@@ -17,8 +17,8 @@ export type IosDeployable = {
   buildOnly?: boolean,
 };
 
-export const RUNNABLE_RULE_TYPES = new Set(['apple_bundle']);
-export const SUPPORTED_RULE_TYPES = new Set([
+export const RUNNABLE_RULE_TYPES: Set<string> = new Set(['apple_bundle']);
+export const SUPPORTED_RULE_TYPES: Set<string> = new Set([
   ...RUNNABLE_RULE_TYPES,
   'apple_library',
   'apple_test',

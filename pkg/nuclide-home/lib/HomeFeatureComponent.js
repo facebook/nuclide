@@ -45,18 +45,16 @@ export default class HomeFeatureComponent extends React.Component<Props> {
           className={`nuclide-home-summary icon icon-${this.props.icon}`}>
           {title}
           {// flowlint-next-line sketchy-null-string:off
-          command
-            ? <Button
-                className="pull-right nuclide-home-tryit"
-                size={ButtonSizes.SMALL}
-                onClick={this._tryIt}>
-                Try it
-              </Button>
-            : null}
+          command ? (
+            <Button
+              className="pull-right nuclide-home-tryit"
+              size={ButtonSizes.SMALL}
+              onClick={this._tryIt}>
+              Try it
+            </Button>
+          ) : null}
         </summary>
-        <div className="nuclide-home-detail">
-          {this.props.description}
-        </div>
+        <div className="nuclide-home-detail">{this.props.description}</div>
       </details>
     );
   }

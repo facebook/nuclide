@@ -1,0 +1,63 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.terminal-pane {
+  width: 100%;
+  height: 100%;
+  background-color: @base-background-color;
+
+  // The 'fit' extension that resizes the terminal character grid
+  // based on the window dimensions makes this odd. Empirically,
+  // padding applied to .terminal is subtracted on all sides by 'fit'
+  // when calculating how many rows and columns to create, but does
+  // not affect (?) the top-left placement of the rectangle, while
+  // padding applied to .terminal-pane affects the top-left placement
+  // of terminal text, but 'fit' ignores this when determining rows
+  // and columns, so bottom and right here have no effect. Keeping the
+  // 'padding' value in sync between .terminal-pane and .terminal seems
+  // to be the simplest way to achieve a specific padding.
+  padding: @component-padding / 2;
+}
+
+html .terminal {
+  background-color: transparent;
+  color: @text-color;
+  font-family: Menlo, courier-new, courier, monospace;
+  padding: @component-padding / 2;
+
+  // Background
+  .xterm-viewport {
+    background-color: transparent;
+  }
+
+  // Colors
+
+  // red
+  .xterm-color-1 { color: @text-color-error; }
+  // green
+  .xterm-color-2 { color: @text-color-success; }
+  // yellow
+  .xterm-color-3 { color: @text-color-warning; }
+  // blue
+  .xterm-color-4 { color: @text-color-info; }
+
+  // Cursor
+  &.focus:not(.xterm-cursor-style-underline):not(.xterm-cursor-style-bar) .terminal-cursor {
+    background-color: @text-color;
+  }
+  &.terminal:not(.focus) .terminal-cursor {
+    outline: 1px solid @text-color;
+  }
+  &.xterm-cursor-style-bar .terminal-cursor::before,
+  &.xterm-cursor-style-underline .terminal-cursor::before {
+    background-color: @text-color;
+  }
+  &.xterm-cursor-style-bar.focus.xterm-cursor-blink .terminal-cursor::before,
+  &.xterm-cursor-style-underline.focus.xterm-cursor-blink .terminal-cursor::before {
+    background-color: @text-color;
+  }
+}
+
+.xterm-rows span {
+    display: inline-block;
+}

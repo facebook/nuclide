@@ -17,10 +17,13 @@ import {shellParse, shellQuote} from 'nuclide-commons/string';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
+import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 import {Modal} from '../../../nuclide-ui/Modal';
+import {Icon} from 'nuclide-commons-ui/Icon';
 
 type Props = {
   buckRoot: string,
+  buckversionFileContents: ?(string | Error),
   settings: TaskSettings,
   platformProviderSettings: ?PlatformProviderSettings,
   onDismiss: () => void,
@@ -47,16 +50,19 @@ export default class BuckToolbarSettings extends React.Component<Props, State> {
       this.props.platformProviderSettings != null
         ? this.props.platformProviderSettings.ui
         : null;
+
     return (
       <Modal onDismiss={this.props.onDismiss}>
         <div className="block">
           <div className="block">
             <label>Current Buck root:</label>
             <p>
-              <code>
-                {this.props.buckRoot}
-              </code>
+              <code>{this.props.buckRoot}</code>
             </p>
+            <div>
+              <label>Buck version:</label>
+              {this._getBuckversionFileComponent()}
+            </div>
             <label>Build Arguments:</label>
             <AtomInput
               tabIndex="0"
@@ -65,16 +71,14 @@ export default class BuckToolbarSettings extends React.Component<Props, State> {
               onDidChange={this._onBuildArgsChange.bind(this)}
               onConfirm={this._onSave.bind(this)}
             />
-            <div>
-              <label>Run Arguments:</label>
-              <AtomInput
-                tabIndex="0"
-                initialValue={this.state.runArguments}
-                placeholderText="Custom command-line arguments to pass to the app/binary"
-                onDidChange={this._onRunArgsChange.bind(this)}
-                onConfirm={this._onSave.bind(this)}
-              />
-            </div>
+            <label>Run Arguments:</label>
+            <AtomInput
+              tabIndex="0"
+              initialValue={this.state.runArguments}
+              placeholderText="Custom command-line arguments to pass to the app/binary"
+              onDidChange={this._onRunArgsChange.bind(this)}
+              onConfirm={this._onSave.bind(this)}
+            />
             {extraSettingsUi}
           </div>
           <div style={{display: 'flex', justifyContent: 'flex-end'}}>
@@ -90,6 +94,44 @@ export default class BuckToolbarSettings extends React.Component<Props, State> {
         </div>
       </Modal>
     );
+  }
+
+  _getBuckversionFileComponent(): React.Node {
+    const label = ' .buckversion file:';
+    const {buckversionFileContents} = this.props;
+    if (buckversionFileContents == null) {
+      return (
+        <p>
+          <div className="inline-block">
+            <LoadingSpinner
+              size="EXTRA_SMALL"
+              className="nuclide-buck-buckversion-file-spinner"
+            />
+          </div>
+          {label}
+        </p>
+      );
+    } else if (buckversionFileContents instanceof Error) {
+      let errorMessage;
+      if (buckversionFileContents.code === 'ENOENT') {
+        errorMessage = 'not found';
+      } else {
+        errorMessage = buckversionFileContents.message;
+      }
+      return (
+        <p>
+          <Icon icon="x" className="inline-block" />
+          {label} {errorMessage}
+        </p>
+      );
+    } else {
+      return (
+        <p>
+          <Icon icon="check" className="inline-block" />
+          {label} <code>{buckversionFileContents}</code>
+        </p>
+      );
+    }
   }
 
   _onBuildArgsChange(args: string) {

@@ -62,7 +62,7 @@ export class DatatipComponent extends React.Component<DatatipComponentProps> {
       const actionIcon = IconsForAction[action];
       actionButton = (
         <div
-          className={`nuclide-datatip-pin-button icon-${actionIcon}`}
+          className={`datatip-pin-button icon-${actionIcon}`}
           onClick={this.handleActionClick}
           title={actionTitle}
         />
@@ -71,11 +71,9 @@ export class DatatipComponent extends React.Component<DatatipComponentProps> {
 
     return (
       <div
-        className={`${maybeToString(className)} nuclide-datatip-container`}
+        className={`${maybeToString(className)} datatip-container`}
         {...props}>
-        <div className="nuclide-datatip-content">
-          {content}
-        </div>
+        <div className="datatip-content">{content}</div>
         {actionButton}
       </div>
     );

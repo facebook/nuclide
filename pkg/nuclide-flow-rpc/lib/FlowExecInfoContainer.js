@@ -12,9 +12,9 @@
 import type {LRUCache} from 'lru-cache';
 
 import LRU from 'lru-cache';
-import {CompositeDisposable} from 'event-kit';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import which from 'nuclide-commons/which';
 import {runCommand} from 'nuclide-commons/process';
 import {ConfigCache} from 'nuclide-commons/ConfigCache';
@@ -46,7 +46,7 @@ export class FlowExecInfoContainer {
   // not others because we will support root-specific installations of flow-bin.
   _flowExecInfoCache: LRUCache<?string, ?FlowExecInfo>;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   _pathToFlow: string;
   _canUseFlowBin: boolean;
@@ -60,7 +60,7 @@ export class FlowExecInfoContainer {
       maxAge: 1000 * 30, // 30 seconds
     });
 
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._versionInfo = versionInfo;
 
     this._observeSettings();
@@ -202,10 +202,7 @@ async function canFindFlow(flowPath: string): Promise<boolean> {
     // "flow.exe", format the path correctly to pass to `where <flow>`
     const dirPath = nuclideUri.dirname(flowPath);
     if (dirPath != null && dirPath !== '' && dirPath !== '.') {
-      const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(
-        flowPath,
-      )}`;
-      return (await which(whichPath)) != null;
+      return (await which(flowPath)) != null;
     }
   }
 

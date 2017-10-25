@@ -9,6 +9,8 @@
  * @format
  */
 
+import type {WatchEditorFunction} from '../types';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
@@ -18,6 +20,7 @@ type Props = {
   onSubmit: (value: string) => mixed,
   scopeName: ?string,
   history: Array<string>,
+  watchEditor: ?WatchEditorFunction,
 };
 
 type State = {
@@ -29,7 +32,7 @@ const ENTER_KEY_CODE = 13;
 const UP_KEY_CODE = 38;
 const DOWN_KEY_CODE = 40;
 
-export default class OutputTable extends React.Component<Props, State> {
+export default class InputArea extends React.Component<Props, State> {
   _keySubscription: ?rxjs$ISubscription;
   _textEditorModel: ?atom$TextEditor;
 
@@ -40,6 +43,32 @@ export default class OutputTable extends React.Component<Props, State> {
       draft: '',
     };
   }
+
+  _submit = (): void => {
+    // Clear the text and trigger the `onSubmit` callback
+    const editor = this._textEditorModel;
+    if (editor == null) {
+      return;
+    }
+
+    const text = editor.getText();
+    if (text === '') {
+      return;
+    }
+
+    editor.setText(''); // Clear the text field.
+    this.props.onSubmit(text);
+    this.setState({historyIndex: -1});
+  };
+
+  _attachLabel = (editor: atom$TextEditor): IDisposable => {
+    const {watchEditor} = this.props;
+    const disposable = new UniversalDisposable();
+    if (watchEditor) {
+      disposable.add(watchEditor(editor, ['nuclide-console']));
+    }
+    return disposable;
+  };
 
   _handleTextEditor = (component: ?AtomTextEditor): void => {
     if (this._keySubscription) {
@@ -57,6 +86,9 @@ export default class OutputTable extends React.Component<Props, State> {
 
   _handleKeyDown = (event: KeyboardEvent): void => {
     const editor = this._textEditorModel;
+    // Detect AutocompletePlus menu element: https://git.io/vddLi
+    const isAutocompleteOpen =
+      document.querySelector('autocomplete-suggestion-list') != null;
     if (editor == null) {
       return;
     }
@@ -69,18 +101,9 @@ export default class OutputTable extends React.Component<Props, State> {
         return;
       }
 
-      // Clear the text and trigger the `onSubmit` callback
-      const text = editor.getText();
-
-      if (text === '') {
-        return;
-      }
-
-      editor.setText(''); // Clear the text field.
-      this.props.onSubmit(text);
-      this.setState({historyIndex: -1});
+      this._submit();
     } else if (event.which === UP_KEY_CODE) {
-      if (this.props.history.length === 0) {
+      if (this.props.history.length === 0 || isAutocompleteOpen) {
         return;
       }
       event.preventDefault();
@@ -98,7 +121,7 @@ export default class OutputTable extends React.Component<Props, State> {
         this.props.history[this.props.history.length - historyIndex - 1],
       );
     } else if (event.which === DOWN_KEY_CODE) {
-      if (this.props.history.length === 0) {
+      if (this.props.history.length === 0 || isAutocompleteOpen) {
         return;
       }
       event.preventDefault();
@@ -128,6 +151,8 @@ export default class OutputTable extends React.Component<Props, State> {
           gutterHidden
           autoGrow
           lineNumberGutterVisible={false}
+          onConfirm={this._submit}
+          onInitialized={this._attachLabel}
         />
       </div>
     );

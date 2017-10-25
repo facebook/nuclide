@@ -12,8 +12,8 @@
 import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
 import type {
   DiagnosticInvalidationMessage,
+  DiagnosticMessage,
   DiagnosticProviderUpdate,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {Result} from 'nuclide-commons-atom/ActiveEditorRegistry';
 
@@ -34,7 +34,7 @@ describe('diagnosticProviderForResultStream', () => {
 
   let diagnosticProvider: ObservableDiagnosticProvider = (null: any);
 
-  let updates: Array<Array<FileDiagnosticMessage>> = (null: any);
+  let updates: Array<Array<DiagnosticMessage>> = (null: any);
   let invalidations: Array<DiagnosticInvalidationMessage> = (null: any);
 
   let editor: atom$TextEditor = (null: any);
@@ -85,12 +85,10 @@ describe('diagnosticProviderForResultStream', () => {
 
     diagnosticProvider.updates.subscribe((update: DiagnosticProviderUpdate) => {
       // We go through all this just to extract the array of file messages for the current file.
-      const filePathToMessages = update.filePathToMessages;
-      invariant(filePathToMessages != null);
-      invariant(filePathToMessages.size === 1);
-      const firstValue = filePathToMessages.values().next();
+      invariant(update.size === 1);
+      const firstValue = update.values().next();
       invariant(firstValue.value != null);
-      const fileMessages: Array<FileDiagnosticMessage> = firstValue.value;
+      const fileMessages: Array<DiagnosticMessage> = firstValue.value;
       updates.push(fileMessages);
     });
     diagnosticProvider.invalidations.subscribe(invalidation =>
@@ -110,7 +108,6 @@ describe('diagnosticProviderForResultStream', () => {
       expect(updates.length).toBe(1);
       expect(updates[0]).toEqual([
         {
-          scope: 'file',
           providerName: 'Type Coverage',
           type: 'Warning',
           filePath: 'foo',
@@ -118,7 +115,6 @@ describe('diagnosticProviderForResultStream', () => {
           text: 'Not covered by Foo',
         },
         {
-          scope: 'file',
           providerName: 'Type Coverage',
           type: 'Warning',
           filePath: 'foo',

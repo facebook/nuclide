@@ -49,6 +49,8 @@ export class SocketServer {
     const connection = RpcConnection.createServer(
       this._serviceRegistry,
       transport,
+      // Track calls with a sampling rate of 1/10.
+      {trackSampleRate: 10},
     );
     transport.onClose(() => {
       this._connections.delete(connection);

@@ -61,6 +61,11 @@ function trackTaskAction(
     typeof task.getTrackingData === 'function' ? task.getTrackingData() : {};
   const error =
     action.type === Actions.TASK_ERRORED ? action.payload.error : null;
+  const duration =
+    action.type === Actions.TASK_STARTED
+      ? null
+      : new Date().getTime() -
+        parseInt(action.payload.taskStatus.startDate.getTime(), 10);
   trackEvent({
     type,
     data: {
@@ -69,6 +74,7 @@ function trackTaskAction(
       taskType: taskStatus.metadata.type,
       errorMessage: error != null ? error.message : null,
       stackTrace: error != null ? String(error.stack) : null,
+      duration,
     },
   });
 }

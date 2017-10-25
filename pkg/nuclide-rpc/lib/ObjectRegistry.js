@@ -254,6 +254,10 @@ export class ObjectRegistry {
     });
   }
 
+  isRegistered(object: Object): boolean {
+    return this._registrationsByObject.has(object);
+  }
+
   _isRemoteObject(object: Object): boolean {
     return this._idsByProxy.has(object);
   }

@@ -10,28 +10,13 @@
  */
 
 import type {Observable} from 'rxjs';
+import type {UnreliableTransport} from '../../nuclide-rpc';
 
 import invariant from 'assert';
 import {Subject} from 'rxjs';
 import {getLogger} from 'log4js';
 const logger = getLogger('nuclide-server');
 import {Emitter} from 'event-kit';
-
-// An unreliable transport for sending JSON formatted messages
-//
-// onClose handlers are guaranteed to be called exactly once.
-// onMessage handlers are guaranteed to not be called after onClose has been called.
-// send(data) yields false if the message failed to send, true on success.
-// onClose handlers will be called before close() returns.
-// May not call send() after transport has closed..
-export type UnreliableTransport = {
-  send(message: string): Promise<boolean>,
-  onClose(callback: () => mixed): IDisposable,
-  onMessage(): Observable<string>,
-  onError(callback: (error: Object) => mixed): IDisposable,
-  close(): void,
-  isClosed(): boolean,
-};
 
 // Adapter to make an UnreliableTransport a reliable Transport
 // by queuing messages.

@@ -32,8 +32,6 @@ export const Toolbar = (props: Props) => {
 
   return (
     // $FlowFixMe(>=0.53.0) Flow suppress
-    <div className={className}>
-      {props.children}
-    </div>
+    <div className={className}>{props.children}</div>
   );
 };

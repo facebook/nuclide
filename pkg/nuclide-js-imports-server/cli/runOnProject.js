@@ -17,25 +17,30 @@ import {Observable} from 'rxjs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observeProcess} from 'nuclide-commons/process';
+import {getEslintEnvs, getConfigFromFlow} from '../src/getConfig';
 import {AutoImportsManager} from '../src/lib/AutoImportsManager';
 import {indexDirectory, indexNodeModules} from '../src/lib/AutoImportsWorker';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 const DEFAULT_PROJECT_PATH = nuclideUri.join(__dirname, '..', '..', '..');
-const ENVS = ['builtin', 'node', 'jasmine', 'browser', 'atomtest', 'es6'];
-const shouldIndexNodeModules = true;
 
 let numErrors = 0;
 let numFiles = 0;
 
 function main() {
-  const autoImportsManager = new AutoImportsManager(ENVS);
-
   const root =
     process.argv.length === 3 ? toPath(process.argv[2]) : DEFAULT_PROJECT_PATH;
 
-  const indexDirStream = indexDirectory(root, false, os.cpus().length).do({
+  const envs = getEslintEnvs(root);
+  const autoImportsManager = new AutoImportsManager(envs);
+  const {hasteSettings} = getConfigFromFlow(root);
+
+  const indexDirStream = indexDirectory(
+    root,
+    hasteSettings,
+    os.cpus().length,
+  ).do({
     next: exportForFiles => {
       exportForFiles.forEach(exportForFile =>
         autoImportsManager.handleUpdateForFile(exportForFile),
@@ -49,21 +54,19 @@ function main() {
     },
   });
 
-  const indexModulesStream = shouldIndexNodeModules
-    ? indexNodeModules(root).do({
-        next: exportForFile => {
-          if (exportForFile) {
-            autoImportsManager.handleUpdateForFile(exportForFile);
-          }
-        },
-        error: err => {
-          console.error('Encountered error in AutoImportsWorker', err);
-        },
-        complete: () => {
-          console.log(`Finished indexing node modules ${root}`);
-        },
-      })
-    : Observable.empty();
+  const indexModulesStream = indexNodeModules(root).do({
+    next: exportForFile => {
+      if (exportForFile) {
+        autoImportsManager.handleUpdateForFile(exportForFile);
+      }
+    },
+    error: err => {
+      console.error('Encountered error in AutoImportsWorker', err);
+    },
+    complete: () => {
+      console.log(`Finished indexing node modules ${root}`);
+    },
+  });
 
   console.log('Began indexing all files');
 
@@ -75,7 +78,7 @@ function main() {
         'ls',
         root,
         '--ignore',
-        '.*/\\(node_modules\\|VendorLib\\)/.*',
+        '.*/\\(node_modules\\|VendorLib\\|3rdParty\\)/.*',
       ])
         .filter(event => event.kind === 'stdout')
         .mergeMap(event => {

@@ -42,10 +42,6 @@ export default class AnimatedEllipsis extends React.Component<Props, State> {
 
   render(): React.Node {
     const ellipsis = new Array(this.state.n % 4).fill('.').join('');
-    return (
-      <span className="nuclide-ui-animated-ellipsis">
-        {ellipsis}
-      </span>
-    );
+    return <span className="nuclide-ui-animated-ellipsis">{ellipsis}</span>;
   }
 }

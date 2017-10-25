@@ -1,0 +1,5 @@
+{
+  "rules": {
+    "rulesdir/modules-dependencies": [1, {"allowDevDependencies": true}]
+  }
+}

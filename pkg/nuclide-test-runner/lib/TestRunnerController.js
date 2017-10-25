@@ -63,6 +63,15 @@ export class TestRunnerController {
     this._renderPanel();
   }
 
+  // Atom expects us to return a new instance of this class every time it's shown in the
+  // workspace. For historical reasons, we always use the same one. This is bad because it means
+  // that our `destroy()` will be called multiple times, and that this instance needs to be
+  // reusable after it's destroyed. To work around this for the time being, we call this method to
+  // reinitialize the view when we should really be creating a new instance.
+  reinitialize(): void {
+    this._renderPanel();
+  }
+
   clearOutput = () => {
     this._buffer.setText('');
     this._path = undefined;
@@ -82,12 +91,12 @@ export class TestRunnerController {
   }
 
   /**
-   * @return A Promise that resolves when testing has succesfully started.
+   * @return A Promise that resolves when testing has successfully started.
    */
   async runTests(path?: string): Promise<void> {
     this._runningTest = true;
 
-    // eslint-disable-next-line nuclide-internal/atom-apis
+    // eslint-disable-next-line rulesdir/atom-apis
     atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
 
     // Get selected test runner when Flow knows `this._testRunnerPanel` is defined.

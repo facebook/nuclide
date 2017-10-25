@@ -12,7 +12,7 @@
 import invariant from 'assert';
 import loadServicesConfig from '../lib/loadServicesConfig';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 describe('loadServicesConfig()', () => {
   let configPath: ?string;

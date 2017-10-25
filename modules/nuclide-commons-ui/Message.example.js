@@ -14,40 +14,36 @@ import * as React from 'react';
 import {Block} from './Block';
 import {Message, MessageTypes} from './Message';
 
-const MessageExample = (): React.Element<any> =>
+const MessageExample = (): React.Element<any> => (
   <div>
     <Block>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <Message>
         <h2>Message</h2>
         Hello, I'm a simple message.
       </Message>
     </Block>
     <Block>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <Message type={MessageTypes.info}>
         Hello I'm an <strong>info</strong> message.
       </Message>
     </Block>
     <Block>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <Message type={MessageTypes.success}>
         Hello I'm a <strong>success</strong> message.
       </Message>
     </Block>
     <Block>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <Message type={MessageTypes.warning}>
         Hello I'm a <strong>warning</strong> message.
       </Message>
     </Block>
     <Block>
-      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <Message type={MessageTypes.error}>
         Hello I'm an <strong>error</strong> message.
       </Message>
     </Block>
-  </div>;
+  </div>
+);
 
 export const MessageExamples = {
   sectionName: 'Messages',

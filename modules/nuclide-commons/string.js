@@ -212,7 +212,10 @@ export function pluralize(noun: string, count: number) {
 export function capitalize(str: string): string {
   return str.length === 0
     ? str
-    : str.charAt(0).toUpperCase().concat(str.slice(1));
+    : str
+        .charAt(0)
+        .toUpperCase()
+        .concat(str.slice(1));
 }
 
 // Originally copied from:

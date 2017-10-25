@@ -39,7 +39,10 @@ export class Adb extends DebugBridge {
       'list',
       'packages',
     ).toPromise();
-    return stdout.trim().split(/\s+/).map(s => s.substring(prefix.length));
+    return stdout
+      .trim()
+      .split(/\s+/)
+      .map(s => s.substring(prefix.length));
   }
 
   async isPackageInstalled(pkg: string): Promise<boolean> {
@@ -244,6 +247,26 @@ export class Adb extends DebugBridge {
     return this.runShortCommand(...args).toPromise();
   }
 
+  async launchService(
+    packageName: string,
+    serviceName: string,
+    debug: boolean,
+  ): Promise<string> {
+    if (debug) {
+      // Enable "wait for debugger" semantics for the next launch of
+      // the specified package.
+      await this.setDebugApp(packageName, false);
+    }
+
+    const args = [
+      'shell',
+      'am',
+      'startservice',
+      `${packageName}/${serviceName}`,
+    ];
+    return this.runShortCommand(...args).toPromise();
+  }
+
   setDebugApp(packageName: string, persist: boolean): Promise<string> {
     const args = ['shell', 'am', 'set-debug-app', '-w'];
 
@@ -300,7 +323,7 @@ export class Adb extends DebugBridge {
           }
         });
       })
-      .timeout(500)
+      .timeout(1000)
       .catch(error => Observable.of([]))
       .switchMap(() => {
         return Promise.resolve(Array.from(jdwpProcesses));
@@ -312,5 +335,21 @@ export class Adb extends DebugBridge {
       return null;
     }
     return this.runShortCommand('shell', 'dumpsys', 'package', pkg).toPromise();
+  }
+
+  getDeviceArgs(): Array<string> {
+    const portArg =
+      this._device.port != null ? ['-P', String(this._device.port)] : [];
+    const deviceArg = this._device.name !== '' ? ['-s', this._device.name] : [];
+    return deviceArg.concat(portArg);
+  }
+
+  getProcesses(): Observable<Array<SimpleProcess>> {
+    return this.runShortCommand('shell', 'ps').map(stdout =>
+      stdout.split(/\n/).map(line => {
+        const info = line.trim().split(/\s+/);
+        return {user: info[0], pid: info[1], name: info[info.length - 1]};
+      }),
+    );
   }
 }

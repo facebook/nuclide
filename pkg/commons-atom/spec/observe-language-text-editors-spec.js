@@ -9,6 +9,7 @@
  * @format
  */
 
+import fsPromise from 'nuclide-commons/fsPromise';
 import nullthrows from 'nullthrows';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import observeGrammarForTextEditors from '../observe-grammar-for-text-editors';
@@ -20,6 +21,8 @@ describe('observeLanguageTextEditors', () => {
   let jsGrammar: atom$Grammar = (null: any);
   let nullGrammar: atom$Grammar = (null: any);
   let grammarScopes: Array<string> = (null: any);
+  let tempFilenameJS: string = (null: any);
+  let tempFilenameObjC: string = (null: any);
 
   beforeEach(() => {
     observeGrammarForTextEditors.__reset__();
@@ -42,12 +45,17 @@ describe('observeLanguageTextEditors', () => {
     );
 
     grammarScopes = [objcGrammar.scopeName, javaGrammar.scopeName];
+
+    waitsForPromise(async () => {
+      tempFilenameJS = `${await fsPromise.tempfile()}.js`;
+      tempFilenameObjC = `${await fsPromise.tempfile()}.m`;
+    });
   });
 
   describe('without cleanup function', () => {
     it('calls for existing text editors that match the grammars', () => {
       waitsForPromise(async () => {
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
 
         const fn: any = jasmine.createSpy('fn');
         const subscription = observeLanguageTextEditors(grammarScopes, fn);
@@ -65,7 +73,7 @@ describe('observeLanguageTextEditors', () => {
         const fn: any = jasmine.createSpy('fn');
         const subscription = observeLanguageTextEditors(grammarScopes, fn);
 
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
 
         expect(fn).toHaveBeenCalledWith(textEditor);
         expect(fn.callCount).toBe(1);
@@ -111,7 +119,7 @@ describe('observeLanguageTextEditors', () => {
         const fn: any = jasmine.createSpy('fn');
         const subscription = observeLanguageTextEditors(grammarScopes, fn);
 
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
         textEditor.setGrammar(javaGrammar);
 
         expect(fn).toHaveBeenCalledWith(textEditor);
@@ -127,7 +135,7 @@ describe('observeLanguageTextEditors', () => {
         const fn: any = jasmine.createSpy('fn');
         const subscription = observeLanguageTextEditors(grammarScopes, fn);
 
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
         textEditor.destroy();
 
         subscription.dispose();
@@ -165,7 +173,7 @@ describe('observeLanguageTextEditors', () => {
           cleanupFn,
         );
 
-        const textEditor = await atom.workspace.open('file.js');
+        const textEditor = await atom.workspace.open(tempFilenameJS);
         textEditor.setGrammar(nullGrammar);
 
         expect(cleanupFn.callCount).toBe(0);
@@ -185,7 +193,7 @@ describe('observeLanguageTextEditors', () => {
           cleanupFn,
         );
 
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
         textEditor.setGrammar(nullGrammar);
 
         expect(cleanupFn).toHaveBeenCalledWith(textEditor);
@@ -206,7 +214,7 @@ describe('observeLanguageTextEditors', () => {
           cleanupFn,
         );
 
-        const textEditor = await atom.workspace.open('file.js');
+        const textEditor = await atom.workspace.open(tempFilenameJS);
         textEditor.destroy();
 
         expect(cleanupFn.callCount).toBe(0);
@@ -225,7 +233,7 @@ describe('observeLanguageTextEditors', () => {
           cleanupFn,
         );
 
-        const textEditor = await atom.workspace.open('file.m');
+        const textEditor = await atom.workspace.open(tempFilenameObjC);
         textEditor.destroy();
 
         expect(cleanupFn).toHaveBeenCalledWith(textEditor);

@@ -17,8 +17,7 @@ type Props = {
 };
 
 /** A Block. */
-export const Block = (props: Props) =>
+export const Block = (props: Props) => (
   // $FlowFixMe(>=0.53.0) Flow suppress
-  <div className="block">
-    {props.children}
-  </div>;
+  <div className="block">{props.children}</div>
+);

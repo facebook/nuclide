@@ -296,9 +296,9 @@ export function getHgRepositoriesStream(): Observable<Set<HgRepositoryClient>> {
 }
 
 export function getHgRepositoryStream(): Observable<HgRepositoryClient> {
-  return diffSets(getHgRepositoriesStream()).flatMap(repoDiff =>
-    Observable.from(repoDiff.added),
-  );
+  return getHgRepositoriesStream()
+    .let(diffSets())
+    .flatMap(repoDiff => Observable.from(repoDiff.added));
 }
 
 /**

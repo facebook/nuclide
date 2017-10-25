@@ -19,6 +19,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {FileTreeNode} from '../lib/FileTreeNode';
 import FileTreeActions from '../lib/FileTreeActions';
 import {FileTreeStore} from '../lib/FileTreeStore';
+import {FileTreeSelectionManager} from '../lib/FileTreeSelectionManager';
 import {DEFAULT_CONF} from '../lib/FileTreeStore';
 import {WorkingSet} from '../../nuclide-working-sets-common';
 
@@ -32,7 +33,13 @@ import invariant from 'assert';
 
 describe('FileTreeSelectionRange', () => {
   function createNode(rootUri: NuclideUri, uri: NuclideUri): FileTreeNode {
-    return new FileTreeNode({rootUri, uri}, DEFAULT_CONF);
+    return new FileTreeNode(
+      {rootUri, uri},
+      {
+        ...DEFAULT_CONF,
+        selectionManager: new FileTreeSelectionManager(() => {}),
+      },
+    );
   }
 
   describe('RangeKey', () => {

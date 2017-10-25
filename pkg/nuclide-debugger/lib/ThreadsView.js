@@ -12,7 +12,7 @@
 import classnames from 'classnames';
 import type DebuggerModel from './DebuggerModel';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {DebuggerThreadsComponent} from './DebuggerThreadsComponent';
 import type {ThreadColumn} from '../../nuclide-debugger-base/lib/types';
@@ -31,11 +31,11 @@ export class ThreadsView extends React.PureComponent<
     threadsComponentTitle: string,
   },
 > {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
       customThreadColumns:

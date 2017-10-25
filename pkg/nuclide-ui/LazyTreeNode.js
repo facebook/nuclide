@@ -46,6 +46,7 @@ export class LazyTreeNode {
   }
 
   isRoot(): boolean {
+    // eslint-disable-next-line eqeqeq
     return this.__parent === null;
   }
 

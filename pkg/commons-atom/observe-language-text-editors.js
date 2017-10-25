@@ -9,7 +9,8 @@
  * @format
  */
 
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import observeGrammarForTextEditors from './observe-grammar-for-text-editors';
 
 const START_OBSERVING_TEXT_EDITOR_EVENT = 'start-observing-text-editor';
@@ -80,7 +81,7 @@ class LanguageTextEditorsListener {
       // gets called with one arg (i.e. it matches the Flow annotation).
       .forEach(textEditor => fn(textEditor));
 
-    return new CompositeDisposable(
+    return new UniversalDisposable(
       this._emitter.on(START_OBSERVING_TEXT_EDITOR_EVENT, fn),
       this._emitter.on(STOP_OBSERVING_TEXT_EDITOR_EVENT, cleanupFn),
     );
@@ -110,7 +111,7 @@ export default function observeLanguageTextEditors(
   fn: (textEditor: TextEditor) => void,
   cleanupFn?: (textEditor: TextEditor) => void,
 ): IDisposable {
-  const subscriptions = new CompositeDisposable();
+  const subscriptions = new UniversalDisposable();
   const listener = new LanguageTextEditorsListener(new Set(grammarScopes));
   subscriptions.add(listener);
   subscriptions.add(

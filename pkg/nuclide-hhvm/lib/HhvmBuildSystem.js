@@ -60,8 +60,9 @@ export default class HhvmBuildSystem {
   }
 
   getIcon(): React.ComponentType<any> {
-    return () =>
-      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />;
+    return () => (
+      <Icon icon="nuclicon-hhvm" className="nuclide-hhvm-task-runner-icon" />
+    );
   }
 
   runTask(taskName: string): Task {
@@ -71,6 +72,8 @@ export default class HhvmBuildSystem {
           this._projectStore.getDebugMode(),
           this._projectStore.getProjectRoot(),
           this._projectStore.getDebugTarget(),
+          this._projectStore.getUseTerminal(),
+          this._projectStore.getScriptArguments(),
         ),
       ).ignoreElements(),
     );
@@ -88,6 +91,7 @@ export default class HhvmBuildSystem {
       .map(() => this._projectStore)
       .filter(
         store =>
+          // eslint-disable-next-line eqeqeq
           store.getProjectRoot() === path && store.isHHVMProject() !== null,
       )
       .map(store => store.isHHVMProject() === true)

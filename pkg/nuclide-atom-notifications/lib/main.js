@@ -11,15 +11,15 @@
 
 import type {Level, ConsoleService} from '../../nuclide-console/lib/types';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import marked from 'marked';
 import createPackage from 'nuclide-commons-atom/createPackage';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   consumeConsoleService(createConsole: ConsoleService): IDisposable {

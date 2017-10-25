@@ -10,7 +10,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from '../../../pkg/atom-ide-diagnostics/lib/types';
+import type {DiagnosticMessage} from '../../../pkg/atom-ide-diagnostics/lib/types';
 
 export interface CodeAction {
   apply(): Promise<void>,
@@ -24,7 +24,7 @@ export type CodeActionProvider = {
   getCodeActions(
     editor: atom$TextEditor,
     range: atom$Range,
-    diagnostics: Array<FileDiagnosticMessage>,
+    diagnostics: Array<DiagnosticMessage>,
   ): Promise<Array<CodeAction>>,
 };
 
@@ -36,7 +36,7 @@ export type CodeActionProvider = {
 */
 export type CodeActionFetcher = {
   getCodeActionForDiagnostic: (
-    diagnostic: FileDiagnosticMessage,
+    diagnostic: DiagnosticMessage,
     editor: atom$TextEditor,
   ) => Promise<Array<CodeAction>>,
 };

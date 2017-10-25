@@ -14,7 +14,7 @@ import {shellParse} from 'nuclide-commons/string';
 import type {LaunchAttachStore} from './LaunchAttachStore';
 import type {LaunchAttachActions} from './LaunchAttachActions';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-
+import type {LaunchTargetInfo} from '../../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface';
 import * as React from 'react';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
@@ -27,6 +27,8 @@ import classnames from 'classnames';
 
 type PropsType = {
   targetUri: NuclideUri,
+  // TODO Remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   store: LaunchAttachStore,
   actions: LaunchAttachActions,
   configIsValidChanged: (valid: boolean) => void,
@@ -39,6 +41,7 @@ type StateType = {
   launchWorkingDirectory: string,
   stdinFilePath: string,
   coreDump: string,
+  launchSourcePath: string,
 };
 
 export class LaunchUIComponent extends React.Component<PropsType, StateType> {
@@ -57,6 +60,7 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
       launchWorkingDirectory: '',
       stdinFilePath: '',
       coreDump: '',
+      launchSourcePath: '',
     };
   }
 
@@ -90,6 +94,7 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
           launchWorkingDirectory: savedSettings.launchWorkingDirectory,
           stdinFilePath: savedSettings.stdinFilePath,
           coreDump: savedSettings.coreDump || '',
+          launchSourcePath: savedSettings.launchSourcePath || '',
         });
       },
     );
@@ -163,10 +168,18 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
             onDidChange={value =>
               this.setState({launchEnvironmentVariables: value})}
           />
+          <label>Source path: </label>
+          <AtomInput
+            ref="launchSourcePath"
+            tabIndex="16"
+            placeholderText="Optional base path for sources"
+            value={this.state.launchSourcePath}
+            onDidChange={value => this.setState({launchSourcePath: value})}
+          />
           <label>Working directory: </label>
           <AtomInput
             ref="launchWorkingDirectory"
-            tabIndex="15"
+            tabIndex="17"
             disabled={this.state.coreDump !== ''}
             placeholderText="Working directory for the launched executable"
             value={this.state.launchWorkingDirectory}
@@ -176,7 +189,7 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
           <label>Stdin file: </label>
           <AtomInput
             ref="stdinFilePath"
-            tabIndex="16"
+            tabIndex="18"
             disabled={this.state.coreDump !== ''}
             placeholderText="Redirect stdin to this file"
             value={this.state.stdinFilePath}
@@ -198,8 +211,9 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
     const launchWorkingDirectory = this.refs.launchWorkingDirectory
       .getText()
       .trim();
+    const launchSourcePath = this.refs.launchSourcePath.getText().trim();
     const stdinFilePath = this.refs.stdinFilePath.getText().trim();
-    const launchTarget = {
+    const launchTarget: LaunchTargetInfo = {
       executablePath: launchExecutable,
       arguments: launchArguments,
       environmentVariables: launchEnvironmentVariables,
@@ -207,6 +221,9 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
       stdinFilePath,
       coreDump,
     };
+    if (launchSourcePath != null) {
+      launchTarget.basepath = launchSourcePath;
+    }
     // Fire and forget.
     this.props.actions.launchDebugger(launchTarget);
 
@@ -217,6 +234,7 @@ export class LaunchUIComponent extends React.Component<PropsType, StateType> {
       launchWorkingDirectory: this.state.launchWorkingDirectory,
       stdinFilePath: this.state.stdinFilePath,
       coreDump: this.state.coreDump,
+      launchSourcePath: this.state.launchSourcePath,
     });
   };
 }

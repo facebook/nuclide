@@ -101,9 +101,7 @@ export class MutableListSelector extends React.Component<Props> {
     return (
       <div>
         <div className="block select-list">
-          <ol className="list-group">
-            {listItems}
-          </ol>
+          <ol className="list-group">{listItems}</ol>
         </div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           <ButtonGroup>

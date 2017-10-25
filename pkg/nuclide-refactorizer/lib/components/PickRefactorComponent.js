@@ -29,17 +29,13 @@ export class PickRefactorComponent extends React.Component<{
       return <div>No refactorings available at this location</div>;
     }
 
-    const elements = availableRefactorings.map((r, i) =>
+    const elements = availableRefactorings.map((r, i) => (
       <div key={i} className="nuclide-refactorizer-refactor-option">
         {this._renderRefactorOption(r)}
-      </div>,
-    );
-    // Class used to identify this element in integration tests
-    return (
-      <div className="nuclide-refactorizer-pick-refactor">
-        {elements}
       </div>
-    );
+    ));
+    // Class used to identify this element in integration tests
+    return <div className="nuclide-refactorizer-pick-refactor">{elements}</div>;
   }
 
   _pickRefactor(refactoring: AvailableRefactoring): void {
@@ -88,6 +84,7 @@ export class PickRefactorComponent extends React.Component<{
           </div>
         );
       default:
+        (refactoring.kind: empty);
         throw new Error(`Unknown refactoring kind ${refactoring.kind}`);
     }
   }

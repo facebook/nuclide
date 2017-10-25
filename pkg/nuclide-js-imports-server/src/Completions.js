@@ -10,32 +10,25 @@
  */
 
 import {
+  type CompletionItem,
+  type TextDocumentPositionParams,
+  type TextEdit,
   CompletionItemKind,
-  TextDocumentPositionParams,
-  CompletionItem,
-} from 'vscode-languageserver';
+} from '../../nuclide-vscode-language-service-rpc/lib/protocol';
+import type {ImportType} from './lib/ImportFormatter';
 
 import {AutoImportsManager} from './lib/AutoImportsManager';
-import {ImportFormatter} from './lib/ImportFormatter';
+import {ImportFormatter, createImportStatement} from './lib/ImportFormatter';
+import {compareForSuggestion} from './utils/util';
 import {setIntersect} from 'nuclide-commons/collection';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import type TextDocuments from './TextDocuments';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {JSExport} from './lib/types';
 
-type ImportType =
-  | 'namedType'
-  | 'namedValue'
-  | 'defaultType'
-  | 'defaultValue'
-  | 'requireImport'
-  | 'requireDestructured';
-
 type ImportInformation = {
   ids: Array<string>,
   importType: ImportType,
-  extraText: string,
   isComplete: boolean,
 };
 
@@ -63,18 +56,15 @@ export class Completions {
   documents: TextDocuments;
   autoImportsManager: AutoImportsManager;
   importsFormatter: ImportFormatter;
-  isHaste: boolean;
 
   constructor(
     documents: TextDocuments,
     autoImportsManager: AutoImportsManager,
     importsFormatter: ImportFormatter,
-    isHaste: boolean,
   ) {
     this.documents = documents;
     this.autoImportsManager = autoImportsManager;
     this.importsFormatter = importsFormatter;
-    this.isHaste = isHaste;
   }
 
   provideCompletions(
@@ -94,7 +84,8 @@ export class Completions {
       isImportStatement(line) &&
       line.indexOf(';') < 0
     ) {
-      const importInformation = getImportInformation(line);
+      const prefix = line.substr(0, position.character);
+      const importInformation = getImportInformation(prefix);
       if (importInformation) {
         return importInformation.isComplete
           ? provideImportFileCompletions(
@@ -104,7 +95,6 @@ export class Completions {
               nuclideFormattedUri,
               line,
               position.line,
-              this.isHaste,
             )
           : provideFullImportCompletions(
               importInformation,
@@ -113,7 +103,6 @@ export class Completions {
               nuclideFormattedUri,
               line,
               position.line,
-              this.isHaste,
             );
       }
     }
@@ -123,148 +112,115 @@ export class Completions {
 
 // Provides autocompletion of IDs that could be imported. When selected
 // the entire import line is added.
-function provideFullImportCompletions(
+export function provideFullImportCompletions(
   importInformation: ImportInformation,
   importsFormatter: ImportFormatter,
   autoImportsManager: AutoImportsManager,
   nuclideFormattedUri: NuclideUri,
   line: string,
   lineNum: number,
-  isHaste: boolean,
 ): Array<CompletionItem> {
   const {ids, importType} = importInformation;
-  if (
-    isHaste &&
-    (importType === 'defaultValue' || importType === 'namedValue')
-  ) {
-    // Value imports should not be used with haste. Require is used instead.
-    return [];
-  }
-  return filterSuggestions(
-    [
-      autoImportsManager.exportsManager
-        .getExportsIndex()
-        .getExportsStartingWith(ids[0], MAX_RESULTS),
-    ],
-    importType,
-  ).map((suggestion, i) => {
-    const fileToImport = importsFormatter.formatImportFile(
-      nuclideFormattedUri,
-      suggestion,
+  const exportsIndex = autoImportsManager.exportsManager.getExportsIndex();
+  // 1) Find all IDs that fuzzily match the given string.
+  const matchingIds = exportsIndex.getIdsMatching(ids[0], MAX_RESULTS);
+  return matchingIds.reduce((results, id) => {
+    const needed = MAX_RESULTS - results.length;
+    if (needed <= 0) {
+      return results;
+    }
+    // 2) For each ID, find all exports for the ID.
+    const exportsForId = exportsIndex.getExportsFromId(id);
+    // 3) Filter and sort the exports, and add them to the return list of completions.
+    const importPaths = filterSuggestions(exportsForId, importType)
+      .filter(jsExport => jsExport.uri !== nuclideFormattedUri)
+      .map(suggestion =>
+        importsFormatter.formatImportFile(nuclideFormattedUri, suggestion),
+      )
+      .sort(compareForSuggestion);
+    return results.concat(
+      importPaths.slice(0, needed).map(importPath => {
+        return {
+          label: id,
+          kind: CompletionItemKind.Module,
+          inlineDetail: importsFormatter.stripLeadingDots(importPath),
+          textEdit: createLineEdit(
+            lineNum,
+            line,
+            createImportStatement(id, importPath, importType),
+          ),
+        };
+      }),
     );
-
-    const insertText = getInsertTextForCompleteImport(
-      importType,
-      suggestion.id,
-      fileToImport,
-    );
-
-    return {
-      label: suggestion.id,
-      kind: CompletionItemKind.Module,
-      data: i,
-      inlineDetail: importsFormatter.stripLeadingDots(fileToImport),
-      insertText,
-    };
-  });
-}
-
-function getInsertTextForCompleteImport(
-  importType: ImportType,
-  id: string,
-  formattedFileToImport: string,
-) {
-  switch (importType) {
-    case 'namedValue':
-    case 'namedType':
-      return `${id}} from '${formattedFileToImport}';`;
-    case 'requireImport':
-      return `${id} = require('${formattedFileToImport}');`;
-    case 'requireDestructured':
-      return `${id}} = require('${formattedFileToImport}');`;
-    default:
-      return `${id} from '${formattedFileToImport}';`;
-  }
+  }, []);
 }
 
 // Given a list of IDs that are already typed, provide autocompletion for
 // the files that those IDs might be imported from.
-function provideImportFileCompletions(
+export function provideImportFileCompletions(
   importInformation: ImportInformation,
   importsFormatter: ImportFormatter,
   autoImportsManager: AutoImportsManager,
   nuclideFormattedUri: NuclideUri,
   line: string,
   lineNum: number,
-  isHaste: boolean,
 ): Array<CompletionItem> {
-  const {ids, importType, extraText} = importInformation;
-  if (!shouldProvideCompletions(extraText, importType)) {
-    return [];
-  }
-  return filterSuggestions(
-    ids.map(id => autoImportsManager.findFilesWithSymbol(id)),
+  const {ids, importType} = importInformation;
+  // Intersect all exports for `ids` and then filter/sort the result.
+  const suggestions = findCommonSuggestions(
+    autoImportsManager,
+    ids,
     importType,
-  )
-    .sort((s1, s2) => {
-      return uriToSortNumber(s1.uri) - uriToSortNumber(s2.uri);
-    })
-    .map((suggestion, i) => {
-      return importsToCompletionItems(
-        importsFormatter,
-        nuclideFormattedUri,
-        suggestion,
-        i,
-        line,
-        lineNum,
-        importType,
-        isHaste,
-      );
+  );
+  return filterSuggestions(suggestions, importType)
+    .filter(jsExport => jsExport.uri !== nuclideFormattedUri)
+    .map(suggestion =>
+      importsFormatter.formatImportFile(nuclideFormattedUri, suggestion),
+    )
+    .sort(compareForSuggestion)
+    .slice(0, MAX_RESULTS)
+    .map(importPath => {
+      return {
+        label:
+          importType === 'requireImport' || importType === 'requireDestructured'
+            ? `= require('${importPath}');`
+            : `from '${importPath}';`,
+        kind: CompletionItemKind.Module,
+        textEdit: createLineEdit(
+          lineNum,
+          line,
+          createImportStatement(ids.join(', '), importPath, importType),
+        ),
+      };
     });
 }
 
-function shouldProvideCompletions(
-  extraText: string,
+// Find a list of URIs that contain all the given exports,
+// and return a representative export for each one.
+function findCommonSuggestions(
+  autoImportsManager: AutoImportsManager,
+  ids: Array<string>,
   importType: ImportType,
-): boolean {
-  return (
-    // For now, if there is any trailing extra text including whitespace
-    // then don't offer autocomplete suggestions. Eventually, this problem
-    // can be better solved by sending a TextEdit to replace extraText.
-    extraText.indexOf(' ') < 0 ||
-    (importType !== 'requireImport' && extraText.trim() === 'from') ||
-    (importType === 'requireImport' && extraText.trim() === '=')
+): Array<JSExport> {
+  const suggestionsForEachId = ids.map(id =>
+    autoImportsManager.findFilesWithSymbol(id),
   );
+  if (suggestionsForEachId.length === 1) {
+    return suggestionsForEachId[0];
+  }
+  const commonUris = suggestionsForEachId.reduce(
+    (aggregated, suggestionForId) => {
+      return setIntersect(aggregated, new Set(suggestionForId.map(s => s.uri)));
+    },
+    new Set(suggestionsForEachId[0].map(s => s.uri)),
+  );
+  return suggestionsForEachId[0].filter(e => commonUris.has(e.uri));
 }
 
 function filterSuggestions(
-  suggestionsForEachId: Array<Array<JSExport>>,
+  suggestions: Array<JSExport>,
   importType: ImportType,
 ): Array<JSExport> {
-  let suggestions = suggestionsForEachId[0] || [];
-
-  // If there is more than one ID, take the intersection
-  // (based on the import URI) of all the suggestions
-  if (suggestionsForEachId.length > 1) {
-    const commonUris = suggestionsForEachId.reduce(
-      (aggregated, suggestionForId) => {
-        return setIntersect(
-          aggregated,
-          new Set(suggestionForId.map(s => s.uri)),
-        );
-      },
-      new Set(suggestionsForEachId[0].map(s => s.uri)),
-    );
-    suggestions = suggestionsForEachId.reduce(
-      (suggestionsAggregate, suggestionsForId) => {
-        return suggestionsAggregate.concat(
-          suggestionsForId.filter(e => commonUris.has(e.uri)),
-        );
-      },
-      [],
-    );
-  }
-
   // Filter out suggestions based on the import type
   switch (importType) {
     case 'defaultValue':
@@ -272,20 +228,21 @@ function filterSuggestions(
     case 'defaultType':
       return suggestions.filter(
         exp =>
-          exp.isTypeExport || (exp.isDefault && isClassOrUnknownExport(exp)),
+          exp.isDefault && (exp.isTypeExport || isClassOrUnknownExport(exp)),
       );
     case 'namedValue':
       return suggestions.filter(exp => !exp.isDefault && !exp.isTypeExport);
     case 'namedType':
       return suggestions.filter(
         exp =>
-          exp.isTypeExport || (!exp.isDefault && isClassOrUnknownExport(exp)),
+          !exp.isDefault && (exp.isTypeExport || isClassOrUnknownExport(exp)),
       );
     case 'requireImport':
       return suggestions.filter(exp => exp.isDefault && !exp.isTypeExport);
     case 'requireDestructured':
       return suggestions.filter(exp => !exp.isDefault && !exp.isTypeExport);
     default:
+      (importType: empty);
       return suggestions;
   }
 }
@@ -305,7 +262,6 @@ export function getImportInformation(line: string): ?ImportInformation {
           .split(',')
           .map(id => id.trim())
           .filter(id => id.length > 0),
-        extraText: importStatement.length > 2 ? importStatement[2] : '',
         isComplete: true,
         importType,
       };
@@ -316,7 +272,6 @@ export function getImportInformation(line: string): ?ImportInformation {
     if (importStatement && importStatement.length > 1) {
       return {
         ids: [importStatement[1]],
-        extraText: '',
         isComplete: false,
         importType,
       };
@@ -325,42 +280,17 @@ export function getImportInformation(line: string): ?ImportInformation {
   return null;
 }
 
-function importsToCompletionItems(
-  importsFormatter: ImportFormatter,
-  currentFile: NuclideUri,
-  exportSuggestion: JSExport,
-  dataNum: number,
-  lineText: string,
+function createLineEdit(
   lineNum: number,
-  importType: ImportType,
-  isHaste: boolean,
-): CompletionItem {
-  const fileImport = importsFormatter.formatImportFile(
-    currentFile,
-    exportSuggestion,
-  );
-
-  // autocomplete-plus will replace everything until there is whitespace. If the
-  // user writes "import Foo from " we should no longer include "from" in the
-  // completion to avoid two "from"s.
-  const fromIsAlreadyTyped = new RegExp(
-    IMPORT_STATEMENT_REGEXES[importType].source + /\s*from\s+/.source,
-  ).test(lineText);
-
-  const equalIsAlreadyTyped = new RegExp(
-    IMPORT_STATEMENT_REGEXES[importType].source + /\s*=\s*/.source,
-  ).test(lineText);
-
-  const label =
-    importType === 'requireImport' || importType === 'requireDestructured'
-      ? `${equalIsAlreadyTyped ? '' : '='} require('${fileImport}');`
-      : `${fromIsAlreadyTyped ? '' : 'from'} '${fileImport}';`;
-
+  lineText: string,
+  newText: string,
+): TextEdit {
   return {
-    label,
-    kind: CompletionItemKind.Module,
-    data: dataNum,
-    insertText: label,
+    range: {
+      start: {line: lineNum, character: 0},
+      end: {line: lineNum, character: lineText.length},
+    },
+    newText,
   };
 }
 
@@ -382,24 +312,11 @@ function isClassOrUnknownExport(exp: JSExport): boolean {
 }
 
 function positionIsAtLineEnd(line: string, position: Object): boolean {
-  return (
-    line.length === position.character ||
-    // Still provide autocomplete if there is trailing whitespace.
-    line.substr(position.character).trim() === ''
-  );
-}
-
-function uriToSortNumber(uri: NuclideUri): number {
-  /* For now, sort in the following order: (TODO: explore other sorting options)
-        - Modules
-        - Local paths (./*)
-        - Relative paths in other directories (../*)
-  */
-  if (uri.startsWith('..')) {
-    return nuclideUri.split(uri).filter(dir => dir === '..').length;
+  if (line.length === position.character) {
+    return true;
   }
-  if (uri.startsWith('.')) {
-    return 0;
-  }
-  return -1;
+  const remainder = line.substr(position.character).trim();
+  // Still provide autocomplete if there is trailing whitespace.
+  // Editor bracket matchers often insert a trailing "}", which should also be ignored.
+  return remainder === '' || remainder === '}';
 }

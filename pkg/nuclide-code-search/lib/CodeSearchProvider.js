@@ -17,23 +17,29 @@ import {Observable} from 'rxjs';
 import * as React from 'react';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {Subject} from 'rxjs';
 
-type CodeSearchFileResult = {
+type CodeSearchFileResult = {|
   path: string,
   query: string,
   line: number,
   column: number,
   context: string,
-  relativePath: string,
+  displayPath: string,
   isFirstResultForPath: boolean,
-};
+  resultType: 'FILE',
+|};
 
 type NuclideCodeSearchConfig = {
   tool: string,
   maxResults: number,
 };
 
-export const CodeSearchProvider: Provider = {
+const directoriesObs: Subject<atom$Directory> = new Subject();
+
+const SEARCH_TIMEOUT = 10000;
+
+export const CodeSearchProvider: Provider<FileResult> = {
   name: 'CodeSearchProvider',
   providerType: 'DIRECTORY',
   debounceDelay: 250,
@@ -53,6 +59,7 @@ export const CodeSearchProvider: Provider = {
     query: string,
     directory: atom$Directory,
   ): Promise<FileResult[]> {
+    directoriesObs.next(directory);
     if (query.length === 0) {
       return [];
     }
@@ -63,7 +70,12 @@ export const CodeSearchProvider: Provider = {
     ): any);
 
     return getCodeSearchServiceByNuclideUri(projectRoot)
-      .searchWithTool(config.tool, projectRoot, query, config.maxResults)
+      .searchWithTool(
+        config.tool.length === 0 ? null : config.tool,
+        projectRoot,
+        query,
+        config.maxResults,
+      )
       .refCount()
       .map(match => {
         const result = {
@@ -73,15 +85,18 @@ export const CodeSearchProvider: Provider = {
           line: match.row,
           column: match.column,
           context: match.line,
-
-          relativePath: '.' + nuclideUri.relative(projectRoot, match.file),
+          displayPath: `./${nuclideUri
+            .relative(projectRoot, match.file)
+            .replace(/\\/g, '/')}`,
+          resultType: 'FILE',
         };
         lastPath = match.file;
         return result;
       })
+      .timeout(SEARCH_TIMEOUT)
       .catch(() => Observable.empty())
       .toArray()
-      .map(results => (results.length <= 1 ? [] : results))
+      .takeUntil(directoriesObs.filter(dir => dir.getPath() === projectRoot))
       .toPromise();
   },
   getComponentForItem(_item: FileResult): React.Element<any> {
@@ -89,18 +104,20 @@ export const CodeSearchProvider: Provider = {
     const context = replaceAndWrap(
       item.context || '',
       item.query,
-      (rest, i) =>
+      (rest, i) => (
         <span
           key={`rest-${i}`}
           className="code-search-provider-result-context-rest">
           {rest}
-        </span>,
-      (match, i) =>
+        </span>
+      ),
+      (match, i) => (
         <span
           key={`match-${i}`}
           className="code-search-provider-result-context-match">
           {match}
-        </span>,
+        </span>
+      ),
     );
     return (
       <div
@@ -109,14 +126,14 @@ export const CodeSearchProvider: Provider = {
             ? 'code-search-provider-result-first-result-for-path'
             : null
         }>
-        {item.isFirstResultForPath &&
+        {item.isFirstResultForPath && (
           <PathWithFileIcon
             className="code-search-provider-result-path"
-            path={item.relativePath}
-          />}
-        <div className="code-search-provider-result-context">
-          {context}
-        </div>
+            path={item.path}>
+            {item.displayPath}
+          </PathWithFileIcon>
+        )}
+        <div className="code-search-provider-result-context">{context}</div>
       </div>
     );
   },

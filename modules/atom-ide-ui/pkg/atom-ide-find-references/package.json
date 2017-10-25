@@ -1,10 +1,11 @@
 {
   "name": "atom-ide-find-references",
+  "displayName": "Find References",
   "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "description": "Provides the ability to view references to a symbol.",
-  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "description": "Provides the ability to view references to a symbol",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
   "atomConfig": {
     "defaultLocationForPane": {
       "title": "Where to open the find references pane",
@@ -28,6 +29,11 @@
     }
   },
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
     "nuclide-find-references.provider": {
       "versions": {
         "0.0.0": "consumeProvider"

@@ -17,7 +17,7 @@ import {MultiSelectList} from './MultiSelectList';
 
 const NOOP = () => {};
 
-const ListviewExample1 = (): React.Element<any> =>
+const ListviewExample1 = (): React.Element<any> => (
   <Block>
     {/* $FlowFixMe(>=0.53.0) Flow suppress */}
     <ListView alternateBackground={true}>
@@ -32,8 +32,9 @@ const ListviewExample1 = (): React.Element<any> =>
       {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 5}}>test5</ListViewItem>
     </ListView>
-  </Block>;
-const ListviewExample2 = (): React.Element<any> =>
+  </Block>
+);
+const ListviewExample2 = (): React.Element<any> => (
   <Block>
     {/* $FlowFixMe(>=0.53.0) Flow suppress */}
     <ListView alternateBackground={true}>
@@ -83,7 +84,8 @@ const ListviewExample2 = (): React.Element<any> =>
         />
       </ListViewItem>
     </ListView>
-  </Block>;
+  </Block>
+);
 
 class MultiSelectListExample extends React.Component<
   void,

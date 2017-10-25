@@ -33,8 +33,8 @@ import {Observable} from 'rxjs';
 import passesGK from '../../commons-node/passesGK';
 import invariant from 'assert';
 import crypto from 'crypto';
-import semver from 'semver';
 import os from 'os';
+import {ROOT_ARCHIVE_FS} from '../../nuclide-fs-atom';
 
 export type Directory = LocalDirectory | RemoteDirectory;
 type File = LocalFile | RemoteFile;
@@ -52,8 +52,11 @@ function dirPathToKey(path: string): string {
   );
 }
 
-function isDirKey(key: string): boolean {
-  return nuclideUri.endsWithSeparator(key);
+function isDirOrArchiveKey(key: string): boolean {
+  return (
+    nuclideUri.endsWithSeparator(key) ||
+    nuclideUri.hasKnownArchiveExtension(key)
+  );
 }
 
 function keyToName(key: string): string {
@@ -90,7 +93,11 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
       entries = entries || [];
       const keys = entries.map(entry => {
         const path = entry.getPath();
-        return entry.isDirectory() ? dirPathToKey(path) : path;
+        if (entry.isDirectory()) {
+          return dirPathToKey(path);
+        } else {
+          return path;
+        }
       });
       resolve(keys);
     });
@@ -99,22 +106,30 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
 
 function getDirectoryByKey(key: string): ?Directory {
   const path = keyToPath(key);
-  if (!isDirKey(key)) {
+  if (!isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
     if (connection == null) {
       return null;
     }
-    return connection.createDirectory(path);
-  } else {
+    if (nuclideUri.hasKnownArchiveExtension(key)) {
+      return connection.createFileAsDirectory(path);
+    } else {
+      return connection.createDirectory(path);
+    }
+  } else if (nuclideUri.hasKnownArchiveExtension(key)) {
+    return ROOT_ARCHIVE_FS.newArchiveFileAsDirectory(path);
+  } else if (!nuclideUri.isInArchive(path)) {
     return new LocalDirectory(path);
+  } else {
+    return ROOT_ARCHIVE_FS.newArchiveDirectory(path);
   }
 }
 
 function getFileByKey(key: string): ?File {
   const path = keyToPath(key);
-  if (isDirKey(key)) {
+  if (isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
@@ -122,8 +137,10 @@ function getFileByKey(key: string): ?File {
       return null;
     }
     return connection.createFile(path);
-  } else {
+  } else if (!nuclideUri.isInArchive(path)) {
     return new LocalFile(path);
+  } else {
+    return ROOT_ARCHIVE_FS.newArchiveFile(path);
   }
 }
 
@@ -170,7 +187,10 @@ function isContextClick(event: SyntheticMouseEvent<>): boolean {
 }
 
 function buildHashKey(nodeKey: string): string {
-  return crypto.createHash('MD5').update(nodeKey).digest('base64');
+  return crypto
+    .createHash('MD5')
+    .update(nodeKey)
+    .digest('base64');
 }
 
 function observeUncommittedChangesKindConfigKey(): Observable<
@@ -209,23 +229,14 @@ function updatePathInOpenedEditors(
     if (nuclideUri.contains(oldPath, bufferPath)) {
       const relativeToOld = nuclideUri.relative(oldPath, bufferPath);
       const newBufferPath = nuclideUri.join(newPath, relativeToOld);
-      // TODO(19829039): clean up after 1.19
-      if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
-        // setPath() doesn't work correctly with remote files.
-        // We need to create a new remote file and reset the underlying file.
-        const file = getFileByKey(newBufferPath);
-        invariant(
-          file != null,
-          `Could not update open file ${oldPath} to ${newBufferPath}`,
-        );
-        // $FlowFixMe: add to TextBuffer
-        buffer.setFile(file);
-      } else {
-        // setPath will append the hostname when given the local path, so we
-        // strip off the hostname here to avoid including it twice in the path.
-        // $FlowIgnore
-        buffer.setPath(nuclideUri.getPath(newBufferPath));
-      }
+      // setPath() doesn't work correctly with remote files.
+      // We need to create a new remote file and reset the underlying file.
+      const file = getFileByKey(newBufferPath);
+      invariant(
+        file != null,
+        `Could not update open file ${oldPath} to ${newBufferPath}`,
+      );
+      buffer.setFile(file);
     }
   });
 }
@@ -255,7 +266,7 @@ function getSelectionMode(event: SyntheticMouseEvent<>): SelectionMode {
 
 export default {
   dirPathToKey,
-  isDirKey,
+  isDirOrArchiveKey,
   keyToName,
   keyToPath,
   getParentKey,

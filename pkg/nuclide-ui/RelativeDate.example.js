@@ -13,7 +13,7 @@ import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import RelativeDate from './RelativeDate';
 
-const RelativeDateExample = (): React.Element<any> =>
+const RelativeDateExample = (): React.Element<any> => (
   <div>
     <Block>
       <div>
@@ -25,7 +25,8 @@ const RelativeDateExample = (): React.Element<any> =>
         "
       </div>
     </Block>
-  </div>;
+  </div>
+);
 
 export const RelativeDateExamples = {
   sectionName: 'Relative Date',

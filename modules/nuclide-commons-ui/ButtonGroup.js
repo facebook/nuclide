@@ -47,8 +47,6 @@ export const ButtonGroup = (props: Props) => {
   });
   return (
     // $FlowFixMe(>=0.53.0) Flow suppress
-    <div className={newClassName}>
-      {children}
-    </div>
+    <div className={newClassName}>{children}</div>
   );
 };

@@ -9,24 +9,26 @@
     "packageType": "Atom",
     "testRunner": "apm",
     "configMetadata": {
-      "pathComponents": [
-        "IDE",
-        "Code Search"
-      ]
+      "pathComponents": ["IDE", "Code Search"]
     },
     "config": {
       "tool": {
         "title": "Code Search Tool",
         "type": "string",
-        "default": "ag",
-        "enum": ["ag", "ack", "rg"],
-        "description": "The chosen tool must be available in your PATH. On windows only rg works well."
+        "default": "",
+        "enum": [
+          { "value": "", "description": "Let Nuclide use any available tool" },
+          { "value": "ripgrep", "description": "ripgrep (rg)" },
+          { "value": "ag", "description": "silversearcher (ag)" },
+          { "value": "ack", "description": "ack" }
+        ],
+        "description": "The chosen tool must be available in your PATH. On windows only rg is supported."
       },
       "maxResults": {
         "title": "Maximum number of results per project folder",
         "type": "integer",
         "default": 30,
-        "description": "A much higher number might affect the CPU usage and the rendering of Quick-Open"
+        "description": "A much higher number might affect the CPU usage and the rendering of Quick Open"
       }
     }
   },

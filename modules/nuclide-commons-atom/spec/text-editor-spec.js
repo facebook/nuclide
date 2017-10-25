@@ -10,7 +10,13 @@
  * @format
  */
 
-import {existingEditorForUri, observeTextEditors} from '../text-editor';
+import {
+  enforceReadOnlyEditor,
+  existingEditorForUri,
+  observeTextEditors,
+} from '../text-editor';
+
+import {Point, Range} from 'atom';
 
 describe('existingEditorForUri', () => {
   const file1 = '/tmp/file1.txt';
@@ -54,6 +60,72 @@ describe('observeTextEditors', () => {
       await atom.workspace.open('/tmp/test');
 
       expect(paths).toEqual([undefined, '/tmp/test']);
+    });
+  });
+});
+
+function ensureReadOnlyOperations(
+  buffer: atom$TextBuffer,
+  operations: Array<() => mixed>,
+  expectedReadOnly: boolean,
+): void {
+  const initialText = buffer.getText();
+  operations.forEach(operation => {
+    operation();
+    expect(initialText === buffer.getText()).toBe(expectedReadOnly);
+    if (!expectedReadOnly) {
+      buffer.setText(initialText);
+    }
+  });
+}
+
+describe('enforceReadOnlyEditor', () => {
+  it('should not be able to write to the text editor', () => {
+    waitsForPromise(async () => {
+      const editor = await atom.workspace.open('');
+      editor.setText('ABC\nDEF');
+      const buffer = editor.getBuffer();
+
+      const operations = [
+        () => editor.insertText('xyz'),
+        () => editor.backspace(),
+        () => editor.duplicateLines(),
+        () => editor.insertNewline(),
+      ];
+
+      ensureReadOnlyOperations(buffer, operations, false);
+
+      enforceReadOnlyEditor(editor);
+      ensureReadOnlyOperations(buffer, operations, true);
+      // Underlying buffer's `setText` and `append` are an exception by default.
+      ensureReadOnlyOperations(
+        buffer,
+        [() => buffer.setText('lol'), () => buffer.append('lol')],
+        false,
+      );
+    });
+  });
+});
+
+describe('enforceReadOnlyBuffer', () => {
+  it('should not be able to write to the text buffer', () => {
+    waitsForPromise(async () => {
+      const editor = await atom.workspace.open('');
+      const buffer = editor.getBuffer();
+      buffer.setText('ABC\nDEF');
+
+      const operations = [
+        () => buffer.append('xyz'),
+        () => buffer.deleteRows(0, 1),
+        () => buffer.delete(new Range([0, 0], [1, 0])),
+        () => buffer.insert(new Point(0, 0), 'lol'),
+        () => buffer.undo(),
+        () => buffer.setText('lol'),
+      ];
+
+      ensureReadOnlyOperations(buffer, operations, false);
+      enforceReadOnlyEditor(editor, []);
+      ensureReadOnlyOperations(buffer, operations, true);
     });
   });
 });

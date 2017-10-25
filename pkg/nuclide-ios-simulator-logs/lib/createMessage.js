@@ -45,6 +45,7 @@ function getLevel(level: AslLevel): Level {
     case '7': // Debug
       return 'debug';
     default:
+      (level: empty);
       throw new Error(`Invalid ASL level: ${level}`);
   }
 }

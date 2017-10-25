@@ -197,9 +197,9 @@ export default class FileTreeController {
         ...letterKeyBindings,
       }),
       atom.commands.add('atom-workspace', {
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'file:copy-full-path': this._copyFullPath.bind(this),
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'file:show-in-file-manager': this._showInFileManager.bind(this),
       }),
     );
@@ -313,7 +313,7 @@ export default class FileTreeController {
     if (showIfHidden) {
       // Ensure the file tree is visible before trying to reveal a file in it. Even if the currently
       // active pane is not an ordinary editor, we still at least want to show the tree.
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
       this._actions.setFoldersExpanded(true);
     }
@@ -408,6 +408,10 @@ export default class FileTreeController {
     this._store._setAutoExpandSingleChild(autoExpandSingleChild);
   }
 
+  setFocusEditorOnFileSelection(focusEditorOnFileSelection: boolean): void {
+    this._actions.setFocusEditorOnFileSelection(focusEditorOnFileSelection);
+  }
+
   updateWorkingSet(workingSet: WorkingSet): void {
     this._actions.updateWorkingSet(workingSet);
   }
@@ -418,6 +422,10 @@ export default class FileTreeController {
 
   updateOpenFilesWorkingSet(openFilesWorkingSet: WorkingSet): void {
     this._actions.updateOpenFilesWorkingSet(openFilesWorkingSet);
+  }
+
+  collectDebugState(): Object {
+    return this._store.collectDebugState();
   }
 
   /**

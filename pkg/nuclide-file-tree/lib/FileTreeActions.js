@@ -9,11 +9,11 @@
  * @format
  */
 
-import {ShowUncommittedChangesKind} from './Constants';
 import FileTreeDispatcher, {ActionTypes} from './FileTreeDispatcher';
 import FileTreeHelpers from './FileTreeHelpers';
 import {FileTreeStore} from './FileTreeStore';
 import Immutable from 'immutable';
+import {track} from '../../nuclide-analytics';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 import {hgConstants} from '../../nuclide-hg-rpc';
 import {getLogger} from 'log4js';
@@ -21,6 +21,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {Observable} from 'rxjs';
 import {objectFromMap} from 'nuclide-commons/collection';
+import {fastDebounce} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 // $FlowFixMe(>=0.53.0) Flow suppress
@@ -234,6 +235,13 @@ export default class FileTreeActions {
     });
   }
 
+  setFocusEditorOnFileSelection(focusEditorOnFileSelection: boolean): void {
+    this._dispatcher.dispatch({
+      actionType: ActionTypes.SET_FOCUS_EDITOR_ON_FILE_SELECTION,
+      focusEditorOnFileSelection,
+    });
+  }
+
   setUsePrefixNav(usePrefixNav: boolean): void {
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_USE_PREFIX_NAV,
@@ -272,12 +280,14 @@ export default class FileTreeActions {
         });
       }
     } else {
+      track('file-tree-open-file', {uri: nodeKey});
       // goToLocation doesn't support pending panes
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.workspace.open(FileTreeHelpers.keyToPath(nodeKey), {
-        activatePane: true,
+        activatePane:
+          (pending && node.conf.focusEditorOnFileSelection) || !pending,
         searchAllPanes: true,
-        pending: true,
+        pending,
       });
     }
   }
@@ -328,6 +338,7 @@ export default class FileTreeActions {
       FileTreeHelpers.dirPathToKey(directory.getPath()),
     );
     const rootRepos: Array<?atom$Repository> = await Promise.all(
+      // $FlowFixMe(>=0.55.0) Flow suppress
       rootDirectories.map(directory => repositoryForPath(directory.getPath())),
     );
 
@@ -573,7 +584,7 @@ export default class FileTreeActions {
         observableFromSubscribeFunction(repo.onDidChangeStatus.bind(repo)),
         observableFromSubscribeFunction(repo.onDidChangeStatuses.bind(repo)),
       )
-        .debounceTime(1000)
+        .let(fastDebounce(1000))
         .startWith(null)
         .map(_ => this._getCachedPathStatuses(repo));
     } else if (repo.getType() === 'hg') {
@@ -585,13 +596,14 @@ export default class FileTreeActions {
       const hgChanges = FileTreeHelpers.observeUncommittedChangesKindConfigKey()
         .map(kind => {
           switch (kind) {
-            case ShowUncommittedChangesKind.UNCOMMITTED:
+            case 'Uncommitted changes':
               return hgRepo.observeUncommittedStatusChanges();
-            case ShowUncommittedChangesKind.HEAD:
+            case 'Head changes':
               return hgRepo.observeHeadStatusChanges();
-            case ShowUncommittedChangesKind.STACK:
+            case 'Stack changes':
               return hgRepo.observeStackStatusChanges();
             default:
+              (kind: empty);
               const error = Observable.throw(
                 new Error('Unrecognized ShowUncommittedChangesKind config'),
               );

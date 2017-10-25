@@ -103,6 +103,7 @@ export function convertSearchResults(
       continue;
     }
     result.push({
+      resultType: 'SYMBOL',
       line: entry.line - 1,
       column: entry.char_start - 1,
       name: entry.name,

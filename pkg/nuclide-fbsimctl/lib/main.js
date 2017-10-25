@@ -16,34 +16,55 @@ import {Observable} from 'rxjs';
 import {arrayEqual} from 'nuclide-commons/collection';
 import shallowEqual from 'shallowequal';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {getLogger} from 'log4js';
 
 const poller = createPoller();
 
 // Callback version
-export function observeDevices(callback: (Array<Device>) => void): IDisposable {
+export function observeDevices(
+  callback: (Array<Device> | Error) => void,
+): IDisposable {
   const subscription = poller.subscribe(devices => callback(devices));
   return new UniversalDisposable(() => subscription.unsubscribe());
 }
 
 // Observable version
-export function getDevices(): Observable<Array<Device>> {
+export function getDevices(): Observable<Array<Device> | Error> {
   return poller;
 }
 
-function createPoller(): Observable<Array<Device>> {
+function createPoller(): Observable<Array<Device> | Error> {
   return Observable.interval(2000)
     .startWith(0)
-    .switchMap(() =>
-      runCommand('fbsimctl', ['--json', '--format=%n%u%s%o%a', 'list']).map(
-        parseFbsimctlJsonOutput,
-      ),
-    )
-    .distinctUntilChanged((a, b) => arrayEqual(a, b, shallowEqual))
-    .catch(() =>
-      Observable.throw(
-        "Can't fetch iOS devices. Make sure that fbsimctl is in your $PATH and that it works properly.",
-      ),
-    )
+    .switchMap(() => {
+      return runCommand('fbsimctl', ['--json', '--format=%n%u%s%o%a', 'list'])
+        .map(parseFbsimctlJsonOutput)
+        .catch(error => {
+          const friendlyError = new Error(
+            "Can't fetch iOS devices. Make sure that fbsimctl is in your $PATH and that it works properly.",
+          );
+          if (error.code !== 'ENOENT') {
+            getLogger().error(error);
+          } else {
+            // Keep the code so tooling higher up knows this is due to the tool missing.
+            (friendlyError: any).code = 'ENOENT';
+          }
+          return Observable.of(friendlyError);
+        });
+    })
+    .distinctUntilChanged((a, b) => {
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return arrayEqual(a, b, shallowEqual);
+      } else if (a instanceof Error && b instanceof Error) {
+        return a.message === b.message;
+      } else {
+        return false;
+      }
+    })
+    .catch(error => {
+      getLogger().error(error);
+      return Observable.of([]);
+    })
     .publishReplay(1)
     .refCount();
 }
@@ -67,12 +88,21 @@ function parseFbsimctlJsonOutput(output: string): Array<Device> {
       return;
     }
     const device = event.subject;
-    const {state, os, name, udid, arch} = device;
+    const {state, name, udid} = device;
+
+    // TODO (#21958483): Remove this hack when `fbsimctl` produces the right
+    // information for new OS devices.
+    let {os, arch} = device;
+    if (!os && !arch && /^(iPhone|iPad)/.test(name)) {
+      os = 'iOS <unknown version>';
+      arch = 'x86_64';
+    }
+
     if (!state || !os || !name || !udid || !arch) {
       return;
     }
 
-    if (!device.os.match(/^iOS (.+)$/)) {
+    if (!os.match(/^iOS (.+)$/)) {
       return;
     }
     const type = typeFromArch(arch);

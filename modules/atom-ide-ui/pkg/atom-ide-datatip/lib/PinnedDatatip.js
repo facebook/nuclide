@@ -10,19 +10,20 @@
  * @format
  */
 
-import type {Datatip} from './types';
+import type {Datatip, PinnedDatatipPosition} from './types';
 
 type Position = {
   x: number,
   y: number,
 };
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {Observable} from 'rxjs';
 import invariant from 'assert';
 import classnames from 'classnames';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {DatatipComponent, DATATIP_ACTIONS} from './DatatipComponent';
 
@@ -44,6 +45,15 @@ function documentMouseUp$(): Observable<MouseEvent> {
   return _mouseUp$;
 }
 
+export type PinnedDatatipParams = {
+  onDispose: (pinnedDatatip: PinnedDatatip) => void,
+  hideDataTips: () => void,
+  // Defaults to 'end-of-line'.
+  position?: PinnedDatatipPosition,
+  // Defaults to true.
+  showRangeHighlight?: boolean,
+};
+
 export class PinnedDatatip {
   _boundDispose: Function;
   _boundHandleMouseDown: Function;
@@ -55,7 +65,7 @@ export class PinnedDatatip {
   _marker: ?atom$Marker;
   _rangeDecoration: ?atom$Decoration;
   _mouseSubscription: ?rxjs$ISubscription;
-  _subscriptions: atom$CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _datatip: Datatip;
   _editor: TextEditor;
   _hostElement: HTMLElement;
@@ -65,21 +75,22 @@ export class PinnedDatatip {
   _offset: Position;
   _isHovering: boolean;
   _hideDataTips: () => void;
+  _position: PinnedDatatipPosition;
+  _showRangeHighlight: boolean;
 
   constructor(
     datatip: Datatip,
     editor: TextEditor,
-    onDispose: (pinnedDatatip: PinnedDatatip) => void,
-    hideDataTips: () => void,
+    params: PinnedDatatipParams,
   ) {
-    this._subscriptions = new CompositeDisposable();
-    this._subscriptions.add(new Disposable(() => onDispose(this)));
+    this._subscriptions = new UniversalDisposable();
+    this._subscriptions.add(new Disposable(() => params.onDispose(this)));
     this._datatip = datatip;
     this._editor = editor;
     this._marker = null;
     this._rangeDecoration = null;
     this._hostElement = document.createElement('div');
-    this._hostElement.className = 'nuclide-datatip-overlay';
+    this._hostElement.className = 'datatip-overlay';
     this._boundDispose = this.dispose.bind(this);
     this._boundHandleMouseDown = this.handleMouseDown.bind(this);
     this._boundHandleMouseEnter = this.handleMouseEnter.bind(this);
@@ -110,7 +121,10 @@ export class PinnedDatatip {
     this._isDragging = false;
     this._dragOrigin = null;
     this._isHovering = false;
-    this._hideDataTips = hideDataTips;
+    this._hideDataTips = params.hideDataTips;
+    this._position = params.position == null ? 'end-of-line' : params.position;
+    this._showRangeHighlight =
+      params.showRangeHighlight == null ? true : params.showRangeHighlight;
     this.render();
   }
 
@@ -141,7 +155,7 @@ export class PinnedDatatip {
 
   handleGlobalMouseUp(): void {
     // If the datatip was moved, push the effects of mouseUp to the next tick,
-    // in order to allow cancelation of captured events (e.g. clicks on child components).
+    // in order to allow cancellation of captured events (e.g. clicks on child components).
     this._mouseUpTimeout = setTimeout(() => {
       this._isDragging = false;
       this._dragOrigin = null;
@@ -184,44 +198,44 @@ export class PinnedDatatip {
     }
   }
 
-  // Ensure positioning of the Datatip at the end of the current line.
+  // Update the position of the pinned datatip.
   _updateHostElementPosition(): void {
-    const {_editor, _datatip, _hostElement, _offset} = this;
+    const {_editor, _datatip, _hostElement, _offset, _position} = this;
     const {range} = _datatip;
-    const charWidth = _editor.getDefaultCharWidth();
-    const lineLength = _editor.getBuffer().getLines()[range.start.row].length;
     _hostElement.style.display = 'block';
-    _hostElement.style.top =
-      -_editor.getLineHeightInPixels() + _offset.y + 'px';
-    _hostElement.style.left =
-      (lineLength - range.end.column) * charWidth +
-      LINE_END_MARGIN +
-      _offset.x +
-      'px';
+    switch (_position) {
+      case 'end-of-line':
+        const charWidth = _editor.getDefaultCharWidth();
+        const lineLength = _editor.getBuffer().getLines()[range.start.row]
+          .length;
+        _hostElement.style.top =
+          -_editor.getLineHeightInPixels() + _offset.y + 'px';
+        _hostElement.style.left =
+          (lineLength - range.end.column) * charWidth +
+          LINE_END_MARGIN +
+          _offset.x +
+          'px';
+        break;
+      case 'above-range':
+        _hostElement.style.bottom =
+          _editor.getLineHeightInPixels() +
+          _hostElement.clientHeight +
+          _offset.y +
+          'px';
+        _hostElement.style.left = _offset.x + 'px';
+        break;
+      default:
+        (_position: empty);
+        throw Error(`Unexpected PinnedDatatip position: ${this._position}`);
+    }
   }
 
-  render(): void {
+  async render(): Promise<void> {
     const {_editor, _datatip, _hostElement, _isDragging, _isHovering} = this;
-    this._updateHostElementPosition();
-    ReactDOM.render(
-      <DatatipComponent
-        action={DATATIP_ACTIONS.CLOSE}
-        actionTitle="Close this datatip"
-        className={classnames(
-          _isDragging ? 'nuclide-datatip-dragging' : '',
-          'nuclide-datatip-pinned',
-        )}
-        datatip={_datatip}
-        onActionClick={this._boundDispose}
-        onMouseDown={this._boundHandleMouseDown}
-        onClickCapture={this._boundHandleCapturedClick}
-      />,
-      _hostElement,
-    );
 
-    let rangeClassname = 'nuclide-datatip-highlight-region';
+    let rangeClassname = 'datatip-highlight-region';
     if (_isHovering) {
-      rangeClassname += ' nuclide-datatip-highlight-region-active';
+      rangeClassname += ' datatip-highlight-region-active';
     }
 
     if (this._marker == null) {
@@ -234,18 +248,40 @@ export class PinnedDatatip {
         position: 'head',
         item: this._hostElement,
       });
-      this._rangeDecoration = _editor.decorateMarker(marker, {
-        type: 'highlight',
-        class: rangeClassname,
-      });
-    } else {
-      // `this._rangeDecoration` is guaranteed to exist iff `this._marker` exists.
-      invariant(this._rangeDecoration);
+      if (this._showRangeHighlight) {
+        this._rangeDecoration = _editor.decorateMarker(marker, {
+          type: 'highlight',
+          class: rangeClassname,
+        });
+      }
+      await _editor.getElement().getNextUpdatePromise();
+      // Guard against disposals during the await.
+      if (marker.isDestroyed() || _editor.isDestroyed()) {
+        return;
+      }
+    } else if (this._rangeDecoration != null) {
       this._rangeDecoration.setProperties({
         type: 'highlight',
         class: rangeClassname,
       });
     }
+
+    ReactDOM.render(
+      <DatatipComponent
+        action={DATATIP_ACTIONS.CLOSE}
+        actionTitle="Close this datatip"
+        className={classnames(
+          _isDragging ? 'datatip-dragging' : '',
+          'datatip-pinned',
+        )}
+        datatip={_datatip}
+        onActionClick={this._boundDispose}
+        onMouseDown={this._boundHandleMouseDown}
+        onClickCapture={this._boundHandleCapturedClick}
+      />,
+      _hostElement,
+    );
+    this._updateHostElementPosition();
   }
 
   dispose(): void {

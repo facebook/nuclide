@@ -9,7 +9,8 @@
  * @format
  */
 
-import {CompositeDisposable, Range} from 'atom';
+import {Range} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {trackTiming} from '../../nuclide-analytics';
 import observeLanguageTextEditors from '../../commons-atom/observe-language-text-editors';
 
@@ -24,7 +25,7 @@ const NUMBER_OF_PREVIOUS_LINES_TO_SEARCH_FOR_COLONS = 25;
  * Clients must call `disable()` once they're done with an instance.
  */
 export default class ObjectiveCColonIndenter {
-  _subscriptions: ?CompositeDisposable;
+  _subscriptions: ?UniversalDisposable;
   _insertTextSubscriptionsMap: Map<TextEditor, IDisposable>;
 
   enable(): void {
@@ -33,7 +34,7 @@ export default class ObjectiveCColonIndenter {
     }
     this._insertTextSubscriptionsMap = new Map();
 
-    const subscriptions = (this._subscriptions = new CompositeDisposable());
+    const subscriptions = (this._subscriptions = new UniversalDisposable());
     subscriptions.add({
       dispose: () => {
         this._insertTextSubscriptionsMap.forEach(subscription =>

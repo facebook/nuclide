@@ -9,7 +9,8 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -24,11 +25,11 @@ type Props = {
 export class Webview extends React.Component<Props, void> {
   props: Props;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Object) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   componentDidMount() {

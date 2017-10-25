@@ -2,7 +2,7 @@
   "name": "nuclide-jasmine",
   "repository": "https://github.com/facebook/nuclide",
   "version": "0.0.0",
-  "description": "Atom-compatible Jasmine test runner that runs outside of Atom",
+  "description": "Wrapper to call into modules/nuclide-jasmine",
   "nuclide": {
     "packageType": "Node",
     "testRunner": "npm"

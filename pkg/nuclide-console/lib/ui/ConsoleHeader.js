@@ -113,18 +113,17 @@ export default class ConsoleHeader extends React.Component<Props> {
 
     const MultiSelectOption = this._renderOption;
     const pasteButton =
-      this.props.createPaste == null
-        ? null
-        : <Button
-            className="inline-block"
-            size={ButtonSizes.SMALL}
-            onClick={this._handleCreatePasteButtonClick}
-            // $FlowFixMe(>=0.53.0) Flow suppress
-            ref={addTooltip({
-              title: 'Creates a Paste from the current contents of the console',
-            })}>
-            Create Paste
-          </Button>;
+      this.props.createPaste == null ? null : (
+        <Button
+          className="inline-block"
+          size={ButtonSizes.SMALL}
+          onClick={this._handleCreatePasteButtonClick}
+          ref={addTooltip({
+            title: 'Creates a Paste from the current contents of the console',
+          })}>
+          Create Paste
+        </Button>
+      );
 
     return (
       <Toolbar location="top">
@@ -184,9 +183,5 @@ function MultiSelectLabel(props: LabelProps): React.Element<any> {
     selectedOptions.length === 1
       ? selectedOptions[0].label
       : `${selectedOptions.length} Sources`;
-  return (
-    <span>
-      Showing: {label}
-    </span>
-  );
+  return <span>Showing: {label}</span>;
 }

@@ -11,6 +11,9 @@
  */
 
 import * as React from 'react';
+import invariant from 'assert';
+import type {Observable} from 'rxjs';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import {goToLocationInEditor} from 'nuclide-commons-atom/go-to-location';
@@ -34,6 +37,7 @@ type Props = {
   updateSearchResults: (
     searchResults: Map<OutlineTreeForUi, SearchResult>,
   ) => void,
+  visibility: Observable<boolean>,
 };
 
 type State = {
@@ -41,7 +45,9 @@ type State = {
 };
 
 export class OutlineViewSearchComponent extends React.Component<Props, State> {
+  subscription: ?UniversalDisposable;
   searchResults: Map<OutlineTreeForUi, SearchResult>;
+  _inputRef: ?React$ElementRef<typeof AtomInput>;
 
   constructor(props: Props) {
     super(props);
@@ -52,10 +58,33 @@ export class OutlineViewSearchComponent extends React.Component<Props, State> {
     this.state = {
       currentQuery: '',
     };
+    (this: any)._handleInputRef = this._handleInputRef.bind(this);
   }
 
-  SEARCH_PLACEHOLDER = 'Search Outline View';
+  SEARCH_PLACEHOLDER = 'Search Outline';
   DEBOUNCE_TIME = 100;
+
+  componentDidMount(): void {
+    invariant(this.subscription == null);
+    this.subscription = new UniversalDisposable(
+      this.props.visibility.filter(visible => visible).subscribe(_ => {
+        if (this._inputRef == null) {
+          return;
+        }
+        this._inputRef.focus();
+      }),
+    );
+  }
+
+  componentWillUnmount(): void {
+    invariant(this.subscription != null);
+    this.subscription.unsubscribe();
+    this.subscription = null;
+  }
+
+  _handleInputRef(element: ?React$ElementRef<typeof AtomInput>): mixed {
+    this._inputRef = element;
+  }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
     if (prevState.currentQuery === '' && this.state.currentQuery === '') {
@@ -116,14 +145,17 @@ export class OutlineViewSearchComponent extends React.Component<Props, State> {
     if (pane == null) {
       return;
     }
-    analytics.track('atom-ide-outline-view:search-enter');
+    analytics.track('outline-view:search-enter');
     pane.activate();
     pane.activateItem(this.props.editor);
-    goToLocationInEditor(
-      this.props.editor,
-      firstElement.startPosition.row,
-      firstElement.startPosition.column,
-    );
+    const landingPosition: atom$Point =
+      firstElement.landingPosition != null
+        ? firstElement.landingPosition
+        : firstElement.startPosition;
+    goToLocationInEditor(this.props.editor, {
+      line: landingPosition.row,
+      column: landingPosition.column,
+    });
     this.setState({currentQuery: ''});
   };
 
@@ -137,24 +169,25 @@ export class OutlineViewSearchComponent extends React.Component<Props, State> {
 
   render(): React.Node {
     return (
-      <div className="atom-ide-outline-view-search-bar">
-        <Icon icon="search" className="atom-ide-outline-view-search-icon" />
+      <div className="outline-view-search-bar">
+        <Icon icon="search" className="outline-view-search-icon" />
         <AtomInput
-          className="atom-ide-outline-view-search-pane"
+          className="outline-view-search-pane"
           onConfirm={this._onConfirm}
           onCancel={this._onDidClear}
           onDidChange={this._onDidChange}
           placeholderText={this.state.currentQuery || this.SEARCH_PLACEHOLDER}
+          ref={this._handleInputRef}
           value={this.state.currentQuery}
           size="sm"
         />
-        {this.state.currentQuery.length > 0
-          ? <Icon
-              icon="x"
-              className="atom-ide-outline-view-search-clear"
-              onClick={this._onDidClear}
-            />
-          : null}
+        {this.state.currentQuery.length > 0 ? (
+          <Icon
+            icon="x"
+            className="outline-view-search-clear"
+            onClick={this._onDidClear}
+          />
+        ) : null}
       </div>
     );
   }

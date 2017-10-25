@@ -112,7 +112,7 @@ describe('DefinitionHyperclick', () => {
       invariant(result.callback != null);
       invariant(typeof result.callback === 'function');
       result.callback();
-      expect(goToLocation).toHaveBeenCalledWith('path1', 1, 2);
+      expect(goToLocation).toHaveBeenCalledWith('path1', {line: 1, column: 2});
     });
   });
 
@@ -175,7 +175,10 @@ describe('DefinitionHyperclick', () => {
       expect(typeof callbacks[2].callback).toBe('function');
 
       callbacks[1].callback();
-      expect(goToLocation).toHaveBeenCalledWith('/a/b/path2', 3, 4);
+      expect(goToLocation).toHaveBeenCalledWith('/a/b/path2', {
+        line: 3,
+        column: 4,
+      });
     });
   });
 

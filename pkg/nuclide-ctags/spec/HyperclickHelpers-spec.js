@@ -110,19 +110,24 @@ describe('HyperclickHelpers', () => {
 
       // Blindly use line numbers, if they're given.
       await result.callback[0].callback();
-      expect(goToLocationSpy).toHaveBeenCalledWith(
-        '/path1/path2/a.py',
-        1336,
-        0,
-      );
+      expect(goToLocationSpy).toHaveBeenCalledWith('/path1/path2/a.py', {
+        line: 1336,
+        column: 0,
+      });
 
       // Find the line by pattern, in other cases.
       await result.callback[1].callback();
-      expect(goToLocationSpy).toHaveBeenCalledWith('/path1/a', 2, 0);
+      expect(goToLocationSpy).toHaveBeenCalledWith('/path1/a', {
+        line: 2,
+        column: 0,
+      });
 
       // Default to the first line, if it's not actually in the file any more.
       await result.callback[2].callback();
-      expect(goToLocationSpy).toHaveBeenCalledWith('/test/a', 0, 0);
+      expect(goToLocationSpy).toHaveBeenCalledWith('/test/a', {
+        line: 0,
+        column: 0,
+      });
     });
   });
 
@@ -147,7 +152,10 @@ describe('HyperclickHelpers', () => {
       invariant(typeof result.callback === 'function');
 
       await result.callback();
-      expect(goToLocationSpy).toHaveBeenCalledWith('/test', 1, 0);
+      expect(goToLocationSpy).toHaveBeenCalledWith('/test', {
+        line: 1,
+        column: 0,
+      });
     });
   });
 

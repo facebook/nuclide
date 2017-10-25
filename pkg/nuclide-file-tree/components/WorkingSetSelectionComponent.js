@@ -20,7 +20,7 @@ import ReactDOM from 'react-dom';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import {HR} from '../../nuclide-ui/HR';
+import {HR} from 'nuclide-commons-ui/HR';
 
 type Props = {
   workingSetsStore: WorkingSetsStore,
@@ -151,9 +151,7 @@ export class WorkingSetSelectionComponent extends React.Component<
             The working sets below are not applicable to your current project
             folders
           </span>
-          <ol className="list-group">
-            {notApplicableDefinitions}
-          </ol>
+          <ol className="list-group">{notApplicableDefinitions}</ol>
         </div>
       );
     }
@@ -245,9 +243,7 @@ class ApplicableDefinitionLine extends React.Component<
             title="Edit this working set"
           />
         </ButtonGroup>
-        <span>
-          {this.props.def.name}
-        </span>
+        <span>{this.props.def.name}</span>
       </li>
     );
   }
@@ -291,9 +287,7 @@ class NonApplicableDefinitionLine extends React.Component<
           tabIndex="-1"
           title="Delete this working set"
         />
-        <span className="text-subtle">
-          {this.props.def.name}
-        </span>
+        <span className="text-subtle">{this.props.def.name}</span>
       </li>
     );
   }

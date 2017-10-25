@@ -55,7 +55,10 @@ class DebuggerDomainDispatcher {
   }
 
   setDebuggerSettings(settings: SetDebuggerSettingsRequest): void {
-    this._agent.setDebuggerSettings(settings.singleThreadStepping);
+    this._agent.setDebuggerSettings(
+      settings.singleThreadStepping,
+      settings.showDisassembly,
+    );
   }
 
   getSourceUriFromUri(fileUri: NuclideUri): ?ScriptId {
@@ -145,6 +148,24 @@ class DebuggerDomainDispatcher {
     );
   }
 
+  setVariable(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._agent.setVariableValue(expression, newValue, scopeObjectId, callback);
+  }
+
+  completions(
+    text: string,
+    column: number,
+    frameId: number,
+    callback: Function,
+  ): void {
+    this._agent.completions(text, column, frameId, callback);
+  }
+
   selectThread(threadId: number): void {
     this._agent.selectThread(threadId);
   }
@@ -223,4 +244,4 @@ class DebuggerDomainDispatcher {
 }
 
 // Use old school export to allow legacy code to import it.
-module.exports = DebuggerDomainDispatcher; // eslint-disable-line nuclide-internal/no-commonjs
+module.exports = DebuggerDomainDispatcher; // eslint-disable-line rulesdir/no-commonjs

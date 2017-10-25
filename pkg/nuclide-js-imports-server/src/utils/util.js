@@ -55,3 +55,73 @@ export function compareLspRange(a: IRange, b: IRange): number {
     compareLspPosition(a.start, b.start) || compareLspPosition(a.end, b.end)
   );
 }
+
+/**
+ * Sort in decreasing order of 'globality':
+ * - Modules
+ * - Relative paths in other directories (../*)
+ * - Local paths (./*)
+ */
+const MODULES_PRIORITY = -1;
+const RELATIVE_PRIORITY = 0;
+const LOCAL_PRIORITY = 1;
+
+export function importPathToPriority(path: string): number {
+  if (path.startsWith('..')) {
+    return RELATIVE_PRIORITY;
+  }
+  if (path.startsWith('.')) {
+    return LOCAL_PRIORITY;
+  }
+  return MODULES_PRIORITY;
+}
+
+function isLowerCase(s: string) {
+  return s.toLowerCase() === s;
+}
+
+export function compareForInsertion(path1: string, path2: string): number {
+  const p1 = importPathToPriority(path1);
+  const p2 = importPathToPriority(path2);
+  if (p1 !== p2) {
+    // Typically the highest-priority imports are at the end.
+    return p1 - p2;
+  }
+  if (p1 === MODULES_PRIORITY) {
+    // Order uppercase modules before lowercased modules.
+    // (Mostly a Facebook-friendly convention).
+    const lc1 = isLowerCase(path1[0]);
+    const lc2 = isLowerCase(path2[0]);
+    if (lc1 !== lc2) {
+      return Number(lc1) - Number(lc2);
+    }
+  }
+  return path1.localeCompare(path2);
+}
+
+export function compareForSuggestion(path1: string, path2: string): number {
+  const p1 = importPathToPriority(path1);
+  const p2 = importPathToPriority(path2);
+  if (p1 !== p2) {
+    // Provide highest-priority matches first.
+    return p2 - p1;
+  }
+  // Prefer shorter paths.
+  if (path1.length !== path2.length) {
+    return path1.length - path2.length;
+  }
+  return path1.localeCompare(path2);
+}
+
+// Check if an AST node is a require call, and returns the literal value.
+export function getRequiredModule(node: Object): ?string {
+  if (
+    node.type === 'CallExpression' &&
+    node.callee.type === 'Identifier' &&
+    node.callee.name === 'require' &&
+    node.arguments[0] &&
+    node.arguments[0].type === 'StringLiteral'
+  ) {
+    return node.arguments[0].value;
+  }
+}

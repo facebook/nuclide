@@ -10,7 +10,7 @@
  * @format
  */
 
-import type {AppState, FileDiagnosticMessage, Store} from '../types';
+import type {AppState, DiagnosticMessage, Store} from '../types';
 import type MessageRangeTracker from '../MessageRangeTracker';
 
 import {
@@ -53,7 +53,7 @@ export default function createStore(
   const messagesWithFixes = getFileMessages(store)
     .map(messageSet => setFilter(messageSet, message => message.fix != null))
     .filter(messageSet => messageSet.size > 0);
-  diffSets(messagesWithFixes).subscribe(({added, removed}) => {
+  messagesWithFixes.let(diffSets()).subscribe(({added, removed}) => {
     if (added.size > 0) {
       messageRangeTracker.addFileMessages(added);
     }
@@ -67,10 +67,12 @@ export default function createStore(
 
 const INITIAL_STATE = {
   messages: new Map(),
-  projectMessages: new Map(),
+  codeActionFetcher: null,
+  codeActionsForMessage: new Map(),
+  providers: new Set(),
 };
 
-function getFileMessages(store: Store): Observable<Set<FileDiagnosticMessage>> {
+function getFileMessages(store: Store): Observable<Set<DiagnosticMessage>> {
   // $FlowFixMe: Flow doesn't understand Symbol.observable.
   const states: Observable<AppState> = Observable.from(store);
   return states

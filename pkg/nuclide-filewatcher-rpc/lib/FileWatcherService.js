@@ -52,17 +52,25 @@ export function watchFile(
   return watchEntity(filePath, true).publish();
 }
 
-export function watchFileWithNode(
-  filePath: NuclideUri,
+export function watchWithNode(
+  watchedPath: NuclideUri,
+  isDirectory?: boolean,
 ): ConnectableObservable<WatchResult> {
   return Observable.create(observer => {
-    const watcher = fs.watch(filePath, {persistent: false}, eventType => {
-      if (eventType === 'rename') {
-        observer.next({path: filePath, type: 'delete'});
-      } else {
-        observer.next({path: filePath, type: 'change'});
-      }
-    });
+    const watcher = fs.watch(
+      watchedPath,
+      {persistent: false},
+      (eventType, fileName) => {
+        const path = isDirectory
+          ? nuclideUri.join(watchedPath, fileName)
+          : watchedPath;
+        if (eventType === 'rename') {
+          observer.next({path, type: 'delete'});
+        } else {
+          observer.next({path, type: 'change'});
+        }
+      },
+    );
     return () => watcher.close();
   }).publish();
 }

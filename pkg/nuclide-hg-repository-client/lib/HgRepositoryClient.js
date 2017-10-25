@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {
   AmendModeValue,
   BookmarkInfo,
@@ -16,6 +17,7 @@ import type {
   HgService,
   DiffInfo,
   LineDiff,
+  OperationProgress,
   RevisionInfo,
   RevisionShowInfo,
   MergeConflicts,
@@ -28,9 +30,12 @@ import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {LRUCache} from 'lru-cache';
 import type {ConnectableObservable} from 'rxjs';
 
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import {parseHgDiffUnifiedOutput} from '../../nuclide-hg-rpc/lib/hg-diff-output-parser';
 import {Emitter} from 'atom';
-import {cacheWhileSubscribed} from 'nuclide-commons/observable';
+import {cacheWhileSubscribed, fastDebounce} from 'nuclide-commons/observable';
 import RevisionsCache from './RevisionsCache';
 import {gitDiffContentAgainstFile} from './utils';
 import {
@@ -119,6 +124,7 @@ function getRevisionStatusCache(
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {RemoteDirectory} from '../../nuclide-remote-connection';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
@@ -302,14 +308,14 @@ export class HgRepositoryClient {
       this._bookmarks.asObservable(),
       commitChanges,
       repoStateChanges,
-    ).debounceTime(REVISION_DEBOUNCE_DELAY);
+    ).let(fastDebounce(REVISION_DEBOUNCE_DELAY));
 
     const bookmarksUpdates = Observable.merge(
       activeBookmarkChanges,
       allBookmarkChanges,
     )
       .startWith(null)
-      .debounceTime(BOOKMARKS_DEBOUNCE_DELAY)
+      .let(fastDebounce(BOOKMARKS_DEBOUNCE_DELAY))
       .switchMap(() =>
         Observable.defer(() => {
           return this._service
@@ -341,6 +347,20 @@ export class HgRepositoryClient {
     );
   }
 
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
+    const path = this._workingDirectory.getPath();
+    const prefix = nuclideUri.isRemote(path)
+      ? `${nuclideUri.getHostname(path)}:`
+      : '';
+    const results = await timeoutAfterDeadline(
+      deadline,
+      this._service.getAdditionalLogFiles(deadline - 1000),
+    ).catch(e => [{title: `${path}:hg`, data: stringifyError(e)}]);
+    return results.map(log => ({...log, title: prefix + log.title}));
+  }
+
   _observeStatus(
     fileChanges: Observable<Array<string>>,
     repoStateChanges: Observable<void>,
@@ -349,7 +369,7 @@ export class HgRepositoryClient {
     >,
   ): HgStatusChanges {
     const triggers = Observable.merge(fileChanges, repoStateChanges)
-      .debounceTime(STATUS_DEBOUNCE_DELAY_MS)
+      .let(fastDebounce(STATUS_DEBOUNCE_DELAY_MS))
       .share()
       .startWith(null);
     // Share comes before startWith. That's because fileChanges/repoStateChanges
@@ -360,13 +380,15 @@ export class HgRepositoryClient {
     const statusChanges = cacheWhileSubscribed(
       triggers
         .switchMap(() =>
-          fetchStatuses().refCount().catch(error => {
-            getLogger('nuclide-hg-repository-client').error(
-              'HgService cannot fetch statuses',
-              error,
-            );
-            return Observable.empty();
-          }),
+          fetchStatuses()
+            .refCount()
+            .catch(error => {
+              getLogger('nuclide-hg-repository-client').error(
+                'HgService cannot fetch statuses',
+                error,
+              );
+              return Observable.empty();
+            }),
         )
         .map(uriToStatusIds =>
           mapTransform(uriToStatusIds, (v, k) => StatusCodeIdToNumber[v]),
@@ -451,6 +473,10 @@ export class HgRepositoryClient {
 
   _observePaneItemVisibility(item: Object): Observable<boolean> {
     return observePaneItemVisibility(item);
+  }
+
+  observeOperationProgressChanges(): Observable<OperationProgress> {
+    return this._service.observeHgOperationProgressDidChange().refCount();
   }
 
   onDidChangeStatuses(callback: () => mixed): IDisposable {
@@ -701,6 +727,7 @@ export class HgRepositoryClient {
     for (const [filePath, status] of this._hgStatusCache) {
       pathStatuses[filePath] = status;
     }
+    // $FlowFixMe(>=0.55.0) Flow suppress
     return pathStatuses;
   }
 

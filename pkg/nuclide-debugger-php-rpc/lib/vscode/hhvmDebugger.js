@@ -17,6 +17,8 @@ import {
   DebugSession,
   LoggingDebugSession,
   InitializedEvent,
+  OutputEvent,
+  TerminatedEvent,
   Thread,
 } from 'vscode-debugadapter';
 import * as DebugProtocol from 'vscode-debugprotocol';
@@ -53,6 +55,34 @@ class HhvmDebugSession extends LoggingDebugSession {
     this._debuggerHandler = new DebuggerHandler(this.sendEvent.bind(this));
   }
 
+  _catchAsyncRequestError(
+    response: ?DebugProtocol.base$Response,
+    fn: () => Promise<mixed>,
+  ) {
+    fn().catch(error => {
+      const errorMessage = error.stack || error.message || String(error);
+      if (response != null) {
+        response.success = false;
+        // $FlowIgnore: returning an ErrorResponse.
+        response.body = {
+          error: {
+            id: -1,
+            format: errorMessage,
+          },
+        };
+        this.sendResponse(response);
+      }
+      this.sendEvent(
+        new OutputEvent(
+          `HHVM Debugger ran into an error:\n\`${errorMessage}\``,
+          'nuclide_notification',
+          {type: 'error'},
+        ),
+      );
+      this.sendEvent(new TerminatedEvent());
+    });
+  }
+
   /**
    * The 'initialize' request is the first request called by the frontend
    * to interrogate the features the debug adapter provides.
@@ -76,63 +106,70 @@ class HhvmDebugSession extends LoggingDebugSession {
       },
     ];
     response.body.supportsConditionalBreakpoints = true;
+    response.body.supportsSetVariable = true;
 
     this.sendResponse(response);
   }
 
-  async launchRequest(
+  launchRequest(
     response: DebugProtocol.LaunchResponse,
     args: LaunchRequestArguments,
-  ): Promise<void> {
-    // make sure to 'Stop' the buffered logging if 'trace' is not set
-    logger.setup(
-      args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop,
-      false,
-    );
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      // make sure to 'Stop' the buffered logging if 'trace' is not set
+      logger.setup(
+        args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop,
+        false,
+      );
 
-    // Yuckky: Setting a global config to be used by the debugger.
-    setConfig(args.config);
-    await setRootDirectoryUri(args.config.targetUri);
-    nuclideLogger.setLevel(args.config.logLevel);
+      // Yuckky: Setting a global config to be used by the debugger.
+      setConfig(args.config);
+      await setRootDirectoryUri(args.config.targetUri);
+      nuclideLogger.setLevel(args.config.logLevel);
 
-    // TODO Get rid of legacy: Resume to start the debug session.
-    this._debuggerHandler.resume();
+      // TODO Get rid of legacy: Resume to start the debug session.
+      this._debuggerHandler.resume();
 
-    this.sendResponse(response);
+      this.sendResponse(response);
+    });
   }
 
-  async setBreakPointsRequest(
+  setBreakPointsRequest(
     response: DebugProtocol.SetBreakpointsResponse,
     args: DebugProtocol.SetBreakpointsArguments,
-  ): Promise<void> {
-    const breakpoints = await this._debuggerHandler.setBreakpoints(
-      nullthrows(args.source.path),
-      nullthrows(args.breakpoints),
-    );
-    // Send back the actual breakpoint positions.
-    response.body = {
-      breakpoints,
-    };
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      const breakpoints = await this._debuggerHandler.setBreakpoints(
+        nullthrows(args.source.path),
+        nullthrows(args.breakpoints),
+      );
+      // Send back the actual breakpoint positions.
+      response.body = {
+        breakpoints,
+      };
+      this.sendResponse(response);
+    });
   }
 
-  async setExceptionBreakPointsRequest(
+  setExceptionBreakPointsRequest(
     response: DebugProtocol.SetExceptionBreakpointsResponse,
     args: DebugProtocol.SetExceptionBreakpointsArguments,
-  ): Promise<void> {
-    let state;
-    if (args.filters.indexOf('uncaught') !== -1) {
-      state = 'uncaught';
-    } else if (args.filters.indexOf('all') !== -1) {
-      state = 'all';
-    } else {
-      state = 'none';
-    }
-    await this._debuggerHandler.setPauseOnExceptions(
-      this._breakpointId++,
-      state,
-    );
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      let state;
+      if (args.filters.indexOf('uncaught') !== -1) {
+        state = 'uncaught';
+      } else if (args.filters.indexOf('all') !== -1) {
+        state = 'all';
+      } else {
+        state = 'none';
+      }
+      await this._debuggerHandler.setPauseOnExceptions(
+        this._breakpointId++,
+        state,
+      );
+      this.sendResponse(response);
+    });
   }
 
   // TODO(most): proper thread updates support.
@@ -146,39 +183,47 @@ class HhvmDebugSession extends LoggingDebugSession {
   /**
    * Returns a fake 'stacktrace' where every 'stackframe' is a word from the current line.
    */
-  async stackTraceRequest(
+  stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments,
-  ): Promise<void> {
-    const frames = await this._debuggerHandler.getStackFrames(args.threadId);
-    response.body = {
-      stackFrames: frames,
-    };
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      const frames = await this._debuggerHandler.getStackFrames(args.threadId);
+      response.body = {
+        stackFrames: frames,
+      };
+      this.sendResponse(response);
+    });
   }
 
-  async scopesRequest(
+  scopesRequest(
     response: DebugProtocol.ScopesResponse,
     args: DebugProtocol.ScopesArguments,
-  ): Promise<void> {
-    const scopes = await this._debuggerHandler.getScopesForFrame(args.frameId);
-    response.body = {
-      scopes,
-    };
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      const scopes = await this._debuggerHandler.getScopesForFrame(
+        args.frameId,
+      );
+      response.body = {
+        scopes,
+      };
+      this.sendResponse(response);
+    });
   }
 
-  async variablesRequest(
+  variablesRequest(
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments,
-  ): Promise<void> {
-    const variables = await this._debuggerHandler.getProperties(
-      args.variablesReference,
-    );
-    response.body = {
-      variables,
-    };
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      const variables = await this._debuggerHandler.getProperties(
+        args.variablesReference,
+      );
+      response.body = {
+        variables,
+      };
+      this.sendResponse(response);
+    });
   }
 
   continueRequest(
@@ -186,7 +231,7 @@ class HhvmDebugSession extends LoggingDebugSession {
     args: DebugProtocol.ContinueArguments,
   ): void {
     this.sendResponse(response);
-    this._debuggerHandler.resume();
+    this._catchAsyncRequestError(null, () => this._debuggerHandler.resume());
   }
 
   pauseRequest(
@@ -194,7 +239,7 @@ class HhvmDebugSession extends LoggingDebugSession {
     args: DebugProtocol.PauseArguments,
   ): void {
     this.sendResponse(response);
-    this._debuggerHandler.pause();
+    this._catchAsyncRequestError(null, () => this._debuggerHandler.pause());
   }
 
   nextRequest(
@@ -202,7 +247,7 @@ class HhvmDebugSession extends LoggingDebugSession {
     args: DebugProtocol.NextArguments,
   ): void {
     this.sendResponse(response);
-    this._debuggerHandler.stepOver();
+    this._catchAsyncRequestError(null, () => this._debuggerHandler.stepOver());
   }
 
   stepInRequest(
@@ -210,7 +255,7 @@ class HhvmDebugSession extends LoggingDebugSession {
     args: DebugProtocol.StepInTargetsArguments,
   ): void {
     this.sendResponse(response);
-    this._debuggerHandler.stepInto();
+    this._catchAsyncRequestError(null, () => this._debuggerHandler.stepInto());
   }
 
   stepOutRequest(
@@ -218,27 +263,47 @@ class HhvmDebugSession extends LoggingDebugSession {
     args: DebugProtocol.StepOutArguments,
   ): void {
     this.sendResponse(response);
-    this._debuggerHandler.stepOut();
+    this._catchAsyncRequestError(null, () => this._debuggerHandler.stepOut());
   }
 
-  async evaluateRequest(
+  evaluateRequest(
     response: DebugProtocol.EvaluateResponse,
     args: DebugProtocol.EvaluateArguments,
-  ): Promise<void> {
-    await this._debuggerHandler.evaluate(
-      args.expression,
-      args.frameId,
-      response,
-    );
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      // Evaluation failures doesn't break the debugger state machine.
+      await this._debuggerHandler.evaluate(
+        args.expression,
+        args.frameId,
+        response,
+      );
+      this.sendResponse(response);
+    });
   }
 
-  async nuclide_continueToLocation(
+  setVariableRequest(
+    response: DebugProtocol.SetVariableResponse,
+    args: DebugProtocol.SetVariableArguments,
+  ) {
+    this._catchAsyncRequestError(response, async () => {
+      await this._debuggerHandler.setVariable(
+        args.variablesReference,
+        args.name,
+        args.value,
+        response,
+      );
+      this.sendResponse(response);
+    });
+  }
+
+  nuclide_continueToLocation(
     response: DebugProtocol.nuclide_ContinueToLocationResponse,
     args: DebugProtocol.nuclide_ContinueToLocationArguments,
-  ): Promise<void> {
-    await this._debuggerHandler.continueToLocation(args);
-    this.sendResponse(response);
+  ): void {
+    this._catchAsyncRequestError(response, async () => {
+      await this._debuggerHandler.continueToLocation(args);
+      this.sendResponse(response);
+    });
   }
 
   customRequest(

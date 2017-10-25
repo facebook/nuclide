@@ -112,7 +112,7 @@ export class RpcTimeoutError extends Error {
 
 class Call {
   _message: RequestMessage;
-  _timeoutMessage: string;
+  _timeoutMessage: ?string;
   _reject: (error: any) => void;
   _resolve: (result: any) => void;
   _cleanup: () => void;
@@ -121,7 +121,7 @@ class Call {
 
   constructor(
     message: RequestMessage,
-    timeoutMessage: string,
+    timeoutMessage: ?string,
     resolve: (result: any) => void,
     reject: (error: any) => void,
     cleanup: () => void,
@@ -132,9 +132,11 @@ class Call {
     this._reject = reject;
     this._cleanup = cleanup;
     this._complete = false;
-    this._timerId = setTimeout(() => {
-      this._timeout();
-    }, SERVICE_FRAMEWORK_RPC_TIMEOUT_MS);
+    if (timeoutMessage != null) {
+      this._timerId = setTimeout(() => {
+        this._timeout();
+      }, SERVICE_FRAMEWORK_RPC_TIMEOUT_MS);
+    }
   }
 
   reject(error): void {
@@ -161,12 +163,14 @@ class Call {
   }
 
   _timeout(): void {
+    const timeoutMessage = this._timeoutMessage;
+    invariant(timeoutMessage != null);
     if (!this._complete) {
       this.cleanup();
       this._reject(
         new RpcTimeoutError(
           `Timeout after ${SERVICE_FRAMEWORK_RPC_TIMEOUT_MS} for id: ` +
-            `${this._message.id}, ${this._timeoutMessage}.`,
+            `${this._message.id}, ${timeoutMessage}.`,
         ),
       );
     }
@@ -180,7 +184,9 @@ export type RpcConnectionOptions = {
 };
 
 export class RpcConnection<TransportType: Transport> {
+  _kind: RpcConnectionKind;
   _rpcRequestId: number;
+  _rpcResponseId: number;
   _transport: TransportType;
   _serviceRegistry: ServiceRegistry;
   _objectRegistry: ObjectRegistry;
@@ -188,8 +194,9 @@ export class RpcConnection<TransportType: Transport> {
   _calls: Map<number, Call>;
   _options: RpcConnectionOptions;
 
-  // Used to track if the request ID is incrementing atomically
+  // Used to track if the IDs are incrementing atomically
   _lastRequestId: number;
+  _lastResponseId: number;
 
   // Do not call this directly, use factory methods below.
   constructor(
@@ -198,9 +205,11 @@ export class RpcConnection<TransportType: Transport> {
     transport: TransportType,
     options: RpcConnectionOptions = {},
   ) {
+    this._kind = kind;
     this._transport = transport;
     this._options = options;
     this._rpcRequestId = 1;
+    this._rpcResponseId = 1;
     this._serviceRegistry = serviceRegistry;
     this._objectRegistry = new ObjectRegistry(
       kind,
@@ -213,14 +222,16 @@ export class RpcConnection<TransportType: Transport> {
     this._subscriptions = new Map();
     this._calls = new Map();
     this._lastRequestId = -1;
+    this._lastResponseId = -1;
   }
 
   // Creates a connection on the server side.
   static createServer(
     serviceRegistry: ServiceRegistry,
     transport: TransportType,
+    options: RpcConnectionOptions = {},
   ): RpcConnection<TransportType> {
-    return new RpcConnection('server', serviceRegistry, transport);
+    return new RpcConnection('server', serviceRegistry, transport, options);
   }
 
   // Creates a client side connection to a server on another machine.
@@ -426,13 +437,22 @@ export class RpcConnection<TransportType: Transport> {
         return; // No values to return.
       case 'promise':
         // Listen for a single message, and resolve or reject a promise on that message.
+        // If we're a server, we never give timeout errors and instead always
+        // just queue up the message on the reliable transport; timeout errors
+        // are solely intended to help clients behave nicer.
         const promise = new Promise((resolve, reject) => {
           this._transport.send(JSON.stringify(message));
           this._calls.set(
             message.id,
-            new Call(message, timeoutMessage, resolve, reject, () => {
-              this._calls.delete(message.id);
-            }),
+            new Call(
+              message,
+              this._kind === 'server' ? null : timeoutMessage,
+              resolve,
+              reject,
+              () => {
+                this._calls.delete(message.id);
+              },
+            ),
           );
         });
         const {trackSampleRate} = this._options;
@@ -492,7 +512,7 @@ export class RpcConnection<TransportType: Transport> {
         return observable;
       }
       default:
-        throw new Error(`Unkown return type: ${returnType}.`);
+        throw new Error(`Unknown return type: ${returnType}.`);
     }
   }
 
@@ -517,13 +537,25 @@ export class RpcConnection<TransportType: Transport> {
     returnVal.then(
       result => {
         this._transport.send(
-          JSON.stringify(createPromiseMessage(this._getProtocol(), id, result)),
+          JSON.stringify(
+            createPromiseMessage(
+              this._getProtocol(),
+              id,
+              this._generateResponseId(),
+              result,
+            ),
+          ),
         );
       },
       error => {
         this._transport.send(
           JSON.stringify(
-            createErrorResponseMessage(this._getProtocol(), id, error),
+            createErrorResponseMessage(
+              this._getProtocol(),
+              id,
+              this._generateResponseId(),
+              error,
+            ),
           ),
         );
       },
@@ -556,20 +588,38 @@ export class RpcConnection<TransportType: Transport> {
       .subscribe(
         data => {
           this._transport.send(
-            JSON.stringify(createNextMessage(this._getProtocol(), id, data)),
+            JSON.stringify(
+              createNextMessage(
+                this._getProtocol(),
+                id,
+                this._generateResponseId(),
+                data,
+              ),
+            ),
           );
         },
         error => {
           this._transport.send(
             JSON.stringify(
-              createObserveErrorMessage(this._getProtocol(), id, error),
+              createObserveErrorMessage(
+                this._getProtocol(),
+                id,
+                this._generateResponseId(),
+                error,
+              ),
             ),
           );
           this._objectRegistry.removeSubscription(id);
         },
         completed => {
           this._transport.send(
-            JSON.stringify(createCompleteMessage(this._getProtocol(), id)),
+            JSON.stringify(
+              createCompleteMessage(
+                this._getProtocol(),
+                id,
+                this._generateResponseId(),
+              ),
+            ),
           );
           this._objectRegistry.removeSubscription(id);
         },
@@ -650,6 +700,15 @@ export class RpcConnection<TransportType: Transport> {
     // Create a new object and put it in the registry.
     const newObject = new localImplementation(...marshalledArgs);
 
+    // If we want to use client-assigned IDs in the future, we need to
+    // assign the ID to the object after construction.
+    // Attempting to marshal before construction is complete makes this impossible.
+    if (this._objectRegistry.isRegistered(newObject)) {
+      logger.error(
+        `Object of type ${constructorMessage.interface} was marshalled during the constructor.`,
+      );
+    }
+
     // Return the object, which will automatically be converted to an id through the
     // marshalling system.
     this._returnPromise(id, Promise.resolve(newObject), {
@@ -671,13 +730,13 @@ export class RpcConnection<TransportType: Transport> {
       }
       /* TODO: Uncomment this when the Hack service updates their protocol.
       if (result.protocol !== this._getProtocol()) {
-        logger.error(`Recieved message with unexpected protocol: '${value}'`);
+        logger.error(`Received message with unexpected protocol: '${value}'`);
         return null;
       }
       */
       return result;
     } catch (e) {
-      logger.error(`Recieved invalid JSON message: '${value}'`);
+      logger.error(`Received invalid JSON message: '${value}'`);
       return null;
     }
   }
@@ -717,12 +776,17 @@ export class RpcConnection<TransportType: Transport> {
   // Handles the response and returns the originating request message (if possible).
   _handleResponseMessage(message: ResponseMessage, rawMessage: string): void {
     const id = message.id;
+    // Keep track of the request message for logging
+    let requestMessage = null;
+
+    // Here's the main message handler ...
     switch (message.type) {
       case 'response': {
         const call = this._calls.get(id);
         if (call != null) {
           const {result} = message;
           call.resolve(result);
+          requestMessage = call._message;
           if (rawMessage.length >= LARGE_RESPONSE_SIZE) {
             this._trackLargeResponse(call._message, rawMessage.length);
           }
@@ -734,6 +798,7 @@ export class RpcConnection<TransportType: Transport> {
         if (call != null) {
           const {error} = message;
           call.reject(error);
+          requestMessage = call._message;
         }
         break;
       }
@@ -743,6 +808,7 @@ export class RpcConnection<TransportType: Transport> {
           const {value} = message;
           const prevBytes = subscription.getBytes();
           subscription.next(value, rawMessage.length);
+          requestMessage = subscription._message;
           if (prevBytes < LARGE_RESPONSE_SIZE) {
             const bytes = subscription.getBytes();
             if (bytes >= LARGE_RESPONSE_SIZE) {
@@ -757,6 +823,7 @@ export class RpcConnection<TransportType: Transport> {
         if (subscription != null) {
           subscription.complete();
           this._subscriptions.delete(id);
+          requestMessage = subscription._message;
         }
         break;
       }
@@ -766,11 +833,41 @@ export class RpcConnection<TransportType: Transport> {
           const {error} = message;
           subscription.error(error);
           this._subscriptions.delete(id);
+          requestMessage = subscription._message;
         }
         break;
       }
       default:
         throw new Error(`Unexpected message type ${JSON.stringify(message)}`);
+    }
+    // end main handler
+
+    const responseId = message.responseId;
+    if (
+      responseId !== this._lastResponseId + 1 &&
+      this._lastResponseId !== -1 &&
+      requestMessage != null &&
+      this._options.trackSampleRate != null
+    ) {
+      const eventName = trackingIdOfMessage(
+        this._objectRegistry,
+        requestMessage,
+      );
+
+      logger.warn(
+        `Out-of-order response received, responseId === ${responseId},` +
+          `_lastResponseId === ${this._lastResponseId}`,
+      );
+
+      track('response-message-id-mismatch', {
+        eventName,
+        responseId,
+        lastResponseId: this._lastResponseId,
+      });
+    }
+
+    if (responseId > this._lastResponseId) {
+      this._lastResponseId = responseId;
     }
   }
 
@@ -828,7 +925,14 @@ export class RpcConnection<TransportType: Transport> {
     } catch (e) {
       logger.error(`Error handling RPC ${message.type} message`, e);
       this._transport.send(
-        JSON.stringify(createErrorResponseMessage(this._getProtocol(), id, e)),
+        JSON.stringify(
+          createErrorResponseMessage(
+            this._getProtocol(),
+            id,
+            this._generateResponseId(),
+            e,
+          ),
+        ),
       );
     }
   }
@@ -843,6 +947,10 @@ export class RpcConnection<TransportType: Transport> {
 
   _generateRequestId(): number {
     return this._rpcRequestId++;
+  }
+
+  _generateResponseId(): number {
+    return this._rpcResponseId++;
   }
 
   _getTypeRegistry(): TypeRegistry {

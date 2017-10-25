@@ -127,6 +127,7 @@ export type Device = {
   displayName: string,
   architecture: DeviceArchitecture,
   rawArchitecture: string,
+  ignoresSelection?: boolean,
 };
 
 export type Process = {

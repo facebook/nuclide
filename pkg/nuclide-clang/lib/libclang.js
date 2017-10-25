@@ -47,7 +47,9 @@ function getDefaultFlags(): ?Array<string> {
 async function getClangProvidersForSource(
   src: string,
 ): Promise<ClangConfigurationProvider[]> {
+  // $FlowFixMe(>=0.55.0) Flow suppress
   return arrayCompact(
+    // $FlowFixMe(>=0.55.0) Flow suppress
     await Promise.all(
       [...clangProviders].map(async provider => {
         if (await provider.supportsSource(src)) {
@@ -70,7 +72,7 @@ async function getClangRequestSettings(
 
 const clangServices = new WeakSet();
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   registerClangProvider(provider: ClangConfigurationProvider): Disposable {
     clangProviders.add(provider);
