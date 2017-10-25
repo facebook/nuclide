@@ -13,14 +13,13 @@ import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Dropdown} from '../../../../nuclide-ui/Dropdown';
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {|
   type: 'adb' | 'sdb',
   setCustomPath: (path: ?string) => void,
   dismiss: () => mixed,
   activePath: ?string,
-  activePort: ?number,
   currentCustomPath: ?string,
   registeredPaths: string[],
 |};
@@ -29,10 +28,7 @@ type State = {|
   customPath: ?string,
 |};
 
-export class ATCustomDBPathModal extends React.Component {
-  props: Props;
-  state: State;
-
+export class ATCustomDBPathModal extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {customPath: this.props.currentCustomPath};
@@ -51,25 +47,29 @@ export class ATCustomDBPathModal extends React.Component {
     this.setState({customPath: customPath.length === 0 ? null : customPath});
   };
 
+  _handleCopyToClipboard = (): void => {
+    if (this.props.activePath != null) {
+      atom.clipboard.write(this.props.activePath);
+    }
+  };
+
   _getActiveConfig(): React.Element<any> {
     return (
-      <div>
+      <div className="nuclide-adb-sdb-path">
         <label>
           Active {this.props.type} path:{' '}
           <i>
-            <strong>
-              {this.props.activePath}
-            </strong>
+            <strong>{this.props.activePath}</strong>
           </i>
         </label>
-        <label>
-          Active {this.props.type} port:{' '}
-          <i>
-            <strong>
-              {this.props.activePort || 'default'}
-            </strong>
-          </i>
-        </label>
+        {this.props.activePath == null ? null : (
+          <Button
+            onClick={this._handleCopyToClipboard}
+            size="SMALL"
+            className="nuclide-adb-sdb-copy-path-btn">
+            Copy path to clipboard
+          </Button>
+        )}
       </div>
     );
   }
@@ -128,21 +128,13 @@ export class ATCustomDBPathModal extends React.Component {
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div>
-        <div className="block">
-          {this._getActiveConfig()}
-        </div>
-        <div className="block">
-          {this._getPathSelector()}
-        </div>
-        <div className="block">
-          {this._getInfoBox()}
-        </div>
-        <div className="block">
-          {this._getFooter()}
-        </div>
+        <div className="block">{this._getActiveConfig()}</div>
+        <div className="block">{this._getPathSelector()}</div>
+        <div className="block">{this._getInfoBox()}</div>
+        <div className="block">{this._getFooter()}</div>
       </div>
     );
   }

@@ -4,7 +4,7 @@
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Hyperclick UI",
-  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "atomTestRunner": "../../../atom-test-runner.js",
   "atomConfig": {
     "darwinTriggerKeys": {
       "title": "Trigger keys for macOS",

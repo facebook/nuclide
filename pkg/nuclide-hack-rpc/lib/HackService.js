@@ -28,17 +28,16 @@ import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {HackReferencesResult} from './FindReferences';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
@@ -111,6 +110,7 @@ export async function initializeLsp(
     host,
     projectFileNames,
     fileExtensions,
+    additionalLogFilesRetentionPeriod: 5 * 60 * 1000, // 5 minutes
   });
 }
 
@@ -210,7 +210,7 @@ class HackSingleFileLanguageService {
   async getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
-  ): Promise<?DiagnosticProviderUpdate> {
+  ): Promise<?FileDiagnosticMap> {
     throw new Error('replaced by observeDiagnstics');
   }
 
@@ -222,7 +222,7 @@ class HackSingleFileLanguageService {
     throw new Error('Not implemented');
   }
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): Observable<FileDiagnosticMap> {
     logger.debug('observeDiagnostics');
     return observeConnections(this._fileCache)
       .mergeMap(connection => {
@@ -245,14 +245,14 @@ class HackSingleFileLanguageService {
             })
             .map((hackDiagnostics: HackDiagnosticsMessage) => {
               logger.debug(`Got hack error in ${hackDiagnostics.filename}`);
-              return [
-                {
-                  filePath: hackDiagnostics.filename,
-                  messages: hackDiagnostics.errors.map(diagnostic =>
+              return new Map([
+                [
+                  hackDiagnostics.filename,
+                  hackDiagnostics.errors.map(diagnostic =>
                     hackMessageToDiagnosticMessage(diagnostic.message),
                   ),
-                },
-              ];
+                ],
+              ]);
             }),
         );
       })
@@ -472,6 +472,23 @@ class HackSingleFileLanguageService {
   async isFileInProject(fileUri: NuclideUri): Promise<boolean> {
     const hhconfigPath = await findHackConfigDir(fileUri);
     return hhconfigPath != null;
+  }
+
+  getExpandedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range> {
+    throw new Error('Not implemented');
+  }
+
+  getCollapsedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range> {
+    throw new Error('Not implemented');
   }
 
   dispose(): void {}

@@ -9,18 +9,22 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 type Option = {
+  // $FlowFixMe(>=0.53.0) Flow suppress
   label: React.Children,
   value: any,
 };
 
 type Props = {
+  // $FlowFixMe(>=0.53.0) Flow suppress
   optionComponent?: (props: OptionComponentProps) => React.Element<any>,
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   className?: string,
   options: Array<Option>,
   value: Array<any>,
@@ -34,15 +38,13 @@ type State = {
 
 type DefaultProps = {
   onChange: (value: Array<any>) => void,
-  optionComponent: ReactClass<OptionComponentProps>,
+  optionComponent: React.ComponentType<OptionComponentProps>,
   value: Array<any>,
   options: Array<Option>,
 };
 
-export class MultiSelectList extends React.Component {
-  props: Props;
-  state: State;
-  _commandsDisposables: CompositeDisposable;
+export class MultiSelectList extends React.Component<Props, State> {
+  _commandsDisposables: UniversalDisposable;
 
   static defaultProps: DefaultProps = {
     onChange: values => {},
@@ -73,7 +75,7 @@ export class MultiSelectList extends React.Component {
       this._commandsDisposables.dispose();
     }
     const el = this.props.commandScope || ReactDOM.findDOMNode(this);
-    this._commandsDisposables = new CompositeDisposable(
+    this._commandsDisposables = new UniversalDisposable(
       atom.commands.add(
         // $FlowFixMe
         el,
@@ -122,12 +124,10 @@ export class MultiSelectList extends React.Component {
     this.props.onChange(activeValues);
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <div className="nuclide-multi-select-list select-list block" tabIndex="0">
-        <ol className="list-group mark-active">
-          {this._renderOptions()}
-        </ol>
+        <ol className="list-group mark-active">{this._renderOptions()}</ol>
       </div>
     );
   }
@@ -166,14 +166,13 @@ export class MultiSelectList extends React.Component {
 
 export type OptionComponentProps = {
   option: Option,
+  // TODO: remove disable
+  /* eslint-disable react/no-unused-prop-types */
   active: boolean,
   selected: boolean,
+  /* eslint-enable react/no-unused-prop-types */
 };
 
 function DefaultOptionComponent(props: OptionComponentProps) {
-  return (
-    <span>
-      {props.option.label}
-    </span>
-  );
+  return <span>{props.option.label}</span>;
 }

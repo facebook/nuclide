@@ -41,6 +41,7 @@ export const ActionTypes = Object.freeze({
 });
 
 // Flow hack: Every SwiftPMTaskRunnerAction actionType must be in ActionTypes.
+// $FlowFixMe(>=0.55.0) Flow suppress
 (('': $PropertyType<SwiftPMTaskRunnerAction, 'actionType'>): $Keys<
   typeof ActionTypes,
 >);

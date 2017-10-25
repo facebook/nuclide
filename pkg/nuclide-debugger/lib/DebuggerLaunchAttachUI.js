@@ -16,7 +16,7 @@ import type {
 } from '../../nuclide-debugger-base';
 import type DebuggerActions from './DebuggerActions';
 
-import React from 'react';
+import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {
@@ -25,17 +25,23 @@ import {
 } from '../../nuclide-debugger-base';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
+import {Dropdown} from '../../nuclide-ui/Dropdown';
 import Tabs from '../../nuclide-ui/Tabs';
 import {Observable} from 'rxjs';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 type PropsType = {
   dialogMode: DebuggerConfigAction,
+  // TODO: Remove disable
+  /* eslint-disable react/no-unused-prop-types */
   store: DebuggerProviderStore,
   debuggerActions: DebuggerActions,
+  /* eslint-enable react/no-unused-prop-types */
   connection: string,
-  providers: Array<DebuggerLaunchAttachProvider>,
-  chooseConnection: () => void,
+  connectionChanged: (newValue: ?string) => void,
+  // $FlowFixMe
+  connectionOptions: Array<{value: string, label: string}>,
+  providers: Map<string, Array<DebuggerLaunchAttachProvider>>,
   dialogCloser: () => void,
 };
 
@@ -49,7 +55,6 @@ type StateType = {
 };
 
 export class DebuggerLaunchAttachUI extends React.Component<
-  void,
   PropsType,
   StateType,
 > {
@@ -108,9 +113,20 @@ export class DebuggerLaunchAttachUI extends React.Component<
       ? nuclideUri.getHostname(this.props.connection)
       : 'local';
 
-    this._filterProviders();
+    this._filterProviders(host);
     this.setState({
       selectedProviderTab: getLastUsedDebugger(host, this.props.dialogMode),
+    });
+  }
+
+  componentWillReceiveProps(nextProps: PropsType) {
+    const host = nuclideUri.isRemote(nextProps.connection)
+      ? nuclideUri.getHostname(nextProps.connection)
+      : 'local';
+
+    this._filterProviders(host);
+    this.setState({
+      selectedProviderTab: getLastUsedDebugger(host, nextProps.dialogMode),
     });
   }
 
@@ -127,13 +143,13 @@ export class DebuggerLaunchAttachUI extends React.Component<
     return enabled ? provider : null;
   }
 
-  _filterProviders(): void {
+  _filterProviders(key: string): void {
     this.setState({
       enabledProviders: [],
     });
 
     Observable.merge(
-      ...this.props.providers.map(provider =>
+      ...(this.props.providers.get(key) || []).map(provider =>
         Observable.fromPromise(this._getProviderIfEnabled(provider)),
       ),
     )
@@ -164,11 +180,7 @@ export class DebuggerLaunchAttachUI extends React.Component<
     });
   };
 
-  render(): React.Element<any> {
-    const displayName = nuclideUri.isRemote(this.props.connection)
-      ? nuclideUri.getHostname(this.props.connection)
-      : 'localhost';
-
+  render(): React.Node {
     const tabs = this.state.enabledProviders
       .map(debuggerType => ({
         name: debuggerType.debuggerName,
@@ -232,16 +244,19 @@ export class DebuggerLaunchAttachUI extends React.Component<
     return (
       <div className="padded nuclide-debugger-launch-attach-container">
         <h1 className="nuclide-debugger-launch-attach-header">
-          {this.props.dialogMode === 'attach'
-            ? 'Attach debugger to '
-            : 'Launch debugger on '}
-          <span
-            className="nuclide-debugger-launch-connection"
-            title="Click to change the connection to be used for debugging."
-            onClick={() => this.props.chooseConnection()}>
-            {displayName}
+          <span className="padded">
+            {this.props.dialogMode === 'attach'
+              ? 'Attach debugger to '
+              : 'Launch debugger on '}
           </span>
-          <span>:</span>
+          <Dropdown
+            className="inline"
+            options={this.props.connectionOptions}
+            onChange={(value: ?string) => this.props.connectionChanged(value)}
+            ref="dropdown"
+            size="xs"
+            value={this.props.connection}
+          />
         </h1>
         {providerContent}
         <div className="nuclide-debugger-launch-attach-actions">

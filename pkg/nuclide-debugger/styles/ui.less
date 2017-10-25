@@ -59,6 +59,13 @@
   text-align: center;
 }
 
+.nuclide-debugger-target-description {
+  color: @text-color-highlight;
+   padding-bottom: 0.5em;
+  text-align: center;
+  font-size: 8pt;
+}
+
 .nuclide-debugger-section-header {
   padding: 0px 5px;
 }
@@ -66,6 +73,7 @@
 .nuclide-debugger-controls-section {
   border: 1px @base-border-color solid;
   padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .nuclide-debugger-webview {
@@ -130,7 +138,7 @@ Use flexbox cross-axis stretch to fill the vertical space.
 
 .nuclide-debugger-breakpoint {
   padding-left: 0.25em;
-
+  position: relative;
   span {
     -webkit-user-select: none;
   }
@@ -183,6 +191,7 @@ Use flexbox cross-axis stretch to fill the vertical space.
   justify-content: space-between;
   min-height: 23px; // Match height of AtomInput to prevent list items from jumping around.
   overflow: visible;
+  position: relative;
 }
 
 .nuclide-debugger-expression-value-content {
@@ -201,8 +210,7 @@ Use flexbox cross-axis stretch to fill the vertical space.
   opacity: 0;
   position: absolute;
   right: 0;
-  top: 0.8em;
-  line-height: 2em;
+  top: 0;
   background-color: @background-color-highlight;
   padding-left: 4px;
   padding-right: 4px;
@@ -216,6 +224,40 @@ Use flexbox cross-axis stretch to fill the vertical space.
 .nuclide-debugger-watch-expression-control.icon::before {
   margin-right: 0px;
   text-align: center;
+}
+
+.nuclide-debugger-breakpoint-condition-controls {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-color: @background-color-highlight;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.nuclide-debugger-breakpoint-condition-control {
+  cursor: pointer;
+  color: @text-color-highlight;
+}
+
+.nuclide-debugger-breakpoint-condition-control.icon::before {
+  margin-right: 0px;
+  text-align: center;
+}
+
+.nuclide-debugger-breakpoint-condition-control.nuclide-debugger-breakpoint-condition-control:hover {
+  opacity: 1;
+  color: @text-color-highlight;
+}
+
+.nuclide-debugger-breakpoint:hover {
+  background-color: @background-color-highlight;
+
+  .nuclide-debugger-breakpoint-condition-controls {
+    opacity: 1;
+    color: fade(@text-color-highlight, 50%);
+  }
 }
 
 .nuclide-debugger-watch-expression-row:hover {
@@ -260,6 +302,36 @@ Use flexbox cross-axis stretch to fill the vertical space.
   font-style: italic;
   padding: 1em;
   text-align: center;
+}
+
+.nuclide-debugger-disassembly-empty {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}
+
+.nuclide-debugger-disassembly-view {
+  font-family: monospace;
+}
+
+.nuclide-debugger-disassembly-helptext {
+  font-size: 8pt;
+  font-style: italic;
+}
+
+.nuclide-debugger-registers-empty {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}
+
+.nuclide-debugger-registers-group {
+  font-weight: bold;
+  padding-top: 15px;
+}
+
+.nuclide-debugger-registers-view {
+  font-family: monospace;
 }
 
 .nuclide-debugger-callstack-name {

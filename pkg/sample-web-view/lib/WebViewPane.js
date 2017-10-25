@@ -11,11 +11,13 @@
 
 /* global HTMLElement */
 
-import {CompositeDisposable, Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+
+import {Emitter} from 'atom';
 
 class WebViewPane extends HTMLElement {
   _title: string;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _emitter: Emitter;
   _webview: WebviewElement;
 
@@ -31,7 +33,7 @@ class WebViewPane extends HTMLElement {
   // initialization since this is not the constructor.
   createdCallback(): mixed {
     this._title = 'Loading...';
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._emitter = new Emitter();
     this._subscriptions.add(this._emitter);
 
@@ -59,6 +61,7 @@ class WebViewPane extends HTMLElement {
     // Unfortunately, page-title-set never seems to fire, so we listen for frame loads and update
     // the title based on those instead.
     webview.addEventListener('did-frame-finish-load', (event: Event) => {
+      // flowlint-next-line sketchy-null-mixed:off
       if (event.isMainFrame) {
         this._title = webview.getTitle();
         this._emitter.emit('did-change-title');

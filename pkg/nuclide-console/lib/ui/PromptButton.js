@@ -10,7 +10,7 @@
  */
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import electron from 'electron';
 
 const {remote} = electron;
@@ -28,11 +28,10 @@ type Props = {
   options: Array<PromptOption>,
 };
 
-export default class PromptButton extends React.Component {
-  props: Props;
+export default class PromptButton extends React.Component<Props> {
   _disposables: IDisposable;
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <span
         className="nuclide-console-prompt-wrapper"
@@ -45,7 +44,7 @@ export default class PromptButton extends React.Component {
     );
   }
 
-  _handleClick = (event: SyntheticMouseEvent): void => {
+  _handleClick = (event: SyntheticMouseEvent<>): void => {
     const currentWindow = remote.getCurrentWindow();
     const menu = new remote.Menu();
     // TODO: Sort alphabetically by label

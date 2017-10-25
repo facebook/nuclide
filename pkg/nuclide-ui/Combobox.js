@@ -9,13 +9,16 @@
  * @format
  */
 
+/* globals Element */
+
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Observable} from 'rxjs';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Portal} from './Portal';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
 type DefaultProps = {
   className: string,
@@ -65,13 +68,11 @@ type State = {
  * TODO use generic search provider
  * TODO move combobox to separate package.
  */
-export class Combobox extends React.Component {
-  props: Props;
-  state: State;
-
+export class Combobox extends React.Component<Props, State> {
   _optionsElement: HTMLElement;
   _updateSubscription: ?rxjs$ISubscription;
   _subscriptions: UniversalDisposable;
+  _shouldBlur: boolean;
 
   static defaultProps: DefaultProps = {
     className: '',
@@ -85,6 +86,7 @@ export class Combobox extends React.Component {
   constructor(props: Props) {
     super(props);
     this._subscriptions = new UniversalDisposable();
+    this._shouldBlur = true;
     this.state = {
       error: null,
       filteredOptions: [],
@@ -104,11 +106,6 @@ export class Combobox extends React.Component {
       atom.commands.add(node, 'core:move-up', this._handleMoveUp),
       // $FlowFixMe
       atom.commands.add(node, 'core:move-down', this._handleMoveDown),
-      // $FlowFixMe
-      atom.commands.add(node, 'core:cancel', this._handleCancel),
-      // $FlowFixMe
-      atom.commands.add(node, 'core:confirm', this._handleConfirm),
-      this.refs.freeformInput.onDidChange(this._handleTextInputChange),
     );
   }
 
@@ -179,6 +176,7 @@ export class Combobox extends React.Component {
   }
 
   focus(showOptions: boolean): void {
+    this._shouldBlur = true;
     this.refs.freeformInput.focus();
     this.setState({optionsVisible: showOptions});
   }
@@ -279,16 +277,7 @@ export class Combobox extends React.Component {
   };
 
   _handleInputBlur = (event: Object): void => {
-    const {relatedTarget} = event;
-    if (
-      relatedTarget == null ||
-      // TODO(hansonw): Move this check inside AtomInput.
-      // See https://github.com/atom/atom/blob/master/src/text-editor-element.coffee#L145
-      (relatedTarget.tagName === 'INPUT' &&
-        relatedTarget.classList.contains('hidden-input')) ||
-      // Selecting a menu item registers on the portal container.
-      relatedTarget === this._getOptionsElement().parentNode
-    ) {
+    if (!this._shouldBlur) {
       return;
     }
     this._handleCancel();
@@ -299,10 +288,12 @@ export class Combobox extends React.Component {
   };
 
   _handleInputClick = (): void => {
+    this._shouldBlur = true;
     this.setState({optionsVisible: true});
   };
 
-  _handleItemClick(selectedValue: string, event: any) {
+  _handleItemClick(selectedValue: string, event: Object): void {
+    this._shouldBlur = false;
     this.selectValue(selectedValue, () => {
       // Focus the input again because the click will cause the input to blur. This mimics native
       // <select> behavior by keeping focus in the form being edited.
@@ -366,22 +357,20 @@ export class Combobox extends React.Component {
 
   _scrollSelectedOptionIntoViewIfNeeded = (): void => {
     const selectedOption = ReactDOM.findDOMNode(this.refs.selectedOption);
-    if (selectedOption) {
-      // $FlowFixMe
-      selectedOption.scrollIntoViewIfNeeded();
+    if (selectedOption instanceof Element) {
+      scrollIntoViewIfNeeded(selectedOption);
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     let optionsContainer;
     const options = [];
 
+    // flowlint-next-line sketchy-null-string:off
     if (this.props.loadingMessage && this.state.loadingOptions) {
       options.push(
         <li key="loading-text" className="loading">
-          <span className="loading-message">
-            {this.props.loadingMessage}
-          </span>
+          <span className="loading-message">{this.props.loadingMessage}</span>
         </li>,
       );
     }
@@ -425,9 +414,7 @@ export class Combobox extends React.Component {
               onMouseOver={this._setSelectedIndex.bind(this, i)}
               ref={isSelected ? 'selectedOption' : null}>
               {beforeMatch}
-              <strong className="text-highlight">
-                {highlightedMatch}
-              </strong>
+              <strong className="text-highlight">{highlightedMatch}</strong>
               {afterMatch}
             </li>
           );
@@ -472,6 +459,9 @@ export class Combobox extends React.Component {
           onBlur={this._handleInputBlur}
           onClick={this._handleInputClick}
           onFocus={this._handleInputFocus}
+          onConfirm={this._handleConfirm}
+          onCancel={this._handleCancel}
+          onDidChange={this._handleTextInputChange}
           placeholderText={placeholderText}
           ref="freeformInput"
           size={size}

@@ -11,7 +11,7 @@
 
 import DebuggerModel from './DebuggerModel';
 import type {DebuggerPaneConfig} from './DebuggerLayoutManager';
-import React from 'react';
+import * as React from 'react';
 
 // A model that will serve as the view model for all debugger panes. We must provide
 // a unique instance of a view model for each pane, which Atom can destroy when the
@@ -62,6 +62,7 @@ export class DebuggerPaneViewModel {
   }
 
   getPreferredWidth(): number {
+    // flowlint-next-line sketchy-null-number:off
     return this._preferredWidth || this._debuggerModel.getPreferredWidth();
   }
 

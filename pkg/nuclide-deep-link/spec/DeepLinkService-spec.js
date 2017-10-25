@@ -9,7 +9,7 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import electron from 'electron';
 import nullthrows from 'nullthrows';
 import DeepLinkService from '../lib/DeepLinkService';
@@ -22,7 +22,7 @@ describe('DeepLinkService', () => {
     const testSpy2 = jasmine.createSpy('test2');
 
     // Make sure multiple subscriptions go through.
-    const disposables = new CompositeDisposable(
+    const disposables = new UniversalDisposable(
       service.subscribeToPath('test1', testSpy1),
       service.subscribeToPath('test1', testSpy11),
       service.subscribeToPath('test2', testSpy2),

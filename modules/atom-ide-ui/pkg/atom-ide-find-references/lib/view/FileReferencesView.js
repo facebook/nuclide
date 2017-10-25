@@ -12,7 +12,7 @@
 
 import type {Reference, ReferenceGroup} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
@@ -32,10 +32,7 @@ type State = {
   isExpanded: boolean,
 };
 
-export default class FileReferencesView extends React.Component {
-  props: Props;
-  state: State;
-
+export default class FileReferencesView extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -45,8 +42,11 @@ export default class FileReferencesView extends React.Component {
     (this: any)._onFileNameClick = this._onFileNameClick.bind(this);
   }
 
-  _onRefClick(evt: SyntheticEvent, ref: Reference) {
-    goToLocation(this.props.uri, ref.range.start.row, ref.range.start.column);
+  _onRefClick(evt: SyntheticEvent<>, ref: Reference) {
+    goToLocation(this.props.uri, {
+      line: ref.range.start.row,
+      column: ref.range.start.column,
+    });
     evt.stopPropagation();
   }
 
@@ -57,30 +57,32 @@ export default class FileReferencesView extends React.Component {
     });
   }
 
-  _onFileNameClick(evt: SyntheticEvent, line?: number) {
-    goToLocation(this.props.uri, line);
+  _onFileNameClick(evt: SyntheticEvent<>, line?: number) {
+    goToLocation(this.props.uri, {line});
     evt.stopPropagation();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const groups = this.props.refGroups.map((group: ReferenceGroup, i) => {
       const firstRef = group.references[0];
       const lastRef = group.references[group.references.length - 1];
 
       let caller;
+      // flowlint-next-line sketchy-null-string:off
       if (firstRef.name && firstRef.name === lastRef.name) {
         caller = (
           <span>
-            {' '}in <code>{firstRef.name}</code>
+            {' '}
+            in <code>{firstRef.name}</code>
           </span>
         );
       }
       const startRange = firstRef.range.start;
       const endRange = lastRef.range.end;
       return (
-        <li key={group.startLine} className="atom-ide-find-references-ref">
+        <li key={group.startLine} className="find-references-ref">
           <div
-            className="atom-ide-find-references-ref-name"
+            className="find-references-ref-name"
             onClick={evt => this._onRefClick(evt, firstRef)}>
             {'Line '}
             {startRange.row + 1}
@@ -102,31 +104,26 @@ export default class FileReferencesView extends React.Component {
         </li>
       );
     });
-    const outerClassName = classnames(
-      'atom-ide-find-references-file list-nested-item',
-      {
-        collapsed: !this.state.isExpanded,
-        expanded: this.state.isExpanded,
-        selected: this.props.isSelected,
-      },
-    );
+    const outerClassName = classnames('find-references-file list-nested-item', {
+      collapsed: !this.state.isExpanded,
+      expanded: this.state.isExpanded,
+      selected: this.props.isSelected,
+    });
 
     return (
       <li className={`${outerClassName}`}>
         <div
-          className="atom-ide-find-references-filename list-item"
+          className="find-references-filename list-item"
           onClick={this._onFileClick}>
           <span className="icon-file-text icon" />
           <a onClick={this._onFileNameClick}>
             {nuclideUri.relative(this.props.basePath, this.props.uri)}
           </a>
-          <span className="atom-ide-find-references-ref-count badge badge-small">
+          <span className="find-references-ref-count badge badge-small">
             {groups.length}
           </span>
         </div>
-        <ul className="atom-ide-find-references-refs list-tree">
-          {groups}
-        </ul>
+        <ul className="find-references-refs list-tree">{groups}</ul>
       </li>
     );
   }

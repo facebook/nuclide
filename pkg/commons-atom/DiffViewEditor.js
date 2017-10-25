@@ -12,7 +12,7 @@
 import type {LineMapper, OffsetMap} from '../commons-node/computeDiff';
 
 import {Range} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {concatIterators} from 'nuclide-commons/collection';
 import {syncBlockDecorations} from './block-decorations';

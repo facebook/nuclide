@@ -20,6 +20,7 @@ type FeaturePkg = {
   atomConfig?: Object,
   consumedServices?: Object,
   description?: string,
+  displayName?: string,
   name: string,
   nuclide?: {
     config?: Object,
@@ -37,6 +38,8 @@ type FeatureLoaderParams = {
   features: Array<Feature>,
 };
 
+const {devMode} = atom.getLoadSettings();
+
 export default class FeatureLoader {
   _activationDisposable: ?UniversalDisposable;
   _loadDisposable: UniversalDisposable;
@@ -51,6 +54,8 @@ export default class FeatureLoader {
     this._pkgName = pkgName;
     this._config = {
       use: {
+        title: 'Enabled Features',
+        description: 'Enable and disable individual features',
         type: 'object',
         collapsed: true,
         properties: {},
@@ -97,19 +102,26 @@ export default class FeatureLoader {
 
       // Entry for enabling/disabling the feature
       const setting = {
-        title: `Enable the "${name}" feature`,
+        title:
+          featurePkg.displayName == null
+            ? `Enable the "${name}" feature`
+            : `Enable ${featurePkg.displayName}`,
         description: featurePkg.description || '',
         type: 'boolean',
         default: enabled,
       };
-      if (featurePkg.providedServices) {
-        const provides = Object.keys(featurePkg.providedServices).join(', ');
-        setting.description += `<br/>**Provides:** _${provides}_`;
+
+      if (devMode) {
+        if (featurePkg.providedServices) {
+          const provides = Object.keys(featurePkg.providedServices).join(', ');
+          setting.description += `<br/>**Provides:** _${provides}_`;
+        }
+        if (featurePkg.consumedServices) {
+          const consumes = Object.keys(featurePkg.consumedServices).join(', ');
+          setting.description += `<br/>**Consumes:** _${consumes}_`;
+        }
       }
-      if (featurePkg.consumedServices) {
-        const consumes = Object.keys(featurePkg.consumedServices).join(', ');
-        setting.description += `<br/>**Consumes:** _${consumes}_`;
-      }
+
       this._config.use.properties[name] = setting;
 
       // Merge in the feature's config
@@ -120,6 +132,8 @@ export default class FeatureLoader {
       if (featurePkgConfig) {
         this._config[name] = {
           type: 'object',
+          title: featurePkg.displayName,
+          description: featurePkg.description,
           collapsed: true,
           properties: {},
         };

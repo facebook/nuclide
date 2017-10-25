@@ -21,7 +21,7 @@ import ThreadStore from './ThreadStore';
 import {WatchExpressionListStore} from './WatchExpressionListStore';
 import DebuggerActionsStore from './DebuggerActionsStore';
 import Bridge from './Bridge';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import DebuggerDispatcher from './DebuggerDispatcher';
 import {DebuggerPauseController} from './DebuggerPauseController';
 import EventEmitter from 'events';
@@ -34,7 +34,7 @@ export const WORKSPACE_VIEW_URI = 'atom://nuclide/debugger';
  * Atom ViewProvider compatible model object.
  */
 export default class DebuggerModel {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _actions: DebuggerActions;
   _breakpointManager: BreakpointManager;
   _breakpointStore: BreakpointStore;
@@ -58,7 +58,7 @@ export default class DebuggerModel {
     this._actions = new DebuggerActions(this._dispatcher, this._store);
     this._breakpointStore = new BreakpointStore(
       this._dispatcher,
-      state ? state.breakpoints : null, // serialized breakpoints
+      state != null ? state.breakpoints : null, // serialized breakpoints
       this._store,
     );
     this._breakpointManager = new BreakpointManager(
@@ -77,17 +77,22 @@ export default class DebuggerModel {
     this._watchExpressionListStore = new WatchExpressionListStore(
       this._watchExpressionStore,
       this._dispatcher,
+      state != null ? state.watchExpressions : null, // serialized watch expressions
     );
     this._debuggerActionStore = new DebuggerActionsStore(
       this._dispatcher,
       this._bridge,
     );
     this._callstackStore = new CallstackStore(this._dispatcher, this._store);
-    this._scopesStore = new ScopesStore(this._dispatcher);
+    this._scopesStore = new ScopesStore(
+      this._dispatcher,
+      this._bridge,
+      this._store,
+    );
     this._threadStore = new ThreadStore(this._dispatcher);
     this._debuggerPauseController = new DebuggerPauseController(this._store);
 
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       this._store,
       this._actions,
       this._breakpointStore,

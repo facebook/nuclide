@@ -9,7 +9,7 @@
  * @format
  */
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   throwsErrorSynchronously(): void {
     // TODO(mbolin): If throws a string rather than an Error, the unit test

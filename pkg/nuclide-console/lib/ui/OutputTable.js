@@ -18,7 +18,7 @@ import type {
 } from '../types';
 
 import Hasher from 'nuclide-commons/Hasher';
-import React from 'react';
+import * as React from 'react';
 import {List} from 'react-virtualized';
 import RecordView from './RecordView';
 import recordsChanged from '../recordsChanged';
@@ -35,6 +35,7 @@ type Props = {
     scrollTop: number,
   ) => void,
   onDisplayableRecordHeightChange: RecordHeightChangeHandler,
+  shouldScrollToBottom: () => boolean,
 };
 
 type State = {
@@ -53,19 +54,18 @@ type RowHeightParams = {
   index: number,
 };
 
+/* eslint-disable react/no-unused-prop-types */
 type OnScrollParams = {
   clientHeight: number,
   scrollHeight: number,
   scrollTop: number,
 };
+/* eslint-enable react/no-unused-prop-types */
 
 // The number of extra rows to render beyond what is visible
 const OVERSCAN_COUNT = 5;
 
-export default class OutputTable extends React.Component {
-  props: Props;
-  state: State;
-
+export default class OutputTable extends React.Component<Props, State> {
   _hasher: Hasher<Record>;
   // This is a <List> from react-virtualized (untyped library)
   _list: ?React.Element<any>;
@@ -101,25 +101,27 @@ export default class OutputTable extends React.Component {
     }
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
+      // $FlowFixMe(>=0.53.0) Flow suppress
       <ResizeSensitiveContainer
         className="nuclide-console-table-wrapper native-key-bindings"
         onResize={this._handleResize}
         tabIndex="1">
-        {this._containerRendered()
-          ? <List
-              ref={this._handleListRef}
-              height={this.state.height}
-              width={this.state.width}
-              rowCount={this.props.displayableRecords.length}
-              rowHeight={this._getRowHeight}
-              rowRenderer={this._renderRow}
-              overscanRowCount={OVERSCAN_COUNT}
-              onScroll={this._onScroll}
-              onRowsRendered={this._handleListRender}
-            />
-          : null}
+        {this._containerRendered() ? (
+          <List
+            // $FlowFixMe(>=0.53.0) Flow suppress
+            ref={this._handleListRef}
+            height={this.state.height}
+            width={this.state.width}
+            rowCount={this.props.displayableRecords.length}
+            rowHeight={this._getRowHeight}
+            rowRenderer={this._renderRow}
+            overscanRowCount={OVERSCAN_COUNT}
+            onScroll={this._onScroll}
+            onRowsRendered={this._handleListRender}
+          />
+        ) : null}
       </ResizeSensitiveContainer>
     );
   }
@@ -212,18 +214,14 @@ export default class OutputTable extends React.Component {
       // $FlowIgnore Untyped react-virtualized List component method
       this._list.recomputeRowHeights();
 
-      // If the element in the viewport when its height changes, scroll to ensure that the entirety
-      // of the record is in the viewport. This is important not just for if the last record changes
-      // height through user interaction (e.g. expanding a debugger variable), but also because this
-      // is the mechanism through which the record's true initial height is reported. Therefore, we
-      // may have scrolled to the bottom, and only afterwards received its true height. In this
-      // case, it's important that we then scroll to the new bottom.
-      const index = this.props.displayableRecords.findIndex(
-        record => record.id === recordId,
-      );
-      if (index >= this._startIndex && index <= this._stopIndex) {
-        // $FlowIgnore Untyped react-virtualized List component method
-        this._list.scrollToRow(index);
+      // If we are already scrolled to the bottom, scroll to ensure that the scrollbar remains at
+      // the bottom. This is important not just for if the last record changes height through user
+      // interaction (e.g. expanding a debugger variable), but also because this is the mechanism
+      // through which the record's true initial height is reported. Therefore, we may have scrolled
+      // to the bottom, and only afterwards received its true height. In this case, it's important
+      // that we then scroll to the new bottom.
+      if (this.props.shouldScrollToBottom()) {
+        this.scrollToBottom();
       }
     });
   };

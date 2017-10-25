@@ -27,7 +27,7 @@ import ConnectionDetailsPrompt from './ConnectionDetailsPrompt';
 import IndeterminateProgressBar from './IndeterminateProgressBar';
 import invariant from 'assert';
 import {notifySshHandshakeError} from './notification';
-import React from 'react';
+import * as React from 'react';
 import electron from 'electron';
 import {
   SshHandshake,
@@ -40,23 +40,19 @@ const logger = getLogger('nuclide-remote-projects');
 const {remote} = electron;
 invariant(remote != null);
 
-type DefaultProps = {
-  indexOfInitiallySelectedConnectionProfile: number,
-};
-
 type Props = {
   // The list of connection profiles that will be displayed.
   connectionProfiles: ?Array<NuclideRemoteConnectionProfile>,
   // If there is >= 1 connection profile, this index indicates the initial
   // profile to use.
-  indexOfInitiallySelectedConnectionProfile: number,
+  selectedProfileIndex: number,
   // Function that is called when the "+" button on the profiles list is clicked.
   // The user's intent is to create a new profile.
   onAddProfileClicked: () => mixed,
   // Function that is called when the "-" button on the profiles list is clicked
   // ** while a profile is selected **.
   // The user's intent is to delete the currently-selected profile.
-  onDeleteProfileClicked: (indexOfSelectedConnectionProfile: number) => mixed,
+  onDeleteProfileClicked: (selectedProfileIndex: number) => mixed,
   onConnect: (
     connection: RemoteConnection,
     config: SshConnectionConfiguration,
@@ -68,11 +64,11 @@ type Props = {
     index: number,
     profile: NuclideRemoteConnectionProfile,
   ) => mixed,
+  onProfileSelected: (index: number) => mixed,
 };
 
 type State = {
   finish: (answers: Array<string>) => mixed,
-  indexOfSelectedConnectionProfile: number,
   instructions: string,
   isDirty: boolean,
   mode: number,
@@ -87,14 +83,7 @@ const WAITING_FOR_AUTHENTICATION = 4;
 /**
  * Component that manages the state transitions as the user connects to a server.
  */
-export default class ConnectionDialog extends React.Component {
-  static defaultProps: DefaultProps = {
-    indexOfInitiallySelectedConnectionProfile: -1,
-  };
-
-  props: Props;
-  state: State;
-
+export default class ConnectionDialog extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -136,8 +125,6 @@ export default class ConnectionDialog extends React.Component {
 
     this.state = {
       finish: answers => {},
-      indexOfSelectedConnectionProfile:
-        props.indexOfInitiallySelectedConnectionProfile,
       instructions: '',
       isDirty: false,
       mode: REQUEST_CONNECTION_DETAILS,
@@ -149,35 +136,12 @@ export default class ConnectionDialog extends React.Component {
     this._focus();
   }
 
-  componentWillReceiveProps(nextProps: Props): void {
-    let indexOfSelectedConnectionProfile = this.state
-      .indexOfSelectedConnectionProfile;
-    if (nextProps.connectionProfiles == null) {
-      indexOfSelectedConnectionProfile = -1;
-    } else if (
-      this.props.connectionProfiles == null ||
-      // The current selection is outside the bounds of the next profiles list
-      indexOfSelectedConnectionProfile >
-        nextProps.connectionProfiles.length - 1 ||
-      // The next profiles list is longer than before, a new one was added
-      nextProps.connectionProfiles.length > this.props.connectionProfiles.length
-    ) {
-      // Select the final connection profile in the list because one of the above conditions means
-      // the current selected index is outdated.
-      indexOfSelectedConnectionProfile =
-        nextProps.connectionProfiles.length - 1;
-    }
-
-    this.setState({indexOfSelectedConnectionProfile});
-  }
-
   componentDidUpdate(prevProps: Props, prevState: State) {
     if (this.state.mode !== prevState.mode) {
       this._focus();
     } else if (
       this.state.mode === REQUEST_CONNECTION_DETAILS &&
-      this.state.indexOfSelectedConnectionProfile ===
-        prevState.indexOfSelectedConnectionProfile &&
+      this.props.selectedProfileIndex === prevProps.selectedProfileIndex &&
       !this.state.isDirty &&
       prevState.isDirty &&
       this.refs.okButton != null
@@ -209,7 +173,7 @@ export default class ConnectionDialog extends React.Component {
     invariant(this.props.connectionProfiles != null);
 
     const selectedProfile = this.props.connectionProfiles[
-      this.state.indexOfSelectedConnectionProfile
+      this.props.selectedProfileIndex
     ];
     const connectionDetails: NuclideRemoteConnectionParamsWithPassword = this.refs.content.getFormFields();
     const validationResult = validateFormInputs(
@@ -233,10 +197,7 @@ export default class ConnectionDialog extends React.Component {
       atom.notifications.addWarning(validationResult.warningMessage);
     }
 
-    this.props.onSaveProfile(
-      this.state.indexOfSelectedConnectionProfile,
-      newProfile,
-    );
+    this.props.onSaveProfile(this.props.selectedProfileIndex, newProfile);
     this.setState({isDirty: false});
   };
 
@@ -244,7 +205,7 @@ export default class ConnectionDialog extends React.Component {
     return path !== '/';
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const mode = this.state.mode;
     let content;
     let isOkDisabled;
@@ -254,9 +215,7 @@ export default class ConnectionDialog extends React.Component {
       content = (
         <ConnectionDetailsPrompt
           connectionProfiles={this.props.connectionProfiles}
-          indexOfSelectedConnectionProfile={
-            this.state.indexOfSelectedConnectionProfile
-          }
+          selectedProfileIndex={this.props.selectedProfileIndex}
           onAddProfileClicked={this.props.onAddProfileClicked}
           onCancel={this.cancel}
           onConfirm={this.ok}
@@ -291,11 +250,11 @@ export default class ConnectionDialog extends React.Component {
     let saveButtonGroup;
     let selectedProfile;
     if (
-      this.state.indexOfSelectedConnectionProfile >= 0 &&
+      this.props.selectedProfileIndex >= 0 &&
       this.props.connectionProfiles != null
     ) {
       selectedProfile = this.props.connectionProfiles[
-        this.state.indexOfSelectedConnectionProfile
+        this.props.selectedProfileIndex
       ];
     }
     if (
@@ -312,9 +271,7 @@ export default class ConnectionDialog extends React.Component {
 
     return (
       <div>
-        <div className="block">
-          {content}
-        </div>
+        <div className="block">{content}</div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           {saveButtonGroup}
           <ButtonGroup>
@@ -460,10 +417,8 @@ export default class ConnectionDialog extends React.Component {
     };
   }
 
-  onProfileClicked = (indexOfSelectedConnectionProfile: number): void => {
-    this.setState({
-      indexOfSelectedConnectionProfile,
-      isDirty: false,
-    });
+  onProfileClicked = (selectedProfileIndex: number): void => {
+    this.setState({isDirty: false});
+    this.props.onProfileSelected(selectedProfileIndex);
   };
 }

@@ -9,7 +9,7 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import WebViewPane from './WebViewPane';
 
 const URI_PREFIX = 'sample-web-view:';
@@ -18,10 +18,10 @@ const URI_PREFIX = 'sample-web-view:';
  * Encapsulates the state for this package so it can be cleaned up easily in deactivate().
  */
 class Activation {
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor(state: ?Object) {
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
       // The Atom 1.0 API docs are ambiguous about the contract of an object returned by an opener:
       // https://atom.io/docs/api/v1.0.0/Workspace#instance-addOpener.
@@ -46,7 +46,7 @@ class Activation {
   /** Opens a tab that loads facebook.com. */
   _openUrl() {
     // not a file URI
-    // eslint-disable-next-line nuclide-internal/atom-apis
+    // eslint-disable-next-line rulesdir/atom-apis
     atom.workspace.open('sample-web-view:https://facebook.com/');
   }
 

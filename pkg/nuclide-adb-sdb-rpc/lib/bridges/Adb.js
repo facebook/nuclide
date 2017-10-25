@@ -39,7 +39,10 @@ export class Adb extends DebugBridge {
       'list',
       'packages',
     ).toPromise();
-    return stdout.trim().split(/\s+/).map(s => s.substring(prefix.length));
+    return stdout
+      .trim()
+      .split(/\s+/)
+      .map(s => s.substring(prefix.length));
   }
 
   async isPackageInstalled(pkg: string): Promise<boolean> {
@@ -88,7 +91,8 @@ export class Adb extends DebugBridge {
         ],
       ) => {
         return new Map([
-          ['name', this._device],
+          ['name', this._device.name],
+          ['adb_port', String(this._device.port)],
           ['architecture', architecture],
           ['api_version', apiVersion],
           ['model', model],
@@ -144,21 +148,69 @@ export class Adb extends DebugBridge {
     return this.runLongCommand('uninstall', packageName);
   }
 
-  forwardJdwpPortToPid(tcpPort: number, pid: number): Promise<string> {
-    return this.runShortCommand(
+  async getForwardSpec(pid: number): Promise<?string> {
+    const specLines = await this.runShortCommand(
+      'forward',
+      '--list',
+    ).toPromise();
+    const specs = specLines.split(/\n/).map(line => {
+      const cols = line.split(/\s+/);
+      return {
+        spec: cols[1],
+        target: cols[2],
+      };
+    });
+    const matchingSpec = specs.find(spec => spec.target === `jdwp:${pid}`);
+    if (matchingSpec != null) {
+      return matchingSpec.spec;
+    }
+    return null;
+  }
+
+  async forwardJdwpPortToPid(tcpPort: number, pid: number): Promise<?string> {
+    await this.runShortCommand(
       'forward',
       `tcp:${tcpPort}`,
       `jdwp:${pid}`,
     ).toPromise();
+    return this.getForwardSpec(pid);
   }
 
-  launchActivity(
+  async removeJdwpForwardSpec(spec: ?string): Promise<string> {
+    let output;
+    let result = '';
+    if (spec != null) {
+      output = this.runLongCommand('forward', '--remove', spec);
+    } else {
+      output = this.runLongCommand('forward', '--remove-all');
+    }
+
+    const subscription = output.subscribe(processMessage => {
+      switch (processMessage.kind) {
+        case 'stdout':
+        case 'stderr':
+          result += processMessage.data + '\n';
+          break;
+      }
+    });
+    await output.toPromise();
+    subscription.unsubscribe();
+    return result;
+  }
+
+  async launchActivity(
     packageName: string,
     activity: string,
     debug: boolean,
     action: ?string,
     parameters: ?Map<string, string>,
   ): Promise<string> {
+    if (debug) {
+      // Enable "wait for debugger" semantics for the next launch of
+      // the specified package.
+      await this.setDebugApp(packageName, false);
+    }
+
     const args = ['shell', 'am', 'start'];
     if (action != null) {
       args.push('-a', action);
@@ -168,31 +220,59 @@ export class Adb extends DebugBridge {
         args.push('-e', key, parameter);
       }
     }
-    if (debug) {
-      args.push('-N', '-D');
-    }
     args.push('-W', '-n');
     args.push(`${packageName}/${activity}`);
     return this.runShortCommand(...args).toPromise();
   }
 
-  launchMainActivity(
+  async launchMainActivity(
     packageName: string,
     debug: boolean,
-    parameters: ?Map<string, string>,
   ): Promise<string> {
-    const args = ['shell', 'am', 'start'];
-    args.push('-W', '-n');
-    if (parameters != null) {
-      for (const [key, parameter] of parameters) {
-        args.push('-e', key, parameter);
-      }
-    }
     if (debug) {
-      args.push('-N', '-D');
+      // Enable "wait for debugger" semantics for the next launch of
+      // the specified package.
+      await this.setDebugApp(packageName, false);
     }
-    args.push('-a', 'android.intent.action.MAIN');
-    args.push('-c', 'android.intent.category.LAUNCHER');
+
+    const args = [
+      'shell',
+      'monkey',
+      '-p',
+      `${packageName}`,
+      '-c',
+      'android.intent.category.LAUNCHER',
+      '1',
+    ];
+    return this.runShortCommand(...args).toPromise();
+  }
+
+  async launchService(
+    packageName: string,
+    serviceName: string,
+    debug: boolean,
+  ): Promise<string> {
+    if (debug) {
+      // Enable "wait for debugger" semantics for the next launch of
+      // the specified package.
+      await this.setDebugApp(packageName, false);
+    }
+
+    const args = [
+      'shell',
+      'am',
+      'startservice',
+      `${packageName}/${serviceName}`,
+    ];
+    return this.runShortCommand(...args).toPromise();
+  }
+
+  setDebugApp(packageName: string, persist: boolean): Promise<string> {
+    const args = ['shell', 'am', 'set-debug-app', '-w'];
+
+    if (persist) {
+      args.push('--persistent');
+    }
     args.push(`${packageName}`);
     return this.runShortCommand(...args).toPromise();
   }
@@ -243,7 +323,7 @@ export class Adb extends DebugBridge {
           }
         });
       })
-      .timeout(500)
+      .timeout(1000)
       .catch(error => Observable.of([]))
       .switchMap(() => {
         return Promise.resolve(Array.from(jdwpProcesses));
@@ -255,5 +335,21 @@ export class Adb extends DebugBridge {
       return null;
     }
     return this.runShortCommand('shell', 'dumpsys', 'package', pkg).toPromise();
+  }
+
+  getDeviceArgs(): Array<string> {
+    const portArg =
+      this._device.port != null ? ['-P', String(this._device.port)] : [];
+    const deviceArg = this._device.name !== '' ? ['-s', this._device.name] : [];
+    return deviceArg.concat(portArg);
+  }
+
+  getProcesses(): Observable<Array<SimpleProcess>> {
+    return this.runShortCommand('shell', 'ps').map(stdout =>
+      stdout.split(/\n/).map(line => {
+        const info = line.trim().split(/\s+/);
+        return {user: info[0], pid: info[1], name: info[info.length - 1]};
+      }),
+    );
   }
 }

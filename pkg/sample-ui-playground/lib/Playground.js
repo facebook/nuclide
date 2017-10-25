@@ -10,29 +10,30 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonExamples} from 'nuclide-commons-ui/Button.example';
 import {ProgressIndicatorExamples} from 'nuclide-commons-ui/ProgressIndicators.example';
 import {CheckboxExamples} from 'nuclide-commons-ui/Checkbox.example';
+import {ModalExamples} from 'nuclide-commons-ui/showModal.example';
 import {DropdownExamples} from '../../nuclide-ui/Dropdown.example';
 import {FullWidthProgressBarExamples} from '../../nuclide-ui/FullWidthProgressBar.example';
+import {TabbableContainerExamples} from 'nuclide-commons-ui/TabbableContainer.example';
 import {TabExamples} from '../../nuclide-ui/Tabs.example';
-import {RadioGroupExamples} from '../../nuclide-ui/RadioGroup.example';
+import {RadioGroupExamples} from 'nuclide-commons-ui/RadioGroup.example';
 import {TextInputExamples} from 'nuclide-commons-ui/TextInputs.example';
 import {ToolbarExamples} from 'nuclide-commons-ui/Toolbar.example';
 import {BadgeExamples} from '../../nuclide-ui/Badge.example';
 import {HighlightExamples} from 'nuclide-commons-ui/Highlight.example';
 import {IconExamples} from 'nuclide-commons-ui/Icon.example';
-import {TreeExamples} from '../../nuclide-ui/Tree.example';
+import {TreeExamples} from 'nuclide-commons-ui/Tree.example';
 import {ListviewExamples} from '../../nuclide-ui/ListView.example';
 import {TableExamples} from 'nuclide-commons-ui/Table.example';
 import {RelativeDateExamples} from '../../nuclide-ui/RelativeDate.example';
 import {MultiRootChangedFilesViewExample} from '../../nuclide-ui/MultiRootChangedFilesView.example';
 import {ToggleExamples} from '../../nuclide-ui/Toggle.example';
 import {ResizableFlexContainerExamples} from '../../nuclide-ui/ResizableFlexContainer.example';
-import {ModalExamples} from '../../nuclide-ui/Modal.example';
 import {FileChangesExamples} from '../../nuclide-ui/FileChanges.example';
 import {MessageExamples} from 'nuclide-commons-ui/Message.example';
 import {PathWithFileIconExamples} from '../../nuclide-ui/PathWithFileIcon.example';
@@ -51,6 +52,7 @@ const playgroundComponents = [
   ResizableFlexContainerExamples,
   RadioGroupExamples,
   TextInputExamples,
+  TabbableContainerExamples,
   RegExpFilterExamples,
   ToolbarExamples,
   BadgeExamples,
@@ -72,7 +74,7 @@ type ComponentSpec = {
   description: string,
   examples: Array<{
     title: string,
-    component: ReactClass<any> | (() => React.Element<any>),
+    component: React.ComponentType<any> | (() => React.Element<any>),
   }>,
 };
 
@@ -82,9 +84,7 @@ type State = {
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/ui-playground';
 
-export class Playground extends React.Component {
-  state: State;
-
+export class Playground extends React.Component<any, State> {
   constructor(props: any) {
     super(props);
     this.state = {
@@ -145,9 +145,7 @@ export class Playground extends React.Component {
         ...examples.map((example, i) => {
           const {title, component: Component} = example;
           return [
-            <h2 key={`${index}:${i}t`}>
-              {title}
-            </h2>,
+            <h2 key={`${index}:${i}t`}>{title}</h2>,
             <div
               key={`${index}:${i}c`}
               className="nuclide-ui-playground-example">
@@ -156,11 +154,7 @@ export class Playground extends React.Component {
           ];
         }),
       );
-      renderedDescription = (
-        <p>
-          {description}
-        </p>
-      );
+      renderedDescription = <p>{description}</p>;
     }
     const h1ClassName = classnames({
       'nuclide-ui-playground-section-headline-collapsed': isCollapsed,
@@ -178,7 +172,7 @@ export class Playground extends React.Component {
     );
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const renderedExamples = playgroundComponents.map(
       this.renderExampleForComponent,
     );

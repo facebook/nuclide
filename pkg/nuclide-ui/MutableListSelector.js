@@ -11,7 +11,7 @@
 
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import React from 'react';
+import * as React from 'react';
 
 type NuclideListSelectorItem = {
   deletable?: boolean,
@@ -54,9 +54,7 @@ const DELETE_BUTTON_TITLE_UNDELETABLE = 'Selected item cannot be deleted';
  *  | +  |  - |
  *   ---------
  */
-export class MutableListSelector extends React.Component {
-  props: Props;
-
+export class MutableListSelector extends React.Component<Props> {
   _onDeleteButtonClicked = () => {
     this.props.onDeleteButtonClicked(this.props.idOfSelectedItem);
   };
@@ -69,7 +67,7 @@ export class MutableListSelector extends React.Component {
     this.props.onItemDoubleClicked(itemId);
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     let selectedItem;
     const listItems = this.props.items.map(item => {
       let classes = 'list-item';
@@ -103,9 +101,7 @@ export class MutableListSelector extends React.Component {
     return (
       <div>
         <div className="block select-list">
-          <ol className="list-group">
-            {listItems}
-          </ol>
+          <ol className="list-group">{listItems}</ol>
         </div>
         <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           <ButtonGroup>

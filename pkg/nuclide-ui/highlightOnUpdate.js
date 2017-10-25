@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import shallowequal from 'shallowequal';
 
 /**
@@ -17,7 +17,7 @@ import shallowequal from 'shallowequal';
  * component's props change.
  */
 export function highlightOnUpdate<
-  T: ReactClass<any>,
+  T: React.ComponentType<any>,
   P: {+[key: string]: mixed},
 >(
   ComposedComponent: T,
@@ -36,8 +36,7 @@ export function highlightOnUpdate<
   unhighlightDelay?: number = 200,
 ): T {
   // $FlowIssue The return type is guaranteed to be the same as the type of ComposedComponent.
-  return class extends React.Component {
-    props: P;
+  return class extends React.Component<P, void> {
     showFlash: boolean;
     timeout: ?number;
 
@@ -63,7 +62,7 @@ export function highlightOnUpdate<
       }, unhighlightDelay);
     }
 
-    render(): React.Element<any> {
+    render(): React.Node {
       return (
         <span
           className={`${className} ${this.showFlash

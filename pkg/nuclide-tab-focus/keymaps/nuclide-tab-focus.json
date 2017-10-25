@@ -1,0 +1,6 @@
+{
+  "atom-workspace .nuclide-tabbable": {
+    "tab": "nuclide-tab-focus:focus-next",
+    "shift-tab": "nuclide-tab-focus:focus-previous"
+  }
+}

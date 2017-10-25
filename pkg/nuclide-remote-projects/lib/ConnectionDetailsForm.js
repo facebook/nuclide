@@ -19,11 +19,11 @@ import {getOfficialRemoteServerCommand} from './connection-profile-utils';
 
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getIPsForHosts} from './connection-profile-utils';
 import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
-import RadioGroup from '../../nuclide-ui/RadioGroup';
-import React from 'react';
+import RadioGroup from 'nuclide-commons-ui/RadioGroup';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {SshHandshake} from '../../nuclide-remote-connection';
 
@@ -64,11 +64,11 @@ type State = {
 };
 
 /** Component to prompt the user for connection details. */
-export default class ConnectionDetailsForm extends React.Component {
-  props: Props;
-  state: State;
-
-  _disposables: ?CompositeDisposable;
+export default class ConnectionDetailsForm extends React.Component<
+  Props,
+  State,
+> {
+  _disposables: ?UniversalDisposable;
   _promptChanged: boolean;
 
   constructor(props: Props) {
@@ -89,7 +89,7 @@ export default class ConnectionDetailsForm extends React.Component {
     };
   }
 
-  _onKeyPress(e: SyntheticKeyboardEvent): void {
+  _onKeyPress(e: SyntheticKeyboardEvent<>): void {
     if (e.key === 'Enter') {
       this.props.onConfirm();
     }
@@ -120,7 +120,7 @@ export default class ConnectionDetailsForm extends React.Component {
     this._promptChanged = false;
   };
 
-  _handleKeyFileInputClick = (event: SyntheticEvent): void => {
+  _handleKeyFileInputClick = (event: SyntheticEvent<>): void => {
     const privateKeyAuthMethodIndex = authMethods.indexOf(
       SupportedMethods.PRIVATE_KEY,
     );
@@ -138,7 +138,7 @@ export default class ConnectionDetailsForm extends React.Component {
     );
   };
 
-  _handlePasswordInputClick = (event: SyntheticEvent): void => {
+  _handlePasswordInputClick = (event: SyntheticEvent<>): void => {
     const passwordAuthMethodIndex = authMethods.indexOf(
       SupportedMethods.PASSWORD,
     );
@@ -181,7 +181,7 @@ export default class ConnectionDetailsForm extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {className} = this.props;
     const activeAuthMethod = authMethods[this.state.selectedAuthMethodIndex];
     // We need native-key-bindings so that delete works and we need
@@ -314,7 +314,7 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   componentDidMount() {
-    const disposables = new CompositeDisposable();
+    const disposables = new UniversalDisposable();
     this._disposables = disposables;
     const root = ReactDOM.findDOMNode(this);
 

@@ -7,7 +7,6 @@
   "main": "index.js",
   "repository": "https://github.com/facebook/nuclide",
   "scripts": {
-    "prepublishOnly": "../../scripts/release-transpile.js --overwrite .",
     "test": "scripts/test.js"
   },
   "dependencies": {

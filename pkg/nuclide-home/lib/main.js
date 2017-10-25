@@ -24,7 +24,7 @@ import HomePaneItem, {WORKSPACE_VIEW_URI} from './HomePaneItem';
 import Immutable from 'immutable';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
-import React from 'react';
+import * as React from 'react';
 import {BehaviorSubject} from 'rxjs';
 import {shell} from 'electron';
 
@@ -55,7 +55,7 @@ class Activation {
       }
     }
     this._subscriptions.add(
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.commands.add('atom-workspace', 'nuclide-home:open-docs', e => {
         const url = createUtmUrl('https://nuclide.io/docs', 'help');
         shell.openExternal(url);
@@ -81,9 +81,10 @@ class Activation {
 
   _considerDisplayingHome() {
     const showHome = featureConfig.get('nuclide-home.showHome');
+    // flowlint-next-line sketchy-null-mixed:off
     if (showHome) {
-      // eslint-disable-next-line nuclide-internal/atom-apis
-      atom.workspace.open(WORKSPACE_VIEW_URI);
+      // eslint-disable-next-line rulesdir/atom-apis
+      atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
     }
   }
 
@@ -105,7 +106,7 @@ class Activation {
       const changelogPath = fbChangeLogExists
         ? fbChangelogPath
         : osChangelogPath;
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       await atom.workspace.open(
         encodeURI(`markdown-preview://${changelogPath}`),
       );

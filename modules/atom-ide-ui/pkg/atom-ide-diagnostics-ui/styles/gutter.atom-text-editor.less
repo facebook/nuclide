@@ -2,75 +2,47 @@
 @import "octicon-mixins.less";
 @import "octicon-utf-codes.less";
 
+@gutter-size: 0.7em;
+
 // Styles for gutter glyphs.
 
-.gutter[gutter-name=nuclide-diagnostics-gutter] {
-  min-width: 0.5em;
+.gutter[gutter-name=diagnostics-gutter] {
+  width: @gutter-size;
 }
 
-.nuclide-diagnostics-gutter-ui-gutter-error,
-.nuclide-diagnostics-gutter-ui-gutter-warning {
-  // Needs to match .nuclide-debugger-breakpoint-icon
-  .octicon(triangle-right, @size: 130%);
-  text-align: left;
-  display: block;
-  width: 0.8em;
-  color: @text-color-info;
-
-  // Makes it smaller, but respects the line-height :)
-  transform: scale(0.7);
-  transform-origin: left;
-}
-
-.nuclide-diagnostics-gutter-ui-gutter-error {
-  color: @text-color-error;
-}
-
-.nuclide-diagnostics-gutter-ui-gutter-warning {
-  color: @text-color-warning;
-}
-
-// Styles for popup triggered by mousing over the gutter glyph.
-
-.nuclide-diagnostics-gutter-ui-popup {
-  background: @app-background-color;
-  box-shadow: 0px 1px 4px 0px rgba(0,0,0,1);
-  position: absolute;
-  padding-right: 10px;
-  padding-left: 10px;
-  max-width: 500px;
-  word-wrap: break-word;
-
-  // Many themes set the editor's scrollbars to z-index: 3. We wish to appear
-  // above the scrollbars because we appear at the atom-workspace's root, which
-  // means we may span multiple panes and hence overlap the leftmost scrollbar.
-  z-index: 4;
-}
-
-.nuclide-diagnostics-gutter-ui-popup-header {
+// The gutter icon. If you make any edits here, make extra sure that the icon is
+// still vertically centered within the line number and looks good next to the
+// debugger breakpoint icon at all different editor font sizes. Probably,
+// flexbox is the only way to reliably do this.
+.diagnostics-gutter-ui-item {
   display: flex;
-  justify-content: space-between;
-  margin-left: -10px;
-  margin-right: -10px;
-  padding: 4px 10px;
-}
 
-.nuclide-diagnostics-gutter-ui-popup-diagnostic {
-  color: @text-color;
-  font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
-}
+  .icon {
+    display: flex;
 
-.nuclide-diagnostics-gutter-ui-popup-error
-  .nuclide-diagnostics-gutter-ui-popup-header {
-    background-color: fade(@text-color-error, 20%);
-}
+    width: @gutter-size;
+    height: @gutter-size;
+    font-size: @gutter-size;
+    align-self: center;
 
-.nuclide-diagnostics-gutter-ui-popup-warning
-  .nuclide-diagnostics-gutter-ui-popup-header {
-    background-color: fade(@text-color-warning, 20%);
-}
+    &::before {
+      width: 1em;
+      height: 1em;
+      font-size: 1em;
+      margin: 0;
 
-.nuclide-diagnostics-gutter-ui-popup-message {
-  padding-top: 4px;
-  padding-bottom: 4px;
+      align-self: center;
+    }
+  }
+
+  &.diagnostics-gutter-ui-gutter-info,
+  &.diagnostics-gutter-ui-gutter-review {
+    color: @text-color-info;
+  }
+  &.diagnostics-gutter-ui-gutter-error {
+    color: @text-color-error;
+  }
+  &.diagnostics-gutter-ui-gutter-warning {
+    color: @text-color-warning;
+  }
 }

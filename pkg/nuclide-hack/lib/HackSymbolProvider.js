@@ -11,18 +11,15 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  FileResult,
+  SymbolResult,
   GlobalProviderType,
 } from '../../nuclide-quick-open/lib/types';
-import type {
-  SymbolResult,
-  LanguageService,
-} from '../../nuclide-language-service/lib/LanguageService';
+import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 
 import {getHackLanguageForUri} from './HackLanguage';
 import {collect, arrayCompact, arrayFlatten} from 'nuclide-commons/collection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 
 async function getHackDirectoriesByService(
   directories: Array<atom$Directory>, // top-level project directories
@@ -45,7 +42,7 @@ async function getHackDirectoriesByService(
   return Array.from(results.entries());
 }
 
-export const HackSymbolProvider: GlobalProviderType = {
+export const HackSymbolProvider: GlobalProviderType<SymbolResult> = {
   providerType: 'GLOBAL',
   name: 'HackSymbolProvider',
   display: {
@@ -69,7 +66,7 @@ export const HackSymbolProvider: GlobalProviderType = {
   async executeQuery(
     query: string,
     directories: Array<atom$Directory>,
-  ): Promise<Array<FileResult>> {
+  ): Promise<Array<SymbolResult>> {
     if (query.length === 0) {
       return [];
     }
@@ -80,38 +77,24 @@ export const HackSymbolProvider: GlobalProviderType = {
         service.symbolSearch(query, dirs),
       ),
     );
-    const flattenedResults: Array<SymbolResult> = arrayFlatten(
-      arrayCompact(results),
-    );
-
-    return ((flattenedResults: any): Array<FileResult>);
-    // Why the weird cast? Because services are expected to return their own
-    // custom type with symbol-provider-specific additional detail. We upcast it
-    // now to FileResult which only has the things that Quick-Open cares about
-    // like line, column, ... Later on, Quick-Open invokes getComponentForItem
-    // (below) to render each result: it does a downcast so it can render
-    // whatever additional details.
+    return arrayFlatten(arrayCompact(results));
   },
 
-  getComponentForItem(uncastedItem: FileResult): React.Element<any> {
-    const item = ((uncastedItem: any): SymbolResult);
+  getComponentForItem(item: SymbolResult): React.Element<any> {
     const filePath = item.path;
     const filename = nuclideUri.basename(filePath);
     const name = item.name || '';
 
+    // flowlint-next-line sketchy-null-string:off
     const symbolClasses = item.icon
       ? `file icon icon-${item.icon}`
       : 'file icon no-icon';
     return (
       <div title={item.hoverText || ''}>
         <span className={symbolClasses}>
-          <code>
-            {name}
-          </code>
+          <code>{name}</code>
         </span>
-        <span className="omnisearch-symbol-result-filename">
-          {filename}
-        </span>
+        <span className="omnisearch-symbol-result-filename">{filename}</span>
       </div>
     );
   },

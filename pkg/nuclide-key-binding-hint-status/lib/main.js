@@ -12,7 +12,8 @@
 const STATUS_BAR_PRIORITY = 500;
 
 // TODO: Allow the user to toggle this feature.
-import React from 'react';
+import invariant from 'assert';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
@@ -25,7 +26,7 @@ class Activation {
   constructor(state: ?mixed) {
     this._statusNode = document.createElement('div');
     this._statusNode.classList.add('inline-block', 'text');
-
+    invariant(this._statusNode);
     ReactDOM.render(<KeyBindingHint />, this._statusNode);
 
     this._disposables = new UniversalDisposable(() => {

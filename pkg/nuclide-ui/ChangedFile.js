@@ -22,7 +22,7 @@ import {
   FileChangeStatusToTextColor,
 } from '../nuclide-vcs-base';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 import {FileChangeStatus} from '../nuclide-vcs-base';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import PathWithFileIcon from './PathWithFileIcon';
@@ -33,9 +33,13 @@ const LF = '\u000A';
 type Props = {
   commandPrefix: string,
   // whether files can be expanded to reveal a diff of changes. Requires passing `fileChanges`.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   enableFileExpansion: boolean,
   enableInlineActions: boolean,
   // `null` values for FileDiffs for a given key are assumed to be in "loading" state.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   fileChanges: ?diffparser$FileDiff,
   filePath: NuclideUri,
   fileStatus: FileChangeStatusValue,
@@ -49,6 +53,10 @@ type Props = {
   onFileChecked: (filePath: NuclideUri) => void,
   onFileChosen: (filePath: NuclideUri) => void,
   onForgetFile: (filePath: NuclideUri, analyticsSourceKey: string) => void,
+  onMarkFileResolved?: (
+    filePath: NuclideUri,
+    analyticsSourceKey: string,
+  ) => void,
   onOpenFileInDiffView: (
     filePath: NuclideUri,
     analyticsSourceKey: string,
@@ -58,9 +66,7 @@ type Props = {
   rootPath: NuclideUri,
 };
 
-export default class ChangedFile extends React.Component {
-  props: Props;
-
+export default class ChangedFile extends React.Component<Props> {
   _getFileClassname(): string {
     const {commandPrefix, fileStatus, isHgPath, isSelected} = this.props;
     return classnames(
@@ -113,6 +119,21 @@ export default class ChangedFile extends React.Component {
     );
   }
 
+  _renderResolveAction(filePath: string): ?React.Element<any> {
+    return this.props.onMarkFileResolved
+      ? this._renderAction(
+          'resolve' /* key */,
+          'check' /* icon */,
+          'Mark file as resolved' /* title */,
+          this.props.onMarkFileResolved.bind(
+            this,
+            filePath,
+            ANALYTICS_SOURCE_KEY,
+          ),
+        )
+      : null;
+  }
+
   _renderMarkDeletedAction(filePath: string): React.Element<any> {
     return this._renderAction(
       'mark-deleted' /* key */,
@@ -159,7 +180,7 @@ export default class ChangedFile extends React.Component {
     this.props.onFileChecked(this.props.filePath);
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       enableInlineActions,
       isChecked,
@@ -194,24 +215,26 @@ export default class ChangedFile extends React.Component {
         case FileChangeStatus.REMOVED: // removed from both FS and VCS
           eligibleActions.push(this._renderRestoreAction(filePath));
           break;
+        case FileChangeStatus.CHANGE_DELETE:
+          eligibleActions.push(this._renderDeleteAction(filePath));
+          eligibleActions.push(this._renderResolveAction(filePath));
+          break;
       }
       actions = (
-        <div className="nuclide-changed-file-actions">
-          {eligibleActions}
-        </div>
+        <div className="nuclide-changed-file-actions">{eligibleActions}</div>
       );
     }
     const statusName = FileChangeStatusToLabel[fileStatus];
     const projectRelativePath =
       getAtomProjectRelativePath(filePath) || filePath;
     const checkbox =
-      isChecked != null
-        ? <Checkbox
-            className="nuclide-changed-file-checkbox"
-            checked={isChecked}
-            onChange={this._onCheckboxChange}
-          />
-        : null;
+      isChecked != null ? (
+        <Checkbox
+          className="nuclide-changed-file-checkbox"
+          checked={isChecked}
+          onChange={this._onCheckboxChange}
+        />
+      ) : null;
     return (
       <li
         data-name={baseName}

@@ -198,7 +198,7 @@ export class DebuggerInstance extends DebuggerInstanceBase {
 
   _handleServerMessage(message_: string): void {
     let message = message_;
-    this.getLogger().debug('Recieved server message: ' + message);
+    this.getLogger().debug('Received server message: ' + message);
     const processedMessage = this.preProcessServerMessage(message);
     const webSocket = this._chromeWebSocket;
     message = this._translateMessageIfNeeded(processedMessage);
@@ -224,7 +224,7 @@ export class DebuggerInstance extends DebuggerInstanceBase {
   }
 
   async _handleChromeSocketMessage(message: string): Promise<void> {
-    this.getLogger().debug('Recieved Chrome message: ' + message);
+    this.getLogger().debug('Received Chrome message: ' + message);
     const processedMessage = await this.preProcessClientMessage(message);
     this._rpcService.sendCommand(translateMessageToServer(processedMessage));
   }
@@ -247,7 +247,7 @@ export class DebuggerInstance extends DebuggerInstanceBase {
     this._emitter.emit(RECEIVED_MESSAGE_EVENT, message);
   }
 
-  // Preprocessing hook for client messsages before sending to server.
+  // Preprocessing hook for client messages before sending to server.
   preProcessClientMessage(message: string): Promise<string> {
     return Promise.resolve(message);
   }

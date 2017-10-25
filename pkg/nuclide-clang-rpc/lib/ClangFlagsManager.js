@@ -334,6 +334,7 @@ export default class ClangFlagsManager {
       return this._getRelatedSrcFileForHeader(
         src,
         dbFlags,
+        // flowlint-next-line sketchy-null-string:off
         projectRoot || dbDir,
       );
     }
@@ -359,6 +360,7 @@ export default class ClangFlagsManager {
       const sourceFile = await this._getRelatedSrcFileForHeader(
         src,
         dbFlags,
+        // flowlint-next-line sketchy-null-string:off
         requestSettings.projectRoot || dbDir,
       );
       if (sourceFile != null) {
@@ -454,6 +456,7 @@ export default class ClangFlagsManager {
                 directory,
                 arguments: entry.arguments,
               },
+              // flowlint-next-line sketchy-null-string:off
               flagsFile: flagsFile || dbFile,
             };
             flags.set(realpath, result);

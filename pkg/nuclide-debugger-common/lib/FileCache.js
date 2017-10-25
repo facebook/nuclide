@@ -14,6 +14,7 @@ import invariant from 'assert';
 
 import {uriToPath, pathToUri} from './helpers';
 import File from './File';
+import {getLogger} from 'log4js';
 
 /**
  * Handles registering files encountered during debugging with the Chrome debugger
@@ -54,7 +55,14 @@ export default class FileCache {
   }
 
   async getFileSource(filepath: string): Promise<string> {
-    const file = await this.registerFile(filepath);
-    return file.getSource();
+    try {
+      const file = await this.registerFile(filepath);
+      return file.getSource();
+    } catch (e) {
+      getLogger('DebuggerFileCache').error(
+        `Failed to get source for path ${filepath}: ${e.toString()}`,
+      );
+      return '';
+    }
   }
 }

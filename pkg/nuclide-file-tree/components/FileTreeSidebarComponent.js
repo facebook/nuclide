@@ -8,17 +8,18 @@
  * @flow
  * @format
  */
+/* global HTMLElement */
 
 import type {FileChangeStatusValue} from '../../nuclide-vcs-base';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {ShowUncommittedChangesKindValue} from '../lib/Constants';
 
 import {Emitter} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
-import {Observable} from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import {ShowUncommittedChangesKind} from '../lib/Constants';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
 
@@ -47,6 +48,7 @@ import FileTreeActions from '../lib/FileTreeActions';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import {MultiRootChangedFilesView} from '../../nuclide-ui/MultiRootChangedFilesView';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
+import {ResizeObservable} from 'nuclide-commons-ui/observable-dom';
 import {
   nextAnimationFrame,
   toggle,
@@ -87,7 +89,10 @@ type State = {
   isFileTreeHovered: boolean,
 };
 
-export default class FileTreeSidebarComponent extends React.Component {
+export default class FileTreeSidebarComponent extends React.Component<
+  mixed,
+  State,
+> {
   _actions: FileTreeActions;
   _store: FileTreeStore;
   _emitter: Emitter;
@@ -95,8 +100,8 @@ export default class FileTreeSidebarComponent extends React.Component {
   _showOpenConfigValues: Observable<boolean>;
   _showUncommittedConfigValue: Observable<boolean>;
   _showUncommittedKindConfigValue: Observable<ShowUncommittedChangesKindValue>;
+  _scrollerElements: Subject<?HTMLElement>;
   _scrollWasTriggeredProgrammatically: boolean;
-  state: State;
 
   constructor() {
     super();
@@ -136,27 +141,21 @@ export default class FileTreeSidebarComponent extends React.Component {
 
     this._disposables = new UniversalDisposable(this._emitter);
     this._scrollWasTriggeredProgrammatically = false;
+    this._scrollerElements = new Subject();
   }
 
   componentDidMount(): void {
-    this._processExternalUpdate();
+    const componentDOMNode = ReactDOM.findDOMNode(this);
+    invariant(componentDOMNode instanceof HTMLElement);
 
-    const remeasureEvents = Observable.merge(
-      Observable.of(null),
-      Observable.fromEvent(window, 'resize'),
-      observableFromSubscribeFunction(
-        atom.commands.onDidDispatch.bind(atom.commands),
-      ).filter(event => event.type === 'nuclide-file-tree:toggle'),
-      Observable.interval(2000), // We poll because lots of things can change the height :(
-    );
+    this._processExternalUpdate();
 
     this._disposables.add(
       this._store.subscribe(this._processExternalUpdate),
       atom.project.onDidChangePaths(this._processExternalUpdate),
-      toggle(
-        observeAllModifiedStatusChanges(),
-        this._showOpenConfigValues,
-      ).subscribe(() => this._setModifiedUris()),
+      observeAllModifiedStatusChanges()
+        .let(toggle(this._showOpenConfigValues))
+        .subscribe(() => this._setModifiedUris()),
       this._monitorActiveUri(),
       Observable.fromPromise(
         FileTreeHelpers.areStackChangesEnabled(),
@@ -173,17 +172,9 @@ export default class FileTreeSidebarComponent extends React.Component {
         showUncommittedChangesKind =>
           this.setState({showUncommittedChangesKind}),
       ),
-      compact(
-        throttle(remeasureEvents, () => nextAnimationFrame).map(() =>
-          this._getScrollerHeight(),
-        ),
-      )
-        .distinctUntilChanged()
-        .subscribe(scrollerHeight => {
-          this.setState({scrollerHeight});
-        }),
+      this._subscribeToResizeEvent(componentDOMNode),
       // Customize the context menu to remove items that match the 'atom-pane' selector.
-      Observable.fromEvent(ReactDOM.findDOMNode(this), 'contextmenu')
+      Observable.fromEvent(componentDOMNode, 'contextmenu')
         .switchMap(event => {
           if (event.button !== 2) {
             return Observable.never();
@@ -214,6 +205,10 @@ export default class FileTreeSidebarComponent extends React.Component {
         this.didChangeVisibility(visible);
       }),
     );
+
+    const node = ReactDOM.findDOMNode(this.refs.scroller);
+    invariant(node == null || node instanceof HTMLElement);
+    this._scrollerElements.next(node);
   }
 
   componentWillUnmount(): void {
@@ -238,13 +233,38 @@ export default class FileTreeSidebarComponent extends React.Component {
     }
 
     const node = ReactDOM.findDOMNode(this.refs.scroller);
+    invariant(node == null || node instanceof HTMLElement);
+    this._scrollerElements.next(node);
     if (node) {
-      // $FlowFixMe
       node.scrollTop = this.state.scrollerScrollTop;
     }
   }
 
-  _handleFocus = (event: SyntheticEvent): void => {
+  _subscribeToResizeEvent = (
+    resizableElement: HTMLElement,
+  ): rxjs$Subscription => {
+    const remeasureEvents = Observable.merge(
+      new ResizeObservable(resizableElement),
+      observableFromSubscribeFunction(
+        atom.commands.onDidDispatch.bind(atom.commands),
+      ).filter(event => event.type === 'nuclide-file-tree:toggle'),
+      this._scrollerElements.distinctUntilChanged().switchMap(scroller => {
+        if (scroller == null) {
+          return Observable.empty();
+        }
+
+        return new ResizeObservable(scroller);
+      }),
+    );
+    return remeasureEvents
+      .let(throttle(() => nextAnimationFrame))
+      .map(() => this._getScrollerHeight())
+      .let(compact)
+      .distinctUntilChanged()
+      .subscribe(scrollerHeight => this.setState({scrollerHeight}));
+  };
+
+  _handleFocus = (event: SyntheticEvent<>): void => {
     if (event.target === ReactDOM.findDOMNode(this)) {
       this.focus();
     }
@@ -261,11 +281,12 @@ export default class FileTreeSidebarComponent extends React.Component {
             filter={this._store.getFilter()}
             found={this._store.getFilterFound()}
           />
-          {this._store.foldersExpanded &&
+          {this._store.foldersExpanded && (
             <FileTreeToolbarComponent
               key="toolbar"
               workingSetsStore={workingSetsStore}
-            />}
+            />
+          )}
         </div>
       );
     }
@@ -300,13 +321,13 @@ export default class FileTreeSidebarComponent extends React.Component {
           return repo != null && repo.getType() === 'hg';
         });
 
-        const dropdownIcon = !showDropdown
-          ? null
-          : <Icon
-              icon="triangle-down"
-              className="nuclide-file-tree-toolbar-fader nuclide-ui-dropdown-icon"
-              onClick={this._handleUncommittedChangesKindDownArrow}
-            />;
+        const dropdownIcon = !showDropdown ? null : (
+          <Icon
+            icon="triangle-down"
+            className="nuclide-file-tree-toolbar-fader nuclide-ui-dropdown-icon"
+            onClick={this._handleUncommittedChangesKindDownArrow}
+          />
+        );
 
         const dropdownTooltip = `<div style="text-align: left;">
 This section shows the file changes you've made:<br />
@@ -321,15 +342,16 @@ Just the changes that you've already amended/committed.<br />
 All the changes across your entire stacked diff.
 </div>`;
 
-        const calculatingChangesSpinner = !this.state.isCalculatingChanges
-          ? null
-          : <span className="nuclide-file-tree-spinner">
-              &nbsp;
-              <LoadingSpinner
-                className="inline-block"
-                size={LoadingSpinnerSizes.EXTRA_SMALL}
-              />
-            </span>;
+        const calculatingChangesSpinner = !this.state
+          .isCalculatingChanges ? null : (
+          <span className="nuclide-file-tree-spinner">
+            &nbsp;
+            <LoadingSpinner
+              className="inline-block"
+              size={LoadingSpinnerSizes.EXTRA_SMALL}
+            />
+          </span>
+        );
 
         uncommittedChangesHeadline = (
           <span ref={addTooltip({title: dropdownTooltip})}>
@@ -371,6 +393,7 @@ All the changes across your entire stacked diff.
       }
       openFilesSection = (
         <LockableHeight isLocked={this.state.isFileTreeHovered}>
+          {/* $FlowFixMe(>=0.53.0) Flow suppress */}
           <Section
             className="nuclide-file-tree-section-caption nuclide-file-tree-open-files-section"
             collapsable={true}
@@ -408,7 +431,7 @@ All the changes across your entire stacked diff.
         {openFilesSection}
         {foldersCaption}
         {toolbar}
-        {this._store.foldersExpanded &&
+        {this._store.foldersExpanded && (
           <PanelComponentScroller ref="scroller" onScroll={this._handleScroll}>
             <FileTree
               ref="fileTree"
@@ -418,7 +441,8 @@ All the changes across your entire stacked diff.
               onMouseEnter={this._handleFileTreeHovered}
               onMouseLeave={this._handleFileTreeUnhovered}
             />
-          </PanelComponentScroller>}
+          </PanelComponentScroller>
+        )}
       </div>
     );
   }
@@ -487,7 +511,7 @@ All the changes across your entire stacked diff.
   };
 
   _handleUncommittedChangesKindDownArrow = (
-    event: SyntheticMouseEvent,
+    event: SyntheticMouseEvent<>,
   ): void => {
     invariant(remote != null);
     const menu = new remote.Menu();
@@ -544,18 +568,20 @@ All the changes across your entire stacked diff.
     );
 
     return new UniversalDisposable(
-      toggle(activeEditors, this._showOpenConfigValues).subscribe(editor => {
-        if (
-          editor == null ||
-          typeof editor.getPath !== 'function' ||
-          editor.getPath() == null
-        ) {
-          this.setState({activeUri: null});
-          return;
-        }
+      activeEditors
+        .let(toggle(this._showOpenConfigValues))
+        .subscribe(editor => {
+          if (
+            editor == null ||
+            typeof editor.getPath !== 'function' ||
+            editor.getPath() == null
+          ) {
+            this.setState({activeUri: null});
+            return;
+          }
 
-        this.setState({activeUri: editor.getPath()});
-      }),
+          this.setState({activeUri: editor.getPath()});
+        }),
     );
   }
 
@@ -568,7 +594,7 @@ All the changes across your entire stacked diff.
     if (el == null) {
       return null;
     }
-    // $FlowFixMe
+    invariant(el instanceof HTMLElement);
     return el.clientHeight;
   };
 
@@ -578,7 +604,11 @@ All the changes across your entire stacked diff.
     }
     this._scrollWasTriggeredProgrammatically = false;
     const node = ReactDOM.findDOMNode(this.refs.scroller);
-    // $FlowFixMe
+    if (node == null) {
+      return;
+    }
+
+    invariant(node instanceof HTMLElement);
     const {scrollTop} = node;
     if (scrollTop !== this.state.scrollerScrollTop) {
       this.setState({scrollerScrollTop: scrollTop});
@@ -594,6 +624,7 @@ All the changes across your entire stacked diff.
     if (node == null) {
       return;
     }
+    invariant(node instanceof HTMLElement);
 
     if (!approximate) {
       this._actions.clearTrackedNodeIfNotLoading();
@@ -616,7 +647,6 @@ All the changes across your entire stacked diff.
       try {
         // For the rather unlikely chance that the node is already gone from the DOM
         this._scrollWasTriggeredProgrammatically = true;
-        // $FlowFixMe
         node.scrollTop = newTop;
         if (this.state.scrollerScrollTop !== newTop) {
           this.setState({scrollerScrollTop: newTop});
@@ -638,7 +668,7 @@ All the changes across your entire stacked diff.
     if (el == null) {
       return;
     }
-    // $FlowFixMe
+    invariant(el instanceof HTMLElement);
     el.focus();
   }
 

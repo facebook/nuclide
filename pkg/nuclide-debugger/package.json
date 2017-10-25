@@ -8,6 +8,12 @@
   "nuclide": {
     "packageType": "Atom",
     "testRunner": "apm",
+    "configMetadata": {
+      "pathComponents": [
+        "Nuclide Debugger",
+        "General Settings"
+      ]
+    },
     "config": {
       "openDevToolsOnDebuggerStart": {
         "title": "Developer Only: Open the Dev Tools on debugger start",
@@ -20,6 +26,12 @@
         "type": "boolean",
         "default": false,
         "description": "Force to use the new debugger protocol channel."
+      },
+      "showDebuggerOnBpSet": {
+        "title": "Show debugger on breakpoint set",
+        "type": "boolean",
+        "default": true,
+        "description": "Shows the debugger, if it is currently hidden, when the user sets a breakpoint in a file via the gutter."
       }
     }
   },
@@ -28,6 +40,11 @@
       "versions": {
         "description": "Remote control for launching debugger.",
         "0.0.0": "provideRemoteControlService"
+      }
+    },
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "createAutocompleteProvider"
       }
     }
   },

@@ -13,9 +13,14 @@ import invariant from 'assert';
 import fs from 'fs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import http from 'http';
-import xfetch from '../../commons-node/xfetch';
+import xfetch from '../xfetch';
 
 describe('xfetch', () => {
+  beforeEach(() => {
+    // Normally we get a stubbed version during tests.
+    spyOn(require('../system-info'), 'isRunningInTest').andReturn(false);
+  });
+
   it('is the correct module', () => {
     if (typeof atom === 'undefined') {
       expect(xfetch).toBe(require('node-fetch'));

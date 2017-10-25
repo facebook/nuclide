@@ -103,6 +103,7 @@ export function convertSearchResults(
       continue;
     }
     result.push({
+      resultType: 'SYMBOL',
       line: entry.line - 1,
       column: entry.char_start - 1,
       name: entry.name,
@@ -131,6 +132,7 @@ const ICONS = {
 };
 
 function bestIconForDesc(desc: ?string): ?string {
+  // flowlint-next-line sketchy-null-string:off
   if (!desc) {
     return ICONS.default;
   }

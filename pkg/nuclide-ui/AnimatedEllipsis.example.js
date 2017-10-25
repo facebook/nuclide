@@ -9,16 +9,17 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import AnimatedEllipsis from './AnimatedEllipsis';
 
-const BasicExample = (): React.Element<any> =>
+const BasicExample = (): React.Element<any> => (
   <div>
     <Block>
       Still waiting<AnimatedEllipsis />
     </Block>
-  </div>;
+  </div>
+);
 
 export const AnimatedEllipsisExamples = {
   sectionName: 'AnimatedEllipsis',

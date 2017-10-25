@@ -10,31 +10,28 @@
  */
 
 import invariant from 'assert';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 
+import {Observable} from 'rxjs';
+import {generateHgRepo1Fixture} from '../../nuclide-test-helpers';
 import {WatchmanSubscription} from '../../nuclide-watchman-helpers';
 
 import {PathSet} from '../lib/process/PathSet';
 import PathSetUpdater from '../lib/process/PathSetUpdater';
+import * as hgUtils from '../../nuclide-hg-rpc/lib/hg-utils';
 
 describe('PathSetUpdater', () => {
-  const MOCK_WATCHMAN_PROJECT_ROOT = '/Mock/Root';
   const INITIAL_PATHS = ['a', 'b'];
-  const TEST_DIRECTORY = '/Mock/Root/To/Test/Dir';
-  const RELATIVE_PATH = nuclideUri.relative(
-    MOCK_WATCHMAN_PROJECT_ROOT,
-    TEST_DIRECTORY,
-  );
   let pathSet;
   let pathSetUpdater;
+  let mockRepoPath;
 
   const createMockWatchmanSubscription = (directoryPath: string) => {
     return Promise.resolve(
       new WatchmanSubscription(
-        /* subscriptionRoot */ MOCK_WATCHMAN_PROJECT_ROOT,
-        /* pathFromSubscriptionRootToSubscriptionPath */ RELATIVE_PATH,
-        /* subscriptionPath */ TEST_DIRECTORY,
-        /* subscriptionName */ TEST_DIRECTORY,
+        /* subscriptionRoot */ mockRepoPath,
+        /* pathFromSubscriptionRootToSubscriptionPath */ '.',
+        /* subscriptionPath */ mockRepoPath,
+        /* subscriptionName */ mockRepoPath,
         /* subscriptionCount */ 1,
         /* subscriptionOptions */ {fields: [], since: ''}, // Not used in this test.
       ),
@@ -59,6 +56,11 @@ describe('PathSetUpdater', () => {
   beforeEach(() => {
     pathSet = new PathSet(INITIAL_PATHS, [], '');
     pathSetUpdater = new PathSetUpdater();
+    jasmine.Clock.useMock();
+
+    waitsForPromise(async () => {
+      mockRepoPath = await generateHgRepo1Fixture();
+    });
   });
 
   describe('startUpdatingPathSet', () => {
@@ -72,16 +74,20 @@ describe('PathSetUpdater', () => {
         spyOn(mockWatchmanClient, 'unwatch');
       });
 
+      spyOn(hgUtils, 'hgRunCommand').andCallFake(() =>
+        Observable.of('[{ "path": "e", "status": "I"}]'),
+      );
+
       waitsForPromise(async () => {
         // Attach the pathSetUpdater to the pathSet.
         invariant(pathSetUpdater);
         invariant(pathSet);
         const disposable = await pathSetUpdater.startUpdatingPathSet(
           pathSet,
-          TEST_DIRECTORY,
+          mockRepoPath,
         );
         expect(mockWatchmanClient.watchDirectoryRecursive).toHaveBeenCalledWith(
-          TEST_DIRECTORY,
+          mockRepoPath,
         );
 
         // Trigger mock 'file add' and 'file remove' events, and check that they
@@ -106,8 +112,16 @@ describe('PathSetUpdater', () => {
             // This is a directory, and should be ignored.
             mode: 16384,
           },
+          {
+            name: 'e',
+            // This is in .hgignore and should be ignored.
+            new: true,
+            exists: true,
+            mode: 1234,
+          },
         ];
         emitMockWatchmanUpdate(mockChanges);
+        jasmine.Clock.tick(5000);
         let newValues = pathSet.query('').map(x => x.path);
         expect(newValues.sort()).toEqual(['/b', '/c']);
 
@@ -119,13 +133,20 @@ describe('PathSetUpdater', () => {
             exists: false,
             mode: 1234,
           },
+          {
+            name: 'e',
+            // This is in .hgignore and should be ignored.
+            new: false,
+            exists: false,
+            mode: 1234,
+          },
         ]);
         newValues = pathSet.query('').map(x => x.path);
         expect(newValues.sort()).toEqual(['/b', '/c']);
 
         // Verify that disposing the Disposable stops updates to the pathSet.
         disposable.dispose();
-        expect(mockWatchmanClient.unwatch).toHaveBeenCalledWith(TEST_DIRECTORY);
+        expect(mockWatchmanClient.unwatch).toHaveBeenCalledWith(mockRepoPath);
         const unnoticedChanges = [
           {
             name: 'd',

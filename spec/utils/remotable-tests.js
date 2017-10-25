@@ -76,11 +76,12 @@ class RemoteTestContext {
 
   constructor() {
     this._remoteProjectPath = null;
+    const defaultTimeout = jasmine.getEnv().defaultTimeoutInterval;
 
     beforeEach(() => {
       // Proxy parsing, generation, and loading is slow. This timeout covers
       // the average case. Blocks that need more time can specify it themselves.
-      jasmine.getEnv().defaultTimeoutInterval = 10000;
+      jasmine.getEnv().defaultTimeoutInterval = defaultTimeout + 10000;
       waitsForPromise({label: 'remote test setup'}, async () => {
         jasmineIntegrationTestSetup();
         await activateAllPackages();
@@ -96,6 +97,8 @@ class RemoteTestContext {
         }
         deactivateAllPackages();
       });
+      // Restore the original timeout.
+      jasmine.getEnv().defaultTimeoutInterval = defaultTimeout;
     });
   }
 

@@ -54,6 +54,14 @@ export class BigDigClient {
     });
   }
 
+  isClosed(): boolean {
+    return this._webSocketTransport.isClosed();
+  }
+
+  onClose(callback: () => mixed): IDisposable {
+    return this._webSocketTransport.onClose(callback);
+  }
+
   sendMessage(tag: string, body: string) {
     this._webSocketTransport.send(`${tag}\0${body}`);
   }

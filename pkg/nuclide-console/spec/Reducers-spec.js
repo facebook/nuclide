@@ -124,6 +124,7 @@ describe('createStateStream', () => {
           scopeName: null,
           timestamp: new Date('2017-01-01T12:34:56.789Z'),
           data: null,
+          repeatCount: 1,
         },
       ];
       const initialState = {

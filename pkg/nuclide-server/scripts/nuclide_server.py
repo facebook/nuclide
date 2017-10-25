@@ -83,7 +83,8 @@ class NuclideServer(object):
         if self.is_https():
             server_cert, server_key, ca = self.get_server_certificate_files()
             client_cert, client_key = self.get_client_certificate_files(ca)
-            self._version = utils.http_get('localhost', self.port, method='POST', url='/heartbeat',
+            common_name = NuclideCertificatesGenerator.get_common_name(server_cert)
+            self._version = utils.http_get(common_name, self.port, method='POST', url='/heartbeat',
                                            key_file=client_key, cert_file=client_cert, ca_cert=ca)
         else:
             self._version = utils.http_get('localhost', self.port, method='POST', url='/heartbeat')
@@ -211,6 +212,8 @@ class NuclideServer(object):
         # Increase stack trace limit for better debug logs.
         # For reference, Atom/Electron does not have a stack trace limit.
         js_cmd += ' --stack-trace-limit=50'
+        # Increase the default memory limit from ~1.76GB to 4GB.
+        js_cmd += ' --max-old-space-size=4096'
         if cert and key and ca:
             js_cmd += ' --cert %s --key %s --ca %s' % (cert, key, ca)
         if abort_on_uncaught_exception:

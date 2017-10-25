@@ -175,7 +175,7 @@ export class ConnectionMultiplexer {
       'warning',
     );
 
-    const {launchScriptPath} = getConfig();
+    const {launchScriptPath, deferLaunch} = getConfig();
     if (launchScriptPath != null) {
       this._launchModeListen();
     } else {
@@ -185,7 +185,7 @@ export class ConnectionMultiplexer {
     this._status = ConnectionMultiplexerStatus.Running;
     this._dummyRequestProcess = sendDummyRequest();
 
-    if (launchScriptPath != null) {
+    if (launchScriptPath != null && !deferLaunch) {
       const expandedScript = nuclideUri.expandHomeDir(launchScriptPath);
       this._launchedScriptProcessPromise = new Promise(resolve => {
         this._launchedScriptProcess = launchPhpScriptWithXDebugEnabled(
@@ -279,6 +279,7 @@ export class ConnectionMultiplexer {
       socket,
       this._connectionOnStatus.bind(this),
       this._handleNotification.bind(this),
+      this._sendOutputMessage.bind(this),
       isDummyConnection(message),
     );
     this._connections.set(connection.getId(), connection);
@@ -371,7 +372,7 @@ export class ConnectionMultiplexer {
       case ConnectionStatus.Break:
         // Send the preloading complete message after the dummy connection hits its first
         // breakpoint. This means all of the preloading done by the 'require' commands
-        // preceeding the first xdebug_break() call has completed.
+        // preceding the first xdebug_break() call has completed.
         if (
           connection.isDummyConnection() &&
           connection.getBreakCount() === 1
@@ -458,6 +459,7 @@ export class ConnectionMultiplexer {
           this._status === ConnectionMultiplexerStatus.UserAsyncBreakSent) &&
         // Don't switch threads unnecessarily in single thread stepping mode.
         (!getSettings().singleThreadStepping ||
+          // eslint-disable-next-line eqeqeq
           this._lastEnabledConnection === null ||
           connection === this._lastEnabledConnection) &&
         // Respect the visibility of the dummy connection.
@@ -474,22 +476,22 @@ export class ConnectionMultiplexer {
     );
   }
 
-  _enableConnection(connection: Connection): void {
+  _enableConnection(connection: Connection): Promise<void> {
     logger.debug('Mux enabling connection');
     this._enabledConnection = connection;
     this._handlePotentialRequestSwitch(connection);
     this._lastEnabledConnection = connection;
     this._setBreakStatus();
     this._sendRequestInfo(connection);
-    this._pauseConnectionsIfNeeded();
+    return this._pauseConnectionsIfNeeded();
   }
 
-  _pauseConnectionsIfNeeded(): void {
+  async _pauseConnectionsIfNeeded(): Promise<void> {
     if (
       getConfig().stopOneStopAll &&
       this._status !== ConnectionMultiplexerStatus.UserAsyncBreakSent
     ) {
-      this._asyncBreak();
+      return this._asyncBreak();
     }
   }
 
@@ -652,7 +654,7 @@ export class ConnectionMultiplexer {
     if (this._enabledConnection) {
       return this._enabledConnection.getScopesForFrame(frameIndex);
     } else {
-      throw this._noConnectionError();
+      return Promise.reject(this._noConnectionError());
     }
   }
 
@@ -660,10 +662,10 @@ export class ConnectionMultiplexer {
     return this._status;
   }
 
-  sendContinuationCommand(command: string): void {
-    this._resumeBackgroundConnections();
+  async sendContinuationCommand(command: string): Promise<void> {
+    await this._resumeBackgroundConnections();
     if (this._enabledConnection) {
-      this._enabledConnection.sendContinuationCommand(command);
+      await this._enabledConnection.sendContinuationCommand(command);
     } else {
       throw this._noConnectionError();
     }
@@ -694,36 +696,42 @@ export class ConnectionMultiplexer {
     return exists;
   }
 
-  _resumeBackgroundConnections(): void {
-    for (const connection of this._connections.values()) {
-      if (
-        connection !== this._enabledConnection &&
-        (connection.getStopReason() === ASYNC_BREAK ||
-          (connection.getStopReason() === BREAKPOINT &&
-            connection.getStatus() === ConnectionStatus.Break &&
-            !this._connectionBreakpointExits(connection)) ||
-          (connection.getStopReason() === EXCEPTION &&
-            !this._breakpointStore.getPauseOnExceptions()) ||
-          connection.getStatus() === ConnectionStatus.Starting)
-      ) {
-        try {
-          connection.sendContinuationCommand(COMMAND_RUN);
-        } catch (e) {
-          // Connection could have been closed (or resumed by the frontend) before we resumed it.
+  async _resumeBackgroundConnections(): Promise<void> {
+    await Promise.all(
+      Array.from(this._connections.values()).map(connection => {
+        if (
+          connection !== this._enabledConnection &&
+          (connection.getStopReason() === ASYNC_BREAK ||
+            (connection.getStopReason() === BREAKPOINT &&
+              connection.getStatus() === ConnectionStatus.Break &&
+              !this._connectionBreakpointExits(connection)) ||
+            (connection.getStopReason() === EXCEPTION &&
+              !this._breakpointStore.getPauseOnExceptions()) ||
+            connection.getStatus() === ConnectionStatus.Starting)
+        ) {
+          try {
+            connection.sendContinuationCommand(COMMAND_RUN);
+          } catch (e) {
+            // Connection could have been closed (or resumed by the frontend) before we resumed it.
+          }
         }
-      }
-    }
+      }),
+    );
   }
 
-  _asyncBreak(): void {
-    for (const connection of this._connections.values()) {
-      if (connection.getStatus() === ConnectionStatus.Running) {
-        connection.sendBreakCommand();
-      }
-    }
+  async _asyncBreak(): Promise<void> {
+    await Promise.all(
+      Array.from(this._connections.values()).map(connection => {
+        if (connection.getStatus() === ConnectionStatus.Running) {
+          return connection.sendBreakCommand();
+        } else {
+          return Promise.resolve();
+        }
+      }),
+    );
   }
 
-  pause(): void {
+  async pause(): Promise<void> {
     if (
       this._onlyDummyRemains() &&
       (this._dummyConnection != null && !this._dummyConnection.isViewable())
@@ -748,14 +756,14 @@ export class ConnectionMultiplexer {
       this._pausePending = false;
       this._status = ConnectionMultiplexerStatus.UserAsyncBreakSent;
       // allow a connection that hasn't hit a breakpoint to be enabled, then break all connections.
-      this._asyncBreak();
+      await this._asyncBreak();
     }
   }
 
-  resume(): void {
+  resume(): Promise<void> {
     // For now we will have only single thread stepping, not single thread running.
     this._lastEnabledConnection = null;
-    this.sendContinuationCommand(COMMAND_RUN);
+    return this.sendContinuationCommand(COMMAND_RUN);
   }
 
   getProperties(remoteId: RemoteObjectId): Promise<Array<PropertyDescriptor>> {
@@ -764,7 +772,7 @@ export class ConnectionMultiplexer {
     } else if (this._dummyConnection) {
       return this._dummyConnection.getProperties(remoteId);
     } else {
-      throw this._noConnectionError();
+      return Promise.reject(this._noConnectionError());
     }
   }
 

@@ -26,7 +26,12 @@ const SEARCH_RESULTS_FIXTURE: GroupedResults = {
         error: null,
       },
       folderB: {
-        results: [{path: 'foo'}],
+        results: [
+          {
+            resultType: 'FILE',
+            path: 'foo',
+          },
+        ],
         loading: false,
         error: null,
       },
@@ -38,7 +43,12 @@ const SEARCH_RESULTS_FIXTURE: GroupedResults = {
   symbolService: {
     results: {
       folderA: {
-        results: [{path: 'bar'}],
+        results: [
+          {
+            resultType: 'FILE',
+            path: 'bar',
+          },
+        ],
         loading: false,
         error: null,
       },
@@ -81,7 +91,12 @@ describe('searchResultHelper', () => {
         searchService: {
           results: {
             folderB: {
-              results: [{path: 'foo'}],
+              results: [
+                {
+                  resultType: 'FILE',
+                  path: 'foo',
+                },
+              ],
               loading: false,
               error: null,
             },
@@ -90,7 +105,12 @@ describe('searchResultHelper', () => {
         symbolService: {
           results: {
             folderA: {
-              results: [{path: 'bar'}],
+              results: [
+                {
+                  resultType: 'FILE',
+                  path: 'bar',
+                },
+              ],
               loading: false,
               error: null,
             },
@@ -103,8 +123,8 @@ describe('searchResultHelper', () => {
   describe('flattenResults', () => {
     it('returns an array of flattened results', () => {
       expect(flattenResults(SEARCH_RESULTS_FIXTURE)).toEqual([
-        {path: 'foo'},
-        {path: 'bar'},
+        {resultType: 'FILE', path: 'foo'},
+        {resultType: 'FILE', path: 'bar'},
       ]);
     });
   });
@@ -115,7 +135,12 @@ describe('searchResultHelper', () => {
       expect(topOuterResults).toEqual({
         serviceName: 'searchService',
         directoryName: 'folderB',
-        results: [{path: 'foo'}],
+        results: [
+          {
+            resultType: 'FILE',
+            path: 'foo',
+          },
+        ],
       });
     });
 
@@ -124,7 +149,12 @@ describe('searchResultHelper', () => {
       expect(topOuterResults).toEqual({
         serviceName: 'symbolService',
         directoryName: 'folderA',
-        results: [{path: 'bar'}],
+        results: [
+          {
+            resultType: 'FILE',
+            path: 'bar',
+          },
+        ],
       });
     });
   });

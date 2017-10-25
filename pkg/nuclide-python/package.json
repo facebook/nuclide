@@ -69,11 +69,6 @@
     "testRunner": "apm"
   },
   "consumedServices": {
-    "atom-ide-busy-signal": {
-      "versions": {
-        "0.1.0": "consumeBusySignal"
-      }
-    },
     "nuclide.buck-platforms": {
       "versions": {
         "0.0.0": "consumePlatformService"

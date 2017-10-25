@@ -30,7 +30,9 @@ export async function generateCertificatesAndStartServer(
   const logger = getLogger();
   logger.info('in generateCertificatesAndStartServer()');
 
+  // flowlint-next-line sketchy-null-string:off
   const homeDir = process.env.HOME || process.env.USERPROFILE;
+  // flowlint-next-line sketchy-null-string:off
   invariant(homeDir);
 
   const sharedCertsDir = nuclideUri.join(homeDir, '.certs');

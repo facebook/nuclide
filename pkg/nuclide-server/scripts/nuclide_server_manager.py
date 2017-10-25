@@ -63,8 +63,8 @@ class NuclideServerManager(object):
         self.options = options
         self.logger.info('NuclideServerManager was created with these options: {0}'.format(options))
 
-    def _is_port_open(self, port):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def _check_port_family(self, port, family):
+        s = socket.socket(family, socket.SOCK_STREAM)
         try:
             # If you can connect socket, that means the somebody is listening to the port.
             # Therefore, the port is not available for Nuclide server.
@@ -75,6 +75,10 @@ class NuclideServerManager(object):
             return False
         except socket.error:
             return True
+
+    def _is_port_open(self, port):
+        return self._check_port_family(port, socket.AF_INET) and\
+            self._check_port_family(port, socket.AF_INET6)
 
     def _find_open_port(self):
         for port in OPEN_PORTS:

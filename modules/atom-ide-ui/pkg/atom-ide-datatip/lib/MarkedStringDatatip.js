@@ -13,7 +13,7 @@
 import type {MarkedString} from './types';
 
 import marked from 'marked';
-import React from 'react';
+import * as React from 'react';
 
 import MarkedStringSnippet from './MarkedStringSnippet';
 
@@ -21,15 +21,13 @@ type Props = {
   markedStrings: Array<MarkedString>,
 };
 
-export default class MarkedStringDatatip extends React.PureComponent {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class MarkedStringDatatip extends React.PureComponent<Props> {
+  render(): React.Node {
     const elements = this.props.markedStrings.map((chunk, i) => {
       if (chunk.type === 'markdown') {
         return (
           <div
-            className="nuclide-datatip-marked-container"
+            className="datatip-marked-container"
             dangerouslySetInnerHTML={{
               __html: marked(chunk.value, {sanitize: true}),
             }}
@@ -41,10 +39,6 @@ export default class MarkedStringDatatip extends React.PureComponent {
       }
     });
 
-    return (
-      <div className="nuclide-datatip-marked">
-        {elements}
-      </div>
-    );
+    return <div className="datatip-marked">{elements}</div>;
   }
 }

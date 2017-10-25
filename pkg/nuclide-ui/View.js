@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 type Props = {
@@ -21,8 +21,7 @@ type Props = {
  * Because we're going through Atom's ViewRegistry (which returns DOM nodes), we need to render an
  * empty element and manually attach the view (DOM element) we get from Atom.
  */
-export class View extends React.Component {
-  props: Props;
+export class View extends React.Component<Props> {
   _renderedItem: ?Object;
 
   shouldComponentUpdate(nextProps: Props): boolean {
@@ -59,7 +58,7 @@ export class View extends React.Component {
     container.appendChild(el);
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return <nuclide-react-mount-root />;
   }
 }

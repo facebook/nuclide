@@ -11,7 +11,7 @@
  */
 
 import {AtomInput} from '../AtomInput';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 let reactElement: any;

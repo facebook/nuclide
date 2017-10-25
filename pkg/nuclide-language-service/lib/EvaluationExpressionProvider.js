@@ -15,7 +15,6 @@ import type {LanguageService} from './LanguageService';
 import {trackTiming} from '../../nuclide-analytics';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
-import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {getDefaultEvaluationExpression} from '../../nuclide-debugger-base';
 
 export type MatcherType =
@@ -110,18 +109,4 @@ export class EvaluationExpressionProvider<T: LanguageService> {
       }
     });
   }
-}
-
-export function getEvaluationExpressionFromRegexp(
-  editor: atom$TextEditor,
-  position: atom$Point,
-  regexp: RegExp,
-): ?NuclideEvaluationExpression {
-  const extractedIdentifier = wordAtPosition(editor, position, regexp);
-  if (extractedIdentifier == null) {
-    return null;
-  }
-  const {range, wordMatch} = extractedIdentifier;
-  const [expression] = wordMatch;
-  return expression == null ? null : {expression, range};
 }

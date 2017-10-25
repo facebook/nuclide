@@ -17,10 +17,10 @@ import type {
 } from './connection-types';
 
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ConnectionDetailsForm from './ConnectionDetailsForm';
 import {validateFormInputs} from './form-validation-utils';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
@@ -50,17 +50,16 @@ const emptyFunction = () => {};
  * A form that is used to create a new connection profile.
  */
 export default class CreateConnectionProfileForm extends React.Component<
-  void,
   Props,
   void,
 > {
   props: Props;
 
-  disposables: CompositeDisposable;
+  disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    this.disposables = new CompositeDisposable();
+    this.disposables = new UniversalDisposable();
   }
 
   componentDidMount(): void {
@@ -85,15 +84,13 @@ export default class CreateConnectionProfileForm extends React.Component<
    * remote server command. The remote server command will only be saved if the
    * user changes it from this default.
    */
-  render(): React.Element<any> {
+  render(): React.Node {
     const initialFields = this.props.initialFormFields;
 
     return (
       <div>
         <div className="form-group">
-          <label>
-            {PROFILE_NAME_LABEL}:
-          </label>
+          <label>{PROFILE_NAME_LABEL}:</label>
           <AtomInput initialValue="" ref="profile-name" unstyled={true} />
         </div>
         <ConnectionDetailsForm
@@ -101,6 +98,7 @@ export default class CreateConnectionProfileForm extends React.Component<
           initialServer={initialFields.server}
           initialCwd={initialFields.cwd}
           initialRemoteServerCommand={
+            // flowlint-next-line sketchy-null-string:off
             initialFields.remoteServerCommand ||
             DEFAULT_SERVER_COMMAND_PLACEHOLDER
           }

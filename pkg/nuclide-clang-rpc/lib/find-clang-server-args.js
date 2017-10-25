@@ -55,6 +55,7 @@ export default (async function findClangServerArgs(
     const path = ((atom.config.get(
       'nuclide.nuclide-clang.libclangPath',
     ): any): ?string);
+    // flowlint-next-line sketchy-null-string:off
     if (path) {
       libClangLibraryFile = path.trim();
     }

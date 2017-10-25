@@ -47,6 +47,8 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
       ...super.getDebuggerCapabilities(),
       conditionalBreakpoints: true,
       continueToLocation: true,
+      disassembly: true,
+      registers: true,
       singleThreadStepping: true,
       threads: true,
     };
@@ -64,7 +66,10 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
       rpcService.getOutputWindowObservable().refCount(),
     );
     try {
-      await rpcService.attach(this._targetInfo).refCount().toPromise();
+      await rpcService
+        .attach(this._targetInfo)
+        .refCount()
+        .toPromise();
       // Start websocket server with Chrome after attach completed.
       invariant(outputDisposable);
       debugSession = new DebuggerInstance(

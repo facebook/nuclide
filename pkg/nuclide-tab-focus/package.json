@@ -1,0 +1,12 @@
+{
+  "name": "nuclide-tab-focus",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides tabbing and shift-tabbing commands to cycle through focusing elements",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  }
+}

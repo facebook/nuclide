@@ -12,7 +12,7 @@
 import type {Tunnel} from '../types';
 
 import {Button} from 'nuclide-commons-ui/Button';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   tunnel: Tunnel,

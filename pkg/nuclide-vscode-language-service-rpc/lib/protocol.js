@@ -88,7 +88,13 @@ export type TextEdit = {
 
 export type WorkspaceEdit = {
   // Holds changes to existing resources.
-  changes: {[uri: string]: TextEdit[]},
+  changes?: {[uri: string]: TextEdit[]},
+
+  // An array of `TextDocumentEdit`s to express changes to n different text documents
+  // where each text document edit addresses a specific version of a text document.
+  // Whether a client supports versioned document edits is expressed via
+  // `WorkspaceClientCapabilities.workspaceEdit.documentChanges`.
+  documentChanges?: TextDocumentEdit[],
 };
 
 export type TextDocumentIdentifier = {
@@ -394,6 +400,15 @@ export type ServerCapabilities = {
   renameProvider?: boolean,
   // The server provides type coverage support.
   typeCoverageProvider?: boolean,
+  // The server responds to rage requests
+  rageProvider?: boolean,
+};
+
+export type RageItem = {
+  // Title convention is [host:]/path/file[:meta] - if ommitted, client picks
+  title?: string,
+  // Arbitrary text for the rage report
+  data: string,
 };
 
 // Document
@@ -887,4 +902,11 @@ export type ApplyWorkspaceEditParams = {
 export type ApplyWorkspaceEditResponse = {
   // Indicates whether the edit was applied or not.
   applied: boolean,
+};
+
+export type TextDocumentEdit = {
+  // The text document to change.
+  textDocument: VersionedTextDocumentIdentifier,
+  // The edits to be applied.
+  edits: TextEdit[],
 };

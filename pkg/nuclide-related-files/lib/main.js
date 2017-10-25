@@ -11,11 +11,11 @@
 
 import type {RelatedFilesProvider} from './types';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import JumpToRelatedFile from './JumpToRelatedFile';
 import RelatedFileFinder from './RelatedFileFinder';
 
-let subscriptions: ?CompositeDisposable = null;
+let subscriptions: ?UniversalDisposable = null;
 
 // Only expose a context menu for files in languages that have header files.
 const GRAMMARS_WITH_HEADER_FILES = new Set([
@@ -27,7 +27,7 @@ const GRAMMARS_WITH_HEADER_FILES = new Set([
 ]);
 
 export function activate() {
-  subscriptions = new CompositeDisposable(
+  subscriptions = new UniversalDisposable(
     new JumpToRelatedFile(),
     atom.contextMenu.add({
       'atom-text-editor': [

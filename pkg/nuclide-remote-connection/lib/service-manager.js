@@ -88,6 +88,20 @@ export function getServiceByNuclideUri(
 }
 
 /**
+ * Asynchronously create or get a cached service.
+ * @param uri It could either be either a local path or a remote path in form of
+ *    `nuclide://$host/$path`. The function will use the $host from remote path to
+ *    create a remote service or create a local service if the uri is local path.
+ */
+export function awaitServiceByNuclideUri(
+  serviceName: string,
+  uri: ?NuclideUri = null,
+): Promise<?any> {
+  const hostname = nuclideUri.getHostnameOpt(uri);
+  return awaitService(serviceName, hostname);
+}
+
+/**
  * Create or get cached service.
  * null connection implies get local service.
  */
@@ -107,7 +121,7 @@ export function getServiceByConnection(
  * it returns a local service, otherwise a remote service will be returned.
  */
 export function getService(serviceName: string, hostname: ?string): ?Object {
-  if (hostname) {
+  if (hostname != null && hostname !== '') {
     const serverConnection = ServerConnection.getByHostname(hostname);
     if (serverConnection == null) {
       return null;
@@ -115,5 +129,23 @@ export function getService(serviceName: string, hostname: ?string): ?Object {
     return serverConnection.getService(serviceName);
   } else {
     return getlocalService(serviceName);
+  }
+}
+
+/**
+ * Asynchronously create or get a cached service. If hostname is null or empty
+ * string, it returns a local service, otherwise a remote service will be returned.
+ */
+export function awaitService(
+  serviceName: string,
+  hostname: ?string,
+): Promise<?Object> {
+  if (hostname != null && hostname !== '') {
+    return ServerConnection.connectionAddedToHost(hostname)
+      .first()
+      .toPromise()
+      .then(serverConnection => serverConnection.getService(serviceName));
+  } else {
+    return Promise.resolve(getlocalService(serviceName));
   }
 }

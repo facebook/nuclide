@@ -35,6 +35,9 @@ const getGatekeeper = once(() => {
         });
         return new Disposable();
       }
+      getCacheEntries(): Iterable<[string, boolean]> {
+        return [];
+      }
     };
   }
   return new Gatekeeper();
@@ -71,4 +74,8 @@ export function onceGkInitializedAsync(): Promise<void> {
   return new Promise(resolve => {
     getGatekeeper().onceGkInitialized(() => resolve());
   });
+}
+
+export function getCacheEntries(): Iterable<[string, boolean]> {
+  return getGatekeeper().getCacheEntries();
 }

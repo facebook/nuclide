@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import {ListView, ListViewItem} from './ListView';
 import {Checkbox} from 'nuclide-commons-ui/Checkbox';
@@ -17,19 +17,28 @@ import {MultiSelectList} from './MultiSelectList';
 
 const NOOP = () => {};
 
-const ListviewExample1 = (): React.Element<any> =>
+const ListviewExample1 = (): React.Element<any> => (
   <Block>
+    {/* $FlowFixMe(>=0.53.0) Flow suppress */}
     <ListView alternateBackground={true}>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 1}}>test1</ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 2}}>test2</ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 3}}>test3</ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 4}}>test4</ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem value={{id: 5}}>test5</ListViewItem>
     </ListView>
-  </Block>;
-const ListviewExample2 = (): React.Element<any> =>
+  </Block>
+);
+const ListviewExample2 = (): React.Element<any> => (
   <Block>
+    {/* $FlowFixMe(>=0.53.0) Flow suppress */}
     <ListView alternateBackground={true}>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem>
         <Checkbox
           checked={true}
@@ -38,6 +47,7 @@ const ListviewExample2 = (): React.Element<any> =>
           label="A Checkbox."
         />
       </ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem>
         <Checkbox
           checked={true}
@@ -46,6 +56,7 @@ const ListviewExample2 = (): React.Element<any> =>
           label="A Checkbox."
         />
       </ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem>
         <Checkbox
           checked={true}
@@ -54,6 +65,7 @@ const ListviewExample2 = (): React.Element<any> =>
           label="A Checkbox."
         />
       </ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem>
         <Checkbox
           checked={false}
@@ -62,6 +74,7 @@ const ListviewExample2 = (): React.Element<any> =>
           label="A Checkbox."
         />
       </ListViewItem>
+      {/* $FlowFixMe(>=0.53.0) Flow suppress */}
       <ListViewItem>
         <Checkbox
           checked={false}
@@ -71,15 +84,18 @@ const ListviewExample2 = (): React.Element<any> =>
         />
       </ListViewItem>
     </ListView>
-  </Block>;
+  </Block>
+);
 
-class MultiSelectListExample extends React.Component {
-  state: {value: Array<number>};
+class MultiSelectListExample extends React.Component<
+  void,
+  {value: Array<number>},
+> {
   constructor(props: void) {
     super(props);
     this.state = {value: [2]};
   }
-  render(): React.Element<any> {
+  render(): React.Node {
     const options = [
       {value: 1, label: 'One'},
       {value: 2, label: 'Two'},
@@ -88,6 +104,7 @@ class MultiSelectListExample extends React.Component {
     ];
 
     return (
+      // $FlowFixMe(>=0.53.0) Flow suppress
       <MultiSelectList
         options={options}
         value={this.state.value}

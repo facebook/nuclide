@@ -50,7 +50,6 @@ describe('BuckBuildSystem', () => {
           .updates.subscribe(spy);
 
         const diagnostic = {
-          scope: 'file',
           providerName: 'Buck',
           type: 'Error',
           filePath: 'a',
@@ -86,21 +85,10 @@ describe('BuckBuildSystem', () => {
         expect(msg.message.text).toContain('Diagnostics');
 
         expect(spy.calls.map(call => call.args[0])).toEqual([
-          {
-            filePathToMessages: new Map([['a', [diagnostic]]]),
-          },
-          {
-            // Accumulate diagnostics per file.
-            filePathToMessages: new Map([
-              ['a', [diagnostic, {...diagnostic, type: 'Warning'}]],
-            ]),
-          },
-          {
-            // No need to emit diagnostics for 'a' again.
-            filePathToMessages: new Map([
-              ['b', {...diagnostic, filePath: 'b'}],
-            ]),
-          },
+          new Map([['a', [diagnostic]]]),
+          new Map([['a', [diagnostic, {...diagnostic, type: 'Warning'}]]]),
+          // No need to emit diagnostics for 'a' again.
+          new Map([['b', {...diagnostic, filePath: 'b'}]]),
         ]);
 
         subscription.unsubscribe();

@@ -14,14 +14,14 @@ import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 
 import {PackagerActivation} from './packager/PackagerActivation';
 import {ShellActivation} from './shell/ShellActivation';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class Activation {
   _packagerActivation: PackagerActivation;
   _disposables: IDisposable;
 
   constructor(state: ?Object) {
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       (this._packagerActivation = new PackagerActivation()),
       new ShellActivation(),
     );

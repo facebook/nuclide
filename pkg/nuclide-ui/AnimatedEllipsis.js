@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
@@ -17,9 +17,7 @@ type Props = {};
 type State = {n: number};
 
 const DOT_ANIMATION_INTERVAL = 500; /* ms */
-export default class AnimatedEllipsis extends React.Component {
-  props: Props;
-  state: State;
+export default class AnimatedEllipsis extends React.Component<Props, State> {
   _disposables: UniversalDisposable;
 
   constructor(props: Props) {
@@ -42,12 +40,8 @@ export default class AnimatedEllipsis extends React.Component {
     this._disposables.dispose();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const ellipsis = new Array(this.state.n % 4).fill('.').join('');
-    return (
-      <span className="nuclide-ui-animated-ellipsis">
-        {ellipsis}
-      </span>
-    );
+    return <span className="nuclide-ui-animated-ellipsis">{ellipsis}</span>;
   }
 }

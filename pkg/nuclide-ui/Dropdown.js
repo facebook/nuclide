@@ -16,7 +16,7 @@ import {Icon} from 'nuclide-commons-ui/Icon';
 import classnames from 'classnames';
 import invariant from 'assert';
 import electron from 'electron';
-import React from 'react';
+import * as React from 'react';
 
 const {remote} = electron;
 invariant(remote != null);
@@ -62,8 +62,8 @@ type Props = {
   // If provided, this will be rendered as the label if the value is null.
   // Otherwise, we'll display the first option as selected by default.
   placeholder?: string,
-  buttonComponent?: ReactClass<any>,
-  options: Array<Option>,
+  buttonComponent?: React.ComponentType<any>,
+  options: $ReadOnlyArray<Option>,
   onChange?: (value: any) => mixed,
   size?: ShortButtonSize,
   tooltip?: atom$TooltipsAddOptions,
@@ -73,9 +73,7 @@ type Props = {
   selectionComparator?: (dropdownValue: any, optionValue: any) => boolean,
 };
 
-export class Dropdown extends React.Component {
-  props: Props;
-
+export class Dropdown extends React.Component<Props> {
   static defaultProps = {
     className: '',
     disabled: false,
@@ -85,7 +83,7 @@ export class Dropdown extends React.Component {
     title: '',
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const selectedOption = this._findSelectedOption(this.props.options);
 
     let selectedLabel;
@@ -130,13 +128,13 @@ export class Dropdown extends React.Component {
     return text;
   }
 
-  _handleDropdownClick = (event: SyntheticMouseEvent): void => {
+  _handleDropdownClick = (event: SyntheticMouseEvent<>): void => {
     const currentWindow = remote.getCurrentWindow();
     const menu = this._menuFromOptions(this.props.options);
     menu.popup(currentWindow, event.clientX, event.clientY);
   };
 
-  _menuFromOptions(options: Array<Option>): remote.Menu {
+  _menuFromOptions(options: $ReadOnlyArray<Option>): remote.Menu {
     const menu = new remote.Menu();
     options.forEach(option => {
       if (option.type === 'separator') {
@@ -176,7 +174,7 @@ export class Dropdown extends React.Component {
       : dropdownValue === optionValue;
   }
 
-  _findSelectedOption(options: Array<Option>): ?Option {
+  _findSelectedOption(options: $ReadOnlyArray<Option>): ?Option {
     let result = null;
     for (const option of options) {
       if (option.type === 'separator') {
@@ -197,15 +195,17 @@ export class Dropdown extends React.Component {
 }
 
 type DropdownButtonProps = {
-  buttonComponent?: ReactClass<any>,
+  buttonComponent?: React.ComponentType<any>,
   children?: any,
   className: string,
   disabled?: boolean,
   isFlat?: boolean,
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   title?: string,
   size?: ShortButtonSize,
   tooltip?: atom$TooltipsAddOptions,
-  onExpand?: (event: SyntheticMouseEvent) => void,
+  onExpand?: (event: SyntheticMouseEvent<>) => void,
 };
 
 const noop = () => {};
@@ -221,11 +221,11 @@ export function DropdownButton(props: DropdownButtonProps): React.Element<any> {
   });
 
   const label =
-    props.children == null
-      ? null
-      : <span className="nuclide-dropdown-label-text-wrapper">
-          {props.children}
-        </span>;
+    props.children == null ? null : (
+      <span className="nuclide-dropdown-label-text-wrapper">
+        {props.children}
+      </span>
+    );
 
   return (
     <ButtonComponent

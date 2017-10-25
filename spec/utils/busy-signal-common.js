@@ -12,7 +12,7 @@
 function getElement(): ?HTMLElement {
   const element = atom.views
     .getView(atom.workspace)
-    .querySelector('.atom-ide-busy-signal-status-bar');
+    .querySelector('.busy-signal-status-bar');
   return element;
 }
 

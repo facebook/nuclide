@@ -12,13 +12,18 @@
 import type {ConnectableObservable} from 'rxjs';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
+import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {HgExecOptions} from './hg-exec-types';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {fastDebounce} from 'nuclide-commons/observable';
+import {timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import {WatchmanClient} from '../../nuclide-watchman-helpers';
 import fs from 'fs';
 
-import {AmendMode, MergeConflictStatus} from './hg-constants';
+import {MergeConflictStatus} from './hg-constants';
 import {Subject} from 'rxjs';
 import {parseMultiFileHgDiffUnifiedOutput} from './hg-diff-output-parser';
 import {
@@ -46,7 +51,6 @@ import debounce from 'nuclide-commons/debounce';
 import invariant from 'assert';
 
 import {fetchActiveBookmark} from './hg-bookmark-helpers';
-import {readArcConfig} from '../../nuclide-arcanist-rpc';
 import {getLogger} from 'log4js';
 import {Observable} from 'rxjs';
 
@@ -63,6 +67,8 @@ const WATCHMAN_SUBSCRIPTION_NAME_HGBOOKMARKS =
 const WATCHMAN_HG_DIR_STATE = 'hg-repository-watchman-subscription-dirstate';
 const WATCHMAN_SUBSCRIPTION_NAME_CONFLICTS =
   'hg-repository-watchman-subscription-conflicts';
+const WATCHMAN_SUBSCRIPTION_NAME_PROGRESS =
+  'hg-repository-watchman-subscription-progress';
 
 const CHECK_CONFLICT_DELAY_MS = 2000;
 const COMMIT_CHANGE_DEBOUNCE_MS = 1000;
@@ -228,6 +234,23 @@ export type CheckoutOptions = {
   clean?: true,
 };
 
+export type OperationProgressState = {
+  active: boolean,
+  estimate_sec: ?number,
+  estimate_str: ?string,
+  item: ?string,
+  pos: number,
+  speed_str: ?string,
+  topic: string,
+  total: ?number,
+  unit: ?string,
+  units_per_sec: ?number,
+};
+export type OperationProgress = {
+  topics: Array<string>,
+  state: {[key: string]: OperationProgressState},
+};
+
 async function logWhenSubscriptionEstablished(
   sub: Promise<mixed>,
   subName: string,
@@ -237,14 +260,18 @@ async function logWhenSubscriptionEstablished(
 }
 
 async function getForkBaseName(directoryPath: string): Promise<string> {
-  const arcConfig = await readArcConfig(directoryPath);
-  if (arcConfig != null) {
-    return (
-      arcConfig['arc.feature.start.default'] ||
-      arcConfig['arc.land.onto.default'] ||
-      DEFAULT_ARC_PROJECT_FORK_BASE
-    );
-  }
+  try {
+    // $FlowFB
+    const {readArcConfig} = require('../../fb-arcanist-rpc');
+    const arcConfig = await readArcConfig(directoryPath);
+    if (arcConfig != null) {
+      return (
+        arcConfig['arc.feature.start.default'] ||
+        arcConfig['arc.land.onto.default'] ||
+        DEFAULT_ARC_PROJECT_FORK_BASE
+      );
+    }
+  } catch (err) {}
   return DEFAULT_FORK_BASE_NAME;
 }
 
@@ -263,6 +290,15 @@ function getPrimaryWatchmanSubscriptionRefinements(): Array<mixed> {
   return refinements;
 }
 
+function resolvePathForPlatform(path: string): string {
+  // hg resolve on win has a bug where it returns path with both unix
+  // and win separators (T22157755). We normalize the path here.
+  if (process.platform === 'win32') {
+    return path.replace(/\//g, '\\');
+  }
+  return path;
+}
+
 export class HgService {
   _isInConflict: boolean;
   _watchmanClient: ?WatchmanClient;
@@ -276,6 +312,7 @@ export class HgService {
   _hgRepoCommitsDidChangeObserver: Subject<void>;
   _watchmanSubscriptionPromise: Promise<void>;
   _hgConflictStateDidChangeObserver: Subject<boolean>;
+  _hgOperationProgressDidChangeObserver: Subject<void>;
   _debouncedCheckConflictChange: () => void;
   _hgStoreDirWatcher: ?fs.FSWatcher;
 
@@ -287,6 +324,7 @@ export class HgService {
     this._hgRepoStateDidChangeObserver = new Subject();
     this._hgConflictStateDidChangeObserver = new Subject();
     this._hgRepoCommitsDidChangeObserver = new Subject();
+    this._hgOperationProgressDidChangeObserver = new Subject();
     this._isInConflict = false;
     this._debouncedCheckConflictChange = debounce(() => {
       this._checkConflictChange();
@@ -393,6 +431,82 @@ export class HgService {
     return this.fetchStatuses('ancestor(. or (. and (not public()))^)');
   }
 
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
+    const options = {cwd: this._workingDirectory};
+    const base = await timeoutAfterDeadline(
+      deadline,
+      getForkBaseName(this._workingDirectory),
+    ); // e.g. master
+    const root = expressionForCommonAncestor(base); // ancestor(master, .)
+
+    // The ID of the root
+    const getId = async () => {
+      try {
+        const args = ['id', '--rev', root];
+        const output = await this._hgAsyncExecute(args, options);
+        return output.stdout ? output.stdout.trim() : '<id unknown>';
+      } catch (e) {
+        return `<id error: ${e.stderr}`;
+      }
+    };
+
+    // Diff from base to current working directory
+    const getDiff = async () => {
+      try {
+        const args = ['diff', '--unified', '0', '-r', root];
+        const output = await this._hgAsyncExecute(args, options);
+        return output.stdout ? output.stdout.trim() : '<diff unknown>';
+      } catch (e) {
+        return `<diff error: ${e.stderr}>`;
+      }
+    };
+
+    // Summary of changes from base to current working directory
+    const getStatus = async () => {
+      const statuses = await this.fetchStatuses(root)
+        .refCount()
+        .toPromise();
+      let result = '';
+      for (const [filepath, status] of statuses) {
+        result += `${status} ${filepath}\n`;
+      }
+      return result;
+    };
+
+    const [id, diff, status] = await Promise.all([
+      timeoutAfterDeadline(deadline, getId()).catch(
+        e => `id ${e.message}\n${e.stack}`,
+      ),
+      timeoutAfterDeadline(deadline, getDiff()).catch(
+        e => 'diff ' + stringifyError(e),
+      ),
+      timeoutAfterDeadline(deadline, getStatus()).catch(
+        e => 'status ' + stringifyError(e),
+      ),
+    ]);
+
+    const results: Array<AdditionalLogFile> = [];
+
+    // If the user is on a public revision, there's no need to provide hgdiff.
+    results.push({
+      title: `${this._workingDirectory}:hg`,
+      data:
+        `hg update -r ${id}\n` +
+        (status === '' ? '' : 'hg import --no-commit hgdiff\n') +
+        `\n${status}`,
+    });
+    if (status !== '') {
+      results.push({
+        title: `${this._workingDirectory}:hgdiff`,
+        data: diff,
+      });
+    }
+
+    return results;
+  }
+
   async _subscribeToWatchman(): Promise<void> {
     // Using a local variable here to allow better type refinement.
     const watchmanClient = new WatchmanClient();
@@ -496,6 +610,21 @@ export class HgService {
       WATCHMAN_HG_DIR_STATE,
     );
 
+    const progressSubscriptionPromise = watchmanClient.watchDirectoryRecursive(
+      workingDirectory,
+      WATCHMAN_SUBSCRIPTION_NAME_PROGRESS,
+      {
+        fields: ['name'],
+        expression: ['name', '.hg/progress', 'wholename'],
+        empty_on_fresh_instance: true,
+        defer_vcs: false,
+      },
+    );
+    logWhenSubscriptionEstablished(
+      progressSubscriptionPromise,
+      WATCHMAN_SUBSCRIPTION_NAME_PROGRESS,
+    );
+
     // Those files' changes indicate a commit-changing action has been applied to the repository,
     // Watchman currently (v4.7) ignores `.hg/store` file updates.
     // Hence, we here use node's filesystem watchers instead.
@@ -524,12 +653,14 @@ export class HgService {
       hgBookmarksSubscription,
       dirStateSubscription,
       conflictStateSubscription,
+      progressSubscription,
     ] = await Promise.all([
       primarySubscriptionPromise,
       hgActiveBookmarkSubscriptionPromise,
       hgBookmarksSubscriptionPromise,
       dirStateSubscriptionPromise,
       conflictStateSubscriptionPromise,
+      progressSubscriptionPromise,
     ]);
 
     primarySubscription.on('change', this._filesDidChange.bind(this));
@@ -540,6 +671,10 @@ export class HgService {
     hgBookmarksSubscription.on('change', this._hgBookmarksDidChange.bind(this));
     dirStateSubscription.on('change', this._emitHgRepoStateChanged.bind(this));
     conflictStateSubscription.on('change', this._debouncedCheckConflictChange);
+    progressSubscription.on(
+      'change',
+      this._hgOperationProgressDidChange.bind(this),
+    );
   }
 
   async _cleanUpWatchman(): Promise<void> {
@@ -594,7 +729,9 @@ export class HgService {
   }
 
   async _fetchMergeConflicts(): Promise<?MergeConflicts> {
-    return this.fetchMergeConflicts().refCount().toPromise();
+    return this.fetchMergeConflicts()
+      .refCount()
+      .toPromise();
   }
 
   _emitHgRepoStateChanged(): void {
@@ -607,6 +744,10 @@ export class HgService {
 
   _hgBookmarksDidChange(): void {
     this._hgBookmarksDidChangeObserver.next();
+  }
+
+  _hgOperationProgressDidChange(): void {
+    this._hgOperationProgressDidChangeObserver.next();
   }
 
   /**
@@ -627,7 +768,7 @@ export class HgService {
       this._hgRepoCommitsDidChangeObserver
         // Upon rebase, this can fire once per added commit!
         // Apply a generous debounce to avoid overloading the RPC connection.
-        .debounceTime(COMMIT_CHANGE_DEBOUNCE_MS)
+        .let(fastDebounce(COMMIT_CHANGE_DEBOUNCE_MS))
         .publish()
     );
   }
@@ -646,6 +787,38 @@ export class HgService {
   observeHgConflictStateDidChange(): ConnectableObservable<boolean> {
     this._checkConflictChange();
     return this._hgConflictStateDidChangeObserver.publish();
+  }
+
+  /**
+   * Observes when the Mercurial operation progress has changed
+   */
+  observeHgOperationProgressDidChange(): ConnectableObservable<
+    OperationProgress,
+  > {
+    return this._hgOperationProgressDidChangeObserver
+      .switchMap(() =>
+        Observable.fromPromise(
+          fsPromise.readFile(
+            nuclideUri.join(this._workingDirectory, '.hg', 'progress'),
+            'utf8',
+          ),
+        )
+          .catch(() => {
+            getLogger('nuclide-hg-rpc').error(
+              '.hg/progress changed but could not be read',
+            );
+            return Observable.empty();
+          })
+          .filter(content => content.length > 0)
+          .map(content => JSON.parse(content))
+          .catch(() => {
+            getLogger('nuclide-hg-rpc').error(
+              '.hg/progress changed but its contents could not be parsed as JSON',
+            );
+            return Observable.empty();
+          }),
+      )
+      .publish();
   }
 
   /**
@@ -695,6 +868,7 @@ export class HgService {
 
   createBookmark(name: string, revision: ?string): Promise<void> {
     const args = [];
+    // flowlint-next-line sketchy-null-string:off
     if (revision) {
       args.push('--rev', revision);
     }
@@ -1015,15 +1189,16 @@ export class HgService {
     // TODO(T17463635)
     const args = ['amend', ...filePaths];
     switch (amendMode) {
-      case AmendMode.CLEAN:
+      case 'Clean':
         break;
-      case AmendMode.REBASE:
+      case 'Rebase':
         args.push('--rebase');
         break;
-      case AmendMode.FIXUP:
+      case 'Fixup':
         args.push('--fixup');
         break;
       default:
+        (amendMode: empty);
         throw new Error('Unexpected AmendMode');
     }
     return this._commitCode(message, args).publish();
@@ -1135,7 +1310,7 @@ export class HgService {
    * Undoes the effect of a local commit, specifically the working directory parent.
    */
   uncommit(): Promise<void> {
-    return this._runSimpleInWorkingDirectory('reset', ['--rev', '.^']);
+    return this._runSimpleInWorkingDirectory('uncommit', []);
   }
 
   /**
@@ -1314,6 +1489,7 @@ export class HgService {
           const conflicts = parsedData.conflicts.map(conflict => {
             const {local, other} = conflict;
             let status;
+            conflict.output.path = resolvePathForPlatform(conflict.output.path);
             if (local.exists && other.exists) {
               status = MergeConflictStatus.BOTH_CHANGED;
             } else if (local.exists) {
@@ -1402,7 +1578,7 @@ export class HgService {
     }
     const execOptions = {
       cwd: this._workingDirectory,
-      // Setting the editor to a non-existant tool to prevent operations that rely
+      // Setting the editor to a non-existent tool to prevent operations that rely
       // on the user's default editor from attempting to open up when needed.
     };
     return this._hgObserveExecution(args, execOptions).publish();

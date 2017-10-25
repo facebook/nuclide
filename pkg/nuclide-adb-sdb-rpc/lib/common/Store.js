@@ -15,6 +15,7 @@ import type {
   DebugBridgeConfig,
 } from '../types';
 
+import {DEFAULT_ADB_PORT} from './DebugBridge';
 import {runCommand} from 'nuclide-commons/process';
 import {asyncFind, lastly} from 'nuclide-commons/promise';
 import {arrayUnique} from 'nuclide-commons/collection';
@@ -27,7 +28,13 @@ class DebugBridgePathStore {
   _sortedPaths: string[] = [];
   _lastWorkingPath: ?string = null;
   _customPath: ?string = null;
-  _port: ?number = null;
+  _ports: Array<number> = [];
+
+  constructor(defaultPort: ?number) {
+    if (defaultPort != null) {
+      this._ports.push(defaultPort);
+    }
+  }
 
   registerPath(id: string, dbPath: DBPath): void {
     this._registeredPaths.set(id, dbPath);
@@ -50,9 +57,10 @@ class DebugBridgePathStore {
 
   getFullConfig(): DebugBridgeFullConfig {
     return {
+      // flowlint-next-line sketchy-null-string:off
       active: this._customPath || this._lastWorkingPath,
       all: this.getPaths(),
-      port: this.getPort(),
+      ports: this.getPorts(),
     };
   }
 
@@ -67,12 +75,22 @@ class DebugBridgePathStore {
     return this._customPath;
   }
 
-  setPort(port: ?number) {
-    this._port = port;
+  addPort(port: number) {
+    // Keep the ports sorted such that the most recently added
+    // is always at the end.
+    this.removePort(port);
+    this._ports.push(port);
   }
 
-  getPort(): ?number {
-    return this._port;
+  removePort(port: number) {
+    const idx = this._ports.indexOf(port);
+    if (idx >= 0) {
+      this._ports.splice(idx, 1);
+    }
+  }
+
+  getPorts(): Array<number> {
+    return Array.from(this._ports);
   }
 }
 
@@ -124,9 +142,12 @@ function pathForDebugBridge(db: DebugBridgeType): Promise<string> {
 export function createConfigObs(
   db: DebugBridgeType,
 ): Observable<DebugBridgeConfig> {
-  return Observable.defer(() => pathForDebugBridge(db)).map(path => ({
-    path,
-    port: portForDebugBridge(db),
+  return Observable.defer(async () => ({
+    path: await pathForDebugBridge(db),
+    ports: portsForDebugBridge(db),
+  })).map(config => ({
+    path: config.path,
+    ports: config.ports,
   }));
 }
 
@@ -135,14 +156,14 @@ const pathStore = new Map();
 export function getStore(db: DebugBridgeType): DebugBridgePathStore {
   let cached = pathStore.get(db);
   if (cached == null) {
-    cached = new DebugBridgePathStore();
+    cached = new DebugBridgePathStore(db === 'adb' ? DEFAULT_ADB_PORT : null);
     cached.registerPath('default', {path: db, priority: -1});
     pathStore.set(db, cached);
   }
   return cached;
 }
 
-export function portForDebugBridge(db: DebugBridgeType): ?number {
+export function portsForDebugBridge(db: DebugBridgeType): Array<number> {
   const store = getStore(db);
-  return store.getPort();
+  return store.getPorts();
 }

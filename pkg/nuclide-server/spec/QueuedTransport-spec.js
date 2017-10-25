@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {UnreliableTransport} from '../lib/QueuedTransport';
+import type {UnreliableTransport} from '../../nuclide-rpc';
 import {QueuedTransport} from '../lib/QueuedTransport';
 import {Emitter} from 'event-kit';
 import {Subject} from 'rxjs';

@@ -61,8 +61,8 @@ declare module 'vscode-debugprotocol' {
     event: 'stopped',
     body: {
       /** The reason for the event (such as: 'step', 'breakpoint', 'exception', 'pause', 'entry').
-				For backward compatibility this string is shown in the UI if the 'description' attribute is missing (but it must not be translated).
-			*/
+        For backward compatibility this string is shown in the UI if the 'description' attribute is missing (but it must not be translated).
+      */
       reason: string,
       /** The full reason for the event, e.g. 'Paused on exception'. This string is shown in the UI as is. */
       description?: string,
@@ -71,9 +71,9 @@ declare module 'vscode-debugprotocol' {
       /** Additional information. E.g. if reason is 'exception', text contains the exception name. This string is shown in the UI. */
       text?: string,
       /** If allThreadsStopped is true, a debug adapter can announce that all threads have stopped.
-				*  The client should use this information to enable that all threads can be expanded to access their stacktraces.
-				*  If the attribute is missing or false, only the thread with the given threadId can be expanded.
-			*/
+        *  The client should use this information to enable that all threads can be expanded to access their stacktraces.
+        *  If the attribute is missing or false, only the thread with the given threadId can be expanded.
+      */
       allThreadsStopped?: boolean,
     },
   }
@@ -89,8 +89,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'exited' event type.
-		The event indicates that the debuggee has exited.
-	*/
+    The event indicates that the debuggee has exited.
+  */
   declare interface ExitedEvent extends base$Event {
     event: 'exited',
     body: {
@@ -100,8 +100,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'terminated' event types.
-		The event indicates that debugging of the debuggee has terminated.
-	*/
+    The event indicates that debugging of the debuggee has terminated.
+  */
   declare interface TerminatedEvent extends base$Event {
     event: 'terminated',
     body?: {
@@ -111,8 +111,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'thread' event type.
-		The event indicates that a thread has started or exited.
-	*/
+    The event indicates that a thread has started or exited.
+  */
   declare interface ThreadEvent extends base$Event {
     event: 'thread',
     body: {
@@ -124,8 +124,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'output' event type.
-		The event indicates that the target has produced some output.
-	*/
+    The event indicates that the target has produced some output.
+  */
   declare interface OutputEvent extends base$Event {
     event: 'output',
     body: {
@@ -141,8 +141,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'breakpoint' event type.
-		The event indicates that some information about a breakpoint has changed.
-	*/
+    The event indicates that some information about a breakpoint has changed.
+  */
   declare interface BreakpointEvent extends base$Event {
     event: 'breakpoint',
     body: {
@@ -154,8 +154,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Event message for 'module' event type.
-		The event indicates that some information about a module has changed.
-	*/
+    The event indicates that some information about a module has changed.
+  */
   declare interface ModuleEvent extends base$Event {
     event: 'module',
     body: {
@@ -166,9 +166,19 @@ declare module 'vscode-debugprotocol' {
     },
   }
 
+  declare interface LoadedSourceEvent extends base$Event {
+    event: 'loadedSource',
+    body: {
+      /** The reason for the event. */
+      reason: 'new' | 'changed' | 'removed',
+      /** The new, changed, or removed source. */
+      source: Source,
+    },
+  }
+
   /** runInTerminal request; value of command field is 'runInTerminal'.
-		With this request a debug adapter can run a command in a terminal.
-	*/
+    With this request a debug adapter can run a command in a terminal.
+  */
   declare interface RunInTerminalRequest extends base$Request {
     command: 'runInTerminal',
     arguments: RunInTerminalRequestArguments,
@@ -237,16 +247,16 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** ConfigurationDone request; value of command field is 'configurationDone'.
-		The client of the debug protocol must send this request at the end of the sequence of configuration requests (which was started by the InitializedEvent).
-	*/
+    The client of the debug protocol must send this request at the end of the sequence of configuration requests (which was started by the InitializedEvent).
+  */
   declare interface ConfigurationDoneRequest extends base$Request {
     command: 'configurationDone',
     arguments?: ConfigurationDoneArguments,
   }
 
   /** Arguments for 'configurationDone' request.
-		The configurationDone request has no standardized attributes.
-	*/
+    The configurationDone request has no standardized attributes.
+  */
   declare type ConfigurationDoneArguments = {};
 
   /** Response to 'configurationDone' request. This is just an acknowledgement, so no body field is required. */
@@ -274,27 +284,27 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Arguments for 'attach' request.
-		The attach request has no standardized attributes.
-	*/
+    The attach request has no standardized attributes.
+  */
   declare type AttachRequestArguments = {};
 
   /** Response to 'attach' request. This is just an acknowledgement, so no body field is required. */
   declare interface AttachResponse extends base$Response {}
 
   /** Restart request; value of command field is 'restart'.
-		Restarts a debug session. If the capability 'supportsRestartRequest' is missing or has the value false,
-		the client will implement 'restart' by terminating the debug adapter first and then launching it anew.
-		A debug adapter can override this default behaviour by implementing a restart request
-		and setting the capability 'supportsRestartRequest' to true.
-	*/
+    Restarts a debug session. If the capability 'supportsRestartRequest' is missing or has the value false,
+    the client will implement 'restart' by terminating the debug adapter first and then launching it anew.
+    A debug adapter can override this default behaviour by implementing a restart request
+    and setting the capability 'supportsRestartRequest' to true.
+  */
   declare interface RestartRequest extends base$Request {
     command: 'restart',
     arguments?: RestartArguments,
   }
 
   /** Arguments for 'restart' request.
-		The restart request has no standardized attributes.
-	*/
+    The restart request has no standardized attributes.
+  */
   declare type RestartArguments = {};
 
   /** Response to 'restart' request. This is just an acknowledgement, so no body field is required. */
@@ -309,9 +319,9 @@ declare module 'vscode-debugprotocol' {
   /** Arguments for 'disconnect' request. */
   declare type DisconnectArguments = {
     /** Indicates whether the debuggee should be terminated when the debugger is disconnected.
-			If unspecified, the debug adapter is free to do whatever it thinks is best.
-			A client can only rely on this attribute being properly honored if a debug adapter returns true for the 'supportTerminateDebuggee' capability.
-		*/
+      If unspecified, the debug adapter is free to do whatever it thinks is best.
+      A client can only rely on this attribute being properly honored if a debug adapter returns true for the 'supportTerminateDebuggee' capability.
+    */
     terminateDebuggee?: boolean,
   };
 
@@ -319,10 +329,10 @@ declare module 'vscode-debugprotocol' {
   declare interface DisconnectResponse extends base$Response {}
 
   /** SetBreakpoints request; value of command field is 'setBreakpoints'.
-		Sets multiple breakpoints for a single source and clears all previous breakpoints in that source.
-		To clear all breakpoint for a source, specify an empty array.
-		When a breakpoint is hit, a StoppedEvent (event type 'breakpoint') is generated.
-	*/
+    Sets multiple breakpoints for a single source and clears all previous breakpoints in that source.
+    To clear all breakpoint for a source, specify an empty array.
+    When a breakpoint is hit, a StoppedEvent (event type 'breakpoint') is generated.
+  */
   declare interface SetBreakpointsRequest extends base$Request {
     command: 'setBreakpoints',
     arguments: SetBreakpointsArguments,
@@ -341,11 +351,11 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** Response to 'setBreakpoints' request.
-		Returned is information about each breakpoint created by this request.
-		This includes the actual code location and whether the breakpoint could be verified.
-		The breakpoints returned are in the same order as the elements of the 'breakpoints'
-		(or the deprecated 'lines') in the SetBreakpointsArguments.
-	*/
+    Returned is information about each breakpoint created by this request.
+    This includes the actual code location and whether the breakpoint could be verified.
+    The breakpoints returned are in the same order as the elements of the 'breakpoints'
+    (or the deprecated 'lines') in the SetBreakpointsArguments.
+  */
   declare interface SetBreakpointsResponse extends base$Response {
     body: {
       /** Information about the breakpoints. The array elements are in the same order as the elements of the 'breakpoints' (or the deprecated 'lines') in the SetBreakpointsArguments. */
@@ -354,10 +364,10 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** SetFunctionBreakpoints request; value of command field is 'setFunctionBreakpoints'.
-		Sets multiple function breakpoints and clears all previous function breakpoints.
-		To clear all function breakpoint, specify an empty array.
-		When a function breakpoint is hit, a StoppedEvent (event type 'function breakpoint') is generated.
-	*/
+    Sets multiple function breakpoints and clears all previous function breakpoints.
+    To clear all function breakpoint, specify an empty array.
+    When a function breakpoint is hit, a StoppedEvent (event type 'function breakpoint') is generated.
+  */
   declare interface SetFunctionBreakpointsRequest extends base$Request {
     command: 'setFunctionBreakpoints',
     arguments: SetFunctionBreakpointsArguments,
@@ -370,8 +380,8 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** Response to 'setFunctionBreakpoints' request.
-		Returned is information about each breakpoint created by this request.
-	*/
+    Returned is information about each breakpoint created by this request.
+  */
   declare interface SetFunctionBreakpointsResponse extends base$Response {
     body: {
       /** Information about the breakpoints. The array elements correspond to the elements of the 'breakpoints' array. */
@@ -380,8 +390,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** SetExceptionBreakpoints request; value of command field is 'setExceptionBreakpoints'.
-		The request configures the debuggers response to thrown exceptions. If an exception is configured to break, a StoppedEvent is fired (event type 'exception').
-	*/
+    The request configures the debuggers response to thrown exceptions. If an exception is configured to break, a StoppedEvent is fired (event type 'exception').
+  */
   declare interface SetExceptionBreakpointsRequest extends base$Request {
     command: 'setExceptionBreakpoints',
     arguments: SetExceptionBreakpointsArguments,
@@ -399,8 +409,8 @@ declare module 'vscode-debugprotocol' {
   declare interface SetExceptionBreakpointsResponse extends base$Response {}
 
   /** Continue request; value of command field is 'continue'.
-		The request starts the debuggee to run again.
-	*/
+    The request starts the debuggee to run again.
+  */
   declare interface ContinueRequest extends base$Request {
     command: 'continue',
     arguments: ContinueArguments,
@@ -439,9 +449,9 @@ declare module 'vscode-debugprotocol' {
   declare interface nuclide_ContinueToLocationResponse extends base$Response {}
 
   /** Next request; value of command field is 'next'.
-		The request starts the debuggee to run again for one step.
-		The debug adapter first sends the NextResponse and then a StoppedEvent (event type 'step') after the step has completed.
-	*/
+    The request starts the debuggee to run again for one step.
+    The debug adapter first sends the NextResponse and then a StoppedEvent (event type 'step') after the step has completed.
+  */
   declare interface NextRequest extends base$Request {
     command: 'next',
     arguments: NextArguments,
@@ -457,13 +467,13 @@ declare module 'vscode-debugprotocol' {
   declare interface NextResponse extends base$Response {}
 
   /** StepIn request; value of command field is 'stepIn'.
-		The request starts the debuggee to step into a function/method if possible.
-		If it cannot step into a target, 'stepIn' behaves like 'next'.
-		The debug adapter first sends the StepInResponse and then a StoppedEvent (event type 'step') after the step has completed.
-		If there are multiple function/method calls (or other targets) on the source line,
-		the optional argument 'targetId' can be used to control into which target the 'stepIn' should occur.
-		The list of possible targets for a given source line can be retrieved via the 'stepInTargets' request.
-	*/
+    The request starts the debuggee to step into a function/method if possible.
+    If it cannot step into a target, 'stepIn' behaves like 'next'.
+    The debug adapter first sends the StepInResponse and then a StoppedEvent (event type 'step') after the step has completed.
+    If there are multiple function/method calls (or other targets) on the source line,
+    the optional argument 'targetId' can be used to control into which target the 'stepIn' should occur.
+    The list of possible targets for a given source line can be retrieved via the 'stepInTargets' request.
+  */
   declare interface StepInRequest extends base$Request {
     command: 'stepIn',
     arguments: StepInArguments,
@@ -481,9 +491,9 @@ declare module 'vscode-debugprotocol' {
   declare interface StepInResponse extends base$Response {}
 
   /** StepOut request; value of command field is 'stepOut'.
-		The request starts the debuggee to run again for one step.
-		The debug adapter first sends the StepOutResponse and then a StoppedEvent (event type 'step') after the step has completed.
-	*/
+    The request starts the debuggee to run again for one step.
+    The debug adapter first sends the StepOutResponse and then a StoppedEvent (event type 'step') after the step has completed.
+  */
   declare interface StepOutRequest extends base$Request {
     command: 'stepOut',
     arguments: StepOutArguments,
@@ -499,9 +509,9 @@ declare module 'vscode-debugprotocol' {
   declare interface StepOutResponse extends base$Response {}
 
   /** StepBack request; value of command field is 'stepBack'.
-		The request starts the debuggee to run one step backwards.
-		The debug adapter first sends the StepBackResponse and then a StoppedEvent (event type 'step') after the step has completed. Clients should only call this request if the capability supportsStepBack is true.
-	*/
+    The request starts the debuggee to run one step backwards.
+    The debug adapter first sends the StepBackResponse and then a StoppedEvent (event type 'step') after the step has completed. Clients should only call this request if the capability supportsStepBack is true.
+  */
   declare interface StepBackRequest extends base$Request {
     command: 'stepBack',
     arguments: StepBackArguments,
@@ -517,8 +527,8 @@ declare module 'vscode-debugprotocol' {
   declare interface StepBackResponse extends base$Response {}
 
   /** ReverseContinue request; value of command field is 'reverseContinue'.
-		The request starts the debuggee to run backward. Clients should only call this request if the capability supportsStepBack is true.
-	*/
+    The request starts the debuggee to run backward. Clients should only call this request if the capability supportsStepBack is true.
+  */
   declare interface ReverseContinueRequest extends base$Request {
     command: 'reverseContinue',
     arguments: ReverseContinueArguments,
@@ -534,9 +544,9 @@ declare module 'vscode-debugprotocol' {
   declare interface ReverseContinueResponse extends base$Response {}
 
   /** RestartFrame request; value of command field is 'restartFrame'.
-		The request restarts execution of the specified stackframe.
-		The debug adapter first sends the RestartFrameResponse and then a StoppedEvent (event type 'restart') after the restart has completed.
-	*/
+    The request restarts execution of the specified stackframe.
+    The debug adapter first sends the RestartFrameResponse and then a StoppedEvent (event type 'restart') after the restart has completed.
+  */
   declare interface RestartFrameRequest extends base$Request {
     command: 'restartFrame',
     arguments: RestartFrameArguments,
@@ -552,11 +562,11 @@ declare module 'vscode-debugprotocol' {
   declare interface RestartFrameResponse extends base$Response {}
 
   /** Goto request; value of command field is 'goto'.
-		The request sets the location where the debuggee will continue to run.
-		This makes it possible to skip the execution of code or to executed code again.
-		The code between the current location and the goto target is not executed but skipped.
-		The debug adapter first sends the GotoResponse and then a StoppedEvent (event type 'goto').
-	*/
+    The request sets the location where the debuggee will continue to run.
+    This makes it possible to skip the execution of code or to executed code again.
+    The code between the current location and the goto target is not executed but skipped.
+    The debug adapter first sends the GotoResponse and then a StoppedEvent (event type 'goto').
+  */
   declare interface GotoRequest extends base$Request {
     command: 'goto',
     arguments: GotoArguments,
@@ -574,9 +584,9 @@ declare module 'vscode-debugprotocol' {
   declare interface GotoResponse extends base$Response {}
 
   /** Pause request; value of command field is 'pause'.
-		The request suspenses the debuggee.
-		The debug adapter first sends the PauseResponse and then a StoppedEvent (event type 'pause') after the thread has been paused successfully.
-	*/
+    The request suspenses the debuggee.
+    The debug adapter first sends the PauseResponse and then a StoppedEvent (event type 'pause') after the thread has been paused successfully.
+  */
   declare interface PauseRequest extends base$Request {
     command: 'pause',
     arguments: PauseArguments,
@@ -613,8 +623,8 @@ declare module 'vscode-debugprotocol' {
   declare interface StackTraceResponse extends base$Response {
     body: {
       /** The frames of the stackframe. If the array has length zero, there are no stackframes available.
-				This means that there is no location information available.
-			*/
+        This means that there is no location information available.
+      */
       stackFrames: StackFrame[],
       /** The total number of frames available. */
       totalFrames?: number,
@@ -622,8 +632,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Scopes request; value of command field is 'scopes'.
-		The request returns the variable scopes for a given stackframe ID.
-	*/
+    The request returns the variable scopes for a given stackframe ID.
+  */
   declare interface ScopesRequest extends base$Request {
     command: 'scopes',
     arguments: ScopesArguments,
@@ -644,9 +654,9 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Variables request; value of command field is 'variables'.
-		Retrieves all child variables for the given variable reference.
-		An optional filter can be used to limit the fetched children to either named or indexed children.
-	*/
+    Retrieves all child variables for the given variable reference.
+    An optional filter can be used to limit the fetched children to either named or indexed children.
+  */
   declare interface VariablesRequest extends base$Request {
     command: 'variables',
     arguments: VariablesArguments,
@@ -656,7 +666,7 @@ declare module 'vscode-debugprotocol' {
   declare type VariablesArguments = {
     /** The Variable reference. */
     variablesReference: number,
-    /** Optional filter to limit the child variables to either named or indexed. If ommited, both types are fetched. */
+    /** Optional filter to limit the child variables to either named or indexed. If omitted, both types are fetched. */
     filter?: 'indexed' | 'named',
     /** The index of the first variable to return; if omitted children start at 0. */
     start?: number,
@@ -675,8 +685,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** setVariable request; value of command field is 'setVariable'.
-		Set the variable with the given name in the variable container to a new value.
-	*/
+    Set the variable with the given name in the variable container to a new value.
+  */
   declare interface SetVariableRequest extends base$Request {
     command: 'setVariable',
     arguments: SetVariableArguments,
@@ -704,19 +714,19 @@ declare module 'vscode-debugprotocol' {
       /** If variablesReference is > 0, the new value is structured and its children can be retrieved by passing variablesReference to the VariablesRequest. */
       variablesReference?: number,
       /** The number of named child variables.
-				The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-			*/
+        The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+      */
       namedVariables?: number,
       /** The number of indexed child variables.
-				The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-			*/
+        The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+      */
       indexedVariables?: number,
     },
   }
 
   /** Source request; value of command field is 'source'.
-		The request retrieves the source code for a given source reference.
-	*/
+    The request retrieves the source code for a given source reference.
+  */
   declare interface SourceRequest extends base$Request {
     command: 'source',
     arguments: SourceArguments,
@@ -741,8 +751,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Thread request; value of command field is 'threads'.
-		The request retrieves a list of all threads.
-	*/
+    The request retrieves a list of all threads.
+  */
   declare interface ThreadsRequest extends base$Request {
     command: 'threads',
   }
@@ -780,9 +790,9 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** Evaluate request; value of command field is 'evaluate'.
-		Evaluates the given expression in the context of the top most stack frame.
-		The expression has access to any variables and arguments that are in scope.
-	*/
+    Evaluates the given expression in the context of the top most stack frame.
+    The expression has access to any variables and arguments that are in scope.
+  */
   declare interface EvaluateRequest extends base$Request {
     command: 'evaluate',
     arguments: EvaluateArguments,
@@ -810,21 +820,21 @@ declare module 'vscode-debugprotocol' {
       /** If variablesReference is > 0, the evaluate result is structured and its children can be retrieved by passing variablesReference to the VariablesRequest. */
       variablesReference: number,
       /** The number of named child variables.
-				The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-			*/
+        The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+      */
       namedVariables?: number,
       /** The number of indexed child variables.
-				The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-			*/
+        The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+      */
       indexedVariables?: number,
     },
   }
 
   /** StepInTargets request; value of command field is 'stepInTargets'.
-		This request retrieves the possible stepIn targets for the specified stack frame.
-		These targets can be used in the 'stepIn' request.
-		The StepInTargets may only be called if the 'supportsStepInTargetsRequest' capability exists and is true.
-	*/
+    This request retrieves the possible stepIn targets for the specified stack frame.
+    These targets can be used in the 'stepIn' request.
+    The StepInTargets may only be called if the 'supportsStepInTargetsRequest' capability exists and is true.
+  */
   declare interface StepInTargetsRequest extends base$Request {
     command: 'stepInTargets',
     arguments: StepInTargetsArguments,
@@ -845,10 +855,10 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** GotoTargets request; value of command field is 'gotoTargets'.
-		This request retrieves the possible goto targets for the specified source location.
-		These targets can be used in the 'goto' request.
-		The GotoTargets request may only be called if the 'supportsGotoTargetsRequest' capability exists and is true.
-	*/
+    This request retrieves the possible goto targets for the specified source location.
+    These targets can be used in the 'goto' request.
+    The GotoTargets request may only be called if the 'supportsGotoTargetsRequest' capability exists and is true.
+  */
   declare interface GotoTargetsRequest extends base$Request {
     command: 'gotoTargets',
     arguments: GotoTargetsArguments,
@@ -873,9 +883,9 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** CompletionsRequest request; value of command field is 'completions'.
-		Returns a list of possible completions for a given caret position and text.
-		The CompletionsRequest may only be called if the 'supportsCompletionsRequest' capability exists and is true.
-	*/
+    Returns a list of possible completions for a given caret position and text.
+    The CompletionsRequest may only be called if the 'supportsCompletionsRequest' capability exists and is true.
+  */
   declare interface CompletionsRequest extends base$Request {
     command: 'completions',
     arguments: CompletionsArguments,
@@ -902,8 +912,8 @@ declare module 'vscode-debugprotocol' {
   }
 
   /** ExceptionInfoRequest request; value of command field is 'exceptionInfo'.
-		Retrieves the details of the exception that caused the StoppedEvent to be raised.
-	*/
+    Retrieves the details of the exception that caused the StoppedEvent to be raised.
+  */
   declare interface ExceptionInfoRequest extends base$Request {
     command: 'exceptionInfo',
     arguments: ExceptionInfoArguments,
@@ -1009,7 +1019,8 @@ declare module 'vscode-debugprotocol' {
     | ThreadEvent
     | OutputEvent
     | BreakpointEvent
-    | ModuleEvent;
+    | ModuleEvent
+    | LoadedSourceEvent;
 
   declare type Capabilities = {
     /** The debug adapter supports the configurationDoneRequest. */
@@ -1069,8 +1080,8 @@ declare module 'vscode-debugprotocol' {
     /** Unique identifier for the message. */
     id: number,
     /** A format string for the message. Embedded variables have the form '{name}'.
-			If variable name starts with an underscore character, the variable does not contain user data (PII) and can be safely used for telemetry purposes.
-		*/
+      If variable name starts with an underscore character, the variable does not contain user data (PII) and can be safely used for telemetry purposes.
+    */
     format: string,
     /** An object used as a dictionary for looking up the variables in the format string. */
     variables?: {[key: string]: string},
@@ -1085,24 +1096,24 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** A Module object represents a row in the modules view.
-		Two attributes are mandatory: an id identifies a module in the modules view and is used in a ModuleEvent for identifying a module for adding, updating or deleting.
-		The name is used to minimally render the module in the UI.
+    Two attributes are mandatory: an id identifies a module in the modules view and is used in a ModuleEvent for identifying a module for adding, updating or deleting.
+    The name is used to minimally render the module in the UI.
 
-		Additional attributes can be added to the module. They will show up in the module View if they have a corresponding ColumnDescriptor.
+    Additional attributes can be added to the module. They will show up in the module View if they have a corresponding ColumnDescriptor.
 
-		To avoid an unnecessary proliferation of additional attributes with similar semantics but different names
-		we recommend to re-use attributes from the 'recommended' list below first, and only introduce new attributes if nothing appropriate could be found.
-	*/
+    To avoid an unnecessary proliferation of additional attributes with similar semantics but different names
+    we recommend to re-use attributes from the 'recommended' list below first, and only introduce new attributes if nothing appropriate could be found.
+  */
   declare type Module = {
     /** Unique identifier for the module. */
     id: number | string,
     /** A name of the module. */
     name: string,
     /** optional but recommended attributes.
-			always try to use these first before introducing additional attributes.
+      always try to use these first before introducing additional attributes.
 
-			Logical full path to the module. The exact definition is implementation defined, but usually this would be a full path to the on-disk file for the module.
-		*/
+      Logical full path to the module. The exact definition is implementation defined, but usually this would be a full path to the on-disk file for the module.
+    */
     path?: string,
     /** True if the module is optimized. */
     isOptimized?: boolean,
@@ -1121,8 +1132,8 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** A ColumnDescriptor specifies what module attribute to show in a column of the ModulesView, how to format it, and what the column's label should be.
-		It is only used if the underlying UI actually supports this level of customization.
-	*/
+    It is only used if the underlying UI actually supports this level of customization.
+  */
   declare type ColumnDescriptor = {
     /** Name of the attribute rendered in this column. */
     attributeName: string,
@@ -1137,8 +1148,8 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** The ModulesViewDescriptor is the container for all declarative configuration options of a ModuleView.
-		For now it only specifies the columns to be shown in the modules view.
-	*/
+    For now it only specifies the columns to be shown in the modules view.
+  */
   declare type ModulesViewDescriptor = {
     columns: ColumnDescriptor[],
   };
@@ -1198,12 +1209,12 @@ declare module 'vscode-debugprotocol' {
     /** The variables of this scope can be retrieved by passing the value of variablesReference to the VariablesRequest. */
     variablesReference: number,
     /** The number of named variables in this scope.
-			The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-		*/
+      The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+    */
     namedVariables?: number,
     /** The number of indexed variables in this scope.
-			The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
-		*/
+      The client can use this optional information to present the variables in a paged UI and fetch them in chunks.
+    */
     indexedVariables?: number,
     /** If true, the number of variables in this scope is large or expensive to retrieve. */
     expensive: boolean,
@@ -1220,12 +1231,12 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** A Variable is a name/value pair.
-		Optionally a variable can have a 'type' that is shown if space permits or when hovering over the variable's name.
-		An optional 'kind' is used to render additional properties of the variable, e.g. different icons can be used to indicate that a variable is public or private.
-		If the value is structured (has children), a handle is provided to retrieve the children with the VariablesRequest.
-		If the number of named or indexed children is large, the numbers should be returned via the optional 'namedVariables' and 'indexedVariables' attributes.
-		The client can use this optional information to present the children in a paged UI and fetch them in chunks.
-	*/
+    Optionally a variable can have a 'type' that is shown if space permits or when hovering over the variable's name.
+    An optional 'kind' is used to render additional properties of the variable, e.g. different icons can be used to indicate that a variable is public or private.
+    If the value is structured (has children), a handle is provided to retrieve the children with the VariablesRequest.
+    If the number of named or indexed children is large, the numbers should be returned via the optional 'namedVariables' and 'indexedVariables' attributes.
+    The client can use this optional information to present the children in a paged UI and fetch them in chunks.
+  */
   declare type Variable = {
     /** The variable's name. */
     name: string,
@@ -1240,12 +1251,12 @@ declare module 'vscode-debugprotocol' {
     /** If variablesReference is > 0, the variable is structured and its children can be retrieved by passing variablesReference to the VariablesRequest. */
     variablesReference: number,
     /** The number of named child variables.
-			The client can use this optional information to present the children in a paged UI and fetch them in chunks.
-		*/
+      The client can use this optional information to present the children in a paged UI and fetch them in chunks.
+    */
     namedVariables?: number,
     /** The number of indexed child variables.
-			The client can use this optional information to present the children in a paged UI and fetch them in chunks.
-		*/
+      The client can use this optional information to present the children in a paged UI and fetch them in chunks.
+    */
     indexedVariables?: number,
   };
 
@@ -1303,8 +1314,8 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** A GotoTarget describes a code location that can be used as a target in the 'goto' request.
-		The possible goto targets can be determined via the 'gotoTargets' request.
-	*/
+    The possible goto targets can be determined via the 'gotoTargets' request.
+  */
   declare type GotoTarget = {
     /** Unique identifier for a goto target. This is used in the goto request. */
     id: number,
@@ -1329,12 +1340,12 @@ declare module 'vscode-debugprotocol' {
     /** The item's type. Typically the client uses this information to render the item in the UI with an icon. */
     type?: CompletionItemType,
     /** This value determines the location (in the CompletionsRequest's 'text' attribute) where the completion text is added.
-			If missing the text is added at the location specified by the CompletionsRequest's 'column' attribute.
-		*/
+      If missing the text is added at the location specified by the CompletionsRequest's 'column' attribute.
+    */
     start?: number,
     /** This value determines how many characters are overwritten by the completion text.
-			If missing the value 0 is assumed which results in the completion text being inserted.
-		*/
+      If missing the value 0 is assumed which results in the completion text being inserted.
+    */
     length?: number,
   };
 
@@ -1402,11 +1413,11 @@ declare module 'vscode-debugprotocol' {
   };
 
   /** This enumeration defines all possible conditions when a thrown exception should result in a break.
-		never: never breaks,
-		always: always breaks,
-		unhandled: breaks when excpetion unhandled,
-		userUnhandled: breaks if the exception is not handled by user code.
-	*/
+    never: never breaks,
+    always: always breaks,
+    unhandled: breaks when excpetion unhandled,
+    userUnhandled: breaks if the exception is not handled by user code.
+  */
   declare type ExceptionBreakMode =
     | 'never'
     | 'always'

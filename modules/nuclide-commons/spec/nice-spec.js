@@ -10,9 +10,9 @@
  * @format
  */
 
-import typeof {niceSafeSpawn as niceSafeSpawnType} from 'nuclide-commons/nice';
+import typeof {niceSafeSpawn as niceSafeSpawnType} from '../nice';
 
-import {uncachedRequire} from '../../../pkg/nuclide-test-helpers';
+import {uncachedRequire} from '../test-helpers';
 import {Observable} from 'rxjs';
 
 describe('nice', () => {
@@ -29,10 +29,7 @@ describe('nice', () => {
   beforeEach(() => {
     shouldFindNiceCommand = true;
     shouldFindIoniceCommand = true;
-    whichSpy = spyOn(
-      require('nuclide-commons/which'),
-      'default',
-    ).andCallFake(command => {
+    whichSpy = spyOn(require('../which'), 'default').andCallFake(command => {
       if (
         (shouldFindNiceCommand && command === 'nice') ||
         (shouldFindIoniceCommand && command === 'ionice')
@@ -42,7 +39,7 @@ describe('nice', () => {
         return null;
       }
     });
-    spawnSpy = spyOn(require('nuclide-commons/process'), 'spawn').andReturn(
+    spawnSpy = spyOn(require('../process'), 'spawn').andReturn(
       Observable.of(fakeSafeSpawnReturn),
     );
     ({niceSafeSpawn} = (uncachedRequire(require, '../nice'): any));

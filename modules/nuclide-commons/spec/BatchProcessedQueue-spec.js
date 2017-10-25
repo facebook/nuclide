@@ -10,7 +10,7 @@
  * @format
  */
 
-import BatchProcessedQueue from 'nuclide-commons/BatchProcessedQueue';
+import BatchProcessedQueue from '../BatchProcessedQueue';
 
 describe('analytics - BatchProcessedQueue', () => {
   it('regular operation', () => {

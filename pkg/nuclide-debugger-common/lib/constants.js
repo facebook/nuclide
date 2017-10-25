@@ -12,8 +12,9 @@
 import type {VsAdapterType} from './types';
 
 export const VsAdapterTypes = Object.freeze({
-  PYTHON: 'python',
   HHVM: 'hhvm',
+  PYTHON: 'python',
+  NODE: 'node',
 });
 
 // This is to work around flow's missing support of enums.

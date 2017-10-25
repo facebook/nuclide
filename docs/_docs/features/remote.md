@@ -24,7 +24,7 @@ remote projects to which Nuclide will connect.
 The remote machine must meet certain prerequisites before the
 [remote Nuclide server](#nuclide-server__setup) can be installed.
 
-- [Python](https://www.python.org/) 2.6 or later. In many cases, this will already be installed by
+- [Python](https://www.python.org/) 2.7 or later. In many cases, this will already be installed by
 default on your OS distribution.
 <ul><li class="node"></li></ul>
 - `node` and `npm` must be in your `$PATH` environment variable.

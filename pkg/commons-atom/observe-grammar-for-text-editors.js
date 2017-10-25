@@ -9,8 +9,9 @@
  * @format
  */
 
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
 import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const GRAMMAR_CHANGE_EVENT = 'grammar-change';
 
@@ -19,11 +20,11 @@ const GRAMMAR_CHANGE_EVENT = 'grammar-change';
  */
 class GrammarForTextEditorsListener {
   _emitter: Emitter;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor() {
     this._emitter = new Emitter();
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
       this._emitter,
       observeTextEditors(textEditor => {

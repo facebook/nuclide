@@ -56,6 +56,7 @@ export class DebuggerStore {
   _togglePauseOnException: boolean;
   _togglePauseOnCaughtException: boolean;
   _enableSingleThreadStepping: boolean;
+  _enableShowDisassembly: boolean;
   _onLoaderBreakpointResume: () => void;
   _registerExecutor: ?() => IDisposable;
   _consoleDisposable: ?IDisposable;
@@ -81,6 +82,7 @@ export class DebuggerStore {
     this._togglePauseOnException = false;
     this._togglePauseOnCaughtException = false;
     this._enableSingleThreadStepping = false;
+    this._enableShowDisassembly = false;
     this._registerExecutor = null;
     this._consoleDisposable = null;
     this._customControlButtons = [];
@@ -194,6 +196,28 @@ export class DebuggerStore {
 
   onDebuggerModeChange(callback: () => void): IDisposable {
     return this._emitter.on(DEBUGGER_MODE_CHANGE_EVENT, callback);
+  }
+
+  supportsSetVariable(): boolean {
+    const currentDebugInfo = this.getDebugProcessInfo();
+    return currentDebugInfo
+      ? currentDebugInfo.getDebuggerCapabilities().setVariable
+      : false;
+  }
+
+  setShowDisassembly(enable: boolean): void {
+    this._enableShowDisassembly = enable;
+    if (this.isDebugging()) {
+      this.getBridge().setShowDisassembly(enable);
+    }
+  }
+
+  getShowDisassembly(): boolean {
+    return (
+      this._debugProcessInfo != null &&
+      this._debugProcessInfo.getDebuggerCapabilities().disassembly &&
+      this._enableShowDisassembly
+    );
   }
 
   _handlePayload(payload: DebuggerAction) {

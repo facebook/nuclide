@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import invariant from 'assert';
@@ -35,15 +35,13 @@ type State = {
   updatedWorkingSetName: string,
 };
 
-export class FileTreeToolbarComponent extends React.Component {
+export class FileTreeToolbarComponent extends React.Component<Props, State> {
   _store: FileTreeStore;
   _disposables: UniversalDisposable;
   _inProcessOfClosingSelection: boolean;
   _prevName: string;
   _actions: FileTreeActions;
   _closeWorkingSetsSelector: ?() => void;
-  state: State;
-  props: Props;
 
   constructor(props: Object) {
     super(props);
@@ -74,7 +72,7 @@ export class FileTreeToolbarComponent extends React.Component {
       atom.commands.add(
         'atom-workspace',
         // This command is exposed in the nuclide-working-sets menu config.
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'working-sets:select-active',
         this._toggleWorkingSetsSelector,
       ),
@@ -94,7 +92,7 @@ export class FileTreeToolbarComponent extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const workingSetsStore = this._store.getWorkingSetsStore();
     let shouldShowButtonLabel;
     if (workingSetsStore != null) {
@@ -139,6 +137,7 @@ export class FileTreeToolbarComponent extends React.Component {
         })}>
         <ButtonGroup className="pull-right" size={ButtonGroupSizes.SMALL}>
           {selectWorkingSetButton}
+          {/* $FlowFixMe(>=0.53.0) Flow suppress */}
           <DefineWorkingSetButton
             isActive={isEditingWorkingSet}
             isWorkingSetEmpty={workingSet.isEmpty()}
@@ -249,14 +248,12 @@ export class FileTreeToolbarComponent extends React.Component {
   }
 }
 
-class SelectWorkingSetButton extends React.Component {
-  props: {
-    isWorkingSetEmpty: boolean,
-    onClick: () => void,
-    onFocus: () => void,
-  };
-
-  render(): React.Element<any> {
+class SelectWorkingSetButton extends React.Component<{
+  isWorkingSetEmpty: boolean,
+  onClick: () => void,
+  onFocus: () => void,
+}> {
+  render(): React.Node {
     const {isWorkingSetEmpty, onClick, onFocus} = this.props;
     return (
       <Button
@@ -277,15 +274,13 @@ class SelectWorkingSetButton extends React.Component {
   }
 }
 
-class DefineWorkingSetButton extends React.Component {
-  props: {
-    isActive: boolean,
-    isWorkingSetEmpty: boolean,
-    shouldShowLabel: boolean,
-    onClick: () => void,
-  };
-
-  render(): React.Element<any> {
+class DefineWorkingSetButton extends React.Component<{
+  isActive: boolean,
+  isWorkingSetEmpty: boolean,
+  shouldShowLabel: boolean,
+  onClick: () => void,
+}> {
+  render(): React.Node {
     const {isActive, isWorkingSetEmpty, shouldShowLabel, onClick} = this.props;
     return (
       <Button

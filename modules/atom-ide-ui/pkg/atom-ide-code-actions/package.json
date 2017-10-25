@@ -1,10 +1,11 @@
 {
   "name": "atom-ide-code-actions",
+  "displayName": "Code Actions",
   "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "description": "Provides Code Actions for Diagnostics.",
-  "atomTestRunner": "../../../../lib/test-runner-entry.js",
+  "description": "Provides code actions for diagnostics",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
   "consumedServices": {
     "code-actions": {
       "versions": {
@@ -13,9 +14,9 @@
     }
   },
   "providedServices": {
-    "code-actions-updater": {
+    "code-action-fetcher": {
       "versions": {
-        "0.1.0": "provideCodeActionUpdater"
+        "0.1.0": "provideCodeActionFetcher"
       }
     }
   }

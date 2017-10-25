@@ -12,9 +12,10 @@
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
 import type {ExportStoreData} from './FileTreeStore';
+// $FlowFixMe(>=0.53.0) Flow suppress
 import type React from 'react';
 
-import {EVENT_HANDLER_SELECTOR} from './FileTreeConstants';
+import {COMMANDS_SELECTOR} from './FileTreeConstants';
 import FileSystemActions from './FileSystemActions';
 import FileTreeActions from './FileTreeActions';
 import FileTreeContextMenu from './FileTreeContextMenu';
@@ -122,7 +123,7 @@ export default class FileTreeController {
       ] = this._handlePrefixKeypress.bind(this, char);
     }
     this._disposables.add(
-      atom.commands.add(EVENT_HANDLER_SELECTOR, {
+      atom.commands.add(COMMANDS_SELECTOR, {
         'core:move-down': this._moveDown.bind(this),
         'core:move-up': this._moveUp.bind(this),
         'core:move-to-top': this._moveToTop.bind(this),
@@ -179,9 +180,14 @@ export default class FileTreeController {
           FileSystemActions.openRenameDialog(),
         'nuclide-file-tree:duplicate-selection': () => {
           FileSystemActions.openDuplicateDialog(
-            this._openAndRevealFilePath.bind(this),
+            this._openAndRevealFilePaths.bind(this),
           );
         },
+        'nuclide-file-tree:copy-selection': this._copyFilenamesWithDir.bind(
+          this,
+        ),
+        'nuclide-file-tree:paste-selection': () =>
+          FileSystemActions.openPasteDialog(),
         'nuclide-file-tree:search-in-directory': this._searchInDirectory.bind(
           this,
         ),
@@ -191,9 +197,9 @@ export default class FileTreeController {
         ...letterKeyBindings,
       }),
       atom.commands.add('atom-workspace', {
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'file:copy-full-path': this._copyFullPath.bind(this),
-        // eslint-disable-next-line nuclide-internal/atom-apis
+        // eslint-disable-next-line rulesdir/atom-apis
         'file:show-in-file-manager': this._showInFileManager.bind(this),
       }),
     );
@@ -261,6 +267,15 @@ export default class FileTreeController {
     }
   }
 
+  _openAndRevealFilePaths(filePaths: Array<string>): void {
+    for (let i = 0; i < filePaths.length; i++) {
+      goToLocation(filePaths[i]);
+    }
+    if (filePaths.length !== 0) {
+      this.revealNodeKey(filePaths[filePaths.length - 1]);
+    }
+  }
+
   _openAndRevealDirectoryPath(path: ?string): void {
     if (path != null) {
       this.revealNodeKey(FileTreeHelpers.dirPathToKey(path));
@@ -298,11 +313,12 @@ export default class FileTreeController {
     if (showIfHidden) {
       // Ensure the file tree is visible before trying to reveal a file in it. Even if the currently
       // active pane is not an ordinary editor, we still at least want to show the tree.
-      // eslint-disable-next-line nuclide-internal/atom-apis
-      atom.workspace.open(WORKSPACE_VIEW_URI);
+      // eslint-disable-next-line rulesdir/atom-apis
+      atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
       this._actions.setFoldersExpanded(true);
     }
 
+    // flowlint-next-line sketchy-null-string:off
     if (!filePath) {
       return;
     }
@@ -337,6 +353,7 @@ export default class FileTreeController {
       invariant(this._cwdApiSubscription == null);
       this._cwdApiSubscription = cwdApi.observeCwd(directory => {
         const path = directory == null ? null : directory.getPath();
+        // flowlint-next-line sketchy-null-string:off
         const rootKey = path && FileTreeHelpers.dirPathToKey(path);
         this._actions.setCwd(rootKey);
       });
@@ -391,6 +408,10 @@ export default class FileTreeController {
     this._store._setAutoExpandSingleChild(autoExpandSingleChild);
   }
 
+  setFocusEditorOnFileSelection(focusEditorOnFileSelection: boolean): void {
+    this._actions.setFocusEditorOnFileSelection(focusEditorOnFileSelection);
+  }
+
   updateWorkingSet(workingSet: WorkingSet): void {
     this._actions.updateWorkingSet(workingSet);
   }
@@ -401,6 +422,10 @@ export default class FileTreeController {
 
   updateOpenFilesWorkingSet(openFilesWorkingSet: WorkingSet): void {
     this._actions.updateOpenFilesWorkingSet(openFilesWorkingSet);
+  }
+
+  collectDebugState(): Object {
+    return this._store.collectDebugState();
   }
 
   /**
@@ -450,7 +475,7 @@ export default class FileTreeController {
   }
 
   _deleteSelection(): void {
-    const nodes = this._store.getSelectedNodes();
+    const nodes = this._store.getTargetNodes();
     if (nodes.size === 0) {
       return;
     }
@@ -547,7 +572,7 @@ export default class FileTreeController {
     orientation: atom$PaneSplitOrientation,
     side: atom$PaneSplitSide,
   ): void {
-    const singleSelectedNode = this._store.getSingleSelectedNode();
+    const singleSelectedNode = this._store.getSingleTargetNode();
     // Only perform the default action if a single node is selected.
     if (singleSelectedNode != null && !singleSelectedNode.isContainer) {
       // for: is this feature used enough to justify uncollapsing?
@@ -670,6 +695,43 @@ export default class FileTreeController {
       return;
     }
     shell.showItemInFolder(path);
+  }
+
+  _copyFilenamesWithDir(event: Event): void {
+    const nodes = this._store.getSelectedNodes();
+    const dirs = [];
+    const files = [];
+    for (const node of nodes) {
+      const file = FileTreeHelpers.getFileByKey(node.uri);
+      if (file != null) {
+        files.push(file);
+      }
+      const dir = FileTreeHelpers.getDirectoryByKey(node.uri);
+      if (dir != null) {
+        dirs.push(dir);
+      }
+    }
+    const entries = dirs.concat(files);
+    if (entries.length === 0) {
+      // no valid files or directories found
+      return;
+    }
+    const dirPath = entries[0].getParent().getPath();
+    if (!entries.every(e => e.getParent().getPath() === dirPath)) {
+      // only copy if all selected files are in the same directory
+      return;
+    }
+
+    // copy this text in case user pastes into a text area
+    const copyNames = entries
+      .map(e => encodeURIComponent(e.getBaseName()))
+      .join();
+
+    atom.clipboard.write(copyNames, {
+      directory: FileTreeHelpers.dirPathToKey(dirPath),
+      filenames: files.map(f => f.getBaseName()),
+      dirnames: dirs.map(f => f.getBaseName()),
+    });
   }
 
   _copyFullPath(event: Event): void {

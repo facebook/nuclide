@@ -117,7 +117,10 @@ xdescribe('pane item change events', () => {
 
     it('should debounce', () => {
       waitsForPromise(async () => {
-        const itemsPromise = activePaneItems.take(2).toArray().toPromise();
+        const itemsPromise = activePaneItems
+          .take(2)
+          .toArray()
+          .toPromise();
 
         await sleep(SLEEP_INTERVAL);
 
@@ -137,7 +140,10 @@ xdescribe('pane item change events', () => {
 
     it('should return null if the item is not an editor', () => {
       waitsForPromise(async () => {
-        const itemsPromise = activeEditors.take(3).toArray().toPromise();
+        const itemsPromise = activeEditors
+          .take(3)
+          .toArray()
+          .toPromise();
 
         await sleep(SLEEP_INTERVAL);
         pane.activateItem(nonEditor);
@@ -161,17 +167,17 @@ xdescribe('pane item change events', () => {
           .toArray()
           .toPromise();
         await sleep(SLEEP_INTERVAL_2);
-        goToLocationInEditor(editor1, 3, 4);
+        goToLocationInEditor(editor1, {line: 3, column: 4});
         await sleep(SLEEP_INTERVAL_2);
         pane.activateItem(nonEditor);
         await sleep(SLEEP_INTERVAL_2);
-        goToLocationInEditor(editor1, 0, 0);
+        goToLocationInEditor(editor1, {line: 0, column: 0});
         await sleep(SLEEP_INTERVAL_2);
         pane.activateItem(editor2);
         await sleep(SLEEP_INTERVAL_2);
-        goToLocationInEditor(editor1, 3, 4);
+        goToLocationInEditor(editor1, {line: 3, column: 4});
         await sleep(SLEEP_INTERVAL_2);
-        goToLocationInEditor(editor2, 1, 1);
+        goToLocationInEditor(editor2, {line: 1, column: 1});
         await sleep(SLEEP_INTERVAL_2);
 
         expect(await itemsPromise).toEqual([

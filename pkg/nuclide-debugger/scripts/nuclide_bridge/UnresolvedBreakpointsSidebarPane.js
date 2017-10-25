@@ -10,7 +10,7 @@
  */
 
 import NuclideBridge from './NuclideBridge';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import url from 'url';
@@ -23,10 +23,7 @@ type State = {
   breakpoints: Array<{url: string, line: number}>,
 };
 
-class UnresolvedBreakpointsComponent extends React.Component {
-  props: Props;
-  state: State;
-
+class UnresolvedBreakpointsComponent extends React.Component<Props, State> {
   _changeHandler: ?IDisposable;
 
   constructor(props: Props) {
@@ -50,6 +47,7 @@ class UnresolvedBreakpointsComponent extends React.Component {
   render() {
     const children = this.state.breakpoints.map(breakpoint => {
       const {pathname} = url.parse(breakpoint.url);
+      // flowlint-next-line sketchy-null-string:off
       invariant(pathname);
       const longRep = `${pathname}:${breakpoint.line + 1}`;
       const shortRep = `${nuclideUri.basename(pathname)}:${breakpoint.line +
@@ -66,9 +64,11 @@ class UnresolvedBreakpointsComponent extends React.Component {
     });
     return (
       <ol className="breakpoint-list">
-        {this.state.breakpoints.length > 0
-          ? children
-          : <div className="info">None</div>}
+        {this.state.breakpoints.length > 0 ? (
+          children
+        ) : (
+          <div className="info">None</div>
+        )}
       </ol>
     );
   }

@@ -11,8 +11,8 @@
 
 import electron from 'electron';
 import fs from 'fs';
-import invariant from 'invariant';
-// eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
+import invariant from 'assert';
+// eslint-disable-next-line rulesdir/prefer-nuclide-uri
 import path from 'path';
 import temp from 'temp';
 import {__test__} from '../lib/url-main';

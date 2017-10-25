@@ -13,6 +13,9 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {AndroidBridge} from './bridges/AndroidBridge';
 import {TizenBridge} from './bridges/TizenBridge';
 
+export type DeviceTypeAndroid = 'Android';
+export type DeviceTypeTizen = 'Tizen';
+
 export type Bridge = AndroidBridge | TizenBridge;
 
 export type AppState = {

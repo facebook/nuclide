@@ -7,7 +7,6 @@
 from find_lldb import get_lldb
 from remote_objects import ValueListRemoteObject
 
-
 CALL_STACK_OBJECT_GROUP = 'thread_stack'
 MAX_STOP_REASON_DESCRIPTION_LENGTH = 1024
 
@@ -60,6 +59,80 @@ class ThreadManager(object):
         }
         self._debugger_store.chrome_channel.send_notification('Debugger.threadsUpdated', params)
 
+    def _get_frame_registers(self, frame):
+        result = []
+        registers = frame.GetRegisters()
+        for group in registers:
+            groupRegisters = []
+            for register in group:
+                groupRegisters.append({
+                    'name': register.GetName(),
+                    'value': register.GetValue(),
+                })
+
+            result.append({
+                'groupName': group.GetName(),
+                'registers': groupRegisters,
+            })
+
+        return result
+
+    def _get_frame_disassembly(self, frame):
+        # frame.GetFunction() returns the correct SBFunction only if debug
+        # symbols are available.
+        func = frame.GetFunction()
+        if not func:
+            # Otherwise, grab it from the symbol table.
+            func = frame.GetSymbol()
+
+        target = frame.GetThread().GetProcess().GetTarget()
+
+        # Determine the current program counter offset within the frame
+        ip = frame.GetPCAddress()
+        file_addr = ip.GetFileAddress()
+        start_addr = frame.GetSymbol().GetStartAddress().GetFileAddress()
+        pcOffset = file_addr - start_addr
+        baseInstructionAddress = -1
+
+        disassembly = []
+        currentInstructionIndex = 0
+
+        if func and target:
+            instructions = func.GetInstructions(target)
+            instructionIdx = 0
+            for instruction in instructions:
+                address = instruction.GetAddress().GetLoadAddress(target)
+                comment = instruction.GetComment(target)
+                data = instruction.GetMnemonic(target) + '\t'
+                data += instruction.GetOperands(target) + '\t'
+
+                # If this is the first instruction, use this as the base address
+                # for the frame (offset 0x0)
+                if instructionIdx == 0:
+                    baseInstructionAddress = address
+
+                # If this instruction + baseInstructionAddress == pcOffset
+                # then we have found the instruction that the current program
+                # counter is pointing to.
+                if address - baseInstructionAddress == pcOffset:
+                    currentInstructionIndex = instructionIdx
+
+                instructionOffset = address - baseInstructionAddress
+                disassembly.append({
+                    'address': '0x{0:02x}'.format(address),
+                    'offset': '<+' + str(instructionOffset) + '>',
+                    'instruction': data,
+                    'comment': comment,
+                })
+                instructionIdx += 1
+
+        return {
+            'frameTitle': str(frame),
+            'currentInstructionIndex': currentInstructionIndex,
+            'instructions': disassembly,
+            'metadata': [],
+        }
+
     def get_thread_stack(self, thread):
         """Fetch serialized callstack for input thread."""
         result = []
@@ -74,7 +147,7 @@ class ThreadManager(object):
                 CALL_STACK_OBJECT_GROUP)
             scopeChainObject = local_variables.serialized_value
             scopeChainObject.update({'description': 'Locals'})
-            result.append({
+            frameInfo = {
                 'callFrameId': "%d.%d" % (frame.thread.idx, frame.idx),
                 'functionName': self._get_frame_name(frame),
                 'location': self._debugger_store.location_serializer.get_frame_location(frame),
@@ -83,7 +156,13 @@ class ThreadManager(object):
                     'object': scopeChainObject,
                     'type': 'local',
                 }],
-            })
+                'registers': self._get_frame_registers(frame),
+            }
+            if self._debugger_store.getDebuggerSettings()['showDisassembly']:
+                frameInfo['disassembly'] = self._get_frame_disassembly(frame)
+
+            result.append(frameInfo)
+
         return result
 
     def get_thread_stop_description(self, thread):

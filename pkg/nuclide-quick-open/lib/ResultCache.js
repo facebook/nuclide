@@ -9,15 +9,15 @@
  * @format
  */
 
-import type {FileResult} from './types';
-import type {ProviderResult} from './searchResultHelpers';
+import type {ProviderResults} from './searchResultHelpers';
+import type {ProviderResult} from './types';
 
 import invariant from 'assert';
 
 import debounce from 'nuclide-commons/debounce';
 
 // TODO use maps
-type CachedDirectoryResults = {[query: string]: ProviderResult};
+type CachedDirectoryResults = {[query: string]: ProviderResults};
 type CachedProviderResults = {[directory: string]: CachedDirectoryResults};
 export type CachedResults = {[providerName: string]: CachedProviderResults};
 
@@ -61,7 +61,7 @@ export default class ResultCache {
     providerName: string,
     directory: string,
     query: string,
-    results: Array<FileResult>,
+    results: Array<ProviderResult>,
     loading: boolean = false,
     error: ?Object = null,
   ): void {
@@ -83,7 +83,7 @@ export default class ResultCache {
     providerName: string,
     directory: string,
     query: string,
-    result: ProviderResult,
+    result: ProviderResults,
   ): void {
     this._ensureCacheEntry(providerName, directory);
     this._cachedResults[providerName][directory][query] = result;
@@ -93,7 +93,7 @@ export default class ResultCache {
     providerName: string,
     directory: string,
     query: string,
-  ): ProviderResult {
+  ): ProviderResults {
     this._ensureCacheEntry(providerName, directory);
     return this._cachedResults[providerName][directory][query];
   }

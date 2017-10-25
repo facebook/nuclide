@@ -9,6 +9,8 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
+
 export type LogLevel =
   | 'ALL'
   | 'TRACE'
@@ -18,3 +20,15 @@ export type LogLevel =
   | 'ERROR'
   | 'FATAL'
   | 'OFF';
+
+export type AdditionalLogFilesProvider = {|
+  id: string,
+  getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>>,
+|};
+
+export type AdditionalLogFile = {
+  title: string, // usually a filepath
+  data: string,
+};

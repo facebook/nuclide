@@ -14,7 +14,7 @@ import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {arrayFlatten} from 'nuclide-commons/collection';
 
-import type {CodeActionProvider, CodeActionUpdater} from './types';
+import type {CodeActionProvider, CodeActionFetcher} from './types';
 
 export class CodeActionManager {
   _providerRegistry: ProviderRegistry<CodeActionProvider>;
@@ -29,11 +29,13 @@ export class CodeActionManager {
     this._disposables.dispose();
   }
 
-  addProvider(provider: CodeActionProvider) {
-    this._disposables.add(this._providerRegistry.addProvider(provider));
+  addProvider(provider: CodeActionProvider): IDisposable {
+    const disposable = this._providerRegistry.addProvider(provider);
+    this._disposables.add(disposable);
+    return disposable;
   }
 
-  createCodeActionUpdater(): CodeActionUpdater {
+  createCodeActionFetcher(): CodeActionFetcher {
     return {
       getCodeActionForDiagnostic: (diagnostic, editor) => {
         if (diagnostic.range) {

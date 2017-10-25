@@ -10,7 +10,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from '../lib/types';
+import type {DiagnosticMessage} from '../lib/types';
 
 import invariant from 'assert';
 import {Range} from 'atom';
@@ -25,8 +25,8 @@ describe('MessageRangeTracker', () => {
   let initiallyOpenFilePath: string = (null: any);
   let initiallyClosedFilePath: string = (null: any);
 
-  let messageForInitiallyOpenFile: FileDiagnosticMessage = (null: any);
-  let messageForInitiallyClosedFile: FileDiagnosticMessage = (null: any);
+  let messageForInitiallyOpenFile: DiagnosticMessage = (null: any);
+  let messageForInitiallyClosedFile: DiagnosticMessage = (null: any);
 
   let initiallyOpenEditor: atom$TextEditor = (null: any);
 
@@ -44,7 +44,6 @@ describe('MessageRangeTracker', () => {
     );
 
     messageForInitiallyOpenFile = {
-      scope: 'file',
       providerName: 'test',
       type: 'Error',
       filePath: initiallyOpenFilePath,
@@ -58,7 +57,6 @@ describe('MessageRangeTracker', () => {
     };
 
     messageForInitiallyClosedFile = {
-      scope: 'file',
       providerName: 'test',
       type: 'Error',
       filePath: initiallyClosedFilePath,

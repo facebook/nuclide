@@ -15,6 +15,7 @@ import type {
   DebuggerCapabilities,
   DebuggerProperties,
 } from '../../nuclide-debugger-base';
+import type {PausedEvent} from '../../nuclide-debugger-base/lib/protocol-types';
 
 export default class DebuggerProcessInfo {
   _serviceName: string;
@@ -38,15 +39,20 @@ export default class DebuggerProcessInfo {
       conditionalBreakpoints: false,
       continueToLocation: false,
       customSourcePaths: false,
+      disassembly: false,
       readOnlyTarget: false,
+      registers: false,
+      setVariable: false,
       singleThreadStepping: false,
       threads: false,
+      completionsRequest: false,
     };
   }
 
   getDebuggerProps(): DebuggerProperties {
     return {
       customControlButtons: [],
+      targetDescription: () => null,
       threadColumns: null,
       threadsComponentTitle: 'Threads',
     };
@@ -59,6 +65,12 @@ export default class DebuggerProcessInfo {
 
   clone(): DebuggerProcessInfo {
     throw new Error('abstract method');
+  }
+
+  shouldFilterBreak(pausedEvent: PausedEvent): boolean {
+    // Gives an individual debugger front-end the option to auto-resume
+    // from a break if it should be filtered so that the user doesn't see it.
+    return false;
   }
 
   async debug(): Promise<DebuggerInstanceBase> {

@@ -12,7 +12,7 @@
 import type {FreeformRefactoringArgument} from '../..';
 import type {Store, FreeformPhase} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
@@ -47,10 +47,7 @@ function getDefault(arg: FreeformRefactoringArgument): string | boolean {
   throw new Error('unreachable');
 }
 
-export class FreeformRefactorComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class FreeformRefactorComponent extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     const defaultArgs = new Map(
@@ -61,7 +58,7 @@ export class FreeformRefactorComponent extends React.Component {
     };
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div>
         {this._getControls()}

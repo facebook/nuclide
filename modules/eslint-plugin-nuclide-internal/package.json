@@ -1,0 +1,21 @@
+{
+  "name": "eslint-plugin-nuclide-internal",
+  "version": "0.4.0",
+  "description": "A custom ESLint plugin for Atom/Nuclide code",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/eslint-plugin-nuclide-internal",
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "dependencies": {
+    "idx": "1.2.0",
+    "resolve-from": "2.0.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "7.2.3",
+    "eslint": "3.15.0",
+    "temp": "0.8.3"
+  },
+  "private": true
+}

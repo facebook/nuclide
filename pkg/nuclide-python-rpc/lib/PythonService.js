@@ -18,14 +18,15 @@ import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
   DiagnosticMessageType,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
-  FileDiagnosticMessage,
   CodeAction,
 } from 'atom-ide-ui';
-import type {AutocompleteResult} from '../../nuclide-language-service/lib/LanguageService';
+import type {
+  AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
+} from '../../nuclide-language-service/lib/LanguageService';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
@@ -34,6 +35,7 @@ import {runCommand, ProcessExitError} from 'nuclide-commons/process';
 import {maybeToString} from 'nuclide-commons/string';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import once from '../../commons-node/once';
 import JediServerManager from './JediServerManager';
 import {parseFlake8Output} from './flake8';
 import {ServerLanguageService} from '../../nuclide-language-service-rpc';
@@ -158,11 +160,11 @@ class PythonSingleFileLanguageService {
   getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
-  ): Promise<?DiagnosticProviderUpdate> {
+  ): Promise<?FileDiagnosticMap> {
     throw new Error('Not Yet Implemented');
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     throw new Error('Not Yet Implemented');
   }
 
@@ -289,14 +291,12 @@ class PythonSingleFileLanguageService {
     formatted: string,
   }> {
     const contents = buffer.getText();
-    const start = range.start.row + 1;
-    const end = range.end.row + 1;
-    const libCommand = getFormatterPath();
+    const {command, args} = await getFormatterCommandImpl()(filePath, range);
     const dirName = nuclideUri.dirname(nuclideUri.getPath(filePath));
 
     let stdout;
     try {
-      stdout = await runCommand(libCommand, ['--line', `${start}-${end}`], {
+      stdout = await runCommand(command, args, {
         cwd: dirName,
         input: contents,
         // At the moment, yapf outputs 3 possible exit codes:
@@ -308,7 +308,7 @@ class PythonSingleFileLanguageService {
         isExitError: exit => exit.exitCode === 1,
       }).toPromise();
     } catch (err) {
-      throw new Error(`"${libCommand}" failed, likely due to syntax errors.`);
+      throw new Error(`"${command}" failed, likely due to syntax errors.`);
     }
 
     if (contents !== '' && stdout === '') {
@@ -344,30 +344,37 @@ class PythonSingleFileLanguageService {
     throw new Error('Not Yet Implemented');
   }
 
+  getExpandedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range> {
+    throw new Error('Not Yet Implemented');
+  }
+
+  getCollapsedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range> {
+    throw new Error('Not Yet Implemented');
+  }
+
   dispose(): void {}
 }
 
-let formatterPath;
-function getFormatterPath() {
-  if (formatterPath) {
-    return formatterPath;
-  }
-
-  formatterPath = 'yapf';
-
+const getFormatterCommandImpl = once(() => {
   try {
     // $FlowFB
-    const findFormatterPath = require('./fb/find-formatter-path').default;
-    const overridePath = findFormatterPath();
-    if (overridePath) {
-      formatterPath = overridePath;
-    }
+    return require('./fb/get-formatter-command').default;
   } catch (e) {
-    // Ignore.
+    return (filePath, range) => ({
+      command: 'yapf',
+      args: ['--lines', `${range.start.row + 1}-${range.end.row + 1}`],
+    });
   }
-
-  return formatterPath;
-}
+});
 
 export async function getReferences(
   src: NuclideUri,
@@ -416,6 +423,7 @@ async function runLinterCommand(
 ): Promise<string> {
   const dirName = nuclideUri.dirname(src);
   const configDir = await fsPromise.findNearestFile('.flake8', dirName);
+  // flowlint-next-line sketchy-null-string:off
   const configPath = configDir ? nuclideUri.join(configDir, '.flake8') : null;
 
   let result;
@@ -439,6 +447,7 @@ async function runLinterCommand(
     'flake8';
   const args = [];
 
+  // flowlint-next-line sketchy-null-string:off
   if (configPath) {
     args.push('--config');
     args.push(configPath);

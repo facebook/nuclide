@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from 'atom-ide-ui';
+import type {FileDiagnosticMessage} from '../../nuclide-language-service/lib/LanguageService';
 
 import {Range} from 'simple-text-buffer';
 
@@ -18,6 +18,9 @@ import {
   diagnosticToFix,
 } from '../lib/diagnosticsParser';
 import {addMatchers} from '../../nuclide-test-helpers';
+
+import flowChildrenOutput from './fixtures/flow-children-output.json';
+import flowChildrenDiagnostic from './fixtures/flow-children-diagnostic.json';
 
 const flowOutput = {
   passed: false,
@@ -149,13 +152,13 @@ const flowOutput = {
         },
       ],
     },
+    flowChildrenOutput,
   ],
 };
 
 const expected: Array<FileDiagnosticMessage> = [
   {
     type: 'Error',
-    scope: 'file',
     providerName: 'Flow',
     filePath: '/flow-test/src/test.js',
     text: 'object literal',
@@ -181,7 +184,6 @@ const expected: Array<FileDiagnosticMessage> = [
   },
   {
     type: 'Warning',
-    scope: 'file',
     providerName: 'Flow',
     filePath: 'myPath',
     text: 'message',
@@ -189,7 +191,6 @@ const expected: Array<FileDiagnosticMessage> = [
   },
   {
     type: 'Error',
-    scope: 'file',
     providerName: 'Flow',
     filePath: '/flow-test/src/test.js',
     text: 'object type',
@@ -205,6 +206,7 @@ const expected: Array<FileDiagnosticMessage> = [
       },
     ],
   },
+  flowChildrenDiagnostic,
 ];
 
 describe('flowStatusOutputToDiagnostics', () => {
@@ -226,7 +228,6 @@ describe('diagnosticToFix', () => {
     const diagnostic: FileDiagnosticMessage = {
       filePath: 'foo',
       providerName: 'Flow',
-      scope: 'file',
       type: 'Error',
       text: 'Error suppressing comment',
       range: new Range([5, 0], [5, 13]),
@@ -248,7 +249,6 @@ describe('diagnosticToFix', () => {
   it('should provide a fix for named import typos', () => {
     const diagnostic: FileDiagnosticMessage = {
       type: 'Error',
-      scope: 'file',
       providerName: 'Flow',
       filePath: 'foo',
       range: new Range([2, 8], [2, 16]),

@@ -11,6 +11,7 @@
 
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import React from 'react';
 
 /**
  * Use this function to simulate keyboard shortcuts or special keys, e.g. cmd-v,
@@ -170,15 +171,11 @@ export function waitsForFilePosition(
  *    });
  */
 export function getMountedReactRootNames(): Array<string> {
-  const ReactComponentTreeHookPath = Object.keys(require.cache).find(x =>
-    x.endsWith('react/lib/ReactComponentTreeHook.js'),
-  );
-  invariant(
-    ReactComponentTreeHookPath != null,
-    'ReactComponentTreeHook could not be found in the module cache.',
-  );
-  const ReactComponentTreeHook =
-    require.cache[ReactComponentTreeHookPath].exports;
+  const {
+    ReactComponentTreeHook,
+    // $FlowFixMe This is not typed for obvious reasons
+  } = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+
   const reactRootNames = ReactComponentTreeHook.getRootIDs().map(rootID => {
     return ReactComponentTreeHook.getDisplayName(rootID);
   });

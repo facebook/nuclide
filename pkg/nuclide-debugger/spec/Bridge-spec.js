@@ -63,6 +63,7 @@ describe('Bridge', () => {
       // Feed 30 lines to editor
       editor.setText('foo\nbar\nbaz'.repeat(10));
       const editorPath = editor.getPath();
+      // flowlint-next-line sketchy-null-string:off
       invariant(editorPath);
       path = editorPath;
 

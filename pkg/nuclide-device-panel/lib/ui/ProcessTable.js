@@ -10,28 +10,29 @@
  */
 
 import type {Process, ProcessTask} from '../types';
+import type {Expected} from '../../../commons-node/expected';
 
 import {ProcessTaskButton} from './ProcessTaskButton';
-import React from 'react';
+import * as React from 'react';
 import {Table} from 'nuclide-commons-ui/Table';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
+import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 
 type Props = {|
   toggleProcessPolling: (isActive: boolean) => void,
   processTasks: ProcessTask[],
-  processes: Process[],
+  processes: Expected<Process[]>,
 |};
+
+type ColumnName = 'pid' | 'user' | 'name' | 'cpuUsage' | 'memUsage' | 'debug';
 
 type State = {
   filterText: string,
-  sortedColumn: ?string,
+  sortedColumn: ?ColumnName,
   sortDescending: boolean,
 };
 
-export class ProcessTable extends React.Component {
-  props: Props;
-  state: State;
-
+export class ProcessTable extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -64,13 +65,13 @@ export class ProcessTable extends React.Component {
     }
   }
 
-  _handleSort = (sortedColumn: ?string, sortDescending: boolean): void => {
+  _handleSort = (sortedColumn: ?ColumnName, sortDescending: boolean): void => {
     this.setState({sortedColumn, sortDescending});
   };
 
   _sortProcesses(
     processes: Process[],
-    sortedColumnName: ?string,
+    sortedColumnName: ?ColumnName,
     sortDescending: boolean,
   ): Process[] {
     if (sortedColumnName == null) {
@@ -82,6 +83,7 @@ export class ProcessTable extends React.Component {
     )
       ? (a: ?number, b: ?number, isAsc: boolean): number => {
           const cmp =
+            // flowlint-next-line sketchy-null-number:off
             (a || Number.NEGATIVE_INFINITY) - (b || Number.NEGATIVE_INFINITY);
           return isAsc ? cmp : -cmp;
         }
@@ -91,93 +93,95 @@ export class ProcessTable extends React.Component {
         };
 
     return processes.sort((a, b) =>
+      // $FlowFixMe: Process doesn't have a debug field.
       compare(a[sortedColumnName], b[sortedColumnName], !sortDescending),
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const filterRegex = new RegExp(this.state.filterText, 'i');
-    const rows = this._sortProcesses(
-      this.props.processes.filter(
-        item =>
-          filterRegex.test(item.user) ||
-          filterRegex.test(`${item.pid}`) ||
-          filterRegex.test(item.name),
-      ),
-      this.state.sortedColumn,
-      this.state.sortDescending,
-    ).map(item => ({
-      data: {
-        pid: (
-          <div>
+
+    let processComponent;
+    if (this.props.processes.isError) {
+      processComponent = <div>{this.props.processes.error.toString()}</div>;
+    } else if (this.props.processes.isPending) {
+      processComponent = (
+        <LoadingSpinner size="EXTRA_SMALL" key="infoTableLoading" />
+      );
+    } else {
+      const rows = this._sortProcesses(
+        this.props.processes.value.filter(
+          item =>
+            filterRegex.test(item.user) ||
+            filterRegex.test(`${item.pid}`) ||
+            filterRegex.test(item.name),
+        ),
+        this.state.sortedColumn,
+        this.state.sortDescending,
+      ).map(item => ({
+        data: {
+          pid: (
+            <div>
+              <ProcessTaskButton
+                icon="x"
+                proc={item}
+                taskType="KILL"
+                nameIfManyTasks="Kill process"
+                tasks={this.props.processTasks}
+              />
+              {item.pid}
+            </div>
+          ),
+          user: item.user,
+          name: item.name,
+          cpuUsage: this._formatCpuUsage(item.cpuUsage),
+          memUsage: this._formatMemUsage(item.memUsage),
+          debug: (
             <ProcessTaskButton
-              icon="x"
+              icon="nuclicon-debugger"
+              className="nuclide-device-panel-debug-button"
               proc={item}
-              taskType="KILL"
-              nameIfManyTasks="Kill process"
+              taskType="DEBUG"
+              nameIfManyTasks="Debug process"
               tasks={this.props.processTasks}
             />
-            {item.pid}
-          </div>
-        ),
-        user: item.user,
-        name: item.name,
-        cpuUsage: this._formatCpuUsage(item.cpuUsage),
-        memUsage: this._formatMemUsage(item.memUsage),
-        debug: (
-          <ProcessTaskButton
-            icon="nuclicon-debugger"
-            className="nuclide-device-panel-debug-button"
-            proc={item}
-            taskType="DEBUG"
-            nameIfManyTasks="Debug process"
-            tasks={this.props.processTasks}
-          />
-        ),
-      },
-    }));
-    const columns = [
-      {
-        key: 'pid',
-        title: 'PID',
-        width: 0.17,
-      },
-      {
-        key: 'name',
-        title: 'Name',
-        width: 0.31,
-      },
-      {
-        key: 'user',
-        title: 'User',
-        width: 0.13,
-      },
-      {
-        key: 'cpuUsage',
-        title: 'CPU',
-        width: 0.15,
-      },
-      {
-        key: 'memUsage',
-        title: 'Mem',
-        width: 0.15,
-      },
-      {
-        key: 'debug',
-        title: 'Debug',
-        width: 0.08,
-      },
-    ];
-    const emptyComponent = () => <div className="padded">No information</div>;
-
-    return (
-      <div>
-        <AtomInput
-          placeholderText="Filter process..."
-          initialValue={this.state.filterText}
-          onDidChange={this._handleFilterTextChange}
-          size="sm"
-        />
+          ),
+        },
+      }));
+      const columns = [
+        {
+          key: 'pid',
+          title: 'PID',
+          width: 0.17,
+        },
+        {
+          key: 'name',
+          title: 'Name',
+          width: 0.31,
+        },
+        {
+          key: 'user',
+          title: 'User',
+          width: 0.13,
+        },
+        {
+          key: 'cpuUsage',
+          title: 'CPU',
+          width: 0.15,
+        },
+        {
+          key: 'memUsage',
+          title: 'Mem',
+          width: 0.15,
+        },
+        {
+          key: 'debug',
+          title: 'Debug',
+          width: 0.08,
+        },
+      ];
+      const emptyComponent = () => <div className="padded">No information</div>;
+      processComponent = (
         <Table
           collapsable={false}
           columns={columns}
@@ -190,6 +194,18 @@ export class ProcessTable extends React.Component {
           sortDescending={this.state.sortDescending}
           className="nuclide-device-panel-process-table"
         />
+      );
+    }
+
+    return (
+      <div>
+        <AtomInput
+          placeholderText="Filter process..."
+          initialValue={this.state.filterText}
+          onDidChange={this._handleFilterTextChange}
+          size="sm"
+        />
+        {processComponent}
       </div>
     );
   }

@@ -9,9 +9,42 @@
  * @format
  */
 
-import type {Action, AppState} from '../types';
+import type {Action, AppState, Record} from '../types';
 
+import {arrayEqual} from 'nuclide-commons/collection';
 import * as Actions from './Actions';
+
+const RECORD_PROPERTIES_TO_COMPARE = [
+  'text',
+  'level',
+  'scopeName',
+  'sourceId',
+  'kind',
+];
+
+function shouldAccumulateRecordCount(
+  recordA: Record,
+  recordB: Record,
+): boolean {
+  const areRelevantPropertiesEqual = RECORD_PROPERTIES_TO_COMPARE.every(
+    prop => recordA[prop] === recordB[prop],
+  );
+
+  // if data exists, we should not accumulate this into the previous record
+  const doesDataExist = recordA.data || recordB.data;
+
+  const recATags = recordA.tags;
+  const recBTags = recordB.tags;
+  const areTagsEqual =
+    (!recATags && !recBTags) ||
+    (recATags && recBTags && arrayEqual(recATags, recBTags));
+
+  return (
+    areRelevantPropertiesEqual &&
+    !Boolean(doesDataExist) &&
+    Boolean(areTagsEqual)
+  );
+}
 
 export default function accumulateState(
   state: AppState,
@@ -20,10 +53,25 @@ export default function accumulateState(
   switch (action.type) {
     case Actions.RECORD_RECEIVED: {
       const {record} = action.payload;
-      return {
-        ...state,
-        records: state.records.concat(record).slice(-state.maxMessageCount),
-      };
+      // check if the message is exactly the same as the previous one, if so
+      // we add a count to it.
+      const lastRecord = state.records[state.records.length - 1];
+      if (
+        state.records.length &&
+        shouldAccumulateRecordCount(lastRecord, record)
+      ) {
+        state.records[state.records.length - 1] = {
+          ...lastRecord,
+          repeatCount: lastRecord.repeatCount + 1,
+          timestamp: record.timestamp,
+        };
+        return state;
+      } else {
+        return {
+          ...state,
+          records: state.records.concat(record).slice(-state.maxMessageCount),
+        };
+      }
     }
     case Actions.SET_MAX_MESSAGE_COUNT: {
       const {maxMessageCount} = action.payload;
@@ -103,6 +151,13 @@ export default function accumulateState(
       return {
         ...state,
         createPasteFunction,
+      };
+    }
+    case Actions.SET_WATCH_EDITOR_FUNCTION: {
+      const {watchEditor} = action.payload;
+      return {
+        ...state,
+        watchEditor,
       };
     }
   }

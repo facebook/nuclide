@@ -109,13 +109,17 @@
     "cmd-k left": "nuclide-file-tree:open-selected-entry-left",
     "cmd-k up": "nuclide-file-tree:open-selected-entry-up",
     "cmd-k down": "nuclide-file-tree:open-selected-entry-down",
-    "cmd-f": "nuclide-file-tree:search-in-directory"
+    "cmd-f": "nuclide-file-tree:search-in-directory",
+    "cmd-c": "nuclide-file-tree:copy-selection",
+    "cmd-v": "nuclide-file-tree:paste-selection"
   },
   ".platform-win32 .nuclide-file-tree, .platform-linux .nuclide-file-tree": {
     "ctrl-k right": "nuclide-file-tree:open-selected-entry-right",
     "ctrl-k left": "nuclide-file-tree:open-selected-entry-left",
     "ctrl-k up": "nuclide-file-tree:open-selected-entry-up",
     "ctrl-k down": "nuclide-file-tree:open-selected-entry-down",
-    "ctrl-f": "nuclide-file-tree:search-in-directory"
+    "ctrl-f": "nuclide-file-tree:search-in-directory",
+    "ctrl-c": "nuclide-file-tree:copy-selection",
+    "ctrl-v": "nuclide-file-tree:paste-selection"
   }
 }

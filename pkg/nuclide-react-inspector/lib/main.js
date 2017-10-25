@@ -13,7 +13,7 @@ import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElem
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import Inspector, {WORKSPACE_VIEW_URI} from './ui/Inspector';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
 let disposables: ?UniversalDisposable = null;

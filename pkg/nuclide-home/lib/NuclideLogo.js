@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 /* eslint-disable max-len */
 const LOGO = (
@@ -31,7 +31,6 @@ const LOGO = (
 );
 /* eslint-enable max-len */
 
-export default (props: {className?: string}): React.Element<any> =>
-  <div {...props}>
-    {LOGO}
-  </div>;
+export default (props: {className?: string}): React.Element<any> => (
+  <div {...props}>{LOGO}</div>
+);

@@ -43,6 +43,7 @@ export class RemoteDirectory {
   _hgRepositoryDescription: ?HgRepositoryDescription;
   _symlink: boolean;
   _deleted: boolean;
+  _isArchive: boolean;
 
   /**
    * @param uri should be of the form "nuclide://example.com/path/to/directory".
@@ -71,6 +72,7 @@ export class RemoteDirectory {
     this._hgRepositoryDescription = options
       ? options.hgRepositoryDescription
       : null;
+    this._isArchive = options != null && Boolean(options.isArchive);
     this._deleted = false;
   }
 
@@ -106,7 +108,9 @@ export class RemoteDirectory {
     if (this._watchSubscription) {
       return;
     }
-    const watchStream = this._server.getDirectoryWatch(this._uri);
+    const watchStream = nuclideUri.isInArchive(this._uri)
+      ? this._server.getFileWatch(nuclideUri.ancestorOutsideArchive(this._uri))
+      : this._server.getDirectoryWatch(this._uri);
     this._watchSubscription = watchStream.subscribe(
       watchUpdate => {
         logger.debug('watchDirectory update:', watchUpdate);
@@ -170,6 +174,12 @@ export class RemoteDirectory {
     }
   }
 
+  _joinLocalPath(name: string): string {
+    return this._isArchive
+      ? nuclideUri.archiveJoin(this._localPath, name)
+      : nuclideUri.join(this._localPath, name);
+  }
+
   isFile(): boolean {
     return false;
   }
@@ -220,9 +230,11 @@ export class RemoteDirectory {
     if (!uri) {
       return uri;
     }
-    // Note: host of uri must match this._host.
-    const subpath = nuclideUri.parse(uri).path;
-    return nuclideUri.relative(this._localPath, subpath);
+    const parsedUrl = nuclideUri.parse(uri);
+    if (parsedUrl.hostname !== this._host) {
+      return uri;
+    }
+    return nuclideUri.relative(this._localPath, parsedUrl.path);
   }
 
   getParent(): RemoteDirectory {
@@ -240,7 +252,7 @@ export class RemoteDirectory {
   getFile(filename: string): RemoteFile {
     const uri = nuclideUri.createRemoteUri(
       this._host,
-      nuclideUri.join(this._localPath, filename),
+      this._joinLocalPath(filename),
     );
     return this._server.createFile(uri);
   }
@@ -248,7 +260,7 @@ export class RemoteDirectory {
   getSubdirectory(dir: string): RemoteDirectory {
     const uri = nuclideUri.createRemoteUri(
       this._host,
-      nuclideUri.join(this._localPath, dir),
+      this._joinLocalPath(dir),
     );
     return this._server.createDirectory(uri, this._hgRepositoryDescription);
   }
@@ -302,7 +314,7 @@ export class RemoteDirectory {
         const [name, isFile, symlink] = entry;
         const uri = nuclideUri.createRemoteUri(
           this._host,
-          nuclideUri.join(this._localPath, name),
+          this._joinLocalPath(name),
         );
         if (isFile) {
           files.push(this._server.createFile(uri, symlink));

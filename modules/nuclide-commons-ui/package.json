@@ -1,23 +1,28 @@
 {
   "name": "nuclide-commons-ui",
-  "version": "0.1.10",
+  "version": "0.4.0",
   "description": "Common Nuclide UI components.",
   "license": "BSD-3-Clause",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-commons-ui",
   "scripts": {
-    "prepublish": "../../scripts/modules-prepublish.sh",
+    "prepublish": "../scripts/prepublish.sh",
     "test": "atom --dev --test spec"
   },
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "atomTestRunner": "../scripts/atom-test-runner.js",
   "dependencies": {
     "async-to-generator": "1.1.0",
     "classnames": "2.2.5",
     "escape-string-regexp": "1.0.5",
-    "nuclide-commons": "0.1.10",
-    "nuclide-commons-atom": "0.1.10",
-    "react": "15.3.1",
-    "react-dom": "15.3.1",
-    "rxjs": "5.3.1"
+    "idx": "1.2.0",
+    "invariant": "2.2.2",
+    "nuclide-commons": "0.4.0",
+    "nuclide-commons-atom": "0.4.0",
+    "nullthrows": "1.0.0",
+    "react": "16.0.0",
+    "react-dom": "16.0.0",
+    "rxjs": "5.3.1",
+    "shallowequal": "0.2.2",
+    "tabbable": "1.1.0"
   }
 }

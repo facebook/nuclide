@@ -12,9 +12,9 @@
 import type {ContextElementProps, ContextProvider} from '../lib/types';
 import type {DefinitionProvider} from 'atom-ide-ui';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ContextViewManager} from '../lib/ContextViewManager';
-import React from 'react';
+import * as React from 'react';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import invariant from 'assert';
 
@@ -25,7 +25,7 @@ const PROVIDER2_TITLE = 'Provider Two';
 
 describe('ContextViewManager', () => {
   let manager: ContextViewManager;
-  let disposables: CompositeDisposable;
+  let disposables: UniversalDisposable;
   let provider1: ContextProvider;
   let provider2: ContextProvider;
   const provider1Priority = 1;
@@ -42,7 +42,7 @@ describe('ContextViewManager', () => {
   }
 
   beforeEach(() => {
-    disposables = new CompositeDisposable();
+    disposables = new UniversalDisposable();
 
     manager = new ContextViewManager();
     provider1 = {

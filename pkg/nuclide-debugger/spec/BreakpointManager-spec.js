@@ -47,6 +47,7 @@ describe('BreakpointManager', () => {
     waitsForPromise(async () => {
       const uniqueEditor = await utils.createEditorWithUniquePath();
       const path = uniqueEditor.getPath();
+      // flowlint-next-line sketchy-null-string:off
       invariant(path);
       breakpointStore._addBreakpoint(path, 1);
       const editor = await atom.workspace.open(path);

@@ -13,7 +13,7 @@ import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import watchman from 'fb-watchman';
 import WatchmanClient from '../lib/WatchmanClient';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 const FILE_MODE = 33188;
 

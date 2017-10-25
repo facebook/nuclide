@@ -11,55 +11,103 @@
  */
 
 import type {
+  AppState,
+  CodeActionsState,
   DiagnosticMessage,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
-  ProjectDiagnosticMessage,
+  DiagnosticMessages,
+  Store,
+  DiagnosticMessageKind,
+  UiConfig,
 } from '../types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import ObservableDiagnosticUpdater from './ObservableDiagnosticUpdater';
+import * as Actions from '../redux/Actions';
+import * as Selectors from '../redux/Selectors';
+import {arrayEqual} from 'nuclide-commons/collection';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {Observable} from 'rxjs';
 
 export default class DiagnosticUpdater {
-  _observableUpdater: ObservableDiagnosticUpdater;
+  _store: Store;
+  _states: Observable<AppState>;
+  _allMessageUpdates: Observable<Array<DiagnosticMessage>>;
 
   constructor(store: Store) {
-    this._observableUpdater = new ObservableDiagnosticUpdater(store);
+    this._store = store;
+    // $FlowIgnore: Flow doesn't know about Symbol.observable
+    this._states = Observable.from(store);
+
+    this._allMessageUpdates = this._states
+      .map(Selectors.getMessages)
+      .distinctUntilChanged();
   }
 
-  onFileMessagesDidUpdate(
-    callback: (update: FileDiagnosticMessages) => mixed,
+  getMessages = (): Array<DiagnosticMessage> => {
+    return Selectors.getMessages(this._store.getState());
+  };
+
+  getFileMessageUpdates = (filePath: NuclideUri): DiagnosticMessages => {
+    return Selectors.getFileMessageUpdates(this._store.getState(), filePath);
+  };
+
+  observeMessages = (
+    callback: (messages: Array<DiagnosticMessage>) => mixed,
+  ): IDisposable => {
+    return new UniversalDisposable(this._allMessageUpdates.subscribe(callback));
+  };
+
+  observeFileMessages = (
     filePath: NuclideUri,
-  ): IDisposable {
+    callback: (update: DiagnosticMessages) => mixed,
+  ): IDisposable => {
     return new UniversalDisposable(
-      this._observableUpdater
-        .getFileMessageUpdates(filePath)
+      // TODO: As a potential perf improvement, we could cache so the mapping only happens once.
+      // Whether that's worth it depends on how often this is actually called with the same path.
+      this._states
+        .distinctUntilChanged((a, b) => a.messages === b.messages)
+        .map(state => Selectors.getFileMessageUpdates(state, filePath))
+        .distinctUntilChanged((a, b) => arrayEqual(a.messages, b.messages))
         .subscribe(callback),
     );
-  }
+  };
 
-  onProjectMessagesDidUpdate(
-    callback: (messages: Array<ProjectDiagnosticMessage>) => mixed,
-  ): IDisposable {
+  observeCodeActionsForMessage = (
+    callback: (update: CodeActionsState) => mixed,
+  ): IDisposable => {
     return new UniversalDisposable(
-      this._observableUpdater.projectMessageUpdates.subscribe(callback),
+      this._states
+        .map(state => state.codeActionsForMessage)
+        .distinctUntilChanged()
+        .subscribe(callback),
     );
-  }
+  };
 
-  onAllMessagesDidUpdate(
-    callback: (messages: Array<DiagnosticMessage>) => mixed,
-  ): IDisposable {
+  observeSupportedMessageKinds = (
+    callback: (kinds: Set<DiagnosticMessageKind>) => mixed,
+  ): IDisposable => {
     return new UniversalDisposable(
-      this._observableUpdater.allMessageUpdates.subscribe(callback),
+      this._states.map(Selectors.getSupportedMessageKinds).subscribe(callback),
     );
-  }
+  };
 
-  applyFix(message: FileDiagnosticMessage): void {
-    this._observableUpdater.applyFix(message);
-  }
+  observeUiConfig = (callback: (config: UiConfig) => mixed): IDisposable => {
+    return new UniversalDisposable(
+      this._states.map(Selectors.getUiConfig).subscribe(callback),
+    );
+  };
 
-  applyFixesForFile(file: NuclideUri): void {
-    this._observableUpdater.applyFixesForFile(file);
-  }
+  applyFix = (message: DiagnosticMessage): void => {
+    this._store.dispatch(Actions.applyFix(message));
+  };
+
+  applyFixesForFile = (file: NuclideUri): void => {
+    this._store.dispatch(Actions.applyFixesForFile(file));
+  };
+
+  fetchCodeActions = (
+    editor: atom$TextEditor,
+    messages: Array<DiagnosticMessage>,
+  ): void => {
+    this._store.dispatch(Actions.fetchCodeActions(editor, messages));
+  };
 }

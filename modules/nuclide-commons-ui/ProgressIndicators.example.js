@@ -10,12 +10,12 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import {ProgressBar} from './ProgressBar';
 import {LoadingSpinner} from './LoadingSpinner';
 
-const ProgressBarExample = (): React.Element<any> =>
+const ProgressBarExample = (): React.Element<any> => (
   <div>
     <Block>
       <ProgressBar />
@@ -29,9 +29,10 @@ const ProgressBarExample = (): React.Element<any> =>
     <Block>
       <ProgressBar max={100} value={100} />
     </Block>
-  </div>;
+  </div>
+);
 
-const LoadingSpinnerExample = (): React.Element<any> =>
+const LoadingSpinnerExample = (): React.Element<any> => (
   <div>
     <Block>
       <LoadingSpinner size="EXTRA_SMALL" />
@@ -45,7 +46,8 @@ const LoadingSpinnerExample = (): React.Element<any> =>
     <Block>
       <LoadingSpinner size="LARGE" />
     </Block>
-  </div>;
+  </div>
+);
 
 export const ProgressIndicatorExamples = {
   sectionName: 'Progress Indicators',

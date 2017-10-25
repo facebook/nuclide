@@ -189,7 +189,7 @@ Hyperclick Trigger keys are configurable.
 
 1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
 2. Select **Packages** from the list at the left, and search for `nuclide`.
-3. Click on the **Settings** button for the `nuclide` package.  
+3. Click on the **Settings** button for the `nuclide` package.
 
 The Hyperclick Trigger key settings are right at the top and set to the defaults.  You can change them by clicking on the selection bar and choosing from the provided list.
 

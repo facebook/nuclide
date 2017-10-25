@@ -11,7 +11,7 @@
 
 import type {ChildProcessInfo} from '../../types';
 
-import React from 'react';
+import * as React from 'react';
 import HandlesTableComponent from './HandlesTableComponent';
 
 type Props = {
@@ -23,10 +23,8 @@ type ProcessWithLevel = {
   level: number,
 };
 
-export default class ChildProcessTreeComponent extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class ChildProcessTreeComponent extends React.Component<Props> {
+  render(): React.Node {
     const {childProcessesTree} = this.props;
     if (!childProcessesTree) {
       return <div />;

@@ -16,7 +16,7 @@ import {addMatchers} from '../../nuclide-test-helpers';
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import search from '../lib/scanhandler';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 
 describe('Scan Handler Tests', () => {
   beforeEach(function() {

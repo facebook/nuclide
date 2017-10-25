@@ -1,0 +1,47 @@
+{
+  "name": "nuclide-js-imports-client",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides support for JS auto-imports in nuclide ",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "atomConfig": {
+    "diagnosticsWhitelist": {
+      "title": "Directories for which the JS-Autoimports server should provide diagnostics",
+      "type": "array",
+      "items": {"type": "string"},
+      "default": [],
+      "description": "If the working directory matches any of these regexes, then diagnostics will be provided. If the array is empty, diagnostics will be provided for all directories."
+    },
+    "requiresWhitelist": {
+      "title": "Directories for which the JS-Autoimports server should use requires, not imports",
+      "type": "array",
+      "items": {"type": "string"},
+      "default": [],
+      "description": "If the working directory matches any of these regexes, then suggestions will use requires rather than imports."
+    },
+    "logLevel": {
+      "title": "Log Level",
+      "type": "string",
+      "default": "INFO",
+      "description": "Specify that level of logging.",
+      "enum": [
+        "ALL",
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL",
+        "OFF"
+      ]
+    }
+  },
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm"
+  },
+  "activationHooks": [
+    "nuclide_js_auto_imports:gk:nuclide"
+  ]
+}

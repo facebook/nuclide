@@ -13,14 +13,10 @@
 /* eslint
   comma-dangle: [1, always-multiline],
   prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
+  rulesdir/no-commonjs: 0,
   */
 /* eslint-disable no-console */
 
-const {__DEV__} = require('../../nuclide-node-transpiler/lib/env');
-
-if (__DEV__) {
-  require('../../nuclide-node-transpiler');
-}
+require('../../commons-node/load-transpiler');
 
 require('../lib/generate-proxy-main');

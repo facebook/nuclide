@@ -10,7 +10,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import type {IconName} from 'nuclide-commons-ui/Icon';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import featureConfig from 'nuclide-commons-atom/feature-config';

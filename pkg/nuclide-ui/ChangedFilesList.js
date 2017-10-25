@@ -16,7 +16,7 @@ import {repositoryForPath} from '../nuclide-vcs-base';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import classnames from 'classnames';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 import ChangedFile from './ChangedFile';
 
 function isHgPath(path: NuclideUri): boolean {
@@ -44,6 +44,7 @@ type Props = {
   // Call back when a file is clicked on
   onFileChosen: (filePath: NuclideUri) => void,
   onForgetFile: (filePath: NuclideUri) => void,
+  onMarkFileResolved?: (filePath: NuclideUri) => void,
   onOpenFileInDiffView: (filePath: NuclideUri) => void,
   onRevertFile: (filePath: NuclideUri) => void,
   openInDiffViewOption: boolean,
@@ -57,10 +58,7 @@ type State = {
   visiblePagesCount: number,
 };
 
-export default class ChangedFilesList extends React.Component {
-  props: Props;
-  state: State;
-
+export default class ChangedFilesList extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -69,7 +67,7 @@ export default class ChangedFilesList extends React.Component {
     };
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {
       checkedFiles,
       commandPrefix,
@@ -82,6 +80,7 @@ export default class ChangedFilesList extends React.Component {
       onFileChecked,
       onFileChosen,
       onForgetFile,
+      onMarkFileResolved,
       onOpenFileInDiffView,
       openInDiffViewOption,
       onRevertFile,
@@ -104,40 +103,40 @@ export default class ChangedFilesList extends React.Component {
     });
 
     const showMoreFilesElement =
-      fileStatuses.size > filesToShow
-        ? <div
-            className="icon icon-ellipsis"
-            ref={addTooltip({
-              title: 'Show more files with uncommitted changes',
-              delay: 300,
-              placement: 'bottom',
+      fileStatuses.size > filesToShow ? (
+        <div
+          className="icon icon-ellipsis"
+          ref={addTooltip({
+            title: 'Show more files with uncommitted changes',
+            delay: 300,
+            placement: 'bottom',
+          })}
+          onClick={() =>
+            this.setState({
+              visiblePagesCount: this.state.visiblePagesCount + 1,
             })}
-            onClick={() =>
-              this.setState({
-                visiblePagesCount: this.state.visiblePagesCount + 1,
-              })}
-          />
-        : null;
+        />
+      ) : null;
 
     const isHgRoot = isHgPath(rootPath);
     return (
       <ul className="list-tree has-collapsable-children nuclide-changed-files-list">
         <li className={rootClassName}>
-          {this.props.shouldShowFolderName
-            ? <div
-                className="list-item"
-                key={this.props.rootPath}
-                onClick={() =>
-                  this.setState({isCollapsed: !this.state.isCollapsed})}>
-                <span
-                  className="icon icon-file-directory nuclide-file-changes-root-entry"
-                  data-path={this.props.rootPath}>
-                  {nuclideUri.basename(this.props.rootPath)}
-                </span>
-              </div>
-            : null}
+          {this.props.shouldShowFolderName ? (
+            <div
+              className="list-item"
+              key={this.props.rootPath}
+              onClick={() =>
+                this.setState({isCollapsed: !this.state.isCollapsed})}>
+              <span
+                className="icon icon-file-directory nuclide-file-changes-root-entry"
+                data-path={this.props.rootPath}>
+                {nuclideUri.basename(this.props.rootPath)}
+              </span>
+            </div>
+          ) : null}
           <ul className="list-tree has-flat-children">
-            {sizeLimitedFileChanges.map(([filePath, fileStatus]) =>
+            {sizeLimitedFileChanges.map(([filePath, fileStatus]) => (
               <ChangedFile
                 commandPrefix={commandPrefix}
                 enableFileExpansion={enableFileExpansion}
@@ -158,15 +157,14 @@ export default class ChangedFilesList extends React.Component {
                 onFileChecked={onFileChecked}
                 onFileChosen={onFileChosen}
                 onForgetFile={onForgetFile}
+                onMarkFileResolved={onMarkFileResolved}
                 onOpenFileInDiffView={onOpenFileInDiffView}
                 openInDiffViewOption={openInDiffViewOption}
                 onRevertFile={onRevertFile}
                 rootPath={rootPath}
-              />,
-            )}
-            <li>
-              {showMoreFilesElement}
-            </li>
+              />
+            ))}
+            <li>{showMoreFilesElement}</li>
           </ul>
         </li>
       </ul>

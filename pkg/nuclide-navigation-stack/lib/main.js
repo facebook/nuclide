@@ -19,7 +19,17 @@ import {trackTiming} from '../../nuclide-analytics';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observeNavigatingEditors} from 'nuclide-commons-atom/go-to-location';
 import createPackage from 'nuclide-commons-atom/createPackage';
-import {consumeStatusBar} from './StatusBar';
+
+export type NavigationStackService = {
+  navigateBackwards: () => Promise<void>,
+  navigateForwards: () => Promise<void>,
+  subscribe: (
+    ({
+      hasPrevious: boolean,
+      hasNext: boolean,
+    }) => void,
+  ) => UniversalDisposable,
+};
 
 const controller = new NavigationStackController();
 
@@ -107,10 +117,17 @@ class Activation {
     );
   }
 
-  consumeStatusBar(statusBar: atom$StatusBar): IDisposable {
-    const disposable = consumeStatusBar(statusBar, controller);
-    this._disposables.add(disposable);
-    return disposable;
+  getNavigationStackProvider(): NavigationStackService {
+    const stackChanges = controller.observeStackChanges().map(stack => ({
+      hasPrevious: stack.hasPrevious(),
+      hasNext: stack.hasNext(),
+    }));
+    return {
+      subscribe: callback =>
+        new UniversalDisposable(stackChanges.subscribe(callback)),
+      navigateForwards: () => controller.navigateForwards(),
+      navigateBackwards: () => controller.navigateBackwards(),
+    };
   }
 
   dispose() {

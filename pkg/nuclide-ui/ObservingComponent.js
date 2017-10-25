@@ -11,7 +11,7 @@
 
 import type {Observable} from 'rxjs';
 
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 
 // State is set to null indicates that the observable has not
@@ -26,11 +26,7 @@ export type Props<T> = {
 
 // Derived classes must override render()
 // Also might want to override shouldComponentUpdate(nextProps, nextState).
-export class ObservingComponent<T> extends React.Component<
-  void,
-  Props<T>,
-  State<T>,
-> {
+export class ObservingComponent<T> extends React.Component<Props<T>, State<T>> {
   state: State<T>;
   props: Props<T>;
 

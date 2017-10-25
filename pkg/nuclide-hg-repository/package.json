@@ -35,6 +35,12 @@
       "versions": {
         "0.1.0": "createHgRepositoryProvider"
       }
+    },
+    "additional-log-files": {
+      "description": "Hg log files",
+      "versions": {
+        "0.0.0": "createHgAdditionalLogFilesProvider"
+      }
     }
   }
 }

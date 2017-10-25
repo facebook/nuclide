@@ -9,9 +9,8 @@
  * @format
  */
 
-import type {FileDiagnosticMessages} from 'atom-ide-ui';
 import type {ConnectableObservable} from 'rxjs';
-import type {LanguageService} from '../lib/LanguageService';
+import type {FileDiagnosticMap, LanguageService} from '../lib/LanguageService';
 
 import {getLogger} from 'log4js';
 import {Observable} from 'rxjs';
@@ -79,8 +78,8 @@ describe('ObservableDiagnosticsProvider', () => {
 
   const TEST_FILE = 'test.txt';
   const mockLanguageService: LanguageService = ({
-    observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
-      return Observable.of([{filePath: TEST_FILE, messages: []}]).publish();
+    observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
+      return Observable.of(new Map([[TEST_FILE, []]])).publish();
     },
   }: any);
 
@@ -113,9 +112,7 @@ describe('ObservableDiagnosticsProvider', () => {
         mockLanguageService,
       );
 
-      expect(await updates).toEqual({
-        filePathToMessages: new Map([[TEST_FILE, []]]),
-      });
+      expect(await updates).toEqual(new Map([[TEST_FILE, []]]));
     });
   });
 });

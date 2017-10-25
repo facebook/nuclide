@@ -33,6 +33,7 @@ export async function setRootDirectoryUri(directoryUri: string): Promise<void> {
   );
   // TODO: make xdebug_includes.php path configurable from hhconfig.
   const hackDummyRequestFilePath = nuclideUri.join(
+    // flowlint-next-line sketchy-null-string:off
     hackRootDirectory ? hackRootDirectory : '',
     '/scripts/xdebug_includes.php',
   );
@@ -119,8 +120,11 @@ export function isCorrectConnection(
   // The regex is only applied to connections coming in during attach mode.  We do not use the
   // regex for launching.
   return (
+    // flowlint-next-line sketchy-null-number:off
     (!pid || attributes.appid === String(pid)) &&
+    // flowlint-next-line sketchy-null-string:off
     (!idekeyRegex || new RegExp(idekeyRegex).test(attributes.idekey)) &&
+    // flowlint-next-line sketchy-null-string:off
     (!attachScriptRegex ||
       new RegExp(attachScriptRegex).test(requestScriptPath))
   );

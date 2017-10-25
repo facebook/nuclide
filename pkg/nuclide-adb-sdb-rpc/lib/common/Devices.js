@@ -27,14 +27,15 @@ export class Devices {
   getDeviceList(): Observable<Array<DeviceDescription>> {
     return this._db.getDevices().switchMap(devices => {
       return Observable.concat(
-        ...devices.map(name => {
-          const db = new this._db(name);
+        ...devices.map(deviceId => {
+          const db = new this._db(deviceId);
           return Observable.forkJoin(
             db.getDeviceArchitecture().catch(() => Observable.of('')),
             db.getAPIVersion().catch(() => Observable.of('')),
             db.getDeviceModel().catch(() => Observable.of('')),
           ).map(([architecture, apiVersion, model]) => ({
-            name,
+            name: deviceId.name,
+            port: deviceId.port,
             architecture,
             apiVersion,
             model,

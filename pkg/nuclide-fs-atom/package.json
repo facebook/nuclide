@@ -1,0 +1,13 @@
+{
+  "name": "nuclide-fs-atom",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Abstractions for dealing with files in Atom based on nuclide-fs.",
+  "private": true,
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "apm"
+  }
+}

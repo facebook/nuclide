@@ -11,7 +11,7 @@
 
 import type {ProgressPhase} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 
 import {ProgressBar} from 'nuclide-commons-ui/ProgressBar';
 
@@ -19,10 +19,8 @@ type Props = {
   phase: ProgressPhase,
 };
 
-export class ProgressComponent extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export class ProgressComponent extends React.Component<Props> {
+  render(): React.Node {
     const {message, value, max} = this.props.phase;
     return (
       <div>

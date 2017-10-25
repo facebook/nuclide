@@ -9,6 +9,7 @@
  * @format
  */
 
+// $FlowFixMe(>=0.53.0) Flow suppress
 import type React from 'react';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {StatusCodeNumberValue} from '../../nuclide-hg-rpc/lib/HgService';
@@ -77,6 +78,20 @@ export type FileTreeAction =
       actionType: 'CLEAR_TRACKED_NODE_IF_NOT_LOADING',
     }
   | {
+      actionType: 'START_REORDER_DRAG',
+      draggedRootKey: NuclideUri,
+    }
+  | {
+      actionType: 'END_REORDER_DRAG',
+    }
+  | {
+      actionType: 'REORDER_DRAG_INTO',
+      dragTargetNodeKey: NuclideUri,
+    }
+  | {
+      actionType: 'REORDER_ROOTS',
+    }
+  | {
       actionType: 'MOVE_TO_NODE',
       rootKey: NuclideUri,
       nodeKey: NuclideUri,
@@ -87,6 +102,10 @@ export type FileTreeAction =
   | {
       actionType: 'SET_USE_PREVIEW_TABS',
       usePreviewTabs: boolean,
+    }
+  | {
+      actionType: 'SET_FOCUS_EDITOR_ON_FILE_SELECTION',
+      focusEditorOnFileSelection: boolean,
     }
   | {
       actionType: 'SET_USE_PREFIX_NAV',
@@ -218,6 +237,11 @@ export type FileTreeAction =
     }
   | {
       actionType: 'INVALIDATE_REMOVED_FOLDER',
+    }
+  | {
+      actionType: 'SET_TARGET_NODE',
+      rootKey: NuclideUri,
+      nodeKey: NuclideUri,
     };
 
 export const ActionTypes = Object.freeze({
@@ -235,11 +259,16 @@ export const ActionTypes = Object.freeze({
   SET_TRACKED_NODE: 'SET_TRACKED_NODE',
   CLEAR_TRACKED_NODE: 'CLEAR_TRACKED_NODE',
   CLEAR_TRACKED_NODE_IF_NOT_LOADING: 'CLEAR_TRACKED_NODE_IF_NOT_LOADING',
+  START_REORDER_DRAG: 'START_REORDER_DRAG',
+  END_REORDER_DRAG: 'END_REORDER_DRAG',
+  REORDER_DRAG_INTO: 'REORDER_DRAG_INTO',
+  REORDER_ROOTS: 'REORDER_ROOTS',
   MOVE_TO_NODE: 'MOVE_TO_NODE',
   SET_DROP_TARGET_NODE: 'SET_DROP_TARGET_NODE',
   SET_USE_PREVIEW_TABS: 'SET_USE_PREVIEW_TABS',
   SET_USE_PREFIX_NAV: 'SET_USE_PREFIX_NAV',
   SET_AUTO_EXPAND_SINGLE_CHILD: 'SET_AUTO_EXPAND_SINGLE_CHILD',
+  SET_FOCUS_EDITOR_ON_FILE_SELECTION: 'SET_FOCUS_EDITOR_ON_FILE_SELECTION',
   SET_VCS_STATUSES: 'SET_VCS_STATUSES',
   SET_REPOSITORIES: 'SET_REPOSITORIES',
   SET_WORKING_SET: 'SET_WORKING_SET',
@@ -271,6 +300,7 @@ export const ActionTypes = Object.freeze({
   SET_UNCOMMITTED_CHANGES_EXPANDED: 'SET_UNCOMMITTED_CHANGES_EXPANDED',
   SET_FOLDERS_EXPANDED: 'SET_FOLDERS_EXPANDED',
   INVALIDATE_REMOVED_FOLDER: 'INVALIDATE_REMOVED_FOLDER',
+  SET_TARGET_NODE: 'SET_TARGET_NODE',
 });
 
 // Flow hack: Every FileTreeAction actionType must be in ActionTypes.

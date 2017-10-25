@@ -65,6 +65,7 @@ describe('Nuclide Secure Server test suite', () => {
         cert: fs.readFileSync(client_cert_path),
         key: fs.readFileSync(client_key_path),
         family: 6,
+        useAck: false,
       });
       const client = RpcConnection.createRemote(
         socket,
@@ -79,7 +80,7 @@ describe('Nuclide Secure Server test suite', () => {
       // Ensure that we resolved the IPv6 address.
       const rpcTransport = client._transport;
       const queuedTransport = nullthrows(rpcTransport)._transport;
-      const webSocketTransport = nullthrows(queuedTransport)._transport;
+      const webSocketTransport = (nullthrows(queuedTransport): any)._transport;
       invariant(webSocketTransport instanceof WebSocketTransport);
       const webSocket = nullthrows(webSocketTransport._socket);
       expect(webSocket._socket.remoteAddress).toBe('::1');

@@ -12,10 +12,7 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Result} from 'nuclide-commons-atom/ActiveEditorRegistry';
 import type {ObservableDiagnosticProvider} from 'atom-ide-ui';
-import type {
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessage,
-} from 'atom-ide-ui';
+import type {DiagnosticMessage, DiagnosticProviderUpdate} from 'atom-ide-ui';
 
 import type {CoverageProvider} from './types';
 import type {CoverageResult, UncoveredRegion} from './rpc-types';
@@ -29,7 +26,7 @@ export function diagnosticProviderForResultStream(
   results: Observable<Result<CoverageProvider, ?CoverageResult>>,
   isEnabledStream: Observable<boolean>,
 ): ObservableDiagnosticProvider {
-  const toggledResults = toggle(results, isEnabledStream);
+  const toggledResults = results.let(toggle(isEnabledStream));
 
   return {
     updates: compact(toggledResults.map(diagnosticsForResult)),
@@ -80,20 +77,17 @@ function diagnosticsForResult(
     uncoveredRangeToDiagnostic(region, editorPath, providerName),
   );
 
-  return {
-    filePathToMessages: new Map([[editorPath, diagnostics]]),
-  };
+  return new Map([[editorPath, diagnostics]]);
 }
 
 function uncoveredRangeToDiagnostic(
   region: UncoveredRegion,
   path: NuclideUri,
   providerName: string,
-): FileDiagnosticMessage {
+): DiagnosticMessage {
   const text =
     region.message != null ? region.message : `Not covered by ${providerName}`;
   return {
-    scope: 'file',
     providerName: 'Type Coverage',
     type: 'Warning',
     filePath: path,

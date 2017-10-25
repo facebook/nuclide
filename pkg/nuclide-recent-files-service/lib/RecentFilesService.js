@@ -13,12 +13,12 @@ export type FilePath = string;
 export type TimeStamp = number;
 export type FileList = Array<{path: FilePath, timestamp: TimeStamp}>;
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class RecentFilesService {
   // Map uses `Map`'s insertion ordering to keep files in order.
   _fileList: Map<FilePath, TimeStamp>;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor(state: ?{filelist?: FileList}) {
     this._fileList = new Map();
@@ -28,10 +28,11 @@ export default class RecentFilesService {
         this._fileList.set(fileItem.path, fileItem.timestamp);
       }, null);
     }
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
-      atom.workspace.onDidStopChangingActivePaneItem((item: ?mixed) => {
+      atom.workspace.onDidChangeActivePaneItem((item: ?mixed) => {
         // Not all `item`s are instances of TextEditor (e.g. the diff view).
+        // flowlint-next-line sketchy-null-mixed:off
         if (!item || typeof item.getPath !== 'function') {
           return;
         }
@@ -53,10 +54,13 @@ export default class RecentFilesService {
    * Returns a reverse-chronological list of recently opened files.
    */
   getRecentFiles(): FileList {
-    return Array.from(this._fileList).reverse().map(pair => ({
-      path: pair[0],
-      timestamp: pair[1],
-    }));
+    return Array.from(this._fileList)
+      .reverse()
+      .map(pair => ({
+        resultType: 'FILE',
+        path: pair[0],
+        timestamp: pair[1],
+      }));
   }
 
   dispose() {

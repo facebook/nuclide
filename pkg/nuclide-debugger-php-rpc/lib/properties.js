@@ -29,7 +29,17 @@ export function convertProperties(
   properties: Array<DbgpProperty>,
 ): Array<PropertyDescriptor> {
   logger.debug('Got properties: ' + JSON.stringify(properties));
-  return properties.map(property => convertProperty(id, property));
+  return properties
+    .map(property => convertProperty(id, property))
+    .sort((prop1, prop2) => {
+      // Do not sort array properties lexiographically!
+      const int1 = parseInt(prop1.name, 10);
+      const int2 = parseInt(prop2.name, 10);
+      if (!isNaN(int1) && !isNaN(int2)) {
+        return int1 - int2;
+      }
+      return prop1.name.localeCompare(prop2.name);
+    });
 }
 
 /**
@@ -45,6 +55,7 @@ export function convertProperty(
   const result = {
     configurable: false,
     enumerable: true,
+    // flowlint-next-line sketchy-null-string:off
     name: dbgpProperty.$.name || 'Anonymous Property',
     value: convertValue(contextId, dbgpProperty),
   };

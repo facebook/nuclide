@@ -10,6 +10,8 @@
  */
 
 import type {ShowNotificationLevel, Progress, HostServices} from './rpc-types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 
 import invariant from 'assert';
 import {Subject, ConnectableObservable} from 'rxjs';
@@ -98,6 +100,12 @@ class HostServicesAggregator {
     return this._selfRelay().dialogNotification(level, text);
   }
 
+  applyTextEditsForMultipleFiles(
+    changes: Map<NuclideUri, Array<TextEdit>>,
+  ): Promise<boolean> {
+    return this._selfRelay().applyTextEditsForMultipleFiles(changes);
+  }
+
   dialogRequest(
     level: ShowNotificationLevel,
     text: string,
@@ -119,6 +127,20 @@ class HostServicesAggregator {
     return this._selfRelay().showProgress(title, options);
   }
 
+  syncProgress(expected: Set<Progress>): void {
+    invariant(false, 'syncProgress is for internal use only.');
+  }
+
+  aggregateSyncProgress(): void {
+    const currentProgress: Set<Progress> = new Set();
+    for (const [, relay] of this._childRelays) {
+      for (const [, parentProgress] of relay._progressWrappers) {
+        currentProgress.add(parentProgress);
+      }
+    }
+    this._parent.syncProgress(currentProgress);
+  }
+
   showActionRequired(
     title: string,
     options?: {|clickable?: boolean|},
@@ -128,6 +150,11 @@ class HostServicesAggregator {
 
   // Call 'dispose' to dispose of the aggregate and all its children
   dispose(): void {
+    // Guard against double-disposal (see below).
+    if (this._childRelays == null) {
+      return;
+    }
+
     // We'll explicitly dispose of everything that our own self relay keeps
     // track of (e.g. outstanding busy signals, notifications, ...)
     this._selfRelay()._disposables.dispose();
@@ -168,6 +195,11 @@ class HostServicesRelay {
   // the _childIsDisposed.next().
   _childIsDisposed: Subject<void> = new Subject();
   _disposables: UniversalDisposable = new UniversalDisposable();
+
+  // _progressWrappers is a hack to work around message-loss in nuclide-rpc.
+  // It maps from the Progress wrappers we have returned from showProgress, to
+  // the underlying Progress that we got from our parent. See also syncProgress.
+  _progressWrappers: Map<Progress, Progress> = new Map();
 
   constructor(
     aggregator: HostServicesAggregator,
@@ -217,6 +249,12 @@ class HostServicesRelay {
       .publish();
   }
 
+  applyTextEditsForMultipleFiles(
+    changes: Map<NuclideUri, Array<TextEdit>>,
+  ): Promise<boolean> {
+    return this._aggregator._parent.applyTextEditsForMultipleFiles(changes);
+  }
+
   async showProgress(
     title: string,
     options?: {|debounce?: boolean|},
@@ -264,13 +302,33 @@ class HostServicesRelay {
       dispose: () => {
         this._disposables.remove(wrapper);
         if (progress != null) {
+          this._progressWrappers.delete(wrapper);
           progress.dispose();
           progress = null;
+          this._aggregator.aggregateSyncProgress();
         }
       },
     };
     this._disposables.add(wrapper);
+    this._progressWrappers.set(wrapper, progress);
+    this._aggregator.aggregateSyncProgress();
     return wrapper;
+  }
+
+  syncProgress(expected: Set<Progress>): void {
+    for (const [wrappedProgress, parentProgress] of this._progressWrappers) {
+      if (!expected.has(wrappedProgress)) {
+        this._progressWrappers.delete(wrappedProgress);
+        this._disposables.remove(wrappedProgress);
+        // We'll also call dispose on the parent object, to allow nuclide-rpc
+        // to remove the object from its object-id store. This is opportunistic;
+        // the call to aggregateSyncProgress is the definitive removal.
+        try {
+          parentProgress.dispose();
+        } catch (e) {}
+      }
+    }
+    this._aggregator.aggregateSyncProgress();
   }
 
   showActionRequired(
@@ -285,11 +343,13 @@ class HostServicesRelay {
   }
 
   dispose(): void {
-    // Remember, this is a notification relayed from one of the children that
-    // it has just finished its "dispose" method. That's what a relay is.
-    // It is *NOT* a means to dispose of this relay
-    this._disposables.dispose();
-    this._aggregator._childRelays.delete(this._id);
+    if (!this._disposables.disposed) {
+      // Remember, this is a notification relayed from one of the children that
+      // it has just finished its "dispose" method. That's what a relay is.
+      // It is *NOT* a means to dispose of this relay
+      this._disposables.dispose();
+      this._aggregator._childRelays.delete(this._id);
+    }
   }
 
   childRegister(child: HostServices): Promise<HostServices> {

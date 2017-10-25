@@ -13,6 +13,8 @@
 import type {
   DiagnosticProviderUpdate,
   DiagnosticInvalidationMessage,
+  DiagnosticMessageKind,
+  LinterConfig,
   LinterMessageV2,
 } from '../types';
 
@@ -22,6 +24,8 @@ import {linterMessagesToDiagnosticUpdate} from '../services/LinterAdapter';
 
 export class IndieLinterDelegate {
   _name: string;
+  _supportedMessageKinds: Array<DiagnosticMessageKind>;
+  _uiSettings: Array<string>;
   _messages: Array<LinterMessageV2>;
   _updates: Subject<DiagnosticProviderUpdate>;
   _invalidations: Subject<DiagnosticInvalidationMessage>;
@@ -31,8 +35,12 @@ export class IndieLinterDelegate {
   updates: Observable<DiagnosticProviderUpdate>;
   invalidations: Observable<DiagnosticInvalidationMessage>;
 
-  constructor(name: string) {
-    this._name = name;
+  constructor(config: LinterConfig) {
+    this._name = config.name;
+    this._supportedMessageKinds = config.supportedMessageKinds || ['lint'];
+    this._uiSettings = Object.freeze(
+      config.uiSettings ? config.uiSettings.slice() : [],
+    );
     this._messages = [];
     this._updates = new Subject();
     this._invalidations = new Subject();
@@ -44,6 +52,15 @@ export class IndieLinterDelegate {
 
   get name(): string {
     return this._name;
+  }
+
+  get supportedMessageKinds(): Array<DiagnosticMessageKind> {
+    // We'll count on ourselves not to mutate this.
+    return this._supportedMessageKinds;
+  }
+
+  get uiSettings(): Array<string> {
+    return this._uiSettings;
   }
 
   getMessages(): Array<LinterMessageV2> {
@@ -84,7 +101,10 @@ export class IndieLinterDelegate {
 
   onDidDestroy(callback: () => mixed): IDisposable {
     return new UniversalDisposable(
-      this._destroyed.filter(Boolean).take(1).subscribe(callback),
+      this._destroyed
+        .filter(Boolean)
+        .take(1)
+        .subscribe(callback),
     );
   }
 
@@ -104,8 +124,8 @@ export default class IndieLinterRegistry {
     this._delegates = new Set();
   }
 
-  register(config: {name: string}): IndieLinterDelegate {
-    const delegate = new IndieLinterDelegate(config.name);
+  register(config: LinterConfig): IndieLinterDelegate {
+    const delegate = new IndieLinterDelegate(config);
     this._delegates.add(delegate);
     delegate.onDidDestroy(() => {
       this._delegates.delete(delegate);

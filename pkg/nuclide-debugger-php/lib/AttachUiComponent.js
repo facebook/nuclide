@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {AttachProcessInfo} from './AttachProcessInfo';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
 import {RemoteConnection} from '../../nuclide-remote-connection';
@@ -33,11 +33,7 @@ type StateType = {
   pathMenuItems: Array<{label: string, value: number}>,
 };
 
-export class AttachUiComponent extends React.Component<
-  void,
-  PropsType,
-  StateType,
-> {
+export class AttachUiComponent extends React.Component<PropsType, StateType> {
   props: PropsType;
   state: StateType;
   _disposables: UniversalDisposable;
@@ -101,11 +97,12 @@ export class AttachUiComponent extends React.Component<
     return true;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="block">
         <div className="nuclide-debugger-php-launch-attach-ui-select-project">
           <label>Selected Project Directory: </label>
+          {/* $FlowFixMe(>=0.53.0) Flow suppress */}
           <Dropdown
             className="inline-block nuclide-debugger-connection-box"
             options={this.state.pathMenuItems}

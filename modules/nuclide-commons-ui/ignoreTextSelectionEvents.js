@@ -29,8 +29,10 @@
  *   onClick={ignoreTextSelectionEvents(this._onClick)}
  */
 
-const ignoreTextSelectionEvents = (cb?: (e: SyntheticMouseEvent) => mixed) => {
-  return (e: SyntheticMouseEvent) => {
+const ignoreTextSelectionEvents = (
+  cb?: (e: SyntheticMouseEvent<>) => mixed,
+) => {
+  return (e: SyntheticMouseEvent<>) => {
     // Ignore text selection
     const selection = getSelection();
     if (selection != null && selection.type === 'Range') {

@@ -16,8 +16,10 @@ import {shell} from 'electron';
 import {HACK_GRAMMARS} from '../../nuclide-hack-common/lib/constants.js';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
-import {Button} from 'nuclide-commons-ui/Button';
-import React from 'react';
+import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {Checkbox} from 'nuclide-commons-ui/Checkbox';
+import * as React from 'react';
+import {HhvmToolbarSettings} from './HhvmToolbarSettings';
 
 const WEB_SERVER_OPTION = {label: 'Attach to WebServer', value: 'webserver'};
 const SCRIPT_OPTION = {label: 'Launch Script', value: 'script'};
@@ -30,12 +32,29 @@ type Props = {
   projectStore: ProjectStore,
 };
 
-export default class HhvmToolbar extends React.Component {
-  props: Props;
+type State = {
+  stickyScript: boolean,
+  useTerminal: boolean,
+  settingsVisible: boolean,
+};
+
+export default class HhvmToolbar extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      stickyScript: false,
+      useTerminal: false,
+      settingsVisible: false,
+    };
+  }
 
   _updateLastScriptCommand = (command: string): void => {
     if (this.props.projectStore.getDebugMode() !== 'webserver') {
-      this.props.projectStore.updateLastScriptCommand(command);
+      if (this.state.stickyScript) {
+        this.props.projectStore.setStickyCommand(command, true);
+      } else {
+        this.props.projectStore.updateLastScriptCommand(command);
+      }
     }
   };
 
@@ -47,11 +66,11 @@ export default class HhvmToolbar extends React.Component {
       additionalOptions.push(...helpers.getAdditionalLaunchOptions());
     } catch (e) {}
 
-    return (this._isTargetLaunchable(
+    return this._isTargetLaunchable(
       this.props.projectStore.getCurrentFilePath(),
     )
-      ? DEBUG_OPTIONS
-      : NO_LAUNCH_DEBUG_OPTIONS).concat(additionalOptions);
+      ? DEBUG_OPTIONS.concat(additionalOptions)
+      : NO_LAUNCH_DEBUG_OPTIONS;
   }
 
   _isTargetLaunchable(targetFilePath: string): boolean {
@@ -74,6 +93,7 @@ export default class HhvmToolbar extends React.Component {
     const store = this.props.projectStore;
     if (
       store.getDebugMode() === 'script' &&
+      !this.state.stickyScript &&
       !this._isTargetLaunchable(store.getCurrentFilePath())
     ) {
       store.setDebugMode('webserver');
@@ -82,7 +102,7 @@ export default class HhvmToolbar extends React.Component {
     this.refs.debugTarget.setText(store.getDebugTarget());
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const store = this.props.projectStore;
     const isDebugScript = store.getDebugMode() !== 'webserver';
     const isDisabled = !isDebugScript;
@@ -90,6 +110,7 @@ export default class HhvmToolbar extends React.Component {
 
     return (
       <div className="hhvm-toolbar">
+        {/* $FlowFixMe(>=0.53.0) Flow suppress */}
         <Dropdown
           className="inline-block"
           options={this._getMenuItems()}
@@ -101,7 +122,7 @@ export default class HhvmToolbar extends React.Component {
         <div className="inline-block" style={{width: '300px'}}>
           <AtomInput
             ref="debugTarget"
-            initialValue={value}
+            value={value}
             // Ugly hack: prevent people changing the value without disabling so
             // that they can copy and paste.
             onDidChange={
@@ -116,34 +137,92 @@ export default class HhvmToolbar extends React.Component {
             size="sm"
           />
         </div>
-        {!isDebugScript
-          ? <Button
+        {store.getDebugMode() !== 'webserver' ? (
+          <Button
+            className="icon icon-gear"
+            size={ButtonSizes.SMALL}
+            title="Advanced settings"
+            style={{'margin-right': '3px'}}
+            onClick={() => this._showSettings()}
+          />
+        ) : null}
+        {this.state.settingsVisible ? (
+          <HhvmToolbarSettings
+            projectStore={this.props.projectStore}
+            onDismiss={() => this._hideSettings()}
+          />
+        ) : null}
+        <div className="inline-block">
+          {!isDebugScript ? (
+            <Button
               size="SMALL"
               onClick={() => {
                 shell.openExternal('https://' + store.getDebugTarget());
               }}>
               Open
             </Button>
-          : null}
+          ) : (
+            <Checkbox
+              checked={this.state.stickyScript}
+              label="Sticky"
+              onChange={isChecked => {
+                this.props.projectStore.setStickyCommand(
+                  this.refs.debugTarget.getText(),
+                  isChecked,
+                );
+                this.setState({stickyScript: isChecked});
+              }}
+              tooltip={{
+                title:
+                  'When checked, the target script will not change when switching to another editor tab',
+              }}
+            />
+          )}
+          {store.getDebugMode() === 'script' ? (
+            <Checkbox
+              checked={this.state.useTerminal}
+              className="nuclide-hhvm-use-terminal-control"
+              label="Run in Terminal"
+              onChange={isChecked => {
+                this.props.projectStore.setUseTerminal(isChecked);
+                this.setState({useTerminal: isChecked});
+              }}
+              tooltip={{
+                title:
+                  "When checked, the target script's STDIN and STDOUT will be redirected to a new Nuclide Terminal pane",
+              }}
+            />
+          ) : null}
+        </div>
       </div>
     );
   }
 
+  _showSettings(): void {
+    this.setState({settingsVisible: true});
+  }
+
+  _hideSettings(): void {
+    this.setState({settingsVisible: false});
+  }
+
   _suggestTargetIfCustomDebugMode(debugMode: DebugMode) {
+    const store = this.props.projectStore;
     // If a custom debug mode is selected, suggest a debug target for the user.
     if (DEBUG_OPTIONS.find(option => option.value === debugMode) == null) {
       try {
         // $FlowFB
         const helpers = require('./fb-hhvm');
-        const store = this.props.projectStore;
         const suggestedTarget = helpers.suggestDebugTargetName(
           debugMode,
           store.getCurrentFilePath(),
         );
-        if (suggestedTarget != null) {
-          store.updateLastScriptCommand(suggestedTarget);
-        }
+        store.updateLastScriptCommand(
+          suggestedTarget != null ? suggestedTarget : '',
+        );
       } catch (e) {}
+    } else {
+      store.updateLastScriptCommand('');
     }
   }
 

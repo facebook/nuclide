@@ -9,15 +9,15 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 import FileWatcher from './FileWatcher';
 
-let subscriptions: ?CompositeDisposable = null;
+let subscriptions: ?UniversalDisposable = null;
 let watchers: ?Map<any, any> = null;
 
 export function activate(state: ?Object): void {
-  const _subscriptions = new CompositeDisposable();
+  const _subscriptions = new UniversalDisposable();
   const _watchers = new Map();
 
   _subscriptions.add(

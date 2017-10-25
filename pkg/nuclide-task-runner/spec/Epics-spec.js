@@ -571,12 +571,19 @@ describe('Epics', () => {
           {
             type: Actions.TASK_STOPPED,
             payload: {
-              taskStatus: {metadata: taskMeta, task, progress: 1},
+              taskStatus: {
+                metadata: taskMeta,
+                task,
+                progress: 1,
+                startDate: new Date(),
+              },
               taskRunner,
             },
           },
         ];
-        await runActions(actions, state).toArray().toPromise();
+        await runActions(actions, state)
+          .toArray()
+          .toPromise();
         expect(task.cancel).toHaveBeenCalled();
       });
     });

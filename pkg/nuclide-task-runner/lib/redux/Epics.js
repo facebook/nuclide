@@ -21,7 +21,6 @@ import type {
 import type {Directory} from '../../../nuclide-remote-connection';
 import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 
-import {saveBuffer} from '../../../nuclide-remote-connection';
 import {observableFromTask} from '../../../commons-node/tasks';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getLogger} from 'log4js';
@@ -254,6 +253,7 @@ export function toggleToolbarVisibilityEpic(
       const currentlyVisible = state.visible;
       const {visible, taskRunner} = action.payload;
 
+      // eslint-disable-next-line eqeqeq
       if (visible === true || (visible === null && !currentlyVisible)) {
         if (projectRoot == null) {
           atom.notifications.addError(
@@ -371,7 +371,7 @@ export function verifySavedBeforeRunningTaskEpic(
             return Promise.all(
               unsavedEditors
                 .filter(editor => stillUnsaved.indexOf(editor) !== -1)
-                .map(editor => saveBuffer(editor.getBuffer())),
+                .map(editor => editor.save()),
             );
           });
           return Observable.concat(
@@ -563,7 +563,11 @@ function createTaskObservable(
       taskFailedNotification.dismiss();
     }
     const task = taskMeta.taskRunner.runTask(taskMeta.type);
-    const taskStatus = {metadata: taskMeta, task};
+    const taskStatus = {
+      metadata: taskMeta,
+      task,
+      startDate: new Date(),
+    };
     const events = observableFromTask(task);
 
     return Observable.of({

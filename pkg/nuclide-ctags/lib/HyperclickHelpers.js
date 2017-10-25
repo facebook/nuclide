@@ -27,7 +27,7 @@ const QUALIFYING_FIELDS = ['class', 'namespace', 'struct', 'enum', 'Module'];
 function createCallback(tag: CtagsResult) {
   return async () => {
     const lineNumber = await getLineNumberForTag(tag);
-    goToLocation(tag.file, lineNumber, 0);
+    goToLocation(tag.file, {line: lineNumber, column: 0});
   };
 }
 

@@ -37,6 +37,7 @@ import {
   ConnectionCache,
   getServiceByConnection,
 } from '../../nuclide-remote-connection';
+import {completingSwitchMap} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
@@ -93,12 +94,21 @@ async function connectionToFlowService(
   );
   const fileNotifier = await getNotifierByConnection(connection);
   const host = await getHostServices();
+  getLogger('nuclide-flow').info(
+    'Checking the nuclide_flow_lazy_mode_ide gk...',
+  );
+  const ideLazyMode = await passesGK(
+    'nuclide_flow_lazy_mode_ide',
+    15 * 1000, // 15 second timeout
+  );
+  getLogger('nuclide-flow').info('ideLazyMode: %s', ideLazyMode);
   const config: FlowSettings = {
     functionSnippetShouldIncludeArguments: Boolean(
       featureConfig.get('nuclide-flow.functionSnippetShouldIncludeArguments'),
     ),
     stopFlowOnExit: Boolean(featureConfig.get('nuclide-flow.stopFlowOnExit')),
     lazyServer: Boolean(featureConfig.get('nuclide-flow.lazyServer')),
+    ideLazyMode,
   };
   const languageService = await flowService.initialize(
     fileNotifier,
@@ -117,36 +127,32 @@ export function serverStatusUpdatesToBusyMessages(
   return statusUpdates
     .groupBy(({pathToRoot}) => pathToRoot)
     .mergeMap(messagesForRoot => {
-      return (
-        messagesForRoot
-          // Append a null sentinel to ensure that completion clears the busy signal.
-          .concat(Observable.of(null))
-          .switchMap(nextStatus => {
-            // I would use constants here but the constant is in the flow-rpc package which we can't
-            // load directly from this package. Casting to the appropriate type is just as safe.
-            if (
-              nextStatus != null &&
-              (nextStatus.status === ('init': ServerStatusType) ||
-                nextStatus.status === ('busy': ServerStatusType))
-            ) {
-              const readablePath = nuclideUri.nuclideUriToDisplayString(
-                nextStatus.pathToRoot,
+      return messagesForRoot.let(
+        completingSwitchMap(nextStatus => {
+          // I would use constants here but the constant is in the flow-rpc package which we can't
+          // load directly from this package. Casting to the appropriate type is just as safe.
+          if (
+            nextStatus.status === ('init': ServerStatusType) ||
+            nextStatus.status === ('busy': ServerStatusType)
+          ) {
+            const readablePath = nuclideUri.nuclideUriToDisplayString(
+              nextStatus.pathToRoot,
+            );
+            const readableStatus =
+              nextStatus.status === ('init': ServerStatusType)
+                ? 'initializing'
+                : 'busy';
+            // Use an observable to encapsulate clearing the message.
+            // The switchMap above will ensure that messages get cleared.
+            return Observable.create(observer => {
+              const disposable = busySignal.reportBusy(
+                `Flow server is ${readableStatus} (${readablePath})`,
               );
-              const readableStatus =
-                nextStatus.status === ('init': ServerStatusType)
-                  ? 'initializing'
-                  : 'busy';
-              // Use an observable to encapsulate clearing the message.
-              // The switchMap above will ensure that messages get cleared.
-              return Observable.create(observer => {
-                const disposable = busySignal.reportBusy(
-                  `Flow server is ${readableStatus} (${readablePath})`,
-                );
-                return () => disposable.dispose();
-              });
-            }
-            return Observable.empty();
-          })
+              return () => disposable.dispose();
+            });
+          }
+          return Observable.empty();
+        }),
       );
     })
     .subscribe();
@@ -185,9 +191,6 @@ async function allowFlowServerRestart(): Promise<void> {
 }
 
 async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
-  const enableHighlight = featureConfig.get(
-    'nuclide-flow.enableReferencesHighlight',
-  );
   const excludeLowerPriority = Boolean(
     featureConfig.get('nuclide-flow.excludeOtherAutocomplete'),
   );
@@ -197,16 +200,17 @@ async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
   const enableTypeHints = Boolean(
     featureConfig.get('nuclide-flow.enableTypeHints'),
   );
+  const enableFindRefs = Boolean(
+    featureConfig.get('nuclide-flow.enableFindReferences'),
+  );
   return {
     name: 'Flow',
     grammars: JS_GRAMMARS,
-    highlight: enableHighlight
-      ? {
-          version: '0.1.0',
-          priority: 1,
-          analyticsEventName: 'flow.codehighlight',
-        }
-      : undefined,
+    highlight: {
+      version: '0.1.0',
+      priority: 1,
+      analyticsEventName: 'flow.codehighlight',
+    },
     outline: {
       version: '0.1.0',
       priority: 1,
@@ -262,6 +266,12 @@ async function getLanguageServiceConfig(): Promise<AtomLanguageServiceConfig> {
       analyticsEventName: 'flow.evaluationExpression',
       matcher: {kind: 'default'},
     },
+    findReferences: enableFindRefs
+      ? {
+          version: '0.1.0',
+          analyticsEventName: 'flow.find-references',
+        }
+      : undefined,
   };
 }
 

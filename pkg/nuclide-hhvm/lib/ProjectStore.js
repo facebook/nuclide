@@ -14,7 +14,7 @@ import type {DebugMode} from './types';
 import {Emitter} from 'atom';
 import {BehaviorSubject} from 'rxjs';
 
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {isFileInHackProject} from '../../nuclide-hack/lib/HackLanguage';
 import {trackTiming} from '../../nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -28,6 +28,9 @@ export default class ProjectStore {
   _isHHVMProject: ?boolean;
   _debugMode: DebugMode;
   _filePathsToScriptCommand: Map<string, string>;
+  _stickyCommand: string;
+  _useTerminal: boolean;
+  _scriptArguments: string;
 
   constructor() {
     this._emitter = new Emitter();
@@ -36,6 +39,9 @@ export default class ProjectStore {
     this._isHHVMProject = null;
     this._debugMode = 'webserver';
     this._filePathsToScriptCommand = new Map();
+    this._stickyCommand = '';
+    this._useTerminal = false;
+    this._scriptArguments = '';
 
     const onDidChange = this._onDidChangeActivePaneItem.bind(this);
     this._disposables = new UniversalDisposable(
@@ -62,6 +68,7 @@ export default class ProjectStore {
     }
 
     const fileName = activeTextEditor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!fileName) {
       return;
     }
@@ -123,9 +130,40 @@ export default class ProjectStore {
     this._emitter.emit('change');
   }
 
+  setScriptArguments(args: string): void {
+    this._scriptArguments = args;
+  }
+
+  getScriptArguments(): string {
+    return this._scriptArguments;
+  }
+
+  setStickyCommand(command: string, sticky: boolean): void {
+    if (sticky) {
+      this._stickyCommand = command;
+    } else {
+      const activeTextEditor = atom.workspace.getActiveTextEditor();
+      if (!activeTextEditor || !activeTextEditor.getPath()) {
+        this._currentFilePath = command;
+      }
+      this._stickyCommand = '';
+    }
+  }
+
+  setUseTerminal(useTerminal: boolean): void {
+    this._useTerminal = useTerminal;
+  }
+
+  getUseTerminal(): boolean {
+    return this._useTerminal;
+  }
+
   getDebugTarget(): string {
     const filePath = this._currentFilePath;
     if (this._debugMode !== 'webserver') {
+      if (this._stickyCommand !== '') {
+        return this._stickyCommand;
+      }
       const localPath = nuclideUri.getPath(filePath);
       const lastScriptCommand = this.getLastScriptCommand(localPath);
       return lastScriptCommand === '' ? localPath : lastScriptCommand;

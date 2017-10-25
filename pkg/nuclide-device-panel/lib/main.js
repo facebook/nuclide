@@ -16,7 +16,7 @@ import {
   WORKSPACE_VIEW_URI,
 } from './DevicePanelWorkspaceView';
 import {Disposable} from 'atom';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {ServerConnection} from '../../nuclide-remote-connection/lib/ServerConnection';
 import {
   combineEpics,
@@ -81,7 +81,9 @@ class Activation {
   _refreshDeviceTypes(): void {
     this._store.dispatch(
       Actions.setDeviceTypes(
-        Array.from(getProviders().deviceList).map(p => p.getType()),
+        Array.from(getProviders().deviceList)
+          .map(p => p.getType())
+          .sort((a, b) => a.localeCompare(b)),
       ),
     );
   }
@@ -132,6 +134,10 @@ class Activation {
       ),
       registerDeviceTypeTaskProvider: this._createProviderRegistration(
         providers.deviceTypeTask,
+        () => this._refreshDeviceTypes(),
+      ),
+      registerDeviceActionProvider: this._createProviderRegistration(
+        providers.deviceAction,
       ),
     };
   }

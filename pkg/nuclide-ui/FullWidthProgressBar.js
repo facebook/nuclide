@@ -11,17 +11,15 @@
 
 import invariant from 'assert';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   progress: ?number /* 0..1 */,
   visible: boolean,
 };
 
-export default class FullWidthProgressBar extends React.Component {
-  props: Props;
-
-  render(): ?React.Element<any> {
+export default class FullWidthProgressBar extends React.Component<Props> {
+  render(): React.Node {
     const className = classnames('nuclide-ui-full-width-progress-bar', {
       indeterminate: this._isIndeterminate(),
     });
@@ -50,10 +48,8 @@ type BarProps = {
   progress: number,
 };
 
-class Bar extends React.Component {
-  props: BarProps;
-
-  render(): React.Element<any> {
+class Bar extends React.Component<BarProps> {
+  render(): React.Node {
     const pct = Math.max(0, Math.min(100, this.props.progress * 100));
     return (
       <div

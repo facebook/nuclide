@@ -15,32 +15,36 @@ import type {OutlineForUi, OutlineTreeForUi} from './createOutlines';
 import type {TextToken} from 'nuclide-commons/tokenized-text';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 import classnames from 'classnames';
 
 import analytics from 'nuclide-commons-atom/analytics';
-import {goToLocationInEditor} from 'nuclide-commons-atom/go-to-location';
+import {
+  goToLocation,
+  goToLocationInEditor,
+} from 'nuclide-commons-atom/go-to-location';
 import {
   LoadingSpinner,
   LoadingSpinnerSizes,
 } from 'nuclide-commons-ui/LoadingSpinner';
 import {EmptyState} from 'nuclide-commons-ui/EmptyState';
+import {NestedTreeItem, Tree, TreeItem} from 'nuclide-commons-ui/Tree';
 
-import featureConfig from 'nuclide-commons-atom/feature-config';
 import type {SearchResult} from './OutlineViewSearch';
 import {OutlineViewSearchComponent} from './OutlineViewSearch';
 import groupMatchIndexes from 'nuclide-commons/groupMatchIndexes';
 
-const SEARCH_ENABLED_DEFAULT = true;
-
 type State = {
+  fontFamily: string,
+  fontSize: number,
+  lineHeight: number,
   outline: OutlineForUi,
-  searchEnabled: boolean,
 };
 
 type Props = {
   outlines: Observable<OutlineForUi>,
+  visibility: Observable<boolean>,
 };
 
 const TOKEN_KIND_TO_CLASS_NAME_MAP = {
@@ -55,22 +59,18 @@ const TOKEN_KIND_TO_CLASS_NAME_MAP = {
   type: 'syntax--support syntax--type',
 };
 
-export class OutlineView extends React.PureComponent {
-  state: State;
-  props: Props;
-
+export class OutlineView extends React.PureComponent<Props, State> {
   subscription: ?UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
     this.state = {
+      fontFamily: (atom.config.get('editor.fontFamily'): any),
+      fontSize: (atom.config.get('editor.fontSize'): any),
+      lineHeight: (atom.config.get('editor.lineHeight'): any),
       outline: {
         kind: 'empty',
       },
-      searchEnabled: featureConfig.getWithDefaults(
-        'atom-ide-outline-view.searchEnabled',
-        SEARCH_ENABLED_DEFAULT,
-      ),
     };
   }
 
@@ -80,15 +80,15 @@ export class OutlineView extends React.PureComponent {
       this.props.outlines.subscribe(outline => {
         this.setState({outline});
       }),
-      featureConfig
-        .observeAsStream('atom-ide-outline-view.searchEnabled')
-        .subscribe((searchEnabled: mixed) => {
-          if (typeof searchEnabled === 'boolean') {
-            this.setState({searchEnabled});
-          } else {
-            this.setState({searchEnabled: SEARCH_ENABLED_DEFAULT});
-          }
-        }),
+      atom.config.observe('editor.fontSize', (size: mixed) => {
+        this.setState({fontSize: (size: any)});
+      }),
+      atom.config.observe('editor.fontFamily', (font: mixed) => {
+        this.setState({fontFamily: (font: any)});
+      }),
+      atom.config.observe('editor.lineHeight', (size: mixed) => {
+        this.setState({lineHeight: (size: any)});
+      }),
     );
   }
 
@@ -98,12 +98,23 @@ export class OutlineView extends React.PureComponent {
     this.subscription = null;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
-      <div className="nuclide-outline-view">
+      <div className="outline-view">
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .outline-view-core {
+                line-height: ${this.state.lineHeight};
+                font-size: ${this.state.fontSize}px;
+                font-family: ${this.state.fontFamily};
+              }
+          `,
+          }}
+        />
         <OutlineViewComponent
           outline={this.state.outline}
-          searchEnabled={this.state.searchEnabled}
+          visibility={this.props.visibility}
         />
       </div>
     );
@@ -112,18 +123,18 @@ export class OutlineView extends React.PureComponent {
 
 type OutlineViewComponentProps = {
   outline: OutlineForUi,
-  searchEnabled: boolean,
+  visibility: Observable<boolean>,
 };
 
-class OutlineViewComponent extends React.PureComponent {
-  props: OutlineViewComponentProps;
-
+class OutlineViewComponent extends React.PureComponent<
+  OutlineViewComponentProps,
+> {
   constructor(props: OutlineViewComponentProps) {
     super(props);
   }
 
-  render(): ?React.Element<any> {
-    const {outline, searchEnabled} = this.props;
+  render(): React.Node {
+    const {outline} = this.props;
 
     switch (outline.kind) {
       case 'empty':
@@ -131,12 +142,12 @@ class OutlineViewComponent extends React.PureComponent {
         return (
           <EmptyState
             title="No outline available"
-            message="You need to open a file to use outline view."
+            message="Open a file to see its outline."
           />
         );
       case 'loading':
         return (
-          <div className="nuclide-outline-view-loading">
+          <div className="outline-view-loading">
             <LoadingSpinner
               className="inline-block"
               size={LoadingSpinnerSizes.MEDIUM}
@@ -144,29 +155,42 @@ class OutlineViewComponent extends React.PureComponent {
           </div>
         );
       case 'no-provider':
-        return outline.grammar === 'Null Grammar'
-          ? <EmptyState
-              title="No outline available"
-              message="The current file doesn't have an associated grammar. You may want to save it."
-            />
-          : <EmptyState
-              title="No outline available"
-              message={
-                'Outline view does not currently support ' +
-                outline.grammar +
-                '.'
-              }
-            />;
+        return outline.grammar === 'Null Grammar' ? (
+          <EmptyState
+            title="No outline available"
+            message="Atom doesn't recognize this file's language. Make sure this file has an extension and has been saved."
+          />
+        ) : (
+          <EmptyState
+            title="No outline available"
+            message={
+              <div>
+                {outline.grammar} files do not currently support outlines.{' '}
+                <a
+                  href="#"
+                  onClick={() =>
+                    goToLocation(
+                      `atom://config/install/package:ide-${outline.grammar}`,
+                    )}>
+                  Install an IDE package first.
+                </a>
+              </div>
+            }
+          />
+        );
       case 'provider-no-outline':
         return (
           <EmptyState
             title="No outline available"
-            message="There are no outline providers registered."
+            message="This is likely an error with the language package."
           />
         );
       case 'outline':
         return (
-          <OutlineViewCore outline={outline} searchEnabled={searchEnabled} />
+          <OutlineViewCore
+            outline={outline}
+            visibility={this.props.visibility}
+          />
         );
       default:
         (outline: empty);
@@ -176,14 +200,18 @@ class OutlineViewComponent extends React.PureComponent {
 
 type OutlineViewCoreProps = {
   outline: OutlineForUi,
-  searchEnabled: boolean,
+  visibility: Observable<boolean>,
 };
 
 /**
  * Contains both the search field and the scrollable outline tree
  */
-class OutlineViewCore extends React.PureComponent {
-  props: OutlineViewCoreProps;
+class OutlineViewCore extends React.PureComponent<
+  OutlineViewCoreProps,
+  {
+    searchResults: Map<OutlineTreeForUi, SearchResult>,
+  },
+> {
   state: {
     searchResults: Map<OutlineTreeForUi, SearchResult>,
   } = {
@@ -191,88 +219,116 @@ class OutlineViewCore extends React.PureComponent {
   };
 
   render() {
-    const {outline, searchEnabled} = this.props;
+    const {outline, visibility} = this.props;
     invariant(outline.kind === 'outline');
 
     return (
-      <div className="nuclide-outline-view-core">
-        {searchEnabled
-          ? <OutlineViewSearchComponent
-              outlineTrees={outline.outlineTrees}
-              editor={outline.editor}
-              updateSearchResults={searchResults => {
-                this.setState({searchResults});
-              }}
-            />
-          : null}
-        <div className="nuclide-outline-view-trees-scroller">
-          <div className="nuclide-outline-view-trees">
+      <div className="outline-view-core">
+        <OutlineViewSearchComponent
+          outlineTrees={outline.outlineTrees}
+          editor={outline.editor}
+          updateSearchResults={searchResults => {
+            this.setState({searchResults});
+          }}
+          visibility={visibility}
+        />
+        <div className="outline-view-trees-scroller">
+          <Tree className="outline-view-trees">
             {renderTrees(
               outline.editor,
               outline.outlineTrees,
               this.state.searchResults,
             )}
-          </div>
+          </Tree>
         </div>
       </div>
     );
   }
 }
 
-class OutlineTree extends React.PureComponent {
-  props: {
-    editor: atom$TextEditor,
-    outline: OutlineTreeForUi,
-    searchResults: Map<OutlineTreeForUi, SearchResult>,
-  };
-
-  onClick = () => {
+class OutlineTree extends React.PureComponent<{
+  editor: atom$TextEditor,
+  outline: OutlineTreeForUi,
+  searchResults: Map<OutlineTreeForUi, SearchResult>,
+}> {
+  _handleSelect = () => {
     const {editor, outline} = this.props;
-    const pane = atom.workspace.paneForItem(editor);
-    if (pane == null) {
-      return;
-    }
+    // single click moves the cursor, but does not focus the editor
     analytics.track('atom-ide-outline-view:go-to-location');
-    pane.activate();
-    pane.activateItem(editor);
-    goToLocationInEditor(
-      editor,
-      outline.startPosition.row,
-      outline.startPosition.column,
-    );
+    const landingPosition =
+      outline.landingPosition != null
+        ? outline.landingPosition
+        : outline.startPosition;
+    goToLocationInEditor(editor, {
+      line: landingPosition.row,
+      column: landingPosition.column,
+    });
   };
 
-  onDoubleClick = () => {
-    const {editor, outline} = this.props;
+  _handleConfirm = () => {
+    this._focusEditor();
+  };
 
-    // Assumes that the click handler has already run, activating the text editor and moving the
-    // cursor to the start of the symbol.
+  _handleTripleClick = () => {
+    const {editor, outline} = this.props;
+    // triple click selects the symbol's region
     const endPosition = outline.endPosition;
     if (endPosition != null) {
       editor.selectToBufferPosition(endPosition);
     }
+    this._focusEditor();
   };
 
-  render(): React.Element<any> {
+  _focusEditor = () => {
+    const {editor} = this.props;
+    // double and triple clicks focus the editor afterwards
+    const pane = atom.workspace.paneForItem(editor);
+    if (pane == null) {
+      return;
+    }
+
+    // Assumes that the click handler has already run, which moves the
+    // cursor to the start of the symbol. Let's activate the pane now.
+    pane.activate();
+    pane.activateItem(editor);
+  };
+
+  render(): React.Node {
     const {editor, outline, searchResults} = this.props;
 
-    const classNames = ['list-nested-item'];
-    if (outline.kind) {
-      classNames.push(`kind-${outline.kind}`);
+    const classes = classnames(
+      'outline-view-item',
+      outline.kind ? `kind-${outline.kind}` : null,
+      {
+        selected: outline.highlighted,
+      },
+    );
+
+    const childTrees = renderTrees(editor, outline.children, searchResults);
+    const itemContent = renderItem(outline, searchResults.get(outline));
+
+    if (childTrees.length === 0) {
+      return (
+        <TreeItem
+          className={classes}
+          onConfirm={this._handleConfirm}
+          onSelect={this._handleSelect}
+          onTripleClick={this._handleTripleClick}>
+          {itemContent}
+        </TreeItem>
+      );
     }
-    const classes = classnames(classNames, {
-      selected: outline.highlighted,
-    });
     return (
-      <li className={classes}>
-        <div
-          className="list-item nuclide-outline-view-item"
-          onClick={this.onClick}
-          onDoubleClick={this.onDoubleClick}>
-          {renderItem(outline, searchResults.get(outline))}
-        </div>
-        {renderTrees(editor, outline.children, searchResults)}
-      </li>
+      // Set fontSize for the li to make the highlighted region of selected
+      // lines (set equal to 2em) look reasonable relative to size of the font.
+      <NestedTreeItem
+        className={classes}
+        onConfirm={this._handleConfirm}
+        onSelect={this._handleSelect}
+        onTripleClick={this._handleTripleClick}
+        title={itemContent}>
+        {childTrees}
+      </NestedTreeItem>
     );
   }
 }
@@ -280,9 +336,10 @@ class OutlineTree extends React.PureComponent {
 function renderItem(
   outline: OutlineTreeForUi,
   searchResult: ?SearchResult,
-): Array<React.Element<any> | string> {
+): React.Element<string> | string {
   const r = [];
   const icon =
+    // flowlint-next-line sketchy-null-string:off
     outline.icon || (outline.kind && OUTLINE_KIND_TO_ICON[outline.kind]);
 
   if (icon != null) {
@@ -313,7 +370,8 @@ function renderItem(
   } else {
     r.push('Missing text');
   }
-  return r;
+
+  return <span>{r}</span>;
 }
 
 function renderTextToken(
@@ -340,11 +398,7 @@ function renderTextToken(
 }
 
 function renderSubsequence(seq: string, props: Object): React.Element<any> {
-  return (
-    <span {...props}>
-      {seq}
-    </span>
-  );
+  return <span {...props}>{seq}</span>;
 }
 
 function renderUnmatchedSubsequence(
@@ -360,7 +414,7 @@ function renderMatchedSubsequence(
 ): React.Element<any> {
   return renderSubsequence(seq, {
     key,
-    className: 'atom-ide-outline-view-match',
+    className: 'outline-view-match',
   });
 }
 
@@ -368,31 +422,18 @@ function renderTrees(
   editor: atom$TextEditor,
   outlines: Array<OutlineTreeForUi>,
   searchResults: Map<OutlineTreeForUi, SearchResult>,
-): ?React.Element<any> {
-  if (outlines.length === 0) {
-    return null;
-  }
-  return (
-    // Add `position: relative;` to let `li.selected` style position itself relative to the list
-    // tree rather than to its container.
-    <ul
-      className="list-tree"
-      style={{
-        position: 'relative',
-      }}>
-      {outlines.map((outline, index) => {
-        const result = searchResults.get(outline);
-        return !result || result.visible
-          ? <OutlineTree
-              editor={editor}
-              outline={outline}
-              key={index}
-              searchResults={searchResults}
-            />
-          : null;
-      })}
-    </ul>
-  );
+): Array<?React.Element<any>> {
+  return outlines.map((outline, index) => {
+    const result = searchResults.get(outline);
+    return !result || result.visible ? (
+      <OutlineTree
+        editor={editor}
+        outline={outline}
+        key={index}
+        searchResults={searchResults}
+      />
+    ) : null;
+  });
 }
 
 const OUTLINE_KIND_TO_ICON = {

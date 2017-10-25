@@ -1,6 +1,15 @@
 /**
-eslint-disable nuclide-internal/license-header
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ * @format
+ */
 
+/**
 Originally copied from https://github.com/Microsoft/vscode/blob/b34f17350f2d20dbbbfdb26df91dd50bb9160900/src/vs/workbench/parts/debug/electron-browser/debugHover.ts#L125-L166
 
 MIT License
@@ -26,9 +35,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-@flow
-@format
 */
 
 import {Range} from 'atom';

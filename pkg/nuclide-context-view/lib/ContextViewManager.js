@@ -22,7 +22,7 @@ import featureConfig from 'nuclide-commons-atom/feature-config';
 import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import {arrayCompact} from 'nuclide-commons/collection';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {observeTextEditorsPositions} from 'nuclide-commons-atom/debounced';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
@@ -294,6 +294,7 @@ export class ContextViewManager {
     }
 
     ReactDOM.render(
+      // $FlowFixMe(>=0.53.0) Flow suppress
       <ContextViewPanel
         definition={this.currentDefinition}
         locked={this._locked}>

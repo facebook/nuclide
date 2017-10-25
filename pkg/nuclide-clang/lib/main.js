@@ -11,7 +11,7 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  BusySignalService,
+  CodeActionProvider,
   CodeFormatProvider,
   DefinitionProvider,
   DefinitionQueryResult,
@@ -26,11 +26,10 @@ import type {
 } from './types';
 import type {RelatedFilesProvider} from '../../nuclide-related-files/lib/types';
 
-import {Observable} from 'rxjs';
-import SharedObservableCache from '../../commons-node/SharedObservableCache';
+import {Disposable} from 'atom';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {CompositeDisposable, Disposable} from 'atom';
 import AutocompleteHelpers from './AutocompleteHelpers';
+import CodeActions from './CodeActions';
 import CodeFormatHelpers from './CodeFormatHelpers';
 import DefinitionHelpers from './DefinitionHelpers';
 import OutlineViewHelpers from './OutlineViewHelpers';
@@ -45,11 +44,10 @@ import {
   getDeclarationInfo,
 } from './libclang';
 
-let busySignalService: ?BusySignalService = null;
-let subscriptions: ?CompositeDisposable = null;
+let subscriptions: ?UniversalDisposable = null;
 
 export function activate() {
-  subscriptions = new CompositeDisposable();
+  subscriptions = new UniversalDisposable();
   // Provide a 'Clean and rebuild' command to restart the Clang server for the current file
   // and reset all compilation flags. Useful when BUCK targets or headers change,
   // since those are heavily cached for performance. Also great for testing!
@@ -67,6 +65,8 @@ export function activate() {
           return;
         }
         await resetForSource(editor);
+        // Save the file to trigger compilation.
+        await editor.save();
       },
     ),
   );
@@ -109,13 +109,6 @@ export function provideDefinitions(): DefinitionProvider {
   };
 }
 
-export function consumeBusySignal(service: BusySignalService): IDisposable {
-  busySignalService = service;
-  return new UniversalDisposable(() => {
-    busySignalService = null;
-  });
-}
-
 export function provideCodeFormat(): CodeFormatProvider {
   return {
     grammarScopes: Array.from(GRAMMAR_SET),
@@ -126,36 +119,13 @@ export function provideCodeFormat(): CodeFormatProvider {
   };
 }
 
-const busySignalCache = new SharedObservableCache(path => {
-  // Return an observable that starts the busy signal on subscription
-  // and disposes it upon unsubscription.
-  return Observable.create(() => {
-    if (busySignalService != null) {
-      return new UniversalDisposable(
-        busySignalService.reportBusy(`Clang: compiling \`${path}\``),
-      );
-    }
-  }).share();
-});
-
 export function provideLinter(): LinterProvider {
   return {
     grammarScopes: Array.from(GRAMMAR_SET),
     scope: 'file',
     lintOnFly: false,
     name: 'Clang',
-    lint(editor) {
-      const getResult = () => ClangLinter.lint(editor);
-      if (busySignalService != null) {
-        // Use the busy signal cache to dedupe busy signal messages.
-        // The shared subscription gets released when all the lints finish.
-        return busySignalCache
-          .get(editor.getTitle())
-          .race(Observable.defer(getResult))
-          .toPromise();
-      }
-      return getResult();
-    },
+    lint: editor => ClangLinter.lint(editor),
   };
 }
 
@@ -204,6 +174,16 @@ export function consumeClangConfigurationProvider(
   provider: ClangConfigurationProvider,
 ): Disposable {
   return registerClangProvider(provider);
+}
+
+export function provideCodeActions(): CodeActionProvider {
+  return {
+    grammarScopes: Array.from(GRAMMAR_SET),
+    priority: 1,
+    getCodeActions(editor, range, diagnostics) {
+      return CodeActions.getCodeActions(editor, range, diagnostics);
+    },
+  };
 }
 
 export function deactivate() {

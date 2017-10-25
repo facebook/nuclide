@@ -7,10 +7,10 @@ author: matthewwithanm
 One of the cool things about Nuclide is that, even though it’s an IDE with a ton
 of awesome IDE features, it still belongs to the TextMate/Sublime/Atom lineage
 of modern text editors. Unfortunately, sometimes these two things come into
-conflict. Such is the case with command click…
+conflict. Such is the case with command click.
 
 See, in the Atom family of editors, command + click (control + click on Windows
-and Linux) means multiple cursors.But if you’re coming from an IDE, you’re
+and Linux) means multiple cursors. But if you’re coming from an IDE, you’re
 probably used to using command + click to jump to a definition (“Hyperclick”).
 
 Since Nuclide is both of these things, we’ve always tried to do both: if you

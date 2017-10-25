@@ -12,6 +12,7 @@
 import type {HgService, RevisionInfo} from '../../nuclide-hg-rpc/lib/HgService';
 
 import {arrayEqual} from 'nuclide-commons/collection';
+import {fastDebounce} from 'nuclide-commons/observable';
 import {BehaviorSubject, Observable, Subject, TimeoutError} from 'rxjs';
 import {getLogger} from 'log4js';
 
@@ -57,7 +58,7 @@ export default class RevisionsCache {
 
     this._lazyRevisionFetcher = this._fetchRevisionsRequests
       .startWith(null) // Initially, no refresh requests applied.
-      .debounceTime(FETCH_REVISIONS_DEBOUNCE_MS)
+      .let(fastDebounce(FETCH_REVISIONS_DEBOUNCE_MS))
       .switchMap(() =>
         // Using `defer` will guarantee a fresh subscription / execution on retries,
         // even though `_fetchSmartlogRevisions` returns a `refCount`ed shared Observable.

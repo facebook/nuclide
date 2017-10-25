@@ -15,6 +15,7 @@ import type {Store} from '../types';
 import type {DebugBridgeFullConfig} from '../../../nuclide-adb-sdb-rpc/lib/types';
 import type {Expected} from '../../../commons-node/expected';
 import type {Device} from '../../../nuclide-device-panel/lib/types';
+import type {DeviceTypeTizen} from '../types';
 
 import * as Actions from '../redux/Actions';
 import {getSdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
@@ -23,7 +24,7 @@ import {Observable} from 'rxjs';
 
 export class TizenBridge {
   debugBridge: 'sdb' = 'sdb';
-  name: 'tizen' = 'tizen';
+  name: DeviceTypeTizen = 'Tizen';
 
   _store: Store;
 

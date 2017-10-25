@@ -362,6 +362,9 @@ export class FlowProcess {
     if (getConfig('lazyServer')) {
       lazy.push('--lazy');
     }
+    if (getConfig('ideLazyMode')) {
+      lazy.push('--lazy-mode', 'ide');
+    }
     // `flow server` will start a server in the foreground. runCommand/runCommandDetailed
     // will not resolve the promise until the process exits, which in this
     // case is never. We need to use spawn directly to get access to the
@@ -394,6 +397,7 @@ export class FlowProcess {
       // is null. So, let's blacklist conservatively for now and we can
       // add cases later if we observe Flow crashes that do not fit this
       // pattern.
+      // eslint-disable-next-line eqeqeq
       if (code === 2 && signal === null) {
         logger.error('Flow server unexpectedly exited', this._root);
         this._setServerStatus(ServerStatus.FAILED);
@@ -504,7 +508,9 @@ export class FlowProcess {
   }
 
   _pingServerOnce(): Promise<void> {
-    return this._rawExecFlow(['status']).catch(() => {}).then(() => {});
+    return this._rawExecFlow(['status'])
+      .catch(() => {})
+      .then(() => {});
   }
 
   /**

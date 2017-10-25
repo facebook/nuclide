@@ -9,13 +9,17 @@
  * @format
  */
 
+/* globals Element */
+
 import invariant from 'assert';
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {LazyTreeNode} from './LazyTreeNode';
 import {TreeNodeComponent} from './TreeNodeComponent';
 import {forEachCachedNode} from './tree-node-traversals';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
+import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
 type TreeMenuItemDefinition = {
   label: string,
@@ -95,16 +99,13 @@ type State = {
 /**
  * Generic tree component that operates on LazyTreeNodes.
  */
-export class TreeRootComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class TreeRootComponent extends React.Component<Props, State> {
   _allKeys: ?Array<string>;
   _emitter: ?Emitter;
   _isMounted: boolean;
   _keyToNode: ?{[key: string]: LazyTreeNode};
   _rejectDidUpdateListenerPromise: ?() => void;
-  _subscriptions: ?CompositeDisposable;
+  _subscriptions: ?UniversalDisposable;
 
   static defaultProps: DefaultProps = {
     elementToRenderWhenEmpty: null,
@@ -151,10 +152,10 @@ export class TreeRootComponent extends React.Component {
     if (!prevState || this.state.selectedKeys !== prevState.selectedKeys) {
       const firstSelectedDescendant = this.refs[FIRST_SELECTED_DESCENDANT_REF];
       if (firstSelectedDescendant !== undefined) {
-        // $FlowFixMe
-        ReactDOM.findDOMNode(firstSelectedDescendant).scrollIntoViewIfNeeded(
-          false,
-        );
+        const el = ReactDOM.findDOMNode(firstSelectedDescendant);
+        if (el instanceof Element) {
+          scrollIntoViewIfNeeded(el, false);
+        }
       }
     }
 
@@ -205,7 +206,7 @@ export class TreeRootComponent extends React.Component {
     this.setState({selectedKeys});
   }
 
-  _onClickNode = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
+  _onClickNode = (event: SyntheticMouseEvent<>, node: LazyTreeNode): void => {
     if (event.metaKey) {
       this._toggleNodeSelected(node);
       return;
@@ -224,12 +225,12 @@ export class TreeRootComponent extends React.Component {
     this._confirmNode(node);
   };
 
-  _onClickNodeArrow = (event: SyntheticEvent, node: LazyTreeNode): void => {
+  _onClickNodeArrow = (event: SyntheticEvent<>, node: LazyTreeNode): void => {
     this._toggleNodeExpanded(node);
   };
 
   _onDoubleClickNode = (
-    event: SyntheticMouseEvent,
+    event: SyntheticMouseEvent<>,
     node: LazyTreeNode,
   ): void => {
     // Double clicking a non-directory will keep the created tab open.
@@ -238,7 +239,7 @@ export class TreeRootComponent extends React.Component {
     }
   };
 
-  _onMouseDown = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
+  _onMouseDown = (event: SyntheticMouseEvent<>, node: LazyTreeNode): void => {
     // Select the node on right-click.
     if (event.button === 2 || (event.button === 0 && event.ctrlKey === true)) {
       if (!this._isNodeSelected(node)) {
@@ -282,7 +283,7 @@ export class TreeRootComponent extends React.Component {
     atom.contextMenu.add(contextMenuObj);
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     if (this.state.roots.length === 0) {
       return this.props.elementToRenderWhenEmpty;
     }
@@ -371,11 +372,7 @@ export class TreeRootComponent extends React.Component {
 
     this._allKeys = allKeys;
     this._keyToNode = keyToNode;
-    return (
-      <div className="nuclide-tree-root">
-        {children}
-      </div>
-    );
+    return <div className="nuclide-tree-root">{children}</div>;
   }
 
   componentWillMount(): void {
@@ -388,7 +385,7 @@ export class TreeRootComponent extends React.Component {
       keyToNode[rootKey] = root;
     });
 
-    const subscriptions = new CompositeDisposable();
+    const subscriptions = new UniversalDisposable();
     subscriptions.add(
       atom.commands.add(this.props.eventHandlerSelector, {
         // Expand and collapse.
@@ -554,6 +551,7 @@ export class TreeRootComponent extends React.Component {
 
   _expandSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       this.expandNodeKey(key);
     }
@@ -631,6 +629,7 @@ export class TreeRootComponent extends React.Component {
 
   _collapseSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (!key) {
       return;
     }
@@ -656,6 +655,7 @@ export class TreeRootComponent extends React.Component {
 
     let keyIndexToSelect = allKeys.length - 1;
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       keyIndexToSelect = allKeys.indexOf(key);
       if (keyIndexToSelect > 0) {
@@ -674,6 +674,7 @@ export class TreeRootComponent extends React.Component {
 
     let keyIndexToSelect = 0;
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       keyIndexToSelect = allKeys.indexOf(key);
       if (keyIndexToSelect !== -1 && keyIndexToSelect < allKeys.length - 1) {
@@ -686,6 +687,7 @@ export class TreeRootComponent extends React.Component {
 
   _confirmSelection(): void {
     const key = this._getFirstSelectedKey();
+    // flowlint-next-line sketchy-null-string:off
     if (key) {
       const node = this.getNodeForKey(key);
       if (node) {

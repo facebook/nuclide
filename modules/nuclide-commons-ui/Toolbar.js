@@ -11,7 +11,7 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 import {maybeToString} from 'nuclide-commons/string';
 
 type Props = {
@@ -31,8 +31,7 @@ export const Toolbar = (props: Props) => {
   );
 
   return (
-    <div className={className}>
-      {props.children}
-    </div>
+    // $FlowFixMe(>=0.53.0) Flow suppress
+    <div className={className}>{props.children}</div>
   );
 };

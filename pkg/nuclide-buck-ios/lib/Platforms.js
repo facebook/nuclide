@@ -17,7 +17,7 @@ import type {BuckEvent} from '../../nuclide-buck/lib/BuckEventStream';
 import {getTasks, runTask} from './Tasks';
 
 import {Observable} from 'rxjs';
-import * as fbsimctl from '../../nuclide-ios-common';
+import * as fbsimctl from '../../nuclide-fbsimctl';
 
 export function getSimulatorPlatform(
   buckRoot: NuclideUri,
@@ -26,7 +26,14 @@ export function getSimulatorPlatform(
     Observable<LegacyProcessMessage>,
   ) => Observable<BuckEvent>,
 ): Observable<Platform> {
-  return fbsimctl.getFbsimctlSimulators().map(simulators => {
+  return fbsimctl.getDevices().map(devices => {
+    let simulators;
+    if (devices instanceof Error) {
+      // TODO: Come up with a way to surface the error in UI
+      simulators = [];
+    } else {
+      simulators = devices.filter(device => device.type === 'simulator');
+    }
     let deviceGroups;
     if (simulators.length === 0) {
       deviceGroups = NO_SIMULATORS_FOUND_GROUPS;
@@ -88,19 +95,25 @@ export function getDevicePlatform(
     Observable<LegacyProcessMessage>,
   ) => Observable<BuckEvent>,
 ): Observable<Platform> {
-  return fbsimctl.getFbsimctlDevices().map(devices => {
+  return fbsimctl.getDevices().map(devices => {
     const deviceGroups = [];
 
-    if (devices.length > 0) {
-      deviceGroups.push({
-        name: 'Connected',
-        devices: devices.map(device => ({
-          name: device.name,
-          udid: device.udid,
-          arch: device.arch,
-          type: 'device',
-        })),
-      });
+    if (devices instanceof Array) {
+      const physicalDevices = devices.filter(
+        device => device.type === 'physical_device',
+      );
+
+      if (physicalDevices.length > 0) {
+        deviceGroups.push({
+          name: 'Connected',
+          devices: physicalDevices.map(device => ({
+            name: device.name,
+            udid: device.udid,
+            arch: device.arch,
+            type: 'device',
+          })),
+        });
+      }
     }
 
     deviceGroups.push(BUILD_ONLY_DEVICES_GROUP);

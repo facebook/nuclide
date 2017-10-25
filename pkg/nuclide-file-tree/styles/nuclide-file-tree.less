@@ -57,6 +57,16 @@
     }
   }
 
+  &:focus .selected {
+    .list-item,
+    .name {
+      color: contrast(@button-background-color-selected) !important;
+    }
+
+    &::before {
+      background: @button-background-color-selected;
+    }
+  }
 }
 
 .nuclide-file-tree-filter {
@@ -117,6 +127,9 @@
   opacity: 0.4;
 }
 
+.nuclide-file-tree-root-being-reordered {
+  opacity: 0.5;
+}
 
 .nuclide-file-tree-locked-height {
   display: flex;
@@ -193,4 +206,12 @@
 
 .nuclide-file-tree .list-item::before {
   vertical-align: middle;
+}
+
+.nuclide-file-tree .list-item.generated-fully {
+  color: mix(@text-color, @tree-view-background-color, 33%);
+}
+
+.nuclide-file-tree .list-item.generated-partly {
+  color: mix(@text-color, @tree-view-background-color, 66%);
 }

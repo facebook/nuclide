@@ -101,18 +101,18 @@ export class RangeUtil {
     if (shown == null) {
       return shown;
     }
-    if (shown.isSelected) {
+    if (shown.isSelected()) {
       return shown;
     }
     let selected = shown;
-    while (selected != null && !selected.isSelected) {
+    while (selected != null && !selected.isSelected()) {
       selected = selected.findNext();
     }
     if (selected != null) {
       return selected;
     }
     selected = shown;
-    while (selected != null && !selected.isSelected) {
+    while (selected != null && !selected.isSelected()) {
       selected = selected.findPrevious();
     }
     return selected;

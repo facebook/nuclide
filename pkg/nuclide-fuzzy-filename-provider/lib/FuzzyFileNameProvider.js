@@ -67,6 +67,7 @@ export default ({
     }
 
     return results.map(result => ({
+      resultType: 'FILE',
       path: result.path,
       score: result.score,
       matchIndexes: result.matchIndexes,
@@ -74,4 +75,4 @@ export default ({
       column,
     }));
   },
-}: DirectoryProviderType);
+}: DirectoryProviderType<FileResult>);

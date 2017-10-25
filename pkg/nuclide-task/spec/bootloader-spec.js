@@ -10,7 +10,7 @@
  */
 
 import invariant from 'assert';
-import {expectAsyncFailure} from '../../nuclide-test-helpers';
+import {expectAsyncFailure} from 'nuclide-commons/test-helpers';
 import Task from '..';
 
 describe('Task', () => {

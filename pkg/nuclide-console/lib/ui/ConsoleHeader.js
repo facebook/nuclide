@@ -12,7 +12,7 @@
 import type {Source} from '../types';
 import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
-import React from 'react';
+import * as React from 'react';
 import {ModalMultiSelect} from '../../../nuclide-ui/ModalMultiSelect';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import RegExpFilter from 'nuclide-commons-ui/RegExpFilter';
@@ -36,14 +36,12 @@ type Props = {
   filterText: string,
 };
 
-export default class ConsoleHeader extends React.Component {
-  props: Props;
-
-  _handleClearButtonClick = (event: SyntheticMouseEvent): void => {
+export default class ConsoleHeader extends React.Component<Props> {
+  _handleClearButtonClick = (event: SyntheticMouseEvent<>): void => {
     this.props.clear();
   };
 
-  _handleCreatePasteButtonClick = (event: SyntheticMouseEvent): void => {
+  _handleCreatePasteButtonClick = (event: SyntheticMouseEvent<>): void => {
     if (this.props.createPaste != null) {
       this.props.createPaste();
     }
@@ -81,7 +79,10 @@ export default class ConsoleHeader extends React.Component {
       action();
     };
     return (
-      <Button className="pull-right" icon={icon} onClick={clickHandler}>
+      <Button
+        className="pull-right nuclide-console-process-control-button"
+        icon={icon}
+        onClick={clickHandler}>
         {label}
       </Button>
     );
@@ -101,7 +102,7 @@ export default class ConsoleHeader extends React.Component {
     );
   };
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const options = this.props.sources
       .slice()
       .sort((a, b) => sortAlpha(a.name, b.name))
@@ -112,17 +113,17 @@ export default class ConsoleHeader extends React.Component {
 
     const MultiSelectOption = this._renderOption;
     const pasteButton =
-      this.props.createPaste == null
-        ? null
-        : <Button
-            className="inline-block"
-            size={ButtonSizes.SMALL}
-            onClick={this._handleCreatePasteButtonClick}
-            ref={addTooltip({
-              title: 'Creates a Paste from the current contents of the console',
-            })}>
-            Create Paste
-          </Button>;
+      this.props.createPaste == null ? null : (
+        <Button
+          className="inline-block"
+          size={ButtonSizes.SMALL}
+          onClick={this._handleCreatePasteButtonClick}
+          ref={addTooltip({
+            title: 'Creates a Paste from the current contents of the console',
+          })}>
+          Create Paste
+        </Button>
+      );
 
     return (
       <Toolbar location="top">
@@ -182,9 +183,5 @@ function MultiSelectLabel(props: LabelProps): React.Element<any> {
     selectedOptions.length === 1
       ? selectedOptions[0].label
       : `${selectedOptions.length} Sources`;
-  return (
-    <span>
-      Showing: {label}
-    </span>
-  );
+  return <span>Showing: {label}</span>;
 }

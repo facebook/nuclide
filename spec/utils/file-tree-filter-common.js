@@ -11,11 +11,11 @@
 
 import invariant from 'assert';
 
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {FileTreeStore} from '../../pkg/nuclide-file-tree/lib/FileTreeStore';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {EVENT_HANDLER_SELECTOR} from '../../pkg/nuclide-file-tree/lib/FileTreeConstants';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {WORKSPACE_VIEW_URI as FILE_TREE_VIEW_URI} from '../../pkg/nuclide-file-tree/lib/Constants';
 
 import type {TestContext} from './remotable-tests';
@@ -37,7 +37,7 @@ export function runTest(context: TestContext) {
     };
     const open = () => {
       runs(() => {
-        atom.workspace.open(FILE_TREE_VIEW_URI);
+        atom.workspace.open(FILE_TREE_VIEW_URI, {searchAllPanes: true});
       });
       waits(100); // Open notifications are delayed by an animation frame.
     };

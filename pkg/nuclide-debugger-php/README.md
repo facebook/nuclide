@@ -128,10 +128,10 @@ selected subdirectories.
 
 Similarly the `Idekey Regex` can be used to filter debuggee connections by `idekey`. By
 default HHVM sets the `idekey` to the unix username which started HHVM. The `idekey` used by HHVM can
-be overriden by setting `xdebug.idekey` in the `config.ini` file specified when running HHVM.
+be overridden by setting `xdebug.idekey` in the `config.ini` file specified when running HHVM.
 Note that on many servers HHVM will be run by `root` so filtering by `idekey` may be unhelpful.
 
-By default HHVM connects to debuggers on port 9000. This can be overriden with `xdebug.remote_port`
+By default HHVM connects to debuggers on port 9000. This can be overridden with `xdebug.remote_port`
 in your `config.ini`.
 
 Note that `xdebug.idekey` and `xdebug.remote_port` may only be set in an `ini` file. They are

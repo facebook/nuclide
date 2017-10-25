@@ -11,7 +11,7 @@
 
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {generateFixture} from '../../nuclide-test-helpers';
+import {generateFixture} from 'nuclide-commons/test-helpers';
 import {applyRefactoring} from '../lib/refactorEpics';
 
 describe('applyRefactoring', () => {

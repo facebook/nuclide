@@ -9,17 +9,17 @@
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import invariant from 'assert';
 import {
   RecentFilesProvider,
   setRecentFilesService,
 } from '../lib/RecentFilesProvider';
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
+import * as React from 'react';
+import TestUtils from 'react-dom/test-utils';
 
-let provider: Provider = (null: any);
+let provider: ?Provider<FileResult> = null;
 
 const PROJECT_PATH = '/Users/testuser/';
 const PROJECT_PATH2 = '/Users/something_else/';
@@ -31,6 +31,7 @@ const FILE_PATHS = [
 ];
 
 const FAKE_RECENT_FILES = FILE_PATHS.map((path, i) => ({
+  resultType: 'FILE',
   path,
   timestamp: 1e8 - i * 1000,
   matchIndexes: [],
@@ -46,16 +47,11 @@ let fakeGetProjectPathsImpl = () => [];
 const fakeGetProjectPaths = () => fakeGetProjectPathsImpl();
 
 // Per https://github.com/facebook/react/issues/4692#issuecomment-163029873
-class Wrapper extends React.Component {
-  props: {
-    children?: any,
-  };
-  render(): React.Element<any> {
-    return (
-      <div>
-        {this.props.children}
-      </div>
-    );
+class Wrapper extends React.Component<{
+  children?: any,
+}> {
+  render(): React.Node {
+    return <div>{this.props.children}</div>;
   }
 }
 
@@ -70,6 +66,7 @@ describe('RecentFilesProvider', () => {
   describe('getRecentFiles', () => {
     it('returns all recently opened files for currently mounted project directories', () => {
       waitsForPromise(async () => {
+        invariant(provider != null);
         fakeGetProjectPathsImpl = () => [PROJECT_PATH];
         invariant(provider.providerType === 'GLOBAL');
         expect(await provider.executeQuery('', [])).toEqual(FAKE_RECENT_FILES);
@@ -81,6 +78,7 @@ describe('RecentFilesProvider', () => {
 
     it('does not return files for project directories that are not currently mounted', () => {
       waitsForPromise(async () => {
+        invariant(provider != null);
         fakeGetProjectPathsImpl = () => [PROJECT_PATH2];
         invariant(provider.providerType === 'GLOBAL');
         expect(await provider.executeQuery('', [])).toEqual([]);
@@ -93,6 +91,7 @@ describe('RecentFilesProvider', () => {
 
     it('does not return files that are currently open in Atom', () => {
       waitsForPromise(async () => {
+        invariant(provider != null);
         fakeGetProjectPathsImpl = () => [PROJECT_PATH];
         const textEditor = await atom.workspace.open(FILE_PATHS[0]);
         invariant(provider.providerType === 'GLOBAL');
@@ -108,6 +107,7 @@ describe('RecentFilesProvider', () => {
 
     it('filters results according to the query string', () => {
       waitsForPromise(async () => {
+        invariant(provider != null);
         fakeGetProjectPathsImpl = () => [PROJECT_PATH];
         // 'foo/bla/foo.js' does not match 'bba', but `bar.js` and `baz.js` do.
         invariant(provider.providerType === 'GLOBAL');
@@ -134,18 +134,18 @@ describe('RecentFilesProvider', () => {
     it('should render complete results', () => {
       const timestamp = Date.now();
       const mockResult = {
+        resultType: 'FILE',
         path: '/some/arbitrary/path',
         timestamp,
       };
+      invariant(provider != null);
       invariant(provider.getComponentForItem != null);
       const reactElement = provider.getComponentForItem(mockResult);
       expect(reactElement.props.title).toEqual(
         new Date(mockResult.timestamp).toLocaleString(),
       );
       const renderedComponent = TestUtils.renderIntoDocument(
-        <Wrapper>
-          {reactElement}
-        </Wrapper>,
+        <Wrapper>{reactElement}</Wrapper>,
       );
       expect(
         TestUtils.scryRenderedDOMComponentsWithClass(
@@ -171,9 +171,11 @@ describe('RecentFilesProvider', () => {
       const HOURS = 60 * 60 * 1000;
       const DAYS = 24 * HOURS;
 
+      invariant(provider != null);
       invariant(provider.getComponentForItem != null);
       expect(
         provider.getComponentForItem({
+          resultType: 'FILE',
           path: '/some/arbitrary/path',
           timestamp: now,
         }).props.style.opacity,
@@ -182,6 +184,7 @@ describe('RecentFilesProvider', () => {
       invariant(provider.getComponentForItem != null);
       expect(
         provider.getComponentForItem({
+          resultType: 'FILE',
           path: '/some/arbitrary/path',
           timestamp: now - 7 * HOURS,
         }).props.style.opacity,
@@ -190,6 +193,7 @@ describe('RecentFilesProvider', () => {
       invariant(provider.getComponentForItem != null);
       expect(
         provider.getComponentForItem({
+          resultType: 'FILE',
           path: '/some/arbitrary/path',
           timestamp: now - 8 * HOURS,
         }).props.style.opacity,
@@ -198,6 +202,7 @@ describe('RecentFilesProvider', () => {
       invariant(provider.getComponentForItem != null);
       expect(
         provider.getComponentForItem({
+          resultType: 'FILE',
           path: '/some/arbitrary/path',
           timestamp: now - 10 * DAYS,
         }).props.style.opacity,

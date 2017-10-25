@@ -12,7 +12,7 @@
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 import {maybeToString} from 'nuclide-commons/string';
 
@@ -64,9 +64,5 @@ export const Badge = (props: Props) => {
     [colorClassName]: color != null,
     [`icon icon-${maybeToString(icon)}`]: icon != null,
   });
-  return (
-    <span className={newClassName}>
-      {value}
-    </span>
-  );
+  return <span className={newClassName}>{value}</span>;
 };

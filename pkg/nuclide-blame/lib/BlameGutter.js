@@ -15,11 +15,11 @@ import type {BlameForEditor, BlameProvider} from './types';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import hideAllTooltips from '../../nuclide-ui/hide-all-tooltips';
 import {track, trackTiming} from '../../nuclide-analytics';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {shell} from 'electron';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {shortNameForAuthor} from '../../nuclide-vcs-log';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
@@ -34,7 +34,10 @@ try {
 }
 
 function escapeHTML(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function getHash(revision: ?RevisionInfo): ?string {
@@ -52,7 +55,7 @@ export default class BlameGutter {
   _loadingSpinnerDiv: ?HTMLElement;
   _isDestroyed: boolean;
   _isEditorDestroyed: boolean;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   /**
    * @param gutterName A name for this gutter. Must not be used by any another
@@ -69,7 +72,7 @@ export default class BlameGutter {
     this._isDestroyed = false;
     this._isEditorDestroyed = false;
 
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._editor = editor;
     this._blameProvider = blameProvider;
     this._bufferLineToDecoration = new Map();
@@ -100,6 +103,7 @@ export default class BlameGutter {
       this._editor,
       revision.hash,
     );
+    // flowlint-next-line sketchy-null-string:off
     if (url) {
       // Note that 'shell' is not the public 'shell' package on npm but an Atom built-in.
       shell.openExternal(url);
@@ -317,10 +321,8 @@ type Props = {
   newest: number,
 };
 
-class GutterElement extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+class GutterElement extends React.Component<Props> {
+  render(): React.Node {
     const {oldest, newest, revision, isLastLine, isFirstLine} = this.props;
     const date = Number(revision.date);
 
@@ -344,13 +346,11 @@ class GutterElement extends React.Component {
         <div
           className="nuclide-blame-row nuclide-blame-content"
           ref={addTooltip(tooltip)}>
-          {!isLastLine
-            ? <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
-            : null}
+          {!isLastLine ? (
+            <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
+          ) : null}
           {Avatar ? <Avatar size={16} unixname={unixname} /> : unixname + ': '}
-          <span>
-            {revision.title}
-          </span>
+          <span>{revision.title}</span>
           <div style={{opacity}} className="nuclide-blame-border-age" />
         </div>
       );

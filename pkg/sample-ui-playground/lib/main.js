@@ -14,7 +14,7 @@ import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElem
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Playground, WORKSPACE_VIEW_URI} from './Playground';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 
 let disposables: ?UniversalDisposable = null;
 

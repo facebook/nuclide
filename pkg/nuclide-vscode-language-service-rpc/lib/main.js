@@ -12,6 +12,7 @@
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
 import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
+import type {LogLevel} from '../../nuclide-logging/lib/rpc-types';
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
@@ -32,7 +33,7 @@ export async function createMultiLspLanguageService(
   languageId: string,
   command: string,
   args: Array<string>,
-  params: {
+  params: {|
     spawnOptions?: Object,
     initializationOptions?: Object,
     fileNotifier: FileNotifier,
@@ -40,8 +41,9 @@ export async function createMultiLspLanguageService(
     projectFileNames: Array<string>,
     fileExtensions: Array<string>,
     logCategory: string,
-    logLevel: string,
-  },
+    logLevel: LogLevel,
+    additionalLogFilesRetentionPeriod?: number,
+  |},
 ): Promise<LanguageService> {
   const result = new MultiProjectLanguageService();
   const logger = getLogger(params.logCategory);
@@ -78,6 +80,7 @@ export async function createMultiLspLanguageService(
       projectDir,
       params.fileExtensions,
       params.initializationOptions || {},
+      Number(params.additionalLogFilesRetentionPeriod),
     );
 
     lsp.start(); // Kick off 'Initializing'...

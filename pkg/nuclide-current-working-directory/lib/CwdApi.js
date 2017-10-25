@@ -15,7 +15,7 @@ import type {Observable} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import FileTreeHelpers from '../../nuclide-file-tree/lib/FileTreeHelpers';
 import {BehaviorSubject} from 'rxjs';
 

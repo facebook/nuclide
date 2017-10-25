@@ -291,6 +291,7 @@ export default class BreakpointDisplayController {
    */
   _handleMarkerChange(event: Object) {
     const path = this._editor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!path) {
       return;
     }
@@ -327,6 +328,7 @@ export default class BreakpointDisplayController {
     }
 
     const path = this._editor.getPath();
+    // flowlint-next-line sketchy-null-string:off
     if (!path) {
       return;
     }
@@ -348,6 +350,20 @@ export default class BreakpointDisplayController {
     try {
       const curLine = this._getCurrentMouseEventLine(event);
       this._debuggerActions.toggleBreakpoint(path, curLine);
+
+      if (this._breakpointStore.getBreakpointAtLine(path, curLine) != null) {
+        // If a breakpoint was added and showDebuggerOnBpSet config setting
+        // is true, show the debugger.
+        if (atom.config.get('nuclide.nuclide-debugger.showDebuggerOnBpSet')) {
+          atom.commands.dispatch(
+            atom.views.getView(atom.workspace),
+            'nuclide-debugger:show',
+            {
+              showOnlyIfHidden: true,
+            },
+          );
+        }
+      }
     } catch (e) {
       return;
     }

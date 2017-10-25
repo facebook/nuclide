@@ -11,7 +11,8 @@
 
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
-import React from 'react';
+import UnstyledButton from 'nuclide-commons-ui/UnstyledButton';
+import * as React from 'react';
 
 import {Icon} from 'nuclide-commons-ui/Icon';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
@@ -34,14 +35,12 @@ const REALLY_BAD_THRESHOLD = 50;
 const NOT_GREAT_THRESHOLD = 80;
 const COLOR_DISPLAY_SETTING = 'nuclide-type-coverage.colorizeStatusBar';
 
-export class StatusBarTileComponent extends React.Component {
-  props: Props;
-
+export class StatusBarTileComponent extends React.Component<Props> {
   constructor(props: Props) {
     super(props);
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const result = this.props.result;
     if (result != null) {
       const percentage = result.percentage;
@@ -57,6 +56,8 @@ export class StatusBarTileComponent extends React.Component {
         };
       }
       const classes: string = classnames({
+        'inline-block': true,
+        'nuclide-type-coverage-status-bar': true,
         'nuclide-type-coverage-status-bar-pending': this.props.pending,
         'nuclide-type-coverage-status-bar-ready': !this.props.pending,
         ...colorClasses,
@@ -67,8 +68,7 @@ export class StatusBarTileComponent extends React.Component {
         result.providerName,
       );
       return (
-        <div
-          style={{cursor: 'pointer'}}
+        <UnstyledButton
           onClick={this.props.onClick}
           className={classes}
           ref={addTooltip({
@@ -76,20 +76,15 @@ export class StatusBarTileComponent extends React.Component {
             delay: 0,
             placement: 'top',
           })}>
-          {this._getIconElement(result.icon)}
-          {formattedPercentage}
-        </div>
+          {result.icon == null ? null : <Icon icon={result.icon} />}
+          <span className="nuclide-type-coverage-status-bar-percentage">
+            {formattedPercentage}
+          </span>
+        </UnstyledButton>
       );
     } else {
       return null;
     }
-  }
-
-  _getIconElement(icon: ?IconName): ?React.Element<any> {
-    if (icon == null) {
-      return null;
-    }
-    return <Icon icon={icon} />;
   }
 }
 

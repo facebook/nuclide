@@ -52,6 +52,7 @@ export type TaskStatus = {
   metadata: TaskMetadata,
   task: Task,
   progress: ?number,
+  startDate: Date,
 };
 
 export type TaskMetadata = {
@@ -70,8 +71,8 @@ export type TaskMetadata = {
 export type TaskRunner = {
   id: string,
   name: string,
-  +getExtraUi?: () => ReactClass<any>,
-  +getIcon: () => ReactClass<any>,
+  +getExtraUi?: () => React$ComponentType<any>,
+  +getIcon: () => React$ComponentType<any>,
   +runTask: (taskType: string) => Task,
   // Returns a callback that executes when the task runner determines whether it should be enabled
   // or when the task list changes for the project root

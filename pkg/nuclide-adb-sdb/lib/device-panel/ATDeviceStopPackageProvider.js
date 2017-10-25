@@ -10,6 +10,7 @@
  */
 
 import type {
+  Device,
   DeviceProcessTaskProvider,
   Process,
   ProcessTaskType,
@@ -44,13 +45,13 @@ export class ATDeviceStopPackageProvider implements DeviceProcessTaskProvider {
 
   getSupportedPIDs(
     host: NuclideUri,
-    device: string,
+    device: Device,
     procs: Process[],
   ): Observable<Set<number>> {
     return Observable.of(new Set(procs.map(proc => proc.pid)));
   }
 
-  async run(host: NuclideUri, device: string, proc: Process): Promise<void> {
+  async run(host: NuclideUri, device: Device, proc: Process): Promise<void> {
     return this._bridge.getService(host).stopPackage(device, proc.name);
   }
 }

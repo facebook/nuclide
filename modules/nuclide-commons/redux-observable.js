@@ -83,7 +83,6 @@ export function createEpicMiddleware<T: Action, U>(
 }
 
 export class ActionsObservable<T: Action> extends Observable<T> {
-  source: Observable<any>;
   operator: any;
 
   constructor(actionsSubject: Observable<any>) {

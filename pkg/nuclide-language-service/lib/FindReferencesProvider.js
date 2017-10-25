@@ -17,7 +17,6 @@ import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {trackTiming} from '../../nuclide-analytics';
-import loadingNotification from '../../commons-atom/loading-notification';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type FindReferencesConfig = {|
@@ -81,10 +80,7 @@ export class FindReferencesProvider<T: LanguageService> {
         return null;
       }
 
-      return loadingNotification(
-        (await languageService).findReferences(fileVersion, position),
-        `Loading references from ${this.name} server...`,
-      );
+      return (await languageService).findReferences(fileVersion, position);
     });
   }
 }

@@ -11,7 +11,7 @@
 
 import type {Parameter} from './types';
 
-import React from 'react';
+import * as React from 'react';
 import {Button} from 'nuclide-commons-ui/Button';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 
@@ -24,7 +24,7 @@ type PropsType = {
   removeParameter: (index: number) => void,
 };
 
-export class ParameterInput extends React.Component<void, PropsType, void> {
+export class ParameterInput extends React.Component<PropsType, void> {
   props: PropsType;
 
   constructor(props: PropsType) {
@@ -62,7 +62,7 @@ export class ParameterInput extends React.Component<void, PropsType, void> {
         }
       : null;
   }
-  render(): React.Element<any> {
+  render(): React.Node {
     const style = this._getErrorStyle();
     return (
       <div>

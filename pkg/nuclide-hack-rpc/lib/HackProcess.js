@@ -116,10 +116,11 @@ class HackProcess {
               editToHackEdit(fileEvent),
             ]);
             break;
+          case FileEventKind.SAVE:
+            break;
           default:
-            throw new Error(
-              `Unexpected FileEvent kind: ${JSON.stringify(fileEvent)}`,
-            );
+            (fileEvent.kind: empty);
+            throw new Error(`Unexpected FileEvent kind: ${fileEvent.kind}`);
         }
         this._fileVersionNotifier.onEvent(fileEvent);
       });

@@ -8,14 +8,16 @@
  * @flow
  */
 
-type toolbar$ToolbarManager = {
-  addButton(options: {
+type toolbar$ButtonSpec = {
     priority?: number,
     tooltip?: string,
     iconset?: string,
     icon?: string,
     callback?: string | (() => void),
-  }): toolbar$ToolbarButtonView,
+}
+
+type toolbar$ToolbarManager = {
+  addButton(options: toolbar$ButtonSpec): toolbar$ToolbarButtonView,
   addSpacer(options: {
     priority?: number,
   }): toolbar$ToolbarButtonView,

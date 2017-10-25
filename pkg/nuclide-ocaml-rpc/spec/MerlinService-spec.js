@@ -9,7 +9,7 @@
  * @format
  */
 
-import {uncachedRequire} from '../../nuclide-test-helpers';
+import {uncachedRequire} from 'nuclide-commons/test-helpers';
 
 describe('MerlinService V 2.3.1', () => {
   function getMockedMerlinService(callback): Promise<any> {

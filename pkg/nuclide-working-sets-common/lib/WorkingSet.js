@@ -49,11 +49,6 @@ export class WorkingSet {
   _uris: Array<string>;
   _root: ?InnerNode;
 
-  static union(...sets: Array<WorkingSet>): WorkingSet {
-    const combinedUris = [].concat(...sets.map(s => s._uris));
-    return new WorkingSet(combinedUris);
-  }
-
   constructor(uris: Array<NuclideUri> = []) {
     try {
       this._uris = dedupeUris(

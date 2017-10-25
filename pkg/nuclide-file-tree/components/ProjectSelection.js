@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {FileTreeStore} from '../lib/FileTreeStore';
@@ -21,10 +21,9 @@ type State = {
   extraContent: ?Array<React.Element<any>>,
 };
 
-export class ProjectSelection extends React.Component {
+export class ProjectSelection extends React.Component<Props, State> {
   _store: FileTreeStore;
   _disposables: UniversalDisposable;
-  state: State;
 
   constructor(props: Props) {
     super(props);
@@ -73,7 +72,7 @@ export class ProjectSelection extends React.Component {
     return list.toJS();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="padded">
         <TruncatedButton

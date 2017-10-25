@@ -10,7 +10,7 @@
  */
 /* global localStorage */
 
-import React from 'react';
+import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import type {DebuggerModeType} from './types';
 import {DebuggerPaneViewModel} from './DebuggerPaneViewModel';
@@ -18,7 +18,7 @@ import {DebuggerPaneContainerViewModel} from './DebuggerPaneContainerViewModel';
 import DebuggerModel from './DebuggerModel';
 import {DebuggerMode} from './DebuggerStore';
 import invariant from 'assert';
-import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
+import {__DEV__} from '../../commons-node/runtime-info';
 import createPaneContainer from '../../commons-atom/create-pane-container';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
@@ -29,6 +29,9 @@ import {CallstackView} from './CallstackView';
 import {BreakpointsView} from './BreakpointsView';
 import {ScopesView} from './ScopesView';
 import {WatchView} from './WatchView';
+import {DisassemblyView} from './DisassemblyView';
+import {RegisterView} from './RegisterView';
+import type {SerializedState} from '..';
 
 export type DebuggerPaneLocation = {
   dock: string,
@@ -65,6 +68,9 @@ export type DebuggerPaneConfig = {
   // Structure to remember the pane's previous location if the user moved it around.
   previousLocation?: ?DebuggerPaneLocation,
 
+  // Location to use for layout if no user previous location is set.
+  defaultLocation: string,
+
   // Optional callback to be invoked when the pane is being resized (flex scale changed).
   onPaneResize?: (pane: atom$Pane, newFlexScale: number) => boolean,
 };
@@ -79,7 +85,7 @@ export class DebuggerLayoutManager {
   _rightPaneContainerModel: ?DebuggerPaneContainerViewModel;
   _debuggerVisible: boolean;
 
-  constructor(model: DebuggerModel) {
+  constructor(model: DebuggerModel, state: ?SerializedState) {
     this._disposables = new UniversalDisposable();
     this._model = model;
     this._previousDebuggerMode = DebuggerMode.STOPPED;
@@ -88,6 +94,8 @@ export class DebuggerLayoutManager {
     this._rightPaneContainerModel = null;
     this._debuggerVisible = false;
     this._initializeDebuggerPanes();
+    this._reshowDebuggerPanes(state);
+
     this._disposables.add(() => {
       if (this._leftPaneContainerModel != null) {
         this._leftPaneContainerModel.dispose();
@@ -186,6 +194,7 @@ export class DebuggerLayoutManager {
         uri: debuggerUriBase + 'controls',
         isLifetimeView: true,
         title: () => 'Debugger',
+        defaultLocation: 'right',
         isEnabled: () => true,
         createView: () => <DebuggerControlsView model={this._model} />,
         onPaneResize: (dockPane, newFlexScale) => {
@@ -212,6 +221,7 @@ export class DebuggerLayoutManager {
       {
         uri: debuggerUriBase + 'callstack',
         isLifetimeView: false,
+        defaultLocation: 'right',
         title: () => 'Call Stack',
         isEnabled: () => true,
         createView: () => <CallstackView model={this._model} />,
@@ -221,6 +231,7 @@ export class DebuggerLayoutManager {
       {
         uri: debuggerUriBase + 'breakpoints',
         isLifetimeView: false,
+        defaultLocation: 'right',
         title: () => 'Breakpoints',
         isEnabled: () => true,
         createView: () => <BreakpointsView model={this._model} />,
@@ -228,6 +239,7 @@ export class DebuggerLayoutManager {
       {
         uri: debuggerUriBase + 'scopes',
         isLifetimeView: false,
+        defaultLocation: 'right',
         title: () => 'Scopes',
         isEnabled: () => true,
         createView: () => <ScopesView model={this._model} />,
@@ -237,34 +249,116 @@ export class DebuggerLayoutManager {
       {
         uri: debuggerUriBase + 'watch-expressions',
         isLifetimeView: false,
+        defaultLocation: 'right',
         title: () => 'Watch Expressions',
         isEnabled: () => true,
-        createView: () =>
-          <WatchView
-            model={this._model}
-            watchExpressionListStore={this._model.getWatchExpressionListStore()}
-          />,
+        createView: () => <WatchView model={this._model} />,
       },
       {
         uri: debuggerUriBase + 'threads',
         isLifetimeView: false,
+        defaultLocation: 'right',
         title: () => {
           return String(
-            this._model.getStore().getSettings().get('threadsComponentTitle'),
+            this._model
+              .getStore()
+              .getSettings()
+              .get('threadsComponentTitle'),
           );
         },
         isEnabled: () => {
           return Boolean(
-            this._model.getStore().getSettings().get('SupportThreadsWindow'),
+            this._model
+              .getStore()
+              .getSettings()
+              .get('SupportThreadsWindow'),
           );
         },
         createView: () => <ThreadsView model={this._model} />,
         debuggerModeFilter: (mode: DebuggerModeType) =>
           mode !== DebuggerMode.STOPPED,
       },
+      {
+        uri: debuggerUriBase + 'disassembly',
+        isLifetimeView: false,
+        defaultLocation: 'bottom',
+        title: () => {
+          return 'Dissasembly View';
+        },
+        isEnabled: () => true,
+        createView: () => <DisassemblyView model={this._model} />,
+        debuggerModeFilter: (mode: DebuggerModeType) => {
+          if (mode === DebuggerMode.STOPPED) {
+            return false;
+          }
+          const info = this._model.getStore().getDebugProcessInfo();
+          return info != null && info.getDebuggerCapabilities().disassembly;
+        },
+      },
+      {
+        uri: debuggerUriBase + 'registers',
+        isLifetimeView: false,
+        defaultLocation: 'bottom',
+        title: () => {
+          return 'Register View';
+        },
+        isEnabled: () => true,
+        createView: () => <RegisterView model={this._model} />,
+        debuggerModeFilter: (mode: DebuggerModeType) => {
+          if (mode === DebuggerMode.STOPPED) {
+            return false;
+          }
+          const info = this._model.getStore().getDebugProcessInfo();
+          return info != null && info.getDebuggerCapabilities().registers;
+        },
+      },
     ];
 
     this._restoreDebuggerPaneLocations();
+  }
+
+  _reshowDebuggerPanes(state: ?SerializedState): void {
+    if (state && state.showDebugger) {
+      this.showDebuggerViews();
+      this._getWorkspaceDocks().forEach((dock, index) => {
+        if (
+          dock.dock.isVisible != null &&
+          state.workspaceDocksVisibility != null &&
+          !state.workspaceDocksVisibility[index] &&
+          dock.dock.isVisible() &&
+          dock.dock.hide != null
+        ) {
+          dock.dock.hide();
+        }
+      });
+
+      // Hiding the docks might have changed the visibility of the debugger
+      // if the only docks containing debugger panes are now hidden.
+      this._updateDebuggerVisibility();
+    }
+  }
+
+  _updateDebuggerVisibility(): void {
+    this._debuggerVisible = false;
+
+    // See if any visible docks contain a pane that contains a debugger pane.
+    this._getWorkspaceDocks().forEach(dock => {
+      if (dock.dock.isVisible != null && dock.dock.isVisible()) {
+        dock.dock.getPanes().forEach(pane => {
+          if (
+            pane
+              .getItems()
+              .find(
+                item =>
+                  item instanceof DebuggerPaneViewModel ||
+                  item instanceof DebuggerPaneContainerViewModel,
+              ) != null
+          ) {
+            this._debuggerVisible = true;
+          }
+        });
+      }
+    });
   }
 
   showHiddenDebuggerPane(uri: string): void {
@@ -508,7 +602,7 @@ export class DebuggerLayoutManager {
       }
 
       const key = this._getPaneStorageKey('dock-size' + name);
-      if (dockContainsDebuggerItem) {
+      if (dockContainsDebuggerItem && dock.state != null) {
         // Save the size of a dock only if it contains a debugger item.
         const sizeInfo = JSON.stringify(dock.state.size);
         localStorage.setItem(key, sizeInfo);
@@ -676,14 +770,15 @@ export class DebuggerLayoutManager {
         let targetDock = defaultDock;
 
         // If this pane had a previous location, restore to the previous dock.
-        const loc = debuggerPane.previousLocation;
-        if (loc != null) {
-          const previousDock = this._getWorkspaceDocks().find(
-            d => d.name === loc.dock,
-          );
-          if (previousDock != null) {
-            targetDock = previousDock;
-          }
+        const loc =
+          debuggerPane.previousLocation != null
+            ? debuggerPane.previousLocation.dock
+            : debuggerPane.defaultLocation;
+        const previousDock = this._getWorkspaceDocks().find(
+          d => d.name === loc,
+        );
+        if (previousDock != null) {
+          targetDock = previousDock;
         }
 
         // Render to a nested pane container for the two vertical docks
@@ -857,5 +952,12 @@ export class DebuggerLayoutManager {
 
   isDebuggerVisible(): boolean {
     return this._debuggerVisible;
+  }
+
+  getWorkspaceDocksVisibility(): Array<boolean> {
+    this._saveDebuggerPaneLocations();
+    return this._getWorkspaceDocks().map(dock => {
+      return dock.dock.isVisible != null && dock.dock.isVisible();
+    });
   }
 }

@@ -12,7 +12,7 @@
 
 import addTooltip from './addTooltip';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type LoadingSpinnerSize = 'EXTRA_SMALL' | 'SMALL' | 'MEDIUM' | 'LARGE';
 type Props = {
@@ -44,9 +44,10 @@ const LoadingSpinnerClassnames = Object.freeze({
 /**
  * Shows an indefinite, animated LoadingSpinner.
  */
-export class LoadingSpinner extends React.Component {
-  props: Props;
-  state: {shouldRender: boolean};
+export class LoadingSpinner extends React.Component<
+  Props,
+  {shouldRender: boolean},
+> {
   _timeout: ?number;
 
   constructor(props: Props) {
@@ -69,7 +70,7 @@ export class LoadingSpinner extends React.Component {
     }
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {className, size, tooltip} = this.props;
     if (!this.state.shouldRender) {
       return null;

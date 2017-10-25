@@ -18,7 +18,7 @@ import {describeRemote} from './utils/remotable-tests';
 describeRemote('Remote Connection', (context: TestContext) => {
   const NEW_FILE_NAME = 'NEW_FILE.txt';
 
-  it("succesfully opens and saves a remote file that doesn't exist", () => {
+  it("successfully opens and saves a remote file that doesn't exist", () => {
     let editor;
     let fileName;
 

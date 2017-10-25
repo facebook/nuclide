@@ -81,7 +81,7 @@ The Nuclide repository is organized to facilitate iterative development of Nucli
 
 To run the tests for an individual package, invoke the test runner that corresponds to
 the `"nuclide/testRunner"` section of the `package.json` file (i.e., `npm test` or `apm test`).
-Note that the [nuclide-node-transpiler](./nuclide-node-transpiler) package creates some
+Note that the [nuclide-jasmine](./nuclide-jasmine) package creates some
 bootstrapping code for `npm test` so that it behaves more like `apm test`. In particular,
 files with the `/** @flow */` pragma are automatically transpiled, and helper functions such as
 `fit()`, `fdescribe()`, and `waitsForPromise()` will be globally available. Here are the
@@ -93,11 +93,8 @@ relevant parts of the `package.json` file that set this up:
     "packageType": "Node",
     "testRunner": "npm"
   },
-  "dependencies": {
-    "nuclide-node-transpiler": "0.0.0",
-  },
   "scripts": {
-    "test": "node node_modules/.bin/jasmine-node-transpiled spec"
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
   }
 }
 ```

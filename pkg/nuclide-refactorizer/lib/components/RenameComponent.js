@@ -11,7 +11,7 @@
 
 import type {Store, RenamePhase} from '../types';
 
-import React from 'react';
+import * as React from 'react';
 
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button} from 'nuclide-commons-ui/Button';
@@ -27,10 +27,7 @@ type State = {
   newName: string,
 };
 
-export class RenameComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class RenameComponent extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -38,7 +35,7 @@ export class RenameComponent extends React.Component {
     };
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div>
         <AtomInput

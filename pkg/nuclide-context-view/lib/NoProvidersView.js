@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 /**
  * This view is rendered when no context providers are registered.

@@ -25,13 +25,15 @@ export class TaskRunner {
   name: string;
 
   constructor(id?: string) {
+    // flowlint-next-line sketchy-null-string:off
     this.id = id || 'build-system';
+    // flowlint-next-line sketchy-null-string:off
     this.name = id || 'Build System';
     this._taskLists = new Subject();
   }
 
-  getIcon(): ReactClass<any> {
-    return ((null: any): ReactClass<any>);
+  getIcon(): React$ComponentType<any> {
+    return ((null: any): React$ComponentType<any>);
   }
 
   setProjectRoot(

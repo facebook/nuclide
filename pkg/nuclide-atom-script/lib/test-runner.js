@@ -77,6 +77,9 @@ export default (async function runTest(
       document,
       window,
     });
+    // This is the spec runner but Nuclide code shouldn't think this is a spec.
+    // (This ensures that `atom.inSpecMode()` returns false.)
+    (atomGlobal: any).specMode = false;
     atomGlobal.atomScriptMode = true;
 
     invariant(typeof process.env.FILE_ATOM_SCRIPT === 'string');

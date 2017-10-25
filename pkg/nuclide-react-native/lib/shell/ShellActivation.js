@@ -16,7 +16,7 @@ export class ShellActivation {
 
   constructor() {
     // TODO: Enable following when RN changes land. Don't forget to call dispose in `dispose()`!
-    // this._disposables = new CompositeDisposable(
+    // this._disposables = new UniversalDisposable(
     //   atom.commands.add('atom-workspace', {
     //     'nuclide-react-native:reload-app': () => this._reload(),
     //   }),

@@ -17,7 +17,7 @@ import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 
 export type Message =
@@ -44,9 +44,7 @@ type State = {
   grammar: ?atom$Grammar,
 };
 
-export class PanelView extends React.Component {
-  props: Props;
-  state: State;
+export class PanelView extends React.Component<Props, State> {
   _disposables: ?UniversalDisposable;
 
   constructor(props: Props) {
@@ -61,7 +59,7 @@ export class PanelView extends React.Component {
     this._disposables.unsubscribe();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="sample-lsp-tester-panel padded">
         <div className="sample-lsp-tester-command-wrapper">
@@ -139,7 +137,7 @@ export class PanelView extends React.Component {
     );
   }
 
-  _handleSendButtonClick = (event: SyntheticMouseEvent): void => {
+  _handleSendButtonClick = (event: SyntheticMouseEvent<>): void => {
     const {inputField} = this.refs;
     const rawMessage = inputField.getModel().getText();
     let parsed;

@@ -11,7 +11,7 @@
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 export type Nuclicon =
   | 'nuclicon-nuclide'
@@ -32,7 +32,13 @@ export type Nuclicon =
   | 'nuclicon-jest-outline'
   | 'nuclicon-flow'
   | 'nuclicon-react-devtools'
-  | 'nuclicon-funnel';
+  | 'nuclicon-funnel'
+  | 'nuclicon-error'
+  // Currently, "nuclicon-warning" is the same as Octicon's "alert" but we duplicate it because the
+  // Octicons aren't vertically centered and the fact that this one's frequently shown next to
+  // nuclicon-error makes it wayyyy more obvious.
+  | 'nuclicon-warning'
+  | 'nuclicon-small-arrow-right';
 
 export type IconName = Nuclicon | atom$Octicon;
 
@@ -41,7 +47,7 @@ type Props = {
   icon: IconName,
   className?: string,
   /** Optional text content to render next to the icon. */
-  children?: string,
+  children?: React.Node,
 };
 
 /**

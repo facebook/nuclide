@@ -11,7 +11,6 @@
  */
 
 import {Range} from 'atom';
-import semver from 'semver';
 import temp from 'temp';
 import * as config from '../lib/config';
 import CodeFormatManager from '../lib/CodeFormatManager';
@@ -71,6 +70,7 @@ describe('CodeFormatManager', () => {
 
   it('formats an editor on type', () => {
     waitsForPromise(async () => {
+      spyOn(config, 'getFormatOnType').andReturn(true);
       const manager = new CodeFormatManager();
       const provider = {
         grammarScopes: ['text.plain.null-grammar'],
@@ -118,36 +118,10 @@ describe('CodeFormatManager', () => {
       });
 
       textEditor.setText('abc');
-      textEditor.save();
-      waitsFor(() => textEditor.getText() === 'def');
+      await textEditor.save();
+      expect(textEditor.getText()).toBe('def');
     });
   });
-
-  // TODO(19829039): remove check
-  if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
-    it('formats an editor on save in 1.19', () => {
-      waitsForPromise(async () => {
-        spyOn(config, 'getFormatOnSave').andReturn(true);
-        const manager = new CodeFormatManager();
-        manager.addOnSaveProvider({
-          grammarScopes: ['text.plain.null-grammar'],
-          priority: 1,
-          formatOnSave: () =>
-            Promise.resolve([
-              {
-                oldRange: new Range([0, 0], [0, 3]),
-                oldText: 'abc',
-                newText: 'def',
-              },
-            ]),
-        });
-
-        textEditor.setText('abc');
-        await textEditor.save();
-        expect(textEditor.getText()).toBe('def');
-      });
-    });
-  }
 
   it('should still save on timeout', () => {
     waitsForPromise(async () => {

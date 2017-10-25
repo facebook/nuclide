@@ -10,10 +10,10 @@
  * @format
  */
 
-import type {ProcessExitMessage} from 'nuclide-commons/process';
+import type {ProcessExitMessage} from '../process';
 
 import EventEmitter from 'events';
-import {sleep} from 'nuclide-commons/promise';
+import {sleep} from '../promise';
 import child_process from 'child_process';
 import invariant from 'assert';
 import {Observable, Scheduler, Subject} from 'rxjs';
@@ -33,7 +33,7 @@ import {
   runCommandDetailed,
   scriptifyCommand,
   exitEventToMessage,
-} from 'nuclide-commons/process';
+} from '../process';
 
 describe('commons-node/process', () => {
   let origPlatform;
@@ -131,7 +131,9 @@ describe('commons-node/process', () => {
           '-e',
           'console.error("stderr"); console.log("std out"); process.exit(0);',
         ]);
-        const results = await getOutputStream(child).toArray().toPromise();
+        const results = await getOutputStream(child)
+          .toArray()
+          .toPromise();
         expect(results).toEqual([
           {kind: 'stderr', data: 'stderr\n'},
           {kind: 'stdout', data: 'std out\n'},
@@ -767,7 +769,7 @@ describe('commons-node/process', () => {
               'one   two',
             ]),
           ).toPromise();
-          expect(output).toBe(
+          expect(output.trim()).toBe(
             'a\\b c\\\\d e\\\\\\f g\\\\\\\\h "dubs" \'singles\' one   two',
           );
         });

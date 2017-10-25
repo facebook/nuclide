@@ -10,11 +10,11 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import {Message, MessageTypes} from './Message';
 
-const MessageExample = (): React.Element<any> =>
+const MessageExample = (): React.Element<any> => (
   <div>
     <Block>
       <Message>
@@ -42,7 +42,8 @@ const MessageExample = (): React.Element<any> =>
         Hello I'm an <strong>error</strong> message.
       </Message>
     </Block>
-  </div>;
+  </div>
+);
 
 export const MessageExamples = {
   sectionName: 'Messages',

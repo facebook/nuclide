@@ -9,6 +9,8 @@
  * @format
  */
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+
 /**
  * Copy of the npm package: blocked, but without the unref, because that doesn't work in apm tests.
  * https://github.com/tj/node-blocked/blob/master/index.js
@@ -21,10 +23,10 @@ export default function blocked(
   fn: (ms: number) => void,
   intervalMs: number = 100,
   thresholdMs: number = 50,
-): number {
+): IDisposable {
   let start = Date.now();
 
-  return setInterval(() => {
+  const interval: any = setInterval(() => {
     const deltaMs = Date.now() - start;
     const blockTimeMs = deltaMs - intervalMs;
     if (blockTimeMs > thresholdMs) {
@@ -32,4 +34,6 @@ export default function blocked(
     }
     start = Date.now();
   }, intervalMs);
+
+  return new UniversalDisposable(() => clearInterval(interval));
 }

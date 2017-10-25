@@ -41,6 +41,7 @@ export default function createBuckWebSocket(
       }
 
       const type = message.type;
+      // eslint-disable-next-line eqeqeq
       if (buildId === null) {
         if (type === 'BuildStarted') {
           buildId = message.buildId;

@@ -12,10 +12,10 @@
 import type {FileResult} from '../../nuclide-quick-open/lib/types';
 import type {CtagsResult, CtagsService} from '../../nuclide-ctags-rpc';
 
-import React from 'react';
+import * as React from 'react';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {isFileInHackProject} from '../../nuclide-hack/lib/HackLanguage';
 import {getServiceByNuclideUri} from '../../nuclide-remote-connection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -65,13 +65,9 @@ export default class QuickOpenHelpers {
     return (
       <div title={kind}>
         <span className={`file icon ${icon}`}>
-          <code>
-            {item.name}
-          </code>
+          <code>{item.name}</code>
         </span>
-        <span className="omnisearch-symbol-result-filename">
-          {path}
-        </span>
+        <span className="omnisearch-symbol-result-filename">{path}</span>
       </div>
     );
   }
@@ -110,11 +106,12 @@ export default class QuickOpenHelpers {
         .map(tag => {
           return {
             ...tag,
+            resultType: 'FILE',
             path: tag.file,
             dir,
             async callback() {
               const line = await getLineNumberForTag(tag);
-              goToLocation(tag.file, line);
+              goToLocation(tag.file, {line});
             },
           };
         });

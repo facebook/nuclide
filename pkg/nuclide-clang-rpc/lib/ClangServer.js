@@ -23,7 +23,7 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {runCommand, spawn} from 'nuclide-commons/process';
 import {RpcProcess} from '../../nuclide-rpc';
 import {ServiceRegistry, loadServicesConfig} from '../../nuclide-rpc';
-import {watchFileWithNode} from '../../nuclide-filewatcher-rpc';
+import {watchWithNode} from '../../nuclide-filewatcher-rpc';
 
 export type ClangServerStatus =
   | 'finding_flags'
@@ -97,6 +97,7 @@ function spawnClangProcess(
     const argsFd = 3;
     const args = [pathToLibClangServer, '--flags-from-pipe', `${argsFd}`];
     const libClangLibraryFile =
+      // flowlint-next-line sketchy-null-string:off
       libClangFromFlags || serverArgs.libClangLibraryFile;
     if (libClangLibraryFile != null) {
       args.push('--libclang-file', libClangLibraryFile);
@@ -164,7 +165,9 @@ export default class ClangServer {
       })
       .switchMap(flagsData => {
         if (flagsData != null && flagsData.flagsFile != null) {
-          return watchFileWithNode(flagsData.flagsFile).refCount().take(1);
+          return watchWithNode(flagsData.flagsFile)
+            .refCount()
+            .take(1);
         }
         return Observable.empty();
       })

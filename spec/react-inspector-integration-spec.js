@@ -17,7 +17,7 @@ import {
 } from './utils/integration-test-helpers';
 import WS from 'ws';
 
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {WORKSPACE_VIEW_URI} from '../pkg/nuclide-react-inspector/lib/ui/Inspector';
 
 describe('React Native Inspector', () => {
@@ -38,8 +38,8 @@ describe('React Native Inspector', () => {
   it('tries to connect to the RN app on port 8097', () => {
     // Activate the Inspector
 
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    atom.workspace.open(WORKSPACE_VIEW_URI);
+    // eslint-disable-next-line rulesdir/atom-apis
+    atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
 
     waitsForPromise({timeout: 3000}, async () => {
       // Keep trying to connect to the server.

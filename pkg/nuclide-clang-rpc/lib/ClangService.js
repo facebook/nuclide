@@ -27,6 +27,8 @@ import {keyMirror, mapTransform, mapCompact} from 'nuclide-commons/collection';
 import {Observable} from 'rxjs';
 import {runCommand} from 'nuclide-commons/process';
 import ClangServerManager from './ClangServerManager';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 
 const serverManager = new ClangServerManager();
 
@@ -267,7 +269,9 @@ export async function formatCode(
   if (length != null) {
     args.push(`-length=${length}`);
   }
-  const stdout = await runCommand('clang-format', args, {
+  const binary = await getArcanistClangFormatBinary(src);
+  const command = binary == null ? 'clang-format' : binary;
+  const stdout = await runCommand(command, args, {
     input: contents,
   }).toPromise();
 
@@ -277,6 +281,30 @@ export async function formatCode(
     newCursor: JSON.parse(stdout.substring(0, newLine)).Cursor,
     formatted: stdout.substring(newLine + 1),
   };
+}
+
+async function getArcanistClangFormatBinary(src: string): Promise<?string> {
+  try {
+    // $FlowFB
+    const arcService = require('../../fb-arcanist-rpc/lib/ArcanistService');
+    const [arcConfigDirectory, arcConfig] = await Promise.all([
+      arcService.findArcConfigDirectory(src),
+      arcService.readArcConfig(src),
+    ]);
+    if (arcConfigDirectory == null || arcConfig == null) {
+      return null;
+    }
+    const lintClangFormatBinary = arcConfig['lint.clang-format.binary'];
+    if (lintClangFormatBinary == null) {
+      return null;
+    }
+    return nuclideUri.join(
+      await fsPromise.realpath(arcConfigDirectory),
+      lintClangFormatBinary,
+    );
+  } catch (err) {
+    return null;
+  }
 }
 
 export function loadFlagsFromCompilationDatabaseAndCacheThem(

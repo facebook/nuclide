@@ -103,6 +103,7 @@ function itemToTree(item: any): ?OutlineTree {
       };
     case 'ExportDeclaration':
     case 'ExportNamedDeclaration':
+    case 'DeclareExportDeclaration':
       return exportDeclaration(item, extent, Boolean(item.default));
     case 'ExportDefaultDeclaration':
       return exportDeclaration(item, extent, true);
@@ -112,6 +113,14 @@ function itemToTree(item: any): ?OutlineTree {
       return typeAliasOutline(item);
     case 'VariableDeclaration':
       return variableDeclarationOutline(item);
+    case 'DeclareClass':
+      return declareClassOutline(item, extent);
+    case 'DeclareFunction':
+      return declareFunctionOutline(item, extent);
+    case 'DeclareModule':
+      return declareModuleOutline(item, extent);
+    case 'DeclareVariable':
+      return declareVariableOutline(item, extent);
     default:
       return null;
   }
@@ -169,6 +178,12 @@ function declarationReducer(
     case 'RestElement':
       textElements.push(plain('...'));
       return declarationReducer(textElements, p.argument, index, declarations);
+    case 'FunctionTypeParam':
+      // Very similar to the Identifier case, but with different obj structure
+      if (p.name) {
+        textElements.push(param(p.name.name));
+      }
+      break;
     default:
       throw new Error(`encountered unexpected argument type ${p.type}`);
   }
@@ -481,6 +496,73 @@ function variableDeclaratorOutline(
     kind: kind === 'const' ? 'constant' : 'variable',
     tokenizedText,
     representativeName,
+    children: [],
+    ...extent,
+  };
+}
+function declareClassOutline(item: any, extent: Extent): ?OutlineTree {
+  const tokenizedText = [keyword('class')];
+  let representativeName = undefined;
+  if (item.id != null) {
+    tokenizedText.push(whitespace(' '), className(item.id.name));
+    representativeName = item.id.name;
+  }
+  const properties = item.body.properties;
+  return {
+    kind: 'class',
+    tokenizedText,
+    representativeName,
+    children: arrayCompact(properties.map(declareClassPropertyOutline)),
+    ...extent,
+  };
+}
+function declareClassPropertyOutline(item: any): ?OutlineTree {
+  if (item.key == null) {
+    return null;
+  }
+  const representativeName = item.key.name;
+  const extent = getExtent(item);
+  switch (item.value.type) {
+    case 'FunctionTypeAnnotation':
+      return functionOutline(representativeName, item.value.params, extent);
+    case 'StringTypeAnnotation':
+    case 'GenericTypeAnnotation':
+      return {
+        kind: 'property',
+        tokenizedText: [method(representativeName)],
+        representativeName,
+        children: [],
+        ...extent,
+      };
+    default:
+      return null;
+  }
+}
+
+function declareFunctionOutline(item: any, extent: Extent): ?OutlineTree {
+  const params = item.id.typeAnnotation.typeAnnotation.params;
+  return functionOutline(item.id.name, params.map(obj => obj.name), extent);
+}
+function declareModuleOutline(item: any, extent: Extent): ?OutlineTree {
+  const tokenizedText = [keyword('module')];
+  let representativeName = undefined;
+  if (item.id != null) {
+    tokenizedText.push(whitespace(' '), className(item.id.value));
+    representativeName = item.id.value;
+  }
+  return {
+    kind: 'interface',
+    tokenizedText,
+    representativeName,
+    children: itemsToTrees(item.body.body),
+    ...extent,
+  };
+}
+function declareVariableOutline(item: any, extent: Extent): ?OutlineTree {
+  return {
+    kind: 'variable',
+    tokenizedText: [keyword('var'), whitespace(' '), method(item.id.name)],
+    representativeName: item.id.name,
     children: [],
     ...extent,
   };

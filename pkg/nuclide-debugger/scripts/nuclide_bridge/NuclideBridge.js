@@ -423,6 +423,7 @@ class NuclideBridge {
         const result = getIpcEvaluationResult(wasThrown, remoteObject);
         ipcRenderer.sendToHost('notification', 'ExpressionEvaluationResponse', {
           result,
+          // flowlint-next-line sketchy-null-mixed:off
           error: wasThrown ? error || result : null,
           expression,
           id,

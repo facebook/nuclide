@@ -11,7 +11,7 @@ from find_lldb import get_lldb
 from handler import HandlerDomain, UndefinedHandlerError, handler
 from logging_helper import log_debug
 import file_manager
-
+import re
 
 class DebuggerDomain(HandlerDomain):
     '''Implement Chrome debugger domain protocol and
@@ -28,13 +28,16 @@ class DebuggerDomain(HandlerDomain):
 
     @handler()
     def canSetScriptSource(self, params):
-        # Return False, becuase we don't support
+        # Return False, because we don't support
         # changing source at runtime.
         return {"result": False}
 
     @handler()
     def continueToLocation(self, params):
-        filelike = self.debugger_store.file_manager.get_by_client_url(params['location']['scriptId'])
+        client_url = params['location']['scriptId']
+        if not client_url.startswith('file://'):
+            client_url = 'file://' + client_url
+        filelike = self.debugger_store.file_manager.get_by_client_url(client_url)
         if not filelike or not isinstance(filelike, file_manager.File):
             # Only support setting breakpoints in real files.
             return {}
@@ -110,6 +113,11 @@ class DebuggerDomain(HandlerDomain):
 
     @handler()
     def setBreakpoint(self, params):
+        if self._is_hex_address(params['location']['scriptId']):
+            # This breakpoint is at a memory address location, not a file.
+            return self._set_breakpoint_by_address(params['location']['scriptId'])
+
+        # Otherwise it's a regular file+line breakpoint
         filelike = self.debugger_store.file_manager.get_by_script_id(params['location']['scriptId'])
         if not filelike or not isinstance(filelike, file_manager.File):
             # Only support setting breakpoints in real files.
@@ -120,8 +128,17 @@ class DebuggerDomain(HandlerDomain):
 
     @handler()
     def setBreakpointByUrl(self, params):
+        # If the url contains a hex address rather than a file path,
+        # treat this as an address breakpoint.
+        possible_address = params['url'].replace('file://', '')
+        if self._is_hex_address(possible_address):
+            # This breakpoint is at a memory address location, not a file.
+            return self._set_breakpoint_by_address(possible_address)
+
+        # Otherwise, it's a regular file+line breakpoint
         # Use source file name to set breakpoint.
         parsed_url = urlparse.urlparse(params['url'])
+
         return self._set_breakpoint_by_source_path(
             str(os.path.basename(parsed_url.path)),
             int(params['lineNumber']) + 1,
@@ -189,6 +206,15 @@ class DebuggerDomain(HandlerDomain):
                 self.debugger_store.location_serializer.get_breakpoint_locations(breakpoint),
         }
 
+    def _set_breakpoint_by_address(self, address):
+        target = self.debugger_store.debugger.GetSelectedTarget()
+        breakpoint = target.BreakpointCreateByAddress(int(address, 16))
+        locations = self.debugger_store.location_serializer.get_breakpoint_locations(breakpoint)
+        return {
+            'breakpointId': str(breakpoint.id),
+            'locations': locations,
+        }
+
     def _getSteppingFlag(self):
         lldb = get_lldb()
         if self.debugger_store.getDebuggerSettings()['singleThreadStepping']:
@@ -205,3 +231,7 @@ class DebuggerDomain(HandlerDomain):
             'breakpointId': str(breakpoint.id),
             'locations': self.debugger_store.location_serializer.get_breakpoint_locations(breakpoint),
         }
+
+    def _is_hex_address(self, path):
+        pattern = re.compile('0x[0-9A-Fa-f]+')
+        return re.match(pattern, path)

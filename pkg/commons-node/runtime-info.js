@@ -17,7 +17,7 @@ import {
 } from './system-info';
 import os from 'os';
 import uuid from 'uuid';
-import {__DEV__} from '../nuclide-node-transpiler/lib/env';
+import {__DEV__} from 'nuclide-node-transpiler/lib/env';
 
 export type RuntimeInformation = {
   sessionId: string,
@@ -36,6 +36,7 @@ export type RuntimeInformation = {
 let cachedInformation = null;
 
 function getCacheableRuntimeInformation(): RuntimeInformation {
+  // eslint-disable-next-line eqeqeq
   if (cachedInformation !== null) {
     return cachedInformation;
   }
@@ -66,3 +67,5 @@ export function getRuntimeInformation(): RuntimeInformation {
   };
   return runtimeInformation;
 }
+
+export {__DEV__};

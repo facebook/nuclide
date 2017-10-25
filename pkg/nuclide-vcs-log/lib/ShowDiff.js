@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import {computeDiff} from '../../commons-node/computeDiff';
@@ -33,14 +33,13 @@ const NUCLIDE_VCS_LOG_EDITOR_CLASSNAME = 'nuclide-vcs-log-editor';
 const NUCLIDE_VCS_LOG_DIFF_CONTAINER_CLASSNAME =
   'nuclide-vcs-log-diff-container';
 
-export class ShowDiff extends React.Component {
-  props: Props;
+export class ShowDiff extends React.Component<Props> {
   _oldTextEditor: atom$TextEditor;
   _oldDiffViewEditor: DiffViewEditor;
   _newTextEditor: atom$TextEditor;
   _newDiffViewEditor: DiffViewEditor;
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className={NUCLIDE_VCS_LOG_DIFF_CONTAINER_CLASSNAME}>
         <AtomTextEditor
@@ -51,6 +50,7 @@ export class ShowDiff extends React.Component {
           className={NUCLIDE_VCS_LOG_EDITOR_CLASSNAME}
           correctContainerWidth={false}
           ref={editorRef => {
+            // $FlowFixMe(>=0.53.0) Flow suppress
             this._oldTextEditor = editorRef && editorRef.getModel();
           }}
         />
@@ -62,6 +62,7 @@ export class ShowDiff extends React.Component {
           className={NUCLIDE_VCS_LOG_EDITOR_CLASSNAME}
           correctContainerWidth={false}
           ref={editorRef => {
+            // $FlowFixMe(>=0.53.0) Flow suppress
             this._newTextEditor = editorRef && editorRef.getModel();
           }}
         />

@@ -10,7 +10,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 import {render} from 'react-dom';
 import ClickOutsideBoundary from '../ClickOutsideBoundary';
@@ -22,7 +22,8 @@ const clickId = (id: string) => {
 };
 
 // A component which removes itself from the DOM when clicked.
-class ClickAway extends React.Component {
+// $FlowFixMe(>=0.53.0) Flow suppress
+class ClickAway extends React.Component<$FlowFixMeProps, $FlowFixMeState> {
   constructor(props) {
     super(props);
     this.state = {visible: true};
@@ -33,11 +34,11 @@ class ClickAway extends React.Component {
   };
 
   render() {
-    return this.state.visible
-      ? <span {...this.props} onClick={this.handleClick}>
-          Click to dismiss
-        </span>
-      : null;
+    return this.state.visible ? (
+      <span {...this.props} onClick={this.handleClick}>
+        Click to dismiss
+      </span>
+    ) : null;
   }
 }
 
@@ -83,7 +84,7 @@ describe('ClickOutsideBoundary - onClickOutside handler', () => {
       expect(onClickOutside).toHaveBeenCalled();
     });
 
-    it('on a sibling that dissapears after render', () => {
+    it('on a sibling that disappears after render', () => {
       // This would fail if we tool the approach of ignoring all
       // clicks on elements that were not in the DOM.
       render(

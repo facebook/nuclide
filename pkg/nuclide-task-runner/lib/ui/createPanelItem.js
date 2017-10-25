@@ -16,7 +16,7 @@ import {viewableFromReactElement} from '../../../commons-atom/viewableFromReactE
 import {nextAnimationFrame, throttle} from 'nuclide-commons/observable';
 import * as Actions from '../redux/Actions';
 import {Toolbar} from './Toolbar';
-import React from 'react';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 import shallowequal from 'shallowequal';
 
@@ -64,13 +64,14 @@ export function createPanelItem(store: Store): Object {
       : undefined,
   }));
 
-  const props = throttle(
-    Observable.combineLatest(stickyProps, alwaysUpToDateProps, (a, b) => ({
+  const props = Observable.combineLatest(
+    stickyProps,
+    alwaysUpToDateProps,
+    (a, b) => ({
       ...a,
       ...b,
-    })),
-    () => nextAnimationFrame,
-  );
+    }),
+  ).let(throttle(() => nextAnimationFrame));
 
   const StatefulToolbar = bindObservableAsProps(props, Toolbar);
   return viewableFromReactElement(<StatefulToolbar />);
@@ -78,7 +79,9 @@ export function createPanelItem(store: Store): Object {
 
 // Since `getExtraUi` may create a React class dynamically, the classes are cached
 const extraUiComponentCache = new WeakMap();
-function getExtraUiComponent(taskRunner: ?TaskRunner): ?ReactClass<any> {
+function getExtraUiComponent(
+  taskRunner: ?TaskRunner,
+): ?React.ComponentType<any> {
   if (!taskRunner) {
     return null;
   }

@@ -12,8 +12,9 @@
 import type {ThreadItem, NuclideThreadData, DebuggerModeType} from './types';
 import type {DatatipService} from 'atom-ide-ui';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
-import {Disposable, CompositeDisposable, Emitter} from 'atom';
-import React from 'react';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import * as React from 'react';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ActionTypes} from './DebuggerDispatcher';
@@ -37,11 +38,9 @@ export default class ThreadStore {
 
   constructor(dispatcher: DebuggerDispatcher) {
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._datatipService = null;
     this._emitter = new Emitter();
     this._threadMap = new Map();
@@ -176,7 +175,7 @@ export default class ThreadStore {
     if (datatipService != null && path != null && atom.workspace != null) {
       // This should be goToLocation instead but since the searchAllPanes option is correctly
       // provided it's not urgent.
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.workspace.open(path, {searchAllPanes: true}).then(editor => {
         const buffer = editor.getBuffer();
         const rowRange = buffer.rangeForRow(notificationLineNumber);
@@ -208,12 +207,13 @@ export default class ThreadStore {
     return this._emitter.on('change', callback);
   }
 
-  _createAlertComponentClass(message: string): ReactClass<any> {
-    return () =>
+  _createAlertComponentClass(message: string): React.ComponentType<any> {
+    return () => (
       <div className="nuclide-debugger-thread-switch-alert">
         <Icon icon="alert" />
         {message}
-      </div>;
+      </div>
+    );
   }
 
   dispose(): void {

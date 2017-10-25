@@ -14,7 +14,7 @@ import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import {Disposable, CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ActionTypes} from './DebuggerDispatcher';
 
 export default class DebuggerActionsStore {
@@ -24,11 +24,9 @@ export default class DebuggerActionsStore {
   constructor(dispatcher: DebuggerDispatcher, bridge: Bridge) {
     this._bridge = bridge;
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
   }
 
   _handlePayload(payload: DebuggerAction) {

@@ -11,7 +11,11 @@
 
 import type {RemoteConnection} from '../../nuclide-remote-connection';
 import type {NuclideRemoteConnectionProfile} from './connection-types';
+// eslint-disable-next-line rulesdir/import-type-style
+import type {Props as RemoteProjectConnectionModalProps} from './RemoteProjectConnectionModal';
 
+import Model from 'nuclide-commons/Model';
+import showModal from 'nuclide-commons-ui/showModal';
 import {
   getDefaultConnectionProfile,
   getOfficialRemoteServerCommand,
@@ -20,16 +24,13 @@ import {
   saveConnectionConfig,
   saveConnectionProfiles,
 } from './connection-profile-utils';
-import ConnectionDialog from './ConnectionDialog';
-import CreateConnectionProfileForm from './CreateConnectionProfileForm';
-import {getLogger} from 'log4js';
 import {getUniqueHostsForProfiles} from './connection-profile-utils';
-import {PromiseQueue} from '../../commons-node/promise-executors';
-import React from 'react';
-import ReactDOM from 'react-dom';
-
-const logger = getLogger('nuclide-remote-projects');
-let dialogPromiseQueue: ?PromiseQueue = null;
+import RemoteProjectConnectionModal from './RemoteProjectConnectionModal';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {getLogger as getLogger_} from 'log4js';
+import * as React from 'react';
+import {Observable} from 'rxjs';
 
 export type OpenConnectionDialogOptions = {
   initialServer: string,
@@ -37,248 +38,168 @@ export type OpenConnectionDialogOptions = {
   initialRemoteServerCommand?: string,
 };
 
+const getLogger = () => getLogger_('nuclide-remote-projects');
+
 /**
  * Opens the remote connection dialog flow, which includes asking the user
  * for connection parameters (e.g. username, server name, etc), and optionally
  * asking for additional (e.g. 2-fac) authentication.
  */
 export function openConnectionDialog(
-  options?: OpenConnectionDialogOptions,
+  dialogOptions?: OpenConnectionDialogOptions,
 ): Promise<?RemoteConnection> {
-  if (!dialogPromiseQueue) {
-    dialogPromiseQueue = new PromiseQueue();
+  return new Promise(resolve => {
+    showModal(
+      dismiss => {
+        const StatefulModal = bindObservableAsProps(
+          createPropsStream({dismiss, onConnected: resolve, dialogOptions}),
+          RemoteProjectConnectionModal,
+        );
+        return <StatefulModal />;
+      },
+      {shouldDismissOnClickOutsideModal: () => false},
+    );
+  });
+}
+
+/**
+ * Creates an observable that contains the props of the wizard component. When the state changes,
+ * the observable emits new props and (thanks to `bindObservableAsProps`), we re-render the
+ * component.
+ */
+function createPropsStream({dismiss, onConnected, dialogOptions}) {
+  // During the lifetime of this 'openConnectionDialog' flow, the 'default'
+  // connection profile should not change (even if it is reset by the user
+  // connecting to a remote project from another Atom window).
+  const defaultConnectionProfile = getDefaultConnectionProfile(dialogOptions);
+
+  const initialConnectionProfiles = [
+    defaultConnectionProfile,
+    ...getSavedConnectionProfiles(),
+  ];
+
+  // These props don't change over the lifetime of the modal.
+  const staticProps = {
+    defaultConnectionProfile,
+    initialFormFields: defaultConnectionProfile.params,
+    profileHosts: getUniqueHostsForProfiles(initialConnectionProfiles),
+
+    onScreenChange: screen => {
+      updateState({screen});
+    },
+    onConnect: async (connection, config) => {
+      onConnected(connection);
+      saveConnectionConfig(config, getOfficialRemoteServerCommand());
+    },
+    onCancel: () => {
+      onConnected(null);
+      dismiss();
+    },
+    onError: (err_, config) => {
+      onConnected(/* connection */ null);
+      saveConnectionConfig(config, getOfficialRemoteServerCommand());
+    },
+    onClosed: () => {
+      dismiss();
+    },
+    onSaveProfile(
+      index: number,
+      profile: NuclideRemoteConnectionProfile,
+    ): void {
+      const connectionProfiles = model.state.connectionProfiles.slice();
+      // Override the existing version.
+      connectionProfiles.splice(index, 1, profile);
+      updateState({connectionProfiles});
+    },
+    onDeleteProfileClicked(indexToDelete: number): void {
+      if (indexToDelete === 0) {
+        // no-op: The default connection profile can't be deleted.
+        // TODO jessicalin: Show this error message in a better place.
+        atom.notifications.addError(
+          'The default connection profile cannot be deleted.',
+        );
+        return;
+      }
+      const {connectionProfiles, selectedProfileIndex} = model.state;
+      if (connectionProfiles) {
+        if (indexToDelete >= connectionProfiles.length) {
+          getLogger().fatal(
+            'Tried to delete a connection profile with an index that does not exist. ' +
+              'This should never happen.',
+          );
+          return;
+        }
+        const nextConnectionProfiles = connectionProfiles.slice();
+        nextConnectionProfiles.splice(indexToDelete, 1);
+        const nextSelectedProfileIndex =
+          selectedProfileIndex >= indexToDelete
+            ? selectedProfileIndex - 1
+            : selectedProfileIndex;
+        updateState({
+          selectedProfileIndex: nextSelectedProfileIndex,
+          connectionProfiles: nextConnectionProfiles,
+        });
+      }
+    },
+    onProfileCreated(newProfile: NuclideRemoteConnectionProfile) {
+      const connectionProfiles = [
+        ...model.state.connectionProfiles,
+        newProfile,
+      ];
+      updateState({
+        connectionProfiles,
+        selectedProfileIndex: connectionProfiles.length - 1,
+        screen: 'connect',
+      });
+    },
+    onProfileSelected(selectedProfileIndex: number): void {
+      updateState({selectedProfileIndex});
+    },
+  };
+
+  function updateState(nextState: Object, saveProfiles: boolean = true): void {
+    const prevState = model.state;
+    model.setState(nextState);
+
+    // If the connection profiles changed, save them to the config. The `saveProfiles` option allows
+    // us to opt out because this is a bi-directional sync and we don't want to cause an infinite
+    // loop!
+    if (
+      saveProfiles &&
+      nextState.connectionProfiles != null &&
+      nextState.connectionProfiles !== prevState.connectionProfiles
+    ) {
+      // Don't include the first profile when saving since that's the default.
+      saveConnectionProfiles(nextState.connectionProfiles.slice(1));
+    }
   }
 
-  return dialogPromiseQueue.submit(
+  const model = new Model({
+    screen: 'connect',
+    selectedProfileIndex: 0,
+    connectionProfiles: initialConnectionProfiles,
+  });
+
+  const props: Observable<
+    RemoteProjectConnectionModalProps,
+  > = model.toObservable().map(state => ({...state, ...staticProps}));
+
+  const savedProfilesStream = observableFromSubscribeFunction(
+    onSavedConnectionProfilesDidChange,
+  ).map(() => getSavedConnectionProfiles());
+
+  return Observable.using(
     () =>
-      new Promise((resolve, reject) => {
-        // During the lifetime of this 'openConnectionDialog' flow, the 'default'
-        // connection profile should not change (even if it is reset by the user
-        // connecting to a remote project from another Atom window).
-        const defaultConnectionProfile: NuclideRemoteConnectionProfile = getDefaultConnectionProfile(
-          options,
-        );
-        // The `compositeConnectionProfiles` is the combination of the default connection
-        // profile plus any user-created connection profiles. Initialize this to the
-        // default connection profile. This array of profiles may change in the lifetime
-        // of `openConnectionDialog` flow.
-        let compositeConnectionProfiles: Array<
-          NuclideRemoteConnectionProfile,
-        > = [defaultConnectionProfile];
-        // Add any previously-created (saved) connection profiles.
-        compositeConnectionProfiles = compositeConnectionProfiles.concat(
-          getSavedConnectionProfiles(),
-        );
-
-        // We want to observe changes in the saved connection profiles during the
-        // lifetime of this connection dialog, because the user can add/delete
-        // a profile from a connection dialog.
-        let connectionProfilesSubscription: ?IDisposable = null;
-        function cleanupSubscriptionFunc(): void {
-          if (connectionProfilesSubscription) {
-            connectionProfilesSubscription.dispose();
-          }
-        }
-
-        function onDeleteProfileClicked(indexToDelete: number) {
-          if (indexToDelete === 0) {
-            // no-op: The default connection profile can't be deleted.
-            // TODO jessicalin: Show this error message in a better place.
-            atom.notifications.addError(
-              'The default connection profile cannot be deleted.',
-            );
-            return;
-          }
-          if (compositeConnectionProfiles) {
-            if (indexToDelete >= compositeConnectionProfiles.length) {
-              logger.fatal(
-                'Tried to delete a connection profile with an index that does not exist. ' +
-                  'This should never happen.',
-              );
-              return;
-            }
-            // Remove the index of the profile to delete.
-            let newConnectionProfiles = compositeConnectionProfiles
-              .slice(0, indexToDelete)
-              .concat(compositeConnectionProfiles.slice(indexToDelete + 1));
-            // Remove the first index, because this is the default connection profile,
-            // not a user-created profile.
-            newConnectionProfiles = newConnectionProfiles.slice(1);
-            saveConnectionProfiles(newConnectionProfiles);
-          }
-        }
-
-        let basePanel;
-        let newProfileForm;
-
-        function saveProfile(
-          index: number,
-          profile: NuclideRemoteConnectionProfile,
-        ): void {
-          const profiles = compositeConnectionProfiles.slice();
-          profiles.splice(index, 1, profile);
-
-          // Don't include the default connection profile.
-          saveConnectionProfiles(profiles.slice(1));
-        }
-
-        /*
-     * When the "+" button is clicked (the user intends to add a new connection profile),
-     * open a new dialog with a form to create one.
-     * This new dialog will be prefilled with the info from the default connection profile.
-     */
-        function onAddProfileClicked() {
-          if (basePanel != null) {
-            basePanel.destroy();
-            basePanel = null;
-          }
-
-          // If there is already an open form, don't open another one.
-          if (newProfileForm) {
-            return;
-          }
-
-          const hostElementForNewProfileForm = document.createElement('div');
-          let newProfilePanel = null;
-
-          // Props
-          function closeNewProfileForm(
-            newProfile?: NuclideRemoteConnectionProfile,
-          ) {
-            newProfileForm = null;
-            ReactDOM.unmountComponentAtNode(hostElementForNewProfileForm);
-            if (newProfilePanel != null) {
-              newProfilePanel.destroy();
-              newProfilePanel = null;
-            }
-            openBaseDialog(newProfile);
-          }
-
-          function onSave(newProfile: NuclideRemoteConnectionProfile) {
-            // Don't include the default connection profile.
-            const userCreatedProfiles = compositeConnectionProfiles
-              .slice(1)
-              .concat(newProfile);
-            saveConnectionProfiles(userCreatedProfiles);
-            closeNewProfileForm(newProfile);
-          }
-
-          const initialDialogProps = {
-            onCancel: closeNewProfileForm,
-            onSave,
-            initialFormFields: defaultConnectionProfile.params,
-            profileHosts: getUniqueHostsForProfiles(
-              compositeConnectionProfiles,
-            ),
-          };
-
-          newProfilePanel = atom.workspace.addModalPanel({
-            item: hostElementForNewProfileForm,
-          });
-
-          // Pop up a dialog that is pre-filled with the default params.
-          newProfileForm = ReactDOM.render(
-            <CreateConnectionProfileForm {...initialDialogProps} />,
-            hostElementForNewProfileForm,
-          );
-        }
-
-        function openBaseDialog(
-          selectedProfile?: NuclideRemoteConnectionProfile,
-        ) {
-          const hostEl = document.createElement('div');
-          let indexOfInitiallySelectedConnectionProfile;
-          if (selectedProfile == null) {
-            // Select the default connection profile, which is always index 0.
-            indexOfInitiallySelectedConnectionProfile = 0;
-          } else {
-            const selectedDisplayTitle = selectedProfile.displayTitle;
-            indexOfInitiallySelectedConnectionProfile = compositeConnectionProfiles.findIndex(
-              profile => profile.displayTitle === selectedDisplayTitle,
-            );
-          }
-
-          // The connection profiles could change, but the rest of the props passed
-          // to the ConnectionDialog will not.
-          // Note: the `cleanupSubscriptionFunc` is called when the dialog closes:
-          // `onConnect`, `onError`, or `onCancel`.
-          const baseDialogProps = {
-            indexOfInitiallySelectedConnectionProfile,
-            onAddProfileClicked,
-            onCancel: () => {
-              resolve(/* connection */ null);
-              cleanupSubscriptionFunc();
-            },
-            onClosed: () => {
-              // Unmount the ConnectionDialog and clean up the host element.
-              ReactDOM.unmountComponentAtNode(hostEl);
-              if (basePanel != null) {
-                basePanel.destroy();
-              }
-            },
-            onConnect: async (connection, config) => {
-              resolve(connection);
-              saveConnectionConfig(config, getOfficialRemoteServerCommand());
-              cleanupSubscriptionFunc();
-            },
-            onError: (err_, config) => {
-              resolve(/* connection */ null);
-              saveConnectionConfig(config, getOfficialRemoteServerCommand());
-              cleanupSubscriptionFunc();
-            },
-            onDeleteProfileClicked,
-            onSaveProfile: saveProfile,
-          };
-
-          // If/when the saved connection profiles change, we want to re-render the dialog
-          // with the new set of connection profiles.
-          connectionProfilesSubscription = onSavedConnectionProfilesDidChange(
-            (newProfiles: ?Array<NuclideRemoteConnectionProfile>) => {
-              compositeConnectionProfiles = newProfiles
-                ? [defaultConnectionProfile].concat(newProfiles)
-                : [defaultConnectionProfile];
-
-              const newDialogProps = {
-                ...baseDialogProps,
-                connectionProfiles: compositeConnectionProfiles,
-              };
-              ReactDOM.render(<ConnectionDialog {...newDialogProps} />, hostEl);
-            },
-          );
-
-          basePanel = atom.workspace.addModalPanel({item: hostEl});
-
-          // $FlowFixMe
-          const parentEl: ?HTMLElement = hostEl.parentElement;
-          if (parentEl != null) {
-            // Atom sets the width of all modals, but the connection dialog
-            // is best with more width, so reach out to the parent (an atom-panel.modal)
-            // and increase the fixed width
-            parentEl.style.width = '650px';
-
-            // responsive behavior for this dialog. Aim for 650px as above,
-            // but not larger than the width of the window.
-            parentEl.style.maxWidth = '100%';
-            parentEl.style.minWidth = '550px';
-          }
-
-          const initialDialogProps = {
-            ...baseDialogProps,
-            connectionProfiles: compositeConnectionProfiles,
-          };
-          ReactDOM.render(<ConnectionDialog {...initialDialogProps} />, hostEl);
-        }
-
-        // Select the last profile that was used. It's possible the config changed since the last time
-        // this was opened and the profile no longer exists. If the profile is not found,
-        // `openBaseDialog` will select the "default" / "Most Recent" option.
-        openBaseDialog(
-          compositeConnectionProfiles.find(
-            profile =>
-              profile.displayTitle ===
-              defaultConnectionProfile.params.displayTitle,
-          ),
+      // If something else changes the saved profiles, we want to update our state to reflect those
+      // changes.
+      savedProfilesStream.subscribe(savedProfiles => {
+        updateState(
+          {connectionProfiles: [defaultConnectionProfile, ...savedProfiles]},
+          // Don't write the changes to the config; that's where we got them from and we don't want
+          // to cause an infinite loop.
+          false,
         );
       }),
+    () => props,
   );
 }

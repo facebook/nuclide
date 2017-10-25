@@ -14,7 +14,7 @@ import type {Action, Store} from '../types';
 
 import {Observable} from 'rxjs';
 import * as Actions from './Actions';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {getAdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 import {getSdbServiceByNuclideUri} from '../../../nuclide-remote-connection';
 
@@ -56,7 +56,7 @@ export function setAdbPortEpic(
     .ofType(Actions.SET_ADB_PORT)
     .map(action => {
       invariant(action.type === Actions.SET_ADB_PORT);
-      getAdbServiceByNuclideUri(action.payload.host).setAdbPort(
+      getAdbServiceByNuclideUri(action.payload.host).addAdbPort(
         action.payload.port,
       );
     })

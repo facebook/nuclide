@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 import type {DOMMeasurements} from '../commons-atom/observe-element-dimensions';
 
@@ -24,8 +24,7 @@ type Props = {
  * container's height and width measurements change. The callback is invoked once
  * when the MeasuredComponent has mounted.
  */
-export class MeasuredComponent extends React.Component {
-  props: Props;
+export class MeasuredComponent extends React.Component<Props> {
   // Listens to the container DOM node for mutations
   _mutationObserverSubscription: rxjs$ISubscription;
   _domNode: ?HTMLElement;
@@ -44,11 +43,8 @@ export class MeasuredComponent extends React.Component {
     this._domNode = node;
   };
 
-  render(): React.Element<any> {
-    return (
-      <div ref={this._updateDomNode}>
-        {this.props.children}
-      </div>
-    );
+  render(): React.Node {
+    const {onMeasurementsChanged, ...passThroughProps} = this.props;
+    return <div ref={this._updateDomNode} {...passThroughProps} />;
   }
 }

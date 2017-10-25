@@ -15,9 +15,13 @@ import {
 } from './GraphQLLanguage';
 
 export function activate() {
-  graphqlLanguageService.then(value => value.activate());
+  if (process.platform !== 'win32') {
+    graphqlLanguageService.then(value => value.activate());
+  }
 }
 
 export function deactivate(): void {
-  resetGraphQLLanguageService();
+  if (process.platform !== 'win32') {
+    resetGraphQLLanguageService();
+  }
 }

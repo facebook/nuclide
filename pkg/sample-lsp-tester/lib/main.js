@@ -40,6 +40,7 @@ class Activation {
   }
 
   deserializeLspTester(serialized: ?mixed): LspTester {
+    // flowlint-next-line sketchy-null-mixed:off
     const data = (serialized && serialized.data) || null;
     return new LspTester({
       lastCommand:

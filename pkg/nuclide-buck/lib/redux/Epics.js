@@ -13,11 +13,18 @@ import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 import type {PlatformGroup, Store} from '../types';
 import type {Action} from './Actions';
 import type {ResolvedRuleType} from '../../../nuclide-buck-rpc/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 import {getBuckProjectRoot, getBuckService} from '../../../nuclide-buck-base';
 import * as Actions from './Actions';
+import {
+  getFileSystemServiceByNuclideUri,
+  getFileWatcherServiceByNuclideUri,
+} from '../../../nuclide-remote-connection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {getLogger} from 'log4js';
 
 export function setProjectRootEpic(
   actions: ActionsObservable<Action>,
@@ -38,6 +45,46 @@ export function setProjectRootEpic(
       ),
     );
   });
+}
+
+export function setBuckRootEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions.ofType(Actions.SET_BUCK_ROOT).switchMap(action => {
+    invariant(action.type === Actions.SET_BUCK_ROOT);
+    const {buckRoot} = action;
+    if (buckRoot == null) {
+      return Observable.empty();
+    }
+    const watcherService = getFileWatcherServiceByNuclideUri(buckRoot);
+    return Observable.of(undefined)
+      .concat(
+        watcherService
+          .watchWithNode(buckRoot, true)
+          .refCount()
+          .filter(event => nuclideUri.basename(event.path) === '.buckversion'),
+      )
+      .switchMap(() => readBuckversionFile(buckRoot))
+      .map(fileContents => Actions.setBuckversionFileContents(fileContents));
+  });
+}
+
+async function readBuckversionFile(
+  buckRoot: NuclideUri,
+): Promise<string | Error> {
+  const fileSystemService = getFileSystemServiceByNuclideUri(buckRoot);
+  try {
+    const data = await fileSystemService.readFile(
+      nuclideUri.join(buckRoot, '.buckversion'),
+    );
+    return String(data);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      getLogger().error(error);
+    }
+    return error;
+  }
 }
 
 // Intentionally not exposed in Actions; this shouldn't be used externally.
@@ -82,6 +129,7 @@ export function setRuleTypeEpic(
     const {ruleType} = action;
     if (ruleType) {
       const state = store.getState();
+      // flowlint-next-line sketchy-null-string:off
       invariant(state.buckRoot);
       return state.platformService
         .getPlatformGroups(state.buckRoot, ruleType.type, state.buildTarget)

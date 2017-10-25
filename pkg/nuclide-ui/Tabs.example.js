@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import Tabs from './Tabs';
 
@@ -36,9 +36,7 @@ const tabs = [
   },
 ];
 
-class TabExample extends React.Component {
-  state: {activeTabName: string};
-
+class TabExample extends React.Component<any, {activeTabName: string}> {
   constructor(props: any) {
     super(props);
     this.state = {
@@ -55,7 +53,7 @@ class TabExample extends React.Component {
     });
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {activeTabName} = this.state;
     return (
       <Block>

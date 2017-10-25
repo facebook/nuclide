@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 import type RecentFilesService from '../../nuclide-recent-files-service/lib/RecentFilesService';
 
 import {
@@ -17,7 +17,7 @@ import {
   setRecentFilesService,
 } from './RecentFilesProvider';
 
-export function registerProvider(): Provider {
+export function registerProvider(): Provider<FileResult> {
   return RecentFilesProvider;
 }
 

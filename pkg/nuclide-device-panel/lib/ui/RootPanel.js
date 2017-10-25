@@ -18,9 +18,9 @@ import type {Props as TaskButtonPropsType} from './TaskButton';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {TaskButton} from './TaskButton';
 import {DeviceTask} from '../DeviceTask';
-import React from 'react';
+import * as React from 'react';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Selectors} from './Selectors';
 import {DeviceTable} from './DeviceTable';
 import {DevicePanel} from './DevicePanel';
@@ -39,15 +39,13 @@ export type Props = {|
   deviceType: ?string,
   deviceTasks: DeviceTask[],
   device: ?Device,
-  infoTables: Map<string, Map<string, string>>,
-  processes: Process[],
+  infoTables: Expected<Map<string, Map<string, string>>>,
+  processes: Expected<Process[]>,
   isDeviceConnected: boolean,
   deviceTypeTasks: DeviceTask[],
 |};
 
-export class RootPanel extends React.Component {
-  props: Props;
-
+export class RootPanel extends React.Component<Props> {
   constructor(props: Props) {
     super(props);
     invariant(props.hosts.length > 0);
@@ -62,6 +60,7 @@ export class RootPanel extends React.Component {
   }
 
   _createDeviceTable(): ?React.Element<any> {
+    // eslint-disable-next-line eqeqeq
     if (this.props.deviceType === null) {
       return null;
     }
@@ -99,9 +98,7 @@ export class RootPanel extends React.Component {
       return <StreamedTaskButton key={task.getName()} />;
     });
     return (
-      <div className="block nuclide-device-panel-tasks-container">
-        {tasks}
-      </div>
+      <div className="block nuclide-device-panel-tasks-container">{tasks}</div>
     );
   }
 
@@ -138,15 +135,13 @@ export class RootPanel extends React.Component {
             setHost={this.props.setHost}
           />
         </div>
-        <div className="block">
-          {this._createDeviceTable()}
-        </div>
+        <div className="block">{this._createDeviceTable()}</div>
         {this._getTasks()}
       </div>
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <PanelComponentScroller>
         <div className="nuclide-device-panel-container">

@@ -17,9 +17,10 @@ import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Modal} from './Modal';
 import {MultiSelectList} from './MultiSelectList';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type Option = {
+  // $FlowFixMe(>=0.53.0) Flow suppress
   label: React.Children,
   value: any,
 };
@@ -44,10 +45,7 @@ type State = {
  * A `<select>`-like control that uses an Atom modal for its options. This component uses an API as
  * similar to `Dropdown` as possible, with extra props for customizing display options.
  */
-export class ModalMultiSelect extends React.Component {
-  props: Props;
-  state: State;
-
+export class ModalMultiSelect extends React.Component<Props, State> {
   static defaultProps = {
     className: '',
     disabled: false,
@@ -66,7 +64,7 @@ export class ModalMultiSelect extends React.Component {
     };
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const LabelComponent = this.props.labelComponent || DefaultLabelComponent;
     const selectedOptions = this.props.options.filter(
       option => this.props.value.indexOf(option.value) !== -1,
@@ -124,6 +122,7 @@ export class ModalMultiSelect extends React.Component {
 
     return (
       <Modal onDismiss={this._dismissModal}>
+        {/* $FlowFixMe(>=0.53.0) Flow suppress */}
         <MultiSelectList
           commandScope={atom.views.getView(atom.workspace)}
           value={this.state.activeValues}

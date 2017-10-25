@@ -67,7 +67,10 @@ describe('Mercurial Repository Integration Tests', () => {
       ): any): HgRepositoryClient);
       invariant(hgRepository != null);
       await fsPromise.writeFile(filePath, 'new text');
-      await hgRepository.commit('commit msg').toArray().toPromise();
+      await hgRepository
+        .commit('commit msg')
+        .toArray()
+        .toPromise();
       const changes = await fetchFilesChangedSinceRevision('.^', repoPath)
         .refCount()
         .toPromise();
@@ -90,9 +93,15 @@ describe('Mercurial Repository Integration Tests', () => {
       ): any): HgRepositoryClient);
       invariant(hgRepository != null);
       await fsPromise.writeFile(filePath, 'new text 1');
-      await hgRepository.commit('commit msg 1').toArray().toPromise();
+      await hgRepository
+        .commit('commit msg 1')
+        .toArray()
+        .toPromise();
       await fsPromise.writeFile(filePath, 'new text 2');
-      await hgRepository.commit('commit msg 2').toArray().toPromise();
+      await hgRepository
+        .commit('commit msg 2')
+        .toArray()
+        .toPromise();
       await fsPromise.writeFile(filePath, 'new text 3');
       await hgRepository
         .amend('commit msg 3', AmendMode.CLEAN)

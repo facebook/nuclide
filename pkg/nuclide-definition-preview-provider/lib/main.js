@@ -15,7 +15,13 @@ import {getDefinitionPreviewServiceByNuclideUri} from '../../nuclide-remote-conn
 
 export function provideDefinitionPreview(): DefinitionPreviewProvider {
   return {
-    async getDefinitionPreview(definition: Definition): Promise<string> {
+    async getDefinitionPreview(
+      definition: Definition,
+    ): Promise<?{
+      mime: string,
+      contents: string,
+      encoding: string,
+    }> {
       const service = await getDefinitionPreviewServiceByNuclideUri(
         definition.path,
       );

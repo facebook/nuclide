@@ -11,6 +11,7 @@
 
 import type {AgentOptions} from './main';
 import type {Observable} from 'rxjs';
+import type {ReliableTransport} from '../../nuclide-rpc';
 
 import url from 'url';
 import WS from 'ws';
@@ -18,6 +19,7 @@ import uuid from 'uuid';
 import {Emitter} from 'event-kit';
 import {WebSocketTransport} from './WebSocketTransport';
 import {QueuedTransport} from './QueuedTransport';
+import {QueuedAckTransport} from './QueuedAckTransport';
 import {XhrConnectionHeartbeat} from './XhrConnectionHeartbeat';
 import invariant from 'assert';
 import {attachEvent} from 'nuclide-commons/event';
@@ -41,7 +43,7 @@ const MAX_RECONNECT_TIME_MS = 5000;
 // Can be in one of the following states:
 //   - Connected - everything healthy
 //   - Disconnected - Was connected, but connection died. Will attempt to reconnect.
-//   - Closed - No longer connected. May not send/recieve messages. Cannot be resurected.
+//   - Closed - No longer connected. May not send/receive messages. Cannot be resurected.
 //
 // Publishes the following events:
 //   - status(boolean): on connect/disconnect
@@ -61,19 +63,22 @@ export class NuclideSocket {
   _previouslyConnected: boolean;
   _websocketUri: string;
   _emitter: Emitter;
-  _transport: ?QueuedTransport;
+  _transport: ?ReliableTransport;
   _heartbeat: XhrConnectionHeartbeat;
 
   constructor(serverUri: string, options: ?AgentOptions) {
+    const useAck = options != null && options.useAck;
     this._emitter = new Emitter();
     this._serverUri = serverUri;
     this._options = options;
-    this.id = uuid.v4();
+    this.id = (useAck ? 'ACK' : 'NOACK') + uuid.v4();
     this._pingTimer = null;
     this._reconnectTime = INITIAL_RECONNECT_TIME_MS;
     this._reconnectTimer = null;
     this._previouslyConnected = false;
-    const transport = new QueuedTransport(this.id);
+    const transport = useAck
+      ? new QueuedAckTransport(this.id)
+      : new QueuedTransport(this.id);
     this._transport = transport;
     transport.onDisconnect(() => {
       if (this.isDisconnected()) {
@@ -219,6 +224,7 @@ export class NuclideSocket {
   }
 
   _scheduleReconnect() {
+    // flowlint-next-line sketchy-null-number:off
     if (this._reconnectTimer) {
       return;
     }
@@ -236,6 +242,7 @@ export class NuclideSocket {
   }
 
   _clearReconnectTimer() {
+    // flowlint-next-line sketchy-null-number:off
     if (this._reconnectTimer) {
       clearTimeout(this._reconnectTimer);
       this._reconnectTimer = null;

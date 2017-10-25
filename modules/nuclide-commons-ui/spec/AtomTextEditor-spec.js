@@ -11,8 +11,8 @@
  */
 
 import {AtomTextEditor} from '../AtomTextEditor';
-import React from 'react';
-import TestUtils from 'react-addons-test-utils';
+import * as React from 'react';
+import TestUtils from 'react-dom/test-utils';
 import invariant from 'assert';
 
 describe('nuclide-ui-atom-text-editor', () => {

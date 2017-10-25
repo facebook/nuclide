@@ -9,8 +9,8 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
-import React from 'react';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import * as React from 'react';
 import {getNotificationService} from './AtomNotifications';
 
 type Props = {
@@ -20,18 +20,14 @@ type Props = {
 };
 
 /** Component to prompt the user for authentication information. */
-export default class AuthenticationPrompt extends React.Component<
-  void,
-  Props,
-  void,
-> {
+export default class AuthenticationPrompt extends React.Component<Props, void> {
   props: Props;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   componentDidMount(): void {
@@ -77,7 +73,7 @@ export default class AuthenticationPrompt extends React.Component<
     return this.refs.password.value;
   }
 
-  _onKeyUp = (e: SyntheticKeyboardEvent): void => {
+  _onKeyUp = (e: SyntheticKeyboardEvent<>): void => {
     if (e.key === 'Enter') {
       this.props.onConfirm();
     }
@@ -87,7 +83,7 @@ export default class AuthenticationPrompt extends React.Component<
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     // * Need native-key-bindings so that delete works and we need `_onKeyUp` so that escape and
     //   enter work
     // * `instructions` are pre-formatted, so apply `whiteSpace: pre` to maintain formatting coming

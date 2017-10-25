@@ -164,7 +164,7 @@ export class LogTailer {
   }
 
   stop(): void {
-    // If the process is explicitly stopped, call all of the running callbacks with a cancelation
+    // If the process is explicitly stopped, call all of the running callbacks with a cancellation
     // error.
     this._startCount = 0;
     this._runningCallbacks.forEach(cb => {
@@ -209,8 +209,8 @@ export class LogTailer {
   }
 
   _start(trackCall: boolean): void {
-    // eslint-disable-next-line nuclide-internal/atom-apis
-    atom.workspace.open(CONSOLE_VIEW_URI);
+    // eslint-disable-next-line rulesdir/atom-apis
+    atom.workspace.open(CONSOLE_VIEW_URI, {searchAllPanes: true});
 
     const currentStatus = this._statuses.getValue();
     if (currentStatus === 'starting') {

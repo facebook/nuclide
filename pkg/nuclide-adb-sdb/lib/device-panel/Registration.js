@@ -34,6 +34,7 @@ export function registerDevicePanelProviders(
     api.registerInfoProvider(new ATDeviceInfoProvider(tizen)),
     // processes
     api.registerProcessesProvider(new ATDeviceProcessesProvider(android)),
+    api.registerProcessesProvider(new ATDeviceProcessesProvider(tizen)),
     // process tasks
     api.registerProcessTaskProvider(new ATDeviceStopPackageProvider(android)),
     // device type tasks

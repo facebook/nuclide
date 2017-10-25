@@ -25,7 +25,7 @@ import {getOutline} from './OutlineProvider';
 import TypeHintProvider from './TypeHintProvider';
 import {cases} from './DestructureHelpers';
 import {getEntireFormatting} from './CodeFormatHelpers';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {createLanguageService} from './OCamlLanguage';
 import {getUseLspConnection} from '../../nuclide-ocaml-rpc/lib/OCamlService';
 
@@ -81,7 +81,7 @@ export function createCodeFormatProvider(): CodeFormatProvider {
   };
 }
 
-let disposables: atom$CompositeDisposable = new CompositeDisposable();
+let disposables: UniversalDisposable = new UniversalDisposable();
 
 export async function activate(): Promise<void> {
   if (await getUseLspConnection()) {
@@ -128,5 +128,5 @@ export async function activate(): Promise<void> {
 
 export async function deactivate(): Promise<void> {
   disposables.dispose();
-  disposables = new CompositeDisposable();
+  disposables = new UniversalDisposable();
 }

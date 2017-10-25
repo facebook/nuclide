@@ -9,21 +9,23 @@
  * @format
  */
 
+// DEPRECATED, AVOID USING THIS. Use 'showModal' in nuclide-commons-ui instead
+
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Portal} from './Portal';
-import React from 'react';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 
 type Props = {
   children?: any,
+  modalClassName?: string,
   onDismiss: () => void,
 };
 
 /**
  * Shows a modal dialog when rendered, using Atom's APIs (atom.workspace.addModalPanel).
  */
-export class Modal extends React.Component {
-  props: Props;
+export class Modal extends React.Component<Props> {
   _container: HTMLElement;
   _cancelDisposable: ?IDisposable;
   _innerElement: ?HTMLElement;
@@ -31,14 +33,33 @@ export class Modal extends React.Component {
 
   componentWillMount(): void {
     this._container = document.createElement('div');
-    this._panel = atom.workspace.addModalPanel({item: this._container});
+    this._panel = atom.workspace.addModalPanel({
+      item: this._container,
+      className: this.props.modalClassName,
+    });
   }
 
   componentWillUnmount(): void {
     this._panel.destroy();
   }
 
-  _handleWindowClick = (event: SyntheticMouseEvent): void => {
+  componentDidUpdate(prevProps: Props): void {
+    const {modalClassName} = this.props;
+    const {modalClassName: prevModalClassName} = prevProps;
+    const panelElement = this._panel.getElement();
+    if (prevModalClassName != null) {
+      panelElement.classList.remove(
+        ...prevModalClassName.split(/\s+/).filter(token => token.length > 0),
+      );
+    }
+    if (modalClassName != null) {
+      panelElement.classList.add(
+        ...modalClassName.split(/\s+/).filter(token => token.length > 0),
+      );
+    }
+  }
+
+  _handleWindowClick = (event: SyntheticMouseEvent<>): void => {
     // If the user clicks outside of the modal, close it.
     if (
       this._innerElement &&
@@ -73,8 +94,7 @@ export class Modal extends React.Component {
   };
 
   render() {
-    const props = {...this.props};
-    delete props.onDismiss;
+    const {modalClassName, children, onDismiss, ...props} = this.props;
     return (
       <Portal container={this._container}>
         <div tabIndex="0" {...props} ref={this._handleContainerInnerElement}>

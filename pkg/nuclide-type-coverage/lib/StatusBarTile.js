@@ -18,7 +18,7 @@ import type {CoverageProvider} from './types';
 import type {CoverageResult} from './rpc-types';
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {Subscription} from 'rxjs';
 
 import {StatusBarTileComponent} from './StatusBarTileComponent';
@@ -39,14 +39,11 @@ type State = {
   isActive: boolean,
 };
 
-export class StatusBarTile extends React.Component {
+export class StatusBarTile extends React.Component<Props, State> {
   _item: ?HTMLElement;
   _tile: ?atom$StatusBarTile;
 
   _percentage: ?number;
-
-  state: State;
-  props: Props;
 
   subscription: ?rxjs$ISubscription;
 
@@ -106,6 +103,7 @@ export class StatusBarTile extends React.Component {
         });
         break;
       default:
+        (result: empty);
         throw new Error(`Should handle kind ${result.kind}`);
     }
   }
@@ -114,7 +112,7 @@ export class StatusBarTile extends React.Component {
     this.setState({isActive});
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <StatusBarTileComponent {...this.state} onClick={this.props.onClick} />
     );

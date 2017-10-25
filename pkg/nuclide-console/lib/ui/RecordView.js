@@ -18,7 +18,7 @@ import type {
 } from '../types';
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 import {LazyNestedValueComponent} from '../../../nuclide-ui/LazyNestedValueComponent';
 import SimpleValueComponent from '../../../nuclide-ui/SimpleValueComponent';
 import shallowEqual from 'shallowequal';
@@ -38,8 +38,7 @@ type Props = {
 };
 
 const ONE_DAY = 1000 * 60 * 60 * 24;
-export default class RecordView extends React.Component {
-  props: Props;
+export default class RecordView extends React.Component<Props> {
   _wrapper: ?HTMLElement;
   _debouncedMeasureAndNotifyHeight: () => void;
   _rafDisposable: ?rxjs$Subscription;
@@ -74,11 +73,7 @@ export default class RecordView extends React.Component {
       // TODO: We really want to use a text editor to render this so that we can get syntax
       // highlighting, but they're just too expensive. Figure out a less-expensive way to get syntax
       // highlighting.
-      return (
-        <pre>
-          {record.text || ' '}
-        </pre>
-      );
+      return <pre>{record.text || ' '}</pre>;
     } else if (record.kind === 'response') {
       const executor = this.props.getExecutor(record.sourceId);
       return this._renderNestedValueComponent(displayableRecord, executor);
@@ -88,11 +83,7 @@ export default class RecordView extends React.Component {
     } else {
       // If there's not text, use a space to make sure the row doesn't collapse.
       const text = record.text || ' ';
-      return (
-        <pre>
-          {parseText(text)}
-        </pre>
-      );
+      return <pre>{parseText(text)}</pre>;
     }
   }
 
@@ -120,7 +111,7 @@ export default class RecordView extends React.Component {
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {displayableRecord} = this.props;
     const {record} = displayableRecord;
     const {level, kind, timestamp, sourceId} = record;
@@ -135,15 +126,16 @@ export default class RecordView extends React.Component {
     );
 
     const iconName = getIconName(record);
+    // flowlint-next-line sketchy-null-string:off
     const icon = iconName ? <span className={`icon icon-${iconName}`} /> : null;
-    const sourceLabel = this.props.showSourceLabel
-      ? <span
-          className={`nuclide-console-record-source-label ${getHighlightClassName(
-            level,
-          )}`}>
-          {sourceId}
-        </span>
-      : null;
+    const sourceLabel = this.props.showSourceLabel ? (
+      <span
+        className={`nuclide-console-record-source-label ${getHighlightClassName(
+          level,
+        )}`}>
+        {sourceId}
+      </span>
+    ) : null;
     let renderedTimestamp;
     if (timestamp != null) {
       const timestampLabel =
@@ -151,18 +143,24 @@ export default class RecordView extends React.Component {
           ? timestamp.toLocaleString()
           : timestamp.toLocaleTimeString();
       renderedTimestamp = (
-        <div className="nuclide-console-record-timestamp">
-          {timestampLabel}
-        </div>
+        <div className="nuclide-console-record-timestamp">{timestampLabel}</div>
       );
     }
     return (
       <MeasuredComponent
         onMeasurementsChanged={this._debouncedMeasureAndNotifyHeight}>
+        {/* $FlowFixMe(>=0.53.0) Flow suppress */}
         <div ref={this._handleRecordWrapper} className={classNames}>
           {icon}
           <div className="nuclide-console-record-content-wrapper">
-            {this._renderContent(displayableRecord)}
+            {displayableRecord.record.repeatCount > 1 && (
+              <div className="nuclide-console-record-duplicate-number">
+                {displayableRecord.record.repeatCount}
+              </div>
+            )}
+            <div className="nuclide-console-record-content">
+              {this._renderContent(displayableRecord)}
+            </div>
           </div>
           {sourceLabel}
           {renderedTimestamp}
@@ -197,7 +195,7 @@ export default class RecordView extends React.Component {
   };
 }
 
-function getComponent(type: ?string): ReactClass<any> {
+function getComponent(type: ?string): React.ComponentType<any> {
   switch (type) {
     case 'text':
       return props => TextRenderer(props.evaluationResult);
@@ -287,11 +285,14 @@ function parseText(text: string): Array<string | React.Element<any>> {
     }
 
     chunks.push(
-      href
-        ? <a key={`r${index}`} href={href} target="_blank">
-            {matchedText}
-          </a>
-        : matchedText,
+      // flowlint-next-line sketchy-null-string:off
+      href ? (
+        <a key={`r${index}`} href={href} target="_blank">
+          {matchedText}
+        </a>
+      ) : (
+        matchedText
+      ),
     );
 
     index++;

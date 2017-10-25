@@ -12,7 +12,7 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup, ButtonGroupSizes} from 'nuclide-commons-ui/ButtonGroup';
@@ -29,9 +29,7 @@ type Props = {|
   deviceType: ?string,
 |};
 
-export class Selectors extends React.Component {
-  props: Props;
-
+export class Selectors extends React.Component<Props> {
   componentDidMount(): void {
     if (this.props.deviceTypes.length > 0) {
       this._setDeviceType(this.props.deviceTypes[0]);
@@ -86,13 +84,27 @@ export class Selectors extends React.Component {
     );
   }
 
-  render(): React.Element<any> {
+  _updateDeviceType(): void {
+    if (this.props.deviceTypes.length > 0) {
+      this._setDeviceType(
+        this.props.deviceType != null
+          ? this.props.deviceType
+          : this.props.deviceTypes[0],
+      );
+    }
+  }
+
+  render(): React.Node {
     return (
       <div>
         <div className="nuclide-device-panel-host-selector">
+          {/* $FlowFixMe(>=0.53.0) Flow suppress */}
           <Dropdown
             options={this._getHostOptions()}
-            onChange={this.props.setHost}
+            onChange={host => {
+              this.props.setHost(host);
+              this._updateDeviceType();
+            }}
             value={this.props.host}
             key="connection"
           />

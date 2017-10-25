@@ -10,18 +10,19 @@
  */
 
 import type {
+  Device,
   DeviceProcessesProvider,
   Process,
 } from '../../../nuclide-device-panel/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {Bridge} from '../types';
 
-import {AndroidBridge} from '../bridges/AndroidBridge';
 import {Observable} from 'rxjs';
 
 export class ATDeviceProcessesProvider implements DeviceProcessesProvider {
-  _bridge: AndroidBridge;
+  _bridge: Bridge;
 
-  constructor(bridge: AndroidBridge) {
+  constructor(bridge: Bridge) {
     this._bridge = bridge;
   }
 
@@ -29,13 +30,14 @@ export class ATDeviceProcessesProvider implements DeviceProcessesProvider {
     return this._bridge.name;
   }
 
-  observe(host: NuclideUri, device: string): Observable<Process[]> {
-    return Observable.interval(3000)
+  observe(host: NuclideUri, device: Device): Observable<Process[]> {
+    const intervalTime = 3000;
+    return Observable.interval(intervalTime)
       .startWith(0)
       .switchMap(() =>
         this._bridge
           .getService(host)
-          .getProcesses(device)
+          .getProcesses(device, intervalTime)
           .refCount()
           .catch(() => Observable.of([])),
       );

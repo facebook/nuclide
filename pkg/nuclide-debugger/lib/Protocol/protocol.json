@@ -3178,6 +3178,55 @@
                 "description": "Location in the source code."
             },
             {
+                "id": "Disassembly",
+                "type": "object",
+                "properties": [
+                    { "name": "frameTitle", "type": "string", "description": "Human readable description of the current frame" },
+                    { "name": "currentInstructionIndex", "type": "integer", "description": "Current instruction within the instruction list" },
+                    { "name": "instructions", "type": "array", "items": { "$ref": "Instruction" }, "description": "Instructions for the current frame" },
+                    { "name": "metadata", "type": "array", "items": { "$ref": "FrameMetadata" }, "description": "Metadata about the current frame." }
+                ],
+                "description": "Disassembly of the current frame."
+            },
+            {
+                "id": "RegisterInfo",
+                "type": "object",
+                "properties": [
+                    { "name": "groupName", "type": "string", "description": "Display name for this group of registers" },
+                    { "name": "registers", "type": "array", "items": { "$ref": "RegisterList" }, "description": "List of registers in this group" }
+                ],
+                "description": "Register values for the current frame."
+            },
+            {
+                "id": "RegisterList",
+                "type": "object",
+                "properties": [
+                    { "name": "name", "type": "string", "description": "Display name for this register" },
+                    { "name": "value", "type": "string", "description": "Current value of this register" }
+                ],
+                "description": "Register values for the current frame."
+            },
+            {
+                "id": "Instruction",
+                "type": "object",
+                "properties": [
+                    { "name": "address", "type": "string", "description": "Address of the instruction" },
+                    { "name": "offset", "type": "string", "optional": true, "description": "Offset of the instruction in the current frame" },
+                    { "name": "comment", "type": "string", "optional": true, "description": "Assembly comment for the instruction" },
+                    { "name": "instruction", "type": "string", "description": "Instruction" }
+                ],
+                "description": "An individual instruction in the disassembly"
+            },
+            {
+                "id": "FrameMetadata",
+                "type": "object",
+                "properties": [
+                    { "name": "name", "type": "string", "description": "Display name for the metadata" },
+                    { "name": "value", "type": "string", "description": "Value of the metadata" }
+                ],
+                "description": "Information about the current frame."
+            },
+            {
                 "id": "FunctionDetails",
                 "hidden": true,
                 "type": "object",
@@ -3234,6 +3283,8 @@
                     { "name": "location", "$ref": "Location", "description": "Location in the source code." },
                     { "name": "hasSource", "type": "boolean", "optional": true, "hidden": true, "description": "Whether this frame has source code or not." },
                     { "name": "scopeChain", "type": "array", "items": { "$ref": "Scope" }, "description": "Scope chain for this call frame." },
+                    { "name": "disassembly", "$ref": "Disassembly", "optional": true, "description": "Disassembly for the current frame" },
+                    { "name": "registers", "$ref": "RegisterInfo", "optional": true, "description": "Registers for the current frame" },
                     { "name": "this", "$ref": "Runtime.RemoteObject", "description": "<code>this</code> object for this call frame." },
                     { "name": "returnValue", "$ref": "Runtime.RemoteObject", "optional": true, "hidden": true, "description": "The value being returned, if the function is at return point." }
                 ],
@@ -3540,7 +3591,8 @@
             {
                 "name": "setDebuggerSettings",
                 "parameters": [
-                    { "name": "singleThreadStepping", "type": "boolean", "optional": true, "description": "Single thread stepping mode" }
+                    { "name": "singleThreadStepping", "type": "boolean", "optional": true, "description": "Single thread stepping mode" },
+                    { "name": "showDisassembly", "type": "boolean", "optional": true, "description": "Show frame disassembly when stopping (if available)" }
                 ],
                 "description": "Sets the settings for the current debugger session."
             },
@@ -3595,14 +3647,25 @@
             {
                 "name": "setVariableValue",
                 "parameters": [
-                    { "name": "scopeNumber", "type": "integer", "description": "0-based number of scope as was listed in scope chain. Only 'local', 'closure' and 'catch' scope types are allowed. Other scopes could be manipulated manually." },
-                    { "name": "variableName", "type": "string", "description": "Variable name." },
-                    { "name": "newValue", "$ref": "Runtime.CallArgument", "description": "New variable value." },
-                    { "name": "callFrameId", "$ref": "CallFrameId", "optional": true, "description": "Id of callframe that holds variable." },
-                    { "name": "functionObjectId", "$ref": "Runtime.RemoteObjectId", "optional": true, "description": "Object id of closure (function) that holds variable." }
+                    { "name": "name", "type": "string", "description": "Variable name." },
+                    { "name": "value", "type": "string", "description": "New variable value." },
+                    { "name": "callFrameId", "type": "number", "description": "Id of callframe that holds variable." }
                 ],
                 "hidden": true,
-                "description": "Changes value of variable in a callframe or a closure. Either callframe or function must be specified. Object-based scopes are not supported and must be mutated manually."
+                "description": "Changes value of variable in a callframe or a closure. Variable container reference must be specified as callFrameId. Object-based scopes are not supported and must be mutated manually."
+            },
+            {
+                "name": "completions",
+                "parameters": [
+                    { "name": "text", "type": "string", "description": "Current text so far." },
+                    { "name": "column", "type": "number", "description": "Cursor position." },
+                    { "name": "frameId", "type": "number", "description": "Id of stack frame to find completions." }
+                ],
+                "returns": [
+                    { "name": "targets", "type": "array", "items": { "$ref": "CompletionItem" }, "description": "completion results" }
+                ],
+                "hidden": true,
+                "description": "Get completions for current text prefix."
             },
             {
                 "name": "getStepInPositions",

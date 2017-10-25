@@ -11,12 +11,15 @@
  */
 
 import {
+  ensureArray,
   arrayRemove,
   arrayEqual,
   arrayCompact,
   arrayFindLastIndex,
   mapUnion,
+  insideOut,
   isEmpty,
+  isIterable,
   keyMirror,
   setFilter,
   setIntersect,
@@ -35,7 +38,20 @@ import {
   mapIterable,
   mapGetWithDefault,
   count,
+  range,
 } from '../collection';
+
+describe('ensureArray', () => {
+  it('works on arrays', () => {
+    expect(ensureArray([1])).toEqual([1]);
+    expect(ensureArray(['test'])).toEqual(['test']);
+  });
+
+  it('works on non-arrays', () => {
+    expect(ensureArray(1)).toEqual([1]);
+    expect(ensureArray('test')).toEqual(['test']);
+  });
+});
 
 describe('arrayRemove', () => {
   let a: any;
@@ -165,6 +181,39 @@ describe('isEmpty', () => {
   });
 });
 
+describe('isIterable', () => {
+  it('detects arrays are iterable', () => {
+    expect(isIterable(['foo', 'bar'])).toBe(true);
+  });
+
+  it('detects strings are iterable', () => {
+    expect(isIterable('foo')).toBe(true);
+  });
+
+  it('detects Sets are iterable', () => {
+    expect(isIterable(new Set(['foo', 'bar']))).toBe(true);
+  });
+
+  it('detects iterable objects are iterable', () => {
+    const anIterable = {
+      *[Symbol.iterator]() {
+        yield 1;
+        yield 42;
+      },
+    };
+
+    expect(isIterable(anIterable)).toBe(true);
+  });
+
+  it('detects plain objects are not iterable', () => {
+    expect(isIterable({foo: 'bar', baz: 42})).toBe(false);
+  });
+
+  it('detects numbers are not iterable', () => {
+    expect(isIterable(42)).toBe(false);
+  });
+});
+
 describe('keyMirror', () => {
   it('correctly mirrors objects', () => {
     expect(keyMirror({a: null, b: null})).toEqual({a: 'a', b: 'b'});
@@ -259,7 +308,10 @@ describe('MultiMap', () => {
   });
 
   it('properly adds multiple bindings', () => {
-    multimap.add(1, 2).add(1, 3).add(10, 11);
+    multimap
+      .add(1, 2)
+      .add(1, 3)
+      .add(10, 11);
     expect(multimap.size).toEqual(3);
     expect(multimap.get(1)).toEqual(new Set([2, 3]));
     expect(multimap.get(10)).toEqual(new Set([11]));
@@ -272,7 +324,10 @@ describe('MultiMap', () => {
   });
 
   it('properly deletes a single binding', () => {
-    multimap.add(1, 2).add(1, 3).add(10, 11);
+    multimap
+      .add(1, 2)
+      .add(1, 3)
+      .add(10, 11);
     expect(multimap.delete(1, 2)).toBe(true);
     expect(multimap.get(1)).toEqual(new Set([3]));
     expect(multimap.get(10)).toEqual(new Set([11]));
@@ -291,7 +346,10 @@ describe('MultiMap', () => {
   });
 
   it('properly clears', () => {
-    multimap.add(1, 2).add(1, 3).add(10, 11);
+    multimap
+      .add(1, 2)
+      .add(1, 3)
+      .add(10, 11);
     multimap.clear();
     expect(multimap.size).toEqual(0);
     expect(multimap.get(1)).toEqual(new Set());
@@ -495,5 +553,76 @@ describe('mapGetWithDefault', () => {
 describe('count', () => {
   it('returns how many values are in an iterable', () => {
     expect(count([1, 2])).toBe(2);
+  });
+});
+
+describe('insideOut', () => {
+  it('traverses correctly', () => {
+    expect([...insideOut([])]).toEqual([]);
+    expect([...insideOut(['a'])]).toEqual([['a', 0]]);
+    expect([...insideOut(['a', 'b'])]).toEqual([['b', 1], ['a', 0]]);
+    expect([...insideOut(['a', 'b', 'c'])]).toEqual([
+      ['b', 1],
+      ['a', 0],
+      ['c', 2],
+    ]);
+    expect([...insideOut(['a', 'b', 'c', 'd'])]).toEqual([
+      ['c', 2],
+      ['b', 1],
+      ['d', 3],
+      ['a', 0],
+    ]);
+  });
+
+  it('traverses correctly with an index', () => {
+    expect([...insideOut([], 99)]).toEqual([]);
+    expect([...insideOut(['a'], 99)]).toEqual([['a', 0]]);
+    expect([...insideOut(['a', 'b'], 99)]).toEqual([['b', 1], ['a', 0]]);
+    expect([...insideOut(['a', 'b', 'c'], 99)]).toEqual([
+      ['c', 2],
+      ['b', 1],
+      ['a', 0],
+    ]);
+
+    expect([...insideOut([], -99)]).toEqual([]);
+    expect([...insideOut(['a'], -99)]).toEqual([['a', 0]]);
+    expect([...insideOut(['a', 'b'], -99)]).toEqual([['a', 0], ['b', 1]]);
+    expect([...insideOut(['a', 'b', 'c'], -99)]).toEqual([
+      ['a', 0],
+      ['b', 1],
+      ['c', 2],
+    ]);
+
+    expect([...insideOut(['a', 'b'], 1)]).toEqual([['b', 1], ['a', 0]]);
+    expect([...insideOut(['a', 'b'], 0)]).toEqual([['a', 0], ['b', 1]]);
+
+    expect([...insideOut(['a', 'b', 'c'], 1)]).toEqual([
+      ['b', 1],
+      ['a', 0],
+      ['c', 2],
+    ]);
+    expect([...insideOut(['a', 'b', 'c', 'd'], 1)]).toEqual([
+      ['b', 1],
+      ['a', 0],
+      ['c', 2],
+      ['d', 3],
+    ]);
+    expect([...insideOut(['a', 'b', 'c', 'd'], 2)]).toEqual([
+      ['c', 2],
+      ['b', 1],
+      ['d', 3],
+      ['a', 0],
+    ]);
+  });
+});
+
+describe('range', () => {
+  it('includes the start value, but not the stop value', () => {
+    expect([...range(1, 4)]).toEqual([1, 2, 3]);
+  });
+
+  it('is empty if stop is less than, or equal to, start', () => {
+    expect([...range(2, 1)]).toEqual([]);
+    expect([...range(1, 1)]).toEqual([]);
   });
 });

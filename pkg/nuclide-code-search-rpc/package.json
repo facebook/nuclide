@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-code-search-rpc",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/CodeSearchService.js",
+  "version": "0.0.0",
+  "description": "Rpc side of the nuclide-code-search package",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "npm"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

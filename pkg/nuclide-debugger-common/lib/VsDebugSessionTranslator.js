@@ -23,7 +23,7 @@ import type {
 } from '../../nuclide-console/lib/types';
 import type {ClientCallback} from '../../nuclide-debugger-common';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import * as NuclideDebugProtocol from '../../nuclide-debugger-base/lib/protocol-types';
 
 import {arrayFlatten} from 'nuclide-commons/collection';
@@ -115,13 +115,8 @@ type TranslatorBreakpoint = {
   path: NuclideUri,
   lineNumber: number,
   condition: string,
+  hitCount: number,
   resolved: boolean,
-};
-
-type BreakpointDescriptor = {
-  breakpointId?: NuclideDebugProtocol.BreakpointId,
-  lineNumber: number,
-  condition: string,
 };
 
 type ThreadState = 'running' | 'paused';
@@ -208,6 +203,7 @@ export default class VsDebugSessionTranslator {
       this._commandsOfType('Debugger.pause').flatMap(
         catchCommandError(async command => {
           const mainThreadId =
+            // flowlint-next-line sketchy-null-number:off
             this._mainThreadId || Array.from(this._threadsById.keys())[0] || -1;
           await this._session.pause({threadId: mainThreadId});
           return getEmptyResponse(command.id);
@@ -262,11 +258,31 @@ export default class VsDebugSessionTranslator {
           return getEmptyResponse(command.id);
         }),
       ),
+      // Request completions
+      this._commandsOfType('Debugger.completions').flatMap(
+        catchCommandError(async command => {
+          invariant(command.method === 'Debugger.completions');
+          const {text, column, frameId} = command.params;
+          if (!this._session.getCapabilities().supportsCompletionsRequest) {
+            // Not supported, return empty result.
+            return {id: command.id, result: {targets: []}};
+          }
+          const {body} = await this._session.completions({
+            text,
+            column,
+            frameId,
+          });
+          const result: NuclideDebugProtocol.GetCompletionsResponse = {
+            targets: body.targets,
+          };
+          return {id: command.id, result};
+        }),
+      ),
       // Get script source
       this._commandsOfType('Debugger.getScriptSource').flatMap(
         catchCommandError(async command => {
           invariant(command.method === 'Debugger.getScriptSource');
-          const result = {
+          const result: NuclideDebugProtocol.GetScriptSourceResponse = {
             scriptSource: await this._files.getFileSource(
               command.params.scriptId,
             ),
@@ -287,9 +303,11 @@ export default class VsDebugSessionTranslator {
               this._exceptionFilters = [state];
               break;
           }
-          await this._session.setExceptionBreakpoints({
-            filters: this._exceptionFilters,
-          });
+          if (this._session.isReadyForBreakpoints()) {
+            await this._session.setExceptionBreakpoints({
+              filters: this._exceptionFilters,
+            });
+          }
           return getEmptyResponse(command.id);
         }),
       ),
@@ -334,9 +352,12 @@ export default class VsDebugSessionTranslator {
           threadInfo != null && threadInfo.state === 'paused'
             ? threadInfo.callFrames
             : null;
+        const result: NuclideDebugProtocol.GetThreadStackResponse = {
+          callFrames: callFrames || [],
+        };
         return {
           id: command.id,
-          result: {callFrames: callFrames || []},
+          result,
         };
       }),
       this._commandsOfType('Debugger.evaluateOnCallFrame').flatMap(
@@ -347,6 +368,25 @@ export default class VsDebugSessionTranslator {
             expression,
             Number(callFrameId),
           );
+          return {
+            id: command.id,
+            result,
+          };
+        }),
+      ),
+      this._commandsOfType('Debugger.setVariableValue').flatMap(
+        catchCommandError(async command => {
+          invariant(command.method === 'Debugger.setVariableValue');
+          const {callFrameId, name, value} = command.params;
+          const args = {
+            variablesReference: callFrameId,
+            name,
+            value,
+          };
+          const {body} = await this._session.setVariable(args);
+          const result: NuclideDebugProtocol.SetVariableResponse = {
+            value: body.value,
+          };
           return {
             id: command.id,
             result,
@@ -383,6 +423,7 @@ export default class VsDebugSessionTranslator {
     };
     await this._files.registerFile(pathToUri(scriptId));
     await this._session.nuclide_continueToLocation({
+      // flowlint-next-line sketchy-null-number:off
       column: columnNumber || 1,
       line: lineNumber + 1,
       source,
@@ -401,18 +442,20 @@ export default class VsDebugSessionTranslator {
     return Observable.concat(
       setBreakpointsCommands
         .buffer(
-          this._commandsOfType('Debugger.resume').first().switchMap(() => {
-            if (this._session.isReadyForBreakpoints()) {
-              // Session is initialized and ready for breakpoint requests.
-              return Observable.of(null);
-            } else {
-              // Session initialization is pending launch.
-              startedDebugging = true;
-              return Observable.fromPromise(this._startDebugging())
-                .ignoreElements()
-                .concat(this._session.observeInitializeEvents());
-            }
-          }),
+          this._commandsOfType('Debugger.resume')
+            .first()
+            .switchMap(() => {
+              if (this._session.isReadyForBreakpoints()) {
+                // Session is initialized and ready for breakpoint requests.
+                return Observable.of(null);
+              } else {
+                // Session initialization is pending launch.
+                startedDebugging = true;
+                return Observable.fromPromise(this._startDebugging())
+                  .ignoreElements()
+                  .merge(this._session.observeInitializeEvents().first());
+              }
+            }),
         )
         .first()
         .flatMap(async commands => {
@@ -477,25 +520,44 @@ export default class VsDebugSessionTranslator {
       Array.from(
         breakpointCommandsByUrl,
       ).map(async ([url, breakpointCommands]) => {
-        await this._files.registerFile(url);
         const path = uriToPath(url);
 
-        const breakpointDescriptors = breakpointCommands
-          .map(c => ({
-            lineNumber: c.params.lineNumber + 1,
-            condition: c.params.condition || '',
-          }))
-          .concat(this._getBreakpointsForFilePath(path).map(bp => ({...bp})));
-
-        const translatorBreakpoins = await this._setBreakpointsForFilePath(
+        const existingTranslatorBreakpoints = this._getBreakpointsForFilePath(
           path,
-          breakpointDescriptors,
-        );
+        ).map(bp => ({...bp}));
+
+        const breakOnLineNumbers = new Set();
+
+        const translatorBreakpoins = breakpointCommands
+          .map(c => {
+            const newTranslatorBp = {
+              breakpointId: this._nextBreakpointId(),
+              path,
+              lineNumber: c.params.lineNumber + 1,
+              condition: c.params.condition || '',
+              resolved: false,
+              hitCount: 0,
+            };
+            breakOnLineNumbers.add(newTranslatorBp.lineNumber);
+            this._breakpointsById.set(
+              newTranslatorBp.breakpointId,
+              newTranslatorBp,
+            );
+            return newTranslatorBp;
+          })
+          .concat(
+            existingTranslatorBreakpoints.filter(
+              tBp => !breakOnLineNumbers.has(tBp.lineNumber),
+            ),
+          );
+
+        await this._files.registerFile(url);
+        await this._syncBreakpointsForFilePath(path, translatorBreakpoins);
 
         return breakpointCommands.map((command, i) => {
           const {breakpointId, lineNumber, resolved} = translatorBreakpoins[i];
 
-          const result = {
+          const result: NuclideDebugProtocol.SetBreakpointByUrlResponse = {
             breakpointId,
             locations: [nuclideDebuggerLocation(path, lineNumber - 1, 0)],
             resolved,
@@ -517,7 +579,7 @@ export default class VsDebugSessionTranslator {
     const setBreakpointPromises = [];
     for (const filePath of filePaths) {
       setBreakpointPromises.push(
-        this._setBreakpointsForFilePath(
+        this._syncBreakpointsForFilePath(
           filePath,
           this._getBreakpointsForFilePath(filePath).map(bp => ({...bp})),
         ),
@@ -535,10 +597,10 @@ export default class VsDebugSessionTranslator {
     }
   }
 
-  async _setBreakpointsForFilePath(
+  async _syncBreakpointsForFilePath(
     path: NuclideUri,
-    breakpoints: Array<BreakpointDescriptor>,
-  ): Promise<Array<TranslatorBreakpoint>> {
+    breakpoints: Array<TranslatorBreakpoint>,
+  ): Promise<void> {
     const source = {path, name: nuclideUri.basename(path)};
     const {
       body: {breakpoints: vsBreakpoints},
@@ -561,27 +623,8 @@ export default class VsDebugSessionTranslator {
       );
       throw new Error(errorMessage);
     }
-    return vsBreakpoints.map((vsBreakpoint, i) => {
-      const bpDescriptior = breakpoints[i];
-      const breakpointId =
-        bpDescriptior.breakpointId ||
-        String(vsBreakpoint.id) ||
-        this._nextBreakpointId();
-      const lineNumber = vsBreakpoint.line || bpDescriptior.lineNumber || -1;
-      const resolved = vsBreakpoint.verified;
-      const condition = breakpoints[i].condition;
-
-      // Cache breakpoint info in the translator by id
-      // for handling of removeBreakpoint by id requests.
-      const translatorBreakpoint = {
-        breakpointId,
-        lineNumber,
-        path,
-        resolved,
-        condition,
-      };
-      this._breakpointsById.set(breakpointId, translatorBreakpoint);
-      return translatorBreakpoint;
+    vsBreakpoints.forEach((vsBreakpoint, i) => {
+      breakpoints[i].resolved = vsBreakpoint.verified;
     });
   }
 
@@ -598,7 +641,7 @@ export default class VsDebugSessionTranslator {
     ).filter(breakpoint => breakpoint.breakpointId !== breakpointId);
     this._breakpointsById.delete(breakpointId);
 
-    await this._setBreakpointsForFilePath(
+    await this._syncBreakpointsForFilePath(
       foundBreakpoint.path,
       remainingBreakpoints.map(bp => ({
         ...bp,
@@ -672,7 +715,7 @@ export default class VsDebugSessionTranslator {
             this._mainThreadId = null;
           }
         } else {
-          this._logger.error('Unkown thread event:', body);
+          this._logger.error('Unknown thread event:', body);
         }
         const threadsUpdatedEvent = this._getThreadsUpdatedEvent();
         this._sendMessageToClient({
@@ -701,28 +744,48 @@ export default class VsDebugSessionTranslator {
           );
         }
       }),
-      this._session
-        .observeBreakpointEvents()
-        .flatMap(async ({body}) => {
-          const {breakpoint} = body;
-          const hitCount = parseInt(breakpoint.nuclide_hitCount, 10);
-          if (!Number.isNaN(hitCount) && breakpoint.id != null) {
-            const changedEvent: NuclideDebugProtocol.BreakpointHitCountEvent = {
+      this._session.observeBreakpointEvents().subscribe(({body}) => {
+        const {breakpoint} = body;
+        const existingBreakpoint = this._breakpointsById.get(
+          String(breakpoint.id == null ? -1 : breakpoint.id),
+        );
+        const hitCount = parseInt(breakpoint.nuclide_hitCount, 10);
+
+        if (existingBreakpoint == null) {
+          this._logger.warn(
+            'Received a breakpoint event, but cannot find the breakpoint',
+          );
+          return;
+        } else if (!existingBreakpoint.resolved && breakpoint.verified) {
+          existingBreakpoint.resolved = true;
+          this._sendMessageToClient({
+            method: 'Debugger.breakpointResolved',
+            params: {
+              breakpointId: existingBreakpoint.breakpointId,
+              location: nuclideDebuggerLocation(
+                existingBreakpoint.path,
+                existingBreakpoint.lineNumber - 1,
+                0,
+              ),
+            },
+          });
+        } else if (
+          !Number.isNaN(hitCount) &&
+          existingBreakpoint != null &&
+          existingBreakpoint.hitCount !== hitCount
+        ) {
+          existingBreakpoint.hitCount = hitCount;
+          this._sendMessageToClient({
+            method: 'Debugger.breakpointHitCountChanged',
+            params: {
               breakpointId: String(breakpoint.id),
               hitCount,
-            };
-            return changedEvent;
-          }
-          return null;
-        })
-        .subscribe(changedEvent => {
-          if (changedEvent != null) {
-            this._sendMessageToClient({
-              method: 'Debugger.breakpointHitCountChanged',
-              params: changedEvent,
-            });
-          }
-        }),
+            },
+          });
+        } else {
+          this._logger.warn('Unknown breakpoint event', body);
+        }
+      }),
       this._session
         .observeStopEvents()
         .flatMap(async ({body}) => {
@@ -747,16 +810,23 @@ export default class VsDebugSessionTranslator {
           const threadsUpdatedEvent = this._getThreadsUpdatedEvent();
           return {pausedEvent, threadsUpdatedEvent};
         })
-        .subscribe(({pausedEvent, threadsUpdatedEvent}) => {
-          this._sendMessageToClient({
-            method: 'Debugger.paused',
-            params: pausedEvent,
-          });
-          this._sendMessageToClient({
-            method: 'Debugger.threadsUpdated',
-            params: threadsUpdatedEvent,
-          });
-        }),
+        .subscribe(
+          ({pausedEvent, threadsUpdatedEvent}) => {
+            this._sendMessageToClient({
+              method: 'Debugger.paused',
+              params: pausedEvent,
+            });
+            this._sendMessageToClient({
+              method: 'Debugger.threadsUpdated',
+              params: threadsUpdatedEvent,
+            });
+          },
+          error =>
+            this._logger.error(
+              'Unable to translate stop event / call stack',
+              error,
+            ),
+        ),
       this._session.observeContinuedEvents().subscribe(({body}) => {
         const {allThreadsContinued, threadId} = body;
         if (allThreadsContinued || threadId === this._pausedThreadId) {
@@ -771,32 +841,8 @@ export default class VsDebugSessionTranslator {
         }
         this._sendMessageToClient({method: 'Debugger.resumed'});
       }),
-      this._session.observeBreakpointEvents().subscribe(({body}) => {
-        const {reason, breakpoint} = body;
-        const existingBreakpoint = this._breakpointsById.get(
-          String(breakpoint.id || -1),
-        );
-        if (
-          existingBreakpoint != null &&
-          !existingBreakpoint.resolved &&
-          breakpoint.verified
-        ) {
-          this._sendMessageToClient({
-            method: 'Debugger.breakpointResolved',
-            params: {
-              breakpointId: existingBreakpoint.breakpointId,
-              location: nuclideDebuggerLocation(
-                existingBreakpoint.path,
-                existingBreakpoint.lineNumber - 1,
-                0,
-              ),
-            },
-          });
-          return;
-        }
-        this._logger.info('Unhandled breakpoint event', reason, breakpoint);
-      }),
       this._session.observeOutputEvents().subscribe(({body}) => {
+        // flowlint-next-line sketchy-null-string:off
         const category = body.category || 'console';
         const level = OUTPUT_CATEGORY_TO_LEVEL[category];
         const output = (body.output || '').replace(/\r?\n$/, '');
@@ -865,6 +911,7 @@ export default class VsDebugSessionTranslator {
         description: threadName,
         address,
         location,
+        // flowlint-next-line sketchy-null-string:off
         stopReason: stopReason || 'running',
         hasSource,
       };
@@ -872,6 +919,7 @@ export default class VsDebugSessionTranslator {
 
     return {
       owningProcessId: VSP_PROCESS_ID,
+      // flowlint-next-line sketchy-null-number:off
       stopThreadId: this._pausedThreadId || -1,
       threads,
     };
@@ -897,6 +945,7 @@ export default class VsDebugSessionTranslator {
   async _getTranslatedCallFramesForThread(
     threadId: number,
   ): Promise<Array<NuclideDebugProtocol.CallFrame>> {
+    // $FlowFixMe(>=0.55.0) Flow suppress
     const {body: {stackFrames}} = await this._session.stackTrace({
       threadId,
     });
@@ -919,7 +968,9 @@ export default class VsDebugSessionTranslator {
             frame.column - 1,
           ),
           hasSource: frame.source != null,
-          scopeChain: await this._getScopesForFrame(frame.id),
+          scopeChain: await this._getScopesForFrame(
+            frame.id,
+          ).catch(error => []),
           this: (undefined: any),
         };
       }),
@@ -976,6 +1027,7 @@ export default class VsDebugSessionTranslator {
       | NuclideDebugProtocol.DebuggerResponse
       | NuclideDebugProtocol.DebuggerEvent,
   ): void {
+    this._logger.info('Sent message to client', JSON.stringify(message));
     this._clientCallback.sendChromeMessage(JSON.stringify(message));
   }
 
@@ -997,17 +1049,10 @@ export default class VsDebugSessionTranslator {
   }
 
   _observeTerminatedDebugeeEvents(): Observable<mixed> {
-    const debugeeTerminated = this._session.observeTerminateDebugeeEvents();
-    if (this._adapterType === VsAdapterTypes.PYTHON) {
-      // The python adapter normally it sends one terminated event on exit.
-      // However, in program crashes, it sends two terminated events:
-      // One immediatelly, followed by the output events with the stack trace
-      // & then the real terminated event.
-      // TODO(t19793170): Remove the extra `TerminatedEvent` from `pythonVSCode`
-      return debugeeTerminated.delay(1000);
-    } else {
-      return debugeeTerminated;
-    }
+    // The service framework doesn't flush the last output messages
+    // if the observables and session are eagerly terminated.
+    // Hence, delaying 1 second.
+    return this._session.observeTerminateDebugeeEvents().delay(1000);
   }
 
   dispose(): void {

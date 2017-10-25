@@ -10,6 +10,8 @@
  */
 
 import * as t from 'babel-types';
+// This is in devDependencies. This file is only reachable in dev mode.
+// eslint-disable-next-line rulesdir/no-unresolved
 import generate from 'babel-generator';
 
 import type {
@@ -456,7 +458,7 @@ function generateUnmarshalResult(
         [],
       );
     default:
-      throw new Error(`Unkown return type ${returnType.kind}.`);
+      throw new Error(`Unknown return type ${returnType.kind}.`);
   }
 }
 
@@ -510,6 +512,7 @@ function generateTransformStatement(
   const convertArgs = [id, objectToLiteral(type)];
 
   // If the type is parameterized, we send the parameters as an optional fourth argument.
+  // flowlint-next-line sketchy-null-mixed:off
   if (type.param) {
     convertArgs.push(objectToLiteral(type.param));
   }
@@ -531,6 +534,7 @@ function objectToLiteral(obj: any): any {
     return t.numericLiteral(obj);
   } else if (typeof obj === 'boolean') {
     return t.booleanLiteral(obj);
+    // eslint-disable-next-line eqeqeq
   } else if (obj === null) {
     return t.nullLiteral();
   } else if (obj === undefined) {

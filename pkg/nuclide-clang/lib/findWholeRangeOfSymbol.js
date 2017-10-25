@@ -38,6 +38,7 @@ export default function findWholeRangeOfSymbol(
   spelling: ?string,
   extent: atom$Range,
 ): Array<atom$Range> {
+  // flowlint-next-line sketchy-null-string:off
   if (!spelling || text === spelling) {
     return [textRange];
   } else if (text + ':' === spelling) {

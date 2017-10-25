@@ -12,7 +12,7 @@
 
 import type {RegExpFilterChange} from './RegExpFilter';
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import RegExpFilter, {getFilterPattern} from './RegExpFilter';
 
@@ -22,9 +22,7 @@ type State = {
   invalid: boolean,
 };
 
-class Example extends React.Component {
-  state: State;
-
+class Example extends React.Component<{}, State> {
   constructor() {
     super();
     this.state = {
@@ -34,7 +32,7 @@ class Example extends React.Component {
     };
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div>
         <Block>

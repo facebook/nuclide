@@ -18,9 +18,12 @@ import type {
   RegisterExecutorFunction,
   OutputService,
 } from '../../nuclide-console/lib/types';
-import type {EvaluationResult, SerializedBreakpoint} from './types';
+import type {
+  EvaluationResult,
+  SerializedBreakpoint,
+  SerializedWatchExpression,
+} from './types';
 import type {WatchExpressionStore} from './WatchExpressionStore';
-import type {NuxTourModel} from '../../nuclide-nux/lib/NuxModel';
 import type {RegisterNux, TriggerNux} from '../../nuclide-nux/lib/main';
 import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {
@@ -41,10 +44,9 @@ import {track} from '../../nuclide-analytics';
 import RemoteControlService from './RemoteControlService';
 import DebuggerModel from './DebuggerModel';
 import {debuggerDatatip} from './DebuggerDatatip';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {DebuggerLaunchAttachUI} from './DebuggerLaunchAttachUI';
-import {DebuggerLaunchAttachConnectionChooser} from './DebuggerLaunchAttachConnectionChooser';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {ServerConnection} from '../../nuclide-remote-connection';
@@ -60,15 +62,16 @@ import {DebuggerPaneContainerViewModel} from './DebuggerPaneContainerViewModel';
 import os from 'os';
 import nullthrows from 'nullthrows';
 import ReactMountRootElement from 'nuclide-commons-ui/ReactMountRootElement';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 export type SerializedState = {
   breakpoints: ?Array<SerializedBreakpoint>,
+  watchExpressions: ?Array<SerializedWatchExpression>,
+  showDebugger: boolean,
+  workspaceDocksVisibility: Array<boolean>,
 };
 
 const DATATIP_PACKAGE_NAME = 'nuclide-debugger-datatip';
-const NUX_NEW_DEBUGGER_UI_ID = 4377;
-const GK_NEW_DEBUGGER_UI_NUX = 'mp_nuclide_new_debugger_ui';
-const NUX_NEW_DEBUGGER_UI_NAME = 'nuclide_new_debugger_ui';
 const SCREEN_ROW_ATTRIBUTE_NAME = 'data-screen-row';
 
 function getGutterLineNumber(target: HTMLElement): ?number {
@@ -131,6 +134,17 @@ function getLineForEvent(editor: atom$TextEditor, event: any): number {
   );
 }
 
+export function createAutocompleteProvider(): atom$AutocompleteProvider {
+  return {
+    labels: ['nuclide-console'],
+    selector: '*',
+    filterSuggestions: true,
+    async getSuggestions(request) {
+      return activation != null ? activation.getSuggestions(request) : null;
+    },
+  };
+}
+
 export function createDebuggerView(model: mixed): ?HTMLElement {
   let view = null;
   if (
@@ -165,7 +179,7 @@ class Activation {
     this._visibleLaunchAttachDialogMode = null;
     this._lauchAttachDialogCloser = null;
     this._connectionProviders = new Map();
-    this._layoutManager = new DebuggerLayoutManager(this._model);
+    this._layoutManager = new DebuggerLayoutManager(this._model, state);
     this._disposables = new UniversalDisposable(
       this._model,
       this._layoutManager,
@@ -286,7 +300,7 @@ class Activation {
       atom.commands.add('atom-workspace', {
         'nuclide-debugger:run-to-location': this._runToLocation.bind(this),
       }),
-      atom.commands.add('.nuclide-debugger-root', {
+      atom.commands.add('.nuclide-debugger-expression-value-list', {
         'nuclide-debugger:copy-debugger-expression-value': this._copyDebuggerExpressionValue.bind(
           this,
         ),
@@ -296,8 +310,41 @@ class Activation {
           this,
         ),
       }),
+      atom.commands.add('.nuclide-debugger-disassembly-view', {
+        'nuclide-debugger:copy-debugger-disassembly': this._copyDebuggerDisassembly.bind(
+          this,
+        ),
+      }),
+      atom.commands.add('.nuclide-debugger-disassembly-table', {
+        'nuclide-debugger:add-disassembly-breakpoint': this._addDisassemblyBreakpoint.bind(
+          this,
+        ),
+      }),
+      atom.commands.add('.nuclide-debugger-registers-view', {
+        'nuclide-debugger:copy-debugger-registers': this._copyDebuggerRegisters.bind(
+          this,
+        ),
+      }),
       // Context Menu Items.
       atom.contextMenu.add({
+        '.nuclide-debugger-disassembly-view': [
+          {
+            label: 'Copy disassembly',
+            command: 'nuclide-debugger:copy-debugger-disassembly',
+          },
+        ],
+        '.nuclide-debugger-disassembly-table': [
+          {
+            label: 'Add breakpoint at address',
+            command: 'nuclide-debugger:add-disassembly-breakpoint',
+          },
+        ],
+        '.nuclide-debugger-registers-view': [
+          {
+            label: 'Copy registers',
+            command: 'nuclide-debugger:copy-debugger-registers',
+          },
+        ],
         '.nuclide-debugger-breakpoint-list': [
           {
             label: 'Enable All Breakpoints',
@@ -414,7 +461,9 @@ class Activation {
                 shouldDisplay: event => {
                   const textEditor = atom.workspace.getActiveTextEditor();
                   if (
-                    !this.getModel().getStore().isDebugging() ||
+                    !this.getModel()
+                      .getStore()
+                      .isDebugging() ||
                     textEditor == null
                   ) {
                     return false;
@@ -452,11 +501,57 @@ class Activation {
     this._connectionProviders.set(key, availableProviders);
   }
 
+  getSuggestions(
+    request: atom$AutocompleteRequest,
+  ): Promise<?Array<atom$AutocompleteSuggestion>> {
+    let text = request.editor.getText();
+    const lines = text.split('\n');
+    const {row, column} = request.bufferPosition;
+    // Only keep the lines up to and including the buffer position row.
+    text = lines.slice(0, row + 1).join('\n');
+    const debuggerInstance = this.getModel()
+      .getStore()
+      .getDebuggerInstance();
+    // Immediately complete if no capable debugger attached.
+    if (
+      debuggerInstance == null ||
+      !debuggerInstance.getDebuggerProcessInfo().getDebuggerCapabilities()
+        .completionsRequest
+    ) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve, reject) => {
+      this.getModel()
+        .getBridge()
+        .sendCompletionsCommand(text, column + 1, (err, response) => {
+          if (err != null) {
+            reject(err);
+          } else {
+            const result = response.targets.map(obj => {
+              const {label} = obj;
+              let replaceText;
+              if (obj.text != null) {
+                replaceText = obj.text;
+              } else {
+                replaceText = label;
+              }
+              return {text: replaceText, displayText: label};
+            });
+            resolve(result);
+          }
+        });
+    });
+  }
+
   serialize(): SerializedState {
+    const model = this.getModel();
     const state = {
-      breakpoints: this.getModel()
-        .getBreakpointStore()
-        .getSerializedBreakpoints(),
+      breakpoints: model.getBreakpointStore().getSerializedBreakpoints(),
+      watchExpressions: model
+        .getWatchExpressionListStore()
+        .getSerializedWatchExpressions(),
+      showDebugger: this._layoutManager.isDebuggerVisible(),
+      workspaceDocksVisibility: this._layoutManager.getWorkspaceDocksVisibility(),
     };
     return state;
   }
@@ -470,8 +565,8 @@ class Activation {
   }
 
   consumeRegisterNuxService(addNewNux: RegisterNux): Disposable {
-    const disposable = addNewNux(createDebuggerNuxTourModel());
-    this._disposables.add(disposable);
+    // TODO: No NUX at this time. Add NUX here.
+    const disposable = new Disposable();
     return disposable;
   }
 
@@ -484,8 +579,15 @@ class Activation {
         this._layoutManager.hideDebuggerViews(false);
       },
       atom.commands.add('atom-workspace', {
-        'nuclide-debugger:show': () => {
-          this._layoutManager.showDebuggerViews();
+        'nuclide-debugger:show': event => {
+          const detail = event.detail;
+          const show =
+            detail == null ||
+            Boolean(detail.showOnlyIfHidden) === false ||
+            !this._layoutManager.isDebuggerVisible();
+          if (show) {
+            this._layoutManager.showDebuggerViews();
+          }
         },
       }),
       atom.commands.add('atom-workspace', {
@@ -677,7 +779,6 @@ class Activation {
 
   _renderConfigDialog(
     panel: atom$Panel,
-    chooseConnection: boolean,
     dialogMode: DebuggerConfigAction,
     dialogCloser: () => void,
   ): void {
@@ -687,52 +788,41 @@ class Activation {
     }
 
     invariant(this._selectedDebugConnection != null);
-    if (chooseConnection) {
-      const options = this._model
-        .getDebuggerProviderStore()
-        .getConnections()
-        .map(connection => {
-          const displayName = nuclideUri.isRemote(connection)
-            ? nuclideUri.getHostname(connection)
-            : 'localhost';
-          return {
-            value: connection,
-            label: displayName,
-          };
-        })
-        .filter(item => item.value != null && item.value !== '')
-        .sort((a, b) => a.label.localeCompare(b.label));
-      ReactDOM.render(
-        <DebuggerLaunchAttachConnectionChooser
-          options={options}
-          selectedConnection={this._selectedDebugConnection || 'local'}
-          connectionChanged={(newValue: ?string) => {
-            this._selectedDebugConnection = newValue;
-            this._renderConfigDialog(panel, false, dialogMode, dialogCloser);
-          }}
-          dialogCloser={dialogCloser}
-        />,
-        panel.getItem(),
-      );
-    } else {
-      const connection = this._selectedDebugConnection || 'local';
-      const key = nuclideUri.isRemote(connection)
-        ? nuclideUri.getHostname(connection)
-        : 'local';
-      ReactDOM.render(
-        <DebuggerLaunchAttachUI
-          dialogMode={dialogMode}
-          store={this._model.getDebuggerProviderStore()}
-          debuggerActions={this._model.getActions()}
-          connection={connection}
-          chooseConnection={() =>
-            this._renderConfigDialog(panel, true, dialogMode, dialogCloser)}
-          dialogCloser={dialogCloser}
-          providers={this._connectionProviders.get(key) || []}
-        />,
-        panel.getItem(),
-      );
-    }
+
+    const options = this._model
+      .getDebuggerProviderStore()
+      .getConnections()
+      .map(connection => {
+        const displayName = nuclideUri.isRemote(connection)
+          ? nuclideUri.getHostname(connection)
+          : 'localhost';
+        return {
+          value: connection,
+          label: displayName,
+        };
+      })
+      .filter(item => item.value != null && item.value !== '')
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    // flowlint-next-line sketchy-null-string:off
+    const connection = this._selectedDebugConnection || 'local';
+
+    ReactDOM.render(
+      <DebuggerLaunchAttachUI
+        dialogMode={dialogMode}
+        store={this._model.getDebuggerProviderStore()}
+        debuggerActions={this._model.getActions()}
+        connectionChanged={(newValue: ?string) => {
+          this._selectedDebugConnection = newValue;
+          this._renderConfigDialog(panel, dialogMode, dialogCloser);
+        }}
+        connection={connection}
+        connectionOptions={options}
+        dialogCloser={dialogCloser}
+        providers={this._connectionProviders}
+      />,
+      panel.getItem(),
+    );
   }
 
   _showLaunchAttachDialog(dialogMode: DebuggerConfigAction): void {
@@ -756,9 +846,7 @@ class Activation {
     parentEl.style.maxWidth = '100em';
 
     // Function callback that closes the dialog and frees all of its resources.
-    this._renderConfigDialog(pane, false, dialogMode, () =>
-      disposables.dispose(),
-    );
+    this._renderConfigDialog(pane, dialogMode, () => disposables.dispose());
     this._lauchAttachDialogCloser = () => disposables.dispose();
     disposables.add(
       pane.onDidChangeVisible(visible => {
@@ -798,6 +886,7 @@ class Activation {
     const expr = wordAtPosition(editor, editor.getCursorBufferPosition());
 
     const watchExpression = selectedText || (expr && expr.wordMatch[0]);
+    // flowlint-next-line sketchy-null-string:off
     if (watchExpression) {
       this._model.getActions().addWatchExpression(watchExpression);
     }
@@ -805,7 +894,96 @@ class Activation {
 
   _copyDebuggerExpressionValue(event: Event) {
     const clickedElement: HTMLElement = (event.target: any);
-    atom.clipboard.write(clickedElement.textContent);
+    const copyElement = clickedElement.closest('.nuclide-ui-lazy-nested-value');
+    if (copyElement != null) {
+      atom.clipboard.write(copyElement.textContent);
+    }
+  }
+
+  _copyDebuggerDisassembly() {
+    const callstackStore = this._model.getCallstackStore();
+    const callstack = callstackStore.getCallstack();
+    if (callstack != null) {
+      const selectedFrame = callstackStore.getSelectedCallFrameIndex();
+      if (selectedFrame >= 0 && selectedFrame < callstack.length) {
+        const frameInfo = callstack[selectedFrame].disassembly;
+        if (frameInfo != null) {
+          const metadata = frameInfo.metadata
+            .map(m => {
+              return `${m.name}:\t${m.value}`;
+            })
+            .join(os.EOL);
+
+          const entries = frameInfo.instructions
+            .map(instruction => {
+              return (
+                `${instruction.address}\t` +
+                `${instruction.offset || ''}\t` +
+                `${instruction.instruction}` +
+                `${instruction.comment || ''}\t`
+              );
+            })
+            .join(os.EOL);
+
+          atom.clipboard.write(
+            `${frameInfo.frameTitle}${os.EOL}` + metadata + os.EOL + entries,
+          );
+        }
+      }
+    }
+  }
+
+  _copyDebuggerRegisters() {
+    const callstackStore = this._model.getCallstackStore();
+    const callstack = callstackStore.getCallstack();
+    if (callstack != null) {
+      const selectedFrame = callstackStore.getSelectedCallFrameIndex();
+      if (selectedFrame >= 0 && selectedFrame < callstack.length) {
+        const registerInfo = callstack[selectedFrame].registers;
+        if (registerInfo != null) {
+          const rows = [];
+          for (const group of registerInfo) {
+            rows.push(group.groupName + os.EOL);
+            for (const register of group.registers) {
+              const value = register.value != null ? register.value : '';
+              let decimalValue = parseInt(value, 16);
+              if (Number.isNaN(decimalValue)) {
+                decimalValue = '';
+              }
+              rows.push(`${register.name}:\t${value}\t${decimalValue}`);
+            }
+            rows.push(os.EOL);
+          }
+          atom.clipboard.write(rows.join(os.EOL));
+        }
+      }
+    }
+  }
+
+  _addDisassemblyBreakpoint(event: Event) {
+    const clickedElement: HTMLElement = (event.target: any);
+    const clickedRow: ?HTMLElement = (clickedElement.closest(
+      '.nuclide-ui-table-row',
+    ): any);
+    if (clickedRow != null) {
+      const rowIndex = clickedRow.dataset.rowindex;
+      const callstackStore = this._model.getCallstackStore();
+      const callstack = callstackStore.getCallstack();
+      const selectedFrameIndex = callstackStore.getSelectedCallFrameIndex();
+      if (
+        callstack != null &&
+        selectedFrameIndex >= 0 &&
+        selectedFrameIndex < callstack.length
+      ) {
+        const disassembly = callstack[selectedFrameIndex].disassembly;
+
+        if (disassembly != null) {
+          const instruction = parseInt(rowIndex, 10);
+          const address = disassembly.instructions[instruction].address;
+          this._model.getActions().addBreakpoint(address, -1);
+        }
+      }
+    }
   }
 
   _copyDebuggerCallstack(event: Event) {
@@ -829,6 +1007,19 @@ class Activation {
     const updateSelectedConnection = directory => {
       this._selectedDebugConnection =
         directory != null ? directory.getPath() : null;
+      if (this._selectedDebugConnection != null) {
+        const conn = this._selectedDebugConnection;
+        if (nuclideUri.isRemote(conn)) {
+          // Use root instead of current directory as launch point for debugger.
+          this._selectedDebugConnection = nuclideUri.createRemoteUri(
+            nuclideUri.getHostname(conn),
+            '/',
+          );
+        } else {
+          // Use null instead of local path to use local debugger downstream.
+          this._selectedDebugConnection = null;
+        }
+      }
     };
     const boundUpdateSelectedColumn = updateSelectedConnection.bind(this);
     const disposable = cwdApi.observeCwd(directory =>
@@ -875,6 +1066,9 @@ export function serialize(): SerializedState {
   } else {
     return {
       breakpoints: null,
+      watchExpressions: null,
+      showDebugger: false,
+      workspaceDocksVisibility: [false, false, false, false],
     };
   }
 }
@@ -951,11 +1145,17 @@ export function consumeDebuggerProvider(
   provider: NuclideDebuggerProvider,
 ): IDisposable {
   if (activation) {
-    activation.getModel().getActions().addDebuggerProvider(provider);
+    activation
+      .getModel()
+      .getActions()
+      .addDebuggerProvider(provider);
   }
   return new Disposable(() => {
     if (activation) {
-      activation.getModel().getActions().removeDebuggerProvider(provider);
+      activation
+        .getModel()
+        .getActions()
+        .removeDebuggerProvider(provider);
     }
   });
 }
@@ -981,13 +1181,15 @@ export function consumeEvaluationExpressionProvider(
 
 export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   const toolBar = getToolBar('nuclide-debugger');
-  toolBar.addButton({
-    iconset: 'icon-nuclicon',
-    icon: 'debugger',
-    callback: 'nuclide-debugger:show-attach-dialog',
-    tooltip: 'Attach Debugger',
-    priority: 500,
-  }).element;
+  toolBar.addButton(
+    makeToolbarButtonSpec({
+      iconset: 'icon-nuclicon',
+      icon: 'debugger',
+      callback: 'nuclide-debugger:show-attach-dialog',
+      tooltip: 'Attach Debugger',
+      priority: 500,
+    }),
+  ).element;
   const disposable = new Disposable(() => {
     toolBar.removeItems();
   });
@@ -1017,28 +1219,12 @@ export function consumeDatatipService(service: DatatipService): IDisposable {
   const provider = createDatatipProvider();
   const disposable = service.addProvider(provider);
   invariant(activation);
-  activation.getModel().getThreadStore().setDatatipService(service);
+  activation
+    .getModel()
+    .getThreadStore()
+    .setDatatipService(service);
   activation._disposables.add(disposable);
   return disposable;
-}
-
-function createDebuggerNuxTourModel(): NuxTourModel {
-  const welcomeToNewUiNux = {
-    content:
-      'Welcome to the new Nuclide debugger UI!</br>' +
-      'We are evolving the debugger to integrate more closely with Nuclide.',
-    selector: '.nuclide-debugger-container-new',
-    position: 'left',
-  };
-
-  const newDebuggerUINuxTour = {
-    id: NUX_NEW_DEBUGGER_UI_ID,
-    name: NUX_NEW_DEBUGGER_UI_NAME,
-    nuxList: [welcomeToNewUiNux],
-    gatekeeperID: GK_NEW_DEBUGGER_UI_NUX,
-  };
-
-  return newDebuggerUINuxTour;
 }
 
 export function consumeRegisterNuxService(addNewNux: RegisterNux): Disposable {

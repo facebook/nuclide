@@ -12,7 +12,8 @@
 
 /* global HTMLElement */
 
-import React from 'react';
+import invariant from 'assert';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 
 /**
@@ -40,6 +41,16 @@ class ReactMountRootElement extends HTMLElement {
   }
 }
 
-export default document.registerElement('nuclide-react-mount-root', {
-  prototype: ReactMountRootElement.prototype,
-});
+let reactMountRootElement;
+try {
+  reactMountRootElement = document.registerElement('nuclide-react-mount-root', {
+    prototype: ReactMountRootElement.prototype,
+  });
+} catch (e) {
+  // Element was already registered. Retrieve its constructor:
+  const oldElem = document.createElement('nuclide-react-mount-root');
+  invariant(oldElem.constructor.name === 'nuclide-react-mount-root');
+  reactMountRootElement = (oldElem.constructor: any);
+}
+
+export default (reactMountRootElement: Class<ReactMountRootElement>);

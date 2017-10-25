@@ -64,4 +64,4 @@ class RuntimeDomainDispatcher {
 }
 
 // Use old school export to allow legacy code to import it.
-module.exports = RuntimeDomainDispatcher; // eslint-disable-line nuclide-internal/no-commonjs
+module.exports = RuntimeDomainDispatcher; // eslint-disable-line rulesdir/no-commonjs

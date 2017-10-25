@@ -24,7 +24,7 @@ const PACKAGES = [
 ];
 const REPETITIONS = 3;
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 module.exports = {
   description:
     'times how long a 10k file takes to open, edit, save, close with different packages',
@@ -60,7 +60,7 @@ module.exports = {
 
     // Open the file, insert text, append text, save and close.
     const {ret: editor, time: open} = await timedAsync(
-      // eslint-disable-next-line nuclide-internal/atom-apis
+      // eslint-disable-next-line rulesdir/atom-apis
       atom.workspace.open(SAMPLE_FILE),
     );
     result.open = open;

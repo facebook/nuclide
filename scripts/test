@@ -25,7 +25,7 @@ from lib.js_test_runner import JsTestRunner
 from lib.lint_py_headers import LintPyHeaders
 from lib.package_manager import PackageManager, NUCLIDE_PATH
 
-# Supress stack traces when stopped by CTRL+C.
+# Suppress stack traces when stopped by CTRL+C.
 def keyboard_interrupt(exctype, value, traceback):
     if exctype == KeyboardInterrupt:
         print()
@@ -89,28 +89,25 @@ def lint_py_headers():
     if errors:
         raise utils.TestFailureError('FAILED: Python file license header lint.')
 
-def test_eslint_plugin_nuclide_internal():
-    run('lint_eslint-plugin-nuclide-internal',
-        ['npm', 'test'],
-        os.path.join(NUCLIDE_PATH, 'resources/eslint-plugin-nuclide-internal'))
-
 def test_modules():
     for root, dirs, _ in os.walk(os.path.join(NUCLIDE_PATH, 'modules')):
         for module in dirs:
             module_path = os.path.join(root, module)
-            run('test_module_%s' % module, ['npm', 'test'], module_path)
+            if os.path.exists(os.path.join(module_path, 'package.json')):
+                run('test_module_%s' % module, ['npm', 'test'], module_path)
         break
 
 def run_compile_steps(destructive_compile=False):
-    if destructive_compile:
+    # Coverage relies on having accurate sources.
+    if destructive_compile and not os.getenv('COVERAGE_DIR'):
         # This will destroy the original source and create untracked files!
         run('generate_proxies',
             ['scripts/release-generate-proxies.js', '--save'])
         run('transpile',
-            ['scripts/release-transpile.js', '--overwrite'])
+            ['npm', 'run', 'release-transpile', '--', '--overwrite'])
     else:
         # This only warms up the transpile cache.
-        run('transpile', ['scripts/release-transpile.js'])
+        run('transpile', ['npm', 'run', 'release-transpile'])
 
 # Some tests compare created files and all their properties to an oracle. If
 # they are created with a different umask, then the permissions are different
@@ -138,7 +135,6 @@ try:
         run('lint_packages', ['scripts/lint-packages'])
         run('flow', ['flow', 'check', '--show-all-errors'])
         run('eslint', ['scripts/lint-eslint.js'])
-        test_eslint_plugin_nuclide_internal()
         lint_py_headers()
         if not options.no_module_cycle_check:
             run('module_cycle_check', ['scripts/module-cycle-check.sh'])

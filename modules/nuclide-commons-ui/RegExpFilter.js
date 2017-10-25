@@ -17,12 +17,12 @@ import classnames from 'classnames';
 import {Button, ButtonSizes} from './Button';
 import {ButtonGroup} from './ButtonGroup';
 import escapeStringRegexp from 'escape-string-regexp';
-import React from 'react';
+import * as React from 'react';
 
 type Size = 'xs' | 'sm' | 'lg';
 
 type Props = {
-  value: Value,
+  value: RegExpFilterValue,
   inputWidth?: number,
   inputClassName?: string,
   onChange: (value: RegExpFilterChange) => mixed,
@@ -35,7 +35,7 @@ type State = {
   invalid: boolean,
 };
 
-type Value = {
+export type RegExpFilterValue = {
   text: string,
   isRegExp: boolean,
   invalid: boolean,
@@ -51,10 +51,9 @@ export type RegExpFilterChange = {
   isRegExp: boolean,
 };
 
-export default class RegExpFilter extends React.Component {
-  props: Props;
-  state: State;
-  _currentValue: Value;
+export default class RegExpFilter extends React.Component<Props, State> {
+  _currentValue: RegExpFilterValue;
+  _input: ?AtomInput;
 
   constructor(props: Props) {
     super(props);
@@ -66,7 +65,7 @@ export default class RegExpFilter extends React.Component {
     this._currentValue = props.value;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {value: {text, isRegExp, invalid}} = this.props;
     const size = this.props.size || 'sm';
     const buttonSize = getButtonSize(size);
@@ -81,6 +80,9 @@ export default class RegExpFilter extends React.Component {
     return (
       <ButtonGroup className="inline-block">
         <AtomInput
+          ref={el => {
+            this._input = el;
+          }}
           className={inputClassName}
           size={size}
           width={inputWidth}
@@ -98,6 +100,13 @@ export default class RegExpFilter extends React.Component {
         </Button>
       </ButtonGroup>
     );
+  }
+
+  focus(): void {
+    if (this._input == null) {
+      return;
+    }
+    this._input.focus();
   }
 
   _handleReToggleButtonClick = (): void => {
@@ -127,6 +136,7 @@ function getButtonSize(size: Size): ButtonSize {
     case 'lg':
       return ButtonSizes.LARGE;
     default:
+      (size: empty);
       throw new Error(`Invalid size: ${size}`);
   }
 }

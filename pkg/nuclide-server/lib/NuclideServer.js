@@ -9,16 +9,19 @@
  * @format
  */
 
-import type {ConfigEntry} from '../../nuclide-rpc';
+import type {ConfigEntry, ReliableTransport} from '../../nuclide-rpc';
 
 import invariant from 'assert';
+import {getLogger} from 'log4js';
 import WS from 'ws';
 import {attachEvent} from 'nuclide-commons/event';
-import {getLogger} from 'log4js';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import blocked from './blocked';
 import {CLIENTINFO_CHANNEL, HEARTBEAT_CHANNEL} from './config';
+import {QueuedAckTransport} from './QueuedAckTransport';
 import {deserializeArgs, sendJsonResponse, sendTextResponse} from './utils';
+import {HistogramTracker} from '../../nuclide-analytics';
 import {getVersion} from '../../nuclide-version';
 import {flushLogsAndExit} from '../../nuclide-logging';
 import {RpcConnection, ServiceRegistry} from '../../nuclide-rpc';
@@ -26,11 +29,11 @@ import {QueuedTransport} from './QueuedTransport';
 import {WebSocketTransport} from './WebSocketTransport';
 import {getServerSideMarshalers} from '../../nuclide-marshalers-common';
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 const connect: connect$module = require('connect');
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 const http: http$fixed = (require('http'): any);
-// eslint-disable-next-line nuclide-internal/no-commonjs
+// eslint-disable-next-line rulesdir/no-commonjs
 const https: https$fixed = (require('https'): any);
 
 const logger = getLogger('nuclide-server');
@@ -48,12 +51,13 @@ export default class NuclideServer {
 
   _webServer: http$fixed$Server;
   _webSocketServer: WS.Server;
-  _clients: Map<string, RpcConnection<QueuedTransport>>;
+  _clients: Map<string, RpcConnection<ReliableTransport>>;
   _port: number;
   _app: connect$Server;
   _xhrServiceRegistry: {[serviceName: string]: () => any};
   _version: string;
   _rpcServiceRegistry: ServiceRegistry;
+  _disposables: UniversalDisposable = new UniversalDisposable();
 
   constructor(options: NuclideServerOptions, services: Array<ConfigEntry>) {
     invariant(NuclideServer._theServer == null);
@@ -91,9 +95,18 @@ export default class NuclideServer {
     this._setupServices(); // Setup 1.0 and 2.0 services.
 
     if (trackEventLoop) {
-      blocked((ms: number) => {
-        logger.info('NuclideServer event loop blocked for ' + ms + 'ms');
-      });
+      const stallTracker = new HistogramTracker(
+        'server-event-loop-blocked',
+        /* max */ 1000,
+        /* buckets */ 10,
+      );
+      this._disposables.add(
+        stallTracker,
+        blocked((ms: number) => {
+          stallTracker.track(ms);
+          logger.info('NuclideServer event loop blocked for ' + ms + 'ms');
+        }),
+      );
     }
 
     this._rpcServiceRegistry = new ServiceRegistry(
@@ -120,7 +133,10 @@ export default class NuclideServer {
   }
 
   _createWebSocketServer(): WS.Server {
-    const webSocketServer = new WS.Server({server: this._webServer});
+    const webSocketServer = new WS.Server({
+      server: this._webServer,
+      perMessageDeflate: true,
+    });
     webSocketServer.on('connection', socket => this._onConnection(socket));
     webSocketServer.on('error', error =>
       logger.error('WebSocketServer Error:', error),
@@ -285,7 +301,7 @@ export default class NuclideServer {
   _onConnection(socket: WS): void {
     logger.debug('WebSocket connecting');
 
-    let client: ?RpcConnection<QueuedTransport> = null;
+    let client: ?RpcConnection<ReliableTransport> = null;
 
     const errorSubscription = attachEvent(socket, 'error', e =>
       logger.error('WebSocket error before first message', e),
@@ -294,11 +310,14 @@ export default class NuclideServer {
     socket.once('message', (clientId: string) => {
       errorSubscription.dispose();
       client = this._clients.get(clientId);
+      const useAck = clientId.startsWith('ACK');
       const transport = new WebSocketTransport(clientId, socket);
       if (client == null) {
         client = RpcConnection.createServer(
           this._rpcServiceRegistry,
-          new QueuedTransport(clientId, transport),
+          useAck
+            ? new QueuedAckTransport(clientId, transport)
+            : new QueuedTransport(clientId, transport),
         );
         this._clients.set(clientId, client);
       } else {
@@ -312,6 +331,7 @@ export default class NuclideServer {
     invariant(NuclideServer._theServer === this);
     NuclideServer._theServer = null;
 
+    this._disposables.dispose();
     this._webSocketServer.close();
     this._webServer.close();
   }

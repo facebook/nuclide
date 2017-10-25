@@ -42,6 +42,10 @@ export class LspConnection {
     this._jsonRpcConnection.sendNotification('exit');
   }
 
+  rage(): Promise<Array<p.RageItem>> {
+    return this._jsonRpcConnection.sendRequest('telemetry/rage');
+  }
+
   showMessageNotification(params: p.ShowMessageParams): void {
     this._jsonRpcConnection.sendNotification('window/showMessage', params);
   }
@@ -57,10 +61,6 @@ export class LspConnection {
 
   logMessage(params: p.LogMessageParams): void {
     this._jsonRpcConnection.sendNotification('window/logMessage', params);
-  }
-
-  telemetry(params: any): void {
-    this._jsonRpcConnection.sendNotification('telemetry/event', params);
   }
 
   didChangeConfiguration(params: p.DidChangeConfigurationParams): void {
@@ -138,10 +138,12 @@ export class LspConnection {
 
   gotoDefinition(
     params: p.TextDocumentPositionParams,
+    token: CancellationToken,
   ): Promise<p.Location | Array<p.Location>> {
     return this._jsonRpcConnection.sendRequest(
       'textDocument/definition',
       params,
+      token,
     );
   }
 
@@ -161,6 +163,7 @@ export class LspConnection {
     return this._jsonRpcConnection.sendRequest(
       'textDocument/documentHighlight',
       params,
+      token,
     );
   }
 

@@ -13,7 +13,7 @@
 import type {IconName} from './Icon';
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {maybeToString} from 'nuclide-commons/string';
 import addTooltip from './addTooltip';
@@ -36,6 +36,7 @@ type Props = {
   /** Allows specifying an element other than `button` to be used as the wrapper node. */
   wrapperElement?: ButtonNodeName,
   tooltip?: atom$TooltipsAddOptions,
+  disabled?: boolean,
 };
 
 export const ButtonSizes = Object.freeze({
@@ -69,9 +70,7 @@ const ButtonTypeClassnames = Object.freeze({
 /**
  * Generic Button wrapper.
  */
-export class Button extends React.Component {
-  props: Props;
-
+export class Button extends React.Component<Props> {
   focus(): void {
     const node = ReactDOM.findDOMNode(this);
     if (node == null) {
@@ -81,7 +80,7 @@ export class Button extends React.Component {
     node.focus();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       icon,
       buttonType,
@@ -96,7 +95,8 @@ export class Button extends React.Component {
     const sizeClassname = size == null ? '' : ButtonSizeClassnames[size] || '';
     const buttonTypeClassname =
       buttonType == null ? '' : ButtonTypeClassnames[buttonType] || '';
-    const ref = tooltip ? addTooltip(tooltip) : null;
+    const ref = tooltip && !this.props.disabled ? addTooltip(tooltip) : null;
+    const titleToolTip = tooltip && this.props.disabled ? tooltip.title : null;
     const newClassName = classnames(className, 'btn', {
       [`icon icon-${maybeToString(icon)}`]: icon != null,
       [sizeClassname]: size != null,
@@ -105,7 +105,12 @@ export class Button extends React.Component {
     });
     const Wrapper = wrapperElement == null ? 'button' : wrapperElement;
     return (
-      <Wrapper className={newClassName} ref={ref} {...remainingProps}>
+      // $FlowFixMe(>=0.53.0) Flow suppress
+      <Wrapper
+        className={newClassName}
+        ref={ref}
+        {...remainingProps}
+        title={titleToolTip}>
         {children}
       </Wrapper>
     );

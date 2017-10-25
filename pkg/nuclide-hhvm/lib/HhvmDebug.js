@@ -13,9 +13,9 @@ import type {DebugMode} from './types';
 
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {LaunchProcessInfo} from '../../nuclide-debugger-php/lib/LaunchProcessInfo';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+// eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {AttachProcessInfo} from '../../nuclide-debugger-php/lib/AttachProcessInfo';
 import invariant from 'assert';
 
@@ -23,6 +23,8 @@ export async function debug(
   debugMode: DebugMode,
   activeProjectRoot: ?string,
   target: string,
+  useTerminal: boolean,
+  scriptArguments: string,
 ): Promise<void> {
   let processInfo = null;
   invariant(activeProjectRoot != null, 'Active project is null');
@@ -35,12 +37,19 @@ export async function debug(
       debugMode,
       activeProjectRoot,
       target,
+      scriptArguments,
     );
   } catch (e) {}
 
   if (processInfo == null) {
     if (debugMode === 'script') {
-      processInfo = new LaunchProcessInfo(activeProjectRoot, target);
+      processInfo = new LaunchProcessInfo(
+        activeProjectRoot,
+        target,
+        null,
+        useTerminal,
+        scriptArguments,
+      );
     } else {
       processInfo = new AttachProcessInfo(activeProjectRoot);
     }

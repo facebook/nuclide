@@ -12,6 +12,7 @@
 import type {TaskEvent} from 'nuclide-commons/process';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Expected} from '../../commons-node/expected';
+import type {Device as DeviceIdType} from '../../nuclide-device-panel/lib/types';
 
 import {DeviceTask} from './DeviceTask';
 import {Observable} from 'rxjs';
@@ -31,6 +32,7 @@ export type DevicePanelServiceApi = {
   registerDeviceTypeTaskProvider: (
     provider: DeviceTypeTaskProvider,
   ) => IDisposable,
+  registerDeviceActionProvider: (provider: DeviceActionProvider) => IDisposable,
 };
 
 export interface DeviceListProvider {
@@ -39,7 +41,10 @@ export interface DeviceListProvider {
 }
 
 export interface DeviceInfoProvider {
-  fetch(host: NuclideUri, device: string): Observable<Map<string, string>>,
+  fetch(
+    host: NuclideUri,
+    device: DeviceIdType,
+  ): Observable<Map<string, string>>,
   getType(): string,
   getTitle(): string,
   getPriority(): number,
@@ -47,12 +52,12 @@ export interface DeviceInfoProvider {
 }
 
 export interface DeviceProcessesProvider {
-  observe(host: NuclideUri, device: string): Observable<Process[]>,
+  observe(host: NuclideUri, device: DeviceIdType): Observable<Process[]>,
   getType(): string,
 }
 
 export interface DeviceTaskProvider {
-  getTask(host: NuclideUri, device: string): Observable<TaskEvent>,
+  getTask(host: NuclideUri, device: DeviceIdType): Observable<TaskEvent>,
   getName(): string,
   getType(): string,
   isSupported(host: NuclideUri): Observable<boolean>,
@@ -65,15 +70,24 @@ export interface DeviceTypeTaskProvider {
 }
 
 export interface DeviceProcessTaskProvider {
-  run(host: NuclideUri, device: string, proc: Process): Promise<void>,
+  run(host: NuclideUri, device: DeviceIdType, proc: Process): Promise<void>,
   getTaskType(): ProcessTaskType,
   getType(): string,
   getSupportedPIDs(
     host: NuclideUri,
-    device: string,
+    device: DeviceIdType,
     procs: Process[],
   ): Observable<Set<number>>,
   getName(): string,
+}
+
+export type DeviceAction = {
+  name: string,
+  callback: (device: Device) => void,
+};
+
+export interface DeviceActionProvider {
+  getActionsForDevice(device: Device): Array<DeviceAction>,
 }
 
 //
@@ -87,12 +101,13 @@ export type AppState = {
   deviceType: ?string,
   deviceTypes: string[],
   device: ?Device,
-  infoTables: Map<string, Map<string, string>>,
-  processes: Process[],
+  infoTables: Expected<Map<string, Map<string, string>>>,
+  processes: Expected<Process[]>,
   processTasks: ProcessTask[],
   deviceTasks: DeviceTask[],
   isDeviceConnected: boolean,
   deviceTypeTasks: DeviceTask[],
+  isPollingDevices: boolean,
 };
 
 export type Store = {
@@ -108,9 +123,11 @@ export type DeviceArchitecture = 'x86' | 'x86_64' | 'arm' | 'arm64' | '';
 
 export type Device = {
   name: string,
+  port: number,
   displayName: string,
   architecture: DeviceArchitecture,
   rawArchitecture: string,
+  ignoresSelection?: boolean,
 };
 
 export type Process = {

@@ -99,7 +99,7 @@ describe('Clang Integration Test (objc)', () => {
     waitsFor('error to show up in diagnostics', 10000, () => {
       const errors = atom.views
         .getView(atom.workspace)
-        .querySelector('.nuclide-diagnostics-status-bar-highlight');
+        .querySelector('.diagnostics-status-bar-highlight');
       if (errors instanceof HTMLElement) {
         const innerText = errors.innerText;
         invariant(innerText != null);
@@ -116,7 +116,7 @@ describe('Clang Integration Test (objc)', () => {
     waitsFor('outline view to load', 10000, () => {
       names = atom.views
         .getView(atom.workspace)
-        .querySelectorAll('.nuclide-outline-view-item .syntax--name');
+        .querySelectorAll('.outline-view-item .syntax--name');
       return names.length > 0;
     });
 

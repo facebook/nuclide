@@ -13,7 +13,7 @@ import type {Process, ProcessTask, ProcessTaskType} from '../types';
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
-import React from 'react';
+import * as React from 'react';
 import {Icon} from 'nuclide-commons-ui/Icon';
 
 type Props = {|
@@ -25,9 +25,7 @@ type Props = {|
   nameIfManyTasks: string,
 |};
 
-export class ProcessTaskButton extends React.Component {
-  props: Props;
-
+export class ProcessTaskButton extends React.Component<Props> {
   _getTaskOptions(): {value: ProcessTask, label: string}[] {
     return this.props.tasks
       .filter(
@@ -38,7 +36,7 @@ export class ProcessTaskButton extends React.Component {
       .map(task => ({value: task, label: task.name}));
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const options = this._getTaskOptions();
     if (options.length === 0) {
       return <div />;
@@ -57,6 +55,7 @@ export class ProcessTaskButton extends React.Component {
         <Icon icon={this.props.icon} title={this.props.nameIfManyTasks} />
       );
       return (
+        // $FlowFixMe(>=0.53.0) Flow suppress
         <Dropdown
           isFlat={true}
           options={options}

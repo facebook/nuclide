@@ -22,9 +22,9 @@ import classnames from 'classnames';
 import ConnectionDetailsForm from './ConnectionDetailsForm';
 import {getIPsForHosts} from './connection-profile-utils';
 import {getUniqueHostsForProfiles} from './connection-profile-utils';
-import {HR} from '../../nuclide-ui/HR';
+import {HR} from 'nuclide-commons-ui/HR';
 import {MutableListSelector} from '../../nuclide-ui/MutableListSelector';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   // The initial list of connection profiles that will be displayed.
@@ -33,7 +33,7 @@ type Props = {
   // again (with the new props) on the ConnectionDetailsPrompt.
   connectionProfiles: ?Array<NuclideRemoteConnectionProfile>,
   // If there is >= 1 connection profile, this index indicates the profile to use.
-  indexOfSelectedConnectionProfile: ?number,
+  selectedProfileIndex: ?number,
   // Function to call when 'enter'/'confirm' is selected by the user in this view.
   onConfirm: () => mixed,
   // Function to call when 'cancel' is selected by the user in this view.
@@ -45,8 +45,8 @@ type Props = {
   // Function that is called when the "-" button on the profiles list is clicked
   // ** while a profile is selected **.
   // The user's intent is to delete the currently-selected profile.
-  onDeleteProfileClicked: (indexOfSelectedConnectionProfile: number) => mixed,
-  onProfileClicked: (indexOfSelectedConnectionProfile: number) => mixed,
+  onDeleteProfileClicked: (selectedProfileIndex: number) => mixed,
+  onProfileClicked: (selectedProfileIndex: number) => mixed,
 };
 
 type State = {
@@ -62,10 +62,10 @@ type State = {
  * 'profiles'. Clicking on a 'profile' in the NuclideListSelector auto-fills
  * the form with the information associated with that profile.
  */
-export default class ConnectionDetailsPrompt extends React.Component {
-  props: Props;
-  state: State;
-
+export default class ConnectionDetailsPrompt extends React.Component<
+  Props,
+  State,
+> {
   _settingFormFieldsLock: boolean;
 
   constructor(props: Props) {
@@ -93,8 +93,7 @@ export default class ConnectionDetailsPrompt extends React.Component {
     // Manually update the contents of an existing `ConnectionDetailsForm`, because it contains
     // `AtomInput` components (which don't update their contents when their props change).
     if (
-      prevProps.indexOfSelectedConnectionProfile !==
-        this.props.indexOfSelectedConnectionProfile ||
+      prevProps.selectedProfileIndex !== this.props.selectedProfileIndex ||
       // If the connection profiles changed length, the effective selected profile also changed.
       (prevProps.connectionProfiles != null &&
         this.props.connectionProfiles != null &&
@@ -145,10 +144,10 @@ export default class ConnectionDetailsPrompt extends React.Component {
     if (
       this.props.connectionProfiles != null &&
       this.props.connectionProfiles.length > 0 &&
-      this.props.indexOfSelectedConnectionProfile != null
+      this.props.selectedProfileIndex != null
     ) {
       const selectedProfile = this.props.connectionProfiles[
-        this.props.indexOfSelectedConnectionProfile
+        this.props.selectedProfileIndex
       ];
       return selectedProfile.params;
     }
@@ -210,7 +209,7 @@ export default class ConnectionDetailsPrompt extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     // If there are profiles, pre-fill the form with the information from the
     // specified selected profile.
     const prefilledConnectionParams = this.getPrefilledConnectionParams() || {};
@@ -223,7 +222,7 @@ export default class ConnectionDetailsPrompt extends React.Component {
     } else {
       uniqueHosts = getUniqueHostsForProfiles(connectionProfiles);
       const mostRecentClassName = classnames('list-item', {
-        selected: this.props.indexOfSelectedConnectionProfile === 0,
+        selected: this.props.selectedProfileIndex === 0,
       });
 
       defaultConnectionProfileList = (
@@ -271,9 +270,10 @@ export default class ConnectionDetailsPrompt extends React.Component {
     // The default profile is sliced from the Array to render it separately, which means
     // decrementing the effective index into the Array passed to the `MutableListSelector`.
     let idOfSelectedItem =
-      this.props.indexOfSelectedConnectionProfile == null
+      this.props.selectedProfileIndex == null
         ? null
-        : this.props.indexOfSelectedConnectionProfile - 1;
+        : this.props.selectedProfileIndex - 1;
+    // eslint-disable-next-line eqeqeq
     if (idOfSelectedItem === null || idOfSelectedItem < 0) {
       idOfSelectedItem = null;
     } else {

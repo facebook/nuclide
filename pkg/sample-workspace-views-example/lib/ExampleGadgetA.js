@@ -11,7 +11,7 @@
 
 import type {IconName} from 'nuclide-commons-ui/Icon';
 
-import React from 'react';
+import * as React from 'react';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 
 export const WORKSPACE_VIEW_URI_A =

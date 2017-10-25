@@ -11,7 +11,7 @@
 
 /* global alert */
 
-import React from 'react';
+import * as React from 'react';
 import {Dropdown} from './Dropdown';
 import {ModalMultiSelect} from './ModalMultiSelect';
 import {SplitButtonDropdown} from './SplitButtonDropdown';
@@ -23,10 +23,11 @@ const DropdownExample = (() => {
     {value: 3, label: 'Three'},
     {value: 4, label: 'Four'},
   ];
-  return (): React.Element<any> =>
+  return (): React.Element<any> => (
     <div>
       <Dropdown options={options} value={2} />
-    </div>;
+    </div>
+  );
 })();
 
 const SplitButtonDropdownExample = (() => {
@@ -38,7 +39,7 @@ const SplitButtonDropdownExample = (() => {
     {value: 4, label: 'Squirrel', icon: 'squirrel'},
     {value: 5, label: 'Beaker', icon: 'telescope', disabled: true},
   ];
-  return (): React.Element<any> =>
+  return (): React.Element<any> => (
     <div>
       <SplitButtonDropdown
         options={options}
@@ -46,18 +47,20 @@ const SplitButtonDropdownExample = (() => {
         onConfirm={// eslint-disable-next-line no-alert
         x => alert(`You selected ${x}!`)}
       />
-    </div>;
+    </div>
+  );
 })();
 
-class ModalMultiSelectExample extends React.Component {
-  state: {value: Array<number>};
-
+class ModalMultiSelectExample extends React.Component<
+  void,
+  {value: Array<number>},
+> {
   constructor(props: void) {
     super(props);
     this.state = {value: [2]};
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const options = [
       {value: 1, label: 'One'},
       {value: 2, label: 'Two'},

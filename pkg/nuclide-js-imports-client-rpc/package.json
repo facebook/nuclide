@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-js-imports-client-rpc",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/JsImportsService.js",
+  "version": "0.0.0",
+  "description": "A service for Javascript auto imports.",
+  "nuclide": {
+    "packageType": "Node",
+    "testRunner": "npm"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

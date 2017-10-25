@@ -17,12 +17,15 @@ import type {
 import type {ConnectableObservable} from 'rxjs';
 import type {OutputService, Message} from '../../nuclide-console/lib/types';
 import type {BusySignalService} from 'atom-ide-ui';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
 import {Subject, Observable} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {forkHostServices} from '../../nuclide-language-service-rpc/lib/HostServicesAggregator';
+import {applyTextEditsForMultipleFiles} from 'nuclide-commons-atom/text-edit';
 
 let rootAggregatorPromise: ?Promise<HostServices>;
 const logger = getLogger('HostServices');
@@ -49,6 +52,11 @@ class RootHostServices {
   };
   // lazily created map from source, to how we'll push messages from that source
   _consoleSubjects: Map<string, Promise<Subject<Message>>> = new Map();
+
+  // _progressWrappers is a hack to work around message loss in nuclide-rpc.
+  // We wouldn't need this field, nor wrappers at all, if we could depend on it.
+  // See also a field of the same name in HostServicesAggregator.js
+  _progressWrappers: Map<Progress, Progress> = new Map();
 
   consoleNotification(
     source: string,
@@ -125,6 +133,12 @@ class RootHostServices {
     }).publish();
   }
 
+  async applyTextEditsForMultipleFiles(
+    changes: Map<NuclideUri, Array<TextEdit>>,
+  ): Promise<boolean> {
+    return applyTextEditsForMultipleFiles(changes);
+  }
+
   _getBusySignalService(): Promise<?BusySignalService> {
     // TODO(ljw): if the busy-signal-package has been disabled before this
     // this function is called, we'll return a promise that never completes.
@@ -152,13 +166,41 @@ class RootHostServices {
     options?: {|debounce?: boolean|},
   ): Promise<Progress> {
     const service = await this._getBusySignalService();
-    const busyMessage =
+    let busyMessage =
       service == null
         ? this._nullProgressMessage
         : service.reportBusy(title, {...options});
     // The BusyMessage type from atom-ide-busy-signal happens to satisfy the
     // nuclide-rpc-able interface 'Progress': thus, we can return it directly.
-    return (busyMessage: Progress);
+    // return (busyMessage: Progress);
+    // Except: we're not going to, because we have to work around a bug in
+    // nuclide-rpc and construct wrappers:
+    const wrapper: Progress = {
+      setTitle: title2 => {
+        if (busyMessage != null) {
+          busyMessage.setTitle(title2);
+        }
+      },
+      dispose: () => {
+        if (busyMessage != null) {
+          this._progressWrappers.delete(wrapper);
+          busyMessage.dispose();
+          busyMessage = null;
+        }
+      },
+    };
+    this._progressWrappers.set(wrapper, busyMessage);
+    return wrapper;
+  }
+
+  syncProgress(expected: Set<Progress>): void {
+    // This function's goal is to compensate for flakey message loss.
+    // If we have any progress messages still hanging around but
+    for (const [wrapper] of this._progressWrappers) {
+      if (!expected.has(wrapper)) {
+        wrapper.dispose();
+      }
+    }
   }
 
   showActionRequired(

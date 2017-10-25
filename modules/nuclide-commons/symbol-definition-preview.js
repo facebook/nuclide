@@ -11,9 +11,10 @@
  */
 
 import type {NuclideUri} from './nuclideUri';
-
-import fs from './fsPromise';
+import mimeTypes from 'mime-types';
+import fsPromise from './fsPromise';
 import {countOccurrences} from './string';
+import nuclideUri from './nuclideUri';
 
 type Definition = {
   path: NuclideUri,
@@ -21,7 +22,7 @@ type Definition = {
 };
 
 const MAX_PREVIEW_LINES = 10;
-
+const MAX_FILESIZE = 100000;
 const WHITESPACE_REGEX = /^\s*/;
 function getIndentLevel(line: string) {
   return WHITESPACE_REGEX.exec(line)[0].length;
@@ -29,8 +30,27 @@ function getIndentLevel(line: string) {
 
 export async function getDefinitionPreview(
   definition: Definition,
-): Promise<string> {
-  const contents = await fs.readFile(definition.path, 'utf8');
+): Promise<?{
+  mime: string,
+  contents: string,
+  encoding: string,
+}> {
+  // ensure filesize not too big before reading in whole file
+  const stats = await fsPromise.stat(definition.path);
+  if (stats.size > MAX_FILESIZE) {
+    return null;
+  }
+
+  // if file is image, return base-64 encoded contents
+  const fileBuffer = await fsPromise.readFile(definition.path);
+
+  const mime =
+    mimeTypes.contentType(nuclideUri.extname(definition.path)) || 'text/plain';
+  if (mime.startsWith('image/')) {
+    return {mime, contents: fileBuffer.toString('base64'), encoding: 'base64'};
+  }
+
+  const contents = fileBuffer.toString('utf8');
   const lines = contents.split('\n');
 
   const start = definition.position.row;
@@ -77,5 +97,5 @@ export async function getDefinitionPreview(
     }
   }
 
-  return buffer.join('\n');
+  return {mime, contents: buffer.join('\n'), encoding: 'utf8'};
 }

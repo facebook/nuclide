@@ -19,6 +19,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {FileTreeNode} from '../lib/FileTreeNode';
 import FileTreeActions from '../lib/FileTreeActions';
 import {FileTreeStore} from '../lib/FileTreeStore';
+import {FileTreeSelectionManager} from '../lib/FileTreeSelectionManager';
 import {DEFAULT_CONF} from '../lib/FileTreeStore';
 import {WorkingSet} from '../../nuclide-working-sets-common';
 
@@ -32,7 +33,13 @@ import invariant from 'assert';
 
 describe('FileTreeSelectionRange', () => {
   function createNode(rootUri: NuclideUri, uri: NuclideUri): FileTreeNode {
-    return new FileTreeNode({rootUri, uri}, DEFAULT_CONF);
+    return new FileTreeNode(
+      {rootUri, uri},
+      {
+        ...DEFAULT_CONF,
+        selectionManager: new FileTreeSelectionManager(() => {}),
+      },
+    );
   }
 
   describe('RangeKey', () => {
@@ -103,6 +110,7 @@ describe('FileTreeSelectionRange', () => {
         'dir/bar/bar3',
       );
       const dir = map.get('dir');
+      // flowlint-next-line sketchy-null-string:off
       invariant(dir);
       actions.setRootKeys([dir]);
       return map;
@@ -114,6 +122,7 @@ describe('FileTreeSelectionRange', () => {
       waitsForPromise(async () => {
         map = await prepareFileTree();
         const dir = map.get('dir');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
         // Await **internal-only** API because the public `expandNodeDeep` API does not
         // return the promise that can be awaited on
@@ -133,7 +142,9 @@ describe('FileTreeSelectionRange', () => {
       it('returns the node itself if it is shown and selected', () => {
         const dir = map.get('dir');
         const bar1 = map.get('dir/bar/bar1');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
         actions.setSelectedNode(dir, bar1);
         const node = store.getNode(dir, bar1);
@@ -145,8 +156,11 @@ describe('FileTreeSelectionRange', () => {
         const dir = map.get('dir');
         const bar1 = map.get('dir/bar/bar1');
         const bar3 = map.get('dir/bar/bar3');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar3);
         actions.setSelectedNode(dir, bar3);
         const node = store.getNode(dir, bar1);
@@ -158,8 +172,11 @@ describe('FileTreeSelectionRange', () => {
         const dir = map.get('dir');
         const bar1 = map.get('dir/bar/bar1');
         const bar3 = map.get('dir/bar/bar3');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar3);
         actions.setSelectedNode(dir, bar1);
         const node = store.getNode(dir, bar3);
@@ -170,7 +187,9 @@ describe('FileTreeSelectionRange', () => {
       it('returns null if nothing is selected', () => {
         const dir = map.get('dir');
         const bar1 = map.get('dir/bar/bar1');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
         const node = store.getNode(dir, bar1);
         invariant(node);
@@ -182,9 +201,13 @@ describe('FileTreeSelectionRange', () => {
         const foo = map.get('dir/foo');
         const foo1 = map.get('dir/foo/foo1');
         const bar1 = map.get('dir/bar/bar1');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(foo);
+        // flowlint-next-line sketchy-null-string:off
         invariant(foo1);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
         actions.collapseNode(dir, foo);
         actions.setSelectedNode(dir, bar1);
@@ -197,8 +220,11 @@ describe('FileTreeSelectionRange', () => {
         const dir = map.get('dir');
         const foo1 = map.get('dir/foo/foo1');
         const bar1 = map.get('dir/bar/bar1');
+        // flowlint-next-line sketchy-null-string:off
         invariant(dir);
+        // flowlint-next-line sketchy-null-string:off
         invariant(foo1);
+        // flowlint-next-line sketchy-null-string:off
         invariant(bar1);
         actions.updateWorkingSet(new WorkingSet([foo1, bar1]));
         actions.setSelectedNode(dir, bar1);

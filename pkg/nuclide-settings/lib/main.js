@@ -11,9 +11,10 @@
 
 import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import React from 'react';
+import * as React from 'react';
 import SettingsPaneItem, {WORKSPACE_VIEW_URI} from './SettingsPaneItem';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 let subscriptions: UniversalDisposable = (null: any);
 
@@ -45,12 +46,14 @@ export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   toolBar.addSpacer({
     priority: -501,
   });
-  toolBar.addButton({
-    icon: 'gear',
-    callback: 'nuclide-settings:toggle',
-    tooltip: 'Open Nuclide Settings',
-    priority: -500,
-  });
+  toolBar.addButton(
+    makeToolbarButtonSpec({
+      icon: 'gear',
+      callback: 'nuclide-settings:toggle',
+      tooltip: 'Open Nuclide Settings',
+      priority: -500,
+    }),
+  );
   const disposable = new UniversalDisposable(() => {
     toolBar.removeItems();
   });

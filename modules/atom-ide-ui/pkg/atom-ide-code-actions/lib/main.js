@@ -13,7 +13,7 @@
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {CodeActionManager} from './CodeActionManager';
 
-import type {CodeActionProvider, CodeActionUpdater} from './types';
+import type {CodeActionProvider, CodeActionFetcher} from './types';
 
 class Activation {
   _codeActionManager: CodeActionManager;
@@ -27,11 +27,11 @@ class Activation {
   }
 
   consumeCodeActionProvider(provider: CodeActionProvider) {
-    this._codeActionManager.addProvider(provider);
+    return this._codeActionManager.addProvider(provider);
   }
 
-  provideCodeActionUpdater(): CodeActionUpdater {
-    return this._codeActionManager.createCodeActionUpdater();
+  provideCodeActionFetcher(): CodeActionFetcher {
+    return this._codeActionManager.createCodeActionFetcher();
   }
 }
 

@@ -34,13 +34,12 @@
 .nuclide-ui-table-body-cell {
   border-right: 1px solid @base-border-color;
   overflow: hidden;
-  padding: 2px 4px;
-  min-width: 40px;
+  padding: 2px 6px;
 }
 
 .nuclide-ui-table-body-cell {
   word-break: break-word;
-  text-overflow:inherit;
+  text-overflow: inherit;
 }
 
 .nuclide-ui-table-header-cell {
@@ -60,8 +59,21 @@
 }
 
 .nuclide-ui-table-sort-indicator {
-  position: absolute;
+  // We want the icon to take up horizontal space so that it's taken into
+  // account when centering the heading, but NOT add any height. In order to
+  // accomplish this, we give a width and height to the the container and then
+  // absolutely position the icon within it.
+  position: relative;
+  display: inline-block;
   transform: scale(0.6);
+  width: 1em;
+  height: 1em;
+
+  .icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
 }
 
 .nuclide-ui-table-header-resize-handle {
@@ -83,7 +95,7 @@
   cursor: pointer;
 }
 
-.nuclide-ui-table-row-selectable:hover {
+.nuclide-ui-table-row-selectable:not(.nuclide-ui-table-row-using-keyboard-nav):hover  {
   background-color: @background-color-selected;
   color: @text-color-selected;
 }
@@ -91,13 +103,23 @@
 .nuclide-ui-table-row-selected {
   background-color: @background-color-selected;
   color: @text-color-selected;
-  font-weight: bold;
+
+  .nuclide-ui-table:focus &,
+  .nuclide-ui-table:focus & a {
+    background: @button-background-color-selected;
+    color: contrast(@button-background-color-selected);
+  }
 }
 
 .nuclide-ui-table-collapsed-row {
   word-break: break-word;
   text-overflow: ellipsis;
-  white-space: nowrap;
+
+  .nuclide-ui-table-body-cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .nuclide-ui-table-empty-message {

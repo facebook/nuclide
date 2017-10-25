@@ -9,6 +9,8 @@
  * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+
 import Immutable from 'immutable';
 
 export type SshTunnelService = {
@@ -17,6 +19,7 @@ export type SshTunnelService = {
     onOpen: () => void,
     onClose: (?Error) => void,
   ): IDisposable,
+  getAvailableServerPort(uri: NuclideUri): Promise<number>,
 };
 
 export type Store = {
@@ -31,11 +34,13 @@ export type AppState = {
 export type Remote = {
   host: string,
   port: number,
+  family?: 4 | 6,
 };
 
 export type Local = {
   host: 'localhost',
   port: number,
+  family?: 4 | 6,
 };
 
 export type Tunnel = {

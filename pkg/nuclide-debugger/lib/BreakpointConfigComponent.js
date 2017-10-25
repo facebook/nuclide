@@ -13,7 +13,7 @@ import type {FileLineBreakpoint} from './types';
 
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import DebuggerActions from './DebuggerActions';
-import React from 'react';
+import * as React from 'react';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -22,7 +22,7 @@ import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import BreakpointStore from './BreakpointStore';
 import {Modal} from '../../nuclide-ui/Modal';
 import {track} from '../../nuclide-analytics';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 type PropsType = {
   onDismiss: () => void,
@@ -36,7 +36,6 @@ type StateType = {
 };
 
 export class BreakpointConfigComponent extends React.Component<
-  void,
   PropsType,
   StateType,
 > {
@@ -96,7 +95,7 @@ export class BreakpointConfigComponent extends React.Component<
     this.props.onDismiss();
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <Modal onDismiss={() => this.props.onDismiss()}>
         <div className="padded nuclide-debugger-bp-dialog">

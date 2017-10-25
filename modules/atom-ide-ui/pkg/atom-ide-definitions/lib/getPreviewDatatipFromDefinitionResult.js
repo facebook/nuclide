@@ -13,21 +13,17 @@
 import analytics from 'nuclide-commons-atom/analytics';
 import {getDefinitionPreview as getLocalFileDefinitionPreview} from 'nuclide-commons/symbol-definition-preview';
 
+import React from 'react';
 import type {Datatip} from '../../atom-ide-datatip/lib/types';
 
-import type {
-  Definition,
-  DefinitionQueryResult,
-  DefinitionPreviewProvider,
-} from './types';
+import type {Definition, DefinitionPreviewProvider} from './types';
 
 export default (async function getPreviewDatatipFromDefinition(
-  definitionResult: DefinitionQueryResult,
+  range: atom$Range,
+  definitions: Array<Definition>,
   definitionPreviewProvider: ?DefinitionPreviewProvider,
   grammar: atom$Grammar,
 ): Promise<?Datatip> {
-  const {queryRange, definitions} = definitionResult;
-
   if (definitions.length === 1) {
     const definition = definitions[0];
     // Some providers (e.g. Flow) return negative positions.
@@ -39,15 +35,32 @@ export default (async function getPreviewDatatipFromDefinition(
       definition,
       definitionPreviewProvider,
     );
+
+    if (definitionPreview == null) {
+      return null;
+    }
+
+    // if mimetype is image return image component with base-64 encoded
+    //  image contents, otherwise use markedStrings
+    if (definitionPreview.mime.startsWith('image/')) {
+      return {
+        component: () => (
+          <img
+            src={`data:${definitionPreview.mime};${definitionPreview.encoding},${definitionPreview.contents}`}
+          />
+        ),
+        range,
+      };
+    }
     return {
       markedStrings: [
         {
           type: 'snippet',
-          value: definitionPreview,
+          value: definitionPreview.contents,
           grammar,
         },
       ],
-      range: queryRange[0],
+      range,
     };
   }
 
@@ -59,7 +72,7 @@ export default (async function getPreviewDatatipFromDefinition(
         grammar,
       },
     ],
-    range: queryRange[0],
+    range,
   };
 });
 
