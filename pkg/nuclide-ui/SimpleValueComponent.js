@@ -22,7 +22,7 @@ type Props = {
 };
 
 const booleanRegex = /^true|false$/i;
-const stringRegex = /^(['"]).*\1$/;
+export const STRING_REGEX = /^(['"]).*\1$/;
 
 function renderNullish(
   evaluationResult: EvaluationResult,
@@ -38,13 +38,19 @@ function renderString(evaluationResult: EvaluationResult): ?React.Element<any> {
   if (value == null) {
     return null;
   }
-  return type === 'string' || stringRegex.test(value) ? (
-    <span className={ValueComponentClassNames.string}>
-      <span className={ValueComponentClassNames.stringOpeningQuote}>"</span>
-      {value}
-      <span className={ValueComponentClassNames.stringClosingQuote}>"</span>
-    </span>
-  ) : null;
+  if (STRING_REGEX.test(value)) {
+    return <span className={ValueComponentClassNames.string}>{value}</span>;
+  } else if (type === 'string') {
+    return (
+      <span className={ValueComponentClassNames.string}>
+        <span className={ValueComponentClassNames.stringOpeningQuote}>"</span>
+        {value}
+        <span className={ValueComponentClassNames.stringClosingQuote}>"</span>
+      </span>
+    );
+  } else {
+    return null;
+  }
 }
 
 function renderNumber(evaluationResult: EvaluationResult): ?React.Element<any> {
@@ -82,7 +88,17 @@ const valueRenderers = [
   renderDefault,
 ];
 
-export default class SimpleValueComponent extends React.PureComponent<Props> {
+export default class SimpleValueComponent extends React.Component<Props> {
+  shouldComponentUpdate(nextProps: Props): boolean {
+    const {expression, evaluationResult} = this.props;
+    return (
+      expression !== nextProps.expression ||
+      evaluationResult.type !== nextProps.evaluationResult.type ||
+      evaluationResult.value !== nextProps.evaluationResult.value ||
+      evaluationResult.description !== nextProps.evaluationResult.description
+    );
+  }
+
   render(): React.Node {
     const {expression, evaluationResult} = this.props;
     let displayValue;

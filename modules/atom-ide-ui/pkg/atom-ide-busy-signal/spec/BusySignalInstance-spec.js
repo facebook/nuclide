@@ -12,6 +12,7 @@
 
 import type {BusySignalOptions} from '../lib/types';
 
+import fsPromise from 'nuclide-commons/fsPromise';
 import {MessageStore} from '../lib/MessageStore';
 import BusySignalSingleton from '../lib/BusySignalSingleton';
 
@@ -88,11 +89,13 @@ describe('BusySignalSingleton', () => {
     let editor1: atom$TextEditor = (null: any);
     let editor2: atom$TextEditor = (null: any);
     let editor3: atom$TextEditor = (null: any);
+    let file2;
 
     beforeEach(() => {
       waitsForPromise(async () => {
-        editor1 = await atom.workspace.open('/file1.txt');
-        editor2 = await atom.workspace.open('/file2.txt');
+        editor1 = await atom.workspace.open(await fsPromise.tempfile());
+        file2 = await fsPromise.tempfile();
+        editor2 = await atom.workspace.open(file2);
         editor3 = await atom.workspace.open();
       });
     });
@@ -105,7 +108,7 @@ describe('BusySignalSingleton', () => {
       atom.workspace.getActivePane().activateItem(editor1);
 
       const disposable = singleton.reportBusy('foo', {
-        onlyForFile: '/file2.txt',
+        onlyForFile: file2,
         ...options,
       });
       expect(messages).toEqual([]);

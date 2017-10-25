@@ -10,6 +10,7 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
@@ -17,18 +18,17 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {ConnectableObservable} from 'rxjs';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   LanguageService,
   SymbolResult,
@@ -39,11 +39,11 @@ import {Observable} from 'rxjs';
 // An implementation of LanguageService which always returns no results.
 // Useful for implementing aggregate language services.
 export class NullLanguageService {
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate> {
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap> {
     return Promise.resolve(null);
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     return Observable.empty().publish();
   }
 
@@ -77,7 +77,9 @@ export class NullLanguageService {
     return Promise.resolve(null);
   }
 
-  getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+  getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
     return Promise.resolve([]);
   }
 

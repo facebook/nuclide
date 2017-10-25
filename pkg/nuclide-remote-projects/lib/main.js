@@ -25,7 +25,7 @@ import {getOpenFileEditorForRemoteProject} from './utils';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import loadingNotification from '../../commons-atom/loading-notification';
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   RemoteConnection,
   RemoteDirectory,
@@ -79,15 +79,17 @@ export type RemoteProjectsService = {
 };
 
 /**
- * Stores the host and cwd of a remote connection.
+ * Stores the host, cwd, displayTitle of a remote connection and
+ * a property switch for whether to prompt to connect again if reconnect attempt fails.
  */
 export type SerializableRemoteConnectionConfiguration = {
   host: string,
   cwd: string,
   displayTitle: string,
+  promptReconnectOnFailure?: boolean,
 };
 
-let packageSubscriptions: ?CompositeDisposable = null;
+let packageSubscriptions: ?UniversalDisposable = null;
 let controller: ?RemoteProjectsController = null;
 let remoteProjectsService: ?RemoteProjectsServiceImpl = null;
 let workingSetsStore: ?WorkingSetsStore = null;
@@ -102,6 +104,7 @@ function createSerializableRemoteConnectionConfiguration(
     host: config.host,
     cwd: config.cwd,
     displayTitle: config.displayTitle,
+    promptReconnectOnFailure: config.promptReconnectOnFailure,
   };
 }
 
@@ -290,6 +293,8 @@ async function reloadRemoteProjects(
           textEditor.destroy();
         }
       });
+
+      ServerConnection.cancelConnection(config.host);
     } else {
       // It's fine the user connected to a different project on the same host:
       // we should still be able to restore this using the new connection.
@@ -343,7 +348,7 @@ function shutdownServersAndRestartNuclide(): void {
 export function activate(
   state: ?{remoteProjectsConfig: SerializableRemoteConnectionConfiguration[]},
 ): void {
-  const subscriptions = new CompositeDisposable();
+  const subscriptions = new UniversalDisposable();
 
   controller = new RemoteProjectsController();
   remoteProjectsService = new RemoteProjectsServiceImpl();

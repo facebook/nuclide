@@ -23,10 +23,7 @@ import SearchResultManager from '../lib/SearchResultManager';
 import QuickOpenProviderRegistry from '../lib/QuickOpenProviderRegistry';
 
 import {__test__} from '../lib/SearchResultManager';
-const {
-  _getOmniSearchProviderSpec,
-  UPDATE_DIRECTORIES_DEBOUNCE_DELAY,
-} = __test__;
+const {_getOmniSearchProviderSpec} = __test__;
 
 const PROJECT_ROOT1 = nuclideUri.join(__dirname, 'fixtures/root1');
 const PROJECT_ROOT2 = nuclideUri.join(__dirname, 'fixtures/root2');
@@ -124,10 +121,15 @@ function constructSingleProviderResult(
 describe('SearchResultManager', () => {
   let searchResultManager: SearchResultManager = (null: any);
   let quickOpenProviderRegistry: QuickOpenProviderRegistry = (null: any);
+  let providersChanged: Promise<void>;
 
   beforeEach(() => {
+    jasmine.useRealClock();
     quickOpenProviderRegistry = new QuickOpenProviderRegistry();
     searchResultManager = new SearchResultManager(quickOpenProviderRegistry);
+    providersChanged = new Promise(resolve => {
+      return searchResultManager.onProvidersChanged(resolve);
+    });
   });
 
   afterEach(() => {
@@ -155,20 +157,14 @@ describe('SearchResultManager', () => {
     it('updates the cache when providers become (un)available', () => {
       waitsForPromise(async () => {
         let providersChangedCallCount = 0;
-        const providersChanged = new Promise(resolve => {
-          searchResultManager.onProvidersChanged(() => {
-            providersChangedCallCount++;
-            resolve();
-          });
+        searchResultManager.onProvidersChanged(() => {
+          providersChangedCallCount++;
         });
 
         const fakeProviderDisposable = quickOpenProviderRegistry.addProvider(
           FakeProvider,
         );
 
-        // The 'addProvider' call above will debounce and then call the async
-        // method updateDirectories. We need to advanceClock to satisfy debounce.
-        advanceClock(UPDATE_DIRECTORIES_DEBOUNCE_DELAY);
         // We want to await until updateDirectories has finished, but we don't
         // have access to its returned Promise. So instead we'll await until
         // it finally emits 'providers-changed'.
@@ -193,7 +189,7 @@ describe('SearchResultManager', () => {
     it('queries providers asynchronously, emits change events and returns filtered results', () => {
       waitsForPromise(async () => {
         quickOpenProviderRegistry.addProvider(ExactStringMatchProvider);
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await querySingleProvider(
             searchResultManager,
@@ -219,7 +215,7 @@ describe('SearchResultManager', () => {
     it('ignores trailing whitespace in querystring.', () => {
       waitsForPromise(async () => {
         quickOpenProviderRegistry.addProvider(ExactStringMatchProvider);
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         await Promise.all(
           ['   yolo', 'yolo   ', '   yolo   \n '].map(async query => {
             expect(
@@ -295,7 +291,7 @@ describe('SearchResultManager', () => {
       quickOpenProviderRegistry.addProvider(ThirdProvider);
       quickOpenProviderRegistry.addProvider(SecondProvider);
       waitsForPromise(async () => {
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await queryOmniSearchProvider(
             quickOpenProviderRegistry,
@@ -311,7 +307,7 @@ describe('SearchResultManager', () => {
       quickOpenProviderRegistry.addProvider(SecondProvider);
       quickOpenProviderRegistry.addProvider(FirstProvider);
       waitsForPromise(async () => {
-        await searchResultManager._updateDirectories();
+        await providersChanged;
         expect(
           await queryOmniSearchProvider(
             quickOpenProviderRegistry,
@@ -334,9 +330,7 @@ describe('SearchResultManager', () => {
         atom.project.addPath(PROJECT_ROOT2);
         atom.project.addPath(PROJECT_ROOT3);
 
-        // Call _updateDirectories immediately here because it is debounced by default, so it won't
-        // execute for a little while.
-        await searchResultManager._updateDirectories();
+        await providersChanged;
       });
     });
 

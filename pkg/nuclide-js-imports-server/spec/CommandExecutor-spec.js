@@ -77,7 +77,7 @@ describe('CommandExecutor', () => {
           isTypeExport: false,
           isDefault: false,
         },
-        getProgramBody('function f() {}'),
+        getProgramBody('function f() {}\nlet fake;'),
       ),
     ).toEqual([
       {

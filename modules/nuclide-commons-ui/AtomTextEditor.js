@@ -37,7 +37,7 @@ function setupTextEditor(props: Props): TextEditorSetup {
 
   const disposables = new UniversalDisposable();
   if (props.onDidTextBufferChange != null) {
-    disposables.add(textBuffer.onDidChange(props.onDidTextBufferChange));
+    disposables.add(textBuffer.onDidChangeText(props.onDidTextBufferChange));
   }
 
   const textEditorParams = {
@@ -49,7 +49,6 @@ function setupTextEditor(props: Props): TextEditorSetup {
     textEditorParams,
   );
   disposables.add(() => textEditor.destroy());
-
   if (props.grammar != null) {
     textEditor.setGrammar(props.grammar);
   }
@@ -68,7 +67,6 @@ function setupTextEditor(props: Props): TextEditorSetup {
       decoration.destroy();
     });
   }
-
   return {
     disposables,
     textEditor,
@@ -94,15 +92,20 @@ type Props = {
   disabled: boolean,
   gutterHidden: boolean,
   grammar?: ?Object,
-  onDidTextBufferChange?: (event: atom$TextEditEvent) => mixed,
+  // these are processed in setupTextEditor below
+  /* eslint-disable react/no-unused-prop-types */
+  onDidTextBufferChange?: (event: atom$AggregatedTextEditEvent) => mixed,
   path?: string,
   placeholderText?: string,
+  /* eslint-enable react/no-unused-prop-types */
   readOnly: boolean,
   textBuffer?: TextBuffer,
   syncTextContents: boolean,
   tabIndex: string,
   softWrapped: boolean,
   onConfirm?: () => mixed,
+  // Called with text editor  as input after initializing and attaching to DOM.
+  onInitialized?: atom$TextEditor => IDisposable,
 };
 
 export class AtomTextEditor extends React.Component<Props, void> {
@@ -182,6 +185,10 @@ export class AtomTextEditor extends React.Component<Props, void> {
           },
         }),
       );
+    }
+
+    if (this.props.onInitialized != null) {
+      this._editorDisposables.add(this.props.onInitialized(textEditor));
     }
   }
 

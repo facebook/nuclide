@@ -15,15 +15,15 @@ import type {HomeFragments} from '../../nuclide-home/lib/types';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ContextViewManager, WORKSPACE_VIEW_URI} from './ContextViewManager';
-import {Disposable, CompositeDisposable} from 'atom';
+import {Disposable} from 'atom';
 import invariant from 'assert';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
 let manager: ?ContextViewManager = null;
-let disposables: CompositeDisposable;
+let disposables: UniversalDisposable;
 
 export function activate(): void {
-  disposables = new CompositeDisposable(_registerCommandAndOpener());
+  disposables = new UniversalDisposable(_registerCommandAndOpener());
 }
 
 export function deactivate(): void {

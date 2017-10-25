@@ -12,11 +12,14 @@
 import type {ConnectableObservable} from 'rxjs';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {HgExecOptions} from './hg-exec-types';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {sleep} from 'nuclide-commons/promise';
+import {fastDebounce} from 'nuclide-commons/observable';
+import {timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import {WatchmanClient} from '../../nuclide-watchman-helpers';
 import fs from 'fs';
 
@@ -428,9 +431,14 @@ export class HgService {
     return this.fetchStatuses('ancestor(. or (. and (not public()))^)');
   }
 
-  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
     const options = {cwd: this._workingDirectory};
-    const base = await getForkBaseName(this._workingDirectory); // e.g. master
+    const base = await timeoutAfterDeadline(
+      deadline,
+      getForkBaseName(this._workingDirectory),
+    ); // e.g. master
     const root = expressionForCommonAncestor(base); // ancestor(master, .)
 
     // The ID of the root
@@ -456,10 +464,8 @@ export class HgService {
     };
 
     // Summary of changes from base to current working directory
-    const getSummary = async () => {
-      const statuses = await this.fetchStatuses(
-        expressionForCommonAncestor(base),
-      )
+    const getStatus = async () => {
+      const statuses = await this.fetchStatuses(root)
         .refCount()
         .toPromise();
       let result = '';
@@ -469,10 +475,16 @@ export class HgService {
       return result;
     };
 
-    const [id, diff, summary] = await Promise.all([
-      getId(),
-      Promise.race([getDiff(), sleep(40000).then(() => 'diff timed out')]),
-      Promise.race([getSummary(), sleep(40000).then(() => 'status timed out')]),
+    const [id, diff, status] = await Promise.all([
+      timeoutAfterDeadline(deadline, getId()).catch(
+        e => `id ${e.message}\n${e.stack}`,
+      ),
+      timeoutAfterDeadline(deadline, getDiff()).catch(
+        e => 'diff ' + stringifyError(e),
+      ),
+      timeoutAfterDeadline(deadline, getStatus()).catch(
+        e => 'status ' + stringifyError(e),
+      ),
     ]);
 
     const results: Array<AdditionalLogFile> = [];
@@ -482,10 +494,10 @@ export class HgService {
       title: `${this._workingDirectory}:hg`,
       data:
         `hg update -r ${id}\n` +
-        (summary === '' ? '' : 'hg import hgdiff\n') +
-        `\n${summary}`,
+        (status === '' ? '' : 'hg import --no-commit hgdiff\n') +
+        `\n${status}`,
     });
-    if (summary !== '') {
+    if (status !== '') {
       results.push({
         title: `${this._workingDirectory}:hgdiff`,
         data: diff,
@@ -756,7 +768,7 @@ export class HgService {
       this._hgRepoCommitsDidChangeObserver
         // Upon rebase, this can fire once per added commit!
         // Apply a generous debounce to avoid overloading the RPC connection.
-        .debounceTime(COMMIT_CHANGE_DEBOUNCE_MS)
+        .let(fastDebounce(COMMIT_CHANGE_DEBOUNCE_MS))
         .publish()
     );
   }
@@ -1298,7 +1310,7 @@ export class HgService {
    * Undoes the effect of a local commit, specifically the working directory parent.
    */
   uncommit(): Promise<void> {
-    return this._runSimpleInWorkingDirectory('reset', ['--rev', '.^']);
+    return this._runSimpleInWorkingDirectory('uncommit', []);
   }
 
   /**

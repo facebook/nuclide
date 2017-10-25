@@ -15,7 +15,7 @@ export const GRAMMARS = [
   'source.objc',
   'source.objcpp',
 ];
-export const GRAMMAR_SET = new Set(GRAMMARS);
+export const GRAMMAR_SET: Set<string> = new Set(GRAMMARS);
 
 export const PACKAGE_NAME = 'nuclide-clang';
 

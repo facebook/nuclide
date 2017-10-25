@@ -45,7 +45,11 @@ export default function addTooltip(
 
     if (elementRef == null) {
       if (node != null) {
-        _toDispose.add(node);
+        if (_tooltipRequests.has(node)) {
+          _tooltipRequests.delete(node);
+        } else {
+          _toDispose.add(node);
+        }
       }
 
       return;

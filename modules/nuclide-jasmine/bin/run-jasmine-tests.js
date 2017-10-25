@@ -27,6 +27,9 @@ require('../../nuclide-node-transpiler');
 // Set this up before we call jasmine-node. jasmine-node does this same trick,
 // but neglects to respect the exit code, so we beat it the to the punch.
 process.once('exit', code => {
+  const {writeCoverage} = require('nuclide-commons/test-helpers');
+  writeCoverage();
+
   const temp = require('temp');
   if (code === 0) {
     // jasmine-node is swallowing temp's exit handler, so force a cleanup.

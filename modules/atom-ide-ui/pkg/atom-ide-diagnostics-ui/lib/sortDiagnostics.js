@@ -15,7 +15,7 @@ import type {
   DiagnosticMessageKind,
   DiagnosticMessageType,
 } from '../../atom-ide-diagnostics/lib/types';
-import type {DisplayDiagnostic} from './ui/ExperimentalDiagnosticsTable';
+import type {DisplayDiagnostic} from './ui/DiagnosticsTable';
 
 import invariant from 'assert';
 

@@ -11,7 +11,7 @@
 
 /* global localStorage */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {NuxManager} from '../lib/NuxManager';
 import {NuxStore, NUX_SAVED_STORE} from '../lib/NuxStore';
@@ -41,11 +41,11 @@ describe('NuxTour', () => {
   }
 
   let nuxStore;
-  let disposables: CompositeDisposable;
+  let disposables: UniversalDisposable;
   let nuclideNuxState;
 
   beforeEach(() => {
-    disposables = new CompositeDisposable();
+    disposables = new UniversalDisposable();
     // Save viewed state of NUXes
     nuclideNuxState = localStorage.getItem(NUX_SAVED_STORE);
     localStorage.clear();

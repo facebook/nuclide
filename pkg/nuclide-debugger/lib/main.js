@@ -62,6 +62,7 @@ import {DebuggerPaneContainerViewModel} from './DebuggerPaneContainerViewModel';
 import os from 'os';
 import nullthrows from 'nullthrows';
 import ReactMountRootElement from 'nuclide-commons-ui/ReactMountRootElement';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 export type SerializedState = {
   breakpoints: ?Array<SerializedBreakpoint>,
@@ -131,6 +132,17 @@ function getLineForEvent(editor: atom$TextEditor, event: any): number {
     // fall back to the line the cursor is on.
     cursorLine,
   );
+}
+
+export function createAutocompleteProvider(): atom$AutocompleteProvider {
+  return {
+    labels: ['nuclide-console'],
+    selector: '*',
+    filterSuggestions: true,
+    async getSuggestions(request) {
+      return activation != null ? activation.getSuggestions(request) : null;
+    },
+  };
 }
 
 export function createDebuggerView(model: mixed): ?HTMLElement {
@@ -298,8 +310,41 @@ class Activation {
           this,
         ),
       }),
+      atom.commands.add('.nuclide-debugger-disassembly-view', {
+        'nuclide-debugger:copy-debugger-disassembly': this._copyDebuggerDisassembly.bind(
+          this,
+        ),
+      }),
+      atom.commands.add('.nuclide-debugger-disassembly-table', {
+        'nuclide-debugger:add-disassembly-breakpoint': this._addDisassemblyBreakpoint.bind(
+          this,
+        ),
+      }),
+      atom.commands.add('.nuclide-debugger-registers-view', {
+        'nuclide-debugger:copy-debugger-registers': this._copyDebuggerRegisters.bind(
+          this,
+        ),
+      }),
       // Context Menu Items.
       atom.contextMenu.add({
+        '.nuclide-debugger-disassembly-view': [
+          {
+            label: 'Copy disassembly',
+            command: 'nuclide-debugger:copy-debugger-disassembly',
+          },
+        ],
+        '.nuclide-debugger-disassembly-table': [
+          {
+            label: 'Add breakpoint at address',
+            command: 'nuclide-debugger:add-disassembly-breakpoint',
+          },
+        ],
+        '.nuclide-debugger-registers-view': [
+          {
+            label: 'Copy registers',
+            command: 'nuclide-debugger:copy-debugger-registers',
+          },
+        ],
         '.nuclide-debugger-breakpoint-list': [
           {
             label: 'Enable All Breakpoints',
@@ -454,6 +499,48 @@ class Activation {
       connection,
     );
     this._connectionProviders.set(key, availableProviders);
+  }
+
+  getSuggestions(
+    request: atom$AutocompleteRequest,
+  ): Promise<?Array<atom$AutocompleteSuggestion>> {
+    let text = request.editor.getText();
+    const lines = text.split('\n');
+    const {row, column} = request.bufferPosition;
+    // Only keep the lines up to and including the buffer position row.
+    text = lines.slice(0, row + 1).join('\n');
+    const debuggerInstance = this.getModel()
+      .getStore()
+      .getDebuggerInstance();
+    // Immediately complete if no capable debugger attached.
+    if (
+      debuggerInstance == null ||
+      !debuggerInstance.getDebuggerProcessInfo().getDebuggerCapabilities()
+        .completionsRequest
+    ) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve, reject) => {
+      this.getModel()
+        .getBridge()
+        .sendCompletionsCommand(text, column + 1, (err, response) => {
+          if (err != null) {
+            reject(err);
+          } else {
+            const result = response.targets.map(obj => {
+              const {label} = obj;
+              let replaceText;
+              if (obj.text != null) {
+                replaceText = obj.text;
+              } else {
+                replaceText = label;
+              }
+              return {text: replaceText, displayText: label};
+            });
+            resolve(result);
+          }
+        });
+    });
   }
 
   serialize(): SerializedState {
@@ -813,6 +900,92 @@ class Activation {
     }
   }
 
+  _copyDebuggerDisassembly() {
+    const callstackStore = this._model.getCallstackStore();
+    const callstack = callstackStore.getCallstack();
+    if (callstack != null) {
+      const selectedFrame = callstackStore.getSelectedCallFrameIndex();
+      if (selectedFrame >= 0 && selectedFrame < callstack.length) {
+        const frameInfo = callstack[selectedFrame].disassembly;
+        if (frameInfo != null) {
+          const metadata = frameInfo.metadata
+            .map(m => {
+              return `${m.name}:\t${m.value}`;
+            })
+            .join(os.EOL);
+
+          const entries = frameInfo.instructions
+            .map(instruction => {
+              return (
+                `${instruction.address}\t` +
+                `${instruction.offset || ''}\t` +
+                `${instruction.instruction}` +
+                `${instruction.comment || ''}\t`
+              );
+            })
+            .join(os.EOL);
+
+          atom.clipboard.write(
+            `${frameInfo.frameTitle}${os.EOL}` + metadata + os.EOL + entries,
+          );
+        }
+      }
+    }
+  }
+
+  _copyDebuggerRegisters() {
+    const callstackStore = this._model.getCallstackStore();
+    const callstack = callstackStore.getCallstack();
+    if (callstack != null) {
+      const selectedFrame = callstackStore.getSelectedCallFrameIndex();
+      if (selectedFrame >= 0 && selectedFrame < callstack.length) {
+        const registerInfo = callstack[selectedFrame].registers;
+        if (registerInfo != null) {
+          const rows = [];
+          for (const group of registerInfo) {
+            rows.push(group.groupName + os.EOL);
+            for (const register of group.registers) {
+              const value = register.value != null ? register.value : '';
+              let decimalValue = parseInt(value, 16);
+              if (Number.isNaN(decimalValue)) {
+                decimalValue = '';
+              }
+              rows.push(`${register.name}:\t${value}\t${decimalValue}`);
+            }
+            rows.push(os.EOL);
+          }
+          atom.clipboard.write(rows.join(os.EOL));
+        }
+      }
+    }
+  }
+
+  _addDisassemblyBreakpoint(event: Event) {
+    const clickedElement: HTMLElement = (event.target: any);
+    const clickedRow: ?HTMLElement = (clickedElement.closest(
+      '.nuclide-ui-table-row',
+    ): any);
+    if (clickedRow != null) {
+      const rowIndex = clickedRow.dataset.rowindex;
+      const callstackStore = this._model.getCallstackStore();
+      const callstack = callstackStore.getCallstack();
+      const selectedFrameIndex = callstackStore.getSelectedCallFrameIndex();
+      if (
+        callstack != null &&
+        selectedFrameIndex >= 0 &&
+        selectedFrameIndex < callstack.length
+      ) {
+        const disassembly = callstack[selectedFrameIndex].disassembly;
+
+        if (disassembly != null) {
+          const instruction = parseInt(rowIndex, 10);
+          const address = disassembly.instructions[instruction].address;
+          this._model.getActions().addBreakpoint(address, -1);
+        }
+      }
+    }
+  }
+
   _copyDebuggerCallstack(event: Event) {
     const callstackStore = this._model.getCallstackStore();
     const callstack = callstackStore.getCallstack();
@@ -1008,13 +1181,15 @@ export function consumeEvaluationExpressionProvider(
 
 export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   const toolBar = getToolBar('nuclide-debugger');
-  toolBar.addButton({
-    iconset: 'icon-nuclicon',
-    icon: 'debugger',
-    callback: 'nuclide-debugger:show-attach-dialog',
-    tooltip: 'Attach Debugger',
-    priority: 500,
-  }).element;
+  toolBar.addButton(
+    makeToolbarButtonSpec({
+      iconset: 'icon-nuclicon',
+      icon: 'debugger',
+      callback: 'nuclide-debugger:show-attach-dialog',
+      tooltip: 'Attach Debugger',
+      priority: 500,
+    }),
+  ).element;
   const disposable = new Disposable(() => {
     toolBar.removeItems();
   });

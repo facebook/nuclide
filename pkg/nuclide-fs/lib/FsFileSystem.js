@@ -90,6 +90,7 @@ export class FsFileSystem implements FileSystem {
   }
 
   async readdir(path: NuclideUri): Promise<Array<DirectoryEntry>> {
+    // $FlowFixMe(>=0.55.0) Flow suppress
     const files = await fsPromise.readdir(path);
     const entries = await Promise.all(
       files.map(async file => {
@@ -118,7 +119,10 @@ export class FsFileSystem implements FileSystem {
   }
 
   move(sourcePath: NuclideUri, destinationPath: NuclideUri): Promise<void> {
-    return fsPromise.move(sourcePath, destinationPath);
+    return fsPromise.mv(sourcePath, destinationPath, {
+      mkdirp: true,
+      clobber: false,
+    });
   }
 
   copy(sourcePath: NuclideUri, destinationPath: NuclideUri): Promise<void> {
@@ -162,6 +166,10 @@ export class FsFileSystem implements FileSystem {
 
   isNfs(path: NuclideUri): Promise<boolean> {
     return fsPromise.isNfs(path);
+  }
+
+  isFuse(path: NuclideUri): Promise<boolean> {
+    return fsPromise.isFuse(path);
   }
 
   async openArchive(path: NuclideUri): Promise<FileSystem> {

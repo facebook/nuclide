@@ -9,6 +9,8 @@
  * @format
  */
 
+// DEPRECATED, AVOID USING THIS. Use 'showModal' in nuclide-commons-ui instead
+
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Portal} from './Portal';
 import * as React from 'react';
@@ -16,6 +18,7 @@ import {Observable} from 'rxjs';
 
 type Props = {
   children?: any,
+  modalClassName?: string,
   onDismiss: () => void,
 };
 
@@ -30,11 +33,30 @@ export class Modal extends React.Component<Props> {
 
   componentWillMount(): void {
     this._container = document.createElement('div');
-    this._panel = atom.workspace.addModalPanel({item: this._container});
+    this._panel = atom.workspace.addModalPanel({
+      item: this._container,
+      className: this.props.modalClassName,
+    });
   }
 
   componentWillUnmount(): void {
     this._panel.destroy();
+  }
+
+  componentDidUpdate(prevProps: Props): void {
+    const {modalClassName} = this.props;
+    const {modalClassName: prevModalClassName} = prevProps;
+    const panelElement = this._panel.getElement();
+    if (prevModalClassName != null) {
+      panelElement.classList.remove(
+        ...prevModalClassName.split(/\s+/).filter(token => token.length > 0),
+      );
+    }
+    if (modalClassName != null) {
+      panelElement.classList.add(
+        ...modalClassName.split(/\s+/).filter(token => token.length > 0),
+      );
+    }
   }
 
   _handleWindowClick = (event: SyntheticMouseEvent<>): void => {
@@ -72,8 +94,7 @@ export class Modal extends React.Component<Props> {
   };
 
   render() {
-    const props = {...this.props};
-    delete props.onDismiss;
+    const {modalClassName, children, onDismiss, ...props} = this.props;
     return (
       <Portal container={this._container}>
         <div tabIndex="0" {...props} ref={this._handleContainerInnerElement}>

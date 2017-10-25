@@ -102,6 +102,8 @@ export type ErrorMessage = {
   error: any,
 };
 
+const ERROR_MESSAGE_LIMIT = 1000;
+
 // TODO: This should be a custom marshaller registered in the TypeRegistry
 export function decodeError(
   message: Object,
@@ -109,10 +111,15 @@ export function decodeError(
 ): ?(Error | string) {
   if (encodedError != null && typeof encodedError === 'object') {
     const resultError = new Error();
+    let messageStr = JSON.stringify(message);
+    if (messageStr.length > ERROR_MESSAGE_LIMIT) {
+      messageStr =
+        messageStr.substr(0, ERROR_MESSAGE_LIMIT) +
+        `<${messageStr.length - ERROR_MESSAGE_LIMIT} bytes>`;
+    }
     resultError.message =
-      `Remote Error: ${encodedError.message} processing message ${JSON.stringify(
-        message,
-      )}\n` + JSON.stringify(encodedError.stack);
+      `Remote Error: ${encodedError.message} processing message ${messageStr}\n` +
+      JSON.stringify(encodedError.stack);
     // $FlowIssue - some Errors (notably file operations) have a code.
     resultError.code = encodedError.code;
     resultError.stack = encodedError.stack;

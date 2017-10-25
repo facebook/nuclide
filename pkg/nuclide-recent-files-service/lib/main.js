@@ -10,15 +10,16 @@
  */
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import RecentFilesService from './RecentFilesService';
 
 class Activation {
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _service: RecentFilesService;
 
   constructor(state: ?Object) {
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._service = new RecentFilesService(state);
     this._subscriptions.add(
       new Disposable(() => {

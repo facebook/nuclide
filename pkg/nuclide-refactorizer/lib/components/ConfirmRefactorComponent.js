@@ -16,7 +16,7 @@ import * as React from 'react';
 import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
 import {pluralize} from 'nuclide-commons/string';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
-import {TreeList, TreeItem} from '../../../nuclide-ui/Tree';
+import {TreeList, TreeItem} from 'nuclide-commons-ui/Tree';
 import PathWithFileIcon from '../../../nuclide-ui/PathWithFileIcon';
 
 import * as Actions from '../refactorActions';

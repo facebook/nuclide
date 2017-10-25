@@ -69,7 +69,7 @@ class DebuggerStore:
             os.chdir(basepath)
 
     def _setDefaultDebuggerSettings(self):
-        return {'singleThreadStepping': False}
+        return {'singleThreadStepping': False, 'showDisassembly': False}
 
     def setDebuggerSettings(self, params):
         for setting, value in params.items():

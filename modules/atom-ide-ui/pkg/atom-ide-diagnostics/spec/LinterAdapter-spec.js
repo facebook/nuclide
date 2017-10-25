@@ -14,6 +14,7 @@ import type {LinterProvider} from '../lib/types';
 
 import {Disposable, Range} from 'atom';
 import invariant from 'assert';
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Subject} from 'rxjs';
 
 import {
@@ -121,7 +122,7 @@ describe('LinterAdapter', () => {
         .getUpdates()
         .take(1)
         .toPromise();
-      expect(message.filePathToMessages.has('foo')).toBe(true);
+      expect(message.has('foo')).toBe(true);
       expect(busySpy).toHaveBeenCalledWith('fakeLinter: running on "foo"');
       expect(busyDisposeSpy).toHaveBeenCalled();
     });
@@ -186,9 +187,7 @@ describe('LinterAdapter', () => {
     waitsFor(
       () => {
         return (
-          numMessages === 1 &&
-          lastMessage &&
-          lastMessage.filePathToMessages.has('baz')
+          numMessages === 1 && lastMessage != null && lastMessage.has('baz')
         );
       },
       'There should be only the latest message',
@@ -266,7 +265,6 @@ describe('message transformation functions', () => {
 
     it('should turn a message with a filePath into a file scope diagnostic', () => {
       checkMessage(fileMessage, {
-        scope: 'file',
         providerName,
         type: fileMessage.type,
         filePath: fileMessage.filePath,
@@ -277,20 +275,48 @@ describe('message transformation functions', () => {
       checkMessage(
         {...fileMessage, type: 'blah'},
         {
-          scope: 'file',
           providerName,
           type: 'Error',
           filePath: fileMessage.filePath,
           text: fileMessage.text,
         },
       );
+
+      // Make sure the trace range gets converted.
+      checkMessage(
+        {
+          ...fileMessage,
+          trace: [
+            {
+              type: 'Trace',
+              text: 'test',
+              filePath: '/fu/bar2',
+              range: [[0, 0], [0, 1]],
+            },
+          ],
+        },
+        {
+          providerName,
+          type: fileMessage.type,
+          filePath: fileMessage.filePath,
+          text: fileMessage.text,
+          trace: [
+            {
+              type: 'Trace',
+              text: 'test',
+              filePath: '/fu/bar2',
+              range: new Range([0, 0], [0, 1]),
+            },
+          ],
+        },
+      );
     });
 
     it('should turn a message without a filePath into a project scope diagnostic', () => {
       checkMessage(projectMessage, {
-        scope: 'project',
         providerName,
         type: projectMessage.type,
+        filePath: nuclideUri.ensureTrailingSeparator(''),
         text: projectMessage.text,
       });
     });
@@ -298,34 +324,29 @@ describe('message transformation functions', () => {
 
   describe('linterMessageV2ToDiagnosticMessage', () => {
     it('should correctly convert messages', () => {
-      expect(
-        linterMessageV2ToDiagnosticMessage(
+      const message = {
+        location: {
+          file: 'file.txt',
+          position: [[0, 0], [0, 1]],
+        },
+        reference: {
+          file: 'ref.txt',
+          position: [1, 1],
+        },
+        excerpt: 'Error',
+        severity: 'error',
+        solutions: [
           {
-            location: {
-              file: 'file.txt',
-              position: [[0, 0], [0, 1]],
-            },
-            reference: {
-              file: 'ref.txt',
-              position: [1, 1],
-            },
-            excerpt: 'Error',
-            severity: 'error',
-            solutions: [
-              {
-                title: 'Solution',
-                position: [[0, 0], [0, 1]],
-                currentText: '',
-                replaceWith: 'a',
-              },
-            ],
-            description: 'Description',
-            linterName: 'test2',
+            title: 'Solution',
+            position: [[0, 0], [0, 1]],
+            currentText: '',
+            replaceWith: 'a',
           },
-          'test',
-        ),
-      ).toEqual({
-        scope: 'file',
+        ],
+        description: 'Description',
+        linterName: 'test2',
+      };
+      const expected = {
         providerName: 'test2',
         type: 'Error',
         filePath: 'file.txt',
@@ -345,6 +366,45 @@ describe('message transformation functions', () => {
           oldText: '',
           newText: 'a',
         },
+        actions: [],
+      };
+      expect(linterMessageV2ToDiagnosticMessage(message, 'test')).toEqual(
+        expected,
+      );
+      expect(
+        linterMessageV2ToDiagnosticMessage(
+          {
+            ...message,
+            solutions: [
+              {
+                title: 'Test solution',
+                position: [[0, 0], [0, 1]],
+                // Since we can't match functions :(
+                apply: ({bind: () => 'dummy'}: any),
+                priority: 2,
+              },
+              {
+                position: [[0, 0], [0, 1]],
+                apply: ({bind: () => 'dummy'}: any),
+                priority: 1,
+              },
+            ],
+          },
+          'test',
+        ),
+      ).toEqual({
+        ...expected,
+        fix: undefined,
+        actions: [
+          {
+            title: 'Solution 1',
+            apply: 'dummy',
+          },
+          {
+            title: 'Test solution',
+            apply: 'dummy',
+          },
+        ],
       });
     });
   });
@@ -360,14 +420,12 @@ describe('message transformation functions', () => {
 
     it('should invalidate diagnostics in the current file', () => {
       const result = runWith([]);
-      invariant(result.filePathToMessages);
-      expect(result.filePathToMessages.get(currentPath)).toEqual([]);
+      expect(result.get(currentPath)).toEqual([]);
     });
 
     it('should use the LinterProvider name when one is not specified in message', () => {
       const result = runWith([fileMessage]);
-      invariant(result.filePathToMessages);
-      const messages = result.filePathToMessages.get(fileMessage.filePath);
+      const messages = result.get(fileMessage.filePath);
       invariant(messages != null);
       const resultMessage = messages[0];
       expect(resultMessage.providerName).toEqual('provider');
@@ -375,10 +433,7 @@ describe('message transformation functions', () => {
 
     it('should use the provider name specified in message when available', () => {
       const result = runWith([fileMessageWithName]);
-      invariant(result.filePathToMessages);
-      const messages = result.filePathToMessages.get(
-        fileMessageWithName.filePath,
-      );
+      const messages = result.get(fileMessageWithName.filePath);
       invariant(messages != null);
       const resultMessage = messages[0];
       expect(resultMessage.providerName).toEqual('Custom Linter Name');
@@ -386,14 +441,16 @@ describe('message transformation functions', () => {
 
     it('should provide both project messages and file messages', () => {
       const result = runWith([fileMessage, projectMessage]);
-      invariant(result.filePathToMessages);
       // The actual message transformations are tested in the tests from
       // linterMessageToDiagnosticMessage -- no need to duplicate them here.
-      const messages = result.filePathToMessages.get(fileMessage.filePath);
+      const messages = result.get(fileMessage.filePath);
       invariant(messages != null);
       expect(messages.length).toEqual(1);
-      invariant(result.projectMessages);
-      expect(result.projectMessages.length).toEqual(1);
+      const projectMessages = result.get(
+        nuclideUri.ensureTrailingSeparator(''),
+      );
+      invariant(projectMessages != null);
+      expect(projectMessages.length).toEqual(1);
     });
   });
 });

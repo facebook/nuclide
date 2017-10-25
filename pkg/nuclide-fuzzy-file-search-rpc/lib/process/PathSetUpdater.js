@@ -71,7 +71,6 @@ export default class PathSetUpdater {
     const changeSubscription = observableFromSubscribeFunction(callback => {
       return subscription.on('change', callback);
     })
-      // $FlowFixMe (bufferTime isn't in the libdef for rxjs)
       .bufferTime(WATCHMAN_SUBSCRIPTION_BUFFER_TIME)
       .mergeMap(bufferedFiles => this._flattenBufferedChanges(bufferedFiles))
       .mergeMap(

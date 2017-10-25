@@ -839,4 +839,42 @@ export class FileTreeNode {
   isFocused(): boolean {
     return this.conf.selectionManager.isFocused(this);
   }
+
+  collectDebugState(): Object {
+    return {
+      uri: this.uri,
+      rootUri: this.rootUri,
+      isExpanded: this.isExpanded,
+      isDragHovered: this.isDragHovered,
+      isBeingReordered: this.isBeingReordered,
+      isLoading: this.isLoading,
+      wasFetched: this.wasFetched,
+      isCwd: this.isCwd,
+      connectionTitle: this.connectionTitle,
+      highlightedText: this.highlightedText,
+      matchesFilter: this.matchesFilter,
+      isPendingLoad: this.isPendingLoad,
+      generatedStatus: this.generatedStatus,
+      isRoot: this.isRoot,
+      name: this.name,
+      hashKey: this.hashKey,
+      relativePath: this.relativePath,
+      localPath: this.localPath,
+      isContainer: this.isContainer,
+      shouldBeShown: this.shouldBeShown,
+      shouldBeSoftened: this.shouldBeSoftened,
+      vcsStatusCode: this.vcsStatusCode,
+      isIgnored: this.isIgnored,
+      checkedStatus: this.checkedStatus,
+      containsDragHover: this.containsDragHover,
+      containsFilterMatches: this.containsFilterMatches,
+      shownChildrenCount: this.shownChildrenCount,
+      containsHidden: this.containsHidden,
+      childrenAreLoading: this.childrenAreLoading,
+
+      children: Array.from(this.children.values()).map(child =>
+        child.collectDebugState(),
+      ),
+    };
+  }
 }

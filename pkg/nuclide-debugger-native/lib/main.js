@@ -32,7 +32,7 @@ import logger from './utils';
 import {getConfig} from './utils';
 import {LLDBLaunchAttachProvider} from './LLDBLaunchAttachProvider';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import invariant from 'invariant';
+import invariant from 'assert';
 import type RemoteControlService from '../../nuclide-debugger/lib/RemoteControlService';
 import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 // eslint-disable-next-line rulesdir/no-cross-atom-imports
@@ -107,7 +107,11 @@ class Activation {
     ruleType: string,
     buildTarget: string,
   ): Observable<?PlatformGroup> {
-    if (!SUPPORTED_RULE_TYPES.has(ruleType)) {
+    const underlyingRuleType = this._getUnderlyingRuleType(
+      ruleType,
+      buildTarget,
+    );
+    if (!SUPPORTED_RULE_TYPES.has(underlyingRuleType)) {
       return Observable.of(null);
     }
 
@@ -131,7 +135,7 @@ class Activation {
                 settings,
                 device,
                 buckRoot,
-                ruleType,
+                underlyingRuleType,
               );
             } else {
               return builder.runSubcommand(
@@ -147,6 +151,14 @@ class Activation {
         },
       ],
     });
+  }
+
+  _getUnderlyingRuleType(ruleType: string, buildTarget: string): string {
+    if (ruleType === 'apple_binary' && buildTarget.endsWith('AppleMac')) {
+      return 'cxx_binary';
+    } else {
+      return ruleType;
+    }
   }
 
   _waitForBuckThenDebugNativeTarget(

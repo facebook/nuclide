@@ -200,6 +200,8 @@ type DropdownButtonProps = {
   className: string,
   disabled?: boolean,
   isFlat?: boolean,
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   title?: string,
   size?: ShortButtonSize,
   tooltip?: atom$TooltipsAddOptions,

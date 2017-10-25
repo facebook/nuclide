@@ -33,7 +33,7 @@ import type {
 
 import {ActionTypes} from './DebuggerDispatcher';
 import {AnalyticsEvents} from './constants';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   beginTimerTracking,
   failTimerTracking,
@@ -53,12 +53,12 @@ const CONSOLE_VIEW_URI = 'atom://nuclide/console';
  * Flux style action creator for actions that affect the debugger.
  */
 export default class DebuggerActions {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _dispatcher: DebuggerDispatcher;
   _store: DebuggerStore;
 
   constructor(dispatcher: DebuggerDispatcher, store: DebuggerStore) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._dispatcher = dispatcher;
     this._store = store;
   }

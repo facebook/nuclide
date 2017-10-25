@@ -12,6 +12,7 @@
 import type {WatchResult} from '..';
 import {Emitter} from 'event-kit';
 import fsPromise from 'nuclide-commons/fsPromise';
+import {sleep} from 'nuclide-commons/promise';
 import * as watchmanHelpers from '../../nuclide-watchman-helpers';
 import {generateFixture} from 'nuclide-commons/test-helpers';
 import fs from 'fs';
@@ -48,6 +49,8 @@ describe('FileWatcherService', () => {
   };
 
   beforeEach(() => {
+    jasmine.useRealClock();
+
     const mockWatchmanClient = {
       hasSubscription: () => false,
       watchDirectoryRecursive() {
@@ -118,7 +121,7 @@ describe('FileWatcherService', () => {
 
     waitsFor(() => nextMock.wasCalled && parentNextMock.wasCalled);
 
-    runs(() => {
+    waitsForPromise(async () => {
       expect(nextMock).toHaveBeenCalledWith({
         path: TEST_FILE,
         type: 'change',
@@ -140,7 +143,9 @@ describe('FileWatcherService', () => {
         },
       ]);
 
-      // Write to watcWithNode test file
+      // Write to watcWithNode test file.
+      // Add a slight delay to allow fs.watch to start up.
+      await sleep(100);
       fs.writeFileSync(nodeTestFilePath, 'These are words.');
     });
 
@@ -161,9 +166,6 @@ describe('FileWatcherService', () => {
         },
       ]);
       fs.unlinkSync(nodeTestFilePath);
-
-      // Deletions are debounced..
-      advanceClock(2000);
     });
 
     // Watch should complete after a delete.
@@ -203,7 +205,7 @@ describe('FileWatcherService', () => {
     // Use the same hack again..
     waitsFor(() => realpathMock.callCount === 3);
 
-    runs(() => {
+    waitsForPromise(async () => {
       // Delete the file again.
       emitter.emit('change', [
         {
@@ -213,9 +215,10 @@ describe('FileWatcherService', () => {
           mode: 0,
         },
       ]);
-      fs.unlinkSync(nodeTestFilePath);
 
-      advanceClock(2000);
+      // Give fs.watch some time to start up.
+      await sleep(100);
+      fs.unlinkSync(nodeTestFilePath);
     });
 
     waitsFor(() => completeMock2.wasCalled && nextMockWithNode2.wasCalled);
@@ -272,8 +275,6 @@ describe('FileWatcherService', () => {
           mode: 0,
         },
       ]);
-
-      advanceClock(2000);
     });
 
     waitsFor(() => completed);

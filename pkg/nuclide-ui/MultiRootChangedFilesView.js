@@ -27,7 +27,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ChangedFilesList from './ChangedFilesList';
-import {TreeList, TreeItem} from './Tree';
+import {TreeList, TreeItem} from 'nuclide-commons-ui/Tree';
 
 type Props = {
   // Used to identify which surface (e.g. file tree vs SCM side bar) was used to trigger an action.

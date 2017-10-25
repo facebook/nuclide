@@ -12,12 +12,12 @@
 
 import type {
   DiagnosticUpdater,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
+  DiagnosticMessage,
+  DiagnosticMessages,
 } from '../../atom-ide-diagnostics/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import classnames from 'classnames';
 
+import classnames from 'classnames';
 import {Range} from 'atom';
 import invariant from 'assert';
 import * as React from 'react';
@@ -28,6 +28,7 @@ import {wordAtPosition} from 'nuclide-commons-atom/range';
 import analytics from 'nuclide-commons-atom/analytics';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {DiagnosticsPopup} from './ui/DiagnosticsPopup';
+import * as GroupUtils from './GroupUtils';
 
 const GUTTER_ID = 'diagnostics-gutter';
 
@@ -54,10 +55,11 @@ const HIGHLIGHT_CSS_LEVELS = {
   Info: 'diagnostics-gutter-ui-highlight-info',
 };
 
-const GUTTER_CSS_LEVELS = {
-  Error: 'diagnostics-gutter-ui-gutter-error',
-  Warning: 'diagnostics-gutter-ui-gutter-warning',
-  Info: 'diagnostics-gutter-ui-gutter-info',
+const GUTTER_CSS_GROUPS = {
+  review: 'diagnostics-gutter-ui-gutter-review',
+  errors: 'diagnostics-gutter-ui-gutter-error',
+  warnings: 'diagnostics-gutter-ui-gutter-warning',
+  info: 'diagnostics-gutter-ui-gutter-info',
 };
 
 const editorToMarkers: WeakMap<TextEditor, Set<atom$Marker>> = new WeakMap();
@@ -65,7 +67,7 @@ const itemToEditor: WeakMap<HTMLElement, TextEditor> = new WeakMap();
 
 export function applyUpdateToEditor(
   editor: TextEditor,
-  update: FileDiagnosticMessages,
+  update: DiagnosticMessages,
   diagnosticUpdater: DiagnosticUpdater,
 ): void {
   let gutter = editor.gutterWithName(GUTTER_ID);
@@ -99,8 +101,8 @@ export function applyUpdateToEditor(
     markers = new Set();
   }
 
-  const rowToMessage: Map<number, Array<FileDiagnosticMessage>> = new Map();
-  function addMessageForRow(message: FileDiagnosticMessage, row: number) {
+  const rowToMessage: Map<number, Array<DiagnosticMessage>> = new Map();
+  function addMessageForRow(message: DiagnosticMessage, row: number) {
     let messages = rowToMessage.get(row);
     if (!messages) {
       messages = [];
@@ -173,20 +175,8 @@ export function applyUpdateToEditor(
 
   // Find all of the gutter markers for the same row and combine them into one marker/popup.
   for (const [row, messages] of rowToMessage.entries()) {
-    // Show the highest priority marker (note the ordering of GUTTER_CSS).
-    const messageTypes = new Set();
-    messages.forEach(msg => messageTypes.add(msg.type));
-    const firstType = Object.keys(GUTTER_CSS_LEVELS).find(type =>
-      messageTypes.has(type),
-    );
-    const gutterMarkerCssClass = GUTTER_CSS_LEVELS[firstType || 'Error'];
-
     // This marker adds some UI to the gutter.
-    const {item, dispose} = createGutterItem(
-      messages,
-      gutterMarkerCssClass,
-      diagnosticUpdater,
-    );
+    const {item, dispose} = createGutterItem(messages, diagnosticUpdater);
     itemToEditor.set(item, editor);
     const gutterMarker = editor.markBufferPosition([row, 0]);
     gutter.decorateMarker(gutterMarker, {item});
@@ -204,12 +194,23 @@ export function applyUpdateToEditor(
 }
 
 function createGutterItem(
-  messages: Array<FileDiagnosticMessage>,
-  gutterMarkerCssClass: string,
+  messages: Array<DiagnosticMessage>,
   diagnosticUpdater: DiagnosticUpdater,
 ): {item: HTMLElement, dispose: () => void} {
+  // Determine which group to display.
+  const messageGroups = new Set();
+  messages.forEach(msg => messageGroups.add(GroupUtils.getGroup(msg)));
+  const group = GroupUtils.getHighestPriorityGroup(messageGroups);
+
   const item = document.createElement('a');
-  item.className = gutterMarkerCssClass;
+  const groupClassName = GUTTER_CSS_GROUPS[group];
+  item.className = `diagnostics-gutter-ui-item ${groupClassName || ''}`;
+
+  // Add the icon
+  const icon = document.createElement('span');
+  icon.className = `icon icon-${GroupUtils.getIcon(group)}`;
+  item.appendChild(icon);
+
   let popupElement = null;
   let paneItemSubscription = null;
   let disposeTimeout = null;
@@ -267,7 +268,7 @@ function createGutterItem(
  * Shows a popup for the diagnostic just below the specified item.
  */
 function showPopupFor(
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
   item: HTMLElement,
   goToLocation: (filePath: NuclideUri, line: number) => mixed,
   diagnosticUpdater: DiagnosticUpdater,

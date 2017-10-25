@@ -18,8 +18,21 @@
 export type DatatipService = {
   addProvider(provider: DatatipProvider): IDisposable,
   addModifierProvider(provider: ModifierDatatipProvider): IDisposable,
-  createPinnedDataTip(datatip: Datatip, editor: TextEditor): IDisposable,
+  createPinnedDataTip(
+    datatip: Datatip,
+    editor: TextEditor,
+    options?: PinnedDatatipOptions,
+  ): IDisposable,
 };
+
+export type PinnedDatatipOptions = {|
+  // Defaults to 'end-of-line'.
+  position?: PinnedDatatipPosition,
+  // Defaults to true.
+  showRangeHighlight?: boolean,
+|};
+
+export type PinnedDatatipPosition = 'end-of-line' | 'above-range';
 
 export type DatatipProvider = {
   priority: number,

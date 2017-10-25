@@ -11,7 +11,7 @@
 
 /* global MutationObserver */
 
-import invariant from 'invariant';
+import invariant from 'assert';
 import {remote, ipcRenderer} from 'electron';
 import * as React from 'react';
 import ReactDOM from 'react-dom';

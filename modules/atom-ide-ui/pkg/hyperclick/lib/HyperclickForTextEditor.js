@@ -15,10 +15,11 @@
 import type {HyperclickSuggestion} from './types';
 import type Hyperclick from './Hyperclick';
 
-import {CompositeDisposable, Disposable, Point} from 'atom';
+import {Disposable, Point} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {isPositionInRange} from 'nuclide-commons/range';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import showTriggerConflictWarning from './showTriggerConflictWarning';
 import invariant from 'assert';
 
@@ -44,7 +45,7 @@ export default class HyperclickForTextEditor {
   _onMouseDown: (event: Event) => void;
   _onKeyDown: (event: Event) => void;
   _onKeyUp: (event: Event) => void;
-  _subscriptions: atom$CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _isDestroyed: boolean;
   _isLoading: boolean;
   _triggerKeys: Set<'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'>;
@@ -65,7 +66,7 @@ export default class HyperclickForTextEditor {
     this._navigationMarkers = null;
 
     this._lastWordRange = null;
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
 
     this._onMouseMove = this._onMouseMove.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);

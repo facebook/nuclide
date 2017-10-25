@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessages} from 'atom-ide-ui';
+import type {FileDiagnosticMap} from '../../nuclide-language-service/lib/LanguageService';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import type {
@@ -496,7 +496,7 @@ type AbbreviatedResult = {
 async function getAbbreviatedResults(
   messages: Array<?PushDiagnosticsMessage>,
 ): Promise<Array<Array<AbbreviatedResult>>> {
-  const results: Array<Array<FileDiagnosticMessages>> = [];
+  const results: Array<FileDiagnosticMap> = [];
   let state: DiagnosticsState = emptyDiagnosticsState();
   results.push(await getDiagnosticUpdates(state).toPromise());
   for (const message of messages) {
@@ -506,10 +506,10 @@ async function getAbbreviatedResults(
     );
   }
   return results.map(inner => {
-    return inner.map(result => {
+    return Array.from(inner).map(([filePath, msgs]) => {
       return {
-        filePath: result.filePath,
-        messages: result.messages.map(msg => [msg.text, Boolean(msg.stale)]),
+        filePath,
+        messages: msgs.map(msg => [msg.text, Boolean(msg.stale)]),
       };
     });
   });

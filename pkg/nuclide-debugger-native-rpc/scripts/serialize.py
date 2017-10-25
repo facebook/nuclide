@@ -98,10 +98,18 @@ class LocationSerializer:
 
         Returns a list of serialized locations.
         """
-        return [
-            self.from_line_entry(bpl.GetAddress().line_entry)
-            for bpl in breakpoint
-        ]
+        locations = []
+        for bpl in breakpoint:
+            entry = bpl.GetAddress().line_entry
+            if entry:
+                locations.append(self.from_line_entry(entry))
+            else:
+                locations.append({
+                    'columnNumber': 0,
+                    'lineNumber': hex(bpl.GetLoadAddress()),
+                    'scriptId': 'address',
+                })
+        return locations
 
     def from_line_entry(self, entry):
         """Attempt to serialize the location of a SBLineEntry.

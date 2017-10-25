@@ -26,7 +26,8 @@ import type {
 } from './types';
 import type {RelatedFilesProvider} from '../../nuclide-related-files/lib/types';
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import AutocompleteHelpers from './AutocompleteHelpers';
 import CodeActions from './CodeActions';
 import CodeFormatHelpers from './CodeFormatHelpers';
@@ -43,10 +44,10 @@ import {
   getDeclarationInfo,
 } from './libclang';
 
-let subscriptions: ?CompositeDisposable = null;
+let subscriptions: ?UniversalDisposable = null;
 
 export function activate() {
-  subscriptions = new CompositeDisposable();
+  subscriptions = new UniversalDisposable();
   // Provide a 'Clean and rebuild' command to restart the Clang server for the current file
   // and reset all compilation flags. Useful when BUCK targets or headers change,
   // since those are heavily cached for performance. Also great for testing!

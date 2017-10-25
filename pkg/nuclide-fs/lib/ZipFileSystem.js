@@ -134,6 +134,10 @@ export class ZipFileSystem implements FileSystem {
     return false;
   }
 
+  async isFuse(path: NuclideUri): Promise<boolean> {
+    return false;
+  }
+
   async openArchive(path: NuclideUri): Promise<FileSystem> {
     const buffer = await this.readFile(path);
     return new ZipFileSystem(buffer, this._outerStat, this._outerLStat);

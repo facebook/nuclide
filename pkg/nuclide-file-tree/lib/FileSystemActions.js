@@ -55,7 +55,16 @@ class FileSystemActions {
         const {path} = nuclideUri.parse(filePath);
         const basename = nuclideUri.basename(path);
         const newDirectory = directory.getSubdirectory(basename);
-        const created = await newDirectory.create();
+        let created;
+        try {
+          created = await newDirectory.create();
+        } catch (e) {
+          atom.notifications.addError(
+            `Could not create directory '${basename}': ${e.toString()}`,
+          );
+          onDidConfirm(null);
+          return;
+        }
         if (!created) {
           atom.notifications.addError(`'${basename}' already exists.`);
           onDidConfirm(null);
@@ -132,23 +141,33 @@ class FileSystemActions {
         }
 
         const newFile = directory.getFile(pathToCreate);
-        const created = await newFile.create();
-        if (created) {
-          const newFilePath = newFile.getPath();
-          // Open a new text editor while VCS actions complete in the background.
-          onDidConfirm(newFilePath);
-          if (hgRepository != null && options.addToVCS === true) {
-            try {
-              await hgRepository.addAll([newFilePath]);
-            } catch (e) {
-              atom.notifications.addError(
-                `Failed to add '${newFilePath}' to version control. Error: ${e.toString()}`,
-              );
-            }
-          }
-        } else {
+        let created;
+        try {
+          created = await newFile.create();
+        } catch (e) {
+          atom.notifications.addError(
+            `Could not create file '${newFile.getPath()}': ${e.toString()}`,
+          );
+          onDidConfirm(null);
+          return;
+        }
+        if (!created) {
           atom.notifications.addError(`'${pathToCreate}' already exists.`);
           onDidConfirm(null);
+          return;
+        }
+
+        const newFilePath = newFile.getPath();
+        // Open a new text editor while VCS actions complete in the background.
+        onDidConfirm(newFilePath);
+        if (hgRepository != null && options.addToVCS === true) {
+          try {
+            await hgRepository.addAll([newFilePath]);
+          } catch (e) {
+            atom.notifications.addError(
+              `Failed to add '${newFilePath}' to version control. Error: ${e.toString()}`,
+            );
+          }
         }
       },
       additionalOptions,

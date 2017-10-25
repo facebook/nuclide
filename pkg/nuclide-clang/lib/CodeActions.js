@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {CodeAction, FileDiagnosticMessage} from 'atom-ide-ui';
+import type {CodeAction, DiagnosticMessage} from 'atom-ide-ui';
 
 import {DEFAULT_FLAGS_WARNING} from './constants';
 import {resetForSource} from './libclang';
@@ -18,7 +18,7 @@ export default class CodeActions {
   static getCodeActions(
     editor: atom$TextEditor,
     range: atom$Range,
-    diagnostics: Array<FileDiagnosticMessage>,
+    diagnostics: Array<DiagnosticMessage>,
   ): Promise<Array<CodeAction>> {
     for (const diagnostic of diagnostics) {
       if (diagnostic.text === DEFAULT_FLAGS_WARNING) {

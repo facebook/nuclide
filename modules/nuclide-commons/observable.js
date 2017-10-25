@@ -12,10 +12,23 @@
 
 /* global requestAnimationFrame, cancelAnimationFrame */
 
+// NOTE: Custom operators that require arguments should be written as higher-order functions. That
+// is, they should accept the arguments and return a function that accepts only an observable. This
+// allows a nice ergonomic way of using them with '.let()' (or a potential future pipe operator):
+//
+//     const makeExciting = (excitementLevel: number = 1) =>
+//       (source: Observable<string>) =>
+//         source.map(x => x + '!'.repeat(excitementLevel));
+//
+//     Observable.of('hey', 'everybody')
+//       .let(makeExciting())
+//       .subscribe(x => console.log(x));
+
 import UniversalDisposable from './UniversalDisposable';
 import invariant from 'assert';
 import {Observable, ReplaySubject} from 'rxjs';
 import {setDifference} from './collection';
+import debounce from './debounce';
 
 /**
  * Splits a stream of strings on newlines.
@@ -36,7 +49,8 @@ export function splitStream(input: Observable<string>): Observable<string> {
 
     return input.subscribe(
       value => {
-        const lines = (current + value).split('\n');
+        const lines = value.split('\n');
+        lines[0] = current + lines[0];
         current = lines.pop();
         lines.forEach(line => observer.next(line + '\n'));
       },
@@ -62,37 +76,37 @@ export function splitStream(input: Observable<string>): Observable<string> {
  *     specifying whether to complete the buffer (and begin a new one).
  */
 export function bufferUntil<T>(
-  stream: Observable<T>,
   condition: (item: T, buffer: Array<T>) => boolean,
-): Observable<Array<T>> {
-  return Observable.create(observer => {
-    let buffer = null;
-    const flush = () => {
-      if (buffer != null) {
-        observer.next(buffer);
-        buffer = null;
-      }
-    };
-    return stream.subscribe(
-      x => {
-        if (buffer == null) {
-          buffer = [];
+): (Observable<T>) => Observable<Array<T>> {
+  return (stream: Observable<T>) =>
+    Observable.create(observer => {
+      let buffer = null;
+      const flush = () => {
+        if (buffer != null) {
+          observer.next(buffer);
+          buffer = null;
         }
-        buffer.push(x);
-        if (condition(x, buffer)) {
+      };
+      return stream.subscribe(
+        x => {
+          if (buffer == null) {
+            buffer = [];
+          }
+          buffer.push(x);
+          if (condition(x, buffer)) {
+            flush();
+          }
+        },
+        err => {
           flush();
-        }
-      },
-      err => {
-        flush();
-        observer.error(err);
-      },
-      () => {
-        flush();
-        observer.complete();
-      },
-    );
-  });
+          observer.error(err);
+        },
+        () => {
+          flush();
+          observer.complete();
+        },
+      );
+    });
 }
 
 /**
@@ -117,19 +131,19 @@ type Diff<T> = {
  * **IMPORTANT:** These sets are assumed to be immutable by convention. Don't mutate them!
  */
 export function diffSets<T>(
-  sets: Observable<Set<T>>,
   hash?: (v: T) => any,
-): Observable<Diff<T>> {
-  return Observable.concat(
-    Observable.of(new Set()), // Always start with no items with an empty set
-    sets,
-  )
-    .pairwise()
-    .map(([previous, next]) => ({
-      added: setDifference(next, previous, hash),
-      removed: setDifference(previous, next, hash),
-    }))
-    .filter(diff => diff.added.size > 0 || diff.removed.size > 0);
+): (Observable<Set<T>>) => Observable<Diff<T>> {
+  return (sets: Observable<Set<T>>) =>
+    Observable.concat(
+      Observable.of(new Set()), // Always start with no items with an empty set
+      sets,
+    )
+      .pairwise()
+      .map(([previous, next]) => ({
+        added: setDifference(next, previous, hash),
+        removed: setDifference(previous, next, hash),
+      }))
+      .filter(diff => diff.added.size > 0 || diff.removed.size > 0);
 }
 
 /**
@@ -203,17 +217,17 @@ export function reconcileSets<T>(
   addAction: (addedItem: T) => IDisposable,
   hash?: (v: T) => any,
 ): IDisposable {
-  const diffs = diffSets(sets, hash);
+  const diffs = sets.let(diffSets(hash));
   return reconcileSetDiffs(diffs, addAction, hash);
 }
 
 export function toggle<T>(
-  source: Observable<T>,
   toggler: Observable<boolean>,
-): Observable<T> {
-  return toggler
-    .distinctUntilChanged()
-    .switchMap(enabled => (enabled ? source : Observable.empty()));
+): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) =>
+    toggler
+      .distinctUntilChanged()
+      .switchMap(enabled => (enabled ? source : Observable.empty()));
 }
 
 export function compact<T>(source: Observable<?T>): Observable<T> {
@@ -225,25 +239,25 @@ export function compact<T>(source: Observable<?T>): Observable<T> {
  * Like `takeWhile`, but includes the first item that doesn't match the predicate.
  */
 export function takeWhileInclusive<T>(
-  source: Observable<T>,
   predicate: (value: T) => boolean,
-): Observable<T> {
-  return Observable.create(observer =>
-    source.subscribe(
-      x => {
-        observer.next(x);
-        if (!predicate(x)) {
+): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) =>
+    Observable.create(observer =>
+      source.subscribe(
+        x => {
+          observer.next(x);
+          if (!predicate(x)) {
+            observer.complete();
+          }
+        },
+        err => {
+          observer.error(err);
+        },
+        () => {
           observer.complete();
-        }
-      },
-      err => {
-        observer.error(err);
-      },
-      () => {
-        observer.complete();
-      },
-    ),
-  );
+        },
+      ),
+    );
 }
 
 // Concatenate the latest values from each input observable into one big list.
@@ -275,43 +289,102 @@ type ThrottleOptions = {
  * A more sensible alternative to RxJS's throttle/audit/sample operators.
  */
 export function throttle<T>(
-  source: Observable<T>,
   duration:
     | number
     | Observable<any>
     | ((value: T) => Observable<any> | Promise<any>),
   options_: ?ThrottleOptions,
-): Observable<T> {
-  const options = options_ || {};
-  const leading = options.leading !== false;
-  let audit;
-  switch (typeof duration) {
-    case 'number':
-      // $FlowFixMe: Add `auditTime()` to Flow defs
-      audit = obs => obs.auditTime(duration);
-      break;
-    case 'function':
-      audit = obs => obs.audit(duration);
-      break;
-    default:
-      audit = obs => obs.audit(() => duration);
-  }
+): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) => {
+    const options = options_ || {};
+    const leading = options.leading !== false;
+    let audit;
+    switch (typeof duration) {
+      case 'number':
+        // $FlowFixMe: Add `auditTime()` to Flow defs
+        audit = obs => obs.auditTime(duration);
+        break;
+      case 'function':
+        audit = obs => obs.audit(duration);
+        break;
+      default:
+        audit = obs => obs.audit(() => duration);
+    }
 
-  if (!leading) {
-    return audit(source);
-  }
+    if (!leading) {
+      return audit(source);
+    }
 
-  return Observable.create(observer => {
-    const connectableSource = source.publish();
-    const throttled = Observable.merge(
-      connectableSource.take(1),
-      audit(connectableSource.skip(1)),
-    );
-    return new UniversalDisposable(
-      throttled.subscribe(observer),
-      connectableSource.connect(),
-    );
-  });
+    return Observable.create(observer => {
+      const connectableSource = source.publish();
+      const throttled = Observable.merge(
+        connectableSource.take(1),
+        audit(connectableSource.skip(1)),
+      );
+      return new UniversalDisposable(
+        throttled.subscribe(observer),
+        connectableSource.connect(),
+      );
+    });
+  };
+}
+
+/**
+ * Returns a new function which takes an `observable` and returns
+ * `observable.switchMap(project)`, except that it completes
+ * when the outer observable completes.
+ *
+ * Example:
+ *
+ *   Observable.of(1)
+ *     .let(completingSwitchMap(x => Observable.never()))
+ *
+ * ends up returning an Observable that completes immediately.
+ * With a regular switchMap, this would never terminate.
+ */
+export function completingSwitchMap<T, U>(
+  project: (input: T, index: number) => rxjs$ObservableInput<U>,
+): (Observable<T>) => Observable<U> {
+  // An alternative implementation is to materialize the input observable,
+  // but this avoids the creation of extra notifier objects.
+  const completedSymbol = Symbol('completed');
+  return (observable: Observable<T>) =>
+    Observable.concat(
+      observable,
+      Observable.of((completedSymbol: any)),
+    ).switchMap((input, index) => {
+      if (input === completedSymbol) {
+        return Observable.empty();
+      }
+      return project(input, index);
+    });
+}
+
+/**
+ * RxJS's debounceTime is actually fairly inefficient:
+ * on each event, it always clears its interval and [creates a new one][1].
+ * Until this is fixed, this uses our debounce implementation which
+ * reuses a timeout and just sets a timestamp when possible.
+ *
+ * This may seem like a micro-optimization but we often use debounces
+ * for very hot events, like keypresses. Exceeding the frame budget can easily lead
+ * to increased key latency!
+ *
+ * [1]: https://github.com/ReactiveX/rxjs/blob/master/src/operators/debounceTime.ts#L106
+ */
+export function fastDebounce<T>(
+  delay: number,
+): (Observable<T>) => Observable<T> {
+  return (observable: Observable<T>) =>
+    Observable.create(observer => {
+      const debouncedNext = debounce((x: T) => observer.next(x), delay);
+      const subscription = observable.subscribe(
+        debouncedNext,
+        observer.error.bind(observer),
+        observer.complete.bind(observer),
+      );
+      return new UniversalDisposable(subscription, debouncedNext);
+    });
 }
 
 export const microtask = Observable.create(observer => {
@@ -343,3 +416,100 @@ export const nextAnimationFrame = Observable.create(observer => {
     cancelAnimationFrame(id);
   };
 });
+
+export type CancellablePromise<T> = {
+  promise: Promise<T>,
+  cancel: () => void,
+};
+
+/**
+ * Thrown when a CancellablePromise is cancelled().
+ */
+export class PromiseCancelledError extends Error {
+  constructor() {
+    super();
+    this.name = 'PromiseCancelledError';
+  }
+}
+
+// Given an observable, convert to a Promise (thereby subscribing to the Observable)
+// and return back a cancellation function as well.
+// If the cancellation function is called before the returned promise resolves,
+// then unsubscribe from the underlying Promise and have the returned Promise throw.
+// If the cancellation function is called after the returned promise resolves,
+// then it does nothing.
+export function toCancellablePromise<T>(
+  observable: Observable<T>,
+): CancellablePromise<T> {
+  // Assign a dummy value to keep flow happy
+  let cancel: () => void = () => {};
+
+  const promise: Promise<T> = new Promise((resolve, reject) => {
+    // Stolen from Rx.js toPromise.js
+    let value;
+    const subscription = observable.subscribe(
+      v => {
+        value = v;
+      },
+      reject,
+      () => {
+        resolve(value);
+      },
+    );
+
+    // Attempt cancellation of both the subscription and the promise.
+    // Do not let one failure prevent the other from succeeding.
+    cancel = () => {
+      try {
+        subscription.unsubscribe();
+      } catch (e) {}
+      try {
+        reject(new PromiseCancelledError());
+      } catch (e) {}
+    };
+  });
+
+  return {promise, cancel};
+}
+
+// Executes tasks. Ensures that at most one task is running at a time.
+// This class is handy for expensive tasks like processes, provided
+// you never want the result of a previous task after a new task has started.
+export class SingletonExecutor<T> {
+  _currentTask: ?CancellablePromise<T> = null;
+
+  // Executes(subscribes to) the task.
+  // Will terminate(unsubscribe) to any previously executing task.
+  // Subsequent executes() will terminate this task if called before
+  // this task completes.
+  async execute(createTask: Observable<T>): Promise<T> {
+    // Kill any previously running processes
+    this.cancel();
+
+    // Start a new process
+    const task = toCancellablePromise(createTask);
+    this._currentTask = task;
+
+    // Wait for the process to complete or be cancelled ...
+    try {
+      return await task.promise;
+    } finally {
+      // ... and always clean up if we haven't been cancelled already.
+      if (task === this._currentTask) {
+        this._currentTask = null;
+      }
+    }
+  }
+
+  isExecuting(): boolean {
+    return this._currentTask != null;
+  }
+
+  // Cancells any currently executing tasks.
+  cancel(): void {
+    if (this._currentTask != null) {
+      this._currentTask.cancel();
+      this._currentTask = null;
+    }
+  }
+}

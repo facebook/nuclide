@@ -64,13 +64,14 @@ export function createPanelItem(store: Store): Object {
       : undefined,
   }));
 
-  const props = throttle(
-    Observable.combineLatest(stickyProps, alwaysUpToDateProps, (a, b) => ({
+  const props = Observable.combineLatest(
+    stickyProps,
+    alwaysUpToDateProps,
+    (a, b) => ({
       ...a,
       ...b,
-    })),
-    () => nextAnimationFrame,
-  );
+    }),
+  ).let(throttle(() => nextAnimationFrame));
 
   const StatefulToolbar = bindObservableAsProps(props, Toolbar);
   return viewableFromReactElement(<StatefulToolbar />);

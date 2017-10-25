@@ -73,7 +73,10 @@ function checkedSmartPromiseAll(
 
 function canBeUndefined(type: Type): boolean {
   return (
-    type.kind === 'nullable' || type.kind === 'mixed' || type.kind === 'any'
+    type.kind === 'nullable' ||
+    type.kind === 'mixed' ||
+    type.kind === 'any' ||
+    type.kind === 'void'
   );
 }
 
@@ -207,8 +210,8 @@ export class TypeRegistry {
 
     this._registerKind(
       'void',
-      (value, type, context) => Promise.resolve(null),
-      (value, type, context) => Promise.resolve(null),
+      (value, type, context) => Promise.resolve(undefined),
+      (value, type, context) => Promise.resolve(undefined),
     );
 
     predefinedTypes.forEach(type => {

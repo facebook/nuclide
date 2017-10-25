@@ -11,7 +11,7 @@
 
 /* eslint-env browser */
 
-import {TABBABLE} from '../../nuclide-ui/TabbableContainer';
+import {_TABBABLE_CLASS_NAME} from 'nuclide-commons-ui/TabbableContainer';
 
 export function focusNext(): void {
   const currentElement = getFocusedElement();
@@ -27,7 +27,7 @@ export function focusNext(): void {
   let lowestTabIndex = Infinity;
 
   let container = findParentElement(currentElement, element => {
-    return element.classList.contains(TABBABLE);
+    return element.classList.contains(_TABBABLE_CLASS_NAME);
   });
   if (
     container instanceof HTMLElement &&
@@ -79,7 +79,7 @@ export function focusPrevious(): void {
   let highestTabIndex = -Infinity;
 
   let container = findParentElement(currentElement, element => {
-    return element.classList.contains(TABBABLE);
+    return element.classList.contains(_TABBABLE_CLASS_NAME);
   });
   if (
     container instanceof HTMLElement &&

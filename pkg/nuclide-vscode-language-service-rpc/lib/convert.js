@@ -16,8 +16,6 @@ import type {
   Definition,
   DiagnosticMessageType,
   DiagnosticTrace,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
   Reference,
   CodeAction,
 } from 'atom-ide-ui';
@@ -28,6 +26,8 @@ import type {
 } from './protocol';
 import type {
   Completion,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {ShowNotificationLevel} from '../../nuclide-language-service-rpc/lib/rpc-types';
@@ -523,7 +523,6 @@ function lspDiagnostic_atomDiagnostic(
     providerName = providerName + ': ' + String(diagnostic.code);
   }
   return {
-    scope: 'file',
     providerName,
     type: lspSeverity_atomDiagnosticMessageType(diagnostic.severity),
     filePath,
@@ -572,14 +571,12 @@ export function atomDiagnostic_lspDiagnostic(
 
 export function lspDiagnostics_atomDiagnostics(
   params: PublishDiagnosticsParams,
-): Array<FileDiagnosticMessages> {
+): FileDiagnosticMap {
   const filePath = lspUri_localPath(params.uri);
-  return [
-    {
+  return new Map([
+    [
       filePath,
-      messages: params.diagnostics.map(d =>
-        lspDiagnostic_atomDiagnostic(d, filePath),
-      ),
-    },
-  ];
+      params.diagnostics.map(d => lspDiagnostic_atomDiagnostic(d, filePath)),
+    ],
+  ]);
 }

@@ -1,8 +1,8 @@
 {
   ".platform-darwin": {
-    "cmd-alt-shift-r": "nuclide-hg-repository:revert"
+    "cmd-alt-shift-r": "nuclide-hg-repository:confirm-and-revert"
   },
   ".platform-win32, .platform-linux": {
-    "ctrl-alt-shift-r": "nuclide-hg-repository:revert"
+    "ctrl-alt-shift-r": "nuclide-hg-repository:confirm-and-revert"
   }
 }

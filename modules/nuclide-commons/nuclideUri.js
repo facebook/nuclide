@@ -100,6 +100,19 @@ function isInArchive(uri: NuclideUri): boolean {
   return false;
 }
 
+function ancestorOutsideArchive(uri: NuclideUri): NuclideUri {
+  for (
+    let i = uri.indexOf(ARCHIVE_SEPARATOR);
+    i >= 0;
+    i = uri.indexOf(ARCHIVE_SEPARATOR, i + 1)
+  ) {
+    if (_isArchiveSeparator(uri, i)) {
+      return uri.substring(0, i);
+    }
+  }
+  return uri;
+}
+
 /**
  * Parses valid Nuclide URIs into the hostname and path components.
  * Throws an Error on invalid URIs. Invalid URIs are:
@@ -840,6 +853,7 @@ export default {
   isLocal,
   createRemoteUri,
   isInArchive,
+  ancestorOutsideArchive,
   parse,
   parseRemoteUri,
   validate,

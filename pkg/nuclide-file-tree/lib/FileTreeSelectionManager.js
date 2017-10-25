@@ -77,4 +77,11 @@ export class FileTreeSelectionManager {
   clearFocused(): void {
     this._checkFocused(this._focusedNodes.clear());
   }
+
+  collectDebugState(): Object {
+    return {
+      _selectedNodes: this._selectedNodes.toArray().map(node => node.uri),
+      _focusedNodes: this._focusedNodes.toArray().map(node => node.uri),
+    };
+  }
 }

@@ -166,6 +166,16 @@ declare module 'vscode-debugprotocol' {
     },
   }
 
+  declare interface LoadedSourceEvent extends base$Event {
+    event: 'loadedSource',
+    body: {
+      /** The reason for the event. */
+      reason: 'new' | 'changed' | 'removed',
+      /** The new, changed, or removed source. */
+      source: Source,
+    },
+  }
+
   /** runInTerminal request; value of command field is 'runInTerminal'.
     With this request a debug adapter can run a command in a terminal.
   */
@@ -1009,7 +1019,8 @@ declare module 'vscode-debugprotocol' {
     | ThreadEvent
     | OutputEvent
     | BreakpointEvent
-    | ModuleEvent;
+    | ModuleEvent
+    | LoadedSourceEvent;
 
   declare type Capabilities = {
     /** The debug adapter supports the configurationDoneRequest. */

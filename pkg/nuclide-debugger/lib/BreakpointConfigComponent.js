@@ -22,7 +22,7 @@ import {Checkbox} from 'nuclide-commons-ui/Checkbox';
 import BreakpointStore from './BreakpointStore';
 import {Modal} from '../../nuclide-ui/Modal';
 import {track} from '../../nuclide-analytics';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 type PropsType = {
   onDismiss: () => void,

@@ -12,7 +12,8 @@
 import type {ThreadItem, NuclideThreadData, DebuggerModeType} from './types';
 import type {DatatipService} from 'atom-ide-ui';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
-import {Disposable, CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -37,11 +38,9 @@ export default class ThreadStore {
 
   constructor(dispatcher: DebuggerDispatcher) {
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._datatipService = null;
     this._emitter = new Emitter();
     this._threadMap = new Map();

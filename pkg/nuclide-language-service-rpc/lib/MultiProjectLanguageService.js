@@ -10,6 +10,7 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
@@ -17,16 +18,15 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   LanguageService,
   SymbolResult,
@@ -35,6 +35,8 @@ import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-type
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
+import {timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import {FileCache, ConfigObserver} from '../../nuclide-open-files-rpc';
 import {Cache} from 'nuclide-commons/cache';
 import {Observable} from 'rxjs';
@@ -200,9 +202,7 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     return arrayCompact(await Promise.all(lsPromises));
   }
 
-  async getDiagnostics(
-    fileVersion: FileVersion,
-  ): Promise<?DiagnosticProviderUpdate> {
+  async getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap> {
     return (await this._getLanguageServiceForFile(
       fileVersion.filePath,
     )).getDiagnostics(fileVersion);
@@ -212,7 +212,7 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     return this._observeDiagnosticsPromise;
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     this._observeDiagnosticsPromiseResolver();
 
     return this.observeLanguageServices()
@@ -272,12 +272,30 @@ export class MultiProjectLanguageService<T: LanguageService = LanguageService> {
     )).getOutline(fileVersion);
   }
 
-  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
-    // Each service knows its own project root, and should put that in the
-    // log.title if needed. That's not our job.
-    const services = await this.getAllLanguageServices();
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
+    const roots: Array<NuclideUri> = Array.from(this._processes.keys());
+
     const results = await Promise.all(
-      services.map(service => service.getAdditionalLogFiles()),
+      roots.map(async root => {
+        try {
+          const service = await timeoutAfterDeadline(
+            deadline,
+            this._processes.get(root),
+          );
+          if (service == null) {
+            return [{title: root, data: 'no language service'}];
+          } else {
+            return timeoutAfterDeadline(
+              deadline,
+              service.getAdditionalLogFiles(deadline - 1000),
+            );
+          }
+        } catch (e) {
+          return [{title: root, data: stringifyError(e)}];
+        }
+      }),
     );
     return arrayFlatten(results);
   }

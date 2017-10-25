@@ -30,12 +30,17 @@ export class Counter {
     this._count = initialCount;
     // Set the changes subscription observable.
     this._changes = new Subject();
-
-    // Add this counter to global list.
-    Counter._counters.push(this);
-    // Broadcast that this counter was created.
-    Counter._newCounters.next(this);
   }
+
+  static async createCounter(initialCount: number): Promise<Counter> {
+    const counter = new Counter(initialCount);
+    // Add this counter to global list.
+    Counter._counters.push(counter);
+    // Broadcast that this counter was created.
+    Counter._newCounters.next(counter);
+    return counter;
+  }
+
   // Get the current value of a counter.
   async getCount(): Promise<number> {
     return this._count;

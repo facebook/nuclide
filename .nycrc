@@ -1,0 +1,8 @@
+{
+  "exclude": [
+    "**/spec/**",
+    "**/scripts/**",
+    "modules/nuclide-jasmine/**",
+    "resources/**"
+  ]
+}

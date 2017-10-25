@@ -9,12 +9,12 @@
  * @format
  */
 
-import {CompositeDisposable} from 'event-kit';
 import type {Socket} from 'net';
 import type {DbgpConnector as DbgpConnectorType} from '../lib/DbgpConnector';
 import type {Connection as ConnectionType} from '../lib/Connection';
 import type {BreakpointStore as BreakpointStoreType} from '../lib/BreakpointStore';
 import type {ConnectionMultiplexer as ConnectionMultiplexerType} from '../lib/ConnectionMultiplexer';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ConnectionMultiplexerStatus} from '../lib/ConnectionMultiplexer';
 import {uncachedRequire, clearRequireCache} from 'nuclide-commons/test-helpers';
 import {updateSettings} from '../lib/settings';
@@ -246,7 +246,7 @@ describe('debugger-hhvm-proxy ConnectionMultiplexer', () => {
           result.onNotification = callback;
           return {dispose: notificationDispose};
         });
-      connection._disposables = new CompositeDisposable(
+      connection._disposables = new UniversalDisposable(
         connection.onStatus((status, ...args) => {
           connection._status = status;
           return connectionMultiplexer._connectionOnStatus(

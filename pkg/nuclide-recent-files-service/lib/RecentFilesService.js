@@ -13,12 +13,12 @@ export type FilePath = string;
 export type TimeStamp = number;
 export type FileList = Array<{path: FilePath, timestamp: TimeStamp}>;
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class RecentFilesService {
   // Map uses `Map`'s insertion ordering to keep files in order.
   _fileList: Map<FilePath, TimeStamp>;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor(state: ?{filelist?: FileList}) {
     this._fileList = new Map();
@@ -28,7 +28,7 @@ export default class RecentFilesService {
         this._fileList.set(fileItem.path, fileItem.timestamp);
       }, null);
     }
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
       atom.workspace.onDidChangeActivePaneItem((item: ?mixed) => {
         // Not all `item`s are instances of TextEditor (e.g. the diff view).

@@ -27,6 +27,8 @@ import classnames from 'classnames';
 
 type PropsType = {
   targetUri: NuclideUri,
+  // TODO Remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   store: LaunchAttachStore,
   actions: LaunchAttachActions,
   configIsValidChanged: (valid: boolean) => void,

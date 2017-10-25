@@ -46,7 +46,10 @@ type atom$Octicon = 'alert' | 'alignment-align' | 'alignment-aligned-to' | 'alig
   'shield' | 'sign-in' | 'sign-out' | 'smiley' | 'split' | 'squirrel' | 'star' | 'star-add' |
   'star-delete' | 'steps' | 'stop' | 'sync' | 'tag' | 'tag-add' | 'tag-remove' | 'tasklist' |
   'telescope' | 'terminal' | 'text-size' | 'three-bars' | 'thumbsdown' | 'thumbsup' | 'tools' |
-  'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'unfold' |
+  'trashcan' | 'triangle-down' | 'triangle-left' | 'triangle-right' | 'triangle-up' | 'type-array'|
+  'type-boolean'| 'type-class'| 'type-constant'| 'type-constructor'| 'type-enum'| 'type-field'|
+  'type-file'| 'type-function'| 'type-interface'| 'type-method'| 'type-module'| 'type-namespace'|
+  'type-number'| 'type-package'| 'type-property'| 'type-string'| 'type-variable' | 'unfold' |
   'unmute' | 'unverified' | 'verified' | 'versions' | 'watch' | 'x' | 'zap';
 
 type atom$PaneLocation = 'left' | 'right' | 'bottom' | 'center';
@@ -90,12 +93,19 @@ type atom$CommandDescriptor = {
   tags?: Array<string>,
 };
 
+type atom$CommandListener = atom$CommandCallback | {
+  displayName?: string,
+  description?: string,
+  didDispatch: atom$CommandCallback,
+};
+
 declare class atom$CommandRegistry {
   // Methods
   add(
     target: string | HTMLElement,
-    commandNameOrCommands: string | {[commandName: string]: atom$CommandCallback},
-    callback?: atom$CommandCallback
+    commandNameOrCommands: string | {[commandName: string]: atom$CommandListener},
+    listener?: atom$CommandListener,
+    throwOnInvalidSelector?: boolean,
   ): IDisposable,
   dispatch(target: HTMLElement, commandName: string, detail?: Object): void,
   onDidDispatch(callback: (event: atom$CustomEvent) => mixed): IDisposable,
@@ -827,6 +837,7 @@ declare class atom$TextEditor extends atom$Model {
       screenLine?: boolean,
     },
   ): atom$Point,
+  getEofBufferPosition(): atom$Point,
   getVisibleRowRange(): ?[number, number],
 
   // Decorations
@@ -864,6 +875,12 @@ declare class atom$TextEditor extends atom$Model {
   moveToEndOfLine(): void,
   moveToBottom(): void,
 
+  // Folds
+  foldCurrentRow(): void,
+  unfoldCurrentRow(): void,
+  foldBufferRow(bufferRow: number): void,
+  unfoldBufferRow(bufferRow: number): void,
+
   // Selections
   getSelectedText(): string,
   selectAll(): void,
@@ -872,7 +889,7 @@ declare class atom$TextEditor extends atom$Model {
   getSelections(): Array<atom$Selection>,
   selectToBufferPosition(point: atom$Point): void,
   setSelectedBufferRange(
-    bufferRange: atom$Range,
+    bufferRange: atom$RangeLike,
     options?: {
       reversed?: boolean,
       preserveFolds?: boolean,
@@ -1486,10 +1503,26 @@ declare class atom$HistoryProject {
   get lastOpened(): Date;
 }
 
-type atom$KeyBinding = Object;
+// https://github.com/atom/atom-keymap/blob/18f00ac307de5770bb8f98958bd9a13ecffa9e68/src/key-binding.coffee
+declare class atom$KeyBinding {
+  cachedKeyups: ?Array<string>,
+  command: string,
+  index: number,
+  keystrokeArray : Array<string>,
+  keystrokeCount: number,
+  keystrokes: string,
+  priority: number,
+  selector: string,
+  source: string,
+  specificity: number,
+
+  matches(keystroke: string): boolean,
+  compare(keybinding: atom$KeyBinding): number,
+  getKeyups(): ?Array<string>,
+  matchesKeystrokes(userKeystrokes: Array<string>): boolean | 'exact' | 'partial' | 'pendingKeyup',
+}
 
 declare class atom$KeymapManager {
-
   // Event Subscription
   onDidMatchBinding(callback: (event: {
     keystrokes: string,

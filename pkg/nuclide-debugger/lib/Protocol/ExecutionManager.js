@@ -17,6 +17,7 @@ import type {
 } from '../../../nuclide-debugger-base/lib/protocol-types';
 import type {ThreadSwitchMessageData} from '../types';
 
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Subject, Observable} from 'rxjs';
 import {reportError} from './EventReporter';
 
@@ -75,9 +76,10 @@ export default class ExecutionManager {
     if (!this._getIsReadonlyTarget()) {
       // Chrome's continueToLocation implementation incorrect
       // uses source uri instead of scriptId as the location ScriptId
-      // field, we mirrow the same behavior for compatibility reason.
-      const scriptId = this._debuggerDispatcher.getSourceUriFromUri(fileUri);
-      if (scriptId != null) {
+      // field, we mirror the same behavior for compatibility reason.
+      const sourceUri = this._debuggerDispatcher.getSourceUriFromUri(fileUri);
+      if (sourceUri != null) {
+        const scriptId = nuclideUri.getPath(sourceUri);
         this._debuggerDispatcher.continueToLocation({
           scriptId,
           lineNumber: line,

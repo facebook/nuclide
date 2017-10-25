@@ -9,16 +9,38 @@
  * @format
  */
 
+import type {LRUCache} from 'lru-cache';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {FileSearchResult} from './rpc-types';
 
+import LRU from 'lru-cache';
 import {
   fileSearchForDirectory,
   getExistingSearchDirectories,
   disposeSearchForDirectory,
 } from './FileSearchProcess';
 import fsPromise from 'nuclide-commons/fsPromise';
+import {getLogger} from 'log4js';
+import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+
+type FileSystemMetadata = {
+  isEden: boolean,
+  edenFsRoot?: string,
+};
+
+const filesystemCache: LRUCache<NuclideUri, Promise<FileSystemMetadata>> = LRU({
+  // In practice, we expect this cache to have one entry for each item in
+  // `atom.project.getPaths()`. We do not expect this number to be particularly
+  // large, so we add a bit of a buffer and log an error if we actually fill the
+  // cache.
+  max: 25,
+  dispose(key: NuclideUri, value: Promise<FileSystemMetadata>) {
+    getLogger('FuzzyFileSearchService').error(
+      `Unexpected eviction of ${key} from the filesystemCache.`,
+    );
+  },
+});
 
 /**
  * Performs a fuzzy file search in the specified directory.
@@ -28,20 +50,40 @@ export async function queryFuzzyFile(
   queryString: string,
   ignoredNames: Array<string>,
 ): Promise<Array<FileSearchResult>> {
-  // Note that Eden makes a "magical" .eden directory entry stat'able but not readdir'able in every
-  // directory under EdenFS to make it cheap to check whether a directory is in EdenFS.
-  const pathToDotEden = nuclideUri.join(rootDirectory, '.eden');
-  const isEden = await fsPromise.isNonNfsDirectory(pathToDotEden);
-  if (!isEden) {
+  let metadataPromise = filesystemCache.get(rootDirectory);
+  if (metadataPromise == null) {
+    metadataPromise = getFileSystemMetadata(rootDirectory);
+    filesystemCache.set(rootDirectory, metadataPromise);
+  }
+
+  const metadata = await metadataPromise;
+  if (!metadata.isEden) {
     const search = await fileSearchForDirectory(rootDirectory, ignoredNames);
     return search.query(queryString);
   } else {
+    // $FlowFB
+    const {doSearch} = require('./fb-EdenFileSearch');
+    const {edenFsRoot} = metadata;
+    invariant(edenFsRoot != null);
+    return doSearch(queryString, edenFsRoot, rootDirectory);
+  }
+}
+
+async function getFileSystemMetadata(
+  rootDirectory: NuclideUri,
+): Promise<FileSystemMetadata> {
+  // Note that Eden makes a "magical" .eden directory entry stat'able but not
+  // readdir'able in every directory under EdenFS to make it cheap to check
+  // whether a directory is in EdenFS.
+  const pathToDotEden = nuclideUri.join(rootDirectory, '.eden');
+  const isEden = await fsPromise.isNonNfsDirectory(pathToDotEden);
+  if (isEden) {
     const edenFsRoot = await fsPromise.readlink(
       nuclideUri.join(pathToDotEden, 'root'),
     );
-    // $FlowFB
-    const {doSearch} = require('./fb-EdenFileSearch');
-    return doSearch(queryString, edenFsRoot, rootDirectory);
+    return {isEden, edenFsRoot};
+  } else {
+    return {isEden};
   }
 }
 

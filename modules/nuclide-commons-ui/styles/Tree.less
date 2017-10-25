@@ -1,0 +1,26 @@
+@import 'ui-variables';
+
+// the list items in list-nested-items are divs, so specify `li` explicitly
+li.list-item.selected:focus {
+  &::before {
+    background: @button-background-color-selected;
+  }
+
+  // These selectors are intentionally strong to override these styles
+  span, .syntax--entity.syntax--entity, .icon {
+    color: contrast(@button-background-color-selected);
+  }
+}
+
+.list-nested-item.selected:focus {
+  &::before {
+    background: @button-background-color-selected;
+  }
+
+  // These selectors are intentionally strong to override these styles
+  > .list-item {
+    span, .syntax--entity.syntax--entity, .icon {
+      color: contrast(@button-background-color-selected);
+    }
+  }
+}

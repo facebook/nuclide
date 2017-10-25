@@ -31,6 +31,7 @@ import HealthPaneItem, {WORKSPACE_VIEW_URI} from './HealthPaneItem';
 import getChildProcessesTree from './getChildProcessesTree';
 import getStats from './getStats';
 import trackStalls from './trackStalls';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 class Activation {
   _paneItemStates: Observable<PaneItemState>;
@@ -107,12 +108,14 @@ class Activation {
 
   consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nuclide-health');
-    this._healthButton = toolBar.addButton({
-      icon: 'dashboard',
-      callback: 'nuclide-health:toggle',
-      tooltip: 'Toggle Nuclide health stats',
-      priority: -400,
-    }).element;
+    this._healthButton = toolBar.addButton(
+      makeToolbarButtonSpec({
+        icon: 'dashboard',
+        callback: 'nuclide-health:toggle',
+        tooltip: 'Toggle Nuclide health stats',
+        priority: -400,
+      }),
+    ).element;
     this._healthButton.classList.add('nuclide-health-jewel');
     const disposable = new Disposable(() => {
       this._healthButton = null;

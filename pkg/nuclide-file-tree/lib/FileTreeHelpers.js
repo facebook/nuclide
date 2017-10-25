@@ -113,7 +113,11 @@ function getDirectoryByKey(key: string): ?Directory {
     if (connection == null) {
       return null;
     }
-    return connection.createDirectory(path);
+    if (nuclideUri.hasKnownArchiveExtension(key)) {
+      return connection.createFileAsDirectory(path);
+    } else {
+      return connection.createDirectory(path);
+    }
   } else if (nuclideUri.hasKnownArchiveExtension(key)) {
     return ROOT_ARCHIVE_FS.newArchiveFileAsDirectory(path);
   } else if (!nuclideUri.isInArchive(path)) {

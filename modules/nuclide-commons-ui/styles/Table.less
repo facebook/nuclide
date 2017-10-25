@@ -103,7 +103,12 @@
 .nuclide-ui-table-row-selected {
   background-color: @background-color-selected;
   color: @text-color-selected;
-  font-weight: bold;
+
+  .nuclide-ui-table:focus &,
+  .nuclide-ui-table:focus & a {
+    background: @button-background-color-selected;
+    color: contrast(@button-background-color-selected);
+  }
 }
 
 .nuclide-ui-table-collapsed-row {

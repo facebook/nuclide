@@ -60,7 +60,7 @@ class HhvmDebugSession extends LoggingDebugSession {
     fn: () => Promise<mixed>,
   ) {
     fn().catch(error => {
-      const errorMessage = error.message || String(error);
+      const errorMessage = error.stack || error.message || String(error);
       if (response != null) {
         response.success = false;
         // $FlowIgnore: returning an ErrorResponse.
@@ -74,7 +74,7 @@ class HhvmDebugSession extends LoggingDebugSession {
       }
       this.sendEvent(
         new OutputEvent(
-          `HHVM Debugger ran into an error: \`${errorMessage}\``,
+          `HHVM Debugger ran into an error:\n\`${errorMessage}\``,
           'nuclide_notification',
           {type: 'error'},
         ),
@@ -106,6 +106,7 @@ class HhvmDebugSession extends LoggingDebugSession {
       },
     ];
     response.body.supportsConditionalBreakpoints = true;
+    response.body.supportsSetVariable = true;
 
     this.sendResponse(response);
   }
@@ -274,6 +275,21 @@ class HhvmDebugSession extends LoggingDebugSession {
       await this._debuggerHandler.evaluate(
         args.expression,
         args.frameId,
+        response,
+      );
+      this.sendResponse(response);
+    });
+  }
+
+  setVariableRequest(
+    response: DebugProtocol.SetVariableResponse,
+    args: DebugProtocol.SetVariableArguments,
+  ) {
+    this._catchAsyncRequestError(response, async () => {
+      await this._debuggerHandler.setVariable(
+        args.variablesReference,
+        args.name,
+        args.value,
         response,
       );
       this.sendResponse(response);

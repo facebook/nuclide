@@ -20,7 +20,7 @@ import {TaskButton} from './TaskButton';
 import {DeviceTask} from '../DeviceTask';
 import * as React from 'react';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Selectors} from './Selectors';
 import {DeviceTable} from './DeviceTable';
 import {DevicePanel} from './DevicePanel';

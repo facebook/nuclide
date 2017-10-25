@@ -201,7 +201,7 @@ function getJSImport(node: Object): ?JSImport {
   switch (node.type) {
     // const {X} = require('..');
     case 'VariableDeclaration':
-      if (node.declarations.length === 1) {
+      if (node.declarations.length === 1 && node.declarations[0].init != null) {
         const importPath = getRequiredModule(node.declarations[0].init);
         if (importPath != null) {
           return {

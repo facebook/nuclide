@@ -12,6 +12,7 @@
 import type {Message} from '../../nuclide-console/lib/types';
 
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {fastDebounce} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createMessage from './createMessage';
 import parseLogcatMetadata from './parseLogcatMetadata';
@@ -80,7 +81,7 @@ export default function createMessageStream(
       // We know *for certain* that we have a complete entry once we see the metadata for the next
       // one. But what if the next one takes a long time to happen? After a certain point, we need
       // to just assume we have the complete entry and move on.
-      sharedLine$.debounceTime(200).subscribe(flush),
+      sharedLine$.let(fastDebounce(200)).subscribe(flush),
     );
   }).map(createMessage);
 

@@ -17,6 +17,10 @@ import {search as rgSearch} from './RgService';
 import {ConnectableObservable, Observable} from 'rxjs';
 import {hasCommand} from 'nuclide-commons/hasCommand';
 import {asyncFind} from 'nuclide-commons/promise';
+import {
+  isNfs,
+  isFuse,
+} from '../../nuclide-server/lib/services/FileSystemService';
 import os from 'os';
 
 const WINDOWS_TOOLS = ['rg'];
@@ -31,27 +35,37 @@ async function resolveTool(tool: ?string): Promise<?string> {
   );
 }
 
-export async function isEligibleForDirectory(
-  rootDirectory: NuclideUri,
-): Promise<boolean> {
-  if ((await resolveTool(null)) == null) {
-    return false;
-  }
-
+async function isFbManaged(rootDirectory: NuclideUri): Promise<boolean> {
   try {
     // $FlowFB
     const {findArcProjectIdOfPath} = require('../../fb-arcanist-rpc');
     const projectId = await findArcProjectIdOfPath(rootDirectory);
     if (projectId == null) {
-      return true;
+      return false;
     }
     // $FlowFB
     const bigGrep = require('../../commons-atom/fb-biggrep-query'); // eslint-disable-line rulesdir/no-cross-atom-imports
     const corpus = bigGrep.ARC_PROJECT_CORPUS[projectId];
     if (corpus != null) {
-      return false;
+      return true;
     }
   } catch (err) {}
+  return false;
+}
+
+export async function isEligibleForDirectory(
+  rootDirectory: NuclideUri,
+): Promise<boolean> {
+  const checks = await Promise.all([
+    resolveTool(null).then(tool => tool == null),
+    isFbManaged(rootDirectory),
+    isNfs(rootDirectory),
+    isFuse(rootDirectory),
+  ]);
+  if (checks.some(x => x)) {
+    return false;
+  }
+
   return true;
 }
 

@@ -1,0 +1,84 @@
+{
+  "name": "nuclide-terminal",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A terminal integrated into nuclide.",
+  "private": true,
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "deserializers": {
+    "TerminalView": "deserializeTerminalView"
+  },
+  "nuclide": {
+    "packageType": "Atom",
+    "testRunner": "apm",
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Terminal"
+      ]
+    },
+    "config": {
+      "scrollback": {
+        "title": "Scrollback",
+        "type": "integer",
+        "default": 1000,
+        "minimum": 1000
+      },
+      "cursorStyle": {
+        "title": "Cursor Style",
+        "type": "string",
+        "default": "block",
+        "enum": [
+          "block",
+          "underline",
+          "bar"
+        ]
+      },
+      "cursorBlink": {
+        "title": "Cursor Blink",
+        "type": "boolean",
+        "default": false
+      },
+      "preservedCommands": {
+        "title": "Preserved Commands",
+        "type": "array",
+        "description": "Editor commands that still function when terminal is active",
+        "items": {
+          "type": "string"
+        },
+        "default": [
+          "command-palette:toggle",
+          "fb-interactive-smartlog:toggle",
+          "nuclide-quick-open:find-anything",
+          "nuclide-terminal:new-terminal",
+          "nuclide-terminal:add-escape-prefix",
+          "pane:move-active-item-to-top-of-stack",
+          "pane:show-next-recently-used-item",
+          "window:focus-next-pane",
+          "window:focus-previous-pane",
+          "window:focus-pane-above",
+          "window:focus-pane-below",
+          "window:focus-pane-on-left",
+          "window:focus-pane-on-right"
+        ]
+      }
+    }
+  },
+  "styleSheets": [
+    "../../../node_modules/xterm/dist/xterm.css",
+    "nuclide-terminal-view.less"
+  ],
+  "consumedServices": {
+    "nuclide-file-tree.context-menu": {
+      "versions": {
+        "0.1.0": "addItemsToFileTreeContextMenu"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "initializeCwdApi"
+      }
+    }
+  }
+}

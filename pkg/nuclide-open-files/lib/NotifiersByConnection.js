@@ -19,16 +19,21 @@ import {
   ConnectionCache,
 } from '../../nuclide-remote-connection';
 import {OPEN_FILES_SERVICE} from '../../nuclide-open-files-rpc';
+import os from 'os';
 import {getLogger} from 'log4js';
 import {FileEventKind} from '../../nuclide-open-files-rpc';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {Observable, Subscription} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {Disposable} from 'atom';
 import {areSetsEqual} from 'nuclide-commons/collection';
+import {track} from '../../nuclide-analytics';
 
 const logger = getLogger('nuclide-open-files');
 
 const RESYNC_TIMEOUT_MS = 2000;
+const TEN_MINUTES = 10 * 60 * 1000;
+const TWO_HOURS = 2 * 60 * 60 * 1000;
 
 function getOpenFilesService(connection: ?ServerConnection): OpenFilesService {
   return getServiceByConnection(OPEN_FILES_SERVICE, connection);
@@ -53,6 +58,7 @@ function uriMatchesConnection(
 export class NotifiersByConnection {
   _notifiers: ConnectionCache<FileNotifier>;
   _subscriptions: ConnectionCache<IDisposable>;
+  _bufferTracking: Subscription;
   _getService: (connection: ?ServerConnection) => OpenFilesService;
 
   constructor(
@@ -84,11 +90,23 @@ export class NotifiersByConnection {
         });
       return Promise.resolve(new Disposable(() => subscription.unsubscribe()));
     });
+    const user = os.userInfo().username;
+    this._bufferTracking = Observable.timer(TEN_MINUTES, TWO_HOURS)
+      .switchMap(() => this._notifiers.observeEntries())
+      .subscribe(([sc, notifier]) => {
+        const host = sc == null ? 'local' : sc.getRemoteHostname();
+        notifier
+          .then(n => n.getTotalBufferSize())
+          .then(bufferSize =>
+            track('open-file-buffer-usage', {bufferSize, user, host}),
+          );
+      });
   }
 
   dispose() {
     this._notifiers.dispose();
     this._subscriptions.dispose();
+    this._bufferTracking.unsubscribe();
   }
 
   // Returns null for a buffer to a file on a closed remote connection

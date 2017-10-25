@@ -174,17 +174,6 @@ describe('Nuclide service parser test suite.', () => {
     }).toThrow();
   });
 
-  it('void may only be a return type', () => {
-    const code = `
-      export class C {
-        m(p: void): void {}
-        dispose(): void {}
-      }`;
-    expect(() => {
-      parseServiceDefinition('fileName', code, []);
-    }).toThrow();
-  });
-
   it('Constructors may not have return types', () => {
     const code = `
       export class C {

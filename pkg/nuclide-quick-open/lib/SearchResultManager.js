@@ -41,11 +41,12 @@ type ResultRenderer<T> = (
 ) => React.Element<any>;
 
 import invariant from 'assert';
+import {fastDebounce} from 'nuclide-commons/observable';
 import {track} from '../../nuclide-analytics';
 import {getLogger} from 'log4js';
 import * as React from 'react';
 import {Subject} from 'rxjs';
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {triggerAfterWait} from 'nuclide-commons/promise';
 import debounce from 'nuclide-commons/debounce';
@@ -89,7 +90,7 @@ export default class SearchResultManager {
   _currentWorkingRoot: ?Directory;
   _debouncedUpdateDirectories: {(): Promise<void> | void} & IDisposable;
   _emitter: Emitter;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _querySubscriptions: UniversalDisposable;
   _activeProviderName: string;
   _lastRawQuery: ?string;
@@ -116,7 +117,7 @@ export default class SearchResultManager {
       /* immediate */ false,
     );
     this._emitter = new Emitter();
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._querySubscriptions = new UniversalDisposable();
     this._quickOpenProviderRegistry = quickOpenProviderRegistry;
     this._queryStream = new Subject();
@@ -259,7 +260,7 @@ export default class SearchResultManager {
         for (const provider of providers) {
           this._querySubscriptions.add(
             this._queryStream
-              .debounceTime(getQueryDebounceDelay(provider))
+              .let(fastDebounce(getQueryDebounceDelay(provider)))
               .subscribe(query =>
                 this._executeDirectoryQuery(directory, provider, query),
               ),
@@ -269,7 +270,7 @@ export default class SearchResultManager {
       for (const provider of this._globalEligibleProviders) {
         this._querySubscriptions.add(
           this._queryStream
-            .debounceTime(getQueryDebounceDelay(provider))
+            .let(fastDebounce(getQueryDebounceDelay(provider)))
             .subscribe(query => this._executeGlobalQuery(provider, query)),
         );
       }
@@ -508,10 +509,13 @@ export default class SearchResultManager {
         };
         const resultList = cachedResult.results || defaultResult.results;
         results[path] = {
-          results: resultList.map(result => ({
-            ...result,
-            sourceProvider: providerName,
-          })),
+          results: resultList.map(result =>
+            // $FlowFixMe (v0.54.1 <)
+            ({
+              ...result,
+              sourceProvider: providerName,
+            }),
+          ),
           loading: cachedResult.loading || defaultResult.loading,
           error: cachedResult.error || defaultResult.error,
         };
@@ -616,5 +620,4 @@ export const __test__ = {
   _getOmniSearchProviderSpec(): ProviderSpec {
     return OMNISEARCH_PROVIDER;
   },
-  UPDATE_DIRECTORIES_DEBOUNCE_DELAY,
 };

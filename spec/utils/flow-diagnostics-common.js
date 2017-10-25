@@ -11,10 +11,9 @@
 
 import type {TestContext} from './remotable-tests';
 
+import invariant from 'assert';
 import {Range} from 'atom';
-
 import {dispatchKeyboardEvent} from '../../pkg/commons-atom/testHelpers';
-
 import {
   doGutterDiagnosticsExist,
   waitsForGutterDiagnostics,
@@ -24,7 +23,6 @@ import {
   isDiagnosticsPanelShowing,
   getPanelDiagnosticElements,
 } from './diagnostics-common';
-
 import {setup} from './flow-common';
 
 export function runTest(context: TestContext) {
@@ -58,19 +56,28 @@ export function runTest(context: TestContext) {
     // The text is rendered slightly differently in the gutter and the panel
     const expectedPanelText = 'property `baz` Property not found in Foo';
     let diagnosticDescriptionElements;
+    let diagnosticRowElement;
 
     waitsFor(() => {
-      const [diagnosticRowElement] = getPanelDiagnosticElements();
+      const [el] = getPanelDiagnosticElements();
+      diagnosticRowElement = el.querySelector('.nuclide-ui-table-row');
+      return diagnosticRowElement != null;
+    }, 'Diagnostics to render a row');
+
+    runs(() => {
+      invariant(diagnosticRowElement != null);
       diagnosticDescriptionElements = diagnosticRowElement.querySelectorAll(
-        '.nuclide-ui-table-row:last-child .nuclide-ui-table-body-cell:last-child',
+        '.nuclide-diagnostics-ui-cell-description',
       );
-      return (
-        diagnosticDescriptionElements.length === 1 &&
+      expect(diagnosticDescriptionElements.length).toBe(1);
+      expect(
         // flowlint-next-line sketchy-null-string:off
         diagnosticDescriptionElements[0].innerText &&
-        diagnosticDescriptionElements[0].innerText.includes(expectedPanelText)
-      );
-    }, 'Diagnostic renders correct text');
+          diagnosticDescriptionElements[0].innerText.includes(
+            expectedPanelText,
+          ),
+      ).toBe(true);
+    });
 
     runs(() => {
       textEditor.setCursorBufferPosition([0, 0]);

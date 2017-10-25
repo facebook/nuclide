@@ -12,7 +12,7 @@
 import classnames from 'classnames';
 import type DebuggerModel from './DebuggerModel';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {WatchExpressionComponent} from './WatchExpressionComponent';
@@ -23,7 +23,7 @@ type Props = {
 
 export class WatchView extends React.PureComponent<Props> {
   _watchExpressionComponentWrapped: React.ComponentType<any>;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);

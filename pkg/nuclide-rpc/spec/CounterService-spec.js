@@ -23,7 +23,7 @@ describe('CounterService', () => {
         [
           {
             name: 'CounterService',
-            definition: nuclideUri.join(__dirname, 'CounterService.def'),
+            definition: nuclideUri.join(__dirname, 'CounterService.js'),
             implementation: nuclideUri.join(__dirname, 'CounterService.js'),
           },
         ],
@@ -50,8 +50,8 @@ describe('CounterService', () => {
         });
 
       // Create two services.
-      const counter1 = new service.Counter(3);
-      const counter2 = new service.Counter(5);
+      const counter1 = await service.Counter.createCounter(3);
+      const counter2 = await service.Counter.createCounter(5);
 
       // Subscribe to events from counter1.
       let completed1 = false;
@@ -128,13 +128,13 @@ describe('CounterService', () => {
       });
 
       // Create two services.
-      const counter1 = new service.Counter(3);
+      const counter1 = await service.Counter.createCounter(3);
       await counter1.getCount();
 
-      const counter2 = new service.Counter(5);
+      const counter2 = await service.Counter.createCounter(5);
       await counter2.getCount();
 
-      const counter3 = new service.Counter(7);
+      const counter3 = await service.Counter.createCounter(7);
       await counter3.getCount();
 
       expect(watchedCounters1).toBe(1);

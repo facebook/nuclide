@@ -60,6 +60,7 @@ export type LocalFileEvent =
 export interface FileNotifier {
   onFileEvent(event: FileEvent): Promise<void>,
   onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void>,
+  getTotalBufferSize(): Promise<number>,
   dispose(): void,
 }
 

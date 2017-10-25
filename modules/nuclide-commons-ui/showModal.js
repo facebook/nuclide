@@ -19,6 +19,8 @@ import ReactDOM from 'react-dom';
 import {Observable} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
+import TabbableContainer from './TabbableContainer';
+
 /**
  * Given a function to dismiss the modal, return a React element for the content.
  * Call the function when e.g. the user clicks a Cancel or Submit button.
@@ -59,6 +61,8 @@ export default function showModal(
   });
   const shouldDismissOnClickOutsideModal =
     options.shouldDismissOnClickOutsideModal || (() => true);
+
+  const previouslyFocusedElement = document.activeElement;
   const disposable = new UniversalDisposable(
     Observable.fromEvent(document, 'mousedown').subscribe(({target}) => {
       if (!shouldDismissOnClickOutsideModal()) {
@@ -84,6 +88,9 @@ export default function showModal(
       }
       ReactDOM.unmountComponentAtNode(hostElement);
       atomPanel.destroy();
+      if (previouslyFocusedElement != null) {
+        previouslyFocusedElement.focus();
+      }
     },
   );
 
@@ -109,7 +116,13 @@ type Props = {
  */
 class ModalContainer extends React.Component<Props> {
   render(): React.Node {
-    return <div tabIndex="-1">{this.props.children}</div>;
+    return (
+      <div tabIndex="-1">
+        <TabbableContainer contained={true}>
+          {this.props.children}
+        </TabbableContainer>
+      </div>
+    );
   }
 
   componentDidMount(): void {

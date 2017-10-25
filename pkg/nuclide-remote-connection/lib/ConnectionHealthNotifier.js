@@ -11,7 +11,7 @@
 
 import invariant from 'assert';
 import {trackEvent} from '../../nuclide-analytics';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {NuclideSocket} from '../../nuclide-server/lib/NuclideSocket';
 import {getLogger} from 'log4js';
 
@@ -190,7 +190,7 @@ export class ConnectionHealthNotifier {
           break;
       }
     };
-    this._subscription = new CompositeDisposable(
+    this._subscription = new UniversalDisposable(
       socket.onHeartbeat(onHeartbeat),
       socket.onHeartbeatError(onHeartbeatError),
     );

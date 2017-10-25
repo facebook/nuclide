@@ -33,9 +33,13 @@ const LF = '\u000A';
 type Props = {
   commandPrefix: string,
   // whether files can be expanded to reveal a diff of changes. Requires passing `fileChanges`.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   enableFileExpansion: boolean,
   enableInlineActions: boolean,
   // `null` values for FileDiffs for a given key are assumed to be in "loading" state.
+  // TODO: remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   fileChanges: ?diffparser$FileDiff,
   filePath: NuclideUri,
   fileStatus: FileChangeStatusValue,

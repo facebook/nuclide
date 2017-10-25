@@ -22,7 +22,7 @@ import {Range} from 'atom';
 import {Observable, Subject} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {microtask} from 'nuclide-commons/observable';
+import {completingSwitchMap, microtask} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
 import {
@@ -44,7 +44,7 @@ type FormatEvent =
   | {
       type: 'type',
       editor: atom$TextEditor,
-      edit: atom$TextEditEvent,
+      edit: atom$AggregatedTextEditEvent,
     };
 
 export default class CodeFormatManager {
@@ -97,21 +97,13 @@ export default class CodeFormatManager {
           event => event.editor.getBuffer(),
           event => event,
           grouped =>
-            // $FlowFixMe: add durationSelector to groupBy
             observableFromSubscribeFunction(callback =>
-              // $FlowFixMe: add key to GroupedObservable
               grouped.key.onDidDestroy(callback),
             ),
         )
         .mergeMap(events =>
-          // Concatenate a null event to ensure that buffer destruction
-          // interrupts any pending format operations.
-          events.concat(Observable.of(null)).switchMap(event => {
-            if (event == null) {
-              return Observable.empty();
-            }
-            return this._handleEvent(event);
-          }),
+          // Make sure we halt everything when the editor gets destroyed.
+          events.let(completingSwitchMap(event => this._handleEvent(event))),
         )
         .subscribe()
     );
@@ -122,11 +114,8 @@ export default class CodeFormatManager {
    */
   _getEditorEventStream(editor: atom$TextEditor): Observable<FormatEvent> {
     const changeEvents = observableFromSubscribeFunction(callback =>
-      editor.getBuffer().onDidChange(callback),
-    )
-      // Debounce to ensure that multiple cursors only trigger one format.
-      // TODO(hansonw): Use onDidChangeText with 1.17+.
-      .debounceTime(0);
+      editor.getBuffer().onDidChangeText(callback),
+    );
 
     const saveEvents = Observable.create(observer => {
       const realSave = editor.save;
@@ -296,9 +285,14 @@ export default class CodeFormatManager {
 
   _formatCodeOnTypeInTextEditor(
     editor: atom$TextEditor,
-    event: atom$TextEditEvent,
+    aggregatedEvent: atom$AggregatedTextEditEvent,
   ): Observable<void> {
     return Observable.defer(() => {
+      // Don't try to format changes with multiple cursors.
+      if (aggregatedEvent.changes.length !== 1) {
+        return Observable.empty();
+      }
+      const event = aggregatedEvent.changes[0];
       // This also ensures the non-emptiness of event.newText for below.
       if (!shouldFormatOnType(event) || !getFormatOnType()) {
         return Observable.empty();

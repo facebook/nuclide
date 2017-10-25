@@ -16,11 +16,11 @@ import {createProcessStream} from './createProcessStream';
 import createMessageStream from './createMessageStream';
 // eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {LogTailer} from '../../nuclide-console/lib/LogTailer';
-import {CompositeDisposable, Disposable} from 'atom';
 import {Observable} from 'rxjs';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _logTailer: LogTailer;
 
   constructor(state: ?Object) {
@@ -61,10 +61,10 @@ export default class Activation {
       },
     });
 
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
+    this._disposables = new UniversalDisposable(
+      () => {
         this._logTailer.stop();
-      }),
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-adb-logcat:start': () => this._logTailer.start(),
         'nuclide-adb-logcat:stop': () => this._logTailer.stop(),

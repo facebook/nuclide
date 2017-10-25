@@ -1,0 +1,23 @@
+{
+  "name": "atom-ide-signature-help",
+  "repository": "https://github.com/facebook-atom/atom-ide-ui",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Displays signature help as datatips.",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
+  "consumedServices": {
+    "datatip": {
+      "versions": {
+        "0.1.0": "consumeDatatip"
+      }
+    }
+  },
+  "providedServices": {
+    "signature-help": {
+      "versions": {
+        "0.1.0": "provideSignatureHelp"
+      }
+    }
+  },
+  "private": true
+}

@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 import type {
@@ -23,20 +24,17 @@ import {
   collect,
   arrayFlatten,
 } from 'nuclide-commons/collection';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import registerGrammar from '../../commons-atom/register-grammar';
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import {repositoryForPath} from '../../nuclide-vcs-base';
-import {
-  addPath,
-  confirmAndRevertPath,
-  revertPath,
-} from '../../nuclide-vcs-base';
+import {addPath, confirmAndRevertPath} from '../../nuclide-vcs-base';
 import HgRepositoryProvider from './HgRepositoryProvider';
 
 const HG_ADD_TREE_CONTEXT_MENU_PRIORITY = 400;
 const HG_REVERT_FILE_TREE_CONTEXT_MENU_PRIORITY = 1050;
 
-let subscriptions: ?CompositeDisposable = null;
+let subscriptions: ?UniversalDisposable = null;
 
 type HgContenxtMenuAction = 'Revert' | 'Add';
 
@@ -110,18 +108,7 @@ function isActivePathAddable(): boolean {
 }
 
 export function activate(state: any): void {
-  subscriptions = new CompositeDisposable();
-
-  subscriptions.add(
-    atom.commands.add(
-      'atom-text-editor',
-      'nuclide-hg-repository:revert',
-      event => {
-        const editorElement: atom$TextEditorElement = (event.currentTarget: any);
-        revertPath(editorElement.getModel().getPath());
-      },
-    ),
-  );
+  subscriptions = new UniversalDisposable();
 
   subscriptions.add(
     atom.commands.add(
@@ -237,7 +224,9 @@ export function createHgRepositoryProvider() {
   return new HgRepositoryProvider();
 }
 
-async function getAllHgAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+async function getAllHgAdditionalLogFiles(
+  deadline: DeadlineRequest,
+): Promise<Array<AdditionalLogFile>> {
   // Atom provides one repository object per project.
   const repositories: Array<?atom$Repository> = atom.project.getRepositories();
   // We want to avoid duplication in the case where two different projects both
@@ -261,13 +250,14 @@ async function getAllHgAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
   );
 
   const results: Array<Array<AdditionalLogFile>> = await Promise.all(
-    uniqueRepositories.map(r => r.getAdditionalLogFiles()),
+    uniqueRepositories.map(r => r.getAdditionalLogFiles(deadline)),
   );
   return arrayFlatten(results);
 }
 
 export function createHgAdditionalLogFilesProvider(): AdditionalLogFilesProvider {
   return {
+    id: 'hg',
     getAdditionalLogFiles: getAllHgAdditionalLogFiles,
   };
 }

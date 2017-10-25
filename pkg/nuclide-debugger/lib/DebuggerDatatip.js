@@ -70,8 +70,7 @@ export async function debuggerDatatip(
   const evaluationResult: ?EvaluationResult = await evaluation
     .take(1)
     .toPromise();
-  // eslint-disable-next-line eqeqeq
-  if (evaluationResult === null) {
+  if (evaluationResult == null) {
     return null;
   }
   const propStream = evaluation

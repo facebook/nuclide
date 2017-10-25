@@ -51,7 +51,7 @@ class DefinitionCache {
       editorDisposables.dispose();
     };
     const editorDisposables = new UniversalDisposable(
-      editor.onDidChange(invalidateAndStopListening),
+      editor.getBuffer().onDidChangeText(invalidateAndStopListening),
       editor.onDidDestroy(invalidateAndStopListening),
     );
     this._disposables.add(editorDisposables);

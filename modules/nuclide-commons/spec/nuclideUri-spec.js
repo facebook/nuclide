@@ -738,4 +738,30 @@ describe('nuclide-uri', () => {
     expect(nuclideUri.isInArchive('nuclide://host/abc.zip!def')).toBe(true);
     expect(nuclideUri.isInArchive('nuclide://host/abc.jar!def')).toBe(true);
   });
+
+  it('reports first ancestor outside archive', () => {
+    expect(nuclideUri.ancestorOutsideArchive('abc')).toBe('abc');
+    expect(nuclideUri.ancestorOutsideArchive('/abc')).toBe('/abc');
+    expect(nuclideUri.ancestorOutsideArchive('nuclide://host/abc')).toBe(
+      'nuclide://host/abc',
+    );
+    expect(nuclideUri.ancestorOutsideArchive('abc.zip')).toBe('abc.zip');
+    expect(nuclideUri.ancestorOutsideArchive('abc.jar')).toBe('abc.jar');
+    expect(nuclideUri.ancestorOutsideArchive('abc.zip!def')).toBe('abc.zip');
+    expect(nuclideUri.ancestorOutsideArchive('abc.jar!def')).toBe('abc.jar');
+    expect(nuclideUri.ancestorOutsideArchive('/abc.zip!def')).toBe('/abc.zip');
+    expect(nuclideUri.ancestorOutsideArchive('/abc.jar!def')).toBe('/abc.jar');
+    expect(nuclideUri.ancestorOutsideArchive('C:\\abc.zip!def')).toBe(
+      'C:\\abc.zip',
+    );
+    expect(nuclideUri.ancestorOutsideArchive('C:\\abc.jar!def')).toBe(
+      'C:\\abc.jar',
+    );
+    expect(
+      nuclideUri.ancestorOutsideArchive('nuclide://host/abc.zip!def'),
+    ).toBe('nuclide://host/abc.zip');
+    expect(
+      nuclideUri.ancestorOutsideArchive('nuclide://host/abc.jar!def'),
+    ).toBe('nuclide://host/abc.jar');
+  });
 });

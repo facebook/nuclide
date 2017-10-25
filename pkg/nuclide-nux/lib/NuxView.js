@@ -12,11 +12,12 @@
 /* global getComputedStyle */
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import debounce from 'nuclide-commons/debounce';
 import {maybeToString} from 'nuclide-commons/string';
 import {track} from '../../nuclide-analytics';
 import {getLogger} from 'log4js';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const VALID_NUX_POSITIONS = new Set(['top', 'bottom', 'left', 'right', 'auto']);
 // The maximum number of times the NuxView will attempt to attach to the DOM.
@@ -36,7 +37,7 @@ export class NuxView {
   _selector: () => ?HTMLElement;
   _position: 'top' | 'bottom' | 'left' | 'right' | 'auto';
   _content: string;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _callback: ?(success: boolean) => void;
   _tooltipDisposable: IDisposable;
   _completePredicate: ?() => boolean;
@@ -92,7 +93,7 @@ export class NuxView {
     this._index = indexInTour;
     this._finalNuxInTour = indexInTour === tourSize - 1;
 
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   _createNux(creationAttempt: number = 1): void {

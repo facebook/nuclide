@@ -366,13 +366,13 @@ module.exports = {
     // nuclide-internal (https://github.com/facebook/nuclide/tree/master/resources/eslint-plugin-nuclide-internal)
     'rulesdir/atom-apis': 1,
     'rulesdir/consistent-import-name': 1,
+    'rulesdir/disallowed-modules': 1,
     'rulesdir/dom-apis': 1,
     'rulesdir/flow-fb-oss': 1,
     'rulesdir/import-type-style': 1,
     'rulesdir/license-header': 1,
     'rulesdir/modules-dependencies': 1,
     'rulesdir/no-cross-atom-imports': [1, {whitelist: ['nuclide-ui']}],
-    'rulesdir/no-shell-quote': 1,
     'rulesdir/no-unnecessary-disposable-wrapping': 1,
     'rulesdir/no-unresolved': 1,
     'rulesdir/prefer-nuclide-uri': 1,
@@ -405,7 +405,7 @@ module.exports = {
     'react/no-string-refs': 0,
     'react/no-unescaped-entities': 0,
     'react/no-unknown-property': 1,
-    'react/no-unused-prop-types': 0,
+    'react/no-unused-prop-types': 1,
     'react/prefer-es6-class': 0,
     'react/prefer-stateless-function': 0,
     // 'react/prefer-stateless-function': 1,
@@ -452,6 +452,7 @@ module.exports = {
     'jsx-a11y/accessible-emoji': 0,
     'jsx-a11y/alt-text': 0, // incremental: error
     'jsx-a11y/anchor-has-content': 0,
+    'jsx-a11y/anchor-is-valid': 0, // incremental: error
     'jsx-a11y/aria-activedescendant-has-tabindex': 0,
     'jsx-a11y/aria-props': 1,
     'jsx-a11y/aria-proptypes': 0,

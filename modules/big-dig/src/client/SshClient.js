@@ -18,9 +18,11 @@ import type {
 } from 'ssh2';
 
 import {lastly, Deferred} from 'nuclide-commons/promise';
+import {observeStream} from 'nuclide-commons/stream';
 import {Client, ClientChannel} from 'ssh2';
 import {Observable} from 'rxjs';
 import {SftpClient} from './SftpClient';
+import {onceEvent} from '../common/events';
 
 export type {
   ClientChannel,
@@ -29,6 +31,9 @@ export type {
   ExecOptions,
   Prompt,
 } from 'ssh2';
+
+const OPEN_CHANNEL_ATTEMPTS = 3;
+const OPEN_CHANNEL_DELAY_MS = 200;
 
 /**
  * Emitted when the server is asking for replies to the given `prompts` for keyboard-
@@ -54,6 +59,20 @@ export class SshClosedError extends Error {
   }
 }
 
+export type ExecExitResult = {
+  code: number | null,
+  signal?: string,
+  dump?: string,
+  description?: string,
+  language?: string,
+};
+
+export type ExecResult = {
+  stdio: ClientChannel,
+  stdout: Observable<string>,
+  result: Promise<ExecExitResult>,
+};
+
 /**
  * Represents an SSH connection. This wraps the `Client` class from ssh2, but reinterprets the
  * API using promises instead of callbacks. The methods of this class generally correspond to the
@@ -64,6 +83,8 @@ export class SshClient {
   _onError: Observable<Error & ClientErrorExtensions>;
   _onClose: Observable<{hadError: boolean}>;
   _deferredContinue: ?Deferred<void> = null;
+  _endPromise: Deferred<void>;
+  _closePromise: Deferred<{hadError: boolean}>;
 
   /**
    * Wraps and takes ownership of the ssh2 Client.
@@ -80,10 +101,15 @@ export class SshClient {
         hadError,
       }),
     );
+    this._closePromise = new Deferred();
+    this._endPromise = new Deferred();
 
+    this._client.on('end', this._endPromise.resolve);
     this._client.on('continue', () => this._resolveContinue());
     this._client.on('close', (hadError: boolean) => {
       this._resolveContinue();
+      this._endPromise.resolve();
+      this._closePromise.resolve({hadError});
     });
     this._client.on(
       'keyboard-interactive',
@@ -150,8 +176,28 @@ export class SshClient {
    * @param command The command to execute.
    * @param options Options for the command.
    */
-  exec(command: string, options: ExecOptions = {}): Promise<ClientChannel> {
-    return this._clientToPromiseContinue(this._client.exec, command, options);
+  async exec(command: string, options: ExecOptions = {}): Promise<ExecResult> {
+    const stdio = await this._clientToPromiseContinue(
+      this._client.exec,
+      command,
+      options,
+    );
+    return {
+      stdio,
+      result: onceEvent(
+        stdio,
+        'close',
+      ).then(
+        (
+          code: number | null,
+          signal?: string,
+          dump?: string,
+          description?: string,
+          language?: string,
+        ) => ({code, signal, dump, description, language}),
+      ),
+      stdout: observeStream(stdio),
+    };
   }
 
   /**
@@ -197,13 +243,15 @@ export class SshClient {
   async end(): Promise<void> {
     await this._readyForData();
     this._client.end();
+    return this._endPromise.promise;
   }
 
   /**
    * Destroys the socket.
    */
-  destroy() {
+  destroy(): Promise<void> {
     this._client.destroy();
+    return this._closePromise.promise.then(() => {});
   }
 
   _resolveContinue() {
@@ -223,8 +271,12 @@ export class SshClient {
 
   _clientToPromiseContinue(func: Function, ...args: any): Promise<any> {
     return new Promise((resolve, reject) => {
+      // In case there is a failure to open a channel.
+      let attempts = 0;
+
       const self = this;
       function doOperation() {
+        ++attempts;
         self._readyForData().then(() => {
           const readyForData = func.apply(self._client, args);
           if (!readyForData && this._deferredContinue == null) {
@@ -235,7 +287,19 @@ export class SshClient {
 
       args.push((err, result) => {
         if (err != null) {
-          return reject(err);
+          if (
+            err instanceof Error &&
+            err.message === '(SSH) Channel open failure: open failed' &&
+            err.reason === 'ADMINISTRATIVELY_PROHIBITED' &&
+            attempts < OPEN_CHANNEL_ATTEMPTS
+          ) {
+            // In case we're severely limited in the number of channels available, we may have to
+            // wait a little while before the previous channel is closed. (If it was closed.)
+            setTimeout(doOperation, OPEN_CHANNEL_DELAY_MS);
+            return;
+          } else {
+            return reject(err);
+          }
         }
         resolve(result);
       });

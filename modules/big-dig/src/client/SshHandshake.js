@@ -11,7 +11,11 @@
  */
 
 import type {BigDigClient} from './BigDigClient';
-import type {ClientErrorExtensions, ConnectConfig, Prompt} from './SshClient';
+import type {
+  ClientErrorExtensions,
+  ConnectConfig,
+  Prompt as SshClientPromptType,
+} from './SshClient';
 
 import net from 'net';
 import invariant from 'assert';
@@ -19,20 +23,21 @@ import {Client as SshConnection} from 'ssh2';
 import {SftpClient} from './SftpClient';
 import {SshClient} from './SshClient';
 import fs from '../common/fs';
-import {
-  lastly,
-  sleep,
-  timeoutPromise,
-  TimedOutError,
-} from 'nuclide-commons/promise';
-import {shellQuote} from 'nuclide-commons/string';
-import {tempfile} from '../common/temp';
+import {lastly, timeoutPromise, TimedOutError} from 'nuclide-commons/promise';
 import ConnectionTracker from './ConnectionTracker';
 import lookupPreferIpv6 from './lookup-prefer-ip-v6';
 import createBigDigClient from './createBigDigClient';
-import {onceEventArray, onceEventOrError} from '../common/events';
+import {onceEventOrError} from '../common/events';
+import {getPackage} from './RemotePackage';
+import type {PackageParams, RemotePackage} from './RemotePackage';
 
-export type {Prompt} from './SshClient';
+export type {
+  ExtractionMethod,
+  PackageParams as ServerPackageParams,
+  ManagedPackageParams as ManagedServerParams,
+  UnmanagedPackageParams as UnmanagedServerParams,
+  PackageParams as ServerExecutable,
+} from './RemotePackage';
 
 // TODO
 function restoreBigDigClient(address: string) {}
@@ -57,7 +62,7 @@ export type SshConnectionConfiguration = {
   sshPort: number, // ssh port of host nuclide server is running on
   username: string, // username to authenticate as
   pathToPrivateKey: string, // The path to private key
-  remoteServerCommand: string, // Command to use to start server
+  remoteServer: PackageParams, // Command to use to start server
   remoteServerPort?: number, // Port remote server should run on (defaults to 0)
   remoteServerCustomParams?: Object, // JSON-serializable params.
   authMethod: SupportedMethodTypes, // Which of the authentication methods in `SupportedMethods` to use.
@@ -84,6 +89,7 @@ const ErrorType = Object.freeze({
   SFTP_TIMEOUT: 'SFTP_TIMEOUT',
   UNSUPPORTED_AUTH_METHOD: 'UNSUPPORTED_AUTH_METHOD',
   USER_CANCELLED: 'USER_CANCELLED',
+  SERVER_SETUP_FAILED: 'SERVER_SETUP_FAILED',
 });
 
 export type SshHandshakeErrorType =
@@ -98,7 +104,8 @@ export type SshHandshakeErrorType =
   | 'SERVER_CANNOT_CONNECT'
   | 'SFTP_TIMEOUT'
   | 'UNSUPPORTED_AUTH_METHOD'
-  | 'USER_CANCELLED';
+  | 'USER_CANCELLED'
+  | 'SERVER_SETUP_FAILED';
 
 type SshConnectionErrorLevel =
   | 'client-timeout'
@@ -107,6 +114,54 @@ type SshConnectionErrorLevel =
   | 'client-authentication'
   | 'agent'
   | 'client-dns';
+
+/** A prompt from ssh */
+export type SshPrompt = {|
+  kind: 'ssh',
+  prompt: string,
+  echo: boolean,
+|};
+
+/** We need the user's private-key password */
+export type PrivateKeyPasswordPrompt = {|
+  kind: 'private-key',
+  prompt: string,
+  echo: false,
+  retry: boolean,
+|};
+
+/**
+ * Prompt for installing a remote server. Emitted when a server does not exist and the given
+ * installation path has no conflicts (i.e. is nonexistant or empty).
+ */
+export type InstallServerPrompt = {|
+  kind: 'install',
+  prompt: string,
+  echo: true,
+  installationPath: string,
+  options: ['abort', 'install'],
+|};
+
+/**
+ * Prompt for updating the remote server. Emitted when a valid server is already installed, but it
+ * is the wrong version for our client.
+ */
+export type UpdateServerPrompt = {|
+  kind: 'update',
+  prompt: string,
+  echo: true,
+  /** The current server version */
+  current: string,
+  /** The expected server version */
+  expected: string,
+  options: ['abort', 'update'],
+|};
+
+export type Prompt =
+  | SshPrompt
+  | PrivateKeyPasswordPrompt
+  | InstallServerPrompt
+  | UpdateServerPrompt;
 
 /**
  * The server is asking for replies to the given prompts for
@@ -253,16 +308,16 @@ export class SshHandshake {
     this._delegate.onDidConnect(connection, this._config);
   }
 
-  async _getPassword(prompt: string): Promise<string> {
+  async _userPromptSingle(prompt: Prompt): Promise<string> {
     const [
-      password,
+      answer,
     ] = await this._delegate.onKeyboardInteractive(
       '' /* name */,
       '' /* instructions */,
       '' /* instructionsLang */,
-      [{prompt, echo: false}],
+      [prompt],
     );
-    return password;
+    return answer;
   }
 
   async _getConnectConfig(
@@ -382,7 +437,12 @@ export class SshHandshake {
       const prompt =
         'Encrypted private key detected, but no passphrase given.\n' +
         `Enter passphrase for ${config.pathToPrivateKey}: `;
-      const password = await this._getPassword(prompt);
+      const password = await this._userPromptSingle({
+        kind: 'private-key',
+        prompt,
+        echo: false,
+        retry: false,
+      });
       authError = await this._connectOrNeedsAuth({
         ...connectConfig,
         password,
@@ -398,7 +458,12 @@ export class SshHandshake {
       ++attempts;
 
       // eslint-disable-next-line no-await-in-loop
-      const password = await this._getPassword(prompt);
+      const password = await this._userPromptSingle({
+        kind: 'private-key',
+        prompt,
+        echo: false,
+        retry: true,
+      });
       // eslint-disable-next-line no-await-in-loop
       authError = await this._connectOrNeedsAuth({
         ...connectConfig,
@@ -501,22 +566,26 @@ export class SshHandshake {
     }
   }
 
-  cancel() {
+  async cancel(): Promise<void> {
     this._cancelled = true;
-    this._connection.end();
+    await this._connection.end();
   }
 
   _onKeyboardInteractive(
     name: string,
     instructions: string,
     instructionsLang: string,
-    prompts: Array<Prompt>,
+    prompts: Array<SshClientPromptType>,
   ): Promise<Array<string>> {
     return this._delegate.onKeyboardInteractive(
       name,
       instructions,
       instructionsLang,
-      prompts,
+      prompts.map(prompt => ({
+        kind: 'ssh',
+        prompt: prompt.prompt,
+        echo: prompt.echo === undefined ? false : prompt.echo,
+      })),
     );
   }
 
@@ -621,18 +690,14 @@ export class SshHandshake {
       }
     };
     const getServerStartInfo = async (sftp: SftpClient): Promise<string> => {
-      const localTempFile = await tempfile();
       try {
-        await sftp.fastGet(remoteTempFile, localTempFile);
-        return await fs.readFileAsString(localTempFile, 'utf8');
+        return await sftp.readFile(remoteTempFile, {encoding: 'utf8'});
       } catch (sftpError) {
         throw new SshHandshakeError(
           'Failed to transfer server start information',
           SshHandshake.ErrorType.SERVER_START_FAILED,
           sftpError,
         );
-      } finally {
-        fs.unlink(localTempFile).catch(() => {});
       }
     };
 
@@ -653,11 +718,87 @@ export class SshHandshake {
     }
   }
 
+  async _installServerPackage(server: RemotePackage) {
+    const answer = await this._userPromptSingle({
+      kind: 'install',
+      prompt:
+        'Cannot find the remote server in ${server.getInstallationPath()}. Abort or install?',
+      echo: true,
+      installationPath: server.getInstallationPath(),
+      options: ['abort', 'install'],
+    });
+    if (answer === 'install') {
+      await server.install(this._connection);
+    } else {
+      throw new SshHandshakeError(
+        'Server setup was aborted by the user',
+        SshHandshake.ErrorType.SERVER_SETUP_FAILED,
+      );
+    }
+  }
+
+  async _updateServerPackage(
+    server: RemotePackage,
+    current: string,
+    expected: string,
+  ) {
+    const answer = await this._userPromptSingle({
+      kind: 'update',
+      prompt: `The remote server version is ${current}, but ${expected} is required. Abort or update?`,
+      echo: true,
+      current,
+      expected,
+      options: ['abort', 'update'],
+    });
+    if (answer === 'update') {
+      await server.install(this._connection, {force: true});
+    } else {
+      throw new SshHandshakeError(
+        'Server setup was aborted by the user',
+        SshHandshake.ErrorType.SERVER_SETUP_FAILED,
+      );
+    }
+  }
+
+  /**
+   * Makes sure that the remote server is installed, possibly installing it if necessary.
+   * @param {*} remoteServer Represents the remore server
+   */
+  async _setupServerPackage(
+    serverParams: PackageParams,
+  ): Promise<RemotePackage> {
+    let server;
+    let check;
+    try {
+      server = getPackage(serverParams);
+      check = await server.verifyInstallation(this._connection);
+    } catch (error) {
+      throw new SshHandshakeError(
+        'Could not verify server installation',
+        SshHandshake.ErrorType.SERVER_SETUP_FAILED,
+        error,
+      );
+    }
+
+    if (check.status === 'needs-install') {
+      await this._installServerPackage(server);
+    } else if (check.status === 'needs-update') {
+      await this._updateServerPackage(server, check.current, check.expected);
+    } else if (check.status !== 'okay') {
+      throw new SshHandshakeError(
+        `Server is corrupt; ${check.message}`,
+        SshHandshake.ErrorType.SERVER_SETUP_FAILED,
+      );
+    }
+
+    return server;
+  }
+
   /**
    * Invokes the remote server and updates the server info via `_updateServerInfo`.
    */
-  async _startRemoteServer(): Promise<void> {
-    const remoteTempFile = `/tmp/nuclide-sshhandshake-${Math.random()}`;
+  async _startRemoteServer(server: RemotePackage): Promise<void> {
+    const remoteTempFile = `/tmp/big-dig-sshhandshake-${Math.random()}`;
     const params = {
       cname: this._config.host,
       jsonOutputFile: remoteTempFile,
@@ -666,39 +807,29 @@ export class SshHandshake {
       serverParams: this._config.remoteServerCustomParams,
       port: this._config.remoteServerPort,
     };
-    const cmd = `${this._config.remoteServerCommand} ${shellQuote([
-      JSON.stringify(params),
-    ])}`;
 
     try {
       // Run the server bootstrapper: this will create a server process, output the process info
       // to `remoteTempFile`, and then exit.
-      const stream = await this._connection.exec(cmd, {pty: {term: 'nuclide'}});
-      // Collect any stdout in case there is an error.
-      let stdOut = '';
-      stream.on('data', data => {
-        stdOut += data;
-      });
+      const {stdout, code} = await server.run(
+        [JSON.stringify(params)],
+        {pty: {term: 'nuclide'}},
+        this._connection,
+      );
 
-      // Wait for the bootstrapper to finish
-      const [code] = await onceEventArray(stream, 'close');
-
-      // Note: this code is probably the code from the child shell if one is in use.
       if (code !== 0) {
         throw new SshHandshakeError(
           'Remote shell execution failed',
           SshHandshake.ErrorType.UNKNOWN,
-          new Error(stdOut),
+          new Error(stdout),
         );
       }
 
-      // Some servers have max channels set to 1, so add a delay to ensure
-      // the old channel has been cleaned up on the server.
-      // TODO(hansonw): Implement a proper retry mechanism.
-      await sleep(100);
-
       return this._loadServerStartInformation(remoteTempFile);
     } catch (error) {
+      if (error instanceof SshHandshakeError) {
+        throw error;
+      }
       const errorType =
         (error.level && SshConnectionErrorLevelMap.get(error.level)) ||
         SshHandshake.ErrorType.UNKNOWN;
@@ -710,7 +841,8 @@ export class SshHandshake {
    * This is called when the SshConnection is ready.
    */
   async _onSshConnectionIsReady(): Promise<BigDigClient> {
-    await this._startRemoteServer();
+    const server = await this._setupServerPackage(this._config.remoteServer);
+    await this._startRemoteServer(server);
 
     // Use an ssh tunnel if server is not secure
     if (this._isSecure()) {
@@ -761,7 +893,7 @@ export class SshHandshake {
     this._didConnect(bigDigClient);
     // If we are secure then we don't need the ssh tunnel.
     if (this._isSecure()) {
-      this._connection.end();
+      await this._connection.end();
     }
 
     return bigDigClient;

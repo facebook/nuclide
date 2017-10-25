@@ -12,7 +12,6 @@
 import type TestSuiteModel from '../TestSuiteModel';
 import type {TestRunner} from '../types';
 
-import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import Console from './Console';
 import {Dropdown} from '../../../nuclide-ui/Dropdown';
@@ -43,14 +42,13 @@ type Props = {
 
 type State = {
   selectedTestRunnerIndex: number,
+  consoleContainer: ?HTMLElement,
+  treeContainer: ?HTMLElement,
 };
 
 export default class TestRunnerPanel extends React.Component<Props, State> {
   _paneContainer: Object;
-  _leftPane: atom$Pane;
-  _rightPane: atom$Pane;
   _textEditorModel: TextEditor;
-  _tree: TestClassTree;
 
   // Bound Functions for use as callbacks.
   setSelectedTestRunnerIndex: Function;
@@ -64,6 +62,8 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
     super(props);
     this.state = {
       roots: [],
+      treeContainer: null,
+      consoleContainer: null,
       // If there are test runners, start with the first one selected. Otherwise store -1 to
       // later indicate there were no active test runners.
       selectedTestRunnerIndex: props.testRunners.length > 0 ? 0 : -1,
@@ -72,8 +72,8 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
 
   componentDidMount() {
     this._paneContainer = createPaneContainer();
-    this._leftPane = this._paneContainer.getActivePane();
-    this._rightPane = this._leftPane.splitRight({
+    const leftPane = this._paneContainer.getActivePane();
+    const rightPane = leftPane.splitRight({
       // Prevent Atom from cloning children on splitting; this panel wants an empty container.
       copyActiveItem: false,
       // Make the right pane 2/3 the width of the parent since console output is generally wider
@@ -81,17 +81,17 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
       flexScale: 2,
     });
 
-    this.renderTree();
-    this.renderConsole();
-
     // $FlowFixMe
     ReactDOM.findDOMNode(this.refs.paneContainer).appendChild(
       atom.views.getView(this._paneContainer),
     );
-  }
 
-  componentDidUpdate() {
-    this.renderTree();
+    this.setState({
+      treeContainer: atom.views.getView(leftPane).querySelector('.item-views'),
+      consoleContainer: atom.views
+        .getView(rightPane)
+        .querySelector('.item-views'),
+    });
   }
 
   componentWillReceiveProps(nextProps: Object) {
@@ -104,12 +104,6 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
-    ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._rightPane).querySelector('.item-views'),
-    );
-    ReactDOM.unmountComponentAtNode(
-      atom.views.getView(this._leftPane).querySelector('.item-views'),
-    );
     this._paneContainer.destroy();
   }
 
@@ -232,8 +226,34 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
       />
     ) : null;
 
+    const tree =
+      this.state.treeContainer == null
+        ? null
+        : // $FlowIssue: This API isn't known by our current version of Flow.
+          ReactDOM.createPortal(
+            <TestClassTree
+              isRunning={
+                this.props.executionState ===
+                TestRunnerPanel.ExecutionState.RUNNING
+              }
+              testSuiteModel={this.props.testSuiteModel}
+            />,
+            this.state.treeContainer,
+          );
+
+    const console =
+      this.state.consoleContainer == null
+        ? null
+        : // $FlowIssue: This API isn't known by our current version of Flow.
+          ReactDOM.createPortal(
+            <Console textBuffer={this.props.buffer} />,
+            this.state.consoleContainer,
+          );
+
     return (
       <div className="nuclide-test-runner-panel">
+        {tree}
+        {console}
         <Toolbar location="top">
           <ToolbarLeft>
             {dropdown}
@@ -271,26 +291,5 @@ export default class TestRunnerPanel extends React.Component<Props, State> {
     if (selectedTestRunnerIndex >= 0) {
       return this.props.testRunners[selectedTestRunnerIndex];
     }
-  }
-
-  renderTree() {
-    const component = ReactDOM.render(
-      <TestClassTree
-        isRunning={
-          this.props.executionState === TestRunnerPanel.ExecutionState.RUNNING
-        }
-        testSuiteModel={this.props.testSuiteModel}
-      />,
-      atom.views.getView(this._leftPane).querySelector('.item-views'),
-    );
-    invariant(component instanceof TestClassTree);
-    this._tree = component;
-  }
-
-  renderConsole() {
-    ReactDOM.render(
-      <Console textBuffer={this.props.buffer} />,
-      atom.views.getView(this._rightPane).querySelector('.item-views'),
-    );
   }
 }

@@ -41,6 +41,11 @@
         "description": "Remote control for launching debugger.",
         "0.0.0": "provideRemoteControlService"
       }
+    },
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "createAutocompleteProvider"
+      }
     }
   },
   "viewProviders": [

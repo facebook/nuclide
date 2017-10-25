@@ -192,6 +192,28 @@ export default class BridgeAdapter {
     this._expressionEvaluationManager.getProperties(id, objectId);
   }
 
+  setVariable(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._debuggerDispatcher.setVariable(
+      scopeObjectId,
+      expression,
+      newValue,
+      callback,
+    );
+  }
+
+  completions(text: string, column: number, callback: Function): void {
+    const currentFrame = this._stackTraceManager.getCurrentFrame();
+    if (currentFrame != null) {
+      const frameId = Number.parseInt(currentFrame.callFrameId, 10);
+      this._debuggerDispatcher.completions(text, column, frameId, callback);
+    }
+  }
+
   selectThread(threadId: string): void {
     this._threadManager.selectThread(threadId);
     this._threadManager.getThreadStack(threadId).then(stackFrames => {
@@ -202,6 +224,13 @@ export default class BridgeAdapter {
 
   setSingleThreadStepping(enable: boolean): void {
     this._debuggerSettingsManager.setSingleThreadStepping(enable);
+    if (this._engineCreated) {
+      this._debuggerSettingsManager.syncToEngine();
+    }
+  }
+
+  setShowDisassembly(enable: boolean): void {
+    this._debuggerSettingsManager.setShowDisassembly(enable);
     if (this._engineCreated) {
       this._debuggerSettingsManager.syncToEngine();
     }

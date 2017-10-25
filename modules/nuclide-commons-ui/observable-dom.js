@@ -15,7 +15,7 @@
 
 import type {Subscriber} from 'rxjs/Subscriber';
 
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Observable, Subscription} from 'rxjs';
 import shallowEqual from 'shallowequal';
 import {isIterable} from 'nuclide-commons/collection';
@@ -74,6 +74,7 @@ import {isIterable} from 'nuclide-commons/collection';
  *   mutations.subscribe(record => console.log(record));
  */
 
+// $FlowFixMe(>=0.55.0) Flow suppress
 type RecordCallback = (records: any, ...rest: Array<any>) => mixed;
 interface DOMObserver {
   constructor(callback: RecordCallback, ...rest: Array<any>): DOMObserver,
@@ -208,6 +209,7 @@ export class IntersectionObservable extends DOMObserverObservable<
       global.IntersectionObserver !== null,
       'environment must contain IntersectionObserver',
     );
+    // $FlowFixMe(>=0.55.0) Flow suppress
     super(IntersectionObserver, target);
   }
 }
@@ -227,6 +229,7 @@ export class MutationObservable extends DOMObserverObservable<
       global.MutationObserver !== null,
       'environment must contain MutationObserver',
     );
+    // $FlowFixMe(>=0.55.0) Flow suppress
     super(MutationObserver, target);
   }
 }
@@ -245,6 +248,7 @@ export class PerformanceObservable extends DOMObserverObservable<
       global.PerformanceObserver !== null,
       'environment must contain PerformanceObserver',
     );
+    // $FlowFixMe(>=0.55.0) Flow suppress
     super(PerformanceObserver, options);
   }
 }
@@ -263,6 +267,7 @@ export class ResizeObservable extends DOMObserverObservable<
       global.ResizeObserver !== null,
       'environment must contain ResizeObserver',
     );
+    // $FlowFixMe(>=0.55.0) Flow suppress
     super(ResizeObserver, target);
   }
 }

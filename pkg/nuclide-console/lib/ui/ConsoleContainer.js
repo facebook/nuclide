@@ -19,6 +19,7 @@ import type {
   Record,
   Source,
   Store,
+  WatchEditorFunction,
 } from '../types';
 import type {CreatePasteFunction} from '../../../nuclide-paste-base';
 import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
@@ -46,6 +47,7 @@ type State = {
   //
 
   createPasteFunction: ?CreatePasteFunction,
+  watchEditor: ?WatchEditorFunction,
   currentExecutor: ?Executor,
   providers: Map<string, OutputProvider>,
   providerStatuses: Map<string, OutputProviderStatus>,
@@ -74,6 +76,8 @@ type BoundActionCreators = {
 // needs to be changed, grep for CONSOLE_VIEW_URI and ensure that the URIs match.
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/console';
 
+const ERROR_TRANSCRIBING_MESSAGE =
+  "// Nuclide couldn't find the right text to display";
 const INITIAL_RECORD_HEIGHT = 21;
 
 // NOTE: We're not accounting for the "store" prop being changed.
@@ -98,6 +102,7 @@ export class ConsoleContainer extends React.Component<Props, State> {
     this.state = {
       ready: false,
       createPasteFunction: null,
+      watchEditor: null,
       currentExecutor: null,
       providers: new Map(),
       providerStatuses: new Map(),
@@ -168,6 +173,7 @@ export class ConsoleContainer extends React.Component<Props, State> {
             : null;
         this.setState({
           createPasteFunction: state.createPasteFunction,
+          watchEditor: state.watchEditor,
           ready: true,
           currentExecutor,
           executors: state.executors,
@@ -237,7 +243,11 @@ export class ConsoleContainer extends React.Component<Props, State> {
         const level =
           record.level != null ? record.level.toString().toUpperCase() : 'LOG';
         const timestamp = record.timestamp.toLocaleString();
-        return `[${level}][${record.sourceId}][${timestamp}]\t ${record.text}`;
+        const text =
+          record.text ||
+          (record.data && record.data.value) ||
+          ERROR_TRANSCRIBING_MESSAGE;
+        return `[${level}][${record.sourceId}][${timestamp}]\t ${text}`;
       })
       .join('\n');
 
@@ -309,6 +319,8 @@ export class ConsoleContainer extends React.Component<Props, State> {
     const createPaste =
       this.state.createPasteFunction != null ? this._createPaste : null;
 
+    const watchEditor = this.state.watchEditor;
+
     return (
       <Console
         invalidFilterInput={invalid}
@@ -316,6 +328,7 @@ export class ConsoleContainer extends React.Component<Props, State> {
         selectExecutor={actionCreators.selectExecutor}
         clearRecords={actionCreators.clearRecords}
         createPaste={createPaste}
+        watchEditor={watchEditor}
         currentExecutor={this.state.currentExecutor}
         unselectedSourceIds={this.state.unselectedSourceIds}
         filterText={this.state.filterText}

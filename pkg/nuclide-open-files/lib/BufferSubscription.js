@@ -19,7 +19,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {NotifiersByConnection} from './NotifiersByConnection';
 
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getLogger} from 'log4js';
 import {FileEventKind} from '../../nuclide-open-files-rpc';
 
@@ -44,7 +44,7 @@ export class BufferSubscription {
   _notifiers: NotifiersByConnection;
   _buffer: atom$TextBuffer;
   _notifier: ?Promise<FileNotifier>;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _serverVersion: number;
   _lastAttemptedSync: number;
   _changeCount: number;
@@ -59,9 +59,10 @@ export class BufferSubscription {
     this._changeCount = 1;
     this._sentOpen = false;
 
-    const subscriptions = new CompositeDisposable();
+    const subscriptions = new UniversalDisposable();
 
     subscriptions.add(
+      // TODO: (hansonw) T22837054 Use buffer.onDidChangeText here.
       buffer.onDidChange(async (event: atom$TextEditEvent) => {
         this._changeCount++;
         if (this._notifier == null) {

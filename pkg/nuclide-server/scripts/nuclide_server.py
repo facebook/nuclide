@@ -212,6 +212,8 @@ class NuclideServer(object):
         # Increase stack trace limit for better debug logs.
         # For reference, Atom/Electron does not have a stack trace limit.
         js_cmd += ' --stack-trace-limit=50'
+        # Increase the default memory limit from ~1.76GB to 4GB.
+        js_cmd += ' --max-old-space-size=4096'
         if cert and key and ca:
             js_cmd += ' --cert %s --key %s --ca %s' % (cert, key, ca)
         if abort_on_uncaught_exception:

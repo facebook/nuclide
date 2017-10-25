@@ -98,7 +98,8 @@ def test_modules():
         break
 
 def run_compile_steps(destructive_compile=False):
-    if destructive_compile:
+    # Coverage relies on having accurate sources.
+    if destructive_compile and not os.getenv('COVERAGE_DIR'):
         # This will destroy the original source and create untracked files!
         run('generate_proxies',
             ['scripts/release-generate-proxies.js', '--save'])

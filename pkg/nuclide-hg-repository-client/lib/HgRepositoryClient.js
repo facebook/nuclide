@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {
   AmendModeValue,
   BookmarkInfo,
@@ -30,10 +31,11 @@ import type {LRUCache} from 'lru-cache';
 import type {ConnectableObservable} from 'rxjs';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {sleep} from 'nuclide-commons/promise';
+import {timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import {parseHgDiffUnifiedOutput} from '../../nuclide-hg-rpc/lib/hg-diff-output-parser';
 import {Emitter} from 'atom';
-import {cacheWhileSubscribed} from 'nuclide-commons/observable';
+import {cacheWhileSubscribed, fastDebounce} from 'nuclide-commons/observable';
 import RevisionsCache from './RevisionsCache';
 import {gitDiffContentAgainstFile} from './utils';
 import {
@@ -306,14 +308,14 @@ export class HgRepositoryClient {
       this._bookmarks.asObservable(),
       commitChanges,
       repoStateChanges,
-    ).debounceTime(REVISION_DEBOUNCE_DELAY);
+    ).let(fastDebounce(REVISION_DEBOUNCE_DELAY));
 
     const bookmarksUpdates = Observable.merge(
       activeBookmarkChanges,
       allBookmarkChanges,
     )
       .startWith(null)
-      .debounceTime(BOOKMARKS_DEBOUNCE_DELAY)
+      .let(fastDebounce(BOOKMARKS_DEBOUNCE_DELAY))
       .switchMap(() =>
         Observable.defer(() => {
           return this._service
@@ -345,16 +347,17 @@ export class HgRepositoryClient {
     );
   }
 
-  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
     const path = this._workingDirectory.getPath();
     const prefix = nuclideUri.isRemote(path)
       ? `${nuclideUri.getHostname(path)}:`
       : '';
-    const err = (msg: string) => [{title: path + ':hg', data: msg}];
-    const results = await Promise.race([
-      this._service.getAdditionalLogFiles().catch(e => err(e.message)),
-      sleep(50000).then(() => err('no response in 50s')),
-    ]);
+    const results = await timeoutAfterDeadline(
+      deadline,
+      this._service.getAdditionalLogFiles(deadline - 1000),
+    ).catch(e => [{title: `${path}:hg`, data: stringifyError(e)}]);
     return results.map(log => ({...log, title: prefix + log.title}));
   }
 
@@ -366,7 +369,7 @@ export class HgRepositoryClient {
     >,
   ): HgStatusChanges {
     const triggers = Observable.merge(fileChanges, repoStateChanges)
-      .debounceTime(STATUS_DEBOUNCE_DELAY_MS)
+      .let(fastDebounce(STATUS_DEBOUNCE_DELAY_MS))
       .share()
       .startWith(null);
     // Share comes before startWith. That's because fileChanges/repoStateChanges
@@ -724,6 +727,7 @@ export class HgRepositoryClient {
     for (const [filePath, status] of this._hgStatusCache) {
       pathStatuses[filePath] = status;
     }
+    // $FlowFixMe(>=0.55.0) Flow suppress
     return pathStatuses;
   }
 

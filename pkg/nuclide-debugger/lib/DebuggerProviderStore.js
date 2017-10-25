@@ -14,8 +14,9 @@ import type {NuclideDebuggerProvider} from '../../nuclide-debugger-interfaces/se
 import type DebuggerActions from './DebuggerActions';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 
-import {CompositeDisposable, Disposable, Emitter} from 'atom';
+import {Disposable, Emitter} from 'atom';
 import {ActionTypes} from './DebuggerDispatcher';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const CONNECTIONS_UPDATED_EVENT = 'CONNECTIONS_UPDATED_EVENT';
 const PROVIDERS_UPDATED_EVENT = 'PROVIDERS_UPDATED_EVENT';
@@ -25,7 +26,7 @@ const PROVIDERS_UPDATED_EVENT = 'PROVIDERS_UPDATED_EVENT';
  */
 export class DebuggerProviderStore {
   _dispatcher: DebuggerDispatcher;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _debuggerActions: DebuggerActions;
   _emitter: Emitter;
   _debuggerProviders: Set<NuclideDebuggerProvider>;
@@ -36,7 +37,7 @@ export class DebuggerProviderStore {
     debuggerActions: DebuggerActions,
   ) {
     this._dispatcher = dispatcher;
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       this._registerDispatcherEvents(),
       this._listenForProjectChange(),
     );

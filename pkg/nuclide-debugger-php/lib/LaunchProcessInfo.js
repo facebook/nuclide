@@ -24,7 +24,7 @@ import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
 
 import logger from './utils';
 import {getSessionConfig} from './utils';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {shellParse} from 'nuclide-commons/string';
 
 export class LaunchProcessInfo extends DebuggerProcessInfo {

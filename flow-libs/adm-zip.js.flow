@@ -126,14 +126,14 @@ declare module 'adm-zip' {
      *
      * @param entry
      */
-    deleteFile(entry: ZipEntry): void,
+    deleteFile(entry: ZipEntry | string): void,
 
     /**
      * Adds a comment to the zip. The zip must be rewritten after adding the comment.
      *
      * @param comment
      */
-    addZipComment(comment: string): void,
+    addZipComment(comment: Buffer): void,
 
     /**
      * Returns the zip comment

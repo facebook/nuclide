@@ -10,19 +10,22 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
+  DiagnosticFix,
+  DiagnosticMessage,
+  DiagnosticMessageKind,
+  DiagnosticMessageType,
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
+  DiagnosticTrace,
   FindReferencesReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {ConnectableObservable} from 'rxjs';
 import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
@@ -87,10 +90,30 @@ export type AutocompleteRequest = {|
   prefix: string,
 |};
 
-export interface LanguageService {
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
+// A (RPC-able) subset of DiagnosticMessage.
+export type FileDiagnosticMessage = {|
+  kind?: DiagnosticMessageKind,
+  providerName: string,
+  type: DiagnosticMessageType,
+  filePath: NuclideUri,
+  text?: string,
+  html?: string,
+  range?: atom$Range,
+  trace?: Array<DiagnosticTrace>,
+  fix?: DiagnosticFix,
+  actions?: void, // Help Flow believe this is a subtype.
+  stale?: boolean,
+|};
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
+// Ensure that this is actually a subset.
+(((null: any): FileDiagnosticMessage): DiagnosticMessage);
+
+export type FileDiagnosticMap = Map<NuclideUri, Array<FileDiagnosticMessage>>;
+
+export interface LanguageService {
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap>,
+
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
@@ -155,7 +178,9 @@ export interface LanguageService {
     options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
-  getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>>,
+  getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>>,
 
   getEvaluationExpression(
     fileVersion: FileVersion,

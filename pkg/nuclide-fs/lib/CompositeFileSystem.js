@@ -150,7 +150,7 @@ export class CompositeFileSystem implements FileSystem {
       async (segFs, pth) => {
         return (await segFs.readdir(pth)).map(([name, isFile, isLink]) => [
           name,
-          isFile && !nuclideUri.hasKnownArchiveExtension(name),
+          isFile,
           isLink,
         ]);
       },
@@ -211,6 +211,10 @@ export class CompositeFileSystem implements FileSystem {
   }
 
   isNfs(fullPath: NuclideUri): Promise<boolean> {
+    return this._resolveFs(fullPath, (segFs, pth) => segFs.isNfs(pth));
+  }
+
+  isFuse(fullPath: NuclideUri): Promise<boolean> {
     return this._resolveFs(fullPath, (segFs, pth) => segFs.isNfs(pth));
   }
 

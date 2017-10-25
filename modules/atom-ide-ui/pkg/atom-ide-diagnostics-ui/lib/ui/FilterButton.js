@@ -10,57 +10,29 @@
  * @format
  */
 
-import type {IconName} from 'nuclide-commons-ui/Icon';
-import type {FilterType} from '../types';
+import type {DiagnosticGroup} from '../types';
 
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
 import * as React from 'react';
+import * as GroupUtils from '../GroupUtils';
 
 type Props = {|
-  type: FilterType,
+  group: DiagnosticGroup,
   selected: boolean,
   onClick: () => mixed,
 |};
 
 export default function FilterButton(props: Props): React.Node {
-  const {selected, type} = props;
-  const typeName = getFilterTypeDisplayName(type);
-  const title = props.selected ? `Hide ${typeName}` : `Show ${typeName}`;
+  const {selected, group} = props;
+  const displayName = GroupUtils.getDisplayName(group);
+  const title = props.selected ? `Hide ${displayName}` : `Show ${displayName}`;
   return (
     <Button
-      icon={getIcon(type)}
+      icon={GroupUtils.getIcon(group)}
       size={ButtonSizes.SMALL}
       selected={selected}
       onClick={props.onClick}
       tooltip={{title}}
     />
   );
-}
-
-function getFilterTypeDisplayName(type: FilterType): string {
-  switch (type) {
-    case 'errors':
-      return 'Errors';
-    case 'warnings':
-      return 'Warnings & Info';
-    case 'review':
-      return 'Review';
-    default:
-      (type: empty);
-      throw new Error(`Invalid filter type: ${type}`);
-  }
-}
-
-function getIcon(type: FilterType): IconName {
-  switch (type) {
-    case 'errors':
-      return 'nuclicon-stop';
-    case 'warnings':
-      return 'alert';
-    case 'review':
-      return 'nuclicon-comment-discussion';
-    default:
-      (type: empty);
-      throw new Error(`Invalid filter type: ${type}`);
-  }
 }

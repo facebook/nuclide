@@ -17,6 +17,7 @@ import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import {WORKSPACE_VIEW_URI} from 'atom-ide-ui/pkg/atom-ide-outline-view/lib/OutlineViewPanel';
+import {makeToolbarButtonSpec} from '../../nuclide-ui/ToolbarUtils';
 
 const NUX_OUTLINE_VIEW_TOUR = 'nuclide_outline_view_nux';
 const NUX_OUTLINE_VIEW_ID = 4342;
@@ -31,12 +32,14 @@ class Activation {
 
   consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('outline-view');
-    const {element} = toolBar.addButton({
-      icon: 'list-unordered',
-      callback: 'outline-view:toggle',
-      tooltip: 'Toggle Outline',
-      priority: 200,
-    });
+    const {element} = toolBar.addButton(
+      makeToolbarButtonSpec({
+        icon: 'list-unordered',
+        callback: 'outline-view:toggle',
+        tooltip: 'Toggle Outline',
+        priority: 200,
+      }),
+    );
     // Class added is not defined elsewhere, and is just used to mark the toolbar button
     element.classList.add('outline-view-toolbar-button');
     const disposable = new UniversalDisposable(() => {

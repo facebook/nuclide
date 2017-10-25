@@ -38,10 +38,13 @@ export type DebuggerCapabilities = {
   +conditionalBreakpoints: boolean,
   +continueToLocation: boolean,
   +customSourcePaths: boolean,
+  +disassembly: boolean,
   +readOnlyTarget: boolean,
+  +registers: boolean,
   +setVariable: boolean,
   +singleThreadStepping: boolean,
   +threads: boolean,
+  +completionsRequest: boolean,
 };
 
 // Describes how to configure various properties that individual debuggers

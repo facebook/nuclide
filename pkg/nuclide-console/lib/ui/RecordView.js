@@ -153,7 +153,14 @@ export default class RecordView extends React.Component<Props> {
         <div ref={this._handleRecordWrapper} className={classNames}>
           {icon}
           <div className="nuclide-console-record-content-wrapper">
-            {this._renderContent(displayableRecord)}
+            {displayableRecord.record.repeatCount > 1 && (
+              <div className="nuclide-console-record-duplicate-number">
+                {displayableRecord.record.repeatCount}
+              </div>
+            )}
+            <div className="nuclide-console-record-content">
+              {this._renderContent(displayableRecord)}
+            </div>
           </div>
           {sourceLabel}
           {renderedTimestamp}

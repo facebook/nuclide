@@ -15,6 +15,7 @@ import type {Observable} from 'rxjs';
 import invariant from 'assert';
 import fs from 'fs';
 import temp from 'temp';
+import uuid from 'uuid';
 import fsPromise from './fsPromise';
 import nuclideUri from './nuclideUri';
 import {asyncLimit} from './promise';
@@ -188,4 +189,17 @@ export async function generateFixture(
   );
 
   return tempDir;
+}
+
+export function writeCoverage(): void {
+  const {COVERAGE_DIR} = process.env;
+  if (COVERAGE_DIR != null) {
+    const coverage = global.__coverage__;
+    if (coverage != null) {
+      fs.writeFileSync(
+        nuclideUri.join(COVERAGE_DIR, uuid.v4() + '.json'),
+        JSON.stringify(coverage),
+      );
+    }
+  }
 }

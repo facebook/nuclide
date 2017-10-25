@@ -15,6 +15,7 @@ import type {
   OutputProvider,
   RecordHeightChangeHandler,
   Source,
+  WatchEditorFunction,
 } from '../types';
 import type {RegExpFilterChange} from 'nuclide-commons-ui/RegExpFilter';
 
@@ -37,6 +38,7 @@ type Props = {
   history: Array<string>,
   clearRecords: () => void,
   createPaste: ?() => Promise<void>,
+  watchEditor: ?WatchEditorFunction,
   execute: (code: string) => void,
   currentExecutor: ?Executor,
   executors: Map<string, Executor>,
@@ -232,6 +234,7 @@ export default class Console extends React.Component<Props, State> {
           scopeName={currentExecutor.scopeName}
           onSubmit={this._executePrompt}
           history={this.props.history}
+          watchEditor={this.props.watchEditor}
         />
       </div>
     );

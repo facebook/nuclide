@@ -19,7 +19,7 @@ import type {WatchExpressionStore} from './WatchExpressionStore';
 import type DebuggerDispatcher, {DebuggerAction} from './DebuggerDispatcher';
 import type {Observable} from 'rxjs';
 
-import {Disposable, CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {BehaviorSubject} from 'rxjs';
 import {ActionTypes} from './DebuggerDispatcher';
 import {DebuggerMode} from './DebuggerStore';
@@ -39,11 +39,9 @@ export class WatchExpressionListStore {
   ) {
     this._watchExpressionStore = watchExpressionStore;
     const dispatcherToken = dispatcher.register(this._handlePayload.bind(this));
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
-        dispatcher.unregister(dispatcherToken);
-      }),
-    );
+    this._disposables = new UniversalDisposable(() => {
+      dispatcher.unregister(dispatcherToken);
+    });
     this._watchExpressions = new BehaviorSubject([]);
     if (initialWatchExpressions) {
       this._deserializeWatchExpressions(initialWatchExpressions);

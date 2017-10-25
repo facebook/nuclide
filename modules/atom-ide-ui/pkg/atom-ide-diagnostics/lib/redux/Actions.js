@@ -16,7 +16,7 @@ import type {
   CodeActionsState,
   DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
-  FileDiagnosticMessage,
+  DiagnosticMessage,
   ObservableDiagnosticProvider,
 } from '../types';
 import type {CodeActionFetcher} from '../../../atom-ide-code-actions/lib/types';
@@ -58,7 +58,7 @@ export function setCodeActionFetcher(
 
 export function fetchCodeActions(
   editor: atom$TextEditor,
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
 ): Action {
   return {
     type: FETCH_CODE_ACTIONS,
@@ -100,7 +100,7 @@ export function updateMessages(
   };
 }
 
-export function applyFix(message: FileDiagnosticMessage): Action {
+export function applyFix(message: DiagnosticMessage): Action {
   return {
     type: APPLY_FIX,
     payload: {
@@ -124,7 +124,7 @@ export function fixFailed(): Action {
 
 export function fixesApplied(
   filePath: NuclideUri,
-  messages: Set<FileDiagnosticMessage>,
+  messages: Set<DiagnosticMessage>,
 ): Action {
   return {
     type: FIXES_APPLIED,

@@ -10,7 +10,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from '../lib/types';
+import type {DiagnosticMessage} from '../lib/types';
 
 import {Observable} from 'rxjs';
 import {ActionsObservable} from 'nuclide-commons/redux-observable';
@@ -28,10 +28,7 @@ describe('Epics', () => {
       getTitle: () => Promise.resolve('test'),
     };
     const TEST_DIAGNOSTIC = {};
-    const fakeMessages: Array<FileDiagnosticMessage> = ([
-      TEST_DIAGNOSTIC,
-      {},
-    ]: any);
+    const fakeMessages: Array<DiagnosticMessage> = ([TEST_DIAGNOSTIC, {}]: any);
 
     it('fetches code actions for a set of diagnostics', () => {
       const store = createStore(fakeMessageRangeTracker);

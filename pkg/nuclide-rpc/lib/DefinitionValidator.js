@@ -503,12 +503,12 @@ export function validateDefinitions(definitions: Definitions): void {
       case 'string-literal':
       case 'boolean-literal':
       case 'number-literal':
-        break;
       case 'void':
+        break;
       case 'promise':
       case 'observable':
         throw error(
-          'Promise, void and Observable types may only be used as return types',
+          'Promise and Observable types may only be used as return types',
         );
       case 'array':
         validateType(type.type);

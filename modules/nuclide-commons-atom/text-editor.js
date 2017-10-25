@@ -85,16 +85,18 @@ export function setPositionAndScroll(
 export function getCursorPositions(
   editor: atom$TextEditor,
 ): Observable<atom$Point> {
-  // This will behave strangely in the face of multiple cursors. Consider supporting multiple
-  // cursors in the future.
-  const cursor = editor.getCursors()[0];
-  invariant(cursor != null);
-  return Observable.merge(
-    Observable.of(cursor.getBufferPosition()),
-    observableFromSubscribeFunction(
-      cursor.onDidChangePosition.bind(cursor),
-    ).map(event => event.newBufferPosition),
-  );
+  return Observable.defer(() => {
+    // This will behave strangely in the face of multiple cursors. Consider supporting multiple
+    // cursors in the future.
+    const cursor = editor.getCursors()[0];
+    invariant(cursor != null);
+    return Observable.merge(
+      Observable.of(cursor.getBufferPosition()),
+      observableFromSubscribeFunction(
+        cursor.onDidChangePosition.bind(cursor),
+      ).map(event => event.newBufferPosition),
+    );
+  });
 }
 
 export function observeEditorDestroy(

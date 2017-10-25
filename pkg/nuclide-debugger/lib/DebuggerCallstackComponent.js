@@ -48,6 +48,7 @@ export class DebuggerCallstackComponent extends React.Component<
   }
 
   _locationComponent = (props: {
+    // eslint-disable-next-line react/no-unused-prop-types
     data: {
       path: string,
       line: number,

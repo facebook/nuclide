@@ -13,7 +13,7 @@
 import type {Datatip} from '../../atom-ide-datatip/lib/types';
 import type {
   DiagnosticUpdater,
-  FileDiagnosticMessage,
+  DiagnosticMessage,
 } from '../../atom-ide-diagnostics/lib/types';
 
 import invariant from 'assert';
@@ -26,7 +26,7 @@ import {DiagnosticsPopup} from './ui/DiagnosticsPopup';
 const gotoLine = (file: string, line: number) => goToLocation(file, {line});
 
 function makeDatatipComponent(
-  messages: Array<FileDiagnosticMessage>,
+  messages: Array<DiagnosticMessage>,
   diagnosticUpdater: DiagnosticUpdater,
 ): React.ComponentType<*> {
   const fixer = message => diagnosticUpdater.applyFix(message);
@@ -46,7 +46,7 @@ function makeDatatipComponent(
 export default (async function getDiagnosticDatatip(
   editor: TextEditor,
   position: atom$Point,
-  messagesAtPosition: Array<FileDiagnosticMessage>,
+  messagesAtPosition: Array<DiagnosticMessage>,
   diagnosticUpdater: DiagnosticUpdater,
 ): Promise<?Datatip> {
   let range = null;

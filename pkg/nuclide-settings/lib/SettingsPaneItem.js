@@ -9,7 +9,7 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import * as React from 'react';
 import SettingsCategory from './SettingsCategory';
@@ -23,7 +23,7 @@ export default class NuclideSettingsPaneItem extends React.Component<
   Object,
   Object,
 > {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Object) {
     super(props);
@@ -37,7 +37,7 @@ export default class NuclideSettingsPaneItem extends React.Component<
     // Only need to add config listeners once.
     let disposables = null;
     if (!this._disposables) {
-      this._disposables = disposables = new CompositeDisposable();
+      this._disposables = disposables = new UniversalDisposable();
     }
 
     const configData = {};

@@ -12,13 +12,13 @@
 import type {Directory} from '../../nuclide-remote-connection';
 
 import {CwdApi} from './CwdApi';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getAtomProjectRootPath} from 'nuclide-commons-atom/projects';
 import getElementFilePath from '../../commons-atom/getElementFilePath';
 
 export class Activation {
   _cwdApi: CwdApi;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _lastWorkingRootPath: ?string;
   _currentWorkingRootDirectory: ?Directory;
 
@@ -27,7 +27,7 @@ export class Activation {
     const {initialCwdPath} = state;
     this._cwdApi = new CwdApi(initialCwdPath);
     this._currentWorkingRootDirectory = this._cwdApi.getCwd();
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       this._cwdApi,
       atom.commands.add(
         'atom-workspace',

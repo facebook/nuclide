@@ -86,7 +86,8 @@ export async function getGeneratedFileTypes(
     const tag = fileTags.get(file);
     if (tag == null) {
       cache.set(filePath, 'manual');
-      fileTypes.set(filePath, 'manual');
+      // don't send this across the wire; receiver should assume that if it gets
+      // a response, any files in the directory that aren't specified are manual
     } else {
       cache.set(filePath, tag);
       fileTypes.set(filePath, tag);
@@ -99,35 +100,46 @@ export async function getGeneratedFileTypes(
 // 1000 entries should allow for a good number of open directories
 const cache: LRUCache<NuclideUri, GeneratedFileType> = new LRU({max: 1000});
 
+function getTagPattern(forWindows: boolean): ?string {
+  if (config.generatedTag == null) {
+    return config.partialGeneratedTag;
+  }
+  if (config.partialGeneratedTag == null) {
+    return config.generatedTag;
+  }
+  const separator = forWindows ? ' ' : '\\|';
+  return config.generatedTag + separator + config.partialGeneratedTag;
+}
+
 function findTaggedFiles(
   dirPath: NuclideUri,
   filenames: Array<string>,
 ): Promise<Map<string, GeneratedFileType>> {
   let command: string;
-  let args: Array<string>;
-  let options;
+  let baseArgs: Array<string>;
+  let pattern: ?string;
   if (process.platform === 'win32' && nuclideUri.isLocal(dirPath)) {
     command = 'findstr';
-    const pattern = config.generatedTag + ' ' + config.partialGeneratedTag;
-    const filesToGrep = filenames.length === 0 ? ['*'] : filenames;
     // ignore "files with nonprintable characters"
-    args = ['-p', pattern, ...filesToGrep];
-    options = {
-      cwd: dirPath,
-    };
+    baseArgs = ['-p'];
+    pattern = getTagPattern(true);
   } else {
     command = 'grep';
-    const pattern = config.generatedTag + '\\|' + config.partialGeneratedTag;
-    const filesToGrep = filenames.length === 0 ? ['*'] : filenames;
     // print with filename, ignore binary files and skip directories
-    args = ['-HId', 'skip', pattern, ...filesToGrep];
-    options = {
-      cwd: dirPath,
-      isExitError: ({exitCode, signal}) => {
-        return signal != null && (exitCode == null || exitCode > 1);
-      },
-    };
+    baseArgs = ['-HId', 'skip'];
+    pattern = getTagPattern(false);
   }
+  if (pattern == null) {
+    return Promise.resolve(new Map());
+  }
+  const filesToGrep = filenames.length === 0 ? ['*'] : filenames;
+  const args = [...baseArgs, pattern, ...filesToGrep];
+  const options = {
+    cwd: dirPath,
+    isExitError: ({exitCode, signal}) => {
+      return signal != null && (exitCode == null || exitCode > 1);
+    },
+  };
   return runCommand(command, args, options)
     .map(stdout => {
       const fileTags: Map<string, GeneratedFileType> = new Map();

@@ -17,8 +17,7 @@ import type {
 import {DbgpSocket} from './DbgpSocket';
 import {DataCache} from './DataCache';
 import {ConnectionStatus} from './DbgpSocket';
-
-import {CompositeDisposable} from 'event-kit';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import type {MessageSender} from './types';
 import type {Socket} from 'net';
@@ -46,7 +45,7 @@ export class Connection {
   _socket: DbgpSocket;
   _dataCache: DataCache;
   _id: number;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _status: string;
   _stopReason: ?string;
   _stopBreakpointLocation: ?FileLineBreakpointInfo;
@@ -69,7 +68,7 @@ export class Connection {
     this._status = ConnectionStatus.Starting;
     this._isDummyConnection = isDummyConnection;
     this._isDummyViewable = false;
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._breakCount = 0;
     this._onUserOutputCallback = onUserOutputCallback;
 

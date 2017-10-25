@@ -43,7 +43,7 @@ export class WebSocketTransport {
     this._messages = new Subject();
 
     logger.info('Client #%s connecting with a new socket!', this.id);
-    socket.on('message', (data, flags) => {
+    socket.on('message', data => {
       this._onSocketMessage(data);
     });
 
@@ -72,7 +72,7 @@ export class WebSocketTransport {
       }
     });
 
-    socket.on('pong', (data, flags) => {
+    socket.on('pong', data => {
       if (this._socket != null) {
         // data may be a Uint8Array
         this._emitter.emit('pong', data != null ? String(data) : data);

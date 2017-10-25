@@ -13,7 +13,7 @@ import type {BlameProvider} from './types';
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {FileTreeNode} from '../../nuclide-file-tree/lib/FileTreeNode';
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import invariant from 'assert';
 
 import BlameGutter from './BlameGutter';
@@ -22,13 +22,14 @@ import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 import {track, trackTiming} from '../../nuclide-analytics';
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 const PACKAGES_MISSING_MESSAGE =
   'Could not open blame. Missing at least one blame provider.';
 const TOGGLE_BLAME_FILE_TREE_CONTEXT_MENU_PRIORITY = 2000;
 
 class Activation {
-  _packageDisposables: CompositeDisposable;
+  _packageDisposables: UniversalDisposable;
   _registeredProviders: Set<BlameProvider>;
   // Map of a TextEditor to its BlameGutter, if it exists.
   _textEditorToBlameGutter: Map<atom$TextEditor, BlameGutter>;
@@ -39,7 +40,7 @@ class Activation {
     this._registeredProviders = new Set();
     this._textEditorToBlameGutter = new Map();
     this._textEditorToDestroySubscription = new Map();
-    this._packageDisposables = new CompositeDisposable();
+    this._packageDisposables = new UniversalDisposable();
     this._packageDisposables.add(
       atom.contextMenu.add({
         'atom-text-editor': [

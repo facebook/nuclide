@@ -10,7 +10,7 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
+import type {DiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
 
 import * as React from 'react';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
@@ -19,10 +19,13 @@ import {DiagnosticsMessageText} from './DiagnosticsMessageText';
 import {DiagnosticsTraceItem} from './DiagnosticsTraceItem';
 
 type DiagnosticsMessageProps = {
-  message: FileDiagnosticMessage,
+  // these are processed in traceElements below
+  /* eslint-disable react/no-unused-prop-types */
+  message: DiagnosticMessage,
   goToLocation: (path: string, line: number) => mixed,
-  fixer: (message: FileDiagnosticMessage) => void,
-  children?: Array<React.Element<any>>,
+  fixer: (message: DiagnosticMessage) => void,
+  children?: React.Node,
+  /* eslint-enable react/no-unused-prop-types */
 };
 
 const PROVIDER_CLASS_NAME = {

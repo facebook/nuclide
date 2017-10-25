@@ -14,17 +14,18 @@ import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
 import type TypeHintManagerType from './TypeHintManager';
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import TypeHintManager from './TypeHintManager';
 
 const PACKAGE_NAME = 'nuclide-type-hint';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   typeHintManager: ?TypeHintManagerType;
 
   constructor(state: ?any) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     if (this.typeHintManager == null) {
       this.typeHintManager = new TypeHintManager();
     }

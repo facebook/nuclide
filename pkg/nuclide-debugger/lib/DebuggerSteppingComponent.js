@@ -291,9 +291,15 @@ export class DebuggerSteppingComponent extends React.Component<
           {setSourcePathsButton}
         </ButtonGroup>
         <ButtonGroup className="nuclide-debugger-stepping-buttongroup">
-          {customControlButtons.map((specification, i) => (
-            <Button {...specification} key={i} />
-          ))}
+          {customControlButtons.map((specification, i) => {
+            const buttonProps = {
+              ...specification,
+              tooltip: {
+                title: specification.title,
+              },
+            };
+            return <Button {...buttonProps} key={i} />;
+          })}
         </ButtonGroup>
         <Checkbox
           className="nuclide-debugger-exception-checkbox"

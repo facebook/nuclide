@@ -29,12 +29,32 @@
 // eslint-disable-next-line rulesdir/modules-dependencies
 require('../nuclide-node-transpiler');
 
+// Patch `console` to output through the main process.
+const {Console} = require('console');
+const {ipcRenderer} = require('electron');
+global.console = new Console(
+  /* stdout */ {
+    write(chunk) {
+      ipcRenderer.send('write-to-stdout', chunk);
+    },
+  },
+  /* stderr */ {
+    write(chunk) {
+      ipcRenderer.send('write-to-stderr', chunk);
+    },
+  }
+);
+
 module.exports = function(params) {
   return params.legacyTestRunner(params)
     .then(statusCode => {
       return new Promise(resolve => {
         const temp = require('temp');
         if (statusCode === 0) {
+          // eslint-disable-next-line rulesdir/modules-dependencies
+          const {writeCoverage} = require('../nuclide-commons/test-helpers');
+          writeCoverage();
+
           // Atom intercepts "process.exit" so we have to do our own manual cleanup.
           temp.cleanup((err, stats) => {
             resolve(statusCode);

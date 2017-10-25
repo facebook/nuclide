@@ -19,7 +19,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {DebuggerMode} from './DebuggerStore';
 import nullthrows from 'nullthrows';
 
@@ -90,7 +90,7 @@ export default class RemoteControlService {
   getTerminal(): any {
     try {
       // $FlowFB
-      const terminalUri = require('../../commons-node/fb-terminal-uri');
+      const terminalUri = require('../../commons-node/nuclide-terminal-uri');
       return terminalUri;
     } catch (_) {
       return null;

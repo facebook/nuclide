@@ -31,6 +31,12 @@
       "versions": {
         "0.0.0": "getProjectSelectionManagerForFileTree"
       }
+    },
+    "additional-log-files": {
+      "description": "File tree state files",
+      "versions": {
+        "0.0.0": "getFileTreeAdditionalLogFilesProvider"
+      }
     }
   },
   "atomTestRunner": "../../lib/test-runner-entry.js",

@@ -124,6 +124,10 @@ export class ArchiveFileSystem implements FileSystem {
     return this._fs.isNfs(path);
   }
 
+  isFuse(path: NuclideUri): Promise<boolean> {
+    return this._fs.isFuse(path);
+  }
+
   openArchive(path: NuclideUri): Promise<FileSystem> {
     return this._fs.openArchive(path);
   }

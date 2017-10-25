@@ -15,7 +15,7 @@ import type {BlameForEditor, BlameProvider} from './types';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import hideAllTooltips from '../../nuclide-ui/hide-all-tooltips';
 import {track, trackTiming} from '../../nuclide-analytics';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {shell} from 'electron';
 // eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {shortNameForAuthor} from '../../nuclide-vcs-log';
@@ -55,7 +55,7 @@ export default class BlameGutter {
   _loadingSpinnerDiv: ?HTMLElement;
   _isDestroyed: boolean;
   _isEditorDestroyed: boolean;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   /**
    * @param gutterName A name for this gutter. Must not be used by any another
@@ -72,7 +72,7 @@ export default class BlameGutter {
     this._isDestroyed = false;
     this._isEditorDestroyed = false;
 
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._editor = editor;
     this._blameProvider = blameProvider;
     this._bufferLineToDecoration = new Map();

@@ -154,15 +154,31 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
     this.getLogger().setLevel(config.logLevel);
   }
 
+  _expandPath(path: string, cwd: ?string): string {
+    // Expand a path to interpret ~/ as home and ./ as relative
+    // to the current working directory.
+    return path.startsWith('./')
+      ? nuclideUri.resolve(
+          cwd != null ? nuclideUri.expandHomeDir(cwd) : '',
+          path.substring(2),
+        )
+      : nuclideUri.expandHomeDir(path);
+  }
+
   attach(attachInfo: AttachTargetInfo): ConnectableObservable<void> {
     this.getLogger().debug(`attach process: ${JSON.stringify(attachInfo)}`);
     const inferiorArguments = {
       pid: String(attachInfo.pid),
-      // flowlint-next-line sketchy-null-string:off
-      basepath: attachInfo.basepath
-        ? attachInfo.basepath
-        : this._config.buckConfigRootFile,
-      lldb_python_path: this._config.lldbPythonPath,
+      basepath: this._expandPath(
+        attachInfo.basepath != null
+          ? attachInfo.basepath
+          : this._config.buckConfigRootFile,
+        null,
+      ),
+      lldb_python_path: this._expandPath(
+        this._config.lldbPythonPath || '',
+        null,
+      ),
     };
     return Observable.fromPromise(
       this._startDebugging(inferiorArguments),
@@ -171,19 +187,30 @@ export class NativeDebuggerService extends DebuggerRpcWebSocketService {
 
   launch(launchInfo: LaunchTargetInfo): ConnectableObservable<void> {
     this.getLogger().debug(`launch process: ${JSON.stringify(launchInfo)}`);
+    const exePath = launchInfo.executablePath.trim();
     const inferiorArguments = {
-      executable_path: launchInfo.executablePath,
+      executable_path: this._expandPath(exePath, launchInfo.workingDirectory),
       launch_arguments: launchInfo.arguments,
       launch_environment_variables: launchInfo.environmentVariables,
       working_directory: launchInfo.workingDirectory,
-      // flowlint-next-line sketchy-null-string:off
-      stdin_filepath: launchInfo.stdinFilePath ? launchInfo.stdinFilePath : '',
-      // flowlint-next-line sketchy-null-string:off
-      basepath: launchInfo.basepath
-        ? launchInfo.basepath
-        : this._config.buckConfigRootFile,
-      lldb_python_path: this._config.lldbPythonPath,
-      core_dump_path: launchInfo.coreDump || '',
+      stdin_filepath: this._expandPath(
+        launchInfo.stdinFilePath != null ? launchInfo.stdinFilePath : '',
+        launchInfo.workingDirectory,
+      ),
+      basepath: this._expandPath(
+        launchInfo.basepath != null
+          ? launchInfo.basepath
+          : this._config.buckConfigRootFile,
+        launchInfo.workingDirectory,
+      ),
+      lldb_python_path: this._expandPath(
+        this._config.lldbPythonPath || '',
+        launchInfo.workingDirectory,
+      ),
+      core_dump_path: this._expandPath(
+        launchInfo.coreDump || '',
+        launchInfo.workingDirectory,
+      ),
     };
 
     if (launchInfo.coreDump != null && launchInfo.coreDump !== '') {

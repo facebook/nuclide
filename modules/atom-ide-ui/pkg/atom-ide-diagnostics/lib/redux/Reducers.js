@@ -14,7 +14,6 @@ import type {
   Action,
   CodeActionsState,
   MessagesState,
-  ProjectMessagesState,
   ObservableDiagnosticProvider,
 } from '../types';
 import type {CodeActionFetcher} from '../../../atom-ide-code-actions/lib/types';
@@ -27,10 +26,7 @@ export function messages(
 ): MessagesState {
   switch (action.type) {
     case Actions.UPDATE_MESSAGES: {
-      const {provider, update: {filePathToMessages}} = action.payload;
-      if (filePathToMessages == null) {
-        return state;
-      }
+      const {provider, update} = action.payload;
       const nextState = new Map(state);
       // Override the messages we already have for each path.
       const prevMessages = nextState.get(provider) || new Map();
@@ -38,17 +34,12 @@ export function messages(
       // we'd like to keep this immutable and we're also accumulating the messages, (and therefore
       // already O(n^2)). So, for now, we'll accept that and revisit if it proves to be a
       // bottleneck.
-      const nextMessages = new Map([...prevMessages, ...filePathToMessages]);
+      const nextMessages = new Map([...prevMessages, ...update]);
       nextState.set(provider, nextMessages);
       return nextState;
     }
     case Actions.INVALIDATE_MESSAGES: {
       const {provider, invalidation} = action.payload;
-
-      // We don't do anything for file messages when the project is invalidated.
-      if (invalidation.scope === 'project') {
-        return state;
-      }
 
       // If there aren't any messages for this provider, there's nothing to do.
       const filesToMessages = state.get(provider);
@@ -118,46 +109,6 @@ export function messages(
       }
 
       return nextState || state;
-    }
-    case Actions.REMOVE_PROVIDER: {
-      return mapDelete(state, action.payload.provider);
-    }
-  }
-
-  return state;
-}
-
-export function projectMessages(
-  state: ProjectMessagesState = new Map(),
-  action: Action,
-): ProjectMessagesState {
-  switch (action.type) {
-    case Actions.UPDATE_MESSAGES: {
-      const {provider, update} = action.payload;
-      const {projectMessages: newProjectMessages} = update;
-      if (newProjectMessages == null) {
-        return state;
-      }
-      const nextState = new Map(state);
-      nextState.set(provider, newProjectMessages);
-      return nextState;
-    }
-    case Actions.INVALIDATE_MESSAGES: {
-      const {provider, invalidation: {scope}} = action.payload;
-      if (scope !== 'project' && scope !== 'all') {
-        return state;
-      }
-
-      const messagesForProvider = state.get(provider);
-
-      // If we don't have any project messages for this provider, we don't need to do anything.
-      if (messagesForProvider == null || messagesForProvider.length === 0) {
-        return state;
-      }
-
-      const nextState = new Map(state);
-      nextState.set(provider, []);
-      return nextState;
     }
     case Actions.REMOVE_PROVIDER: {
       return mapDelete(state, action.payload.provider);

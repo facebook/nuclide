@@ -15,9 +15,8 @@ import type {
   DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
   DiagnosticUpdateCallback,
-  FileDiagnosticMessages,
 } from 'atom-ide-ui';
-import type {LanguageService} from './LanguageService';
+import type {FileDiagnosticMap, LanguageService} from './LanguageService';
 import type {BusySignalProvider} from './AtomLanguageService';
 
 import {Cache} from 'nuclide-commons/cache';
@@ -196,19 +195,17 @@ export class FileDiagnosticsProvider<T: LanguageService> {
           pathsForHackLanguage.add(path);
         }
       };
-      if (diagnostics.filePathToMessages != null) {
-        diagnostics.filePathToMessages.forEach((messages, messagePath) => {
-          addPath(messagePath);
-          messages.forEach(message => {
-            addPath(message.filePath);
-            if (message.trace != null) {
-              message.trace.forEach(trace => {
-                addPath(trace.filePath);
-              });
-            }
-          });
+      diagnostics.forEach((messages, messagePath) => {
+        addPath(messagePath);
+        messages.forEach(message => {
+          addPath(message.filePath);
+          if (message.trace != null) {
+            message.trace.forEach(trace => {
+              addPath(trace.filePath);
+            });
+          }
         });
-      }
+      });
 
       this._providerBase.publishMessageUpdate(diagnostics);
     });
@@ -286,9 +283,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
     this._subscriptions.dispose();
   }
 
-  async findDiagnostics(
-    editor: atom$TextEditor,
-  ): Promise<?DiagnosticProviderUpdate> {
+  async findDiagnostics(editor: atom$TextEditor): Promise<?FileDiagnosticMap> {
     const fileVersion = await getFileVersionOfEditor(editor);
     const languageService = this._connectionToLanguageService.getForUri(
       editor.getPath(),
@@ -356,30 +351,19 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
                 }),
             );
           })
-          .map((updates: Array<FileDiagnosticMessages>) => {
+          .map((updates: FileDiagnosticMap) => {
+            track(this._analyticsEventName);
             const filePathToMessages = new Map();
-            updates.forEach(update => {
-              const {filePath, messages} = update;
-              track(this._analyticsEventName);
+            updates.forEach((messages, filePath) => {
               const fileCache = this._connectionToFiles.get(connection);
               if (messages.length === 0) {
-                this._logger.debug(
-                  `Observing diagnostics: removing ${filePath}, ${this
-                    ._analyticsEventName}`,
-                );
                 fileCache.delete(filePath);
               } else {
-                this._logger.debug(
-                  `Observing diagnostics: adding ${filePath}, ${this
-                    ._analyticsEventName}`,
-                );
                 fileCache.add(filePath);
               }
               filePathToMessages.set(filePath, messages);
             });
-            return {
-              filePathToMessages,
-            };
+            return filePathToMessages;
           });
       })
       .catch(error => {

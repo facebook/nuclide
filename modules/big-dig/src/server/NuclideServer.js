@@ -68,7 +68,10 @@ export function launchServer(options: NuclideServerOptions): Promise<number> {
     // TODO(mbolin): If we want the new WebSocketServer to get the 'connection' event,
     // then we need to get it wired up before the webServer is connected.
     webServer.on('listening', () => {
-      const webSocketServer = new WS.Server({server: webServer});
+      const webSocketServer = new WS.Server({
+        server: webServer,
+        perMessageDeflate: true,
+      });
       webSocketServer.on('error', onError);
 
       const launcher: (

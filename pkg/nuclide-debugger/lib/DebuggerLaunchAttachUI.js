@@ -28,12 +28,15 @@ import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import {Dropdown} from '../../nuclide-ui/Dropdown';
 import Tabs from '../../nuclide-ui/Tabs';
 import {Observable} from 'rxjs';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 type PropsType = {
   dialogMode: DebuggerConfigAction,
+  // TODO: Remove disable
+  /* eslint-disable react/no-unused-prop-types */
   store: DebuggerProviderStore,
   debuggerActions: DebuggerActions,
+  /* eslint-enable react/no-unused-prop-types */
   connection: string,
   connectionChanged: (newValue: ?string) => void,
   // $FlowFixMe

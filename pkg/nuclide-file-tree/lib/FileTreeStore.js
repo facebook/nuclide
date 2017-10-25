@@ -31,7 +31,7 @@ import {WorkingSet} from '../../nuclide-working-sets-common';
 import {HistogramTracker, track} from '../../nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {RangeKey, SelectionRange, RangeUtil} from './FileTreeSelectionRange';
-import {getGeneratedFileServiceByNuclideUri} from '../../nuclide-remote-connection';
+import {awaitGeneratedFileServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 // Used to ensure the version we serialized is the same version we are deserializing.
 const VERSION = 1;
@@ -67,7 +67,6 @@ export type StoreConfigData = {
   >,
   workingSet: WorkingSet,
   hideIgnoredNames: boolean,
-  isCalculatingChanges: boolean,
   excludeVcsIgnoredPaths: boolean,
   ignoredPatterns: Immutable.Set<Minimatch>,
   usePreviewTabs: boolean,
@@ -90,7 +89,6 @@ export const DEFAULT_CONF = {
   workingSet: new WorkingSet(),
   editedWorkingSet: new WorkingSet(),
   hideIgnoredNames: true,
-  isCalculatingChanges: false,
   excludeVcsIgnoredPaths: true,
   ignoredPatterns: new Immutable.Set(),
   usePreviewTabs: false,
@@ -146,6 +144,7 @@ export class FileTreeStore {
   _targetNodeKeys: ?TargetNodeKeys;
   _trackedRootKey: ?NuclideUri;
   _trackedNodeKey: ?NuclideUri;
+  _isCalculatingChanges: boolean;
   selectionManager: FileTreeSelectionManager;
 
   static getInstance(): FileTreeStore {
@@ -188,6 +187,7 @@ export class FileTreeStore {
     this.uncommittedChangesExpanded = true;
     this._selectionRange = null;
     this._targetNodeKeys = null;
+    this._isCalculatingChanges = false;
   }
 
   /**
@@ -331,9 +331,8 @@ export class FileTreeStore {
   }
 
   _setIsCalculatingChanges(isCalculatingChanges: boolean): void {
-    this._updateConf(conf => {
-      conf.isCalculatingChanges = isCalculatingChanges;
-    });
+    this._isCalculatingChanges = isCalculatingChanges;
+    this._emitChange();
   }
 
   /**
@@ -757,7 +756,7 @@ export class FileTreeStore {
   }
 
   getIsCalculatingChanges(): boolean {
-    return this._conf.isCalculatingChanges;
+    return this._isCalculatingChanges;
   }
 
   _invalidateRemovedFolder(): void {
@@ -1177,7 +1176,18 @@ export class FileTreeStore {
   }
 
   async _setGeneratedChildren(nodeKey: NuclideUri): Promise<void> {
-    const generatedFileService = getGeneratedFileServiceByNuclideUri(nodeKey);
+    let generatedFileService;
+    try {
+      generatedFileService = await awaitGeneratedFileServiceByNuclideUri(
+        nodeKey,
+      );
+    } catch (e) {
+      this._logger.warn(
+        `ServerConnection cancelled while getting GeneratedFileService for ${nodeKey}`,
+        e,
+      );
+      return;
+    }
     const generatedFileTypes = await generatedFileService.getGeneratedFileTypes(
       nodeKey,
     );
@@ -1186,8 +1196,10 @@ export class FileTreeStore {
         const generatedType = generatedFileTypes.get(childNode.uri);
         if (generatedType != null) {
           return childNode.setGeneratedStatus(generatedType);
+        } else {
+          // if in the directory but not specified in the map, assume manual.
+          return childNode.setGeneratedStatus('manual');
         }
-        return childNode;
       });
       return node.set({children});
     });
@@ -1273,6 +1285,45 @@ export class FileTreeStore {
 
   getFilterFound(): boolean {
     return this.roots.some(root => root.containsFilterMatches);
+  }
+
+  collectDebugState(): Object {
+    return {
+      openFilesExpanded: this.openFilesExpanded,
+      uncommittedChangesExpanded: this.uncommittedChangesExpanded,
+      foldersExpanded: this.foldersExpanded,
+      reorderPreviewStatus: this.reorderPreviewStatus,
+      _filter: this._filter,
+      _selectionRange: this._selectionRange,
+      _targetNodeKeys: this._targetNodeKeys,
+      _trackedRootKey: this._trackedRootKey,
+      _trackedNodeKey: this._trackedNodeKey,
+      _isCalculatingChanges: this._isCalculatingChanges,
+
+      roots: Array.from(this.roots.values()).map(root =>
+        root.collectDebugState(),
+      ),
+      _conf: this._confCollectDebugState(),
+      selectionManager: this.selectionManager.collectDebugState(),
+    };
+  }
+
+  _confCollectDebugState(): Object {
+    return {
+      hideIgnoredNames: this._conf.hideIgnoredNames,
+      excludeVcsIgnoredPaths: this._conf.excludeVcsIgnoredPaths,
+      usePreviewTabs: this._conf.usePreviewTabs,
+      focusEditorOnFileSelection: this._conf.focusEditorOnFileSelection,
+      isEditingWorkingSet: this._conf.isEditingWorkingSet,
+
+      vcsStatuses: this._conf.vcsStatuses.toObject(),
+      workingSet: this._conf.workingSet.getUris(),
+      ignoredPatterns: this._conf.ignoredPatterns
+        .toArray()
+        .map(ignored => ignored.pattern),
+      openFilesWorkingSet: this._conf.openFilesWorkingSet.getUris(),
+      editedWorkingSet: this._conf.editedWorkingSet.getUris(),
+    };
   }
 
   /*
@@ -1990,11 +2041,18 @@ export class FileTreeStore {
       }
 
       const parents = [];
+      let prevUri = nodeKey;
       let currentParentUri = FileTreeHelpers.getParentKey(nodeKey);
       const rootUri = root.uri;
-      while (currentParentUri !== deepest.uri) {
+      while (currentParentUri !== deepest.uri && currentParentUri !== prevUri) {
         parents.push(currentParentUri);
+        prevUri = currentParentUri;
         currentParentUri = FileTreeHelpers.getParentKey(currentParentUri);
+      }
+
+      if (currentParentUri !== deepest.uri) {
+        // Something went wrong - we didn't find the match
+        return root;
       }
 
       let currentChild = new FileTreeNode({uri: nodeKey, rootUri}, this._conf);

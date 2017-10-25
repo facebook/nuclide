@@ -11,18 +11,19 @@
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import {wordAtPositionFromBuffer} from 'nuclide-commons/range';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   AutocompleteResult,
   Completion,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
-  FileDiagnosticMessage,
   FindReferencesReturn,
+  Reference,
   Outline,
   CodeAction,
 } from 'atom-ide-ui';
@@ -40,6 +41,8 @@ import type {
   FlowAutocompleteItem,
   TypeAtPosOutput,
   FlowStatusOutput,
+  FindRefsOutput,
+  FlowLoc,
 } from './flowOutputTypes';
 
 import invariant from 'assert';
@@ -182,7 +185,19 @@ export class FlowSingleProjectLanguageService {
     if (!isSupported) {
       return null;
     }
+    const result = await this._findRefs(filePath, buffer, position, false);
+    if (result == null || result.type === 'error') {
+      return null;
+    }
+    return result.references.map(ref => ref.range);
+  }
 
+  async _findRefs(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    position: atom$Point,
+    global_: boolean,
+  ): Promise<?FindReferencesReturn> {
     const options = {input: buffer.getText()};
     const args = [
       'find-refs',
@@ -192,21 +207,16 @@ export class FlowSingleProjectLanguageService {
       position.row + 1,
       position.column + 1,
     ];
+    if (global_) {
+      args.push('--global');
+    }
     try {
       const result = await this._process.execFlow(args, options);
       if (result == null) {
         return null;
       }
-      const json = parseJSON(args, result.stdout);
-      if (!Array.isArray(json)) {
-        return null;
-      }
-      return json.map(loc => {
-        return new Range(
-          new Point(loc.start.line - 1, loc.start.column - 1),
-          new Point(loc.end.line - 1, loc.end.column),
-        );
-      });
+      const json: FindRefsOutput = parseJSON(args, result.stdout);
+      return convertFindRefsOutput(json, this._root);
     } catch (e) {
       logger.error(`flowFindRefs error: ${String(e)}`);
       return null;
@@ -221,7 +231,7 @@ export class FlowSingleProjectLanguageService {
   async getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
-  ): Promise<?DiagnosticProviderUpdate> {
+  ): Promise<?FileDiagnosticMap> {
     await this._forceRecheck(filePath);
 
     const options = {};
@@ -274,12 +284,10 @@ export class FlowSingleProjectLanguageService {
       diagnosticArray.push(diagnostic);
     }
 
-    return {
-      filePathToMessages,
-    };
+    return filePathToMessages;
   }
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): Observable<FileDiagnosticMap> {
     const ideConnections = this._process.getIDEConnections();
     return ideConnections
       .switchMap(ideConnection => {
@@ -561,7 +569,9 @@ export class FlowSingleProjectLanguageService {
     throw new Error('Not implemeneted');
   }
 
-  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
     return [];
   }
 
@@ -598,7 +608,8 @@ export class FlowSingleProjectLanguageService {
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
   ): Promise<?FindReferencesReturn> {
-    throw new Error('Not Yet Implemented');
+    // TODO check flow version
+    return this._findRefs(filePath, buffer, position, true);
   }
 
   getEvaluationExpression(
@@ -832,10 +843,13 @@ export function updateDiagnostics(
     case 'start-recheck':
       const staleMessages = new Map();
       for (const [file, oldMessages] of state.currentMessages.entries()) {
-        const messages = oldMessages.map(message => ({
-          ...message,
-          stale: true,
-        }));
+        const messages = oldMessages.map(
+          message =>
+            ({
+              ...message,
+              stale: true,
+            }: any),
+        );
         staleMessages.set(file, messages);
       }
       return {
@@ -861,21 +875,19 @@ export function updateDiagnostics(
 // Exported only for testing
 export function getDiagnosticUpdates(
   state: DiagnosticsState,
-): Observable<Array<FileDiagnosticMessages>> {
-  const updates = [];
+): Observable<FileDiagnosticMap> {
+  const updates = new Map();
   for (const file of state.filesToUpdate) {
     const messages = [
       ...mapGetWithDefault(state.staleMessages, file, []),
       ...mapGetWithDefault(state.currentMessages, file, []),
     ];
-    updates.push({filePath: file, messages});
+    updates.set(file, messages);
   }
   return Observable.of(updates);
 }
 
-function collateDiagnostics(
-  output: FlowStatusOutput,
-): Map<NuclideUri, Array<FileDiagnosticMessage>> {
+function collateDiagnostics(output: FlowStatusOutput): FileDiagnosticMap {
   const diagnostics = flowStatusOutputToDiagnostics(output);
   const filePathToMessages = new Map();
 
@@ -889,4 +901,42 @@ function collateDiagnostics(
     diagnosticArray.push(diagnostic);
   }
   return filePathToMessages;
+}
+
+function locsToReferences(locs: Array<FlowLoc>): Array<Reference> {
+  return locs.map(loc => {
+    return {
+      name: null,
+      range: new Range(
+        new Point(loc.start.line - 1, loc.start.column - 1),
+        new Point(loc.end.line - 1, loc.end.column),
+      ),
+      uri: loc.source,
+    };
+  });
+}
+
+function convertFindRefsOutput(
+  output: FindRefsOutput,
+  root: string,
+): ?FindReferencesReturn {
+  if (Array.isArray(output)) {
+    return {
+      type: 'data',
+      baseUri: root,
+      referencedSymbolName: '',
+      references: locsToReferences(output),
+    };
+  } else {
+    if (output.kind === 'no-symbol-found') {
+      return null;
+    } else {
+      return {
+        type: 'data',
+        baseUri: root,
+        referencedSymbolName: output.name,
+        references: locsToReferences(output.locs),
+      };
+    }
+  }
 }

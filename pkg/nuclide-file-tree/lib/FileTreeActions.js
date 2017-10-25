@@ -21,6 +21,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {Observable} from 'rxjs';
 import {objectFromMap} from 'nuclide-commons/collection';
+import {fastDebounce} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 // $FlowFixMe(>=0.53.0) Flow suppress
@@ -337,6 +338,7 @@ export default class FileTreeActions {
       FileTreeHelpers.dirPathToKey(directory.getPath()),
     );
     const rootRepos: Array<?atom$Repository> = await Promise.all(
+      // $FlowFixMe(>=0.55.0) Flow suppress
       rootDirectories.map(directory => repositoryForPath(directory.getPath())),
     );
 
@@ -582,7 +584,7 @@ export default class FileTreeActions {
         observableFromSubscribeFunction(repo.onDidChangeStatus.bind(repo)),
         observableFromSubscribeFunction(repo.onDidChangeStatuses.bind(repo)),
       )
-        .debounceTime(1000)
+        .let(fastDebounce(1000))
         .startWith(null)
         .map(_ => this._getCachedPathStatuses(repo));
     } else if (repo.getType() === 'hg') {

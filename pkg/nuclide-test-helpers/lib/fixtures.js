@@ -197,7 +197,7 @@ async function renameBuckFiles(projectDir: string) {
     renames.map(name => {
       const prevName = nuclideUri.join(projectDir, name);
       const newName = prevName.replace(/-rename$/, '');
-      return fsPromise.rename(prevName, newName);
+      return fsPromise.mv(prevName, newName);
     }),
   );
 }

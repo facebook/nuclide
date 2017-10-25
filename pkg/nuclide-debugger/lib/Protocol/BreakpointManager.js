@@ -233,7 +233,8 @@ export default class BreakpointManager {
     for (const [index, breakpoint] of this._breakpointList.entries()) {
       if (
         breakpoint.request.sourceURL === sourceUrl &&
-        breakpoint.request.lineNumber === line
+        (breakpoint.request.lineNumber === line ||
+          breakpoint.request.lineNumber < 0)
       ) {
         return index;
       }
@@ -247,14 +248,21 @@ export default class BreakpointManager {
   ): void {
     const breakpoint = this._getBreakpointFromId(breakpointId);
     if (breakpoint != null) {
-      this._raiseIPCEvent('BreakpointRemoved', breakpoint.request);
-      this._raiseIPCEvent(
-        'BreakpointAdded',
-        this._createResolvedBreakpointFromLocation(
-          location,
-          breakpoint.request.condition,
-        ),
+      const resolvedBp = this._createResolvedBreakpointFromLocation(
+        location,
+        breakpoint.request.condition,
       );
+
+      this._raiseIPCEvent('BreakpointRemoved', breakpoint.request);
+      this._raiseIPCEvent('BreakpointAdded', resolvedBp);
+
+      if (breakpoint.request.lineNumber < 0) {
+        // For address breakpoints, the location is determined by the backend
+        // and may no longer match the request. Update the request source so
+        // that operations like Remove on the resolved bp will find the bp correctly.
+        breakpoint.request.sourceURL = resolvedBp.sourceURL;
+      }
+
       // Update original request's location to the new bound one.
       breakpoint.request.lineNumber = location.lineNumber;
     } else {

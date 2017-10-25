@@ -44,6 +44,10 @@ export interface HostServices {
     options?: {|debounce?: boolean|},
   ): Promise<Progress>,
 
+  // syncStatus is an ugly temporary hack. Nuclide-rpc sometimes loses messages.
+  // For internal use only, this method will get them on track.
+  syncProgress(expected: Set<Progress>): void,
+
   // showActionRequired shows an icon with the tooltip message. If clickable,
   // then the user can click on the message, which will generate a next().
   // Unsubscribe when done.

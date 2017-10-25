@@ -37,6 +37,7 @@ export type OutlineTree = {
 
   startPosition: atom$Point,
   endPosition?: atom$Point,
+  landingPosition?: atom$Point,
   children: Array<OutlineTree>,
 };
 

@@ -14,7 +14,7 @@
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
 
-import {CompositeDisposable, Disposable} from 'atom';
+import {Disposable} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import VcsLogComponent from './VcsLogComponent';
 import VcsLogGadget from './VcsLogGadget';
@@ -27,6 +27,7 @@ import querystring from 'querystring';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 import {shortNameForAuthor as shortNameForAuthorFn} from './util';
 import {track} from '../../nuclide-analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import url from 'url';
 import * as React from 'react';
 import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
@@ -39,10 +40,10 @@ const VCS_LOG_URI_PREFIX = 'atom://nucide-vcs-log/view';
 const VCS_LOG_URI_PATHS_QUERY_PARAM = 'path';
 
 class Activation {
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor() {
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._registerOpener();
   }
 

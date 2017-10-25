@@ -21,6 +21,8 @@ import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 type Props = {|
   setDevice: (?Device) => void,
   devices: Expected<Device[]>,
+  // TODO Remove disable
+  // eslint-disable-next-line react/no-unused-prop-types
   device: ?Device,
 |};
 

@@ -258,11 +258,31 @@ export default class VsDebugSessionTranslator {
           return getEmptyResponse(command.id);
         }),
       ),
+      // Request completions
+      this._commandsOfType('Debugger.completions').flatMap(
+        catchCommandError(async command => {
+          invariant(command.method === 'Debugger.completions');
+          const {text, column, frameId} = command.params;
+          if (!this._session.getCapabilities().supportsCompletionsRequest) {
+            // Not supported, return empty result.
+            return {id: command.id, result: {targets: []}};
+          }
+          const {body} = await this._session.completions({
+            text,
+            column,
+            frameId,
+          });
+          const result: NuclideDebugProtocol.GetCompletionsResponse = {
+            targets: body.targets,
+          };
+          return {id: command.id, result};
+        }),
+      ),
       // Get script source
       this._commandsOfType('Debugger.getScriptSource').flatMap(
         catchCommandError(async command => {
           invariant(command.method === 'Debugger.getScriptSource');
-          const result = {
+          const result: NuclideDebugProtocol.GetScriptSourceResponse = {
             scriptSource: await this._files.getFileSource(
               command.params.scriptId,
             ),
@@ -283,9 +303,11 @@ export default class VsDebugSessionTranslator {
               this._exceptionFilters = [state];
               break;
           }
-          await this._session.setExceptionBreakpoints({
-            filters: this._exceptionFilters,
-          });
+          if (this._session.isReadyForBreakpoints()) {
+            await this._session.setExceptionBreakpoints({
+              filters: this._exceptionFilters,
+            });
+          }
           return getEmptyResponse(command.id);
         }),
       ),
@@ -330,9 +352,12 @@ export default class VsDebugSessionTranslator {
           threadInfo != null && threadInfo.state === 'paused'
             ? threadInfo.callFrames
             : null;
+        const result: NuclideDebugProtocol.GetThreadStackResponse = {
+          callFrames: callFrames || [],
+        };
         return {
           id: command.id,
-          result: {callFrames: callFrames || []},
+          result,
         };
       }),
       this._commandsOfType('Debugger.evaluateOnCallFrame').flatMap(
@@ -343,6 +368,25 @@ export default class VsDebugSessionTranslator {
             expression,
             Number(callFrameId),
           );
+          return {
+            id: command.id,
+            result,
+          };
+        }),
+      ),
+      this._commandsOfType('Debugger.setVariableValue').flatMap(
+        catchCommandError(async command => {
+          invariant(command.method === 'Debugger.setVariableValue');
+          const {callFrameId, name, value} = command.params;
+          const args = {
+            variablesReference: callFrameId,
+            name,
+            value,
+          };
+          const {body} = await this._session.setVariable(args);
+          const result: NuclideDebugProtocol.SetVariableResponse = {
+            value: body.value,
+          };
           return {
             id: command.id,
             result,
@@ -409,7 +453,7 @@ export default class VsDebugSessionTranslator {
                 startedDebugging = true;
                 return Observable.fromPromise(this._startDebugging())
                   .ignoreElements()
-                  .concat(this._session.observeInitializeEvents());
+                  .merge(this._session.observeInitializeEvents().first());
               }
             }),
         )
@@ -513,7 +557,7 @@ export default class VsDebugSessionTranslator {
         return breakpointCommands.map((command, i) => {
           const {breakpointId, lineNumber, resolved} = translatorBreakpoins[i];
 
-          const result = {
+          const result: NuclideDebugProtocol.SetBreakpointByUrlResponse = {
             breakpointId,
             locations: [nuclideDebuggerLocation(path, lineNumber - 1, 0)],
             resolved,
@@ -766,16 +810,23 @@ export default class VsDebugSessionTranslator {
           const threadsUpdatedEvent = this._getThreadsUpdatedEvent();
           return {pausedEvent, threadsUpdatedEvent};
         })
-        .subscribe(({pausedEvent, threadsUpdatedEvent}) => {
-          this._sendMessageToClient({
-            method: 'Debugger.paused',
-            params: pausedEvent,
-          });
-          this._sendMessageToClient({
-            method: 'Debugger.threadsUpdated',
-            params: threadsUpdatedEvent,
-          });
-        }),
+        .subscribe(
+          ({pausedEvent, threadsUpdatedEvent}) => {
+            this._sendMessageToClient({
+              method: 'Debugger.paused',
+              params: pausedEvent,
+            });
+            this._sendMessageToClient({
+              method: 'Debugger.threadsUpdated',
+              params: threadsUpdatedEvent,
+            });
+          },
+          error =>
+            this._logger.error(
+              'Unable to translate stop event / call stack',
+              error,
+            ),
+        ),
       this._session.observeContinuedEvents().subscribe(({body}) => {
         const {allThreadsContinued, threadId} = body;
         if (allThreadsContinued || threadId === this._pausedThreadId) {
@@ -894,6 +945,7 @@ export default class VsDebugSessionTranslator {
   async _getTranslatedCallFramesForThread(
     threadId: number,
   ): Promise<Array<NuclideDebugProtocol.CallFrame>> {
+    // $FlowFixMe(>=0.55.0) Flow suppress
     const {body: {stackFrames}} = await this._session.stackTrace({
       threadId,
     });
@@ -916,7 +968,9 @@ export default class VsDebugSessionTranslator {
             frame.column - 1,
           ),
           hasSource: frame.source != null,
-          scopeChain: await this._getScopesForFrame(frame.id),
+          scopeChain: await this._getScopesForFrame(
+            frame.id,
+          ).catch(error => []),
           this: (undefined: any),
         };
       }),

@@ -1,0 +1,5 @@
+{
+  "rules": {
+    "rulesdir/prefer-nuclide-uri": 0
+  }
+}

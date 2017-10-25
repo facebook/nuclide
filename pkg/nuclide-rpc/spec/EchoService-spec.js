@@ -79,6 +79,12 @@ describe('EchoServer', () => {
       expect(results).toBe(expected);
     });
   });
+  it('Echoes undefined.', () => {
+    waitsForPromise(async () => {
+      const result = await service.echoVoid(undefined);
+      expect(result).toBe(undefined);
+    });
+  });
 
   // More complex types.
   it('Echoes a date.', () => {

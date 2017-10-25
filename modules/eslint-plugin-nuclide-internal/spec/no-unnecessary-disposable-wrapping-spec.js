@@ -42,12 +42,12 @@ ruleTester.run('no-unnecessary-disposable-wrapping', rule, {
       errors: [ERROR],
     },
     {
-      code: 'new UniversalDisposable(x, new CompositeDisposable())',
+      code: 'new UniversalDisposable(x, new UniversalDisposable())',
       errors: [ERROR],
     },
     {
       code:
-        'new UniversalDisposable(new Disposable(), new CompositeDisposable())',
+        'new UniversalDisposable(new Disposable(), new UniversalDisposable())',
       errors: [ERROR, ERROR],
     },
   ],

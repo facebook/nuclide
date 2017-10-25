@@ -9,8 +9,6 @@
  * @format
  */
 
-/* global MouseEvent */
-
 import {sleep} from 'nuclide-commons/promise';
 // eslint-disable-next-line rulesdir/no-cross-atom-imports
 import {
@@ -51,14 +49,6 @@ describe('Buck building via toolbar', () => {
       await sleep(1000);
     });
 
-    runs(() => {
-      // Select the Buck build system.
-      atom.commands.dispatch(
-        workspaceView,
-        'nuclide-task-runner:toggle-buck-toolbar',
-      );
-    });
-
     waitsFor('the toolbar to be shown', 500, () => {
       buildToolbar = document.querySelector('.nuclide-task-runner-toolbar');
       return Boolean(buildToolbar);
@@ -72,14 +62,15 @@ describe('Buck building via toolbar', () => {
     });
 
     // Focus on the build toolbar target combobox field.
-    let targetField: ?HTMLElement;
+    let targetField: atom$TextEditorElement;
     runs(() => {
       // Focus on the build toolbar target field.
       invariant(combobox != null);
-      targetField = combobox.querySelector('atom-text-editor');
-      const event = new MouseEvent('focus');
-      invariant(targetField != null);
-      targetField.dispatchEvent(event);
+      targetField = window.targetField = (combobox.querySelector(
+        'atom-text-editor',
+      ): any);
+      targetField.focus();
+      targetField.click();
     });
 
     // Wait for the results.
@@ -106,6 +97,9 @@ describe('Buck building via toolbar', () => {
 
       const listElements = listGroup.querySelectorAll('li');
       const targets = Array.from(listElements).map(el => el.textContent);
+      if (targets.length !== 1 || targets[0] !== 'test_app_alias') {
+        return false;
+      }
       expect(targets).toEqual(['test_app_alias']);
 
       // Set the target.

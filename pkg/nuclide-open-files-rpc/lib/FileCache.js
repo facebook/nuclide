@@ -104,6 +104,11 @@ export class FileCache {
     return Promise.resolve(undefined);
   }
 
+  async getTotalBufferSize(): Promise<number> {
+    const addLength = (acc, buffer) => acc + buffer.getText().length;
+    return [...this._buffers.values()].reduce(addLength, 0);
+  }
+
   async onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void> {
     this._directoryEvents.next(openDirectories);
   }

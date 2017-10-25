@@ -32,7 +32,7 @@ import type {BusySignalService} from 'atom-ide-ui';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {Observable} from 'rxjs';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {AdditionalLogFileProvider} from './AdditionalLogFileProvider';
+import {LanguageAdditionalLogFilesProvider} from './AdditionalLogFileProvider';
 import {CodeHighlightProvider} from './CodeHighlightProvider';
 import {OutlineViewProvider} from './OutlineViewProvider';
 import {TypeCoverageProvider} from './TypeCoverageProvider';
@@ -272,7 +272,10 @@ export class AtomLanguageService<T: LanguageService> {
     }
 
     this._subscriptions.add(
-      AdditionalLogFileProvider.register(this._connectionToLanguageService),
+      LanguageAdditionalLogFilesProvider.register(
+        this._config.name,
+        this._connectionToLanguageService,
+      ),
     );
   }
 

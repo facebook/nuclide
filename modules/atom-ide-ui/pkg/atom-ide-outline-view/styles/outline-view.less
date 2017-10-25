@@ -10,6 +10,8 @@
 .outline-view-core {
   display: flex;
   flex-direction: column;
+  // Default font - this is overridden by the editor settings
+  font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   height: 100%;
   width: 100%;
 }
@@ -17,6 +19,10 @@
 .outline-view-trees-scroller {
   flex-grow: 1;
   overflow: auto;
+}
+
+.outline-view-item {
+  padding: 0 @component-padding / 2;
 }
 
 .outline-view-trees {
@@ -29,9 +35,7 @@
 }
 
 .outline-view-item {
-  // Default font - this is overridden by the editor settings
-  font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
-  padding: 0 @component-padding;
+  padding: 0 @component-padding / 2;
 }
 
 .panel-heading .outline-view-close-button {

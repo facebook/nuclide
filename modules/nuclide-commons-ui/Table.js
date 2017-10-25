@@ -13,10 +13,10 @@
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
 import classnames from 'classnames';
-import idx from 'idx';
 import * as React from 'react';
 import {Observable} from 'rxjs';
 import {Icon} from './Icon';
+import {areSetsEqual} from 'nuclide-commons/collection';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ResizeObservable} from './observable-dom';
 import {scrollIntoViewIfNeeded} from './scrollIntoView';
@@ -117,6 +117,9 @@ type Props<T> = {
    */
   onConfirm?: (selectedItem: any, selectedIndex: number) => mixed,
 
+  onBodyBlur?: (event: SyntheticEvent<*>) => mixed,
+  onBodyFocus?: (event: SyntheticEvent<*>) => mixed,
+
   /**
    * Optional React Component to override the default message when zero rows are provided.
    * Useful for showing loading spinners and custom messages.
@@ -143,18 +146,14 @@ type Props<T> = {
 };
 
 type State<T> = {|
-  columnWidths: ?WidthMap<T>,
+  tableWidth: number,
+  preferredColumnWidths: WidthMap<T>,
 
   // It's awkward to have hover styling when you're using keyboard navigation and the mouse just
   // happens to be over a row. Therefore, we'll keep track of when you use keyboard navigation and
   // will disable the hover state until you move the mouse again.
   usingKeyboard: boolean,
 |};
-
-type ResizerLocation<T> = {
-  leftColumnKey: $Keys<T>,
-  rightColumnKey: $Keys<T>,
-};
 
 /**
  * Design concerns:
@@ -194,14 +193,15 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
     super(props);
     this._resizingDisposable = null;
     this.state = {
-      columnWidths: null,
+      preferredColumnWidths: getInitialPercentageWidths(props.columns),
+      tableWidth: 0,
       usingKeyboard: false,
     };
   }
 
   _handleResizerMouseDown(
     event: SyntheticMouseEvent<>,
-    resizerLocation: ResizerLocation<T>,
+    resizerLocation: number,
   ): void {
     if (this._resizingDisposable != null) {
       this._stopResizing();
@@ -213,13 +213,13 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
     }
     const tableWidth = this.refs.table.getBoundingClientRect().width;
     const startX = event.pageX;
-    const startWidths = this.state.columnWidths;
-    invariant(startWidths != null);
+    const startWidths = this._getColumnWidths();
     this._resizingDisposable = new UniversalDisposable(
       Observable.fromEvent(document, 'mousemove').subscribe(evt => {
         this._handleResizerGlobalMouseMove(
           evt,
           startX,
+          // $FlowFixMe(>=0.55.0) Flow suppress
           startWidths,
           resizerLocation,
           tableWidth,
@@ -243,77 +243,62 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
     event: MouseEvent,
     startX: number,
     startWidths: WidthMap<T>,
-    location: ResizerLocation<T>,
+    resizerLocation: number, // The index of the column after which the resizer appears.
     tableWidth: number,
   ): void => {
     const pxToRatio = px => px / tableWidth;
+    const leftColumns = this.props.columns.slice(0, resizerLocation + 1);
+    const rightColumns = this.props.columns.slice(resizerLocation + 1);
 
     const delta = pxToRatio(event.pageX - startX);
-    const {leftColumnKey, rightColumnKey} = location;
+    const [shrinkingColumns, growingColumn] =
+      delta < 0
+        ? [leftColumns.reverse(), rightColumns[0]]
+        : [rightColumns, leftColumns[leftColumns.length - 1]];
+    const targetChange = Math.abs(delta);
+    let cumulativeChange = 0;
+    const newWidths = {...this.state.preferredColumnWidths};
 
-    // Determine which column is shrinking and which is growing. This will allow us to apply the min
-    // width limitations correctly.
-    let shrinkingColumnKey;
-    let growingColumnKey;
-    if (delta < 0) {
-      [shrinkingColumnKey, growingColumnKey] = [leftColumnKey, rightColumnKey];
-    } else {
-      [shrinkingColumnKey, growingColumnKey] = [rightColumnKey, leftColumnKey];
+    for (const column of shrinkingColumns) {
+      const {key} = column;
+      const startWidth = startWidths[key];
+      const minWidth = pxToRatio(
+        column.minWidth == null ? DEFAULT_MIN_COLUMN_WIDTH : column.minWidth,
+      );
+      const remainingDistance = targetChange - cumulativeChange;
+      const newWidth = Math.max(minWidth, startWidth - remainingDistance);
+      const change = Math.abs(startWidth - newWidth);
+      cumulativeChange += change;
+      newWidths[key] = newWidth;
+      if (cumulativeChange >= targetChange) {
+        break;
+      }
     }
 
-    const prevShrinkingColumnWidth = startWidths[shrinkingColumnKey];
-    const prevGrowingColumnWidth = startWidths[growingColumnKey];
-    const shrinkingColumn = this.props.columns.find(
-      column => column.key === shrinkingColumnKey,
-    );
-    invariant(shrinkingColumn != null);
-    const shrinkingColumnMinWidth = pxToRatio(
-      shrinkingColumn.minWidth == null
-        ? DEFAULT_MIN_COLUMN_WIDTH
-        : shrinkingColumn.minWidth,
-    );
-    const nextShrinkingColumnWidth = Math.max(
-      shrinkingColumnMinWidth,
-      prevShrinkingColumnWidth - Math.abs(delta),
-    );
-    const actualChange = nextShrinkingColumnWidth - prevShrinkingColumnWidth;
-    const nextGrowingColumnWidth = prevGrowingColumnWidth - actualChange;
+    // Determine the width of the growing column. Instead of adding `cumulativeChange` to its
+    // starting width, we figure out what percentage of the table's width is still unaccounted for.
+    // This ensures we avoid snowballing floating point errors.
+    newWidths[growingColumn.key] = Object.entries(
+      newWidths,
+    ).reduce((remaining, [key, width]) => {
+      invariant(typeof width === 'number');
+      return key === growingColumn.key ? remaining : remaining - width;
+    }, 1);
 
-    this.setState({
-      columnWidths: {
-        ...this.state.columnWidths,
-        [shrinkingColumnKey]: nextShrinkingColumnWidth,
-        [growingColumnKey]: nextGrowingColumnWidth,
-      },
-    });
+    this.setState({preferredColumnWidths: newWidths});
   };
 
   componentDidMount(): void {
     const el = nullthrows(this._rootNode);
 
     this._disposables = new UniversalDisposable(
+      // Update the column widths when the table is resized.
       new ResizeObservable(el)
         .startWith((null: any))
         .map(() => el.offsetWidth)
         .filter(tableWidth => tableWidth > 0)
         .subscribe(tableWidth => {
-          // Update the column widths to account for minimum widths. This logic could definitely be
-          // improved. As it is now, if you resize the table to be very small and then make it large
-          // again, the proportions from when it was at its smallest will be preserved. If no
-          // columns have min widths, then this is what you want. But if a minimum width prevented
-          // one or more of the columns from shrinking, you'll probably consider them too wide when
-          // the table's expanded.
-          const preferredColumnWidths =
-            this.state.columnWidths ||
-            getInitialPercentageWidths(this.props.columns);
-          this.setState({
-            columnWidths: ensureMinWidths(
-              preferredColumnWidths,
-              this._getMinWidths(),
-              tableWidth,
-              this.props.columns.map(c => c.key),
-            ),
-          });
+          this.setState({tableWidth});
         }),
       () => {
         this._stopResizing();
@@ -350,14 +335,6 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
 
   componentWillUnmount(): void {
     this._disposables.dispose();
-  }
-
-  _getMinWidths(): WidthMap<T> {
-    const minWidths = {};
-    this.props.columns.forEach(column => {
-      minWidths[column.key] = column.minWidth;
-    });
-    return minWidths;
   }
 
   componentDidUpdate(prevProps: Props<T>, prevState: State<T>): void {
@@ -402,17 +379,34 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
     this._tableBody.focus();
   }
 
+  componentWillReceiveProps(nextProps: Props<T>): void {
+    // Did the columns change? If so, we need to recalculate the widths.
+    const currentColumns = this.props.columns;
+    const nextColumns = nextProps.columns;
+    if (
+      nextColumns.length !== currentColumns.length ||
+      // If the columns just changed order, we want to keep their widths.
+      !areSetsEqual(
+        new Set(currentColumns.map(column => column.key)),
+        new Set(nextColumns.map(column => column.key)),
+      )
+    ) {
+      this.setState({
+        preferredColumnWidths: getInitialPercentageWidths(nextColumns),
+      });
+    }
+  }
+
   _moveSelection(offset: -1 | 1, event: SelectionEvent): void {
     const {selectedIndex} = this.props;
     if (selectedIndex == null) {
       return;
     }
-    const nextSelectedIndex = selectedIndex + offset;
-    if (
-      nextSelectedIndex < 0 ||
-      nextSelectedIndex >= this.props.rows.length ||
-      nextSelectedIndex === selectedIndex
-    ) {
+    const nextSelectedIndex = Math.max(
+      0,
+      Math.min(this.props.rows.length - 1, selectedIndex + offset),
+    );
+    if (nextSelectedIndex === selectedIndex) {
       return;
     }
     this._selectRow({index: nextSelectedIndex, event});
@@ -454,6 +448,15 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
     );
   }
 
+  _getColumnWidths(): WidthMap<T> {
+    return ensureMinWidths(
+      this.state.preferredColumnWidths,
+      getMinWidths(this.props.columns),
+      this.state.tableWidth,
+      this.props.columns.map(column => column.key),
+    );
+  }
+
   _renderEmptyCellContent(): React.Element<any> {
     return <div />;
   }
@@ -469,8 +472,7 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
   }
 
   _renderContents(): React.Node {
-    const {columnWidths} = this.state;
-    if (columnWidths == null) {
+    if (this.state.tableWidth === 0) {
       // We don't have the table width yet so we can't render the columns.
       return null;
     }
@@ -487,6 +489,9 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
       sortedColumn,
       sortDescending,
     } = this.props;
+
+    const columnWidths = this._getColumnWidths();
+
     const header =
       headerTitle != null ? (
         <div className="nuclide-ui-table-header-cell nuclide-ui-table-full-header">
@@ -495,18 +500,13 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
       ) : (
         columns.map((column, i) => {
           const {title, key, shouldRightAlign, cellClassName} = column;
-          const leftColumnKey = column.key;
-          const rightColumnKey = idx(columns[i + 1], _ => _.key);
           let resizer;
-          if (leftColumnKey != null && rightColumnKey != null) {
+          if (i < columns.length - 1) {
             resizer = (
               <div
                 className="nuclide-ui-table-header-resize-handle"
                 onMouseDown={event => {
-                  this._handleResizerMouseDown(event, {
-                    leftColumnKey,
-                    rightColumnKey,
-                  });
+                  this._handleResizerMouseDown(event, i);
                 }}
                 onClick={(e: SyntheticMouseEvent<>) => {
                   // Prevent sortable column header click event from firing.
@@ -610,6 +610,7 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
             'nuclide-ui-table-collapsed-row':
               this.props.collapsable && !isSelectedRow,
           })}
+          data-row-index={i}
           key={i}
           {...rowProps}>
           {renderedRow}
@@ -635,7 +636,19 @@ export class Table<T: Object> extends React.Component<Props<T>, State<T>> {
       <div key="header" className="nuclide-ui-table" ref="table">
         <div className="nuclide-ui-table-header">{header}</div>
       </div>,
-      <div key="body" style={scrollableBodyStyle}>
+      <div
+        key="body"
+        style={scrollableBodyStyle}
+        onFocus={event => {
+          if (this.props.onBodyFocus != null) {
+            this.props.onBodyFocus(event);
+          }
+        }}
+        onBlur={event => {
+          if (this.props.onBodyBlur != null) {
+            this.props.onBodyBlur(event);
+          }
+        }}>
         <div
           ref={el => {
             this._tableBody = el;
@@ -674,8 +687,16 @@ function getInitialPercentageWidths<T: Object>(
   return columnWidthRatios;
 }
 
+function getMinWidths<T: Object>(columns: Array<Column<T>>): WidthMap<T> {
+  const minWidths = {};
+  columns.forEach(column => {
+    minWidths[column.key] = column.minWidth;
+  });
+  return minWidths;
+}
+
 /**
- * Convert percentage widths into actual pixel widths, taking into account minimum widths.
+ * Calculate widths, taking into account the preferred and minimum widths.
  */
 function ensureMinWidths<T: Object>(
   preferredWidths: WidthMap<T>,

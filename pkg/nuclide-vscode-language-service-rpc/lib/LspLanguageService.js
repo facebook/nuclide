@@ -10,6 +10,7 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {
   FileVersion,
@@ -23,17 +24,16 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
   OutlineTree,
   CodeAction,
-  FileDiagnosticMessage,
 } from 'atom-ide-ui';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   SymbolResult,
 } from '../../nuclide-language-service/lib/LanguageService';
@@ -70,7 +70,8 @@ import type {
 } from './jsonrpc';
 
 import invariant from 'assert';
-import {sleep} from 'nuclide-commons/promise';
+import {sleep, timeoutAfterDeadline} from 'nuclide-commons/promise';
+import {stringifyError} from 'nuclide-commons/string';
 import through from 'through';
 import {spawn} from 'nuclide-commons/process';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -206,6 +207,7 @@ export class LspLanguageService {
     actionRequiredDialogMessage?: string,
     existingDialogToDismiss?: rxjs$ISubscription,
   ): void {
+    this._logger.trace(`State ${this._state} -> ${state}`);
     this._state = state;
     this._stateIndicator.dispose();
     const nextDisposable = new UniversalDisposable();
@@ -344,7 +346,7 @@ export class LspLanguageService {
         const message =
           `Couldn't start ${this._languageId} server` +
           ` - ${this._errorString(e, this._command)}`;
-        const dialog = this._host
+        const dialog = this._masterHost
           .dialogNotification('error', message)
           .refCount()
           .subscribe();
@@ -552,18 +554,20 @@ export class LspLanguageService {
       while (true) {
         let initializeResponse;
         try {
-          this._logger.info('Lsp.Initialize');
+          this._logger.trace('Lsp.Initialize');
           userRetryCount++;
           const initializeStartTimeMs = Date.now();
           // eslint-disable-next-line no-await-in-loop
           initializeResponse = await this._lspConnection.initialize(params);
           initializeTimeTakenMs = Date.now() - initializeStartTimeMs;
+          this._logger.trace('Lsp.Initialize.success');
           // We might receive an onError or onClose event at this time too.
           // Those are handled by _handleError and _handleClose methods.
           // If those happen, then the response to initialize will never arrive,
           // so the above await will block until we finally dispose of the
           // connection.
         } catch (e) {
+          this._logger.trace('Lsp.Initialize.error');
           this._logLspException(e);
           track('lsp-start', {
             status: 'initialize failed',
@@ -577,37 +581,53 @@ export class LspLanguageService {
           // CARE! Inside any exception handler of an rpc request,
           // the lspConnection might already have been torn down.
 
-          const offerRetry = e.data != null && Boolean(e.data.retry);
-          const msg = `Couldn't initialize ${this
-            ._languageId} server - ${this._errorString(e)}`;
           this._childOut = {stdout: '', stderr: ''};
+          const message = `Couldn't initialize ${this._languageId} server`;
+          const longMessage = `${message} - ${this._errorString(e)}`;
+
+          // LSP has the notion that only some failures-to-start should
+          // offer a retry button; if the user clicks it then we send a second
+          // initialize request over the existing connection.
+          // Failing that, we have the fallback that for all crashes/failures
+          // we always offer a retry button; clicking on it causes a complete
+          // re-initialize from the start.
+          const offerRetry = e.data != null && Boolean(e.data.retry);
           if (!offerRetry) {
-            this._host
-              .dialogNotification('error', msg)
+            const dialog = this._masterHost
+              .dialogNotification('error', longMessage)
               .refCount()
               .subscribe();
-          } else {
-            // eslint-disable-next-line no-await-in-loop
-            const button = await this._host
-              .dialogRequest('error', msg, ['Retry'], 'Close')
-              .refCount()
-              .toPromise();
-            if (button === 'Retry') {
-              this._host.consoleNotification(
-                this._languageId,
-                'info',
-                `Retrying ${this._command}`,
-              );
-              if (this._lspConnection != null) {
-                continue;
-                // Retry will re-use the same this._lspConnection,
-                // assuming it hasn't been torn down for whatever reason.
-              }
+            this._setState('StartFailed', message, dialog);
+            if (this._lspConnection != null) {
+              this._lspConnection.dispose();
+            }
+            return;
+          }
+
+          // eslint-disable-next-line no-await-in-loop
+          const button = await this._host
+            .dialogRequest('error', message, ['Retry'], 'Close')
+            .refCount()
+            .toPromise();
+          if (button === 'Retry') {
+            this._logger.trace('Lsp.Initialize.retry');
+            this._host.consoleNotification(
+              this._languageId,
+              'info',
+              'Retrying initialize',
+            );
+            if (this._lspConnection != null) {
+              this._logger.trace('Lsp.Initialize.retrying');
+              continue;
+              // Retry will re-use the same this._lspConnection,
+              // assuming it hasn't been torn down for whatever reason.
             }
           }
+          this._setState('StartFailed');
           if (this._lspConnection != null) {
             this._lspConnection.dispose();
           }
+
           return;
         }
 
@@ -746,6 +766,7 @@ export class LspLanguageService {
   }
 
   async _stop(): Promise<void> {
+    this._logger.trace('Lsp._stop');
     if (this._state === 'Stopping' || this._state === 'Stopped') {
       return;
     }
@@ -753,15 +774,17 @@ export class LspLanguageService {
       this._setState('Stopped');
       return;
     }
+    const mustShutdown = this._state === 'Running';
 
     this._setState('Stopping');
     try {
-      // Request the server to close down. It will respond when it's done,
-      // but it won't actually terminate its stdin/stdout/process (since if
-      // it did then we might not get the respone!)
-      await this._lspConnection.shutdown();
-      // Now we can let the server terminate:
-      this._lspConnection.exit();
+      if (mustShutdown) {
+        // Request the server to close down. If it does reply, we can tell it
+        // to 'exit' (i.e. terminate cleanly). If it fails to reply, well,
+        // we won't get hung up on it.
+        await Promise.race([this._lspConnection.shutdown(), sleep(30000)]);
+        this._lspConnection.exit();
+      }
     } catch (e) {
       this._logLspException(e);
     }
@@ -847,6 +870,7 @@ export class LspLanguageService {
   }
 
   _handleError(data: [Error, ?Object, ?number]): void {
+    this._logger.trace('Lsp._handleError');
     if (this._state === 'Stopping' || this._state === 'Stopped') {
       return;
     }
@@ -882,6 +906,7 @@ export class LspLanguageService {
   }
 
   _handleClose(): void {
+    this._logger.trace('Lsp._handleClose');
     // CARE! This method may be called before initialization has finished.
 
     if (this._state === 'Stopping' || this._state === 'Stopped') {
@@ -1255,12 +1280,12 @@ export class LspLanguageService {
     this._lspConnection.didSaveTextDocument(params);
   }
 
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate> {
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap> {
     this._logger.error('Lsp: should observeDiagnostics, not getDiagnostics');
     return Promise.resolve(null);
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     // Note: this function can (and should!) be called even before
     // we reach state 'Running'.
 
@@ -1659,7 +1684,9 @@ export class LspLanguageService {
     });
   }
 
-  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+  async getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>> {
     const results: Array<AdditionalLogFile> = [];
 
     // The LSP server sends back either titled data (each one of which gets
@@ -1674,24 +1701,23 @@ export class LspLanguageService {
     ) {
       let response = null;
       try {
-        response = await Promise.race([
+        response = await timeoutAfterDeadline(
+          deadline,
           this._lspConnection.rage(),
-          sleep(50000).then(() => [{data: 'LSP server rage timed out'}]),
-        ]);
+        );
         invariant(response != null, 'null telemetry/rage');
       } catch (e) {
         this._logLspException(e);
+        response = [{title: null, data: stringifyError(e)}];
       }
-      if (response != null) {
-        for (const rageItem of response) {
-          if (rageItem.title == null) {
-            lspAnonymousRage += rageItem.data + '\n';
-          } else {
-            results.push({
-              title: rageItem.title,
-              data: rageItem.data,
-            });
-          }
+      for (const rageItem of response) {
+        if (rageItem.title == null) {
+          lspAnonymousRage += rageItem.data + '\n';
+        } else {
+          results.push({
+            title: rageItem.title,
+            data: rageItem.data,
+          });
         }
       }
     }

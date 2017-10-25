@@ -6,5 +6,10 @@
   }
   .icon::before {
     transform: scale(0.7);
+
+    // Override this weird hack that Atom applies to all icons in the status bar:
+    // https://github.com/atom/status-bar/blob/7f7a74ac966552ade9432031c80fc3bafe557222/styles/status-bar.less#L82
+    // TODO: Get the hack removed from Atom?
+    top: 0 !important;
   }
 }

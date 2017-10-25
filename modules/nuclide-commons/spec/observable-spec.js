@@ -12,17 +12,22 @@
 
 import {
   bufferUntil,
-  diffSets,
   cacheWhileSubscribed,
+  completingSwitchMap,
+  concatLatest,
+  diffSets,
+  fastDebounce,
   macrotask,
   microtask,
   nextAnimationFrame,
+  PromiseCancelledError,
   reconcileSetDiffs,
+  SingletonExecutor,
   splitStream,
   takeWhileInclusive,
   throttle,
+  toCancellablePromise,
   toggle,
-  concatLatest,
 } from '../observable';
 import {Disposable} from 'event-kit';
 import {Observable, Subject} from 'rxjs';
@@ -53,7 +58,7 @@ describe('nuclide-commons/observable', () => {
   describe('takeWhileInclusive', () => {
     it('completes the stream when something matches the predicate', () => {
       const source = new Subject();
-      const result = takeWhileInclusive(source, x => x !== 2);
+      const result = source.let(takeWhileInclusive(x => x !== 2));
       const next: (n: number) => mixed = jasmine.createSpy();
       const complete: () => mixed = jasmine.createSpy();
       result.subscribe({next, complete});
@@ -117,7 +122,8 @@ describe('nuclide-commons/observable', () => {
     it('emits a diff for the first item', () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source)
+        const diffsPromise = source
+          .let(diffSets())
           .toArray()
           .toPromise();
         source.next(new Set([1, 2, 3]));
@@ -136,7 +142,8 @@ describe('nuclide-commons/observable', () => {
     it('correctly identifies removed items', () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source)
+        const diffsPromise = source
+          .let(diffSets())
           .toArray()
           .toPromise();
         source.next(new Set([1, 2, 3]));
@@ -150,7 +157,8 @@ describe('nuclide-commons/observable', () => {
     it('correctly identifies removed items when a hash function is used', () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source, x => x.key)
+        const diffsPromise = source
+          .let(diffSets(x => x.key))
           .toArray()
           .toPromise();
         const firstItems = [{key: 1}, {key: 2}, {key: 3}];
@@ -168,7 +176,8 @@ describe('nuclide-commons/observable', () => {
     it('correctly identifies added items', () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source)
+        const diffsPromise = source
+          .let(diffSets())
           .toArray()
           .toPromise();
         source.next(new Set([1, 2]));
@@ -182,7 +191,8 @@ describe('nuclide-commons/observable', () => {
     it('correctly identifies added items when a hash function is used', () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source, x => x.key)
+        const diffsPromise = source
+          .let(diffSets(x => x.key))
           .toArray()
           .toPromise();
         const firstItems = [{key: 1}, {key: 2}];
@@ -200,7 +210,8 @@ describe('nuclide-commons/observable', () => {
     it("doesn't emit a diff when nothing changes", () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source)
+        const diffsPromise = source
+          .let(diffSets())
           .toArray()
           .toPromise();
         source.next(new Set([1, 2, 3]));
@@ -215,7 +226,8 @@ describe('nuclide-commons/observable', () => {
     it("doesn't emit a diff when nothing changes and a hash function is used", () => {
       waitsForPromise(async () => {
         const source = new Subject();
-        const diffsPromise = diffSets(source, x => x.key)
+        const diffsPromise = source
+          .let(diffSets(x => x.key))
           .toArray()
           .toPromise();
         const firstItems = [{key: 1}, {key: 2}, {key: 3}];
@@ -309,7 +321,7 @@ describe('nuclide-commons/observable', () => {
     beforeEach(() => {
       toggler = new Subject();
       // Deferred so individual 'it' blocks can set the source on the fly.
-      output = toggle(Observable.defer(() => source), toggler);
+      output = Observable.defer(() => source).let(toggle(toggler));
     });
 
     describe('with a standard source', () => {
@@ -398,7 +410,7 @@ describe('nuclide-commons/observable', () => {
     it('emits the leading item immeditately by default', () => {
       const source = Observable.of(1, 2).merge(Observable.never());
       const spy = jasmine.createSpy();
-      throttle(source, Observable.never()).subscribe(spy);
+      source.let(throttle(Observable.never())).subscribe(spy);
       expect(spy).toHaveBeenCalledWith(1);
     });
 
@@ -406,7 +418,7 @@ describe('nuclide-commons/observable', () => {
       const source = Observable.of(1).merge(Observable.never());
       const notifier = Observable.of(null); // emits immediately on subscription.
       const spy = jasmine.createSpy();
-      throttle(source, notifier).subscribe(spy);
+      source.let(throttle(notifier)).subscribe(spy);
       expect(spy.callCount).toBe(1);
     });
 
@@ -414,7 +426,7 @@ describe('nuclide-commons/observable', () => {
       const source = new Subject();
       const notifier = new Subject();
       const spy = jasmine.createSpy();
-      throttle(source, notifier).subscribe(spy);
+      source.let(throttle(notifier)).subscribe(spy);
       source.next(1);
       spy.reset();
       source.next(2);
@@ -434,7 +446,7 @@ describe('nuclide-commons/observable', () => {
     it('subscribes to the source once per subscription', () => {
       const spy = jasmine.createSpy();
       const source = Observable.create(spy);
-      throttle(source, Observable.of(null)).subscribe();
+      source.let(throttle(Observable.of(null))).subscribe();
       expect(spy.callCount).toBe(1);
     });
   });
@@ -471,10 +483,8 @@ describe('nuclide-commons/observable', () => {
   describe('bufferUntil', () => {
     it('buffers based on the predicate', () => {
       waitsForPromise(async () => {
-        const chunks = await bufferUntil(
-          Observable.of(1, 2, 3, 4),
-          x => x % 2 === 0,
-        )
+        const chunks = await Observable.of(1, 2, 3, 4)
+          .let(bufferUntil(x => x % 2 === 0))
           .toArray()
           .toPromise();
         expect(chunks).toEqual([[1, 2], [3, 4]]);
@@ -483,14 +493,83 @@ describe('nuclide-commons/observable', () => {
 
     it('provides the current buffer', () => {
       waitsForPromise(async () => {
-        const chunks = await bufferUntil(
-          Observable.of(1, 2, 3, 4),
-          (x, buffer) => buffer.length === 2,
-        )
+        const chunks = await Observable.of(1, 2, 3, 4)
+          .let(bufferUntil((x, buffer) => buffer.length === 2))
           .toArray()
           .toPromise();
         expect(chunks).toEqual([[1, 2], [3, 4]]);
       });
+    });
+  });
+
+  describe('completingSwitchMap', () => {
+    it('propagates completions to the inner observable', () => {
+      waitsForPromise(async () => {
+        const results = await Observable.of(1, 2)
+          .let(
+            completingSwitchMap(x => {
+              return Observable.concat(
+                Observable.of(x + 1),
+                Observable.never(),
+              );
+            }),
+          )
+          .toArray()
+          .toPromise();
+        expect(results).toEqual([2, 3]);
+      });
+    });
+  });
+
+  describe('fastDebounce', () => {
+    it('debounces events', () => {
+      waitsForPromise(async () => {
+        let nextSpy: JasmineSpy;
+        const originalCreate = Observable.create.bind(Observable);
+        // Spy on the created observer's next to ensure that we always cancel
+        // the last debounced timer on unsubscribe.
+        spyOn(Observable, 'create').andCallFake(callback => {
+          return originalCreate(observer => {
+            nextSpy = spyOn(observer, 'next').andCallThrough();
+            return callback(observer);
+          });
+        });
+
+        const subject = new Subject();
+        const promise = subject
+          .let(fastDebounce(10))
+          .toArray()
+          .toPromise();
+
+        subject.next(1);
+        subject.next(2);
+        advanceClock(20);
+
+        subject.next(3);
+        advanceClock(5);
+
+        subject.next(4);
+        advanceClock(15);
+
+        subject.next(5);
+        subject.complete();
+        advanceClock(20);
+
+        expect(await promise).toEqual([2, 4]);
+        expect(nextSpy.callCount).toBe(2);
+      });
+    });
+
+    it('passes errors through immediately', () => {
+      let caught = false;
+      Observable.throw(1)
+        .let(fastDebounce(10))
+        .subscribe({
+          error() {
+            caught = true;
+          },
+        });
+      expect(caught).toBe(true);
     });
   });
 
@@ -517,6 +596,164 @@ describe('nuclide-commons/observable', () => {
       const sub = macrotask.subscribe(() => {});
       sub.unsubscribe();
       expect(clearImmediate).toHaveBeenCalled();
+    });
+  });
+
+  describe('toCancellablePromise', () => {
+    it('completes successfully', () => {
+      waitsForPromise(async () => {
+        const source = new Subject();
+        const cancellable = toCancellablePromise(source);
+        source.next(42);
+        source.complete();
+        const result = await cancellable.promise;
+        expect(result).toBe(42);
+      });
+    });
+
+    it('error throws from promise', () => {
+      waitsForPromise(async () => {
+        const source = new Subject();
+        const cancellable = toCancellablePromise(source);
+        source.error(42);
+        let thrown = false;
+        try {
+          await cancellable.promise;
+        } catch (e) {
+          expect(e).toBe(42);
+          thrown = true;
+        }
+        expect(thrown).toBe(true);
+      });
+    });
+
+    it('cancel causes promise to throw', () => {
+      waitsForPromise(async () => {
+        const source = new Subject();
+        const cancellable = toCancellablePromise(source);
+        cancellable.cancel();
+        let thrown = false;
+        try {
+          await cancellable.promise;
+        } catch (e) {
+          thrown = true;
+          expect(e instanceof PromiseCancelledError).toBe(true);
+        }
+        expect(thrown).toBe(true);
+      });
+    });
+
+    it('cancel after complete is a noop', () => {
+      waitsForPromise(async () => {
+        const source = new Subject();
+        const cancellable = toCancellablePromise(source);
+        source.next(42);
+        source.complete();
+        cancellable.cancel();
+        const result = await cancellable.promise;
+        expect(result).toBe(42);
+      });
+    });
+
+    it('cancel after error is a noop', () => {
+      waitsForPromise(async () => {
+        const source = new Subject();
+        const cancellable = toCancellablePromise(source);
+        source.error(42);
+        let thrown = false;
+
+        // This should not throw, nor should it override the result
+        cancellable.cancel();
+
+        try {
+          await cancellable.promise;
+        } catch (e) {
+          expect(e).toBe(42);
+          thrown = true;
+        }
+        expect(thrown).toBe(true);
+      });
+    });
+  });
+
+  describe('SingletonExecutor', () => {
+    it('isExecuting()', () => {
+      const executor = new SingletonExecutor();
+      expect(executor.isExecuting()).toBe(false);
+
+      const source = new Subject();
+      const result = executor.execute(source);
+      result.catch(() => 'silence unhandled promise rejection warning');
+      expect(executor.isExecuting()).toBe(true);
+
+      executor.cancel();
+      expect(executor.isExecuting()).toBe(false);
+    });
+
+    it('completing task normally', () => {
+      waitsForPromise(async () => {
+        const executor = new SingletonExecutor();
+        const source = new Subject();
+
+        const result = executor.execute(source);
+        expect(executor.isExecuting()).toBe(true);
+
+        source.next(42);
+        source.complete();
+        expect(await result).toBe(42);
+        expect(executor.isExecuting()).toBe(false);
+      });
+    });
+
+    it('completing task by error', () => {
+      waitsForPromise(async () => {
+        const executor = new SingletonExecutor();
+        const source = new Subject();
+
+        const result = executor.execute(source);
+        expect(executor.isExecuting()).toBe(true);
+
+        source.error(42);
+        let thrown = false;
+        try {
+          await result;
+        } catch (e) {
+          expect(e).toBe(42);
+          thrown = true;
+        }
+        expect(executor.isExecuting()).toBe(false);
+        expect(thrown).toBe(true);
+      });
+    });
+
+    it('scheduling second task while first is in flight', () => {
+      waitsForPromise(async () => {
+        const executor = new SingletonExecutor();
+
+        const source1 = new Subject();
+        const result1 = executor.execute(source1);
+        expect(executor.isExecuting()).toBe(true);
+
+        const source2 = new Subject();
+        const result2 = executor.execute(source2);
+        expect(executor.isExecuting()).toBe(true);
+
+        let thrown = false;
+        try {
+          await result1;
+        } catch (e) {
+          expect(e instanceof PromiseCancelledError).toBe(true);
+          thrown = true;
+        }
+        expect(executor.isExecuting()).toBe(true);
+        expect(thrown).toBe(true);
+
+        source2.next(42);
+        source2.complete();
+
+        expect(await result2).toBe(42);
+        expect(executor.isExecuting()).toBe(false);
+      });
     });
   });
 });

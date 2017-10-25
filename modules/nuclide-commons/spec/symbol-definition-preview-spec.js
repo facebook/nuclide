@@ -14,7 +14,7 @@ import nuclideUri from '../nuclideUri';
 import dedent from 'dedent';
 import {Point} from 'simple-text-buffer';
 import {getDefinitionPreview} from '../symbol-definition-preview';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 function javascriptFixtureDefinitionWithPoint(point: Point) {
   return {

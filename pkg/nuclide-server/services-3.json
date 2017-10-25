@@ -85,6 +85,10 @@
     "name": "PhpDebuggerService"
   },
   {
+    "implementation": "../nuclide-pty-rpc/lib/PtyService.js",
+    "name": "PtyService"
+  },
+  {
     "implementation": "../nuclide-python-rpc/lib/PythonService.js",
     "name": "PythonService"
   },

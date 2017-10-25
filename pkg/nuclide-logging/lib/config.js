@@ -16,7 +16,7 @@ import {
 } from '../../commons-node/system-info';
 
 import fs from 'fs';
-import invariant from 'invariant';
+import invariant from 'assert';
 import os from 'os';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 

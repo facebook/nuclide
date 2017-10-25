@@ -17,6 +17,7 @@ import {Observable} from 'rxjs';
 import * as React from 'react';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {Subject} from 'rxjs';
 
 type CodeSearchFileResult = {|
   path: string,
@@ -33,6 +34,10 @@ type NuclideCodeSearchConfig = {
   tool: string,
   maxResults: number,
 };
+
+const directoriesObs: Subject<atom$Directory> = new Subject();
+
+const SEARCH_TIMEOUT = 10000;
 
 export const CodeSearchProvider: Provider<FileResult> = {
   name: 'CodeSearchProvider',
@@ -54,6 +59,7 @@ export const CodeSearchProvider: Provider<FileResult> = {
     query: string,
     directory: atom$Directory,
   ): Promise<FileResult[]> {
+    directoriesObs.next(directory);
     if (query.length === 0) {
       return [];
     }
@@ -87,9 +93,10 @@ export const CodeSearchProvider: Provider<FileResult> = {
         lastPath = match.file;
         return result;
       })
+      .timeout(SEARCH_TIMEOUT)
       .catch(() => Observable.empty())
       .toArray()
-      .map(results => (results.length <= 1 ? [] : results))
+      .takeUntil(directoriesObs.filter(dir => dir.getPath() === projectRoot))
       .toPromise();
   },
   getComponentForItem(_item: FileResult): React.Element<any> {

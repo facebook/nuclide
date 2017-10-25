@@ -16,7 +16,7 @@ import {
   WORKSPACE_VIEW_URI,
 } from './DevicePanelWorkspaceView';
 import {Disposable} from 'atom';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {ServerConnection} from '../../nuclide-remote-connection/lib/ServerConnection';
 import {
   combineEpics,

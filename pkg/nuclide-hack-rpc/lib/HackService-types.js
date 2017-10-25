@@ -16,8 +16,6 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
   Outline,
 } from 'atom-ide-ui';
@@ -26,15 +24,16 @@ import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interface
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
   SymbolResult,
   LanguageService,
 } from '../../nuclide-language-service/lib/LanguageService';
 
 // TODO: Remove this once interface inheritance/subtyping is implemented in nuclide-rpc.
 export interface HackLanguageService extends LanguageService {
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap>,
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap>,
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,

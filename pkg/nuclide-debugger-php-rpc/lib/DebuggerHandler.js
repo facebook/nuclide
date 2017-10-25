@@ -43,8 +43,9 @@ import {Deferred, sleep} from 'nuclide-commons/promise';
 import {BREAKPOINT} from './Connection';
 import {arrayFlatten, setDifference} from 'nuclide-commons/collection';
 import nullthrows from 'nullthrows';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
-import {CompositeDisposable} from 'event-kit';
+import type {RemoteObjectId} from '../../nuclide-debugger-base/lib/protocol-types';
 import type {
   Breakpoint as HhBreakpointType,
   ExceptionState,
@@ -61,9 +62,14 @@ type VsBreakpointpointDescriptor = {
   vsBp: ?DebugProtocol.Breakpoint,
 };
 
+type DebugVariable = {|
+  +frameId: ?number,
+  +objectId: RemoteObjectId,
+|};
+
 export class DebuggerHandler {
   _connectionMultiplexer: ConnectionMultiplexer;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _hadFirstContinuationCommand: boolean;
   _temporaryBreakpointpointId: ?string;
   _eventSender: (event: DebugProtocol.Event) => mixed;
@@ -72,7 +78,7 @@ export class DebuggerHandler {
   // so that the frontend can match events with breakpoints.
   _breakpointId = 0;
   _breakpoints: Map<string, VsBreakpointpointDescriptor[]> = new Map();
-  _variableHandles: Handles<string> = new Handles();
+  _variableHandles: Handles<DebugVariable> = new Handles();
 
   _sendOutput(message: string, level: string): void {
     this._eventSender(new OutputEvent(message, level));
@@ -89,7 +95,7 @@ export class DebuggerHandler {
       this._sendOutput.bind(this),
       this._sendNotification.bind(this),
     );
-    this._subscriptions = new CompositeDisposable(
+    this._subscriptions = new UniversalDisposable(
       this._connectionMultiplexer.onStatus(this._onStatusChanged.bind(this)),
       this._connectionMultiplexer.onNotification(
         this._onNotification.bind(this),
@@ -205,11 +211,10 @@ export class DebuggerHandler {
   }
 
   async getStackFrames(id: number): Promise<Array<DebugProtocol.StackFrame>> {
-    // this._connectionMultiplexer.selectThread(id);
     const frames = await this._connectionMultiplexer.getConnectionStackFrames(
       id,
     );
-    if ((frames != null && frames.stack != null) || frames.stack.length === 0) {
+    if (frames != null && frames.stack != null && frames.stack.length !== 0) {
       return Promise.all(
         frames.stack.map((frame, frameIndex) =>
           this._convertFrame(frame, frameIndex),
@@ -230,7 +235,10 @@ export class DebuggerHandler {
       return new Scope(
         // flowlint-next-line sketchy-null-string:off
         scope.object.description || scope.name || scope.type,
-        this._variableHandles.create(nullthrows(scope.object.objectId)),
+        this._variableHandles.create({
+          objectId: nullthrows(scope.object.objectId),
+          frameId: frameIndex,
+        }),
         true,
       );
     });
@@ -435,11 +443,13 @@ export class DebuggerHandler {
   async getProperties(
     variablesReference: number,
   ): Promise<Array<DebugProtocol.Variable>> {
-    const id: string = this._variableHandles.get(variablesReference);
-    if (id == null) {
+    const {objectId} = this._variableHandles.get(variablesReference);
+    if (objectId == null) {
       return [];
     }
-    const properties = await this._connectionMultiplexer.getProperties(id);
+    const properties = await this._connectionMultiplexer.getProperties(
+      objectId,
+    );
     return properties.map(prop => {
       return {
         name: prop.name,
@@ -451,7 +461,10 @@ export class DebuggerHandler {
         variablesReference:
           // flowlint-next-line sketchy-null-string:off
           prop.value && prop.value.objectId
-            ? this._variableHandles.create(prop.value.objectId)
+            ? this._variableHandles.create({
+                objectId: prop.value.objectId,
+                frameId: null,
+              })
             : 0,
       };
     });
@@ -484,12 +497,50 @@ export class DebuggerHandler {
         },
       };
     } else {
+      const objectId = hhResult.result.objectId;
       response.body = {
         type: hhResult.result.type,
         result: String(hhResult.result.description || hhResult.result.value),
-        variablesReference: hhResult.result.objectId
-          ? this._variableHandles.create(hhResult.result.objectId)
+        variablesReference: objectId
+          ? this._variableHandles.create({
+              objectId,
+              frameId: null,
+            })
           : 0,
+      };
+    }
+  }
+
+  async setVariable(
+    variablesReference: number,
+    name: string,
+    value: string,
+    response: DebugProtocol.SetVariableResponse,
+  ): Promise<void> {
+    const {frameId} = this._variableHandles.get(variablesReference);
+    if (frameId != null) {
+      const hhResult = await this._connectionMultiplexer.evaluateOnCallFrame(
+        frameId,
+        makeExpressionHphpdCompatible(name + ' = ' + value),
+      );
+      if (hhResult.wasThrown) {
+        response.success = false;
+        // $FlowIgnore: returning an ErrorResponse.
+        response.body = {
+          error: {
+            id: hhResult.error.$.code,
+            format: hhResult.error.message[0],
+          },
+        };
+      } else {
+        response.success = true;
+        response.body = {value};
+      }
+    } else {
+      response.success = false;
+      // $FlowIgnore: returning an ErrorResponse.
+      response.body = {
+        format: `No frame found for variable: ${name} in container: ${variablesReference}`,
       };
     }
   }

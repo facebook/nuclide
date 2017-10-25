@@ -19,15 +19,31 @@
     }
   },
   "atomConfig": {
+    "statusBarPosition": {
+      "title": "Status Bar position",
+      "type": "string",
+      "default": "left",
+      "description": "",
+      "enum": [
+        "left",
+        "right"
+      ]
+    },
     "showDiagnosticTraces": {
       "title": "Show full diagnostic traces",
       "type": "boolean",
       "default": false,
       "description": "Shows full trace information in diagnostics."
     },
-    "useExperimentalUi": {
-      "title": "Use Experimental UI",
-      "description": "We're working on some UI improvements. Wanna follow our progress?",
+    "showDirectoryColumn": {
+      "title": "Show the Path column in the diagnostics table",
+      "description": "The file's directory can give more context but is often unnecessary.",
+      "type": "boolean",
+      "default": false
+    },
+    "autoVisibility": {
+      "title": "Automatically show and hide diagnostics panel",
+      "description": "When new warnings appear, show the panel. When all warnings clear, hide it.",
       "type": "boolean",
       "default": false
     }

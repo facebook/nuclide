@@ -10,52 +10,47 @@
  * @format
  */
 
-import type {FileDiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
+import type {DiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
 
 import {Range} from 'atom';
 import {compareMessagesByFile} from '../lib/paneUtils';
 
 describe('compareMessagesByFile', () => {
-  let fileAMsgA: FileDiagnosticMessage;
-  let fileAMsgB: FileDiagnosticMessage;
-  let fileAError: FileDiagnosticMessage;
-  let fileAInfo: FileDiagnosticMessage;
-  let fileBMsgA: FileDiagnosticMessage;
+  let fileAMsgA: DiagnosticMessage;
+  let fileAMsgB: DiagnosticMessage;
+  let fileAError: DiagnosticMessage;
+  let fileAInfo: DiagnosticMessage;
+  let fileBMsgA: DiagnosticMessage;
 
   beforeEach(() => {
     fileAMsgA = {
       filePath: '/foo/bar/baz.html',
       providerName: 'foo',
       range: new Range([0, 0], [1, 0]),
-      scope: 'file',
       type: 'Warning',
     };
     fileAMsgB = {
       filePath: '/foo/bar/baz.html',
       providerName: 'foo',
       range: new Range([5, 0], [6, 0]),
-      scope: 'file',
       type: 'Warning',
     };
     fileAError = {
       filePath: '/foo/bar/baz.html',
       providerName: 'foo',
       range: new Range([10, 0], [11, 0]),
-      scope: 'file',
       type: 'Error',
     };
     fileAInfo = {
       filePath: '/foo/bar/baz.html',
       providerName: 'foo',
       range: new Range([0, 0], [0, 0]),
-      scope: 'file',
       type: 'Info',
     };
     fileBMsgA = {
       filePath: '/foo/bar/xyz.html',
       providerName: 'foo',
       range: new Range([3, 0], [4, 0]),
-      scope: 'file',
       type: 'Warning',
     };
   });

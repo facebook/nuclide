@@ -64,5 +64,6 @@ export interface FileSystem {
     options?: WriteOptions,
   ): Promise<void>,
   isNfs(path: NuclideUri): Promise<boolean>,
+  isFuse(path: string): Promise<boolean>,
   openArchive(path: NuclideUri): Promise<FileSystem>,
 }

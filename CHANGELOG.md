@@ -1,5 +1,68 @@
 # Nuclide Changelog
 
+## v0.263.0
+
+### Misc
+
+* Selected diagnostic is now expanded only when the table has focus.
+* Added an option to automatically hide/show diagnostics when available.
+
+### Hack
+
+* Improve Hack grammar parsing of types, constants in argument positions, and default arguments.
+* Fix parsing for lambda and pipe operators in Hack grammar.
+
+### Debugger
+
+* PHP/Hack Debugger: Added missing tooltips to debugger control buttons.
+* C++ Debugger: Fixed a bug that was causing “Continue To Location” not to work at all.
+* C++ Debugger: now accepting paths starting with './' or '~/' in all fields in the Debugger Launch dialog, and they will be expanded properly to be relative to the current working directory, or the user's home directory.
+
+### Flow
+
+* Other occurrences of the local variable under your cursor will now be highlighted.
+
+## v0.262.0
+
+**Hotfix from 0.261.0**
+
+* Fixed a bug causing some tooltips to not get dismissed
+* Await generated file service instead of throwing
+
+## v0.261.0
+
+### Diagnostics
+* Added text and regular expression filtering
+* Added type filtering toggle buttons
+* Improved column sorting
+* Fixed misc. table bugs
+* File directories are now hidden by default (but can be shown via the gear button and resized independently)
+* Added a setting to move status bar icons to the right side.
+
+### General
+
+* Fuzzy filename search on Windows now uses the significantly better native matching library
+* Integrated Terminal is now included in the open-source version of Nuclide.
+
+## v0.260.0
+
+### C++
+
+* A busy signal now indicates when Nuclide is building a compilation database with Buck. (Thanks Anthony Miller!)
+
+### Debugger
+
+* Native debugger: Added disassembly and register views
+* Native debugger: Added ability to set a breakpoint at an instruction address (even without source code available)
+* Native debugger: now allows specifying an executable path beginning with “./” to refer to the current working directory, or “~/” to refer to the user's home directory.
+
+## v0.259.0
+
+**Hotfix from 0.258.0**
+
+* Fix hhvm debugger crashing nuclide server.
+* Workaround broken reveal in remote file tree.
+
 ## v0.258.0
 
 ### General

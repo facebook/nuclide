@@ -10,7 +10,7 @@
  * @format
  */
 
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Observable} from 'rxjs';
 
 import {_DOMObserverObservable as DOMObserverObservable} from '../observable-dom';
@@ -41,6 +41,7 @@ describe('new DOMObserverObservable', () => {
   }
 
   it('does not construct a DOM Observer until the Rx Observable is subscribed to', () => {
+    // $FlowFixMe(>=0.55.0) Flow suppress
     const o = new DOMObserverObservable(MockDOMObserver, 'some', 'additional', {
       args: true,
     });
@@ -58,6 +59,7 @@ describe('new DOMObserverObservable', () => {
   });
 
   it('calls disconnect on the underlying DOM Observer when unsubscribe is called', () => {
+    // $FlowFixMe(>=0.55.0) Flow suppress
     const o = new DOMObserverObservable(MockDOMObserver, 'some', 'additional', {
       args: true,
     });
@@ -85,6 +87,7 @@ describe('new DOMObserverObservable', () => {
       }
 
       waitsForPromise(async () => {
+        // $FlowFixMe(>=0.55.0) Flow suppress
         const output = await new DOMObserverObservable(
           MockDOMObserverEmitsArray,
           'arg',
@@ -99,6 +102,7 @@ describe('new DOMObserverObservable', () => {
 
   describe('multiple subscribers', () => {
     it('only disconnects the underlying observer when all subscribers have unsubscribed', () => {
+      // $FlowFixMe(>=0.55.0) Flow suppress
       const o = new DOMObserverObservable(
         MockDOMObserver,
         'some',
@@ -129,6 +133,7 @@ describe('new DOMObserverObservable', () => {
       'creates a new underlying observable and connects it for new' +
         'subscriptions that happen after a disconnect',
       () => {
+        // $FlowFixMe(>=0.55.0) Flow suppress
         const o = new DOMObserverObservable(
           MockDOMObserver,
           'some',
@@ -169,6 +174,7 @@ describe('new DOMObserverObservable', () => {
       }
 
       expect(
+        // $FlowFixMe(>=0.55.0) Flow suppress
         new DOMObserverObservable(MockDOMObserverEmitsArray, 'arg')
           .flattenEntries()
           .map(x => x) instanceof DOMObserverObservable,
@@ -187,6 +193,7 @@ describe('new DOMObserverObservable', () => {
       }
 
       waitsForPromise(async () => {
+        // $FlowFixMe(>=0.55.0) Flow suppress
         const output = await new DOMObserverObservable(
           MockDOMObserverEmitsArray,
           'arg',
@@ -216,6 +223,7 @@ describe('new DOMObserverObservable', () => {
         }
 
         waitsForPromise(async () => {
+          // $FlowFixMe(>=0.55.0) Flow suppress
           const output = await new DOMObserverObservable(
             MockDOMObserverEmitsEntryList,
             'arg',
@@ -242,6 +250,7 @@ describe('new DOMObserverObservable', () => {
       waitsForPromise(async () => {
         let error;
         try {
+          // $FlowFixMe(>=0.55.0) Flow suppress
           await new DOMObserverObservable(
             MockDOMObserverEmitsNonStandard,
             'arg',

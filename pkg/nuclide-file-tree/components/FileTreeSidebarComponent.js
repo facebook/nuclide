@@ -19,7 +19,7 @@ import * as React from 'react';
 import ReactDOM from 'react-dom';
 import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
-import {Observable} from 'rxjs';
+import {Observable, Subject} from 'rxjs';
 import {ShowUncommittedChangesKind} from '../lib/Constants';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
 
@@ -100,6 +100,7 @@ export default class FileTreeSidebarComponent extends React.Component<
   _showOpenConfigValues: Observable<boolean>;
   _showUncommittedConfigValue: Observable<boolean>;
   _showUncommittedKindConfigValue: Observable<ShowUncommittedChangesKindValue>;
+  _scrollerElements: Subject<?HTMLElement>;
   _scrollWasTriggeredProgrammatically: boolean;
 
   constructor() {
@@ -140,6 +141,7 @@ export default class FileTreeSidebarComponent extends React.Component<
 
     this._disposables = new UniversalDisposable(this._emitter);
     this._scrollWasTriggeredProgrammatically = false;
+    this._scrollerElements = new Subject();
   }
 
   componentDidMount(): void {
@@ -151,10 +153,9 @@ export default class FileTreeSidebarComponent extends React.Component<
     this._disposables.add(
       this._store.subscribe(this._processExternalUpdate),
       atom.project.onDidChangePaths(this._processExternalUpdate),
-      toggle(
-        observeAllModifiedStatusChanges(),
-        this._showOpenConfigValues,
-      ).subscribe(() => this._setModifiedUris()),
+      observeAllModifiedStatusChanges()
+        .let(toggle(this._showOpenConfigValues))
+        .subscribe(() => this._setModifiedUris()),
       this._monitorActiveUri(),
       Observable.fromPromise(
         FileTreeHelpers.areStackChangesEnabled(),
@@ -204,6 +205,10 @@ export default class FileTreeSidebarComponent extends React.Component<
         this.didChangeVisibility(visible);
       }),
     );
+
+    const node = ReactDOM.findDOMNode(this.refs.scroller);
+    invariant(node == null || node instanceof HTMLElement);
+    this._scrollerElements.next(node);
   }
 
   componentWillUnmount(): void {
@@ -228,8 +233,9 @@ export default class FileTreeSidebarComponent extends React.Component<
     }
 
     const node = ReactDOM.findDOMNode(this.refs.scroller);
+    invariant(node == null || node instanceof HTMLElement);
+    this._scrollerElements.next(node);
     if (node) {
-      // $FlowFixMe
       node.scrollTop = this.state.scrollerScrollTop;
     }
   }
@@ -242,9 +248,16 @@ export default class FileTreeSidebarComponent extends React.Component<
       observableFromSubscribeFunction(
         atom.commands.onDidDispatch.bind(atom.commands),
       ).filter(event => event.type === 'nuclide-file-tree:toggle'),
+      this._scrollerElements.distinctUntilChanged().switchMap(scroller => {
+        if (scroller == null) {
+          return Observable.empty();
+        }
+
+        return new ResizeObservable(scroller);
+      }),
     );
     return remeasureEvents
-      .let(obs => throttle(obs, () => nextAnimationFrame))
+      .let(throttle(() => nextAnimationFrame))
       .map(() => this._getScrollerHeight())
       .let(compact)
       .distinctUntilChanged()
@@ -555,18 +568,20 @@ All the changes across your entire stacked diff.
     );
 
     return new UniversalDisposable(
-      toggle(activeEditors, this._showOpenConfigValues).subscribe(editor => {
-        if (
-          editor == null ||
-          typeof editor.getPath !== 'function' ||
-          editor.getPath() == null
-        ) {
-          this.setState({activeUri: null});
-          return;
-        }
+      activeEditors
+        .let(toggle(this._showOpenConfigValues))
+        .subscribe(editor => {
+          if (
+            editor == null ||
+            typeof editor.getPath !== 'function' ||
+            editor.getPath() == null
+          ) {
+            this.setState({activeUri: null});
+            return;
+          }
 
-        this.setState({activeUri: editor.getPath()});
-      }),
+          this.setState({activeUri: editor.getPath()});
+        }),
     );
   }
 
@@ -579,7 +594,7 @@ All the changes across your entire stacked diff.
     if (el == null) {
       return null;
     }
-    // $FlowFixMe
+    invariant(el instanceof HTMLElement);
     return el.clientHeight;
   };
 
@@ -589,7 +604,11 @@ All the changes across your entire stacked diff.
     }
     this._scrollWasTriggeredProgrammatically = false;
     const node = ReactDOM.findDOMNode(this.refs.scroller);
-    // $FlowFixMe
+    if (node == null) {
+      return;
+    }
+
+    invariant(node instanceof HTMLElement);
     const {scrollTop} = node;
     if (scrollTop !== this.state.scrollerScrollTop) {
       this.setState({scrollerScrollTop: scrollTop});
@@ -605,6 +624,7 @@ All the changes across your entire stacked diff.
     if (node == null) {
       return;
     }
+    invariant(node instanceof HTMLElement);
 
     if (!approximate) {
       this._actions.clearTrackedNodeIfNotLoading();
@@ -627,7 +647,6 @@ All the changes across your entire stacked diff.
       try {
         // For the rather unlikely chance that the node is already gone from the DOM
         this._scrollWasTriggeredProgrammatically = true;
-        // $FlowFixMe
         node.scrollTop = newTop;
         if (this.state.scrollerScrollTop !== newTop) {
           this.setState({scrollerScrollTop: newTop});
@@ -649,7 +668,7 @@ All the changes across your entire stacked diff.
     if (el == null) {
       return;
     }
-    // $FlowFixMe
+    invariant(el instanceof HTMLElement);
     el.focus();
   }
 

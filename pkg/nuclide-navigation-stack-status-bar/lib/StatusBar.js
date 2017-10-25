@@ -59,27 +59,29 @@ export function consumeStatusBar(
   });
 }
 
-function NavStackStatusBarTile(props: Props): React.Element<any> {
-  return (
-    <ButtonGroup size="EXTRA_SMALL">
-      <Button
-        icon="chevron-left"
-        onClick={props.onBack}
-        disabled={!props.enableBack}
-        tooltip={{
-          title: 'Navigate Backwards',
-          keyBindingCommand: 'nuclide-navigation-stack:navigate-backwards',
-        }}
-      />
-      <Button
-        icon="chevron-right"
-        onClick={props.onForward}
-        disabled={!props.enableForward}
-        tooltip={{
-          title: 'Navigate Forwards',
-          keyBindingCommand: 'nuclide-navigation-stack:navigate-forwards',
-        }}
-      />
-    </ButtonGroup>
-  );
+class NavStackStatusBarTile extends React.Component<Props> {
+  render(): React.Node {
+    return (
+      <ButtonGroup size="EXTRA_SMALL">
+        <Button
+          icon="chevron-left"
+          onClick={this.props.onBack}
+          disabled={!this.props.enableBack}
+          tooltip={{
+            title: 'Navigate Backwards',
+            keyBindingCommand: 'nuclide-navigation-stack:navigate-backwards',
+          }}
+        />
+        <Button
+          icon="chevron-right"
+          onClick={this.props.onForward}
+          disabled={!this.props.enableForward}
+          tooltip={{
+            title: 'Navigate Forwards',
+            keyBindingCommand: 'nuclide-navigation-stack:navigate-forwards',
+          }}
+        />
+      </ButtonGroup>
+    );
+  }
 }

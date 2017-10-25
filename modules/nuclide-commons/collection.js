@@ -10,6 +10,10 @@
  * @format
  */
 
+export function ensureArray<T>(x: Array<T> | T): Array<T> {
+  return Array.isArray(x) ? x : [x];
+}
+
 export function arrayRemove<T>(array: Array<T>, element: T): void {
   const index = array.indexOf(element);
   if (index >= 0) {
@@ -457,6 +461,17 @@ export function* mapIterable<T, M>(
   }
 }
 
+// Return an iterable of the numbers start (inclusive) through stop (exclusive)
+export function* range(
+  start: number,
+  stop: number,
+  step?: number = 1,
+): Iterable<number> {
+  for (let i = start; i < stop; i += step) {
+    yield i;
+  }
+}
+
 export function firstOfIterable<T>(iterable: Iterable<T>): ?T {
   return findInIterable(iterable, () => true);
 }
@@ -486,4 +501,31 @@ export function count<T>(iterable: Iterable<T>): number {
 
 export function isIterable(obj: any): boolean {
   return typeof obj[Symbol.iterator] === 'function';
+}
+
+// Traverse an array from the inside out, starting at the specified index.
+export function* insideOut<T>(
+  arr: Array<T>,
+  startingIndex?: number,
+): Iterable<[T, number]> {
+  if (arr.length === 0) {
+    return;
+  }
+
+  let i =
+    startingIndex == null
+      ? Math.floor(arr.length / 2)
+      : Math.min(arr.length, Math.max(0, startingIndex));
+  let j = i - 1;
+
+  while (i < arr.length || j >= 0) {
+    if (i < arr.length) {
+      yield [arr[i], i];
+      i++;
+    }
+    if (j >= 0) {
+      yield [arr[j], j];
+      j--;
+    }
+  }
 }

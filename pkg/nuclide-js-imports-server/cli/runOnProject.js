@@ -24,7 +24,6 @@ import {indexDirectory, indexNodeModules} from '../src/lib/AutoImportsWorker';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 const DEFAULT_PROJECT_PATH = nuclideUri.join(__dirname, '..', '..', '..');
-const shouldIndexNodeModules = true;
 
 let numErrors = 0;
 let numFiles = 0;
@@ -55,21 +54,19 @@ function main() {
     },
   });
 
-  const indexModulesStream = shouldIndexNodeModules
-    ? indexNodeModules(root).do({
-        next: exportForFile => {
-          if (exportForFile) {
-            autoImportsManager.handleUpdateForFile(exportForFile);
-          }
-        },
-        error: err => {
-          console.error('Encountered error in AutoImportsWorker', err);
-        },
-        complete: () => {
-          console.log(`Finished indexing node modules ${root}`);
-        },
-      })
-    : Observable.empty();
+  const indexModulesStream = indexNodeModules(root).do({
+    next: exportForFile => {
+      if (exportForFile) {
+        autoImportsManager.handleUpdateForFile(exportForFile);
+      }
+    },
+    error: err => {
+      console.error('Encountered error in AutoImportsWorker', err);
+    },
+    complete: () => {
+      console.log(`Finished indexing node modules ${root}`);
+    },
+  });
 
   console.log('Began indexing all files');
 

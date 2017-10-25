@@ -654,7 +654,7 @@ export class ConnectionMultiplexer {
     if (this._enabledConnection) {
       return this._enabledConnection.getScopesForFrame(frameIndex);
     } else {
-      throw this._noConnectionError();
+      return Promise.reject(this._noConnectionError());
     }
   }
 
@@ -772,7 +772,7 @@ export class ConnectionMultiplexer {
     } else if (this._dummyConnection) {
       return this._dummyConnection.getProperties(remoteId);
     } else {
-      throw this._noConnectionError();
+      return Promise.reject(this._noConnectionError());
     }
   }
 

@@ -17,8 +17,7 @@ import type {
 
 import type {
   DiagnosticMessage,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
+  DiagnosticMessages,
   DiagnosticUpdater,
 } from '../../atom-ide-diagnostics/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
@@ -30,6 +29,8 @@ import analytics from 'nuclide-commons-atom/analytics';
 
 import idx from 'idx';
 import {areSetsEqual} from 'nuclide-commons/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {fastDebounce} from 'nuclide-commons/observable';
 import KeyboardShortcuts from './KeyboardShortcuts';
 import Model from 'nuclide-commons/Model';
 import createPackage from 'nuclide-commons-atom/createPackage';
@@ -65,7 +66,7 @@ class Activation {
   _subscriptions: UniversalDisposable;
   _model: Model<DiagnosticsState>;
   _statusBarTile: ?StatusBarTile;
-  _fileDiagnostics: WeakMap<atom$TextEditor, Array<FileDiagnosticMessage>>;
+  _fileDiagnostics: WeakMap<atom$TextEditor, Array<DiagnosticMessage>>;
   _globalViewStates: ?Observable<GlobalViewState>;
 
   constructor(state: ?Object): void {
@@ -184,17 +185,18 @@ class Activation {
   _getGlobalViewStates(): Observable<GlobalViewState> {
     if (this._globalViewStates == null) {
       const packageStates = this._model.toObservable();
-
-      const diagnosticsStream = packageStates
+      const updaters = packageStates
         .map(state => state.diagnosticUpdater)
-        .distinctUntilChanged()
+        .distinctUntilChanged();
+
+      const diagnosticsStream = updaters
         .switchMap(
           updater =>
             updater == null
               ? Observable.of([])
               : observableFromSubscribeFunction(updater.observeMessages),
         )
-        .debounceTime(100)
+        .let(fastDebounce(100))
         // FIXME: It's not good for UX or perf that we're providing a default sort here (that users
         // can't return to). We should remove this and have the table sorting be more intelligent.
         // For example, sorting by type means sorting by [type, filename, description].
@@ -208,6 +210,18 @@ class Activation {
         featureConfig.set(SHOW_TRACES_SETTING, showTraces);
       };
 
+      const showDirectoryColumnStream: Observable<
+        boolean,
+      > = (featureConfig.observeAsStream(
+        'atom-ide-diagnostics-ui.showDirectoryColumn',
+      ): any);
+
+      const autoVisibilityStream: Observable<
+        boolean,
+      > = (featureConfig.observeAsStream(
+        'atom-ide-diagnostics-ui.autoVisibility',
+      ): any);
+
       const pathToActiveTextEditorStream = getActiveEditorPaths();
 
       const filterByActiveTextEditorStream = packageStates
@@ -217,8 +231,7 @@ class Activation {
         this._model.setState({filterByActiveTextEditor});
       };
 
-      const supportedMessageKindsStream = packageStates
-        .map(state => state.diagnosticUpdater)
+      const supportedMessageKindsStream = updaters
         .switchMap(
           updater =>
             updater == null
@@ -229,26 +242,45 @@ class Activation {
         )
         .distinctUntilChanged(areSetsEqual);
 
+      const uiConfigStream = updaters.switchMap(
+        updater =>
+          updater == null
+            ? Observable.of([])
+            : observableFromSubscribeFunction(
+                updater.observeUiConfig.bind(updater),
+              ),
+      );
+
+      // $FlowFixMe: exceeds number of args defined in flow-typed definition
       this._globalViewStates = Observable.combineLatest(
         diagnosticsStream,
         filterByActiveTextEditorStream,
         pathToActiveTextEditorStream,
         showTracesStream,
+        showDirectoryColumnStream,
+        autoVisibilityStream,
         supportedMessageKindsStream,
+        uiConfigStream,
         (
           diagnostics,
           filterByActiveTextEditor,
           pathToActiveTextEditor,
           showTraces,
+          showDirectoryColumn,
+          autoVisibility,
           supportedMessageKinds,
+          uiConfig,
         ) => ({
           diagnostics,
           filterByActiveTextEditor,
           pathToActiveTextEditor,
           showTraces,
+          showDirectoryColumn,
+          autoVisibility,
           onShowTracesChange: setShowTraces,
           onFilterByActiveTextEditorChange: setFilterByActiveTextEditor,
           supportedMessageKinds,
+          uiConfig,
         }),
       );
     }
@@ -314,7 +346,7 @@ class Activation {
   _getMessagesAtPosition(
     editor: atom$TextEditor,
     position: atom$Point,
-  ): Array<FileDiagnosticMessage> {
+  ): Array<DiagnosticMessage> {
     const messagesForFile = this._fileDiagnostics.get(editor);
     if (messagesForFile == null) {
       return [];
@@ -403,10 +435,11 @@ function getTopMostErrorLocationsByFilePath(
   const errorLocations: Map<string, number> = new Map();
 
   messages.forEach(message => {
-    if (message.scope !== 'file' || message.filePath == null) {
+    const filePath = message.filePath;
+    if (nuclideUri.endsWithSeparator(filePath)) {
       return;
     }
-    const filePath = message.filePath;
+
     // If initialLine is N, Atom will navigate to line N+1.
     // Flow sometimes reports a row of -1, so this ensures the line is at least one.
     let line = Math.max(message.range ? message.range.start.row : 0, 0);
@@ -452,7 +485,7 @@ function getActiveEditorPaths(): Observable<?NuclideUri> {
 function getEditorDiagnosticUpdates(
   editor: atom$TextEditor,
   diagnosticUpdater: DiagnosticUpdater,
-): Observable<FileDiagnosticMessages> {
+): Observable<DiagnosticMessages> {
   return observableFromSubscribeFunction(editor.onDidChangePath.bind(editor))
     .startWith(editor.getPath())
     .switchMap(

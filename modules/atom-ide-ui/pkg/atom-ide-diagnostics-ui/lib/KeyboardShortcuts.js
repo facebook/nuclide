@@ -12,7 +12,7 @@
 
 import type {
   DiagnosticTrace,
-  FileDiagnosticMessage,
+  DiagnosticMessage,
   DiagnosticUpdater,
 } from '../../atom-ide-diagnostics/lib/types';
 
@@ -24,7 +24,7 @@ import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 // TODO(peterhal): The current index should really live in the DiagnosticStore.
 export default class KeyboardShortcuts {
   _subscriptions: UniversalDisposable;
-  _diagnostics: Array<FileDiagnosticMessage>;
+  _diagnostics: Array<DiagnosticMessage>;
   _index: ?number;
   _traceIndex: ?number;
 
@@ -40,11 +40,9 @@ export default class KeyboardShortcuts {
       observableFromSubscribeFunction(
         diagnosticUpdater.observeMessages,
       ).subscribe(diagnostics => {
-        this._diagnostics = (diagnostics.filter(
-          diagnostic => diagnostic.scope === 'file',
-        ): any);
         this._index = null;
         this._traceIndex = null;
+        this._diagnostics = diagnostics;
       }),
       atom.commands.add(
         'atom-workspace',

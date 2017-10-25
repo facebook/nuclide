@@ -10,7 +10,7 @@
 <PROJECT_ROOT>/node_modules/semver/.*
 <PROJECT_ROOT>/node_modules/jest-validate/.*
 ; annotated with `@flow` but have errors
-<PROJECT_ROOT>/node_modules/fbjs/lib/.*
+<PROJECT_ROOT>/node_modules/\(.*/\)*fbjs/lib/.*
 <PROJECT_ROOT>/modules/nuclide-node-transpiler/spec/fixtures/.*
 ; large dirs that are not imported
 <PROJECT_ROOT>/docs/.*
@@ -42,4 +42,4 @@ sketchy-null=error
 sketchy-null-bool=off
 
 [version]
-0.53.1
+0.57.3

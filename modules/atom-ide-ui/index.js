@@ -54,13 +54,13 @@ export type {
   DiagnosticInvalidationCallback,
   DiagnosticInvalidationMessage,
   DiagnosticMessage,
+  DiagnosticMessages,
+  DiagnosticMessageKind,
   DiagnosticMessageType,
   DiagnosticProvider,
   DiagnosticProviderUpdate,
   DiagnosticTrace,
   DiagnosticUpdateCallback,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
   IndieLinterDelegate,
   LinterMessage,
   LinterMessageV1,
@@ -68,7 +68,6 @@ export type {
   LinterProvider,
   LinterTrace,
   ObservableDiagnosticProvider,
-  ProjectDiagnosticMessage,
   RegisterIndieLinter,
 } from './pkg/atom-ide-diagnostics/lib/types';
 
@@ -84,6 +83,13 @@ export type {
   OutlineTree,
   ResultsStreamProvider,
 } from './pkg/atom-ide-outline-view/lib/types';
+
+export type {
+  Signature,
+  SignatureHelp,
+  SignatureHelpProvider,
+  SignatureParameter,
+} from './pkg/atom-ide-signature-help/lib/types';
 
 export type {
   HyperclickProvider,

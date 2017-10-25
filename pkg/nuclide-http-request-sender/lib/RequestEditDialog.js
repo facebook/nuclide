@@ -100,11 +100,15 @@ export class RequestEditDialog extends React.Component<PropsType, void> {
     );
   }
 
-  _handleTextBufferChange(event: atom$TextEditEvent): void {
+  _handleTextBufferChange(event: atom$AggregatedTextEditEvent): void {
     // TODO: It's better to store changes, even if they are illegal JSON.
     let headers;
     try {
-      headers = JSON.parse(event.newText);
+      const editorComponent = this._editorComponent;
+      invariant(editorComponent != null);
+      const editor = editorComponent.getModel();
+      invariant(editor != null);
+      headers = JSON.parse(editor.getText());
     } catch (_) {
       return; // Do not store illegal JSON.
     }

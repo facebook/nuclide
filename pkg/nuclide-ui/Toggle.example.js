@@ -11,7 +11,7 @@
 
 import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
-import {Toggle} from './Toggle';
+import {Toggle} from 'nuclide-commons-ui/Toggle';
 
 const NOOP = () => {};
 

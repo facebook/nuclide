@@ -11,7 +11,7 @@
 
 import {DebuggerPaneViewModel} from './DebuggerPaneViewModel';
 import DebuggerModel from './DebuggerModel';
-import invariant from 'invariant';
+import invariant from 'assert';
 import * as React from 'react';
 import TabBarView from '../../nuclide-ui/VendorLib/atom-tabs/lib/tab-bar-view';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';

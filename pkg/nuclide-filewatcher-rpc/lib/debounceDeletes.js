@@ -31,8 +31,8 @@ export default function debounceDeletes(
   resultStream: Observable<WatchResult>,
 ): Observable<WatchResult> {
   const shared = resultStream.share();
-  return takeWhileInclusive(
-    shared.mergeMap(change => {
+  return shared
+    .mergeMap(change => {
       switch (change.type) {
         case 'change':
           return Observable.of(change);
@@ -42,7 +42,6 @@ export default function debounceDeletes(
             .takeUntil(shared);
       }
       throw new Error('unknown change type');
-    }),
-    change => change.type !== 'delete',
-  );
+    })
+    .let(takeWhileInclusive(change => change.type !== 'delete'));
 }

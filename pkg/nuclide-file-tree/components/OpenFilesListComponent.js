@@ -18,7 +18,7 @@ import FileTreeActions from '../lib/FileTreeActions';
 import FileTreeHelpers from '../lib/FileTreeHelpers';
 import {FileTreeStore} from '../lib/FileTreeStore';
 import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
-import {TreeList, TreeItem, NestedTreeItem} from '../../nuclide-ui/Tree';
+import {TreeList, TreeItem, NestedTreeItem} from 'nuclide-commons-ui/Tree';
 import {track} from '../../nuclide-analytics';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
@@ -33,8 +33,11 @@ type OpenFileEntry = {
 };
 
 type Props = {
+  // these are processed in propsToEntries below
+  /* eslint-disable react/no-unused-prop-types */
   uris: Array<NuclideUri>,
   modifiedUris: Array<NuclideUri>,
+  /* eslint-enable react/no-unused-prop-types */
   activeUri: ?NuclideUri,
 };
 
@@ -72,7 +75,7 @@ export class OpenFilesListComponent extends React.PureComponent<Props, State> {
     }
   }
 
-  _onClick(entry: OpenFileEntry, event: SyntheticMouseEvent<>): void {
+  _onSelect(entry: OpenFileEntry, event: SyntheticMouseEvent<>): void {
     if (event.defaultPrevented) {
       return;
     }
@@ -85,7 +88,11 @@ export class OpenFilesListComponent extends React.PureComponent<Props, State> {
     }
 
     track('filetree-open-from-open-files', {uri});
-    goToLocation(uri);
+    goToLocation(uri, {activatePane: false});
+  }
+
+  _onConfirm(entry: OpenFileEntry, event: SyntheticMouseEvent<>): void {
+    goToLocation(entry.uri);
   }
 
   _onCloseClick(entry: OpenFileEntry, event: SyntheticEvent<>): void {
@@ -137,12 +144,13 @@ export class OpenFilesListComponent extends React.PureComponent<Props, State> {
                     })}
                     selected={e.isSelected}
                     key={e.uri}
-                    onClick={this._onClick.bind(this, e)}
+                    onConfirm={this._onConfirm.bind(this, e)}
+                    onSelect={this._onSelect.bind(this, e)}
                     onMouseEnter={this._onListItemMouseEnter.bind(this, e)}
                     onMouseLeave={this._onListItemMouseLeave}
                     onMouseDown={this._onMouseDown.bind(this, e)}
-                    data-path={e.uri}
-                    data-name={e.name}
+                    path={e.uri}
+                    name={e.name}
                     ref={e.isSelected ? 'selectedRow' : null}>
                     <span
                       className={classnames('icon', {

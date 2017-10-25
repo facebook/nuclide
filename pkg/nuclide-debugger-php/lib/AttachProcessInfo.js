@@ -40,6 +40,7 @@ export class AttachProcessInfo extends DebuggerProcessInfo {
       ...super.getDebuggerCapabilities(),
       conditionalBreakpoints: true,
       continueToLocation: true,
+      setVariable: true,
       threads: true,
     };
   }

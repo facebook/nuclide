@@ -12,7 +12,7 @@
 
 import type {
   DiagnosticUpdater,
-  FileDiagnosticMessage,
+  DiagnosticMessage,
 } from '../../atom-ide-diagnostics/lib/types';
 
 import invariant from 'assert';
@@ -30,7 +30,7 @@ const CODE_ACTIONS_TIMEOUT = 2000;
 export default function showActionsMenu(
   editor: TextEditor,
   position: atom$Point,
-  messagesAtPosition: Array<FileDiagnosticMessage>,
+  messagesAtPosition: Array<DiagnosticMessage>,
   diagnosticUpdater: DiagnosticUpdater,
 ): IDisposable {
   diagnosticUpdater.fetchCodeActions(editor, messagesAtPosition);

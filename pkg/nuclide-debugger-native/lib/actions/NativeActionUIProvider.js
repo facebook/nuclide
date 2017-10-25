@@ -18,8 +18,7 @@ import {LaunchAttachActions} from '../LaunchAttachActions';
 import {LaunchAttachStore} from '../LaunchAttachStore';
 import {LaunchUIComponent} from '../LaunchUIComponent';
 import {DebuggerActionUIProvider} from './DebuggerActionUIProvider';
-import nuclideUri from 'nuclide-commons/nuclideUri';
-import invariant from 'invariant';
+import invariant from 'assert';
 
 export class NativeActionUIProvider extends DebuggerActionUIProvider {
   constructor(targetUri: NuclideUri) {
@@ -53,15 +52,6 @@ export class NativeActionUIProvider extends DebuggerActionUIProvider {
           targetUri={this._targetUri}
         />
       );
-    }
-  }
-
-  isEnabled(action: DebuggerConfigAction): Promise<boolean> {
-    if (nuclideUri.isRemote(this._targetUri)) {
-      return Promise.resolve(true);
-    } else {
-      // Local native debugger is not supported on Windows.
-      return Promise.resolve(process.platform !== 'win32');
     }
   }
 }

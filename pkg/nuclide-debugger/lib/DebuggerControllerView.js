@@ -16,11 +16,14 @@ import Bridge from './Bridge';
 import {LoadingSpinner} from 'nuclide-commons-ui/LoadingSpinner';
 
 type Props = {
+  // TODO Remove disable
+  /* eslint-disable react/no-unused-prop-types */
   breakpointStore: BreakpointStore,
   store: DebuggerStore,
   bridge: Bridge,
   openDevTools: () => void,
   stopDebugging: () => void,
+  /* eslint-enable react/no-unused-prop-types */
 };
 
 type State = {

@@ -13,6 +13,7 @@ import os from 'os';
 import fs from 'fs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {compact} from 'nuclide-commons/observable';
 import {getExportsFromAst, idFromFileName} from './ExportManager';
 import {Observable} from 'rxjs';
 import {parseFile} from './AutoImportsManager';
@@ -20,7 +21,6 @@ import {initializeLoggerForWorker} from '../../logging/initializeLogging';
 import {WatchmanClient} from '../../../nuclide-watchman-helpers/lib/main';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getConfigFromFlow} from '../getConfig';
-import {Settings} from '../Settings';
 import {niceSafeSpawn} from 'nuclide-commons/nice';
 import invariant from 'assert';
 import {getHasteName, hasteReduceName} from './HasteUtils';
@@ -74,12 +74,9 @@ function main() {
   watchDirectoryRecursively(root, hasteSettings);
 
   // Build up the initial index with all files recursively from the root.
-  indexDirectoryAndSendExportsToParent(root, hasteSettings).then(() => {
-    if (Settings.indexNodeModulesWhiteList.find(regex => regex.test(root))) {
-      logger.debug('Indexing node modules.');
-      return indexNodeModulesAndSendToParent(root);
-    }
-  });
+  indexDirectoryAndSendExportsToParent(root, hasteSettings);
+
+  indexNodeModulesAndSendToParent(root);
 }
 
 // Function should be called once when the server is initialized.
@@ -212,7 +209,6 @@ export function indexDirectory(
         maxWorkers,
       );
       const filesPerWorker = Math.floor(files.length / numWorkers);
-      // $FlowIgnore TODO: add Observable.range to flow-typed
       return Observable.range(0, numWorkers)
         .mergeMap(workerId => {
           return niceSafeSpawn(
@@ -432,6 +428,7 @@ function addHasteNames(
 }
 function indexNodeModulesAndSendToParent(root: NuclideUri): Promise<void> {
   return new Promise((resolve, reject) => {
+    logger.info('Indexing node modules.');
     indexNodeModules(root).subscribe({
       next: exportForFile => {
         if (exportForFile) {
@@ -558,13 +555,11 @@ function runChild() {
       .concatMap((file, index) => {
         return addFileToIndex(root, file, hasteSettings);
       })
+      .let(compact)
       .filter(
-        exportForFile =>
-          exportForFile != null &&
-          // Optimization: we already added default exports for all name-reduced Haste modules.
-          !isDefaultExportHasteName(exportForFile.exports),
+        // Optimization: we already added default exports for all name-reduced Haste modules.
+        exportForFile => !isDefaultExportHasteName(exportForFile.exports),
       )
-      // $FlowIgnore TODO: Add .bufferCount to rxjs flow-typed
       .bufferCount(BATCH_SIZE)
       .mergeMap(sendExportUpdateToParent, SEND_CONCURRENCY)
       .subscribe({complete: exitCleanly});

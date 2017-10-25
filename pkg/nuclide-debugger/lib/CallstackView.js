@@ -11,7 +11,7 @@
 
 import classnames from 'classnames';
 import type DebuggerModel from './DebuggerModel';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import {DebuggerCallstackComponent} from './DebuggerCallstackComponent';
 import type {DebuggerModeType} from './types';
@@ -27,11 +27,11 @@ export class CallstackView extends React.PureComponent<
     mode: DebuggerModeType,
   },
 > {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
       mode: debuggerStore.getDebuggerMode(),

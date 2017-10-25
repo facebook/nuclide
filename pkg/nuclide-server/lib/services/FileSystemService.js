@@ -19,7 +19,6 @@ import type {ConnectableObservable} from 'rxjs';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {DirectoryEntry, WriteOptions} from '../../../nuclide-fs';
 
-import mv from 'mv';
 import fs from 'fs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -300,17 +299,11 @@ export function isNfs(path: NuclideUri): Promise<boolean> {
   return ROOT_FS.isNfs(path);
 }
 
-// TODO: Move to nuclide-commons
-function mvPromise(sourcePath: string, destinationPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    mv(sourcePath, destinationPath, {mkdirp: false}, error => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    });
-  });
+/**
+ * Returns true if the path being checked exists in a `Fuse` mounted directory device.
+ */
+export function isFuse(path: NuclideUri): Promise<boolean> {
+  return ROOT_FS.isFuse(path);
 }
 
 async function copyFilePermissions(
@@ -396,7 +389,7 @@ async function _writeFile(
 
     // TODO(mikeo): put renames into a queue so we don't write older save over new save.
     // Use mv as fs.rename doesn't work across partitions.
-    await mvPromise(tempFilePath, realPath);
+    await fsPromise.mv(tempFilePath, realPath);
     complete = true;
   } finally {
     if (!complete) {

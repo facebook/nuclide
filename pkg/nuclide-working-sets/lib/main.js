@@ -10,7 +10,7 @@
  */
 
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {track} from '../../nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {WorkingSetsStore} from './WorkingSetsStore';
@@ -21,12 +21,12 @@ import {WORKING_SET_PATH_MARKER} from '../../nuclide-working-sets-common/lib/con
 class Activation {
   workingSetsStore: WorkingSetsStore;
   _workingSetsConfig: WorkingSetsConfig;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
     this.workingSetsStore = new WorkingSetsStore();
     this._workingSetsConfig = new WorkingSetsConfig();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._disposables.add(
       this.workingSetsStore.onSaveDefinitions(definitions => {

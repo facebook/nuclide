@@ -10,7 +10,7 @@
  */
 
 import type DebuggerModel from './DebuggerModel';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as React from 'react';
 import TruncatedButton from 'nuclide-commons-ui/TruncatedButton';
 import {DebuggerSteppingComponent} from './DebuggerSteppingComponent';
@@ -31,12 +31,12 @@ export class DebuggerControlsView extends React.PureComponent<
     mode: DebuggerModeType,
   },
 > {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(props: Props) {
     super(props);
 
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     const debuggerStore = props.model.getStore();
     this.state = {
       mode: debuggerStore.getDebuggerMode(),

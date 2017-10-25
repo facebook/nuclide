@@ -167,12 +167,39 @@ export default class Bridge {
     );
   }
 
+  setShowDisassembly(disassembly: boolean): void {
+    this._commandDispatcher.send('setShowDisassembly', disassembly);
+  }
+
   selectThread(threadId: string): void {
     this._commandDispatcher.send('selectThread', threadId);
     const threadNo = parseInt(threadId, 10);
     if (!isNaN(threadNo)) {
       this._debuggerModel.getActions().updateSelectedThread(threadNo);
     }
+  }
+
+  sendSetVariableCommand(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._commandDispatcher.send(
+      'setVariable',
+      scopeObjectId,
+      expression,
+      newValue,
+      callback,
+    );
+  }
+
+  sendCompletionsCommand(
+    text: string,
+    column: number,
+    callback: Function,
+  ): void {
+    this._commandDispatcher.send('completions', text, column, callback);
   }
 
   sendEvaluationCommand(
@@ -314,6 +341,7 @@ export default class Bridge {
     this.setPauseOnException(store.getTogglePauseOnException());
     this.setPauseOnCaughtException(store.getTogglePauseOnCaughtException());
     this.setSingleThreadStepping(store.getEnableSingleThreadStepping());
+    this.setShowDisassembly(store.getShowDisassembly());
   }
 
   _handleDebuggerPaused(
@@ -413,7 +441,13 @@ export default class Bridge {
 
   _removeBreakpoint(breakpoint: IPCBreakpoint) {
     const {sourceURL, lineNumber} = breakpoint;
-    const path = nuclideUri.uriToNuclideUri(sourceURL);
+    let path = nuclideUri.uriToNuclideUri(sourceURL);
+    // For address based breakpoints handled by the backend, do not require
+    // a parsable file path here.
+    if (path != null && path === '/') {
+      path = sourceURL.replace('file://', '');
+    }
+
     // only handle real files for now.
     // flowlint-next-line sketchy-null-string:off
     if (path) {

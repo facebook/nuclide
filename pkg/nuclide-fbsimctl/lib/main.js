@@ -88,12 +88,21 @@ function parseFbsimctlJsonOutput(output: string): Array<Device> {
       return;
     }
     const device = event.subject;
-    const {state, os, name, udid, arch} = device;
+    const {state, name, udid} = device;
+
+    // TODO (#21958483): Remove this hack when `fbsimctl` produces the right
+    // information for new OS devices.
+    let {os, arch} = device;
+    if (!os && !arch && /^(iPhone|iPad)/.test(name)) {
+      os = 'iOS <unknown version>';
+      arch = 'x86_64';
+    }
+
     if (!state || !os || !name || !udid || !arch) {
       return;
     }
 
-    if (!device.os.match(/^iOS (.+)$/)) {
+    if (!os.match(/^iOS (.+)$/)) {
       return;
     }
     const type = typeFromArch(arch);

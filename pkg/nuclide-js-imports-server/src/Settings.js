@@ -18,5 +18,4 @@ export const Settings = {
     // with the same ID as the filename.
     shouldAddAllFilesAsDefaultExport: true,
   },
-  indexNodeModulesWhiteList: [/^(.)*\/Nuclide/],
 };

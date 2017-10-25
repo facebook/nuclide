@@ -55,7 +55,10 @@ class DebuggerDomainDispatcher {
   }
 
   setDebuggerSettings(settings: SetDebuggerSettingsRequest): void {
-    this._agent.setDebuggerSettings(settings.singleThreadStepping);
+    this._agent.setDebuggerSettings(
+      settings.singleThreadStepping,
+      settings.showDisassembly,
+    );
   }
 
   getSourceUriFromUri(fileUri: NuclideUri): ?ScriptId {
@@ -143,6 +146,24 @@ class DebuggerDomainDispatcher {
       undefined, // generatePreview
       callback,
     );
+  }
+
+  setVariable(
+    scopeObjectId: number,
+    expression: string,
+    newValue: string,
+    callback: Function,
+  ): void {
+    this._agent.setVariableValue(expression, newValue, scopeObjectId, callback);
+  }
+
+  completions(
+    text: string,
+    column: number,
+    frameId: number,
+    callback: Function,
+  ): void {
+    this._agent.completions(text, column, frameId, callback);
   }
 
   selectThread(threadId: number): void {

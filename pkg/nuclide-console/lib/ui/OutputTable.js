@@ -54,11 +54,13 @@ type RowHeightParams = {
   index: number,
 };
 
+/* eslint-disable react/no-unused-prop-types */
 type OnScrollParams = {
   clientHeight: number,
   scrollHeight: number,
   scrollTop: number,
 };
+/* eslint-enable react/no-unused-prop-types */
 
 // The number of extra rows to render beyond what is visible
 const OVERSCAN_COUNT = 5;
