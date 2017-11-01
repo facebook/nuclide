@@ -112,7 +112,7 @@ export type SshConnectionDelegate = {
   onKeyboardInteractive: KeyboardInteractiveCallback,
   /** Invoked when trying to connect */
   onWillConnect: (config: SshConnectionConfiguration) => void,
-  /** Invoked when connection is sucessful */
+  /** Invoked when connection is successful */
   onDidConnect: (
     connection: RemoteConnection,
     config: SshConnectionConfiguration,
