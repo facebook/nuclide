@@ -164,7 +164,7 @@ describe('getDefinitionPreview', () => {
       });
     });
 
-    it('doesnt dedent beyond the current lines indentation level', () => {
+    it('doesn\'t dedent beyond the current lines indentation level', () => {
       waitsForPromise(async () => {
         const preview = await getDefinitionPreview(
           javascriptFixtureDefinitionWithPoint(new Point(36, 18)),

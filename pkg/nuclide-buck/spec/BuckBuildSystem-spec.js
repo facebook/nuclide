@@ -20,7 +20,7 @@ describe('BuckBuildSystem', () => {
   });
 
   describe('_consumeEventStream', () => {
-    it('doesnt swallow log messages', () => {
+    it('doesn\'t swallow log messages', () => {
       waitsForPromise(async () => {
         const result = await buckBuildSystem
           ._consumeEventStream(

@@ -51,7 +51,7 @@ describe('Reducers', () => {
       });
     });
     describe('ADD_CONSOLE_FOR_TASK_RUNNER', () => {
-      it('adds a new console, but doesnt touch the previous ones', () => {
+      it('adds a new console, but doesn\'t touch the previous ones', () => {
         const oldConsole = createMockConsole();
         const newConsole = createMockConsole();
         const oldState = new Map([[new dummy.TaskRunner(), oldConsole]]);

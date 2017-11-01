@@ -1297,7 +1297,7 @@ export class FileTreeStore {
   /*
   * Manually sets a target node used for context menu actions. The value can be
   * retrieved by calling `getTargetNodes` or `getSingleTargetNode` both of
-  * which will retrive the target node if it exists and default to selected
+  * which will retrieve the target node if it exists and default to selected
   * nodes otherwise.
   * This value gets cleared everytime a selection is set
   */

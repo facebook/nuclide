@@ -458,7 +458,7 @@ export type CompletionItem = {
   itemType?: string,
   // A human-readable string that represents a doc-comment.
   documentation?: string,
-  //  A string that shoud be used when comparing this item
+  //  A string that should be used when comparing this item
   //  with other items. When `falsy` the label is used.
   sortText?: string,
   //  A string that should be used when filtering a set of
