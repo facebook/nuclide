@@ -37,7 +37,7 @@ describe('FuzzyFileSearchService.isFuzzySearchAvailableFor', () => {
     });
   });
 
-  it('doesnt get confused by atom:// paths', () => {
+  it('doesn\'t get confused by atom:// paths', () => {
     waitsForPromise(async () => {
       expect(await isFuzzySearchAvailableFor('atom://about')).toBe(false);
     });
