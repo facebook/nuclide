@@ -72,7 +72,7 @@ export async function asyncExecuteSourceKitten(
     return null;
   }
   if (result.exitCode !== 0 || result.stdout.length === 0) {
-    atom.notifications.addError('An error occured when invoking SourceKitten', {
+    atom.notifications.addError('An error occurred when invoking SourceKitten', {
       description:
         'Please file a bug.<br>' +
         `**exit code:** \`${String(result.exitCode)}\`<br>` +
