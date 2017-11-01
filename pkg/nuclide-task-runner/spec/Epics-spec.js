@@ -124,7 +124,7 @@ describe('Epics', () => {
       };
     });
 
-    describe('if this working root doesnt have a preference', () => {
+    describe('if this working root doesn\'t have a preference', () => {
       it('selects an enabled runner with the highest priority', () => {
         waitsForPromise(async () => {
           const output = await runActions(
