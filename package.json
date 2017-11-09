@@ -90,7 +90,7 @@
     "plist": "2.0.1",
     "q": "1.4.1",
     "react": "16.0.0",
-    "react-devtools-core": "2.5.2",
+    "react-devtools-core": "3.0.0",
     "react-dom": "16.0.0",
     "react-redux": "5.0.6",
     "react-relay": "1.4.1",
