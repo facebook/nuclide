@@ -2,7 +2,7 @@
 
 Run the following commands to run `atom-ide-ui` from source:
 
-```
+```shell
 # Clone the source
 $ git clone https://github.com/facebook/nuclide.git
 $ cd nuclide
