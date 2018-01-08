@@ -173,13 +173,10 @@ export default class FileTreeController {
         'nuclide-file-tree:open-selected-entry-right': this._openSelectedEntrySplitRight.bind(
           this,
         ),
-        'nuclide-file-tree:remove': this._deleteSelection.bind(this),
         'core:delete': this._deleteSelection.bind(this),
         'nuclide-file-tree:remove-project-folder-selection': this._removeRootFolderSelection.bind(
           this,
         ),
-        'nuclide-file-tree:rename-selection': () =>
-          FileSystemActions.openRenameDialog(),
         'nuclide-file-tree:duplicate-selection': () => {
           FileSystemActions.openDuplicateDialog(
             this._openAndRevealFilePaths.bind(this),
@@ -203,6 +200,9 @@ export default class FileTreeController {
         'file:copy-full-path': this._copyFullPath.bind(this),
         // eslint-disable-next-line rulesdir/atom-apis
         'file:show-in-file-manager': this._showInFileManager.bind(this),
+        'nuclide-file-tree:rename-selection': () =>
+          FileSystemActions.openRenameDialog(),
+        'nuclide-file-tree:remove': this._deleteSelection.bind(this),
       }),
     );
     if (state != null) {

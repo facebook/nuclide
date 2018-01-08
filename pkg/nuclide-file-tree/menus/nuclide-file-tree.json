@@ -30,6 +30,14 @@
             {
               "label": "New File...",
               "command": "nuclide-file-tree:add-file-relative"
+            },
+            {
+              "label": "Rename Active File...",
+              "command": "nuclide-file-tree:rename-selection"
+            },
+            {
+              "label": "Remove Active File",
+              "command": "nuclide-file-tree:remove"
             }
           ]
         }
