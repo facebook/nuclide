@@ -36,7 +36,7 @@
               "command": "nuclide-file-tree:rename-selection"
             },
             {
-              "label": "Remove Active File",
+              "label": "Delete Active File",
               "command": "nuclide-file-tree:remove"
             }
           ]
