@@ -2,7 +2,7 @@
   "name": "nuclide-watchman-helpers",
   "publisher": "Facebook",
   "main": "./lib/main.js",
-  "version": "0.0.0",
+  "version": "0.5.0",
   "description": "Helper methods for interacting with fb-watchman",
   "author": "NEEDS OWNER",
   "license": "BSD-3-Clause",
@@ -18,8 +18,8 @@
   "dependencies": {
     "async-to-generator": "1.1.0",
     "event-kit": "2.2.0",
+    "fb-watchman": "2.0.0",
     "log4js": "1.1.1",
-    "nuclide-commons": "0.4.0",
-    "fb-watchman": "2.0.0"
+    "nuclide-commons": "0.5.0"
   }
 }

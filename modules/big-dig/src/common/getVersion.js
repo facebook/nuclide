@@ -10,6 +10,7 @@
  * @format
  */
 
+// eslint-disable-next-line
 import {getPackageMinorVersion} from 'nuclide-commons/package';
 
 let version;

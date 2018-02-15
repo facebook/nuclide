@@ -72,14 +72,14 @@ module.exports = function(context) {
 
     const depName = dep.split('/')[0];
     if (
-      !Object.hasOwnProperty.call(modulePkg.dependencies, depName) &&
+      !Object.hasOwnProperty.call(modulePkg.dependencies || {}, depName) &&
       (!allowDevDependencies ||
         !Object.hasOwnProperty.call(modulePkg.devDependencies || {}, depName))
     ) {
       context.report({
         node,
         data: {dep: depName, pkg: modulePkg.name},
-        message: 'Dependency "{{dep}}" must be declared in module "{{pkg}}".',
+        message: 'Dependency "{{dep}}" must be declared in the package.json of module "{{pkg}}".',
       });
     }
   }

@@ -9,5 +9,12 @@
   },
   "scripts": {
     "test": "node bin/jasmine-node-transpiled spec"
+  },
+  "devDependencies": {
+    "async-to-generator": "1.1.0",
+    "jasmine-node": "1.14.5",
+    "nuclide-commons": "0.4.0",
+    "nuclide-node-transpiler": "0.4.0",
+    "temp": "0.8.3"
   }
 }

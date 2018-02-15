@@ -1,6 +1,6 @@
 {
   "name": "nuclide-debugger-vsps",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Third party VSP adapters used by the Nuclide debugger.",
   "author": "Nuclide : Debugging",
   "license": "BSD-3-Clause",
@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "async-to-generator": "1.1.0",
-    "nuclide-commons": "0.4.0",
-    "nuclide-debugger-common": "0.4.0",
-    "nuclide-node-transpiler": "0.4.0",
+    "nuclide-commons": "0.5.0",
+    "nuclide-debugger-common": "0.5.0",
+    "nuclide-node-transpiler": "0.5.0",
     "nuclide-prebuilt-libs": "0.3.3",
     "nullthrows": "1.0.0",
     "v8-compile-cache": "1.1.0",

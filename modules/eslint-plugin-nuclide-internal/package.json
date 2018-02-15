@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-nuclide-internal",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A custom ESLint plugin for Atom/Nuclide code",
   "author": "NEEDS OWNER",
   "license": "BSD-3-Clause",

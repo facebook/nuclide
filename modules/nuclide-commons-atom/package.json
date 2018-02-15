@@ -1,6 +1,6 @@
 {
   "name": "nuclide-commons-atom",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Common Nuclide node modules (for use with Atom only).",
   "author": "NEEDS OWNER",
   "license": "BSD-3-Clause",
@@ -16,7 +16,7 @@
     "escape-string-regexp": "1.0.5",
     "idx": "1.2.0",
     "log4js": "1.1.1",
-    "nuclide-commons": "0.4.0",
+    "nuclide-commons": "0.5.0",
     "redux-logger": "3.0.6",
     "rxjs": "5.5.5",
     "semver": "5.3.0",
