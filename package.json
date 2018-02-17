@@ -199,7 +199,7 @@
     "language-swift",
     "language-thrift",
     "language-scala",
-    "MagicPython",
+    "magicpython",
     "nuclide-format-js:0.0.43",
     "set-syntax",
     "sort-lines"
