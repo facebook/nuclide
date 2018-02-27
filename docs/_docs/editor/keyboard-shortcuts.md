@@ -50,7 +50,7 @@ for the most common shortcuts provided by Nuclide.
 | `Cmd-T` | `Ctrl-T` | Use [OmniSearch](/docs/features/quick-open/#omnisearch) to open files, etc. |
 | `Cmd-\` | `Ctrl-\` | Toggle the [Project Explorer](/docs/editor/basics/#project-explorer). |
 | `Ctrl-0` | `Ctrl-0` | Toggle between the [Editing Area](/docs/editor/basics/#editing-area) and the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. |
-| `Cmd-K-<arrow>` | `Ctrl-K-<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
+| `Cmd-K,<arrow>` | `Ctrl-K,<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
 | `Option-Shift-D` | `Alt-Shift-D` | Open the [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) window. |
 
 ## Development
