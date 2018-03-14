@@ -29,9 +29,11 @@ export class UndefinedSymbolManager {
   constructor(envs: Array<string>) {
     this.globals = new Set(BUILT_INS);
     envs.forEach(env => {
-      Object.keys(globalsJSON[env]).forEach(globalVar => {
-        this.globals.add(globalVar);
-      });
+      if (globalsJSON[env]) {
+        Object.keys(globalsJSON[env]).forEach(globalVar => {
+          this.globals.add(globalVar);
+        });
+      }
     });
   }
 
