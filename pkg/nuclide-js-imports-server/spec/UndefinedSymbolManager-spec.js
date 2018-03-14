@@ -275,4 +275,9 @@ describe('UndefinedSymbolManager', () => {
     const undefinedSymbols = manager.findUndefined(ast);
     expect(undefinedSymbols.length).toBe(0);
   });
+
+  it('should not error with non-standard environments', () => {
+    // eslint-disable-next-line no-new
+    new UndefinedSymbolManager(['asdf']);
+  });
 });
