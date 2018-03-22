@@ -25,7 +25,7 @@ from utils import is_ip_address
 # SAN = Subject Alternative Name.
 OPENSSL_SAN = 'OPENSSL_SAN'
 # regex pattern for matching common name.
-SUBJECT_CN_REGEX = 'subject=.*/CN=([^/\n]*)'
+SUBJECT_CN_REGEX = 'subject=.*/?CN ?= ?([^/\n]*)'
 
 
 class NuclideCertificatesGenerator(object):
