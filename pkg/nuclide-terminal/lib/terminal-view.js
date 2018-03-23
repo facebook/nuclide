@@ -53,6 +53,7 @@ const PRESERVED_COMMANDS_CONFIG = 'nuclide-terminal.preservedCommands';
 const SCROLLBACK_CONFIG = 'nuclide-terminal.scrollback';
 const CURSOR_STYLE_CONFIG = 'nuclide-terminal.cursorStyle';
 const CURSOR_BLINK_CONFIG = 'nuclide-terminal.cursorBlink';
+const FONT_FAMILY_CONFIG = 'nuclide-terminal.fontFamily';
 const DOCUMENTATION_MESSAGE_CONFIG = 'nuclide-terminal.documentationMessage';
 const ADD_ESCAPE_COMMAND = 'nuclide-terminal:add-escape-prefix';
 const TMUX_CONTROLCONTROL_PREFIX = '\x1BP1000p';
@@ -157,6 +158,7 @@ export class TerminalView implements PtyClient {
       cursorBlink: featureConfig.get(CURSOR_BLINK_CONFIG),
       cursorStyle: featureConfig.get(CURSOR_STYLE_CONFIG),
       scrollback: featureConfig.get(SCROLLBACK_CONFIG),
+      fontFamily: featureConfig.get(FONT_FAMILY_CONFIG),
     }));
     (div: any).terminal = terminal;
     terminal.open(this._div);
@@ -202,6 +204,10 @@ export class TerminalView implements PtyClient {
         .observeAsStream(SCROLLBACK_CONFIG)
         .skip(1)
         .subscribe(scrollback => terminal.setOption('scrollback', scrollback)),
+      featureConfig
+        .observeAsStream(FONT_FAMILY_CONFIG)
+        .skip(1)
+        .subscribe(fontFamily => terminal.setOption('fontFamily', fontFamily)),
       Observable.merge(
         Observable.fromEvent(this._terminal, 'focus'),
         Observable.fromEvent(window, 'resize'),

@@ -40,6 +40,11 @@
         "type": "boolean",
         "default": false
       },
+      "fontFamily": {
+        "title": "Font Family",
+        "type": "string",
+        "default": "courier-new, courier, monospace"
+      },
       "documentationMessage": {
         "title": "Documentation Message",
         "type": "boolean",
