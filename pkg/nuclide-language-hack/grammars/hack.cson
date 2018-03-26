@@ -361,7 +361,7 @@
         'patterns': [
           {
             'begin': '(shape\\()'
-            'end': '(=>)'
+            'end': '(=>|\\.\\.\\.)'
             'endCaptures':
               '1': 'keyword.operator.key.php'
             'patterns':[
