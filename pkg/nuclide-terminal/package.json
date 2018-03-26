@@ -52,8 +52,8 @@
       },
       "lineHeight": {
         "title": "Line Height",
-        "type": "integer",
-        "default": 1
+        "type": "number",
+        "default": 1.5
       },
       "documentationMessage": {
         "title": "Documentation Message",
