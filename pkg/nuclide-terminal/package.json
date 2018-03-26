@@ -40,6 +40,21 @@
         "type": "boolean",
         "default": false
       },
+      "fontFamily": {
+        "title": "Font Family",
+        "type": "string",
+        "default": "courier-new, courier, monospace"
+      },
+      "fontSize": {
+        "title": "Font Size",
+        "type": "integer",
+        "default": 15
+      },
+      "lineHeight": {
+        "title": "Line Height",
+        "type": "number",
+        "default": 1.5
+      },
       "documentationMessage": {
         "title": "Documentation Message",
         "type": "boolean",

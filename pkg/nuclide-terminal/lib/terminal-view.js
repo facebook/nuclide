@@ -53,6 +53,9 @@ const PRESERVED_COMMANDS_CONFIG = 'nuclide-terminal.preservedCommands';
 const SCROLLBACK_CONFIG = 'nuclide-terminal.scrollback';
 const CURSOR_STYLE_CONFIG = 'nuclide-terminal.cursorStyle';
 const CURSOR_BLINK_CONFIG = 'nuclide-terminal.cursorBlink';
+const FONT_FAMILY_CONFIG = 'nuclide-terminal.fontFamily';
+const FONT_SIZE_CONFIG = 'nuclide-terminal.fontSize';
+const LINE_HEIGHT_CONFIG = 'nuclide-terminal.lineHeight';
 const DOCUMENTATION_MESSAGE_CONFIG = 'nuclide-terminal.documentationMessage';
 const ADD_ESCAPE_COMMAND = 'nuclide-terminal:add-escape-prefix';
 const TMUX_CONTROLCONTROL_PREFIX = '\x1BP1000p';
@@ -131,18 +134,6 @@ export class TerminalView implements PtyClient {
             ...(info.preservedCommands || []),
           ]);
         }),
-      atom.config.onDidChange(
-        'editor.fontSize',
-        this._syncAtomStyle.bind(this),
-      ),
-      atom.config.onDidChange(
-        'editor.fontFamily',
-        this._syncAtomStyle.bind(this),
-      ),
-      atom.config.onDidChange(
-        'editor.lineHeight',
-        this._syncAtomStyle.bind(this),
-      ),
       atom.config.onDidChange('core.themes', this._syncAtomTheme.bind(this)),
       atom.themes.onDidChangeActiveThemes(this._syncAtomTheme.bind(this)),
     );
@@ -157,6 +148,9 @@ export class TerminalView implements PtyClient {
       cursorBlink: featureConfig.get(CURSOR_BLINK_CONFIG),
       cursorStyle: featureConfig.get(CURSOR_STYLE_CONFIG),
       scrollback: featureConfig.get(SCROLLBACK_CONFIG),
+      fontFamily: featureConfig.get(FONT_FAMILY_CONFIG),
+      fontSize: featureConfig.get(FONT_SIZE_CONFIG),
+      lineHeight: featureConfig.get(LINE_HEIGHT_CONFIG),
     }));
     (div: any).terminal = terminal;
     terminal.open(this._div);
@@ -202,6 +196,18 @@ export class TerminalView implements PtyClient {
         .observeAsStream(SCROLLBACK_CONFIG)
         .skip(1)
         .subscribe(scrollback => terminal.setOption('scrollback', scrollback)),
+      featureConfig
+        .observeAsStream(FONT_SIZE_CONFIG)
+        .skip(1)
+        .subscribe(fontSize => terminal.setOption('fontSize', fontSize)),
+      featureConfig
+        .observeAsStream(FONT_FAMILY_CONFIG)
+        .skip(1)
+        .subscribe(fontFamily => terminal.setOption('fontFamily', fontFamily)),
+      featureConfig
+        .observeAsStream(LINE_HEIGHT_CONFIG)
+        .skip(1)
+        .subscribe(lineHeight => terminal.setOption('lineHeight', lineHeight)),
       Observable.merge(
         Observable.fromEvent(this._terminal, 'focus'),
         Observable.fromEvent(window, 'resize'),
@@ -396,7 +402,7 @@ export class TerminalView implements PtyClient {
   }
 
   _syncAtomStyleItem(name: string): void {
-    const item = atom.config.get(`editor.${name}`);
+    const item = atom.config.get(`nuclide-terminal.${name}`);
     if (item != null && item !== '') {
       this._terminal.setOption(name, item);
     }
