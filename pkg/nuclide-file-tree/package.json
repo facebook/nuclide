@@ -63,6 +63,13 @@
         "default": true,
         "description": "Hide paths that match the \"Ignored Names\" under \"Settings > Core Settings\""
       },
+      "hideVcsIgnoredPaths": {
+        "title": "Hide VCS Ignored Paths",
+        "type": "boolean",
+        "default": true,
+        "description":
+          "Files and directories ignored by the current project's version control system will be hidden."
+      },
       "allowKeyboardPrefixNavigation": {
         "title": "Enable prefix-based keyboard navigation",
         "type": "boolean",

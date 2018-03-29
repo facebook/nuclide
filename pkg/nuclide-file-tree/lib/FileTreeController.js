@@ -393,6 +393,10 @@ export default class FileTreeController {
     this._actions.setExcludeVcsIgnoredPaths(excludeVcsIgnoredPaths);
   }
 
+  setHideVcsIgnoredPaths(hideVcsIgnoredPaths: boolean): void {
+    this._actions.setHideVcsIgnoredPaths(hideVcsIgnoredPaths);
+  }
+
   setHideIgnoredNames(hideIgnoredNames: boolean): void {
     this._actions.setHideIgnoredNames(hideIgnoredNames);
   }

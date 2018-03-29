@@ -71,6 +71,7 @@ export type StoreConfigData = {
   workingSet: WorkingSet,
   hideIgnoredNames: boolean,
   excludeVcsIgnoredPaths: boolean,
+  hideVcsIgnoredPaths: boolean,
   ignoredPatterns: Immutable.Set<Minimatch>,
   usePreviewTabs: boolean,
   focusEditorOnFileSelection: boolean,
@@ -93,6 +94,7 @@ export const DEFAULT_CONF = {
   editedWorkingSet: new WorkingSet(),
   hideIgnoredNames: true,
   excludeVcsIgnoredPaths: true,
+  hideVcsIgnoredPaths: true,
   ignoredPatterns: Immutable.Set(),
   usePreviewTabs: false,
   focusEditorOnFileSelection: true,
@@ -290,6 +292,12 @@ export class FileTreeStore {
     });
   }
 
+  _setHideVcsIgnoredPaths(hideVcsIgnoredPaths: boolean): void {
+    this._updateConf(conf => {
+      conf.hideVcsIgnoredPaths = hideVcsIgnoredPaths;
+    });
+  }
+
   _setHideIgnoredNames(hideIgnoredNames: boolean): void {
     this._updateConf(conf => {
       conf.hideIgnoredNames = hideIgnoredNames;
@@ -376,6 +384,9 @@ export class FileTreeStore {
         break;
       case ActionTypes.SET_EXCLUDE_VCS_IGNORED_PATHS:
         this._setExcludeVcsIgnoredPaths(payload.excludeVcsIgnoredPaths);
+        break;
+      case ActionTypes.SET_HIDE_VCS_IGNORED_PATHS:
+        this._setHideVcsIgnoredPaths(payload.hideVcsIgnoredPaths);
         break;
       case ActionTypes.SET_USE_PREVIEW_TABS:
         this._setUsePreviewTabs(payload.usePreviewTabs);
@@ -1272,6 +1283,7 @@ export class FileTreeStore {
     return {
       hideIgnoredNames: this._conf.hideIgnoredNames,
       excludeVcsIgnoredPaths: this._conf.excludeVcsIgnoredPaths,
+      hideVcsIgnoredPaths: this._conf.hideVcsIgnoredPaths,
       usePreviewTabs: this._conf.usePreviewTabs,
       focusEditorOnFileSelection: this._conf.focusEditorOnFileSelection,
       isEditingWorkingSet: this._conf.isEditingWorkingSet,

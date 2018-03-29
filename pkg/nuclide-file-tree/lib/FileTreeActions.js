@@ -145,6 +145,13 @@ export default class FileTreeActions {
     });
   }
 
+  setHideVcsIgnoredPaths(hideVcsIgnoredPaths: boolean): void {
+    this._dispatcher.dispatch({
+      actionType: ActionTypes.SET_HIDE_VCS_IGNORED_PATHS,
+      hideVcsIgnoredPaths,
+    });
+  }
+
   setHideIgnoredNames(hideIgnoredNames: boolean): void {
     this._dispatcher.dispatch({
       actionType: ActionTypes.SET_HIDE_IGNORED_NAMES,

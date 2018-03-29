@@ -106,6 +106,7 @@ class Activation {
     this._restored = state.restored === true;
 
     const excludeVcsIgnoredPathsSetting = 'core.excludeVcsIgnoredPaths';
+    const hideVcsIgnoredPathsSetting = 'nuclide-file-tree.hideVcsIgnoredPaths';
     const hideIgnoredNamesSetting = 'nuclide-file-tree.hideIgnoredNames';
     const ignoredNamesSetting = 'core.ignoredNames';
     const prefixKeyNavSetting =
@@ -138,6 +139,9 @@ class Activation {
       ),
       featureConfig.observe(hideIgnoredNamesSetting, (x: any) =>
         this._setHideIgnoredNames(x),
+      ),
+      featureConfig.observe(hideVcsIgnoredPathsSetting, (x: any) =>
+        this._setHideVcsIgnoredPaths(x),
       ),
       atom.config.observe(
         excludeVcsIgnoredPathsSetting,
@@ -293,6 +297,10 @@ class Activation {
 
   _setExcludeVcsIgnoredPaths(excludeVcsIgnoredPaths: boolean): void {
     this._fileTreeController.setExcludeVcsIgnoredPaths(excludeVcsIgnoredPaths);
+  }
+
+  _setHideVcsIgnoredPaths(hideVcsIgnoredPaths: boolean): void {
+    this._fileTreeController.setHideVcsIgnoredPaths(hideVcsIgnoredPaths);
   }
 
   _setHideIgnoredNames(hideIgnoredNames: boolean): void {

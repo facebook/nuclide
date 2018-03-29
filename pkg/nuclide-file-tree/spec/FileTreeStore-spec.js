@@ -417,6 +417,7 @@ describe('FileTreeStore', () => {
       actions.setRootKeys([dir1]);
       actions.expandNode(dir1, fooTxt);
       actions.setExcludeVcsIgnoredPaths(true);
+      actions.setHideVcsIgnoredPaths(true);
 
       const mockRepo = new MockRepository();
       store._updateConf(conf => {
@@ -433,6 +434,24 @@ describe('FileTreeStore', () => {
       actions.setRootKeys([dir1]);
       actions.expandNode(dir1, fooTxt);
       actions.setExcludeVcsIgnoredPaths(false);
+      actions.setHideVcsIgnoredPaths(false);
+
+      const mockRepo = new MockRepository();
+      store._updateConf(conf => {
+        conf.reposByRoot[dir1] = (mockRepo: any);
+      });
+
+      await loadChildKeys(dir1, dir1);
+      expect(shownChildren(dir1, dir1).length).toBe(1);
+    });
+  });
+
+  it('includes vcs-excluded paths when explicitly told to', () => {
+    waitsForPromise(async () => {
+      actions.setRootKeys([dir1]);
+      actions.expandNode(dir1, fooTxt);
+      actions.setExcludeVcsIgnoredPaths(true);
+      actions.setHideVcsIgnoredPaths(false);
 
       const mockRepo = new MockRepository();
       store._updateConf(conf => {

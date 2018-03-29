@@ -42,6 +42,10 @@ export type FileTreeAction =
       excludeVcsIgnoredPaths: boolean,
     }
   | {
+      actionType: 'SET_HIDE_VCS_IGNORED_PATHS',
+      hideVcsIgnoredPaths: boolean,
+    }
+  | {
       actionType: 'EXPAND_NODE_DEEP',
       rootKey: NuclideUri,
       nodeKey: NuclideUri,
@@ -253,6 +257,7 @@ export const ActionTypes = Object.freeze({
   EXPAND_NODE_DEEP: 'EXPAND_NODE_DEEP',
   SET_CWD: 'SET_CWD',
   SET_HIDE_IGNORED_NAMES: 'SET_HIDE_IGNORED_NAMES',
+  SET_HIDE_VCS_IGNORED_PATHS: 'SET_HIDE_VCS_IGNORED_PATHS',
   SET_IS_CALCULATING_CHANGES: 'SET_IS_CALCULATING_CHANGES',
   SET_IGNORED_NAMES: 'SET_IGNORED_NAMES',
   SET_ROOT_KEYS: 'SET_ROOT_KEYS',

@@ -20,6 +20,7 @@ const CONF = {
   workingSet: new WorkingSet(),
   editedWorkingSet: new WorkingSet(),
   hideIgnoredNames: true,
+  hideVcsIgnoredPaths: true,
   excludeVcsIgnoredPaths: true,
   ignoredPatterns: Immutable.Set(),
   repositories: Immutable.Set(),

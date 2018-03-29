@@ -201,6 +201,7 @@ export class MemoizedFieldsDeriver {
     if (
       store.isIgnored !== isIgnored ||
       store.excludeVcsIgnoredPaths !== conf.excludeVcsIgnoredPaths ||
+      store.hideVcsIgnoredPaths !== conf.hideVcsIgnoredPaths ||
       store.hideIgnoredNames !== conf.hideIgnoredNames ||
       store.ignoredPatterns !== conf.ignoredPatterns ||
       store.isEditingWorkingSet !== conf.isEditingWorkingSet ||
@@ -209,13 +210,18 @@ export class MemoizedFieldsDeriver {
     ) {
       store.isIgnored = isIgnored;
       store.excludeVcsIgnoredPaths = conf.excludeVcsIgnoredPaths;
+      store.hideVcsIgnoredPaths = conf.hideVcsIgnoredPaths;
       store.hideIgnoredNames = conf.hideIgnoredNames;
       store.ignoredPatterns = conf.ignoredPatterns;
       store.isEditingWorkingSet = conf.isEditingWorkingSet;
       store.containedInWorkingSet = containedInWorkingSet;
       store.containedInOpenFilesWorkingSet = containedInOpenFilesWorkingSet;
 
-      if (store.isIgnored && store.excludeVcsIgnoredPaths) {
+      if (
+        store.isIgnored &&
+        store.excludeVcsIgnoredPaths &&
+        store.hideVcsIgnoredPaths
+      ) {
         store.shouldBeShown = false;
       } else if (
         store.hideIgnoredNames &&
