@@ -58,9 +58,9 @@ class NuclideCertificatesGenerator(object):
         self._env = os.environ.copy()
         if sys.platform == 'darwin':
             # High Sierra comes with LibreSSL by default.
-            # /opt/homebrew/bin sometimes has OpenSSL instead.
+            # /usr/local/opt/openssl/bin sometimes has OpenSSL instead.
             self._env['PATH'] = os.pathsep.join([
-                '/opt/homebrew/bin',
+                '/usr/local/opt/openssl/bin',
                 self._env.get('PATH', ''),
             ])
         # Set Subject Alternative Name.
