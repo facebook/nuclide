@@ -16,13 +16,13 @@ test:
     - |
       # eslint
       if [[ "$CIRCLE_BRANCH" != "release-v"* ]]; then
-        ./node_modules/.bin/eslint --max-warnings=0 .
+        ./scripts/lint-eslint.js
       fi
     - |
       # flow
       if [[ "$CIRCLE_BRANCH" != "release-v"* ]]; then
         sed -i.tmp -e 's/^; \(suppress_comment=.*FlowFB.*\)$/\1/' .flowconfig
-        ./node_modules/.bin/flow check --show-all-errors
+        ./node_modules/.bin/flow check --show-all-errors --max-workers 8
       fi
 
 deployment:
