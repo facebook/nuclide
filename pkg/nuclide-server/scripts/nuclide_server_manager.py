@@ -66,6 +66,12 @@ class NuclideServerManager(object):
     def __init__(self, options):
         self.options = options
         self.logger.info('NuclideServerManager was created with these options: {0}'.format(options))
+        self.no_ipv6 = False
+        try:
+            # For machines with ipv6 disabled, this will cause exception.
+            self._check_port_family(9090, socket.AF_INET6)
+        except:
+            self.no_ipv6 = True
 
     def _check_port_family(self, port, family):
         s = socket.socket(family, socket.SOCK_STREAM)
@@ -82,7 +88,7 @@ class NuclideServerManager(object):
 
     def _is_port_open(self, port):
         return self._check_port_family(port, socket.AF_INET) and\
-            self._check_port_family(port, socket.AF_INET6)
+            (self.no_ipv6 or self._check_port_family(port, socket.AF_INET6))
 
     def _find_open_port(self):
         for port in OPEN_PORTS:
