@@ -1,6 +1,8 @@
 machine:
   environment:
     PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
+    # The prettier ESLint plugin is problematic in Node v7.
+    ESLINT_NODE_VERSION: "9.11.1"
   node:
     version: 7.9.0
 
@@ -16,7 +18,11 @@ test:
     - |
       # eslint
       if [[ "$CIRCLE_BRANCH" != "release-v"* ]]; then
+        nvm install "$ESLINT_NODE_VERSION"
+        node -v
         ./node_modules/.bin/eslint --max-warnings=0 .
+        # Restore default node version.
+        nvm use 7.9.0
       fi
     - |
       # flow
