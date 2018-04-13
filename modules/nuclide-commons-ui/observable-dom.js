@@ -269,7 +269,7 @@ export class ResizeObservable extends DOMObserverObservable<
       'environment must contain ResizeObserver',
     );
 
-    if (os.default.platform() === 'win32' || os.default.platform() === 'linux') {
+    if (os.platform() === 'win32' || os.platform() === 'linux') {
       super(WindowsResizeMeasurementPatchingObserver, target);
     } else {
       // $FlowFixMe(>=0.55.0) Flow suppress
