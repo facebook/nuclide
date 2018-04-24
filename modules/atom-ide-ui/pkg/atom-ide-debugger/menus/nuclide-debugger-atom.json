@@ -10,7 +10,7 @@
       ]
     },
     {
-      "label": "Debugger",
+      "label": "&Debugger",
       "submenu": [
         {
           "label": "Show",
