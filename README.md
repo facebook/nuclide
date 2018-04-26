@@ -16,3 +16,9 @@ The [full documentation](http://nuclide.io/docs) for Nuclide provides informatio
 - [Server Installation](http://nuclide.io/docs/editor/setup/#installing-nuclide-server)
 - [Getting Started Feature Walkthrough](http://nuclide.io/docs/quick-start/getting-started/)
 - [Building from Source](http://nuclide.io/docs/advanced-topics/building-from-source/)
+
+---
+
+## Support
+
+See https://nuclide.io/support/
