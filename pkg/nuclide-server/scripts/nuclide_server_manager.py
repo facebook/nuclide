@@ -81,8 +81,7 @@ class NuclideServerManager(object):
             return True
 
     def _is_port_open(self, port):
-        return self._check_port_family(port, socket.AF_INET) and\
-            self._check_port_family(port, socket.AF_INET6)
+        return self._check_port_family(port, socket.AF_INET)
 
     def _find_open_port(self):
         for port in OPEN_PORTS:
