@@ -305,7 +305,7 @@ export type InitializeResult = {
 
 export type InitializeError = {
   //  Indicates whether the client should retry to send the
-  //  initilize request after showing the message provided
+  //  initialize request after showing the message provided
   //  in the ResponseError.
   retry: boolean,
 };
@@ -406,7 +406,7 @@ export type ServerCapabilities = {
 };
 
 export type RageItem = {
-  // Title convention is [host:]/path/file[:meta] - if ommitted, client picks
+  // Title convention is [host:]/path/file[:meta] - if omitted, client picks
   title?: string,
   // Arbitrary text for the rage report
   data: string,
@@ -603,7 +603,7 @@ export type DocumentHighlight = {
 };
 
 export const DocumentHighlightKind = {
-  // A textual occurrance.
+  // A textual occurrence.
   Text: 1,
   // Read-access of a symbol, like reading a variable.
   Read: 2,
@@ -878,7 +878,7 @@ export type DidSaveTextDocumentParams = {
   // The document that was saved.
   textDocument: TextDocumentIdentifier,
   // Optional the content when saved. Depends on the includeText value
-  // when the save notifcation was requested.
+  // when the save notification was requested.
   text: ?string,
 };
 
