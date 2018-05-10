@@ -349,7 +349,7 @@ export function repositoryContainsPath(
 }
 
 /**
- * @param filePath1 An abolute file path.
+ * @param filePath1 An absolute file path.
  * @param filePath2 An absolute file path.
  * @return Whether the file paths are equal, accounting for trailing slashes.
  */
