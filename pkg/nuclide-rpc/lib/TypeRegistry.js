@@ -50,7 +50,7 @@ export type Transformer = (
 ) => any | Promise<any>;
 
 // Equivalent to Promise.all, but avoids wrappers if nothing is actually a promise.
-// Input must be homogenously typed.
+// Input must be homogeneously typed.
 function smartPromiseAll<T>(arr: Array<T>): Array<T> | Promise<Array<T>> {
   if (arr.length === 0 || !(arr[0] instanceof Promise)) {
     return arr;
