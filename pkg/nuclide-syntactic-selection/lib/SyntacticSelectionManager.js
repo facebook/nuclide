@@ -178,7 +178,7 @@ export class SyntacticSelectionManager {
     let expectedSelection = selectedRanges[0];
 
     // Sometimes Atom may reinterpret the range that is provided by the language
-    // service. In this case we have one more oportunity to detecting that
+    // service. In this case we have one more opportunity to detecting that
     // the selection change is done by us. That is if it is done synchronously
     // it is definitely ours. Unfortunately this relies on an implementation
     // details, and thus is not future-proof. Still, better then terminating
