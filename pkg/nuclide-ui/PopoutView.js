@@ -98,7 +98,7 @@ export class PopoutView extends React.Component<Props, State> {
     this._update();
 
     const observer = new MutationObserver((mutations, obs) => {
-      // TODO: be more efficent by computing delta and only updating what actually changed.
+      // TODO: be more efficient by computing delta and only updating what actually changed.
       const container = ReactDOM.findDOMNode(this);
       invariant(container != null && container.innerHTML != null);
 
