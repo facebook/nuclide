@@ -42,7 +42,7 @@ describe('ConnectableObservable', () => {
     expect(created).toBe(1);
     const connection2 = connectable.connect();
     expect(created).toBe(2);
-    // But mulitple simultaneous connections are shared.
+    // But multiple simultaneous connections are shared.
     const connection3 = connectable.connect();
     expect(created).toBe(2);
 
