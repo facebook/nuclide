@@ -12,7 +12,7 @@
 export type ReturnType = 'promise' | 'observable' | 'void';
 
 /**
- * `Definitions` encodes all of the information in a service defintion file that is required to
+ * `Definitions` encodes all of the information in a service definition file that is required to
  * generate a remote proxy.
  */
 export type Definitions = {[name: string]: Definition};
