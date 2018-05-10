@@ -33,7 +33,7 @@ export function getSourceKittenDisabled(): boolean {
 }
 
 /**
- * Executes a SourceKitten request asyncrhonously.
+ * Executes a SourceKitten request asynchronously.
  * If an error occurs, displays an error and returns null.
  * Otherwise, returns the stdout from SourceKitten.
  */
