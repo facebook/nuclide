@@ -123,7 +123,7 @@ export function runTest(context: TestContext) {
 }
 
 function save(): void {
-  // In Atom 1.17, using cmd + S while a dock item is focused will atempt to save that dock item.
+  // In Atom 1.17, using cmd + S while a dock item is focused will attempt to save that dock item.
   // (This behavior was changed in 1.18.) To make sure we're compatible with that version, forcibly
   // activate the workspace center. This `activate()` call can be removed after we upgrade to 1.18.
   const center = atom.workspace.getCenter ? atom.workspace.getCenter() : null;
