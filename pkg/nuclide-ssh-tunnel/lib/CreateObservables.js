@@ -33,7 +33,7 @@ export function createObservableForTunnel(
 ): Observable<'ready'> {
   const resolved = resolveTunnel(tunnel);
   if (shallowEqual(resolved.from, resolved.to)) {
-    // Identical source/destination tunnels are always immmediately ready, never close.
+    // Identical source/destination tunnels are always immediately ready, never close.
     // Makes it easy for users to call this function without branching on whether they need to.
     return Observable.of('ready').concat(Observable.never());
   }

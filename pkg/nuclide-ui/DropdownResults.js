@@ -251,7 +251,7 @@ export default class DropdownResults extends React.Component<Props, State> {
       });
     } else {
       // Moves selected index up or down with wrapping.
-      // Also, add one entry for nothing selected (default dropdown behaviour).
+      // Also, add one entry for nothing selected (default dropdown behavior).
       const optionsSize = this.props.options.length + 1;
       this.setState({
         selectedIndex:

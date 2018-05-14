@@ -246,7 +246,7 @@ function getDescription(schema: atom$ConfigSchema): string {
   return schema.description || '';
 }
 
-// Remove spaces and hypens
+// Remove spaces and hyphens
 function strip(str: string): string {
   return str.replace(/\s+/g, '').replace(/-+/g, '');
 }

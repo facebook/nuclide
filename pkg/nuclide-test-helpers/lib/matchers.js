@@ -11,7 +11,7 @@
 
 /*
  * This file contains a set of custom matchers for jasmine testing, which can be used
- * to get more detailed / useful diffs on various reults. These can be used in a test by doing:
+ * to get more detailed / useful diffs on various results. These can be used in a test by doing:
  *
  * import {addMatchers} from 'nuclide-test-helpers';
  *
