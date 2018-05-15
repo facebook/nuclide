@@ -58,7 +58,7 @@ export default class TaskRunner {
   }
 
   runTask(taskType: string): Task {
-    // You can ceate a task however you want as long as it conforms to the Task API. However,
+    // You can create a task however you want as long as it conforms to the Task API. However,
     // because tasks have event registration methods, you'll probably either want to either use Rx
     // or extend event-kit's Emitter. An example of each is provided; both do the same thing.
     // Neither implements the full functionality so check out the Task definition for more detail.
