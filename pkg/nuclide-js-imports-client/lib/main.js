@@ -59,7 +59,7 @@ async function connectToJSImportsService(
       logCategory: 'jsimports',
       logLevel: (featureConfig.get('nuclide-js-imports-client.logLevel'): any),
       projectFileNames: ['.flowconfig'],
-      fileExtensions: ['.js'],
+      fileExtensions: ['.js', '.jsx'],
       initializationOptions: getAutoImportSettings(),
       fork: true,
     },

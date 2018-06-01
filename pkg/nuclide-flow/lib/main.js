@@ -144,7 +144,7 @@ async function activateLsp(): Promise<UniversalDisposable> {
         fileNotifier,
         host,
         projectFileNames: ['.flowconfig'],
-        fileExtensions: ['.js'],
+        fileExtensions: ['.js', '.jsx'],
         logCategory: 'flow-language-server',
         logLevel: 'ALL',
         additionalLogFilesRetentionPeriod: 5 * 60 * 1000, // 5 minutes
