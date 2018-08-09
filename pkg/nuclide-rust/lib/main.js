@@ -9,10 +9,7 @@
  * @format
  */
 
-import {
-  rustLanguageService,
-  resetRustLanguageService,
-} from './RustLanguage';
+import {rustLanguageService, resetRustLanguageService} from './RustLanguage';
 
 export function activate() {
   if (process.platform !== 'win32') {

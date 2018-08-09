@@ -31,22 +31,17 @@ async function connectionToRustService(
   const cmd = 'rls';
   const lspService = await getVSCodeLanguageServiceByConnection(
     connection,
-  ).createMultiLspLanguageService(
-    'rust',
-    cmd,
-    [],
-    {
-      fileNotifier,
-      host,
-      projectFileNames: ['Cargo.toml'],
-      fileExtensions: ['.rs'],
-      logCategory: 'nuclide-rust',
-      logLevel: 'TRACE',
-      useOriginalEnvironment: true,
-      additionalLogFilesRetentionPeriod: 5 * 60 * 1000, // 5 minutes
+  ).createMultiLspLanguageService('rust', cmd, [], {
+    fileNotifier,
+    host,
+    projectFileNames: ['Cargo.toml'],
+    fileExtensions: ['.rs'],
+    logCategory: 'nuclide-rust',
+    logLevel: 'TRACE',
+    useOriginalEnvironment: true,
+    additionalLogFilesRetentionPeriod: 5 * 60 * 1000, // 5 minutes
     waitForDiagnostics: true,
-    },
-  );
+  });
 
   return lspService || new NullLanguageService();
 }
@@ -91,7 +86,7 @@ async function createLanguageService(): Promise<
     diagnostics: diagnosticsConfig,
     definition: definitionConfig,
     autocomplete: autocompleteConfig,
-    typeHint: typeHint,
+    typeHint,
   };
   return new AtomLanguageService(connectionToRustService, atomConfig);
 }
