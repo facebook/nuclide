@@ -6,9 +6,22 @@
   "author": "NEEDS OWNER",
   "atomTestRunner": "../../lib/test-runner-entry.js",
   "nuclide": {
-    "packageType": "AtomPackage"
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "Language",
+        "Rust"
+      ]
+    }
   },
   "activationHooks": [
     "language-rust:grammar-used"
-  ]
+  ],
+  "consumedServices": {
+    "nuclide.buck-task-runner": {
+      "versions": {
+        "0.0.0": "consumeBuckTaskRunner"
+      }
+    }
+  }
 }

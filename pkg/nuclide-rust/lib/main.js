@@ -5,20 +5,42 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow strict-local
+ * @flow
  * @format
  */
 
-import {rustLanguageService, resetRustLanguageService} from './RustLanguage';
+import type {BuckTaskRunnerService} from '../../nuclide-buck/lib/types';
+import type {
+  AtomLanguageService,
+  LanguageService,
+} from '../../nuclide-language-service';
 
-export function activate() {
-  if (process.platform !== 'win32') {
-    rustLanguageService.then(value => value.activate());
+import createPackage from 'nuclide-commons-atom/createPackage';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {createRustLanguageService} from './RustLanguage';
+
+class Activation {
+  _rustLanguageService: AtomLanguageService<LanguageService>;
+  _buckTaskRunnerService: ?BuckTaskRunnerService;
+  _subscriptions: UniversalDisposable;
+
+  constructor(rawState: ?Object) {
+    this._rustLanguageService = createRustLanguageService();
+    this._rustLanguageService.activate();
+
+    this._subscriptions = new UniversalDisposable(this._rustLanguageService);
+  }
+
+  consumeBuckTaskRunner(service: BuckTaskRunnerService): IDisposable {
+    this._buckTaskRunnerService = service;
+    return new UniversalDisposable(() => {
+      this._buckTaskRunnerService = null;
+    });
+  }
+
+  dispose(): void {
+    this._subscriptions.dispose();
   }
 }
 
-export function deactivate(): void {
-  if (process.platform !== 'win32') {
-    resetRustLanguageService();
-  }
-}
+createPackage(module.exports, Activation);

@@ -51,64 +51,55 @@ async function connectionToRustService(
   return lspService || new NullLanguageService();
 }
 
-async function createLanguageService(): Promise<
-  AtomLanguageService<LanguageService>,
+export const atomConfig: AtomLanguageServiceConfig = {
+  name: 'Rust',
+  grammars: ['source.rust'],
+  diagnostics: {
+    version: '0.2.0',
+    analyticsEventName: 'rust.observe-diagnostics',
+  },
+  definition: {
+    version: '0.1.0',
+    priority: 1,
+    definitionEventName: 'rust.definition',
+  },
+  codeFormat: {
+    version: '0.1.0',
+    priority: 1,
+    analyticsEventName: 'rust.formatCode',
+    canFormatRanges: true,
+    canFormatAtPosition: true,
+  },
+  findReferences: {
+    version: '0.1.0',
+    analyticsEventName: 'rust.get-references',
+  },
+  rename: {
+    version: '0.0.0',
+    priority: 1,
+    analyticsEventName: 'rust:rename',
+  },
+  autocomplete: {
+    inclusionPriority: 1,
+    suggestionPriority: 3,
+    excludeLowerPriority: false,
+    analytics: {
+      eventName: 'nuclide-rust',
+      shouldLogInsertedSuggestion: false,
+    },
+    disableForSelector: '.source.rust .comment, .source.rust .string',
+    autocompleteCacherConfig: null,
+    supportsResolve: false,
+  },
+  typeHint: {
+    version: '0.0.0',
+    priority: 1,
+    analyticsEventName: 'rust.typeHint',
+  },
+};
+
+export function createRustLanguageService(): AtomLanguageService<
+  LanguageService,
 > {
-  const atomConfig: AtomLanguageServiceConfig = {
-    name: 'Rust',
-    grammars: ['source.rust'],
-    diagnostics: {
-      version: '0.2.0',
-      analyticsEventName: 'rust.observe-diagnostics',
-    },
-    definition: {
-      version: '0.1.0',
-      priority: 1,
-      definitionEventName: 'rust.definition',
-    },
-    codeFormat: {
-      version: '0.1.0',
-      priority: 1,
-      analyticsEventName: 'rust.formatCode',
-      canFormatRanges: true,
-      canFormatAtPosition: true,
-    },
-    findReferences: {
-      version: '0.1.0',
-      analyticsEventName: 'rust.get-references',
-    },
-    rename: {
-      version: '0.0.0',
-      priority: 1,
-      analyticsEventName: 'rust:rename',
-    },
-    autocomplete: {
-      inclusionPriority: 1,
-      suggestionPriority: 3,
-      excludeLowerPriority: false,
-      analytics: {
-        eventName: 'nuclide-rust',
-        shouldLogInsertedSuggestion: false,
-      },
-      disableForSelector: '.source.rust .comment, .source.rust .string',
-      autocompleteCacherConfig: null,
-      supportsResolve: false,
-    },
-    typeHint: {
-      version: '0.0.0',
-      priority: 1,
-      analyticsEventName: 'rust.typeHint',
-    },
-  };
-
   return new AtomLanguageService(connectionToRustService, atomConfig);
-}
-
-export let rustLanguageService: Promise<
-  AtomLanguageService<LanguageService>,
-> = createLanguageService();
-
-export function resetRustLanguageService(): void {
-  rustLanguageService.then(value => value.dispose());
-  rustLanguageService = createLanguageService();
 }
