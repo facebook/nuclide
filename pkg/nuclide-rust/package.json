@@ -12,6 +12,14 @@
         "Language",
         "Rust"
       ]
+    },
+    "config": {
+      "rlsPath": {
+        "title": "Rust Language Server path",
+        "type": "string",
+        "default": "rls",
+        "description": "Path to the RLS executable. By default uses rustup-managed 'rls' executable."
+      }
     }
   },
   "activationHooks": [

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow strict-local
+ * @flow
  * @format
  */
 
@@ -13,6 +13,7 @@ import type {ServerConnection} from '../../nuclide-remote-connection';
 import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
 import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 
+import featureConfig from 'nuclide-commons-atom/feature-config';
 import {
   AtomLanguageService,
   getHostServices,
@@ -20,6 +21,10 @@ import {
 import {NullLanguageService} from '../../nuclide-language-service-rpc';
 import {getNotifierByConnection} from '../../nuclide-open-files';
 import {getVSCodeLanguageServiceByConnection} from '../../nuclide-remote-connection';
+
+export function getRlsPath(): string {
+  return (featureConfig.get('nuclide-rust.rlsPath'): any);
+}
 
 async function connectionToRustService(
   connection: ?ServerConnection,
@@ -30,10 +35,9 @@ async function connectionToRustService(
   ]);
   const service = getVSCodeLanguageServiceByConnection(connection);
 
-  const cmd = 'rls';
   const lspService = await service.createMultiLspLanguageService(
     'rust',
-    cmd,
+    getRlsPath(),
     [],
     {
       fileNotifier,
