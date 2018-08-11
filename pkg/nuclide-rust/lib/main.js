@@ -19,6 +19,8 @@ import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {createRustLanguageService} from './RustLanguage';
 
+import {updateRlsBuildForTask} from './BuckIntegration';
+
 class Activation {
   _rustLanguageService: AtomLanguageService<LanguageService>;
   _buckTaskRunnerService: ?BuckTaskRunnerService;
@@ -32,6 +34,8 @@ class Activation {
   }
 
   consumeBuckTaskRunner(service: BuckTaskRunnerService): IDisposable {
+    service.onDidCompleteTask(task => updateRlsBuildForTask(task, this._rustLanguageService));
+
     this._buckTaskRunnerService = service;
     return new UniversalDisposable(() => {
       this._buckTaskRunnerService = null;

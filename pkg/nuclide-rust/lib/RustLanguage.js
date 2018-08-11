@@ -49,6 +49,11 @@ async function connectionToRustService(
       useOriginalEnvironment: true,
       additionalLogFilesRetentionPeriod: 5 * 60 * 1000, // 5 minutes
       waitForDiagnostics: true,
+      initializationOptions: {
+        // Don't let RLS eagerly build (and fail crashing while finding a
+        // Cargo.toml if the project uses Buck) for now.
+        omitInitBuild: true,
+      },
     },
   );
 
