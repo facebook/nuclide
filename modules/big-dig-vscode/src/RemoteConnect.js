@@ -225,6 +225,9 @@ async function doConnect(
   const userAuthMethod = await authMethodPromise;
 
   switch (userAuthMethod) {
+    case 'ssl-agent':
+      authMethod = 'SSL_AGENT';
+      break;
     case 'private-key':
       authMethod = 'PRIVATE_KEY';
       pathToPrivateKey = await privateKeyPromise;
