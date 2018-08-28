@@ -153,6 +153,7 @@
               "authentication": {
                 "type": "string",
                 "enum": [
+                  "ssl-agent",
                   "private-key",
                   "password"
                 ],
