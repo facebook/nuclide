@@ -494,7 +494,11 @@ export class TerminalView implements PtyClient, TerminalInstance {
   onExit(code: number, signal: number): void {
     track('nuclide-terminal.exit', {...this._statistics(), code, signal});
 
-    if (code === 0 && !this._terminalInfo.remainOnCleanExit) {
+    if (
+      // eslint-disable-next-line eqeqeq
+      (code === 0 || code === null) &&
+      !this._terminalInfo.remainOnCleanExit
+    ) {
       this._closeTab();
       return;
     }
