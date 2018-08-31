@@ -9,16 +9,23 @@
  * @format
  */
 
-import type {TaskInfo} from '../../nuclide-buck/lib/types';
-
 import * as BuckService from '../../nuclide-buck-rpc';
 
-export function getRustInputs(buckRoot: string, buildTarget: BuildTarget): Promise<Array<string>> {
-  return BuckService.
-    query(buckRoot, `filter('.*\\.rs$', inputs('${buildTarget}'))`, []);
+export function getRustInputs(
+  buckRoot: string,
+  buildTarget: BuildTarget,
+): Promise<Array<string>> {
+  return BuckService.query(
+    buckRoot,
+    `filter('.*\\.rs$', inputs('${buildTarget}'))`,
+    [],
+  );
 }
 
-export function getSaveAnalysisTargets(buckRoot: string, buildTarget: BuildTarget): Promise<Array<string>> {
+export function getSaveAnalysisTargets(
+  buckRoot: string,
+  buildTarget: BuildTarget,
+): Promise<Array<string>> {
   // Save-analysis build flavor is only supported by rust_{binary, library}
   // kinds (so exclude prebuilt_rust_library kind)
   const query: string = `kind('^rust_.*', deps(${buildTarget}))`;

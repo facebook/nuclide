@@ -15,11 +15,14 @@ import type {
   LanguageService,
 } from '../../nuclide-language-service';
 
-import invariant from 'invariant';
+import assert from 'assert';
 import {getLogger} from 'log4js';
 import fsPromise from 'nuclide-commons/fsPromise';
-import nuclideUri from 'nuclide-commons/nuclideUri';
-import {getRustInputs, getSaveAnalysisTargets, normalizeNameForBuckQuery} from './BuckUtils';
+import {
+  getRustInputs,
+  getSaveAnalysisTargets,
+  normalizeNameForBuckQuery,
+} from './BuckUtils';
 
 import * as BuckService from '../../nuclide-buck-rpc';
 
@@ -34,27 +37,31 @@ export async function updateRlsBuildForTask(
   // TODO: Filter by known Rust build targets
   const files = await getRustInputs(task.buckRoot, buildTarget);
   // Probably not a Rust build target, ignore
-  if (files.length == 0)
+  if (files.length === 0) {
     return;
+  }
   // We need only to pick a representative file to get a related lang service
   const fileUri = task.buckRoot + '/' + files[0];
   logger.debug(`fileUri: ${fileUri}`);
 
   const langService = await service.getLanguageServiceForUri(fileUri);
-  invariant(langService != null);
+  assert(langService != null);
 
   // Since `buck` execution is not trivial - the command may be overriden, needs
   // to inherit the environment, passes internal FB USER to env etc. the RLS
   // can't just invoke that.
   // Instead, we build now, copy paths to resulting .json analysis artifacts to
   // a temp file and just use `cat $TMPFILE` as a dummy build command.
-  const analysisTargets = await getSaveAnalysisTargets(task.buckRoot, buildTarget);
+  const analysisTargets = await getSaveAnalysisTargets(
+    task.buckRoot,
+    buildTarget,
+  );
   logger.debug(`analysisTargets: ${analysisTargets.join('\n')}`);
-  let artifacts: Array<string> = [];
+  const artifacts: Array<string> = [];
 
   const buildReport = await BuckService.build(task.buckRoot, analysisTargets);
   if (!buildReport.success) {
-    atom.notifications.addError("[nuclide-rust] save-analysis build failed");
+    atom.notifications.addError('[nuclide-rust] save-analysis build failed');
     return;
   }
 
@@ -74,14 +81,13 @@ export async function updateRlsBuildForTask(
   logger.debug(`Built SA artifacts: ${artifacts.join('\n')}`);
   logger.debug(`buildCommand: ${buildCommand}`);
 
-  await langService.sendLspNotification('workspace/didChangeConfiguration',
-    {
-      settings: {
-        rust: {
-          unstable_features: true, // Required for build_command
-          build_on_save: true,
-          build_command: buildCommand,
-        }
-      }
-    });
+  await langService.sendLspNotification('workspace/didChangeConfiguration', {
+    settings: {
+      rust: {
+        unstable_features: true, // Required for build_command
+        build_on_save: true,
+        build_command: buildCommand,
+      },
+    },
+  });
 }
