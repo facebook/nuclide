@@ -34,7 +34,9 @@ class Activation {
   }
 
   consumeBuckTaskRunner(service: BuckTaskRunnerService): IDisposable {
-    service.onDidCompleteTask(task => updateRlsBuildForTask(task, this._rustLanguageService));
+    service.onDidCompleteTask(task =>
+      updateRlsBuildForTask(task, this._rustLanguageService),
+    );
 
     this._buckTaskRunnerService = service;
     return new UniversalDisposable(() => {
