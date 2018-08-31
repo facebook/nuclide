@@ -31,13 +31,14 @@ export async function updateRlsBuildForTask(
 ) {
   const buildTarget = normalizeNameForBuckQuery(task.buildTarget);
 
+  // TODO: Filter by known Rust build targets
   const files = await getRustInputs(task.buckRoot, buildTarget);
   // Probably not a Rust build target, ignore
   if (files.length == 0)
     return;
   // We need only to pick a representative file to get a related lang service
   const fileUri = task.buckRoot + '/' + files[0];
-  atom.notifications.addInfo(`fileUri: ${fileUri}`);
+  logger.debug(`fileUri: ${fileUri}`);
 
   const langService = await service.getLanguageServiceForUri(fileUri);
   invariant(langService != null);
@@ -52,15 +53,16 @@ export async function updateRlsBuildForTask(
   let artifacts: Array<string> = [];
 
   const buildReport = await BuckService.build(task.buckRoot, analysisTargets);
-  if (buildReport.success === false) {
-    atom.notifications.addError("save-analysis build failed");
+  if (!buildReport.success) {
+    atom.notifications.addError("[nuclide-rust] save-analysis build failed");
     return;
   }
 
   Object.values(buildReport.results)
     // TODO: https://buckbuild.com/command/build.html specifies that for
     // FETCHED_FROM_CACHE we might not get an output file - can we force it
-    // somehow? Or we always locally produce a save-analysis .json file?
+    // somehow? Or we always locally produce a save-analysis .json file for
+    // #save-analysis flavor?
     .forEach((targetReport: any) => artifacts.push(targetReport.output));
 
   const tempfile = await fsPromise.tempfile();
@@ -72,13 +74,13 @@ export async function updateRlsBuildForTask(
   logger.debug(`Built SA artifacts: ${artifacts.join('\n')}`);
   logger.debug(`buildCommand: ${buildCommand}`);
 
-  langService.sendLspNotification(fileUri, 'workspace/didChangeConfiguration',
+  await langService.sendLspNotification('workspace/didChangeConfiguration',
     {
       settings: {
         rust: {
           unstable_features: true, // Required for build_command
           build_on_save: true,
-          build_command: buildCommand, // TODO: Only in RLS branch: https://github.com/Xanewok/rls/tree/external-build
+          build_command: buildCommand,
         }
       }
     });

@@ -52,6 +52,10 @@ async function connectionToRustService(
       initializationOptions: {
         // Don't let RLS eagerly build (and fail crashing while finding a
         // Cargo.toml if the project uses Buck) for now.
+        // TODO: Pass initial config (at least the `build_command`).
+        // https://github.com/rust-lang-nursery/rls/issues/1026
+        // Without this the RLS can still can crash when the user starts
+        // modifying .rs files.
         omitInitBuild: true,
       },
     },
