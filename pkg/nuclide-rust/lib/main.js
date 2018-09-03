@@ -21,12 +21,18 @@ import {createRustLanguageService} from './RustLanguage';
 
 import {updateRlsBuildForTask} from './BuckIntegration';
 
+const DISCLAIMER = `[nuclide-rust] Support for Buck-managed Rust
+projects is currently experimental. For it to work correctly, please build
+the target you plan on working using Buck toolbar.`;
+
 class Activation {
   _rustLanguageService: AtomLanguageService<LanguageService>;
   _buckTaskRunnerService: ?BuckTaskRunnerService;
   _subscriptions: UniversalDisposable;
 
   constructor(rawState: ?Object) {
+    atom.notifications.addInfo(DISCLAIMER);
+
     this._rustLanguageService = createRustLanguageService();
     this._rustLanguageService.activate();
 
