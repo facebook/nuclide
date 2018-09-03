@@ -17,7 +17,7 @@ export function getRustInputs(
 ): Promise<Array<string>> {
   return BuckService.query(
     buckRoot,
-    `filter('.*\\.rs$', inputs('${buildTarget}'))`,
+    `filter('.*\\.rs$', inputs(kind('^rust_.*', ${buildTarget})))`,
     [],
   );
 }
