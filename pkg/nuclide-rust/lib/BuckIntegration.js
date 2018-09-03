@@ -15,7 +15,6 @@ import type {
   LanguageService,
 } from '../../nuclide-language-service';
 
-import assert from 'assert';
 import {getLogger} from 'log4js';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {
@@ -45,7 +44,11 @@ export async function updateRlsBuildForTask(
   logger.debug(`fileUri: ${fileUri}`);
 
   const langService = await service.getLanguageServiceForUri(fileUri);
-  assert(langService != null);
+  if (langService == null) {
+    atom.notifications.addError(`[nuclide-rust] couldn't find language service
+      for target ${buildTarget}`);
+    return;
+  }
 
   // Since `buck` execution is not trivial - the command may be overriden, needs
   // to inherit the environment, passes internal FB USER to env etc. the RLS
