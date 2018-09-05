@@ -46,7 +46,7 @@ By default, Nuclide terminal starts a new shell by running `/bin/bash --login -i
 {
   "command": [
     "/opt/local/bin/bash",
-    "--login",
+    "--login"
   ]
 }
 ```
