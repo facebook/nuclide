@@ -33,7 +33,6 @@ export async function updateRlsBuildForTask(
 ) {
   const buildTarget = normalizeNameForBuckQuery(task.buildTarget);
 
-  // TODO: Filter by known Rust build targets
   const files = await getRustInputs(task.buckRoot, buildTarget);
   // Probably not a Rust build target, ignore
   if (files.length === 0) {

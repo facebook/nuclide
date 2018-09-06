@@ -27,7 +27,6 @@ the target you plan on working using Buck toolbar.`;
 
 class Activation {
   _rustLanguageService: AtomLanguageService<LanguageService>;
-  _buckTaskRunnerService: ?BuckTaskRunnerService;
   _subscriptions: UniversalDisposable;
 
   constructor(rawState: ?Object) {
@@ -40,14 +39,9 @@ class Activation {
   }
 
   consumeBuckTaskRunner(service: BuckTaskRunnerService): IDisposable {
-    service.onDidCompleteTask(task =>
+    return service.onDidCompleteTask(task =>
       updateRlsBuildForTask(task, this._rustLanguageService),
     );
-
-    this._buckTaskRunnerService = service;
-    return new UniversalDisposable(() => {
-      this._buckTaskRunnerService = null;
-    });
   }
 
   dispose(): void {

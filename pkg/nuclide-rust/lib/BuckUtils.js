@@ -22,7 +22,7 @@ export function getRustInputs(
   );
 }
 
-export function getSaveAnalysisTargets(
+export async function getSaveAnalysisTargets(
   buckRoot: string,
   buildTarget: BuildTarget,
 ): Promise<Array<string>> {
@@ -30,9 +30,8 @@ export function getSaveAnalysisTargets(
   // kinds (so exclude prebuilt_rust_library kind)
   const query: string = `kind('^rust_.*', deps(${buildTarget}))`;
 
-  return BuckService.query(buckRoot, query, []).then(deps =>
-    deps.map(dep => dep + '#save-analysis'),
-  );
+  const deps = await BuckService.query(buckRoot, query, []);
+  return deps.map(dep => dep + '#save-analysis');
 }
 
 export type BuildTarget = string;
