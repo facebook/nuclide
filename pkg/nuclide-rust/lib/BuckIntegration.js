@@ -41,14 +41,16 @@ export async function updateRlsBuildForTask(
   // build file path to determine the possible Buck cell root to which the
   // inputs are relative to.
   // FIXME: This is a bug in Buck, only query for files when the output is fixed.
-  const [buildFile, files] = await Promise.all([
+  const [relativeBuildFile, files] = await Promise.all([
     getRustBuildFile(task.buckRoot, buildTarget),
     getRustInputs(task.buckRoot, buildTarget),
   ]);
   // Not a Rust build target, ignore
-  if (buildFile == null || files.length === 0) {
+  if (relativeBuildFile == null || files.length === 0) {
     return;
   }
+
+  const buildFile = `${task.buckRoot}/${relativeBuildFile}`;
   const buckRoot = await BuckService.getRootForPath(buildFile);
   if (buckRoot == null) {
     logger.error(`Couldn't find Buck root for ${buildFile}`);
