@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {BusySignalService, BusySignalOptions} from 'atom-ide-ui';
 import type {TaskInfo} from '../../nuclide-buck/lib/types';
 import type {
   AtomLanguageService,
@@ -31,6 +32,7 @@ const logger = getLogger('nuclide-rust');
 export async function updateRlsBuildForTask(
   task: TaskInfo,
   service: AtomLanguageService<LanguageService>,
+  busySignalService: ?BusySignalService,
 ) {
   const buildTarget = normalizeNameForBuckQuery(task.buildTarget);
 
@@ -73,13 +75,19 @@ export async function updateRlsBuildForTask(
   // can't just invoke that.
   // Instead, we build now, copy paths to resulting .json analysis artifacts to
   // a temp file and just use `cat $TMPFILE` as a dummy build command.
-  const analysisTargets = await getSaveAnalysisTargets(
-    task.buckRoot,
-    buildTarget,
-  );
-  logger.debug(`analysisTargets: ${analysisTargets.join('\n')}`);
+  const doSaveAnalysisBuild = () =>
+    getSaveAnalysisTargets(task.buckRoot, buildTarget).then(analysisTargets => {
+      logger.debug(`analysisTargets: ${analysisTargets.join('\n')}`);
 
-  const buildReport = await BuckService.build(task.buckRoot, analysisTargets);
+      return BuckService.build(task.buckRoot, analysisTargets);
+    });
+
+  const buildReport = await reportBusyWhile(
+    busySignalService,
+    '[nuclide-rust] Indexing...',
+    doSaveAnalysisBuild,
+  );
+
   if (!buildReport.success) {
     atom.notifications.addError('[nuclide-rust] save-analysis build failed');
     return;
@@ -113,4 +121,17 @@ export async function updateRlsBuildForTask(
       },
     },
   });
+}
+
+function reportBusyWhile<T>(
+  busySignalService: ?BusySignalService,
+  title: string,
+  f: () => Promise<T>,
+  options?: BusySignalOptions,
+): Promise<T> {
+  if (busySignalService) {
+    return busySignalService.reportBusyWhile(title, f, options);
+  } else {
+    return f();
+  }
 }

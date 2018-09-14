@@ -26,6 +26,11 @@
     "language-rust:grammar-used"
   ],
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
     "nuclide.buck-task-runner": {
       "versions": {
         "0.0.0": "consumeBuckTaskRunner"

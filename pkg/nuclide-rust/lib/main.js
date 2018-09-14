@@ -10,6 +10,7 @@
  */
 
 import type {BuckTaskRunnerService} from '../../nuclide-buck/lib/types';
+import type {BusySignalService} from 'atom-ide-ui';
 import type {
   AtomLanguageService,
   LanguageService,
@@ -28,6 +29,7 @@ the target you plan on working using Buck toolbar.`;
 class Activation {
   _rustLanguageService: AtomLanguageService<LanguageService>;
   _subscriptions: UniversalDisposable;
+  _busySignalService: ?BusySignalService;
 
   constructor(rawState: ?Object) {
     atom.notifications.addInfo(DISCLAIMER);
@@ -40,8 +42,19 @@ class Activation {
 
   consumeBuckTaskRunner(service: BuckTaskRunnerService): IDisposable {
     return service.onDidCompleteTask(task =>
-      updateRlsBuildForTask(task, this._rustLanguageService),
+      updateRlsBuildForTask(
+        task,
+        this._rustLanguageService,
+        this._busySignalService,
+      ),
     );
+  }
+
+  consumeBusySignal(busySignalService: BusySignalService): IDisposable {
+    this._busySignalService = busySignalService;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
   }
 
   dispose(): void {
