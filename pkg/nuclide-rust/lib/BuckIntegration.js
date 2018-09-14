@@ -21,6 +21,7 @@ import {
   getRustInputs,
   getSaveAnalysisTargets,
   normalizeNameForBuckQuery,
+  getRustBuildFile,
 } from './BuckUtils';
 
 import * as BuckService from '../../nuclide-buck-rpc';
@@ -33,14 +34,30 @@ export async function updateRlsBuildForTask(
 ) {
   const buildTarget = normalizeNameForBuckQuery(task.buildTarget);
 
-  const files = await getRustInputs(task.buckRoot, buildTarget);
-  // Probably not a Rust build target, ignore
-  if (files.length === 0) {
+  // Output is relative to Buck root but the built target may be managed by a
+  // Buck cell (nested Buck root).
+  // Here, Buck returns input paths relative to the possible cell, but the build
+  // file always relative to the current Buck root. Because of that, we use the
+  // build file path to determine the possible Buck cell root to which the
+  // inputs are relative to.
+  // FIXME: This is a bug in Buck, only query for files when the output is fixed.
+  const [buildFile, files] = await Promise.all([
+    getRustBuildFile(task.buckRoot, buildTarget),
+    getRustInputs(task.buckRoot, buildTarget),
+  ]);
+  // Not a Rust build target, ignore
+  if (buildFile == null || files.length === 0) {
     return;
   }
+  const buckRoot = await BuckService.getRootForPath(buildFile);
+  if (buckRoot == null) {
+    logger.error(`Couldn't find Buck root for ${buildFile}`);
+    return;
+  }
+
+  logger.debug(`Detected Buck root: ${buckRoot}`);
   // We need only to pick a representative file to get a related lang service
-  const fileUri = task.buckRoot + '/' + files[0];
-  logger.debug(`fileUri: ${fileUri}`);
+  const fileUri = buckRoot + '/' + files[0];
 
   const langService = await service.getLanguageServiceForUri(fileUri);
   if (langService == null) {
@@ -59,7 +76,6 @@ export async function updateRlsBuildForTask(
     buildTarget,
   );
   logger.debug(`analysisTargets: ${analysisTargets.join('\n')}`);
-  const artifacts: Array<string> = [];
 
   const buildReport = await BuckService.build(task.buckRoot, analysisTargets);
   if (!buildReport.success) {
@@ -67,12 +83,15 @@ export async function updateRlsBuildForTask(
     return;
   }
 
+  const artifacts: Array<string> = [];
   Object.values(buildReport.results)
     // TODO: https://buckbuild.com/command/build.html specifies that for
     // FETCHED_FROM_CACHE we might not get an output file - can we force it
     // somehow? Or we always locally produce a save-analysis .json file for
     // #save-analysis flavor?
-    .forEach((targetReport: any) => artifacts.push(targetReport.output));
+    .forEach((targetReport: any) =>
+      artifacts.push(`${buckRoot}/${targetReport.output}`),
+    );
 
   const tempfile = await fsPromise.tempfile();
   await fsPromise.writeFile(tempfile, artifacts.join('\n'));

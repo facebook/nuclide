@@ -11,6 +11,19 @@
 
 import * as BuckService from '../../nuclide-buck-rpc';
 
+export type BuildTarget = string;
+
+export async function getRustBuildFile(
+  buckRoot: string,
+  buildTarget: BuildTarget,
+): Promise<?string> {
+  return BuckService.query(
+    buckRoot,
+    `buildfile(kind('^rust_.*', ${buildTarget}))`,
+    [],
+  ).then(buildfiles => buildfiles[0] || null);
+}
+
 export function getRustInputs(
   buckRoot: string,
   buildTarget: BuildTarget,
@@ -33,8 +46,6 @@ export async function getSaveAnalysisTargets(
   const deps = await BuckService.query(buckRoot, query, []);
   return deps.map(dep => dep + '#save-analysis');
 }
-
-export type BuildTarget = string;
 
 // FIXME: Copied from nuclide-buck-rpc
 // Buck query doesn't allow omitting // or adding # for flavors, this needs to be fixed in buck.
