@@ -616,7 +616,7 @@ class FileParser {
   /**
    * Parses an method definition in an interface.
    * Note that interface method definitions are slightly different structure to class methods.
-   * @param defintion - The ObjectTypeProperty AST node.
+   * @param definition - The ObjectTypeProperty AST node.
    * @returns A record containing the name of the method, and a FunctionType object
    *   encoding the arguments and return type of the method.
    */
