@@ -19,10 +19,11 @@ import type {
 import {getLogger} from 'log4js';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {
+  getRustBuildFile,
   getRustInputs,
   getSaveAnalysisTargets,
+  isRustBuildRuleType,
   normalizeNameForBuckQuery,
-  getRustBuildFile,
 } from './BuckUtils';
 
 import * as BuckService from '../../nuclide-buck-rpc';
@@ -34,6 +35,9 @@ export async function updateRlsBuildForTask(
   service: AtomLanguageService<LanguageService>,
   busySignalService: ?BusySignalService,
 ) {
+  if (!isRustBuildRuleType(task.buildRuleType.type)) {
+    return;
+  }
   const buildTarget = normalizeNameForBuckQuery(task.buildTarget);
 
   // Output is relative to Buck root but the built target may be managed by a

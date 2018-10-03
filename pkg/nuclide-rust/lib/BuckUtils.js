@@ -13,6 +13,10 @@ import * as BuckService from '../../nuclide-buck-rpc';
 
 export type BuildTarget = string;
 
+export function isRustBuildRuleType(type_: string): boolean {
+  return type_.startsWith('rust_');
+}
+
 export async function getRustBuildFile(
   buckRoot: string,
   buildTarget: BuildTarget,
