@@ -76,21 +76,27 @@ export const atomConfig: AtomLanguageServiceConfig = {
     priority: 1,
     definitionEventName: 'rust.definition',
   },
+  codeAction: {
+    version: '0.1.0',
+    priority: 1,
+    analyticsEventName: 'rust.codeAction',
+    applyAnalyticsEventName: 'rust.applyCodeAction',
+  },
   codeFormat: {
     version: '0.1.0',
     priority: 1,
-    analyticsEventName: 'rust.formatCode',
+    analyticsEventName: 'rust.codeFormat',
     canFormatRanges: true,
     canFormatAtPosition: true,
   },
   findReferences: {
     version: '0.1.0',
-    analyticsEventName: 'rust.get-references',
+    analyticsEventName: 'rust.findReferences',
   },
   rename: {
     version: '0.0.0',
     priority: 1,
-    analyticsEventName: 'rust:rename',
+    analyticsEventName: 'rust.rename',
   },
   autocomplete: {
     inclusionPriority: 1,
