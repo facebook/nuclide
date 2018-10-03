@@ -7,7 +7,7 @@ permalink: /docs/features/remote/
 
 In addition to local development, Nuclide supports remote development. Using one of
 three authentication methods (Password, an SSH agent, or a private key), you can connect to a
-project on a remote machine. This project is then added to your Project Explorer's [File Tree](/docs/editor/basics/#project-explorer) as a remote project where development occurs just it would with a local project.
+project on a remote machine. This project is then added to your Project Explorer's [File Tree](/docs/editor/basics/#project-explorer) as a remote project where development occurs just like it would with a local project.
 
 * TOC
 {:toc}
