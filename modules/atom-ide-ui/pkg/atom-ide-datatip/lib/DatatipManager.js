@@ -254,6 +254,7 @@ class DatatipManagerForEditor {
   _interactedWith: boolean;
   _checkedScrollable: boolean;
   _isScrollable: boolean;
+  _showOnCursorOver: boolean;
 
   constructor(
     editor: atom$TextEditor,
@@ -276,6 +277,7 @@ class DatatipManagerForEditor {
     this._lastHiddenTime = 0;
     this._lastFetchedFromCursorPosition = false;
     this._shouldDropNextMouseMoveAfterFocus = false;
+    this._showOnCursorOver = false;
 
     this._subscriptions.add(
       featureConfig.observe('atom-ide-datatip.datatipDebounceDelay', () =>
@@ -285,6 +287,9 @@ class DatatipManagerForEditor {
         'atom-ide-datatip.datatipInteractedWithDebounceDelay',
         () => this._setHideIfOutsideDebounce(),
       ),
+      featureConfig.observe('atom-ide-datatip.showDatatipOnCursorOver', e => {
+        this._showOnCursorOver = e;
+      }),
       Observable.fromEvent(this._editorView, 'focus').subscribe(e => {
         this._shouldDropNextMouseMoveAfterFocus = true;
         if (!this._insideDatatip) {
@@ -343,6 +348,9 @@ class DatatipManagerForEditor {
         }
       }),
       Observable.fromEvent(this._editorView, 'keyup').subscribe(e => {
+        if (this._showOnCursorOver) {
+          this._startFetching(() => this._editor.getCursorBufferPosition());
+        }
         const modifierKey = getModifierKeyFromKeyboardEvent(e);
         if (modifierKey) {
           this._heldKeys.delete(modifierKey);
