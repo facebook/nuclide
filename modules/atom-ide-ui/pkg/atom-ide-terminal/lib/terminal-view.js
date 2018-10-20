@@ -48,6 +48,7 @@ import {
   setTerminalOption,
   syncTerminalFont,
   RENDERER_TYPE_CONFIG,
+  COPY_ON_SELECT_CONFIG,
 } from './config';
 import {createOutputSink} from './sink';
 
@@ -158,7 +159,6 @@ export class TerminalView implements PtyClient, TerminalInstance {
           const docsUrl = 'https://nuclide.io/docs/features/terminal';
           terminal.writeln(`For more info check out the docs: ${docsUrl}`);
         }
-
         terminal.focus();
         this._subscriptions.add(this._subscribeFitEvents(terminal));
         this._spawn(cwd)
@@ -257,7 +257,23 @@ export class TerminalView implements PtyClient, TerminalInstance {
           e.stopPropagation();
         }),
       );
+    } else {
+      let copyOnSelect;
+      this._subscriptions.add(
+        featureConfig
+          .observeAsStream(COPY_ON_SELECT_CONFIG)
+          .subscribe(
+            copyOnSelectConf => (copyOnSelect = Boolean(copyOnSelectConf)),
+          ),
+        terminal.addDisposableListener('selection', () => {
+          if (copyOnSelect && terminal.hasSelection()) {
+            clipboard.writeText(terminal.getSelection());
+            terminal.focus();
+          }
+        }),
+      );
     }
+
     this._subscriptions.add(
       atom.commands.add(this._div, 'core:copy', () => {
         document.execCommand('copy');

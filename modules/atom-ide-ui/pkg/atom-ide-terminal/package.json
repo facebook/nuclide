@@ -52,6 +52,12 @@
       "type": "boolean",
       "default": false
     },
+    "copyOnSelect": {
+      "title": "Copy on Select",
+      "description": "Selecting text in terminal also copies it to the clipboard. (Macos and Linux only)",
+      "type": "boolean",
+      "default": false
+    },
     "charAtlas": {
       "title": "Character atlas implementation",
       "type": "string",

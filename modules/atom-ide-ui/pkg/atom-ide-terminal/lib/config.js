@@ -50,6 +50,7 @@ export const CHAR_ATLAS_CONFIG = 'atom-ide-terminal.charAtlas';
 export const RENDERER_TYPE_CONFIG = 'atom-ide-terminal.renderer';
 export const FONT_FAMILY_CONFIG = 'atom-ide-terminal.fontFamily';
 export const FONT_SCALE_CONFIG = 'atom-ide-terminal.fontScale';
+export const COPY_ON_SELECT_CONFIG = 'atom-ide-terminal.copyOnSelect';
 
 export function getFontSize(): number {
   return (
