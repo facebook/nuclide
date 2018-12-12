@@ -1,0 +1,40 @@
+{
+  "name": "nuclide-rust",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides Rust language support in Nuclide",
+  "author": "NEEDS OWNER",
+  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "nuclide": {
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "Language",
+        "Rust"
+      ]
+    },
+    "config": {
+      "rlsPath": {
+        "title": "Rust Language Server path",
+        "type": "string",
+        "default": "rls",
+        "description": "Path to the RLS executable. By default uses rustup-managed 'rls' executable."
+      }
+    }
+  },
+  "activationHooks": [
+    "language-rust:grammar-used"
+  ],
+  "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
+    "nuclide.buck-task-runner": {
+      "versions": {
+        "0.0.0": "consumeBuckTaskRunner"
+      }
+    }
+  }
+}
