@@ -35,6 +35,12 @@
       "description": "Display only the highest priority datatip on hover.",
       "type": "boolean",
       "default": false
+    },
+    "showDatatipOnCursorOver": {
+      "title": "Display datatip on cursor over",
+      "description": "This adds the behavior similar to atom-linter when moving the cursor over a datatip marker automatically displays the tip.",
+      "type": "boolean",
+      "default": false
     }
   },
   "providedServices": {
