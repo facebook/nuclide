@@ -30,7 +30,7 @@ default on your OS distribution.
 - `node` and `npm` must be in your `$PATH` environment variable.
 - [Watchman](https://facebook.github.io/watchman). The Nuclide server
 requires Watchman to detect file and directory changes. Follow the Watchman
-[build or install instructions](http://facebook.github.io/watchman/docs/install.html#build-install)
+[build or install instructions](http://facebook.github.io/watchman/docs/install.html#buildinstall)
 for your server's platform.
 - SSH Daemon - The Nuclide client connects to the server via SSH, so ensure that the server exposes
 an SSH daemon that you can connect to from your client machine and that you know the required credentials. You will need to have an existing private key that can be used to connect to the server.
