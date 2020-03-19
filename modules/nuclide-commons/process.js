@@ -30,9 +30,9 @@
 //
 // ## Why observables?
 //
-// Unlike Promises, observables have a standardized, composable cancelation mechanism _today_.
+// Unlike Promises, observables have a standardized, composable cancellation mechanism _today_.
 // Moreover, observables integrate nicely with Atom's callback + IDisposable formula for cancelable,
-// async APIs. Along with React, [RxJS] is one of the core libaries utilized by Nuclide.
+// async APIs. Along with React, [RxJS] is one of the core libraries utilized by Nuclide.
 //
 // ## Why errors?
 //
@@ -50,8 +50,10 @@
 
 import child_process from 'child_process';
 import idx from 'idx';
+import {getLogger} from 'log4js';
 import invariant from 'assert';
-import {Observable, TimeoutError} from 'rxjs';
+import {Observable} from 'rxjs';
+import util from 'util';
 
 import UniversalDisposable from './UniversalDisposable';
 import nuclideUri from './nuclideUri';
@@ -62,8 +64,11 @@ import {observeStream} from './stream';
 import {splitStream, takeWhileInclusive} from './observable';
 import {shellQuote} from './string';
 
-// TODO(T17266325): Replace this in favor of `atom.whenShellEnvironmentLoaded()` when it lands
-import atomWhenShellEnvironmentLoaded from './whenShellEnvironmentLoaded';
+export const LOG_CATEGORY = 'nuclide-commons/process';
+
+const NUCLIDE_DO_NOT_LOG = global.NUCLIDE_DO_NOT_LOG;
+
+const logger = getLogger(LOG_CATEGORY);
 
 /**
  * Run a command, accumulate the output. Errors are surfaced as stream errors and unsubscribing will
@@ -83,8 +88,9 @@ import atomWhenShellEnvironmentLoaded from './whenShellEnvironmentLoaded';
  *
  * The observable returned by this function can error with any of the following:
  *
- * - [Node System Errors][2] Represented as augmented `Error` objects, these errors include things
- *   like `ENOENT`.
+ * - `ProcessSystemError` Wrap [Node System Errors][2] (which are just augmented `Error` objects)
+ *    and include things like `ENOENT`. These contain all of the properties of node system errors
+ *    as well as a reference to the process.
  * - `ProcessExitError` Indicate that the process has ended cleanly, but with an unsuccessful exit
  *    code. Whether a `ProcessExitError` is thrown is determined by the `isExitError` option. This
  *    error includes the exit code as well as accumulated stdout and stderr. See its definition for
@@ -163,6 +169,12 @@ export function observeProcess(
   );
 }
 
+export type DetailedProcessResult = {
+  stdout: string,
+  stderr: string,
+  exitCode: ?number,
+};
+
 /**
  * Identical to `runCommand()`, but instead of only emitting the accumulated stdout, the returned
  * observable emits an object containing the accumulated stdout, the accumulated stderr, and the
@@ -176,7 +188,7 @@ export function runCommandDetailed(
   args?: Array<string> = [],
   options?: ObserveProcessOptions = {},
   rest: void,
-): Observable<{stdout: string, stderr: string, exitCode: ?number}> {
+): Observable<DetailedProcessResult> {
   const maxBuffer = idx(options, _ => _.maxBuffer) || DEFAULT_MAX_BUFFER;
   return observeProcess(command, args, {...options, maxBuffer})
     .catch(error => {
@@ -205,6 +217,7 @@ export function runCommandDetailed(
               acc.stdout,
             );
           default:
+            (event.kind: empty);
             throw new Error(`Invalid event kind: ${event.kind}`);
         }
       },
@@ -310,15 +323,13 @@ export function getOutputStream(
 
     // Accumulate the first `exitErrorBufferSize` bytes of stderr so that we can give feedback about
     // about exit errors (then stop so we don't fill up memory with it).
-    const accumulatedStderr = takeWhileInclusive(
-      stderrEvents
-        .scan(
-          (acc, event) => (acc + event.data).slice(0, exitErrorBufferSize),
-          '',
-        )
-        .startWith(''),
-      acc => acc.length < exitErrorBufferSize,
-    );
+    const accumulatedStderr = stderrEvents
+      .scan(
+        (acc, event) => (acc + event.data).slice(0, exitErrorBufferSize),
+        '',
+      )
+      .startWith('')
+      .let(takeWhileInclusive(acc => acc.length < exitErrorBufferSize));
 
     // We need to start listening for the exit event immediately, but defer emitting it until the
     // (buffered) output streams end.
@@ -350,19 +361,23 @@ export function getOutputStream(
       .publishReplay();
     const exitSub = closeEvents.connect();
 
-    return takeWhileInclusive(
-      Observable.merge(stdoutEvents, stderrEvents).concat(closeEvents),
-      event => event.kind !== 'error' && event.kind !== 'exit',
-    ).finally(() => {
-      exitSub.unsubscribe();
-    });
+    return Observable.merge(stdoutEvents, stderrEvents)
+      .concat(closeEvents)
+      .let(
+        takeWhileInclusive(
+          event => event.kind !== 'error' && event.kind !== 'exit',
+        ),
+      )
+      .finally(() => {
+        exitSub.unsubscribe();
+      });
   });
 }
 
 //
 // # Miscellaneous Utilities
 //
-// The following utilites don't spawn processes or necessarily use observables. Instead, they're
+// The following utilities don't spawn processes or necessarily use observables. Instead, they're
 // used to format arguments to the above functions or for acting on already-spawned processes.
 //
 
@@ -388,9 +403,8 @@ export function scriptifyCommand<T>(
     return ['script', ['-q', '/dev/null', command].concat(args), options];
   } else {
     // On Linux, script takes the command to run as the -c parameter so we have to combine all of
-    // the arguments into a single string. Apparently, because of how `script` works, however, we
-    // wind up with double escapes. So we just strip one level of them.
-    const joined = shellQuote([command, ...args]).replace(/\\\\/g, '\\');
+    // the arguments into a single string.
+    const joined = shellQuote([command, ...args]);
     // flowlint-next-line sketchy-null-mixed:off
     const opts = options || {};
     // flowlint-next-line sketchy-null-mixed:off
@@ -400,7 +414,6 @@ export function scriptifyCommand<T>(
       ['-q', '/dev/null', '-c', joined],
       // `script` will use `SHELL`, but shells have different behaviors with regard to escaping. To
       // make sure that out escaping is correct, we need to force a particular shell.
-      // $FlowIssue: Adding SHELL here makes it no longer really T
       {...opts, env: {...env, SHELL: '/bin/bash'}},
     ];
   }
@@ -412,11 +425,12 @@ export function scriptifyCommand<T>(
 export function killProcess(
   proc: child_process$ChildProcess,
   killTree: boolean,
+  killTreeSignal: ?string,
 ): void {
-  _killProcess(proc, killTree).then(
+  _killProcess(proc, killTree, killTreeSignal).then(
     () => {},
     error => {
-      logError(`Killing process ${proc.pid} failed`, error);
+      logger.error(`Killing process ${proc.pid} failed`, error);
     },
   );
 }
@@ -434,8 +448,12 @@ export function killPid(pid: number): void {
   }
 }
 
-// If provided, read the original environment from NUCLIDE_ORIGINAL_ENV.
-// This should contain the base64-encoded output of `env -0`.
+// Inside FB, Nuclide's RPC process doesn't inherit its parent environment and sets up its own instead.
+// It does this to prevent difficult-to-diagnose issues caused by unexpected code in users' dotfiles.
+// Before overwriting it, the original environment is base64-encoded in NUCLIDE_ORIGINAL_ENV.
+// WARNING: This function returns the environment that would have been inherited under normal conditions.
+// You can use it with a child process to let the user set its environment variables. By doing so, you are creating
+// an even more complicated mess of inheritance and non-inheritance in the process tree.
 let cachedOriginalEnvironment = null;
 export async function getOriginalEnvironment(): Promise<Object> {
   await new Promise(resolve => {
@@ -466,6 +484,26 @@ export async function getOriginalEnvironment(): Promise<Object> {
     cachedOriginalEnvironment = process.env;
   }
   return cachedOriginalEnvironment;
+}
+
+// See getOriginalEnvironment above.
+export async function getOriginalEnvironmentArray(): Promise<Array<string>> {
+  await new Promise(resolve => {
+    whenShellEnvironmentLoaded(resolve);
+  });
+  const {NUCLIDE_ORIGINAL_ENV} = process.env;
+  if (NUCLIDE_ORIGINAL_ENV != null && NUCLIDE_ORIGINAL_ENV.trim() !== '') {
+    const envString = new Buffer(NUCLIDE_ORIGINAL_ENV, 'base64').toString();
+    return envString.split('\0');
+  }
+  return [];
+}
+
+export async function getEnvironment(): Promise<Object> {
+  await new Promise(resolve => {
+    whenShellEnvironmentLoaded(resolve);
+  });
+  return process.env;
 }
 
 /**
@@ -518,32 +556,95 @@ async function getDescendantsOfProcess(
 }
 
 export async function psTree(): Promise<Array<ProcessInfo>> {
-  const stdout = isWindowsPlatform()
-    ? // See also: https://github.com/nodejs/node-v0.x-archive/issues/2318
-      await runCommand('wmic.exe', [
-        'PROCESS',
-        'GET',
-        'ParentProcessId,ProcessId,Name',
-      ]).toPromise()
-    : await runCommand('ps', ['-A', '-o', 'ppid,pid,comm']).toPromise();
+  if (isWindowsPlatform()) {
+    return psTreeWindows();
+  }
+  const [commands, withArgs] = await Promise.all([
+    runCommand('ps', ['-A', '-o', 'ppid,pid,comm']).toPromise(),
+    runCommand('ps', ['-A', '-ww', '-o', 'pid,args']).toPromise(),
+  ]);
+
+  return parsePsOutput(commands, withArgs);
+}
+
+async function psTreeWindows(): Promise<Array<ProcessInfo>> {
+  const stdout = await runCommand('wmic.exe', [
+    'PROCESS',
+    'GET',
+    'ParentProcessId,ProcessId,Name',
+  ]).toPromise();
   return parsePsOutput(stdout);
 }
 
-export function parsePsOutput(psOutput: string): Array<ProcessInfo> {
+export function parsePsOutput(
+  psOutput: string,
+  argsOutput: ?string,
+): Array<ProcessInfo> {
   // Remove the first header line.
-  const lines = psOutput.split(/\n|\r\n/).slice(1);
+  const lines = psOutput
+    .trim()
+    .split(/\n|\r\n/)
+    .slice(1);
+
+  let withArgs = new Map();
+  if (argsOutput != null) {
+    withArgs = new Map(
+      argsOutput
+        .trim()
+        .split(/\n|\r\n/)
+        .slice(1)
+        .map(line => {
+          const columns = line.trim().split(/\s+/);
+          const pid = parseInt(columns[0], 10);
+          const command = columns.slice(1).join(' ');
+          return [pid, command];
+        }),
+    );
+  }
 
   return lines.map(line => {
     const columns = line.trim().split(/\s+/);
-    const [parentPid, pid] = columns;
+    const [parentPid, pidStr] = columns;
+    const pid = parseInt(pidStr, 10);
     const command = columns.slice(2).join(' ');
+    const commandWithArgs = withArgs.get(pid);
 
     return {
       command,
       parentPid: parseInt(parentPid, 10),
-      pid: parseInt(pid, 10),
+      pid,
+      commandWithArgs: commandWithArgs == null ? command : commandWithArgs,
     };
   });
+}
+
+// Use `ps` to get memory usage in kb for an array of process id's as a map.
+export async function memoryUsagePerPid(
+  pids: Array<number>,
+): Promise<Map<number, number>> {
+  const usage = new Map();
+  if (pids.length >= 1) {
+    try {
+      const stdout = await runCommand('ps', [
+        '-p',
+        pids.join(','),
+        '-o',
+        'pid=',
+        '-o',
+        'rss=',
+      ]).toPromise();
+      stdout.split('\n').forEach(line => {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length === 2) {
+          const [pid, rss] = parts.map(x => parseInt(x, 10));
+          usage.set(pid, rss);
+        }
+      });
+    } catch (err) {
+      // Ignore errors.
+    }
+  }
+  return usage;
 }
 
 /**
@@ -568,7 +669,7 @@ export function logStreamErrors(
   return new UniversalDisposable(
     getStreamErrorEvents(proc)
       .do(([err, streamName]) => {
-        logError(
+        logger.error(
           `stream error on stream ${streamName} with command:`,
           command,
           args,
@@ -614,6 +715,7 @@ export type ProcessInfo = {
   parentPid: number,
   pid: number,
   command: string,
+  commandWithArgs: string,
 };
 
 export type Level = 'info' | 'log' | 'warning' | 'error' | 'debug' | 'success';
@@ -634,9 +736,11 @@ export type ResultEvent = {
   result: mixed,
 };
 
+export type Status = {type: string, object: mixed};
+
 export type StatusEvent = {
   type: 'status',
-  status: ?string,
+  status: Status,
 };
 
 export type TaskEvent =
@@ -647,8 +751,10 @@ export type TaskEvent =
 
 type CreateProcessStreamOptions = (
   | child_process$spawnOpts
-  | child_process$forkOpts) & {
+  | child_process$forkOpts
+) & {
   killTreeWhenDone?: ?boolean,
+  killTreeSignal?: string,
   timeout?: ?number,
   input?: ?(string | Observable<string>),
   dontLogInNuclide?: ?boolean,
@@ -689,6 +795,8 @@ export class ProcessExitError extends Error {
   signal: ?string;
   stderr: string;
   stdout: ?string;
+  command: string;
+  args: Array<string>;
   process: child_process$ChildProcess;
 
   constructor(
@@ -700,19 +808,22 @@ export class ProcessExitError extends Error {
   ) {
     // $FlowIssue: This isn't typed in the Flow node type defs
     const {spawnargs} = proc;
-    const commandName =
-      spawnargs[0] === process.execPath ? spawnargs[1] : spawnargs[0];
+    const argsAndCommand =
+      spawnargs[0] === process.execPath ? spawnargs.slice(1) : spawnargs;
+    const [command, ...args] = argsAndCommand;
     super(
-      `"${commandName}" failed with ${exitEventToMessage({
+      `"${command}" failed with ${exitEventToMessage({
         exitCode,
         signal,
-      })}\n\n${stderr}`,
+      })}\n\n${stderr}\n\n${argsAndCommand.join(' ')}`,
     );
     this.name = 'ProcessExitError';
     this.exitCode = exitCode;
     this.signal = signal;
     this.stderr = stderr;
     this.stdout = stdout;
+    this.command = command;
+    this.args = args;
     this.process = proc;
   }
 }
@@ -767,41 +878,116 @@ export class ProcessTimeoutError extends Error {
 const DEFAULT_MAX_BUFFER = 100 * 1024 * 1024;
 
 const MAX_LOGGED_CALLS = 100;
-const PREVERVED_HISTORY_CALLS = 50;
+const NUM_PRESERVED_HISTORY_CALLS = 50;
 
 const noopDisposable = {dispose: () => {}};
 const whenShellEnvironmentLoaded =
-  typeof atom !== 'undefined' &&
-  atomWhenShellEnvironmentLoaded &&
-  !atom.inSpecMode()
-    ? atomWhenShellEnvironmentLoaded
+  typeof atom !== 'undefined' && !atom.inSpecMode()
+    ? atom.whenShellEnvironmentLoaded.bind(atom)
     : cb => {
         cb();
         return noopDisposable;
       };
 
+/**
+ * Log custom events to log4js so that we can easily hook into process events
+ * using a custom log4js appender (e.g. for analytics purposes).
+ */
+export class ProcessLoggingEvent {
+  command: string;
+  duration: number;
+
+  constructor(command: string, duration: number) {
+    this.command = command;
+    this.duration = duration;
+    // log4js uses util.inspect to convert log arguments to strings.
+    // Note: computed property methods aren't supported by Flow yet.
+    (this: any)[util.inspect.custom] = () => {
+      return `${this.duration}ms: ${this.command}`;
+    };
+  }
+}
+
 export const loggedCalls = [];
-function logCall(duration, command, args) {
+function logCall(duration: number, command: string, args: Array<string>) {
   // Trim the history once in a while, to avoid doing expensive array
   // manipulation all the time after we reached the end of the history
   if (loggedCalls.length > MAX_LOGGED_CALLS) {
-    loggedCalls.splice(0, loggedCalls.length - PREVERVED_HISTORY_CALLS, {
-      time: new Date(),
-      duration: 0,
+    loggedCalls.splice(0, loggedCalls.length - NUM_PRESERVED_HISTORY_CALLS, {
       command: '... history stripped ...',
+      duration: 0,
+      time: new Date(),
     });
   }
+
+  const fullCommand = shellQuote([command, ...args]);
   loggedCalls.push({
+    command: fullCommand,
     duration,
-    command: [command, ...args].join(' '),
     time: new Date(),
   });
+  logger.info(new ProcessLoggingEvent(fullCommand, duration));
 }
 
-function logError(...args) {
-  // Can't use nuclide-logging here to not cause cycle dependency.
-  // eslint-disable-next-line no-console
-  console.error(...args);
+/**
+ * Attempt to get the fully qualified binary name from a process id. This is
+ * surprisingly tricky. 'ps' only reports the path as invoked, and in some cases
+ * not even that.
+ *
+ * On Linux, the /proc filesystem can be used to find it.
+ * macOS doesn't have /proc, so we rely on the fact that the process holds
+ * an open FD to the executable. This can fail for various reasons (mostly
+ * not having permissions to execute lsof on the pid.)
+ */
+export async function getAbsoluteBinaryPathForPid(
+  pid: number,
+): Promise<?string> {
+  if (process.platform === 'linux') {
+    return _getLinuxBinaryPathForPid(pid);
+  }
+
+  if (process.platform === 'darwin') {
+    return _getDarwinBinaryPathForPid(pid);
+  }
+
+  return null;
+}
+
+async function _getLinuxBinaryPathForPid(pid: number): Promise<?string> {
+  const exeLink = `/proc/${pid}/exe`;
+  // /proc/xxx/exe is a symlink to the real binary in the file system.
+  return runCommand('/bin/realpath', ['-q', '-e', exeLink])
+    .catch(_ =>
+      runCommand('/bin/sudo', [
+        '-n',
+        '--',
+        '/bin/realpath',
+        '-q',
+        '-e',
+        exeLink,
+      ]),
+    )
+    .catch(_ => Observable.of(null))
+    .toPromise();
+}
+
+async function _getDarwinBinaryPathForPid(pid: number): Promise<?string> {
+  return runCommand('/usr/sbin/lsof', ['-p', `${pid}`])
+    .catch(_ => {
+      return Observable.of(null);
+    })
+    .map(
+      stdout =>
+        stdout == null
+          ? null
+          : stdout
+              .split('\n')
+              .map(line => line.trim().split(/\s+/))
+              .filter(line => line[3] === 'txt')
+              .map(line => line[8])[0],
+    )
+    .take(1)
+    .toPromise();
 }
 
 /**
@@ -834,13 +1020,16 @@ function createProcessStream(
   return observableFromSubscribeFunction(whenShellEnvironmentLoaded)
     .take(1)
     .switchMap(() => {
-      const {dontLogInNuclide, killTreeWhenDone, timeout} = options;
+      const {
+        dontLogInNuclide,
+        killTreeWhenDone,
+        killTreeSignal,
+        timeout,
+      } = options;
       // flowlint-next-line sketchy-null-number:off
       const enforceTimeout = timeout
         ? x =>
-            // TODO: Use `timeoutWith()` when we upgrade to an RxJS that has it.
-            timeoutWith(
-              x,
+            x.timeoutWith(
               timeout,
               Observable.throw(new ProcessTimeoutError(timeout, proc)),
             )
@@ -848,7 +1037,7 @@ function createProcessStream(
       const proc = child_process[type](
         nuclideUri.expandHomeDir(commandOrModulePath),
         args,
-        // $FlowFixMe: child_process$spawnOpts and child_process$forkOpts have incompatable stdio types.
+        // $FlowFixMe: child_process$spawnOpts and child_process$forkOpts have incompatible stdio types.
         {...options},
       );
 
@@ -877,7 +1066,7 @@ function createProcessStream(
         .filter(isRealExit)
         .take(1);
 
-      if (dontLogInNuclide !== true) {
+      if (dontLogInNuclide !== true && NUCLIDE_DO_NOT_LOG !== true) {
         // Log the completion of the process. Note that we intentionally don't merge this with the
         // returned observable because we don't want to cancel the side-effect when the user
         // unsubscribes or when the process exits ("close" events come after "exit" events).
@@ -913,8 +1102,6 @@ function createProcessStream(
               Observable.never(), // Don't complete until we say so!
             ),
         )
-          .takeUntil(errors)
-          .takeUntil(exitEvents)
           .merge(
             // Write any input to stdin. This is just for the side-effect. We merge it here to
             // ensure that writing to the stdin stream happens after our event listeners are added.
@@ -931,6 +1118,8 @@ function createProcessStream(
                   })
                   .ignoreElements(),
           )
+          .takeUntil(errors)
+          .takeUntil(exitEvents)
           .do({
             error: () => {
               finished = true;
@@ -949,9 +1138,9 @@ function createProcessStream(
           throw err;
         })
         .finally(() => {
-          // flowlint-next-line sketchy-null-mixed:off
+          // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
           if (!proc.wasKilled && !finished) {
-            killProcess(proc, Boolean(killTreeWhenDone));
+            killProcess(proc, Boolean(killTreeWhenDone), killTreeSignal);
           }
         });
     });
@@ -965,10 +1154,15 @@ function isRealExit(event: {exitCode: ?number, signal: ?string}): boolean {
 async function _killProcess(
   proc: child_process$ChildProcess & {wasKilled?: boolean},
   killTree: boolean,
+  killTreeSignal: ?string,
 ): Promise<void> {
   proc.wasKilled = true;
   if (!killTree) {
-    proc.kill();
+    if (killTreeSignal != null && killTreeSignal !== '') {
+      proc.kill(killTreeSignal);
+    } else {
+      proc.kill();
+    }
     return;
   }
   if (/^win/.test(process.platform)) {
@@ -1025,23 +1219,6 @@ function limitBufferSize(
       }
     });
   });
-}
-
-// TODO: Use `Observable::timeoutWith()` when we upgrade RxJS
-function timeoutWith<T>(
-  source: Observable<T>,
-  time: number,
-  other: Observable<T>,
-): Observable<T> {
-  return (
-    source
-      .timeout(time)
-      // Technically we could catch other TimeoutErrors here. `Observable::timeoutWith()` won't have
-      // this problem.
-      .catch(
-        err => (err instanceof TimeoutError ? other : Observable.throw(err)),
-      )
-  );
 }
 
 /**

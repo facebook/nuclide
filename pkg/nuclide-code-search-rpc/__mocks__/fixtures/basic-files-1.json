@@ -1,0 +1,38 @@
+[
+  {
+    "column": 11,
+    "file": "file1.js",
+    "line": "        // console.trace(x);",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 7,
+    "row": 1
+  },
+  {
+    "column": 8,
+    "file": "file1.js",
+    "line": "        console3log(b);",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 7,
+    "row": 2
+  },
+  {
+    "column": 8,
+    "file": "file1.js",
+    "line": "        console.log(n); //bad",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 7,
+    "row": 4
+  },
+  {
+    "column": 8,
+    "file": "file1.js",
+    "line": "        console.error(\"Hello World!\");",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 7,
+    "row": 5
+  }
+]

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -22,7 +22,8 @@ export function forEachCachedNode(
   while (stack.length !== 0) {
     const node = stack.pop();
     callback(node);
-    (node.getCachedChildren() || [])
-      .forEach(childNode => stack.push(childNode));
+    (node.getCachedChildren() || []).forEach(childNode =>
+      stack.push(childNode),
+    );
   }
 }

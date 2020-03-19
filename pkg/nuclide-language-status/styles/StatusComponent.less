@@ -1,0 +1,155 @@
+@import "ui-variables";
+@import "../../nuclide-scrollbar-indicators/styles/scroll-indicators";
+
+@color-info: lighten(@background-color-info, 20%);
+@color-warning: lighten(@background-color-warning, 20%);
+@color-error: lighten(@background-color-error, 20%);
+@color-info-bar: mix(@background-color-info, @base-border-color, 75%);
+@color-warning-bar: mix(@background-color-warning, @base-border-color, 75%);
+@color-error-bar: mix(@background-color-error, @base-border-color, 75%);
+@color-settings: @background-color-selected;
+
+.nuclide-language-status-container {
+  position: absolute;
+  right: @scrollbar-width;
+  width: 100%;
+  z-index: 3;
+  font-family: @font-family;
+  font-size: @font-size;
+}
+
+.nuclide-language-status-bar {
+  top: 0px;
+  cursor: default;
+}
+
+.nuclide-language-status-bar-green {
+  border-top: 1px solid @color-info-bar;
+}
+
+.nuclide-language-status-bar-yellow {
+  border-top: 1px solid @color-warning-bar;
+}
+
+.nuclide-language-status-bar-red {
+  border-top: 1px solid @color-error-bar;
+}
+
+.nuclide-language-status-providers-container {
+  display: flex;
+  position: absolute;
+  right: 0;
+  top: 0px;
+  z-index: -1;
+}
+
+.nuclide-language-status-provider {
+  display: inline-block;
+  margin-left: 5px;
+  height: 26px;
+  min-width: 26px;
+  color: @text-color-selected;
+  padding: 0.25em;
+  text-align: center;
+  cursor: default;
+}
+
+.nuclide-language-status-provider-debounce {
+  transition-property: opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+  //transition-delay: 1s;
+}
+
+.nuclide-language-status-provider-settings {
+  background-color: @color-settings;
+}
+
+.nuclide-language-status-settings-item {
+  margin-top: 0.5em;
+}
+
+.nuclide-language-status-provider-green {
+  background-color: @color-info;
+}
+
+.nuclide-language-status-provider-yellow {
+  background-color: @color-warning;
+}
+
+.nuclide-language-status-provider-red {
+  background-color: @color-error;
+}
+
+.nuclide-language-status-icon {
+  display: inline
+}
+
+.nuclide-language-status-icon:before {
+  display: inline;
+  margin: 0 5px;
+}
+
+.btn.btn.nuclide-ui-dropdown-flat.nuclide-language-status-settings-dropdown {
+  display: inline;
+  border-right: 0;
+  font-size: 1em;
+}
+
+.nuclide-language-status-tooltip-content {
+  padding: 0.75em 0.975em;
+  width: 20em + 2*0.75em;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: break-word;
+  color: @text-color-selected;
+}
+
+.nuclide-language-status-tooltip-content p {
+  margin: 0;
+}
+
+.nuclide-language-status-tooltip-content hr {
+  margin: 8px 0;
+  border-top: 1px solid rgba(0,0,0,0.15);
+}
+
+.nuclide-language-status-tooltip-content button.nuclide-ui-dropdown {
+  padding-bottom: 2px;
+}
+
+div.tooltip.nuclide-language-status-tooltip-settings .tooltip-arrow {
+  border-bottom-color: @color-settings;
+}
+
+div.tooltip.nuclide-language-status-tooltip-settings .tooltip-inner {
+  background-color: @color-settings;
+  padding: 0;
+}
+
+div.tooltip.nuclide-language-status-tooltip-green .tooltip-arrow {
+  border-bottom-color: @color-info;
+}
+
+div.tooltip.nuclide-language-status-tooltip-green .tooltip-inner {
+  background-color: @color-info;
+  padding: 0;
+}
+
+div.tooltip.nuclide-language-status-tooltip-yellow .tooltip-arrow {
+  border-bottom-color: @color-warning;
+}
+
+div.tooltip.nuclide-language-status-tooltip-yellow .tooltip-inner {
+  background-color: @color-warning;
+  padding: 0;
+}
+
+div.tooltip.nuclide-language-status-tooltip-red .tooltip-arrow {
+  border-bottom-color: @color-error;
+}
+
+div.nuclide-language-status-tooltip-red .tooltip-inner {
+  background-color: @color-error;
+  padding: 0;
+}

@@ -52,7 +52,8 @@ describe('atom-script', () => {
       () => {
         waitsForPromise(async () => {
           const stdout = await runAtomScript(markdownScript, [readme]);
-          expect(stdout.endsWith('</body>\n</html>\n')).toBe(true);
+          const expectedEnd = '</body>\n</html>\n';
+          expect(stdout.slice(-expectedEnd.length)).toBe(expectedEnd);
         });
       },
     );

@@ -9,14 +9,17 @@
  * @format
  */
 
-import type {Store} from '../types';
+import type {AppState, Store} from '../types';
+import type {Props} from './TunnelsPanelContents';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {createObservableForTunnel} from '../CreateObservables';
 import * as Actions from '../redux/Actions';
 import {Observable} from 'rxjs';
-import {TunnelsPanelTable} from './TunnelsPanelTable';
+import {TunnelsPanelContents} from './TunnelsPanelContents';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
-import React from 'react';
+import observableFromReduxStore from 'nuclide-commons/observableFromReduxStore';
+import * as React from 'react';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/ssh-tunnels';
 
@@ -28,7 +31,7 @@ export class TunnelsPanel {
   }
 
   getTitle() {
-    return 'SSH tunnels';
+    return 'Nuclide tunnels';
   }
 
   getIconName() {
@@ -36,7 +39,7 @@ export class TunnelsPanel {
   }
 
   getPreferredWidth(): number {
-    return 300;
+    return 400;
   }
 
   getDefaultLocation(): string {
@@ -48,19 +51,40 @@ export class TunnelsPanel {
   }
 
   getElement(): HTMLElement {
-    // $FlowFixMe: We need to teach Flow about Symbol.observable
-    const states = Observable.from(this._store);
+    const states: Observable<AppState> = observableFromReduxStore(this._store);
 
-    const props = states.map(state => {
+    const props: Observable<Props> = states.map((state: AppState) => {
       return {
-        tunnels: Array.from(state.openTunnels.entries()),
+        tunnels: state.tunnels.toList(),
+        openTunnel: tunnel => {
+          let noMoreNotifications = false;
+          // eslint-disable-next-line nuclide-internal/unused-subscription
+          createObservableForTunnel(tunnel, this._store)
+            .do(() => (noMoreNotifications = true))
+            .subscribe({
+              error: e => {
+                if (!noMoreNotifications) {
+                  atom.notifications.addError('Failed to open tunnel', {
+                    detail: e.code,
+                    dismissable: true,
+                  });
+                }
+              },
+            });
+        },
         closeTunnel: tunnel =>
-          this._store.dispatch(Actions.closeTunnel(tunnel)),
+          this._store.dispatch(
+            Actions.closeTunnel(tunnel, new Error('Closed from panel')),
+          ),
+        workingDirectory: state.currentWorkingDirectory,
       };
     });
 
-    const BoundTable = bindObservableAsProps(props, TunnelsPanelTable);
-    return renderReactRoot(<BoundTable />);
+    const BoundPanelContents = bindObservableAsProps(
+      props,
+      TunnelsPanelContents,
+    );
+    return renderReactRoot(<BoundPanelContents />);
   }
 
   serialize(): {deserializer: string} {

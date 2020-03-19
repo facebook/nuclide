@@ -247,7 +247,7 @@ successfully again.
 
 ### Nuclide says Diagnostics are disabled, but Buck builds my C++ project
 
-Stand-alone header files are not fully supported yet because Buck doesn't report flags for them.  
+Stand-alone header files are not fully supported yet because Buck doesn't report flags for them.
 
 >The majority of features may still work even without complete flags.  You can provide more default flags in the Settings, if necessary.
 

@@ -40,17 +40,20 @@
 // The export is typed with `typeof fetch` so flow treats the polyfill as the
 // real `fetch`.
 
-import {isRunningInTest} from './system-info';
+import {isRunningInTest} from 'nuclide-commons/system-info';
 import nodeFetch from 'node-fetch';
 
+const fetchImpl =
+  typeof global.fetch === 'function' ? global.fetch : (nodeFetch: typeof fetch);
+
 // Stub out `fetch` in all tests so we don't inadvertently rely on external URLs.
-const testFetch: typeof fetch = function testFetch() {
+const testFetch: typeof fetch = function testFetch(url) {
+  if (typeof url === 'string' && url.startsWith('http://localhost')) {
+    return fetchImpl(url);
+  }
   return Promise.reject(
     Error('fetch is stubbed out for testing. Use a spy instead.'),
   );
 };
-
-const fetchImpl =
-  typeof global.fetch === 'function' ? global.fetch : (nodeFetch: typeof fetch);
 
 export default (isRunningInTest() ? testFetch : fetchImpl);

@@ -1,0 +1,21 @@
+{
+  "name": "nuclide-image-view",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "View images (even remote ones!) in Atom",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide-remote-file-opener": {
+      "versions": {
+        "0.0.0": "consumeRemoteFileOpenerService"
+      }
+    }
+  },
+  "activationCommands": {},
+  "deserializers": {
+    "ImageEditor": "deserializeImageEditor"
+  }
+}

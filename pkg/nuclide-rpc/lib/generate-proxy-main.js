@@ -11,13 +11,18 @@
 
 /* eslint-disable no-console */
 
+import * as t from '@babel/types';
+// eslint-disable-next-line nuclide-internal/no-unresolved
+import generate from '@babel/generator';
 import yargs from 'yargs';
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {createProxyFactory, proxyFilename} from './main';
 import {stripLocationsFileName} from './location';
-import {generateProxy} from './proxy-generator';
+import createProxyGenerator from './proxy-generator';
 import {parseServiceDefinition} from './service-parser';
+
+const {generateProxy} = createProxyGenerator(t, generate);
 
 const argv = yargs
   .usage('Usage: $0 -d path/to/definition -n serviceName')

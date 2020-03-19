@@ -1,0 +1,12 @@
+{
+  "name": "nuclide-scrollbar-style-fix",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A fix for scrollbar styling related bugs. See README.",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "activationCommands": {
+  }
+}

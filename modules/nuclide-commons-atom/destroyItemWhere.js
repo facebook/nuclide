@@ -6,18 +6,20 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
 export function destroyItemWhere(
   predicate: (item: atom$PaneItem) => boolean,
-): void {
+): Promise<Array<boolean>> {
+  const destroyItemStatuses = [];
   atom.workspace.getPanes().forEach(pane => {
     pane.getItems().forEach(item => {
       if (predicate(item)) {
-        pane.destroyItem(item, true);
+        destroyItemStatuses.push(pane.destroyItem(item, true));
       }
     });
   });
+  return Promise.all(destroyItemStatuses);
 }

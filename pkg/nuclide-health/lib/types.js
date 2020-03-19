@@ -9,6 +9,8 @@
  * @format
  */
 
+import type {DOMCounters} from './getDOMCounters';
+
 export type IOBytesStats = {
   stdin: number,
   stdout: number,
@@ -38,6 +40,7 @@ export type HealthStats = {
 
 export type PaneItemState = {
   stats: ?HealthStats,
+  domCounters: ?DOMCounters,
   childProcessesTree: ?ChildProcessInfo,
   toolbarJewel?: string,
   updateToolbarJewel?: (value: string) => void,

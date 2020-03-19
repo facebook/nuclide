@@ -10,7 +10,16 @@
  * @format
  */
 
-export type AnyTeardown = (() => mixed) | rxjs$ISubscription | IDisposable;
+export type IDestructible = {
+  destroy(): void,
+  onDidDestroy(callback: () => mixed): IDisposable,
+};
+
+export type AnyTeardown =
+  | (() => mixed)
+  | rxjs$ISubscription
+  | IDisposable
+  | IDestructible;
 
 /**
  * Like a CompositeDisposable, but in addition to Disposable instances it can
@@ -38,6 +47,32 @@ export default class UniversalDisposable {
     }
   }
 
+  /**
+   * Adds a list of teardowns but also ties them to the lifetime of `destructible`.
+   * When `destructible` is destroyed (or `this.dispose()` gets called, whichever comes first),
+   * all `teardowns` provided are also disposed.
+   *
+   * This is a subtle pattern to get right because of two factors:
+   * - we need to make sure that all teardowns are also removed on destroy
+   * - we also need to ensure that we don't leak the onDidDestroy disposable
+   */
+  addUntilDestroyed(
+    destructible: IDestructible,
+    ...teardowns: Array<AnyTeardown>
+  ) {
+    if (this.disposed) {
+      throw new Error('Cannot add to an already disposed UniversalDisposable!');
+    }
+    const destroyDisposable = new UniversalDisposable(
+      ...teardowns,
+      destructible.onDidDestroy(() => {
+        destroyDisposable.dispose();
+        this.remove(destroyDisposable);
+      }),
+    );
+    this.add(destroyDisposable);
+  }
+
   remove(teardown: AnyTeardown): void {
     if (!this.disposed) {
       this.teardowns.delete(teardown);
@@ -52,6 +87,8 @@ export default class UniversalDisposable {
           teardown.dispose();
         } else if (typeof teardown.unsubscribe === 'function') {
           teardown.unsubscribe();
+        } else if (typeof teardown.destroy === 'function') {
+          teardown.destroy();
         } else if (typeof teardown === 'function') {
           teardown();
         }
@@ -75,6 +112,7 @@ function assertTeardown(teardown: AnyTeardown): void {
   if (
     typeof teardown.dispose === 'function' ||
     typeof teardown.unsubscribe === 'function' ||
+    typeof teardown.destroy === 'function' ||
     typeof teardown === 'function'
   ) {
     return;

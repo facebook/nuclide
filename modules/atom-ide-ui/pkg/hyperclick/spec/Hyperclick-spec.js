@@ -19,6 +19,18 @@ import {jasmineAttachWorkspace} from 'nuclide-commons-atom/test-helpers';
 import Hyperclick from '../lib/Hyperclick';
 import showTriggerConflictWarning from '../lib/showTriggerConflictWarning';
 import invariant from 'assert';
+import {atomConfig} from '../package.json';
+
+beforeEach(() => {
+  Object.keys(atomConfig).forEach(key => {
+    const config = atomConfig[key];
+    atom.config.setSchema(`hyperclick.${key}`, {
+      ...config,
+      // To make testing easier, use metaKey on all platforms.
+      default: 'metaKey',
+    });
+  });
+});
 
 describe('Hyperclick', () => {
   let textEditor: atom$TextEditor = (null: any);
@@ -376,8 +388,6 @@ describe('Hyperclick', () => {
           dispatch(MouseEvent, 'mousemove', position.translate([0, 1]), {
             metaKey: true,
           });
-          await hyperclickForTextEditor.getSuggestionAtMouse();
-
           expect(provider.getSuggestionForWord.callCount).toBe(1);
 
           dispatch(MouseEvent, 'mousedown', position, {metaKey: true});
@@ -455,8 +465,6 @@ describe('Hyperclick', () => {
           );
 
           dispatch(MouseEvent, 'mousemove', new Point(0, 4), {metaKey: true});
-          await hyperclickForTextEditor.getSuggestionAtMouse();
-
           expect(provider.getSuggestion.callCount).toBe(1);
 
           dispatch(MouseEvent, 'mousedown', position, {metaKey: true});
@@ -497,6 +505,26 @@ describe('Hyperclick', () => {
             metaKey: true,
           });
           expect(callback.callCount).toBe(0);
+        });
+      });
+
+      it('ignores <mousemove> when past the end of the line', () => {
+        waitsForPromise(async () => {
+          const provider = {
+            providerName: 'test',
+            async getSuggestion(sourceTextEditor, text) {
+              return {range: [], callback() {}};
+            },
+            priority: 0,
+          };
+          spyOn(provider, 'getSuggestion').andCallThrough();
+          hyperclick.addProvider(provider);
+
+          const outOfRangePosition = new Point(0, 20);
+          dispatch(MouseEvent, 'mousemove', outOfRangePosition, {
+            metaKey: true,
+          });
+          expect(provider.getSuggestion).not.toHaveBeenCalled();
         });
       });
     });

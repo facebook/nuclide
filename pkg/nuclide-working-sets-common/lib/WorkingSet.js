@@ -30,35 +30,30 @@ type LeafNode = {
 type TreeNode = InnerNode | LeafNode;
 
 /**
-* WorkingSet is an implementation of a filter for files and directories.
-* - It is *immutable*
-* - It is created from a set of NuclideUris.
-*     A path URI is either a local path, such as: /aaa/bb/ccc
-*     or remote nuclide://sandbox.com/aaa/bb/ccc
-* - The URIs can point either to files or to directories.
-* - Empty WorkingSet is essentially an empty filter - it accepts everything.
-* - Non-empty WorkingSet contains every file specified by the contained URIs or below.
-*   So, if a URI points to a directory - all its sub-directories and files in them are included.
-*   This kind of test is performed by the .containsFile() method.
-* - WorkingSet aims to support queries for the hierarchical structures, such as TreeView.
-*   Therefore, if a file is included in the WorkingSet, then the file-tree must have a way
-*   to know that it must include its parent directories.
-*   This kind of test is performed by the .containsDir() method.
-*/
+ * WorkingSet is an implementation of a filter for files and directories.
+ * - It is *immutable*
+ * - It is created from a set of NuclideUris.
+ *     A path URI is either a local path, such as: /aaa/bb/ccc
+ *     or remote nuclide://sandbox.com/aaa/bb/ccc
+ * - The URIs can point either to files or to directories.
+ * - Empty WorkingSet is essentially an empty filter - it accepts everything.
+ * - Non-empty WorkingSet contains every file specified by the contained URIs or below.
+ *   So, if a URI points to a directory - all its sub-directories and files in them are included.
+ *   This kind of test is performed by the .containsFile() method.
+ * - WorkingSet aims to support queries for the hierarchical structures, such as TreeView.
+ *   Therefore, if a file is included in the WorkingSet, then the file-tree must have a way
+ *   to know that it must include its parent directories.
+ *   This kind of test is performed by the .containsDir() method.
+ */
 export class WorkingSet {
   _uris: Array<string>;
+  _absoluteUris: Array<string>;
   _root: ?InnerNode;
-
-  static union(...sets: Array<WorkingSet>): WorkingSet {
-    const combinedUris = [].concat(...sets.map(s => s._uris));
-    return new WorkingSet(combinedUris);
-  }
 
   constructor(uris: Array<NuclideUri> = []) {
     try {
-      this._uris = dedupeUris(
-        uris.filter(uri => !nuclideUri.isBrokenDeserializedUri(uri)),
-      );
+      this._absoluteUris = dedupeUris(uris);
+      this._uris = this._absoluteUris.map(nuclideUri.getPath);
       this._root = this._buildDirTree(this._uris);
     } catch (e) {
       logger.error(
@@ -90,7 +85,8 @@ export class WorkingSet {
       return true;
     }
 
-    return this._containsPathFor(tokens, /* mustHaveLeaf */ true);
+    const uriTokens = tokens.map(nuclideUri.getPath);
+    return this._containsPathFor(uriTokens, /* mustHaveLeaf */ true);
   }
 
   containsDir(uri: NuclideUri): boolean {
@@ -111,7 +107,8 @@ export class WorkingSet {
       return true;
     }
 
-    return this._containsPathFor(tokens, /* mustHaveLeaf */ false);
+    const uriTokens = tokens.map(nuclideUri.getPath);
+    return this._containsPathFor(uriTokens, /* mustHaveLeaf */ false);
   }
 
   isEmpty(): boolean {
@@ -122,13 +119,18 @@ export class WorkingSet {
     return this._uris;
   }
 
+  getAbsoluteUris(): Array<string> {
+    return this._absoluteUris;
+  }
+
   append(...uris: Array<NuclideUri>): WorkingSet {
     return new WorkingSet(this._uris.concat(uris));
   }
 
   remove(rootUri: NuclideUri): WorkingSet {
     try {
-      const uris = this._uris.filter(uri => !nuclideUri.contains(rootUri, uri));
+      const uriPath = nuclideUri.getPath(rootUri);
+      const uris = this._uris.filter(uri => !nuclideUri.contains(uriPath, uri));
       return new WorkingSet(uris);
     } catch (e) {
       logger.error(e);

@@ -12,7 +12,7 @@
 
 import type {Datatip} from './types';
 
-import React from 'react';
+import * as React from 'react';
 
 import {maybeToString} from 'nuclide-commons/string';
 import MarkedStringDatatip from './MarkedStringDatatip';
@@ -35,14 +35,12 @@ type DatatipComponentProps = {
   onActionClick: Function,
 };
 
-export class DatatipComponent extends React.Component {
-  props: DatatipComponentProps;
-
-  handleActionClick = (event: SyntheticEvent) => {
+export class DatatipComponent extends React.Component<DatatipComponentProps> {
+  handleActionClick = (event: SyntheticEvent<>) => {
     this.props.onActionClick();
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       className,
       action,
@@ -64,7 +62,7 @@ export class DatatipComponent extends React.Component {
       const actionIcon = IconsForAction[action];
       actionButton = (
         <div
-          className={`nuclide-datatip-pin-button icon-${actionIcon}`}
+          className={`datatip-pin-button icon-${actionIcon}`}
           onClick={this.handleActionClick}
           title={actionTitle}
         />
@@ -73,11 +71,9 @@ export class DatatipComponent extends React.Component {
 
     return (
       <div
-        className={`${maybeToString(className)} nuclide-datatip-container`}
+        className={`${maybeToString(className)} datatip-container`}
         {...props}>
-        <div className="nuclide-datatip-content">
-          {content}
-        </div>
+        <div className="datatip-content">{content}</div>
         {actionButton}
       </div>
     );

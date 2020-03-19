@@ -9,27 +9,24 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
+import nullthrows from 'nullthrows';
 
-type State = {
-  lockedHeight: ?number,
-};
-type Props = {
+type Props = {|
   isLocked: boolean,
   children: any,
-};
+|};
 
-export class LockableHeight extends React.Component {
-  props: Props;
-  state: State;
-  _root: HTMLElement;
+type State = {|
+  lockedHeight: ?number,
+|};
 
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      lockedHeight: null,
-    };
-  }
+export class LockableHeight extends React.Component<Props, State> {
+  _root: ReactHTMLElementRef<HTMLDivElement> = React.createRef();
+
+  state = {
+    lockedHeight: null,
+  };
 
   componentDidMount() {
     if (this.props.isLocked) {
@@ -37,34 +34,27 @@ export class LockableHeight extends React.Component {
     }
   }
 
-  componentWillReceiveProps(nextProps: Props) {
+  UNSAFE_componentWillReceiveProps(nextProps: Props) {
     if (this.props.isLocked !== nextProps.isLocked) {
-      const lockedHeight = nextProps.isLocked ? this._currentHeight() : null;
-      this.setState({lockedHeight});
+      this.setState({
+        lockedHeight: nextProps.isLocked
+          ? nullthrows(this._root.current).clientHeight
+          : null,
+      });
     }
   }
 
-  _currentHeight() {
-    const computedStyle = window.getComputedStyle(this._root);
-    return computedStyle.height;
-  }
-
-  render(): React.Element<any> {
+  render(): React.Node {
     let style = {};
     let className = null;
     if (this.props.isLocked) {
       const {lockedHeight} = this.state;
-      // Flexbox supercedes the height attributes, so we use min/max heigh.
+      // Flexbox supercedes the height attributes, so we use min/max height.
       style = {maxHeight: lockedHeight, minHeight: lockedHeight};
       className = 'nuclide-file-tree-locked-height';
     }
     return (
-      <div
-        style={style}
-        className={className}
-        ref={node => {
-          this._root = node;
-        }}>
+      <div style={style} className={className} ref={this._root}>
         {this.props.children}
       </div>
     );

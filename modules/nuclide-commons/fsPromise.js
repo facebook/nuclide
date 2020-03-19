@@ -14,11 +14,18 @@ import fs from 'fs';
 import fsPlus from 'fs-plus';
 import globLib from 'glob';
 import mkdirpLib from 'mkdirp';
+import mvLib from 'mv';
 import rimraf from 'rimraf';
 import temp from 'temp';
 
 import nuclideUri from './nuclideUri';
 import {runCommand} from './process';
+
+type WriteOptions = {
+  encoding?: string,
+  mode?: number,
+  flag?: string,
+};
 
 /**
  * Create a temp directory with given prefix. The caller is responsible for cleaning up the
@@ -89,6 +96,22 @@ async function findNearestFile(
     }
     currentPath = nuclideUri.dirname(currentPath);
   }
+}
+
+async function findNearestAncestorNamed(
+  fileName: string,
+  pathToDirectory: string,
+): Promise<?string> {
+  const directory = await findNearestFile(fileName, pathToDirectory);
+  if (directory != null) {
+    return nuclideUri.join(directory, fileName);
+  } else {
+    return null;
+  }
+}
+
+function resolveRealPath(path: string): Promise<string> {
+  return realpath(nuclideUri.expandHomeDir(path));
 }
 
 /**
@@ -175,8 +198,7 @@ function rimrafWrapper(filePath: string): Promise<void> {
   });
 }
 
-/** @return true only if we are sure directoryPath is on NFS. */
-async function isNfs(entityPath: string): Promise<boolean> {
+async function getFileSystemType(entityPath: string): Promise<?string> {
   if (process.platform === 'linux' || process.platform === 'darwin') {
     try {
       const stdout = await runCommand('stat', [
@@ -186,14 +208,26 @@ async function isNfs(entityPath: string): Promise<boolean> {
         '%T',
         entityPath,
       ]).toPromise();
-      return stdout.trim() === 'nfs';
+      return stdout.trim();
     } catch (err) {
-      return false;
+      return null;
     }
   } else {
-    // TODO Handle other platforms (windows?): t9917576.
-    return false;
+    // TODO Handle other platforms (windows?)
+    return null;
   }
+}
+
+/** @return true only if we are sure entityPath is on NFS. */
+async function isNfs(entityPath: string): Promise<boolean> {
+  return (await getFileSystemType(entityPath)) === 'nfs';
+}
+
+/** @return true only if we are sure entityPath is on a Fuse filesystem like
+            dewey or gvfs.
+*/
+async function isFuse(entityPath: string): Promise<boolean> {
+  return (await getFileSystemType(entityPath)) === 'fuseblk';
 }
 
 function glob(pattern: string, options?: Object): Promise<Array<string>> {
@@ -212,7 +246,7 @@ async function isNonNfsDirectory(directoryPath: string): Promise<boolean> {
   try {
     const stats = await stat(directoryPath);
     if (stats.isDirectory()) {
-      return !await isNfs(directoryPath);
+      return !(await isNfs(directoryPath));
     } else {
       return false;
     }
@@ -240,16 +274,28 @@ function copy(source: string, dest: string): Promise<void> {
   });
 }
 
-function move(source: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    fsPlus.move(source, dest, (err, result) => {
-      if (err == null) {
-        resolve(result);
-      } else {
-        reject(err);
-      }
-    });
-  });
+async function copyFilePermissions(
+  sourcePath: string,
+  destinationPath: string,
+): Promise<void> {
+  try {
+    const {mode, uid, gid} = await stat(sourcePath);
+    await Promise.all([
+      // The user may not have permissions to use the uid/gid.
+      chown(destinationPath, uid, gid).catch(() => {}),
+      chmod(destinationPath, mode),
+    ]);
+  } catch (e) {
+    // If the file does not exist, then ENOENT will be thrown.
+    if (e.code !== 'ENOENT') {
+      throw e;
+    }
+    // For new files, use the default process file creation mask.
+    await chmod(
+      destinationPath,
+      0o666 & ~process.umask(), // eslint-disable-line no-bitwise
+    );
+  }
 }
 
 /**
@@ -259,7 +305,7 @@ function move(source: string, dest: string): Promise<void> {
 function writeFile(
   filename: string,
   data: Buffer | string,
-  options?: Object | string,
+  options?: WriteOptions | string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     fsPlus.writeFile(filename, data, options, (err, result) => {
@@ -270,6 +316,47 @@ function writeFile(
       }
     });
   });
+}
+
+async function writeFileAtomic(
+  path: string,
+  data: Buffer | string,
+  options?: WriteOptions | string,
+): Promise<void> {
+  const tempFilePath = await tempfile('nuclide');
+  try {
+    await writeFile(tempFilePath, data, options);
+
+    // Expand the target path in case it contains symlinks.
+    let realPath = path;
+    try {
+      realPath = await realpath(path);
+    } catch (e) {
+      // Fallback to using the specified path if it cannot be expanded.
+      // Note: this is expected in cases where the remote file does not
+      // actually exist.
+    }
+
+    // Ensure file still has original permissions:
+    // https://github.com/facebook/nuclide/issues/157
+    // We update the mode of the temp file rather than the destination file because
+    // if we did the mv() then the chmod(), there would be a brief period between
+    // those two operations where the destination file might have the wrong permissions.
+    await copyFilePermissions(realPath, tempFilePath);
+
+    // Ensure file has new permissions updated.
+    const mode = typeof options !== 'string' ? options?.mode : null;
+    if (mode != null) {
+      await chmod(tempFilePath, mode);
+    }
+
+    // TODO: put renames into a queue so we don't write older save over new save.
+    // Use mv as fs.rename doesn't work across partitions.
+    await mv(tempFilePath, realPath, {mkdirp: true});
+  } catch (err) {
+    await unlink(tempFilePath);
+    throw err;
+  }
 }
 
 /**
@@ -300,6 +387,54 @@ function chown(path: string, uid: number, gid: number): Promise<void> {
   });
 }
 
+function close(fd: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.close(fd, err => {
+      if (err == null) {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+function fstat(fd: number): Promise<fs.Stats> {
+  return new Promise((resolve, reject) => {
+    fs.fstat(fd, (err, result) => {
+      if (err == null) {
+        resolve(result);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+async function fsync(fd: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.fsync(fd, (err, result) => {
+      if (err == null) {
+        resolve(result);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+function ftruncate(fd: number, len: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.ftruncate(fd, len, (err, result) => {
+      if (err == null) {
+        resolve(result);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
 function lstat(path: string): Promise<fs.Stats> {
   return new Promise((resolve, reject) => {
     fs.lstat(path, (err, result) => {
@@ -317,6 +452,79 @@ function mkdir(path: string, mode?: number): Promise<void> {
     fs.mkdir(path, mode, (err, result) => {
       if (err == null) {
         resolve(result);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+export type MvOptions = {
+  // Run mkdirp for the directory first. Defaults to false.
+  mkdirp?: boolean,
+  // Overwrite the file if it exists. Defaults to true.
+  clobber?: boolean,
+  // Optional: the concurrency limit when moving a directory.
+  limit?: number,
+};
+
+/**
+ * The key difference between 'mv' and 'rename' is that 'mv' works across devices.
+ * It's not uncommon to have temporary files in a different disk, for instance.
+ */
+async function mv(
+  sourcePath: string,
+  destinationPath: string,
+  options?: MvOptions = {},
+): Promise<void> {
+  // mv-node fails to account for the case where a destination directory exists
+  // and `clobber` is false. This can result in the source directory getting
+  // deleted but the destination not getting written.
+  // https://github.com/andrewrk/node-mv/issues/30
+  if (options.clobber === false && (await exists(destinationPath))) {
+    const err: ErrnoError = new Error('Destination file exists');
+    err.code = 'EEXIST';
+    err.path = destinationPath;
+    throw err;
+  }
+  return new Promise((resolve, reject) => {
+    mvLib(sourcePath, destinationPath, options, error => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function open(
+  path: string | Buffer | URL,
+  flags: string | number,
+  mode: number = 0o666,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    fs.open(path, flags, mode, (err, fd) => {
+      if (err == null) {
+        resolve(fd);
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+function read(
+  fd: number,
+  buffer: Buffer,
+  offset: number,
+  length: number,
+  position: number | null,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    fs.read(fd, buffer, offset, length, position, (err, bytesRead) => {
+      if (err == null) {
+        resolve(bytesRead);
       } else {
         reject(err);
       }
@@ -382,13 +590,13 @@ function realpath(path: string, cache?: Object): Promise<string> {
   });
 }
 
-function rename(oldPath: string, newPath: string): Promise<void> {
+function access(path: string, mode: number): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    fs.rename(oldPath, newPath, (err, result) => {
+    fs.access(path, mode, err => {
       if (err == null) {
-        resolve(result);
+        resolve(true);
       } else {
-        reject(err);
+        resolve(false);
       }
     });
   });
@@ -418,6 +626,46 @@ function symlink(source: string, dest: string, type?: string): Promise<void> {
   });
 }
 
+/**
+ * A utility function to grab the last N bytes from a file. Attempts to do so
+ * without reading the entire file.
+ */
+async function tailBytes(file: string, maxBytes: number): Promise<Buffer> {
+  if (maxBytes <= 0) {
+    throw new Error('tailbytes expects maxBytes > 0');
+  }
+
+  // Figure out the size so we know what strategy to use
+  const {size: file_size} = await stat(file);
+
+  if (file_size > maxBytes) {
+    const fd = await open(file, 'r');
+    const buffer = Buffer.alloc(maxBytes);
+    const bytesRead = await read(
+      fd,
+      buffer,
+      0, // buffer offset
+      maxBytes, // length to read
+      file_size - maxBytes, // file offset
+    );
+    await close(fd);
+
+    /* If we meant to read the last 100 bytes but only read 50 bytes, then we've
+     * failed to read the last 100 bytes. So throw. In the future, someone
+     * could update this code to keep calling `read` until we read maxBytes.
+     */
+    if (bytesRead !== maxBytes) {
+      throw new Error(
+        `Failed to tail file. Intended to read ${maxBytes} bytes but ` +
+          `only read ${bytesRead} bytes`,
+      );
+    }
+    return buffer;
+  } else {
+    return readFile(file);
+  }
+}
+
 function unlink(path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.unlink(path, (err, result) => {
@@ -430,6 +678,67 @@ function unlink(path: string): Promise<void> {
   });
 }
 
+function utimes(
+  path: string,
+  atime: number | Date,
+  mtime: number | Date,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.utimes(path, atime, mtime, err => {
+      if (err == null) {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+function rmdir(path: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.rmdir(path, err => {
+      if (err == null) {
+        resolve();
+      } else {
+        reject(err);
+      }
+    });
+  });
+}
+
+/**
+ * Attempts to resolve the physical path of the filename.
+ * Sometimes filePath may not exist yet, in which case we need to look upwards
+ * for the first prefix that actually does exist.
+ */
+async function guessRealPath(filePath: string): Promise<string> {
+  if (nuclideUri.isRemote(filePath)) {
+    throw new Error('Only local paths can be used with guessRealPath');
+  }
+  const resolved = nuclideUri.resolve(filePath);
+  let prefix = resolved;
+  let suffix = null;
+  while (true) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const realPath = await realpath(prefix);
+      return suffix == null ? realPath : nuclideUri.join(realPath, suffix);
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+      const basename = nuclideUri.basename(prefix);
+      if (basename === '') {
+        // We've reached the filesystem root.
+        break;
+      }
+      suffix = suffix == null ? basename : nuclideUri.join(basename, suffix);
+      prefix = nuclideUri.dirname(prefix);
+    }
+  }
+  return resolved;
+}
+
 export default {
   tempdir,
   tempfile,
@@ -440,23 +749,39 @@ export default {
   mkdirp,
   rimraf: rimrafWrapper,
   isNfs,
+  isFuse,
   glob,
   isNonNfsDirectory,
 
   copy,
-  move,
+  copyFilePermissions,
   writeFile,
+  writeFileAtomic,
 
   chmod,
   chown,
+  close,
+  fstat,
+  fsync,
+  ftruncate,
   lstat,
   mkdir,
+  mv,
+  open,
+  read,
   readFile,
   readdir,
   readlink,
   realpath,
-  rename,
   stat,
   symlink,
+  tailBytes,
   unlink,
+  utimes,
+  rmdir,
+  access,
+
+  findNearestAncestorNamed,
+  resolveRealPath,
+  guessRealPath,
 };

@@ -12,14 +12,15 @@
 import type {HomeFragments} from './types';
 import type {Observable, BehaviorSubject} from 'rxjs';
 
-import Immutable from 'immutable';
-import React from 'react';
+import * as Immutable from 'immutable';
+import * as React from 'react';
 import HomeFeatureComponent from './HomeFeatureComponent';
-import NuclideLogo from './NuclideLogo';
 import createUtmUrl from './createUtmUrl';
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import NuclideLogo from 'nuclide-commons-ui/NuclideLogo';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Checkbox} from 'nuclide-commons-ui/Checkbox';
+import {track} from 'nuclide-analytics';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/home';
 
@@ -53,13 +54,13 @@ type Props = {
   allHomeFragmentsStream: BehaviorSubject<Immutable.Set<HomeFragments>>,
 };
 
-export default class HomePaneItem extends React.Component {
-  props: Props;
-  state: {
-    allHomeFragments: Immutable.Set<string, React.Element<any>>,
+export default class HomePaneItem extends React.Component<
+  Props,
+  {
+    allHomeFragments: Immutable.Set<HomeFragments>,
     showOnStartup: boolean,
-  };
-
+  },
+> {
   _disposables: ?UniversalDisposable;
 
   constructor(props: Props) {
@@ -94,11 +95,7 @@ export default class HomePaneItem extends React.Component {
     sortedHomeFragments.forEach(fragment => {
       const {welcome, feature} = fragment;
       if (welcome) {
-        welcomes.push(
-          <div key={welcomes.length}>
-            {welcome}
-          </div>,
-        );
+        welcomes.push(<div key={welcomes.length}>{welcome}</div>);
       }
       if (feature) {
         features.push(
@@ -113,7 +110,7 @@ export default class HomePaneItem extends React.Component {
           <NuclideLogo className="nuclide-home-logo" />
           <h1 className="nuclide-home-title">Welcome to Nuclide</h1>
         </section>
-        <section className="text-center">
+        <section className="text-center" onClick={trackAnchorClicks}>
           {welcomes.length > 0 ? welcomes : DEFAULT_WELCOME}
         </section>
         <section className="text-center">
@@ -172,4 +169,16 @@ export default class HomePaneItem extends React.Component {
       this._disposables.dispose();
     }
   }
+}
+
+function trackAnchorClicks(e: SyntheticMouseEvent<>) {
+  const {target} = e;
+  // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+  if (target.tagName !== 'A' || target.href == null) {
+    return;
+  }
+
+  // $FlowFixMe
+  const {href, innerText} = target;
+  track('home-link-clicked', {href, text: innerText});
 }

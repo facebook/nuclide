@@ -15,26 +15,20 @@
  * on text editor contents.
  */
 
-import {Disposable} from 'atom';
 import {Observable, Subject} from 'rxjs';
-
-import {
-  observeActiveEditorsDebounced,
-  editorChangesDebounced,
-} from './debounced';
-
+import {observeActiveEditorsDebounced} from './debounced';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 
 import {getLogger} from 'log4js';
 
+import {isPending, observePendingStateEnd} from './pane-item';
 import ProviderRegistry from './ProviderRegistry';
 
 export type Provider = {
   priority: number,
-  grammarScopes: Array<string>,
-  // This overrides the updateOnEdit setting in ActiveEditorRegistry's config.
-  updateOnEdit?: boolean,
+  +grammarScopes?: Array<string>,
 };
 
 export type Result<T, V> =
@@ -56,10 +50,6 @@ export type Result<T, V> =
       editor: atom$TextEditor,
     }
   | {
-      kind: 'edit',
-      editor: atom$TextEditor,
-    }
-  | {
       kind: 'save',
       editor: atom$TextEditor,
     }
@@ -69,7 +59,7 @@ export type Result<T, V> =
       // The editor that the result was computed from
       editor: atom$TextEditor,
       // The provider that computed the result
-      // TODO Use a type paramater for this type
+      // TODO Use a type parameter for this type
       provider: T,
     };
 
@@ -80,61 +70,30 @@ export type ResultFunction<T, V> = (
 
 type PartialEventSources = {
   +activeEditors?: Observable<?atom$TextEditor>,
-  +changesForEditor?: (editor: atom$TextEditor) => Observable<void>,
   +savesForEditor?: (editor: atom$TextEditor) => Observable<void>,
 };
 
 export type EventSources = {
   activeEditors: Observable<?atom$TextEditor>,
-  changesForEditor: (editor: atom$TextEditor) => Observable<void>,
   savesForEditor: (editor: atom$TextEditor) => Observable<void>,
 };
-
-export type Config = {
-  /**
-   * If true, we will query providers for updates whenever the text in the editor is changed.
-   * Otherwise, we will query only when there is a save event.
-   */
-  updateOnEdit?: boolean,
-};
-
-type ConcreteConfig = {
-  updateOnEdit: boolean,
-};
-
-const DEFAULT_CONFIG: ConcreteConfig = {
-  updateOnEdit: true,
-};
-
-function getConcreteConfig(config: Config): ConcreteConfig {
-  return {
-    ...DEFAULT_CONFIG,
-    ...config,
-  };
-}
 
 export default class ActiveEditorRegistry<T: Provider, V> {
   _resultFunction: ResultFunction<T, V>;
   _providerRegistry: ProviderRegistry<T>;
   _newProviderEvents: Subject<void>;
   _resultsStream: Observable<Result<T, V>>;
-  _config: ConcreteConfig;
 
   constructor(
     resultFunction: ResultFunction<T, V>,
-    config: Config = {},
     eventSources: PartialEventSources = {},
   ) {
-    this._config = getConcreteConfig(config);
     this._resultFunction = resultFunction;
     this._providerRegistry = new ProviderRegistry();
     this._newProviderEvents = new Subject();
     this._resultsStream = this._createResultsStream({
       activeEditors:
         eventSources.activeEditors || observeActiveEditorsDebounced(),
-      changesForEditor:
-        eventSources.changesForEditor ||
-        (editor => editorChangesDebounced(editor)),
       savesForEditor:
         eventSources.savesForEditor ||
         (editor => {
@@ -148,7 +107,7 @@ export default class ActiveEditorRegistry<T: Provider, V> {
   consumeProvider(provider: T): IDisposable {
     this._providerRegistry.addProvider(provider);
     this._newProviderEvents.next();
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._providerRegistry.removeProvider(provider);
     });
   }
@@ -181,8 +140,14 @@ export default class ActiveEditorRegistry<T: Provider, V> {
           kind: 'pane-change',
           editor,
         }),
+        // wait for pending panes to no longer be pending, or if they're not,
+        // get the result right away.
+        (isPending(editor)
+          ? observePendingStateEnd(editor).take(1)
+          : Observable.of(null)
+        ).ignoreElements(),
         Observable.fromPromise(
-          this._getResultForEditor(this._getProviderForEditor(editor), editor),
+          this._getResultForEditor(this._getProvidersForEditor(editor), editor),
         ),
         this._resultsForEditor(editor, eventSources),
       );
@@ -197,58 +162,57 @@ export default class ActiveEditorRegistry<T: Provider, V> {
     // It's possible that the active provider for an editor changes over time.
     // Thus, we have to subscribe to both edits and saves.
     return Observable.merge(
-      eventSources.changesForEditor(editor).map(() => 'edit'),
       eventSources.savesForEditor(editor).map(() => 'save'),
     ).flatMap(event => {
-      const provider = this._getProviderForEditor(editor);
-      if (provider != null) {
-        let updateOnEdit = provider.updateOnEdit;
-        // Fall back to the config's updateOnEdit if not provided.
-        if (updateOnEdit == null) {
-          updateOnEdit = this._config.updateOnEdit;
-        }
-        if (updateOnEdit !== (event === 'edit')) {
-          return Observable.empty();
-        }
-      }
+      const providers = this._getProvidersForEditor(editor);
       return Observable.concat(
-        // $FlowIssue: {kind: edit | save} <=> {kind: edit} | {kind: save}
+        // $FlowIssue: {kind: save}
         Observable.of({kind: event, editor}),
-        Observable.fromPromise(this._getResultForEditor(provider, editor)),
+        Observable.fromPromise(this._getResultForEditor(providers, editor)),
       );
     });
   }
 
-  _getProviderForEditor(editor: atom$TextEditor): ?T {
-    return this._providerRegistry.getProviderForEditor(editor);
+  _getProvidersForEditor(editor: atom$TextEditor): Array<T> {
+    return [...this._providerRegistry.getAllProvidersForEditor(editor)];
   }
 
   async _getResultForEditor(
-    provider: ?T,
+    providers: Array<T>,
     editor: atom$TextEditor,
   ): Promise<Result<T, V>> {
-    if (provider == null) {
+    if (providers.length === 0) {
       return {
         kind: 'no-provider',
         grammar: editor.getGrammar(),
       };
     }
-    try {
-      return {
-        kind: 'result',
-        result: await this._resultFunction(provider, editor),
-        provider,
-        editor,
-      };
-    } catch (e) {
-      getLogger(this.constructor.name).error(
-        `Error from provider for ${editor.getGrammar().scopeName}`,
-        e,
-      );
-      return {
-        provider,
-        kind: 'provider-error',
-      };
+    let errorResult;
+    const results = await Promise.all(
+      providers.map(async provider => {
+        try {
+          return await this._resultFunction(provider, editor);
+        } catch (error) {
+          getLogger(this.constructor.name).error(
+            `Error from provider for ${editor.getGrammar().scopeName}`,
+            error,
+          );
+          errorResult = {
+            provider,
+            kind: 'provider-error',
+          };
+        }
+      }),
+    );
+    if (errorResult != null) {
+      return errorResult;
     }
+    const resultIndex = results.findIndex(r => r != null);
+    return {
+      kind: 'result',
+      result: (results[resultIndex]: any),
+      provider: providers[resultIndex] || providers[0],
+      editor,
+    };
   }
 }

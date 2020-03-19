@@ -1,7 +1,0 @@
-{
-    "dependencies": ["bindings"],
-    "scripts": [
-        "SnippetStorage.js",
-        "ScriptSnippetModel.js"
-    ]
-}

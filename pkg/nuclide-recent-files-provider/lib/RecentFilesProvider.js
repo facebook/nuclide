@@ -10,27 +10,29 @@
  */
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import React from 'react';
+import * as React from 'react';
 
 import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import {arrayCompact} from 'nuclide-commons/collection';
 import {relativeDate} from 'nuclide-commons/string';
-import {Matcher} from '../../nuclide-fuzzy-native';
-import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
+import {Matcher} from 'nuclide-fuzzy-native';
+import PathWithFileIcon from 'nuclide-commons-ui/PathWithFileIcon';
 
 // Imported from nuclide-files-service, which is an apm package, preventing a direct import.
 type FilePath = string;
 type TimeStamp = number;
 type FileList = Array<{path: FilePath, timestamp: TimeStamp}>;
 type RecentFilesService = {
-  getRecentFiles(): FileList,
-  touchFile(path: string): void,
+  getRecentFiles(): Promise<FileList>,
+  touchFile(path: string): Promise<void>,
 };
 
 let _recentFilesService: ?RecentFilesService = null;
 
-function getRecentFilesMatching(query: string): Array<FileResult> {
+async function getRecentFilesMatching(
+  query: string,
+): Promise<Array<FileResult>> {
   if (_recentFilesService == null) {
     return [];
   }
@@ -40,15 +42,11 @@ function getRecentFilesMatching(query: string): Array<FileResult> {
       atom.workspace.getTextEditors().map(editor => editor.getPath()),
     ),
   );
-  const validRecentFiles = _recentFilesService
-    .getRecentFiles()
-    .filter(
-      result =>
-        !openFiles.has(result.path) &&
-        projectPaths.some(
-          projectPath => result.path.indexOf(projectPath) !== -1,
-        ),
-    );
+  const validRecentFiles = (await _recentFilesService.getRecentFiles()).filter(
+    result =>
+      !openFiles.has(result.path) &&
+      projectPaths.some(projectPath => result.path.indexOf(projectPath) !== -1),
+  );
   const timestamps: Map<FilePath, TimeStamp> = new Map();
   const matcher = new Matcher(
     validRecentFiles.map(recentFile => {
@@ -60,6 +58,7 @@ function getRecentFilesMatching(query: string): Array<FileResult> {
     matcher
       .match(query, {recordMatchIndexes: true})
       .map(result => ({
+        resultType: 'FILE',
         path: result.value,
         score: result.score,
         matchIndexes: result.matchIndexes,
@@ -102,7 +101,7 @@ function opacityForTimestamp(timestamp: number): number {
   );
 }
 
-export const RecentFilesProvider: Provider = {
+export const RecentFilesProvider: Provider<FileResult> = {
   providerType: 'GLOBAL',
   name: 'RecentFilesProvider',
   debounceDelay: 0,
@@ -129,6 +128,7 @@ export const RecentFilesProvider: Provider = {
     const filename = nuclideUri.basename(item.path);
     const filePath = item.path.substring(0, item.path.lastIndexOf(filename));
     const date = item.timestamp == null ? null : new Date(item.timestamp);
+    // eslint-disable-next-line eqeqeq
     const datetime = date === null ? '' : date.toLocaleString();
     return (
       <div
@@ -142,13 +142,11 @@ export const RecentFilesProvider: Provider = {
             path={filename}>
             {filePath}
           </PathWithFileIcon>
-          <span className="recent-files-provider-file-name">
-            {filename}
-          </span>
+          <span className="recent-files-provider-file-name">{filename}</span>
         </div>
         <div className="recent-files-provider-datetime-container">
           <span className="recent-files-provider-datetime-label">
-            {date === null ? 'At some point' : relativeDate(date)}
+            {date == null ? 'At some point' : relativeDate(date)}
           </span>
         </div>
       </div>

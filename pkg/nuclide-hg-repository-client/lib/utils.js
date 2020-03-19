@@ -5,93 +5,42 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import fsPromise from 'nuclide-commons/fsPromise';
-import {Observable} from 'rxjs';
-import {runCommandDetailed} from 'nuclide-commons/process';
-import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
+import type {RevisionInfo} from '../../nuclide-hg-rpc/lib/types';
 
-export function gitDiffContentAgainstFile(
-  content: string,
-  filePath: string,
-): Observable<string> {
-  const service = getFileSystemServiceByNuclideUri(filePath);
-  const diff = Observable.fromPromise(
-    service.readFile(filePath),
-  ).switchMap(buffer => {
-    return gitDiffStrings(content, buffer.toString('utf8'));
-  });
-  return diff;
+import {hgConstants} from '../../nuclide-hg-rpc';
+
+export function getHeadRevision(revisions: Array<RevisionInfo>): ?RevisionInfo {
+  return revisions.find(revision => revision.isHead);
 }
 
-export function gitDiffStrings(
-  oldString: string,
-  newString: string,
-): Observable<string> {
-  return makeTempFiles(
-    oldString,
-    newString,
-  ).switchMap(([oldTempFile, newTempFile]) =>
-    runCommandDetailed(
-      'git',
-      ['diff', '--unified=0', '--no-index', oldTempFile, newTempFile],
-      {
-        killTreeWhenDone: true,
-      },
-    )
-      .map(({stdout}) => stdout)
-      .catch(e => {
-        // git diff returns with exit code 1 if there was a difference between
-        // the files being compared
-        return Observable.of(e.stdout);
-      })
-      .finally(() => {
-        fsPromise.unlink(oldTempFile);
-        fsPromise.unlink(newTempFile);
-      }),
+export function getHeadToForkBaseRevisions(
+  revisions: Array<RevisionInfo>,
+): Array<RevisionInfo> {
+  // `headToForkBaseRevisions` should have the public commit at the fork base as the first.
+  // and the rest of the current `HEAD` stack in order with the `HEAD` being last.
+  const headRevision = getHeadRevision(revisions);
+  if (headRevision == null) {
+    return [];
+  }
+  const {CommitPhase} = hgConstants;
+  const hashToRevisionInfo = new Map(
+    revisions.map(revision => [revision.hash, revision]),
   );
-}
-
-function makeTempFiles(
-  oldString: string,
-  newString: string,
-): Observable<[string, string]> {
-  let oldFilePath: string;
-  let newFilePath: string;
-  return Observable.forkJoin(
-    Observable.fromPromise(fsPromise.tempfile())
-      .map(filePath => {
-        oldFilePath = filePath.trim();
-        return oldFilePath;
-      })
-      .switchMap(filePath => {
-        return writeContentsToFile(oldString, filePath).map(() => filePath);
-      }),
-    Observable.fromPromise(fsPromise.tempfile())
-      .map(filePath => {
-        newFilePath = filePath.trim();
-        return newFilePath;
-      })
-      .switchMap(filePath => {
-        return writeContentsToFile(newString, filePath).map(() => filePath);
-      }),
-  ).catch(error => {
-    if (oldFilePath != null) {
-      fsPromise.unlink(oldFilePath);
-    }
-    if (newFilePath != null) {
-      fsPromise.unlink(newFilePath);
-    }
-    return Observable.throw(error);
-  });
-}
-
-function writeContentsToFile(
-  contents: string,
-  filePath: string,
-): Observable<void> {
-  return Observable.fromPromise(fsPromise.writeFile(filePath, contents));
+  const headToForkBaseRevisions = [];
+  let parentRevision = headRevision;
+  while (
+    parentRevision != null &&
+    parentRevision.phase !== CommitPhase.PUBLIC
+  ) {
+    headToForkBaseRevisions.unshift(parentRevision);
+    parentRevision = hashToRevisionInfo.get(parentRevision.parents[0]);
+  }
+  if (parentRevision != null) {
+    headToForkBaseRevisions.unshift(parentRevision);
+  }
+  return headToForkBaseRevisions;
 }

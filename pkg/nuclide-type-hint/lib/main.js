@@ -11,37 +11,27 @@
 
 import type {TypeHintProvider} from './types';
 import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
-import type TypeHintManagerType from './TypeHintManager';
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import TypeHintManager from './TypeHintManager';
 
 const PACKAGE_NAME = 'nuclide-type-hint';
 
 class Activation {
-  _disposables: CompositeDisposable;
-  typeHintManager: ?TypeHintManagerType;
+  _disposables: UniversalDisposable;
+  typeHintManager: TypeHintManager;
 
   constructor(state: ?any) {
-    this._disposables = new CompositeDisposable();
-    if (this.typeHintManager == null) {
-      this.typeHintManager = new TypeHintManager();
-    }
+    this._disposables = new UniversalDisposable();
+    this.typeHintManager = new TypeHintManager();
   }
 
   consumeTypehintProvider(provider: TypeHintProvider): IDisposable {
-    invariant(this.typeHintManager);
-    this.typeHintManager.addProvider(provider);
-    return new Disposable(() => {
-      if (this.typeHintManager != null) {
-        this.typeHintManager.removeProvider(provider);
-      }
-    });
+    return this.typeHintManager.addProvider(provider);
   }
 
   consumeDatatipService(service: DatatipService): IDisposable {
-    invariant(this.typeHintManager);
     const datatip = this.typeHintManager.datatip.bind(this.typeHintManager);
     const datatipProvider: DatatipProvider = {
       providerName: PACKAGE_NAME,

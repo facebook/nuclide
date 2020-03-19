@@ -9,7 +9,7 @@
  * @format
  */
 
-import Immutable from 'immutable';
+import * as Immutable from 'immutable';
 import {LazyTreeNode} from '../../../nuclide-ui/LazyTreeNode';
 
 export default class TestClassTreeNode extends LazyTreeNode {

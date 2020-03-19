@@ -7,18 +7,15 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 
 const fs = require('fs');
 const path = require('path');
 if (fs.existsSync(path.join(__dirname, 'DEVELOPMENT'))) {
   // eslint-disable-next-line nuclide-internal/modules-dependencies
-  require('../../pkg/nuclide-node-transpiler');
+  require('../nuclide-node-transpiler');
 }

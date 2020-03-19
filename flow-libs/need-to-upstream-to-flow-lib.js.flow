@@ -30,6 +30,7 @@ declare class Notification {
     message: string,
     options?: NotificationOptions,
   ): void,
+  onclick: () => void,
 }
 
 // T9254051 - Fix flow http/https definitions.
@@ -119,9 +120,19 @@ declare class module$Module {
 }
 
 declare module 'module' {
-  declare var exports: typeof module$Module;
+  declare module.exports: typeof module$Module;
 }
 
 declare module 'console' {
-  declare var exports: any;
+  declare module.exports: any;
 }
+
+declare interface net$ListenOptions {
+  port?: number,
+  host?: string,
+  backlog?: number,
+  path?: string,
+  exclusive?: boolean,
+}
+
+declare export var module: module$Module;

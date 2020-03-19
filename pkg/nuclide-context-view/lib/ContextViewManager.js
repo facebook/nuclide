@@ -19,14 +19,15 @@ import type {ContextProvider} from './types';
 
 import invariant from 'assert';
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {timeoutPromise} from 'nuclide-commons/promise';
 import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
 import {arrayCompact} from 'nuclide-commons/collection';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {observeTextEditorsPositions} from 'nuclide-commons-atom/debounced';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
-import {track, trackTiming} from '../../nuclide-analytics';
+import {track, trackTiming} from 'nuclide-analytics';
 import {getLogger} from 'log4js';
 import ContextViewMessage from './ContextViewMessage';
 import {ContextViewPanel} from './ContextViewPanel';
@@ -35,6 +36,7 @@ import {NoProvidersView} from './NoProvidersView';
 
 const EDITOR_DEBOUNCE_INTERVAL = 500;
 const POSITION_DEBOUNCE_INTERVAL = 500;
+const DEFINITION_TIMEOUT_MS = 5000;
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/context-view';
 
 type SerializedContextViewPanelState = {
@@ -176,19 +178,22 @@ export class ContextViewManager {
         .switchMap((editorPos: ?EditorPosition) => {
           return trackTiming('nuclide-context-view:getDefinition', () => {
             invariant(editorPos != null);
-            const definitionProvider = this._definitionProviders.getProviderForEditor(
-              editorPos.editor,
+            return Promise.all(
+              Array.from(
+                this._definitionProviders.getAllProvidersForEditor(
+                  editorPos.editor,
+                ),
+              ).map(provider =>
+                timeoutPromise(
+                  provider.getDefinition(editorPos.editor, editorPos.position),
+                  DEFINITION_TIMEOUT_MS,
+                ).catch(error => {
+                  logger.error('Error querying definition service: ', error);
+                  return null;
+                }),
+              ),
             );
-            if (definitionProvider == null) {
-              return Promise.resolve(null);
-            }
-            return definitionProvider
-              .getDefinition(editorPos.editor, editorPos.position)
-              .catch(error => {
-                logger.error('Error querying definition service: ', error);
-                return null;
-              });
-          });
+          }).then(results => results.find(result => result != null));
         })
         .map((queryResult: ?DefinitionQueryResult) => {
           if (queryResult != null) {
@@ -294,6 +299,7 @@ export class ContextViewManager {
     }
 
     ReactDOM.render(
+      // $FlowFixMe(>=0.53.0) Flow suppress
       <ContextViewPanel
         definition={this.currentDefinition}
         locked={this._locked}>

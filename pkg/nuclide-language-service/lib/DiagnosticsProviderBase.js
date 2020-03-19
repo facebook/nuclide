@@ -16,8 +16,9 @@ import type {
   DiagnosticUpdateCallback,
 } from 'atom-ide-ui';
 
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
 import {TextEventDispatcher} from 'nuclide-commons-atom/text-event';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 type ProviderBaseOptions = {
   /** The callback by which a provider is notified of text events, such as a file save. */
@@ -72,7 +73,7 @@ export class DiagnosticsProviderBase {
 
   _currentEventSubscription: ?IDisposable;
 
-  _disposables: atom$CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   // callbacks provided by client
   _textEventCallback: (editor: TextEditor) => mixed;
@@ -87,7 +88,7 @@ export class DiagnosticsProviderBase {
   ) {
     this._textEventDispatcher = textEventDispatcher;
     this._emitter = new Emitter();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._textEventCallback = callbackOrNoop(options.onTextEditorEvent);
     this._newUpdateSubscriberCallback = callbackOrNoop(

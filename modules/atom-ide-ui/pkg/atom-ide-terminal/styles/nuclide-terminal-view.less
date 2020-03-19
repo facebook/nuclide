@@ -1,0 +1,29 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.terminal-pane {
+  background-color: @pane-item-background-color;
+
+  // The 'fit' extension that resizes the terminal character grid
+  // based on the window dimensions makes this odd. Empirically,
+  // padding applied to .terminal is subtracted on all sides by 'fit'
+  // when calculating how many rows and columns to create, but does
+  // not affect (?) the top-left placement of the rectangle, while
+  // padding applied to .terminal-pane affects the top-left placement
+  // of terminal text, but 'fit' ignores this when determining rows
+  // and columns, so bottom and right here have no effect. Keeping the
+  // 'padding' value in sync between .terminal-pane and .terminal seems
+  // to be the simplest way to achieve a specific padding.
+  padding: @component-padding / 2;
+}
+
+html .terminal {
+  color: @text-color;
+  font-family: Menlo, courier-new, courier, monospace;
+  padding: @component-padding / 2;
+}
+
+// Set terminal-pane z-index to 0 so terminal is in its own stacking context
+.terminal-pane {
+  z-index: 0;
+}

@@ -6,18 +6,18 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   children?: mixed,
 };
 
 /** A Block. */
-export const Block = (props: Props) =>
-  <div className="block">
-    {props.children}
-  </div>;
+export const Block = (props: Props) => (
+  // $FlowFixMe(>=0.53.0) Flow suppress
+  <div className="block">{props.children}</div>
+);

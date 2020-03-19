@@ -10,12 +10,14 @@
  */
 
 import child_process from 'child_process';
+import DefinitionManager from '../../../nuclide-ui-component-tools-common/lib/definitionManager';
 import {ExportManager} from './ExportManager';
 import {UndefinedSymbolManager} from './UndefinedSymbolManager';
-import * as babylon from 'babylon';
+import * as babylon from '@babel/parser';
 import {getLogger} from 'log4js';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {babelLocationToAtomRange, lspRangeToAtomRange} from '../utils/util';
+import {babelLocationToAtomRange} from '../utils/util';
+import {lspRangeToAtomRange} from '../../../nuclide-lsp-implementation-common/lsp-utils';
 import {Range} from 'simple-text-buffer';
 import {IRange} from 'vscode-languageserver';
 
@@ -32,6 +34,9 @@ export const babylonOptions = {
     'exportExtensions',
     'objectRestSpread',
     'classProperties',
+    'nullishCoalescingOperator',
+    'optionalChaining',
+    'optionalCatchBinding',
   ],
 };
 
@@ -40,16 +45,41 @@ const logger = getLogger();
 // Whether files that have disabled eslint with a comment should be ignored.
 const IGNORE_ESLINT_DISABLED_FILES = true;
 
+// Large files are slow to parse. Bail after a certain limit.
+const LARGE_FILE_LIMIT = 2000000;
+
+const MAX_CRASHES = 3;
+
+type InitializationSettings = {|
+  componentModulePathFilter: ?string,
+|};
+
 export class AutoImportsManager {
+  initializationSettings: InitializationSettings;
+  componentModulePathFilter: ?string;
+  definitionManager: DefinitionManager;
   suggestedImports: Map<NuclideUri, Array<ImportSuggestion>>;
   exportsManager: ExportManager;
   undefinedSymbolsManager: UndefinedSymbolManager;
-  worker: child_process$ChildProcess;
+  crashes: number;
+  worker: ?child_process$ChildProcess;
 
-  constructor(envs: Array<string>) {
+  constructor(
+    globals: Array<string>,
+    initializationSettings: InitializationSettings = {
+      componentModulePathFilter: null,
+    },
+  ) {
+    this.initializationSettings = initializationSettings;
+    this.definitionManager = new DefinitionManager();
     this.suggestedImports = new Map();
     this.exportsManager = new ExportManager();
-    this.undefinedSymbolsManager = new UndefinedSymbolManager(envs);
+    this.undefinedSymbolsManager = new UndefinedSymbolManager(globals);
+    this.crashes = 0;
+  }
+
+  getDefinitionManager(): DefinitionManager {
+    return this.definitionManager;
   }
 
   // Only indexes the file (used for testing purposes)
@@ -67,13 +97,29 @@ export class AutoImportsManager {
     const worker = child_process.fork(
       nuclideUri.join(__dirname, 'AutoImportsWorker-entry.js'),
       [root],
+      {
+        env: {
+          ...process.env,
+          JS_IMPORTS_INITIALIZATION_SETTINGS: JSON.stringify(
+            this.initializationSettings,
+          ),
+        },
+      },
     );
     worker.on('message', (updateForFile: Array<ExportUpdateForFile>) => {
-      return updateForFile.forEach(this.handleUpdateForFile.bind(this));
+      updateForFile.forEach(this.handleUpdateForFile.bind(this));
     });
 
     worker.on('exit', code => {
-      logger.debug('AutoImportWorker exited with code', code);
+      logger.error(
+        `AutoImportsWorker exited with code ${code} (retry: ${this.crashes})`,
+      );
+      this.crashes += 1;
+      if (this.crashes < MAX_CRASHES) {
+        this.indexAndWatchDirectory(root);
+      } else {
+        this.worker = null;
+      }
     });
 
     this.worker = worker;
@@ -83,7 +129,7 @@ export class AutoImportsManager {
   // called first on a directory that is a parent of fileUri.
   workerIndexFile(fileUri: NuclideUri, fileContents: string) {
     if (this.worker == null) {
-      logger.warn(`Worker is not running when asked to index ${fileUri}`);
+      logger.debug(`Worker is not running when asked to index ${fileUri}`);
       return;
     }
     this.worker.send({fileUri, fileContents});
@@ -92,25 +138,38 @@ export class AutoImportsManager {
   findMissingImports(
     fileUri: NuclideUri,
     code: string,
+    onlyAvailableExports: boolean = true,
   ): Array<ImportSuggestion> {
     const ast = parseFile(code);
+    return this.findMissingImportsInAST(fileUri, ast, onlyAvailableExports);
+  }
 
+  findMissingImportsInAST(
+    fileUri: NuclideUri,
+    ast: ?Object,
+    onlyAvailableExports: boolean,
+  ): Array<ImportSuggestion> {
     if (ast == null || checkEslint(ast)) {
       return [];
     }
 
     const missingImports = undefinedSymbolsToMissingImports(
+      fileUri,
       this.undefinedSymbolsManager.findUndefined(ast),
       this.exportsManager,
+      onlyAvailableExports,
     );
     this.suggestedImports.set(fileUri, missingImports);
     return missingImports;
   }
 
   handleUpdateForFile(update: ExportUpdateForFile) {
-    const {updateType, file, exports} = update;
+    const {componentDefinition, updateType, file, exports} = update;
     switch (updateType) {
       case 'setExports':
+        if (componentDefinition != null) {
+          this.definitionManager.addDefinition(componentDefinition);
+        }
         this.exportsManager.setExportsForFile(file, exports);
         break;
       case 'deleteExports':
@@ -122,6 +181,7 @@ export class AutoImportsManager {
   findFilesWithSymbol(id: string): Array<JSExport> {
     return this.exportsManager.getExportsIndex().getExportsFromId(id);
   }
+
   getSuggestedImportsForRange(
     file: NuclideUri,
     range: IRange,
@@ -139,6 +199,9 @@ export class AutoImportsManager {
 }
 
 export function parseFile(code: string): ?Object {
+  if (code.length >= LARGE_FILE_LIMIT) {
+    return null;
+  }
   try {
     return babylon.parse(code, babylonOptions);
   } catch (error) {
@@ -149,21 +212,32 @@ export function parseFile(code: string): ?Object {
 }
 
 function undefinedSymbolsToMissingImports(
+  fileUri: NuclideUri,
   undefinedSymbols: Array<UndefinedSymbol>,
   exportsManager: ExportManager,
+  onlyAvailableExports: boolean,
 ): Array<ImportSuggestion> {
   return undefinedSymbols
-    .filter(symbol => {
-      return exportsManager.hasExport(symbol.id);
-    })
     .map(symbol => {
+      const isValue = symbol.type === 'value';
       return {
         symbol,
         filesWithExport: exportsManager
           .getExportsIndex()
-          .getExportsFromId(symbol.id),
+          .getExportsFromId(symbol.id)
+          .filter(jsExport => {
+            // Value imports cannot use type exports.
+            if (isValue && jsExport.isTypeExport) {
+              return false;
+            }
+            // No self imports.
+            return jsExport.uri !== fileUri;
+          }),
       };
-    });
+    })
+    .filter(
+      result => !onlyAvailableExports || result.filesWithExport.length > 0,
+    );
 }
 
 function checkEslint(ast: Object): boolean {

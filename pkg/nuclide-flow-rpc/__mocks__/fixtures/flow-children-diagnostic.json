@@ -1,0 +1,75 @@
+{
+  "filePath": "-",
+  "providerName": "Flow",
+  "range": {
+    "end": {
+      "column": 26,
+      "row": 1
+    },
+    "start": {
+      "column": 25,
+      "row": 1
+    }
+  },
+  "text": "object type",
+  "trace": [
+    {
+      "text": "This type is incompatible with",
+      "type": "Trace"
+    },
+    {
+      "filePath": "-",
+      "range": {
+        "end": {
+          "column": 22,
+          "row": 1
+        },
+        "start": {
+          "column": 7,
+          "row": 1
+        }
+      },
+      "text": "object type",
+      "type": "Trace"
+    },
+    {
+      "text": "Property `value` is incompatible:",
+      "type": "Trace"
+    },
+    {
+      "filePath": "-",
+      "range": {
+        "end": {
+          "column": 30,
+          "row": 0
+        },
+        "start": {
+          "column": 24,
+          "row": 0
+        }
+      },
+      "text": "string",
+      "type": "Trace"
+    },
+    {
+      "text": "This type is incompatible with",
+      "type": "Trace"
+    },
+    {
+      "filePath": "-",
+      "range": {
+        "end": {
+          "column": 21,
+          "row": 1
+        },
+        "start": {
+          "column": 15,
+          "row": 1
+        }
+      },
+      "text": "number",
+      "type": "Trace"
+    }
+  ],
+  "type": "Error"
+}

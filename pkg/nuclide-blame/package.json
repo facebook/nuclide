@@ -1,13 +1,11 @@
 {
   "name": "nuclide-blame",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Combines blame information providers and UI to create a blame feature.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Source Control",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide-blame-provider": {

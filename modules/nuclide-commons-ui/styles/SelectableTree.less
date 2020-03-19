@@ -1,0 +1,16 @@
+@import 'ui-variables';
+
+.nuclide-selectable-tree.focused {
+  [aria-activedescendant="true"] {
+    &::before {
+      background: @button-background-color-selected;
+    }
+  }
+
+  .list-item[aria-activedescendant="true"],
+  .list-nested-item[aria-activedescendant="true"] > .list-item {
+    span {
+      color: white !important;
+    }
+  }
+}

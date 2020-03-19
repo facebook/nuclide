@@ -10,20 +10,29 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {Device, Process, ProcessTask} from '../types';
-import type {Expected} from '../../../commons-node/expected';
+import type {
+  AppInfoRow,
+  ComponentPosition,
+  Device,
+  DeviceTypeComponent,
+  Process,
+  ProcessTask,
+  Task,
+} from 'nuclide-debugger-common/types';
+import type {Expected} from 'nuclide-commons/expected';
 import type {TaskEvent} from 'nuclide-commons/process';
 import type {Props as TaskButtonPropsType} from './TaskButton';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {TaskButton} from './TaskButton';
-import {DeviceTask} from '../DeviceTask';
-import React from 'react';
+import * as React from 'react';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {Selectors} from './Selectors';
 import {DeviceTable} from './DeviceTable';
 import {DevicePanel} from './DevicePanel';
+import * as Immutable from 'immutable';
+import nullthrows from 'nullthrows';
 
 export type Props = {|
   setHost: (host: NuclideUri) => void,
@@ -37,17 +46,20 @@ export type Props = {|
   host: NuclideUri,
   deviceTypes: string[],
   deviceType: ?string,
-  deviceTasks: DeviceTask[],
+  deviceTasks: Map<string, Array<Task>>,
   device: ?Device,
   infoTables: Expected<Map<string, Map<string, string>>>,
-  processes: Process[],
+  appInfoTables: Expected<Map<string, Array<AppInfoRow>>>,
+  processes: Expected<Process[]>,
   isDeviceConnected: boolean,
-  deviceTypeTasks: DeviceTask[],
+  deviceTypeTasks: Array<Task>,
+  deviceTypeComponents: Immutable.Map<
+    ComponentPosition,
+    Immutable.List<DeviceTypeComponent>,
+  >,
 |};
 
-export class RootPanel extends React.Component {
-  props: Props;
-
+export class RootPanel extends React.Component<Props> {
   constructor(props: Props) {
     super(props);
     invariant(props.hosts.length > 0);
@@ -62,22 +74,20 @@ export class RootPanel extends React.Component {
   }
 
   _createDeviceTable(): ?React.Element<any> {
+    // eslint-disable-next-line eqeqeq
     if (this.props.deviceType === null) {
       return null;
     }
     return (
       <DeviceTable
         devices={this.props.devices}
-        device={this.props.device}
         setDevice={this.props.setDevice}
+        deviceTasks={this.props.deviceTasks}
       />
     );
   }
 
-  _taskEventsToProps(
-    task: DeviceTask,
-    taskEvent: ?TaskEvent,
-  ): TaskButtonPropsType {
+  _taskEventsToProps(task: Task, taskEvent: ?TaskEvent): TaskButtonPropsType {
     return {
       name: task.getName(),
       start: () => task.start(),
@@ -87,7 +97,7 @@ export class RootPanel extends React.Component {
     };
   }
 
-  _getTasks(): React.Element<any> {
+  _getTasks(): ?React.Element<any> {
     const tasks = Array.from(this.props.deviceTypeTasks).map(task => {
       const StreamedTaskButton = bindObservableAsProps(
         task
@@ -98,26 +108,56 @@ export class RootPanel extends React.Component {
       );
       return <StreamedTaskButton key={task.getName()} />;
     });
+    if (tasks.length < 1) {
+      return null;
+    }
     return (
-      <div className="block nuclide-device-panel-tasks-container">
-        {tasks}
-      </div>
+      <div className="block nuclide-device-panel-tasks-container">{tasks}</div>
     );
   }
+
+  _getHostSelectorComponents = (): Immutable.List<DeviceTypeComponent> => {
+    return (
+      this.props.deviceTypeComponents.get('host_selector') || Immutable.List()
+    );
+  };
+
+  _getDeviceTypeComponents = (
+    position: 'above_table' | 'below_table',
+  ): ?React.Element<any> => {
+    const components = this.props.deviceTypeComponents.get(position);
+    if (components == null) {
+      return null;
+    }
+    const nodes = components.map(component => {
+      const Type = component.type;
+      return <Type key={component.key} />;
+    });
+
+    return (
+      <div className={`block nuclide-device-panel-components-${position}`}>
+        {nodes}
+      </div>
+    );
+  };
 
   _goToRootPanel = (): void => {
     this.props.setDevice(null);
   };
 
   _getInnerPanel(): React.Element<any> {
-    if (this.props.device != null) {
+    const {device} = this.props;
+    if (device != null) {
       return (
         <div className="block">
           <DevicePanel
             infoTables={this.props.infoTables}
+            appInfoTables={this.props.appInfoTables}
             processes={this.props.processes}
             processTasks={this.props.processTasks}
-            deviceTasks={this.props.deviceTasks}
+            deviceTasks={nullthrows(
+              this.props.deviceTasks.get(device.identifier),
+            )}
             goToRootPanel={this._goToRootPanel}
             toggleProcessPolling={this.props.toggleProcessPolling}
             isDeviceConnected={this.props.isDeviceConnected}
@@ -125,28 +165,28 @@ export class RootPanel extends React.Component {
         </div>
       );
     }
+
     return (
       <div>
-        <div className="block">
-          <Selectors
-            deviceType={this.props.deviceType}
-            deviceTypes={this.props.deviceTypes}
-            hosts={this.props.hosts}
-            host={this.props.host}
-            setDeviceType={this.props.setDeviceType}
-            toggleDevicePolling={this.props.toggleDevicePolling}
-            setHost={this.props.setHost}
-          />
-        </div>
-        <div className="block">
-          {this._createDeviceTable()}
-        </div>
+        <Selectors
+          deviceType={this.props.deviceType}
+          deviceTypes={this.props.deviceTypes}
+          hosts={this.props.hosts}
+          host={this.props.host}
+          setDeviceType={this.props.setDeviceType}
+          toggleDevicePolling={this.props.toggleDevicePolling}
+          setHost={this.props.setHost}
+          hostSelectorComponents={this._getHostSelectorComponents()}
+        />
+        {this._getDeviceTypeComponents('above_table')}
+        <div className="block">{this._createDeviceTable()}</div>
         {this._getTasks()}
+        {this._getDeviceTypeComponents('below_table')}
       </div>
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <PanelComponentScroller>
         <div className="nuclide-device-panel-container">

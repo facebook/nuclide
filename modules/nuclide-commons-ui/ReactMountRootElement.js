@@ -10,30 +10,50 @@
  * @format
  */
 
-/* global HTMLElement */
+/* eslint-env browser */
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
+import nullthrows from 'nullthrows';
+import getDisplayName from 'nuclide-commons/getDisplayName';
+import trackReactProfilerRender from 'nuclide-commons/trackReactProfilerRender';
+
+// $FlowFixMe Profiler is neither stable nor typed
+const Profiler = React.unstable_Profiler;
 
 /**
  * A custom HTMLElement we render React elements into.
  */
 class ReactMountRootElement extends HTMLElement {
   _reactElement: ?React.Element<any>;
+  _profileName: ?string;
 
-  setReactElement(reactElement: React.Element<any>): void {
+  setReactElement(
+    reactElement: React.Element<any>,
+    profileName?: string,
+  ): void {
     this._reactElement = reactElement;
+    this._profileName = profileName;
   }
 
-  attachedCallback(): mixed {
+  connectedCallback(): mixed {
     if (this._reactElement == null) {
       return;
     }
-    ReactDOM.render(this._reactElement, this);
+
+    ReactDOM.render(
+      <Profiler
+        id={`RootElement(${this._profileName ??
+          getDisplayName(nullthrows(this._reactElement.type))})`}
+        onRender={trackReactProfilerRender}>
+        {this._reactElement}
+      </Profiler>,
+      this,
+    );
   }
 
-  detachedCallback(): mixed {
+  disconnectedCallback(): mixed {
     if (this._reactElement == null) {
       return;
     }
@@ -43,13 +63,12 @@ class ReactMountRootElement extends HTMLElement {
 
 let reactMountRootElement;
 try {
-  reactMountRootElement = document.registerElement('nuclide-react-mount-root', {
-    prototype: ReactMountRootElement.prototype,
-  });
+  customElements.define('nuclide-react-mount-root', ReactMountRootElement);
+  reactMountRootElement = ReactMountRootElement;
 } catch (e) {
   // Element was already registered. Retrieve its constructor:
   const oldElem = document.createElement('nuclide-react-mount-root');
-  invariant(oldElem.constructor.name === 'nuclide-react-mount-root');
+  invariant(oldElem.constructor.name === 'ReactMountRootElement');
   reactMountRootElement = (oldElem.constructor: any);
 }
 

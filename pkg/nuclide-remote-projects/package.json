@@ -1,10 +1,9 @@
 {
   "name": "nuclide-remote-projects",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Manages remote projects",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Remote",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -28,8 +27,7 @@
         "default": false
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "providedServices": {
     "atom.directory-provider": {
@@ -51,6 +49,16 @@
       "versions": {
         "0.0.0": "provideRemoteProjectsService"
       }
+    },
+    "nuclide-rpc-services": {
+      "versions": {
+        "0.0.0": "provideRpcServices"
+      }
+    },
+    "nuclide-remote-file-opener": {
+      "versions": {
+        "0.0.0": "provideRemoteFileOpenerService"
+      }
     }
   },
   "consumedServices": {
@@ -69,5 +77,8 @@
         "0.0.0": "consumeWorkingSetsStore"
       }
     }
+  },
+  "deserializers": {
+    "RemoteTextEditorPlaceholder": "deserializeRemoteTextEditorPlaceholder"
   }
 }

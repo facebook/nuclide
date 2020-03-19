@@ -1,0 +1,32 @@
+{
+  "name": "nuclide-css-lsp-client",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides support for CSS language services (outline, etc) in nuclide ",
+  "author": "NEEDS OWNER",
+  "activationHooks": [
+    "language-css:grammar-used",
+    "language-less:grammar-used"
+  ],
+  "atomConfig": {
+    "logLevel": {
+      "title": "Log Level",
+      "type": "string",
+      "default": "INFO",
+      "description": "Specify that level of logging.",
+      "enum": [
+        "ALL",
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL",
+        "OFF"
+      ]
+    }
+  },
+  "nuclide": {
+    "packageType": "AtomPackage"
+  }
+}

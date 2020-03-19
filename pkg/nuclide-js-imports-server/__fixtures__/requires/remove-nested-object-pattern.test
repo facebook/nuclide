@@ -1,0 +1,3 @@
+var {one: {two, four: [three]}} = require('foo');
+
+one(four);

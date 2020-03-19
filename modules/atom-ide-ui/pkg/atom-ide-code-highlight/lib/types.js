@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -16,5 +16,5 @@ export type CodeHighlightProvider = {
     bufferPosition: atom$Point,
   ): Promise<?Array<atom$Range>>,
   priority: number,
-  grammarScopes: Array<string>,
+  +grammarScopes?: Array<string>,
 };

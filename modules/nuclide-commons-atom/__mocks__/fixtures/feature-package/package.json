@@ -1,0 +1,45 @@
+{
+  "name": "feature-package",
+  "repository": "https://github.com/facebook/nuclide",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Hyperclick UI",
+  "author": "NEEDS OWNER",
+  "atomTestRunner": "../../../atom-test-runner.js",
+  "atomConfig": {
+    "darwinTriggerKeys": {
+      "title": "Trigger keys for macOS",
+      "description": "macOS: Combination of keys to activate Hyperclick while hovering for text",
+      "type": "string",
+      "default": "metaKey",
+      "enum": [
+        {
+          "value": "shiftKey",
+          "description": "shift + click"
+        },
+        {
+          "value": "metaKey",
+          "description": "command + click"
+        }
+      ]
+    }
+  },
+  "consumedServices": {
+    "hyperclick": {
+      "versions": {
+        "0.1.0": "consumeProvider"
+      }
+    }
+  },
+  "providedServices": {
+    "hyperclick.observeTextEditor": {
+      "versions": {
+        "0.0.0": "observeTextEditor"
+      }
+    }
+  },
+  "viewProviders": [
+    "provideHyperclickView"
+  ],
+  "private": true
+}

@@ -1,13 +1,25 @@
 {
   "name": "nuclide-fuzzy-filename-provider",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides fuzzy-search for filenames in project",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Search",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Filename Search"
+      ]
+    },
+    "config": {
+      "smartCase": {
+        "title": "Smart Case",
+        "type": "boolean",
+        "default": false,
+        "description": "Enable case sensitive searches if the query contains a capital letter."
+      }
+    }
   },
   "consumedServices": {
     "atom-ide-busy-signal": {

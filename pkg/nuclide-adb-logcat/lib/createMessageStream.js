@@ -9,9 +9,10 @@
  * @format
  */
 
-import type {Message} from '../../nuclide-console/lib/types';
+import type {ConsoleMessage} from 'atom-ide-ui';
 
 import featureConfig from 'nuclide-commons-atom/feature-config';
+import {fastDebounce} from 'nuclide-commons/observable';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createMessage from './createMessage';
 import parseLogcatMetadata from './parseLogcatMetadata';
@@ -19,7 +20,7 @@ import {Observable} from 'rxjs';
 
 export default function createMessageStream(
   line$: Observable<string>,
-): Observable<Message> {
+): Observable<ConsoleMessage> {
   // Separate the lines into groups, beginning with metadata lines.
   const messages = Observable.create(observer => {
     let buffer = [];
@@ -80,14 +81,16 @@ export default function createMessageStream(
       // We know *for certain* that we have a complete entry once we see the metadata for the next
       // one. But what if the next one takes a long time to happen? After a certain point, we need
       // to just assume we have the complete entry and move on.
-      sharedLine$.debounceTime(200).subscribe(flush),
+      sharedLine$.let(fastDebounce(200)).subscribe(flush),
     );
   }).map(createMessage);
 
   return filter(messages).share();
 }
 
-function filter(messages: Observable<Message>): Observable<Message> {
+function filter(
+  messages: Observable<ConsoleMessage>,
+): Observable<ConsoleMessage> {
   const patterns = (featureConfig.observeAsStream(
     'nuclide-adb-logcat.whitelistedTags',
   ): Observable<any>).map(source => {

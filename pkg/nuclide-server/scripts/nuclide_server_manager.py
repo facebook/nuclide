@@ -6,6 +6,9 @@
 # This source code is licensed under the license found in the LICENSE file in
 # the root directory of this source tree.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 from __future__ import print_function
 
 import getpass
@@ -25,7 +28,6 @@ from nuclide_server import LOG_FILE
 from nuclide_server import NuclideServer
 from nuclide_server_logger import configure_nuclide_logger, get_buffered_logs
 from nuclide_certificates_generator import NuclideCertificatesGenerator
-from process_info import ProcessInfo
 from utils import darwin_path_helper
 
 
@@ -33,7 +35,7 @@ try:
     from fb.nuclide_config import OPEN_PORTS, HOME_FOLDER
 except ImportError as e:
     # Default open ports.
-    OPEN_PORTS = [9090, 9091, 9092, 9093]
+    OPEN_PORTS = [9091, 9092, 9093]
     # Default home folder.
     HOME_FOLDER = os.path.expanduser('~')
     pass
@@ -49,6 +51,8 @@ CERTS_EXPIRATION_DAYS = 14
 CORE_DUMP_PATH = '/var/tmp/cores'
 MAX_CORE_DUMPS = 3
 
+# Number of log lines to display in case of an error.
+LOG_PREVIEW_LINES = 20
 
 # This class manages Nuclide servers.
 
@@ -77,8 +81,7 @@ class NuclideServerManager(object):
             return True
 
     def _is_port_open(self, port):
-        return self._check_port_family(port, socket.AF_INET) and\
-            self._check_port_family(port, socket.AF_INET6)
+        return self._check_port_family(port, socket.AF_INET)
 
     def _find_open_port(self):
         for port in OPEN_PORTS:
@@ -95,14 +98,14 @@ class NuclideServerManager(object):
         try:
             with open(NuclideServerManager.package_file) as f:
                 package_json = json.load(f)
-        except IOError as e:
+        except IOError:
             NuclideServerManager.logger.error('No package.json. Skip version verification.')
-        except (KeyError, ValueError) as e:
+        except (KeyError, ValueError):
             NuclideServerManager.logger.error('Corrupted package.json. Skip version verification.')
         try:
             match = SEMVERISH_RE.match(package_json['version'])
             version = match.group(2)
-        except:
+        except Exception:
             NuclideServerManager.logger.error('Bad version. Skip version verification.')
         return version
 
@@ -113,26 +116,30 @@ class NuclideServerManager(object):
             os.makedirs(CERTS_DIR)
         return CERTS_DIR
 
-    def _check_if_certs_files_exist(self, certs_generator):
-        server_cert_exists = os.path.exists(certs_generator.server_cert)
-        server_key_exists = os.path.exists(certs_generator.server_key)
-        ca_cert_exists = os.path.exists(certs_generator.ca_cert)
+    def _check_if_certs_files_exist(self, ca_cert, server_cert, server_key):
+        server_cert_exists = os.path.exists(server_cert)
+        server_key_exists = os.path.exists(server_key)
+        ca_cert_exists = os.path.exists(ca_cert)
         if server_cert_exists and server_key_exists and ca_cert_exists:
             return True
         else:
             message = 'The expected generated certificate files do not exist:'
             if not server_cert_exists:
-                message += '\n server cert: {0}'.format(certs_generator.server_cert)
+                message += '\n server cert: {0}'.format(server_cert)
             if not server_key_exists:
-                message += '\n server key: {0}'.format(certs_generator.server_key)
+                message += '\n server key: {0}'.format(server_key)
             if not ca_cert_exists:
-                message += '\n ca cert: {0}'.format(certs_generator.ca_cert)
+                message += '\n ca cert: {0}'.format(ca_cert)
             self.logger.error(message)
             return False
 
     # If port_filter is given, only list servers in that list.
     @staticmethod
-    def list_servers(user=getpass.getuser(), port_filter=[]):
+    def list_servers(user=None, port_filter=None):
+        if user is None:
+            user = getpass.getuser()
+        if port_filter is None:
+            port_filter = []
         servers = []
         for proc in NuclideServer.get_processes(user):
             port = int(proc.get_command_param('port'))
@@ -204,6 +211,19 @@ class NuclideServerManager(object):
             self.logger.info('Found an open port: {0}.'.format(port))
             return port
 
+    def _generate_certificates(self):
+        # Add prefix "user.nuclide" to avoid collision.
+        common_name = self.options.common_name or \
+            '%s.nuclide.%s' % (getpass.getuser(), socket.gethostname())
+        # TODO: Client common name is 'nuclide'.
+        # We may want to generate unique common name and verify it.
+        certs_dir = self.options.certs_dir or self._ensure_certs_dir()
+        generator = NuclideCertificatesGenerator(certs_dir, common_name, 'nuclide',
+                                                 expiration_days=CERTS_EXPIRATION_DAYS)
+        self.logger.info(
+            'Initialized NuclideCertificatesGenerator with common_name: {0}'.format(common_name))
+        return generator.ca_cert, generator.server_cert, generator.server_key
+
     def start_nuclide(self):
         server = None
         self.logger.info('Trying to determine the port to use for Nuclide server...')
@@ -233,8 +253,10 @@ class NuclideServerManager(object):
 
         version = NuclideServerManager._get_version()
         running_version = server.get_version()
-        self.logger.info('A Nuclide server is already running. \
-                          Running version: {0}. Desired version: {1}.'.format(running_version, version))
+        self.logger.info(
+            'A Nuclide server is already running. \
+            Running version: {0}. Desired version: {1}.'.format(running_version, version)
+        )
         # If the common names don't match, we restart.
         if (version and version != running_version) or (
                 self.options.common_name and server.get_common_name() != self.options.common_name):
@@ -262,23 +284,18 @@ class NuclideServerManager(object):
         else:
             # Use https.
             self.logger.info('Using https.')
-            certs_dir = self.options.certs_dir or self._ensure_certs_dir()
-            # Add prefix "user.nuclide" to avoid collision.
-            common_name = self.options.common_name or \
-                '%s.nuclide.%s' % (getpass.getuser(), socket.gethostname())
-
-            # TODO: Client common name is 'nuclide'.
-            # We may want to generate unique common name and verify it.
-            certs_generator = NuclideCertificatesGenerator(certs_dir, common_name, 'nuclide',
-                                                           expiration_days=CERTS_EXPIRATION_DAYS)
-            self.logger.info(
-                'Initialized NuclideCertificatesGenerator with common_name: {0}'.format(common_name))
-            self._check_if_certs_files_exist(certs_generator)
+            if not self.options.server_cert and not self.options.server_key and not self.options.ca:
+                ca, server_cert, server_key = self._generate_certificates()
+            else:
+                ca = self.options.ca
+                server_cert = self.options.server_cert
+                server_key = self.options.server_key
+            self._check_if_certs_files_exist(ca, server_cert, server_key)
             return server.start(
                 self.options.timeout,
-                cert=certs_generator.server_cert,
-                key=certs_generator.server_key,
-                ca=certs_generator.ca_cert,
+                cert=server_cert,
+                key=server_key,
+                ca=ca,
                 quiet=self.options.quiet,
                 debug=self.options.debug,
                 inspect=self.options.inspect,
@@ -302,7 +319,19 @@ def get_option_parser():
         '-d',
         '--certs-dir',
         type=str,
-        help='directory to store certificate files, default: ~/.certs')
+        help='directory to store generated certificate files, default: ~/.certs')
+    parser.add_option(
+        '--server-cert',
+        type=str,
+        help='path to server cert to use')
+    parser.add_option(
+        '--server-key',
+        type=str,
+        help='path to server key to use')
+    parser.add_option(
+        '--ca',
+        type=str,
+        help='path to CA cert to use')
     parser.add_option('-n', '--common-name', type=str, help='the common name to use in certificate')
     parser.add_option(
         '-t',
@@ -349,6 +378,11 @@ def get_option_parser():
         '--json-output-file',
         type=str,
         help='Save json format output into a file, only for `start` command',
+        default=None)
+    parser.add_option(
+        '--version',
+        type=str,
+        help='Client Nuclide version. (May be used at some later point).',
         default=None)
     return parser
 
@@ -407,6 +441,17 @@ if __name__ == '__main__':
         else:
             print(json.dumps(result))
         print('The log file can be found at %s.' % LOG_FILE, file=sys.stderr)
+        if ret != 0:
+            try:
+                with open(LOG_FILE) as f:
+                    print('\nPreview:', file=sys.stderr)
+                    for _i in range(LOG_PREVIEW_LINES):
+                        line = f.readline()
+                        if line == '':
+                            break
+                        print(line, end='', file=sys.stderr)
+            except IOError:
+                print('Warning: log file could not be read.', file=sys.stderr)
     elif options.command == 'list' or options.command == 'listall':
         if options.command == 'listall':
             # List processes for all users.

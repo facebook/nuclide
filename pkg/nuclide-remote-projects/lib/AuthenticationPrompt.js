@@ -5,12 +5,13 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
-import React from 'react';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
 import {getNotificationService} from './AtomNotifications';
 
 type Props = {
@@ -20,24 +21,22 @@ type Props = {
 };
 
 /** Component to prompt the user for authentication information. */
-export default class AuthenticationPrompt extends React.Component<
-  void,
-  Props,
-  void,
-> {
+export default class AuthenticationPrompt extends React.Component<Props, void> {
   props: Props;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
+  _password: ?HTMLInputElement;
+  _root: ?HTMLElement;
 
   constructor(props: Props) {
     super(props);
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   componentDidMount(): void {
     // Hitting enter when this panel has focus should confirm the dialog.
     this._disposables.add(
-      atom.commands.add(this.refs.root, 'core:confirm', event =>
+      atom.commands.add(nullthrows(this._root), 'core:confirm', event =>
         this.props.onConfirm(),
       ),
     );
@@ -49,7 +48,7 @@ export default class AuthenticationPrompt extends React.Component<
       ),
     );
 
-    this.refs.password.focus();
+    nullthrows(this._password).focus();
 
     const raiseNativeNotification = getNotificationService();
     if (raiseNativeNotification != null) {
@@ -70,14 +69,14 @@ export default class AuthenticationPrompt extends React.Component<
   }
 
   focus(): void {
-    this.refs.password.focus();
+    nullthrows(this._password).focus();
   }
 
   getPassword(): string {
-    return this.refs.password.value;
+    return nullthrows(this._password).value;
   }
 
-  _onKeyUp = (e: SyntheticKeyboardEvent): void => {
+  _onKeyUp = (e: SyntheticKeyboardEvent<>): void => {
     if (e.key === 'Enter') {
       this.props.onConfirm();
     }
@@ -87,13 +86,16 @@ export default class AuthenticationPrompt extends React.Component<
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     // * Need native-key-bindings so that delete works and we need `_onKeyUp` so that escape and
     //   enter work
     // * `instructions` are pre-formatted, so apply `whiteSpace: pre` to maintain formatting coming
     //   from the server.
     return (
-      <div ref="root">
+      <div
+        ref={el => {
+          this._root = el;
+        }}>
         <div className="block" style={{whiteSpace: 'pre'}}>
           {this.props.instructions}
         </div>
@@ -101,7 +103,9 @@ export default class AuthenticationPrompt extends React.Component<
           tabIndex="0"
           type="password"
           className="nuclide-password native-key-bindings"
-          ref="password"
+          ref={el => {
+            this._password = el;
+          }}
           onKeyPress={this._onKeyUp}
         />
       </div>

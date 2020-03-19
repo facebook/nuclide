@@ -1,0 +1,10 @@
+{
+  ".platform-darwin atom-workspace": {
+    "cmd-alt-j": "console:toggle",
+    "ctrl-l": "console:clear"
+  },
+  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
+    "ctrl-shift-j": "console:toggle",
+    "ctrl-l": "console:clear"
+  }
+}

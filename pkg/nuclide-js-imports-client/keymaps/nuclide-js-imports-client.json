@@ -1,0 +1,5 @@
+{
+  "atom-text-editor": {
+    "cmd-shift-i": "nuclide-js-imports:auto-require"
+  }
+}

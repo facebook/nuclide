@@ -1,0 +1,4 @@
+import type Other from 'Other';
+import type Some from 'Some';
+
+declare function fancy(cb: Some => Other): void;

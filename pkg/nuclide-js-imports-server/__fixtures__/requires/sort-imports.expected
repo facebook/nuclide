@@ -1,0 +1,4 @@
+import type B from 'A';
+import type A from 'B';
+
+function foo(a: A, b: B) {}

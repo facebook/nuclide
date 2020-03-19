@@ -1,0 +1,11 @@
+const five = require('five');
+const four = require('four');
+const nine = require('nine');
+
+function one(two, {three}) {
+  two();
+  three();
+  four(five);
+}
+
+var six = (seven, eight) => ({seven, eight, nine});

@@ -1,0 +1,83 @@
+environment:
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # http://www.appveyor.com/docs/installed-software#python
+    # The list here is complete (excluding Python 2.6, which
+    # isn't covered by this document) at the time of writing.
+    
+    # Note: some envs commented out to have a faster test suite.
+
+    - PYTHON_FOLDER: "C:\\Python27"
+      PYDEVD_USE_CYTHON: YES
+    - PYTHON_FOLDER: "C:\\Python27"
+      PYDEVD_USE_CYTHON: NO
+
+    #- PYTHON_FOLDER: "C:\\Python33"
+    #- PYTHON_FOLDER: "C:\\Python34"
+    #- PYTHON_FOLDER: "C:\\Python35"
+    #- PYTHON_FOLDER: "C:\\Python27-x64"
+    #- PYTHON_FOLDER: "C:\\Python33-x64"
+    #  DISTUTILS_USE_SDK: "1"
+    #- PYTHON_FOLDER: "C:\\Python34-x64"
+    #  DISTUTILS_USE_SDK: "1"
+    
+    - PYTHON_FOLDER: "C:\\Python35-x64"
+      PYDEVD_USE_CYTHON: YES
+#     - PYTHON_FOLDER: "C:\\Python35-x64"
+#       PYDEVD_USE_CYTHON: NO
+     
+#     - PYTHON_FOLDER: "C:\\Python36-x64"
+#       PYDEVD_USE_CYTHON: YES
+    - PYTHON_FOLDER: "C:\\Python36-x64"
+      PYDEVD_USE_CYTHON: NO
+     
+    - PYTHON_FOLDER: "C:\\Python37-x64"
+      PYDEVD_USE_CYTHON: YES
+    - PYTHON_FOLDER: "C:\\Python37-x64"
+      PYDEVD_USE_CYTHON: NO
+    
+    # Disable IronPython tests (must be investigated in appveyor). 
+    #- PYTHON_FOLDER: "C:\\Python36-x64"
+    #  PYDEVD_USE_CYTHON: NO
+    #  TEST_IRONPYTHON: YES
+    
+install:
+  # Note: we can't use powershell for everything as it'll fail if anything is written to stderr (which is expected
+  # in some cases), so, using cmd on case where writing to stderr is Ok.
+  - cmd: "set PYTHON_EXE=%PYTHON_FOLDER%\\python.exe"
+  - ps: if ($env:TEST_IRONPYTHON -eq "YES"){Start-FileDownload https://github.com/IronLanguages/main/releases/download/ipy-2.7.5/IronPython-2.7.5.zip -FileName ironpython.zip}
+  - cmd: IF "%TEST_IRONPYTHON%"=="YES" (7z x ironpython.zip -oironpython)
+  - cmd: IF "%TEST_IRONPYTHON%"=="YES" (ironpython\IronPython-2.7.5\ipy.exe -X:Frames  -X:ExceptionDetail -X:ShowClrExceptions -m ensurepip)
+  - cmd: IF "%TEST_IRONPYTHON%"=="YES" (ironpython\IronPython-2.7.5\ipy.exe -X:Frames  -X:ExceptionDetail -X:ShowClrExceptions -m pip install pytest)
+  # Regular python:
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install --upgrade pip)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install wheel --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install cython --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install numpy)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install pytest --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install pytest-xdist --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install psutil)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install ipython --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install untangle --no-warn-script-location)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" IF %PYTHON_FOLDER%=="C:\\Python27" (%PYTHON_EXE% -m pip install django>=1.7,<1.8)
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pip install scapy==2.4.0 --no-warn-script-location)
+  - cmd: "set PYTHONPATH=%PYTHONPATH%;%APPVEYOR_BUILD_FOLDER%"
+
+build_script:
+  - "%PYTHON_EXE% build_tools/build.py"
+
+test_script:
+  - cmd: IF "%TEST_IRONPYTHON%"=="YES" (ironpython\IronPython-2.7.5\ipy.exe -X:Frames -X:ExceptionDetail -X:ShowClrExceptions -m pytest --assert=plain -k "not samples")
+  - cmd: IF "%TEST_IRONPYTHON%"=="" (%PYTHON_EXE% -m pytest -n auto)
+
+artifacts:
+  # bdist_wheel puts your built wheel in the dist directory
+  # - path: dist\*
+  - path: build\lib.*
+
+#on_success:
+#  You can use this step to upload your artifacts to a public website.
+#  See Appveyor's documentation for more details. Or you can simply
+#  access your wheels from the Appveyor "artifacts" tab for your build.

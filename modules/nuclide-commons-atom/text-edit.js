@@ -6,13 +6,14 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
+import {getLogger} from 'log4js';
 
 import {existingEditorForUri} from './text-editor';
 import {goToLocation} from './go-to-location';
@@ -86,21 +87,31 @@ export function applyTextEdits(
   path: NuclideUri,
   ...edits: Array<TextEdit>
 ): boolean {
-  // Sort the edits to be in order (For every edit, the start of its range will
-  // be after the end of the previous edit's range.)
-  edits.sort((e1, e2) => e1.oldRange.compare(e2.oldRange));
-  if (editsOverlap(edits)) {
-    throw new Error('applyTextEdits cannot be called with overlapping edits.');
-  }
+  const sortedEdits = sortEdits(edits);
   const editor = existingEditorForUri(path);
   invariant(editor != null);
-  return applyTextEditsToBuffer(editor.getBuffer(), edits);
+  return applySortedTextEditsToBuffer(editor.getBuffer(), sortedEdits);
 }
 
 export function applyTextEditsToBuffer(
-  buffer: atom$TextBuffer,
+  buffer: atom$TextBuffer | simpleTextBuffer$TextBuffer,
   edits: Array<TextEdit>,
 ): boolean {
+  return applySortedTextEditsToBuffer(buffer, sortEdits(edits));
+}
+
+function applySortedTextEditsToBuffer(
+  buffer: atom$TextBuffer | simpleTextBuffer$TextBuffer,
+  edits: Array<TextEdit>,
+): boolean {
+  // For every edit, the start of its range will be after the end of the
+  // previous edit's range.
+  if (editsOverlap(edits)) {
+    getLogger('text-edit').warn(
+      'applyTextEdits was called with overlapping edits.',
+    );
+    return false;
+  }
   // Special-case whole-buffer changes to minimize disruption.
   if (edits.length === 1 && edits[0].oldRange.isEqual(buffer.getRange())) {
     if (edits[0].oldText != null && edits[0].oldText !== buffer.getText()) {
@@ -127,7 +138,10 @@ export function applyTextEditsToBuffer(
   return true;
 }
 
-function applyToBuffer(buffer: atom$TextBuffer, edit: TextEdit): boolean {
+function applyToBuffer(
+  buffer: atom$TextBuffer | simpleTextBuffer$TextBuffer,
+  edit: TextEdit,
+): boolean {
   if (edit.oldRange.start.row === edit.oldRange.end.row) {
     // A little extra validation when the old range spans only one line. In particular, this helps
     // when the old range is empty so there is no old text for us to compare against. We can at
@@ -150,9 +164,26 @@ function applyToBuffer(buffer: atom$TextBuffer, edit: TextEdit): boolean {
 // Returns whether an array of sorted TextEdits contain an overlapping range.
 function editsOverlap(sortedEdits: Array<TextEdit>): boolean {
   for (let i = 0; i < sortedEdits.length - 1; i++) {
-    if (sortedEdits[i].oldRange.intersectsWith(sortedEdits[i + 1].oldRange)) {
+    if (
+      sortedEdits[i].oldRange.end.isGreaterThan(
+        sortedEdits[i + 1].oldRange.start,
+      )
+    ) {
       return true;
     }
   }
   return false;
+}
+
+function sortEdits(edits: Array<TextEdit>): Array<TextEdit> {
+  // stable sort (preserve order of edits starting in the same location)
+  return edits
+    .map((edit, i) => [edit, i])
+    .sort(
+      ([e1, i1], [e2, i2]) =>
+        e1.oldRange.start.compare(e2.oldRange.start) ||
+        e1.oldRange.end.compare(e2.oldRange.end) ||
+        i1 - i2,
+    )
+    .map(([edit]) => edit);
 }

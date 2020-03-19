@@ -9,18 +9,24 @@
  * @format
  */
 
+import type {Message} from 'nuclide-commons/process';
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
+import type {BusySignalService} from 'atom-ide-ui';
 import type {HyperclickProvider} from 'atom-ide-ui';
-import type {SerializedState} from './types';
+import type {
+  BuckTaskRunnerService,
+  SerializedState,
+  ConsolePrinter,
+  TaskInfo,
+} from './types';
 import type {BuckBuildSystem} from './BuckBuildSystem';
 import type {ClangConfigurationProvider} from '../../nuclide-clang/lib/types';
 
 import createPackage from 'nuclide-commons-atom/createPackage';
 import registerGrammar from '../../commons-atom/register-grammar';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {openNearestBuildFile} from './buildFiles';
 import {getSuggestion} from './HyperclickProvider';
-import {track} from '../../nuclide-analytics';
 import {BuckTaskRunner} from './BuckTaskRunner';
 import {PlatformService} from './PlatformService';
 import {getClangProvider} from './BuckClangProvider';
@@ -28,18 +34,19 @@ import {getClangProvider} from './BuckClangProvider';
 const OPEN_NEAREST_BUILD_FILE_COMMAND = 'nuclide-buck:open-nearest-build-file';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
+  _busySignalService: ?BusySignalService;
+  _printToConsole: ?ConsolePrinter;
   _taskRunner: BuckTaskRunner;
   _initialState: ?Object = null;
 
   constructor(rawState: ?Object) {
     this._taskRunner = new BuckTaskRunner(rawState);
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       atom.commands.add(
         'atom-workspace',
         OPEN_NEAREST_BUILD_FILE_COMMAND,
         event => {
-          track(OPEN_NEAREST_BUILD_FILE_COMMAND);
           // Add feature logging.
           const target = ((event.target: any): HTMLElement);
           openNearestBuildFile(target); // Note this returns a Promise.
@@ -57,7 +64,21 @@ class Activation {
   }
 
   consumeTaskRunnerServiceApi(api: TaskRunnerServiceApi): void {
-    this._disposables.add(api.register(this._taskRunner));
+    this._printToConsole = (message: Message) =>
+      api.printToConsole(message, this._taskRunner);
+    this._disposables.add(
+      new UniversalDisposable(
+        api.register(this._taskRunner),
+        () => (this._printToConsole = null),
+      ),
+    );
+  }
+
+  consumeBusySignal(service: BusySignalService): IDisposable {
+    this._busySignalService = service;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
   }
 
   provideObservableDiagnosticUpdates() {
@@ -82,12 +103,31 @@ class Activation {
     return this._taskRunner.getBuildSystem();
   }
 
+  provideBuckTaskRunnerService(): BuckTaskRunnerService {
+    return {
+      getBuildTarget: () => this._taskRunner.getBuildTarget(),
+      setBuildTarget: buildTarget =>
+        this._taskRunner.setBuildTarget(buildTarget),
+      setDeploymentTarget: preferredNames =>
+        this._taskRunner.setDeploymentTarget(preferredNames),
+      onDidCompleteTask: (callback: TaskInfo => any): IDisposable => {
+        return new UniversalDisposable(
+          this._taskRunner.getCompletedTasks().subscribe(callback),
+        );
+      },
+    };
+  }
+
   providePlatformService(): PlatformService {
     return this._taskRunner.getPlatformService();
   }
 
   provideClangConfiguration(): ClangConfigurationProvider {
-    return getClangProvider(this._taskRunner);
+    return getClangProvider(
+      this._taskRunner,
+      () => this._busySignalService,
+      () => this._printToConsole,
+    );
   }
 }
 

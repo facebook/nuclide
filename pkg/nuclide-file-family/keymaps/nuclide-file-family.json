@@ -1,0 +1,10 @@
+{
+  ".platform-darwin atom-text-editor": {
+    "ctrl-cmd-a": "file:open-alternate",
+    "cmd-alt-n": "file:open-alternate"
+  },
+  ".platform-win32 atom-text-editor, .platform-linux atom-text-editor": {
+    "ctrl-alt-a": "file:open-alternate",
+    "ctrl-alt-n": "file:open-alternate"
+  }
+}

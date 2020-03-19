@@ -9,52 +9,55 @@
  * @format
  */
 
+import crypto from 'crypto';
+import {memoize} from 'lodash';
+import log4js from 'log4js';
 import os from 'os';
-import fs from 'fs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {compact} from 'nuclide-commons/observable';
+import {arrayCompact, arrayFlatten} from 'nuclide-commons/collection';
+import ExportCache from './ExportCache';
 import {getExportsFromAst, idFromFileName} from './ExportManager';
 import {Observable} from 'rxjs';
 import {parseFile} from './AutoImportsManager';
 import {initializeLoggerForWorker} from '../../logging/initializeLogging';
-import {WatchmanClient} from '../../../nuclide-watchman-helpers/lib/main';
-import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {getConfigFromFlow} from '../getConfig';
-import {Settings} from '../Settings';
+import {getConfigFromFlow} from '../Config';
 import {niceSafeSpawn} from 'nuclide-commons/nice';
 import invariant from 'assert';
+import {getHasteName, hasteReduceName} from './HasteUtils';
+import {watchDirectory, getFileIndex} from './file-index';
+import {getComponentDefinitionFromAst} from '../../../nuclide-ui-component-tools-common';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {ComponentDefinition} from '../../../nuclide-ui-component-tools-common/lib/types';
+import type {HasteSettings} from '../Config';
 import type {JSExport} from './types';
-import type {FileChange} from '../../../nuclide-watchman-helpers/lib/WatchmanClient';
-import type {WatchmanSubscriptionOptions} from '../../../nuclide-watchman-helpers/lib/WatchmanSubscription';
+import type {FileChange} from 'nuclide-watchman-helpers';
+import type {FileIndex} from './file-index';
 
-// TODO(seansegal) Change 'DEBUG' to 'WARN' when development is complete
-const logger = initializeLoggerForWorker('DEBUG');
-
-// TODO: index the entry points of node_modules
-const TO_IGNORE = ['**/node_modules/**', '**/VendorLib/**', '**/flow-typed/**'];
-let toIgnoreRegex = '';
+initializeLoggerForWorker();
+const logger = log4js.getLogger('js-imports-worker');
 
 const CONCURRENCY = 1;
 
+// A bug in Node <= 7.4.0 makes IPC communication O(N^2).
+// For this reason, it's very important to send updates in smaller batches.
 const BATCH_SIZE = 500;
 
+const cpus = os.cpus();
+const MAX_WORKERS = cpus ? Math.max(1, Math.round(cpus.length / 2)) : 1;
 const MIN_FILES_PER_WORKER = 100;
-
-const disposables = new UniversalDisposable();
-const updatedFiles: Set<NuclideUri> = new Set();
-
-// Directory ==> Main File. Null indicates no package.json file.
-const mainFilesCache: Map<NuclideUri, ?NuclideUri> = new Map();
 
 export type ExportUpdateForFile = {
   updateType: 'setExports' | 'deleteExports',
   file: NuclideUri,
+  sha1?: string,
   exports: Array<JSExport>,
+  componentDefinition?: ComponentDefinition,
 };
 
-function main() {
+async function main() {
   if (process.argv.length > 2 && process.argv[2] === '--child') {
     return runChild();
   }
@@ -65,264 +68,257 @@ function main() {
     return;
   }
   const root = process.argv[2];
-  const {hasteSettings} = getConfigFromFlow(root);
-  const shouldIndexDefaultExportForEachFile =
-    hasteSettings.isHaste &&
-    Settings.hasteSettings.shouldAddAllFilesAsDefaultExport;
-
-  toIgnoreRegex = hasteSettings.blacklistedDirs.join('|');
+  const configFromFlow = getConfigFromFlow(root);
+  const {hasteSettings} = configFromFlow;
 
   // Listen for open files that should be indexed immediately
-  setupParentMessagesHandler();
+  setupParentMessagesHandler(root, hasteSettings);
 
   // Listen for file changes with Watchman that should update the index.
-  watchDirectoryRecursively(root);
+  watchDirectoryRecursively(root, hasteSettings);
 
   // Build up the initial index with all files recursively from the root.
-  indexDirectoryAndSendExportsToParent(
-    root,
-    shouldIndexDefaultExportForEachFile,
-  ).then(() => {
-    if (Settings.indexNodeModulesWhiteList.find(regex => regex.test(root))) {
-      logger.debug('Indexing node modules.');
-      return indexNodeModulesAndSendToParent(root);
-    }
-  });
+  const index = await getFileIndex(root, configFromFlow);
+  const newCache = new ExportCache({root, configFromFlow});
+
+  // eslint-disable-next-line nuclide-internal/unused-subscription
+  Observable.merge(
+    indexDirectory(index, hasteSettings),
+    indexNodeModules(index),
+  ).subscribe(
+    message => {
+      sendUpdatesBatched(message);
+      message.forEach(update => {
+        if (update.sha1 != null) {
+          const key = {filePath: update.file, sha1: update.sha1};
+          const value = {exports: update.exports};
+          if (update.componentDefinition != null) {
+            newCache.set(key, {
+              ...value,
+              componentDefinition: update.componentDefinition,
+            });
+          } else {
+            newCache.set(key, value);
+          }
+        }
+      });
+    },
+    error => {
+      logger.error('Received error while indexing files', error);
+    },
+    () => {
+      newCache.save().then(success => {
+        if (success) {
+          logger.info(`Saved cache of size ${newCache.getByteSize()}`);
+        } else {
+          logger.warn(`Failed to save cache to ${newCache.getPath()}`);
+        }
+        disposeForGC(index, newCache);
+      });
+    },
+  );
 }
 
-// Function should be called once when the server is initialized.
-function indexDirectoryAndSendExportsToParent(
-  root: NuclideUri,
-  shouldIndexDefaultExportForEachFile?: boolean,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    indexDirectory(root, shouldIndexDefaultExportForEachFile).subscribe({
-      next: exportForFile => {
-        sendExportUpdateToParent(exportForFile);
-      },
-      error: err => {
-        logger.error('Encountered error in AutoImportsWorker', err);
-        return reject(err);
-      },
-      complete: () => {
-        logger.info(`Finished indexing ${root}`);
-        return resolve();
-      },
-    });
-  });
+// It appears that the index/cache objects are retained by RxJS.
+// To enable garbage collection after indexing, manually clear out the objects.
+function disposeForGC(index: FileIndex, cache: ExportCache) {
+  index.jsFiles.length = 0;
+  index.nodeModulesPackageJsonFiles.length = 0;
+  index.mainFiles.clear();
+  index.exportCache._cache = (null: any);
+  cache._cache = (null: any);
 }
 
 // Watches a directory for changes and reindexes files as needed.
-function watchDirectoryRecursively(root: NuclideUri) {
-  logger.debug('Watching the directory', root);
-  const watchmanClient = new WatchmanClient();
-  disposables.add(watchmanClient);
-  watchmanClient
-    .watchDirectoryRecursive(
-      root,
-      'js-imports-subscription',
-      getWatchmanSubscriptionOptions(root),
+function watchDirectoryRecursively(
+  root: NuclideUri,
+  hasteSettings: HasteSettings,
+) {
+  // eslint-disable-next-line nuclide-internal/unused-subscription
+  watchDirectory(root)
+    .mergeMap(
+      (fileChange: FileChange) =>
+        handleFileChange(root, fileChange, hasteSettings),
+      CONCURRENCY,
     )
-    .then(watchmanSubscription => {
-      disposables.add(watchmanSubscription);
-      const watchmanRoot = watchmanSubscription.root;
-      Observable.fromEvent(watchmanSubscription, 'change')
-        .switchMap(x => Observable.from(x)) // convert to Observable<FileChange>
-        .mergeMap(
-          (fileChange: FileChange) =>
-            handleFileChange(watchmanRoot, fileChange),
-          CONCURRENCY,
-        )
-        .subscribe(() => {});
-    })
-    .catch(error => {
-      logger.error(error);
-    });
+    .subscribe(
+      () => {},
+      error => {
+        logger.error(`Failed to watch ${root}`, error);
+      },
+    );
 }
 
 async function handleFileChange(
   root: NuclideUri,
   fileChange: FileChange,
+  hasteSettings: HasteSettings,
 ): Promise<void> {
-  updatedFiles.add(nuclideUri.resolve(root, fileChange.name));
   if (fileChange.exists) {
     // File created or modified
-    const exportForFile = await addFileToIndex(root, fileChange.name);
+    const exportForFile = await getExportsForFileWithMain(
+      fileChange.name,
+      hasteSettings,
+    );
     if (exportForFile) {
-      sendExportUpdateToParent([exportForFile]);
+      sendUpdatesBatched([exportForFile]);
     }
   } else {
     // File deleted.
-    sendExportUpdateToParent([
+    sendUpdatesBatched([
       {
         updateType: 'deleteExports',
-        file: nuclideUri.resolve(root, fileChange.name),
+        file: fileChange.name,
         exports: [],
       },
     ]);
   }
 }
 
-async function listFilesWithWatchman(root: NuclideUri): Promise<Array<string>> {
-  const client = new WatchmanClient();
-  try {
-    return await client.listFiles(root, getWatchmanSubscriptionOptions(root));
-  } finally {
-    client.dispose();
-  }
-}
-
-function listFilesWithGlob(root: NuclideUri): Promise<Array<string>> {
-  return fsPromise.glob('**/*.js', {
-    cwd: root,
-    ignore: TO_IGNORE,
-  });
-}
-
-function listNodeModulesWithGlob(root: NuclideUri): Promise<Array<string>> {
-  return fsPromise.glob('node_modules/*/package.json', {
-    cwd: root,
-  });
-}
-
 // Exported for testing purposes.
 export function indexDirectory(
-  root: NuclideUri,
-  shouldIndexDefaultExportForEachFile?: boolean,
-  maxWorkers?: number = Math.round(os.cpus().length / 2),
+  {root, exportCache, jsFiles, mainFiles}: FileIndex,
+  hasteSettings: HasteSettings,
+  maxWorkers?: number = MAX_WORKERS,
 ): Observable<Array<ExportUpdateForFile>> {
-  return Observable.fromPromise(
-    listFilesWithWatchman(root).catch(() => listFilesWithGlob(root)),
-  )
-    .map(files =>
-      // Filter out blacklisted files
-      files.filter(
-        file =>
-          toIgnoreRegex.length === 0 ||
-          !nuclideUri.join(root, file).match(toIgnoreRegex),
-      ),
-    )
-    .do(files => {
-      logger.info(`Indexing ${files.length} files`);
-    })
-    .do(files => {
-      if (shouldIndexDefaultExportForEachFile) {
-        logger.debug('Adding all files');
-        addDefaultExportForEachFile(root, files);
-        logger.debug('Sent all files');
-      }
-    })
-    .switchMap(files => {
-      // As an optimization, shuffle the files so that the work is well distributed.
-      shuffle(files);
-      const numWorkers = Math.min(
-        Math.max(1, Math.floor(files.length / MIN_FILES_PER_WORKER)),
-        maxWorkers,
-      );
-      const filesPerWorker = Math.floor(files.length / numWorkers);
-      // $FlowIgnore TODO: add Observable.range to flow-typed
-      return Observable.range(0, numWorkers)
-        .mergeMap(workerId => {
-          return niceSafeSpawn(
-            process.execPath,
-            [
-              nuclideUri.join(__dirname, 'AutoImportsWorker-entry.js'),
-              '--child',
-              root,
-              shouldIndexDefaultExportForEachFile ? 'true' : 'false',
-            ],
-            {
-              stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
-            },
-          );
-        })
-        .mergeMap((worker, workerId) => {
-          invariant(typeof workerId === 'number'); // For Flow
-          const updateStream = Observable.fromEvent(worker, 'message')
-            .takeUntil(
-              Observable.fromEvent(worker, 'error').do(error => {
-                logger.debug(`Worker ${workerId} had received ${error}`);
-              }),
-            )
-            .takeUntil(
-              Observable.fromEvent(worker, 'exit').do(() => {
-                logger.debug(`Worker ${workerId} terminated.`);
-              }),
-            );
-          return Observable.merge(
-            updateStream,
-            Observable.timer(0)
-              .do(() => {
-                worker.send({
-                  files: files.slice(
-                    workerId * filesPerWorker,
-                    Math.min((workerId + 1) * filesPerWorker, files.length),
-                  ),
-                });
-              })
-              .ignoreElements(),
-          );
+  let cachedUpdates = [];
+  const files = [];
+  jsFiles.forEach(({name, sha1}) => {
+    const filePath = nuclideUri.join(root, name);
+    if (sha1 != null) {
+      const cached = exportCache.get({filePath, sha1});
+      if (cached != null) {
+        cachedUpdates.push({
+          updateType: 'setExports',
+          file: filePath,
+          sha1,
+          exports: cached.exports,
+          componentDefinition: cached.componentDefinition,
         });
+        return;
+      }
+    }
+    files.push(name);
+  });
+  // To get faster results, we can send up the Haste reduced names as a default export.
+  if (hasteSettings.isHaste && hasteSettings.useNameReducers) {
+    cachedUpdates = cachedUpdates.concat(
+      getHasteNames(root, files, hasteSettings),
+    );
+  }
+  logger.info(`Indexing ${files.length} files`);
+  // As an optimization, shuffle the files so that the work is well distributed.
+  shuffle(files);
+  const numWorkers = Math.min(
+    Math.max(1, Math.floor(files.length / MIN_FILES_PER_WORKER)),
+    maxWorkers,
+  );
+  const filesPerWorker = Math.ceil(files.length / numWorkers);
+  const workerMessages = Observable.range(0, numWorkers)
+    .mergeMap(workerId => {
+      return niceSafeSpawn(
+        process.execPath,
+        [
+          nuclideUri.join(__dirname, 'AutoImportsWorker-entry.js'),
+          '--child',
+          root,
+        ],
+        {
+          stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+        },
+      );
+    })
+    .mergeMap((worker, workerId) => {
+      invariant(typeof workerId === 'number'); // For Flow
+      const updateStream = Observable.fromEvent(worker, 'message')
+        .takeUntil(
+          Observable.fromEvent(worker, 'error').do(error => {
+            logger.warn(`Worker ${workerId} had received`, error);
+          }),
+        )
+        .takeUntil(
+          Observable.fromEvent(worker, 'exit').do(() => {
+            logger.debug(`Worker ${workerId} terminated.`);
+          }),
+        );
+      return Observable.merge(
+        updateStream,
+        Observable.timer(0)
+          .do(() => {
+            worker.send({
+              files: files.slice(
+                workerId * filesPerWorker,
+                Math.min((workerId + 1) * filesPerWorker, files.length),
+              ),
+            });
+          })
+          .ignoreElements(),
+      );
+    });
+
+  return Observable.of([cachedUpdates])
+    .concat(workerMessages)
+    .map(message => {
+      // Inject the main files at this point, since we have a list of all map files.
+      // This could be pure but it's just not worth the cost.
+      const msg = arrayFlatten(arrayCompact(message));
+      msg.forEach(update => {
+        const mainDir = mainFiles.get(update.file);
+        if (mainDir != null) {
+          decorateExportUpdateWithMainDirectory(update, mainDir);
+        }
+      });
+      return msg;
     });
 }
 
-async function checkIfMain(
-  file: NuclideUri,
-  readFileSync?: boolean,
-): Promise<?NuclideUri> {
-  let currDir = file;
-  while (true) {
-    const lastDir = currDir;
-    currDir = nuclideUri.dirname(currDir);
-    if (lastDir === currDir) {
-      // We've reached the root '/'
-      return null;
-    }
-    const cachedMain = mainFilesCache.get(currDir);
-    if (cachedMain === null) {
-      // The directory doesn't have a package.json with a main.
-      continue;
-    }
-
-    if (
-      // flowlint-next-line sketchy-null-string:off
-      cachedMain &&
-      nuclideUri.stripExtension(cachedMain) === nuclideUri.stripExtension(file)
-    ) {
-      return currDir;
-    }
-    const packageJson = nuclideUri.resolve(currDir, 'package.json');
-    try {
-      // Most of the time the file won't exist and the Promise should be rejected
-      // quickly, so it's probably more efficient to await in this loop instead of
-      // using Promise.all to queue up a promise for each directory in the file path.
-      const fileContents = readFileSync
-        ? fs.readFileSync(packageJson, 'utf8')
-        : // eslint-disable-next-line no-await-in-loop
-          await fsPromise.readFile(packageJson, 'utf8');
-
-      const mainFile = nuclideUri.resolve(
-        currDir,
-        JSON.parse(fileContents).main || 'index.js',
-      );
-      mainFilesCache.set(currDir, mainFile);
-      const isMainFile =
-        nuclideUri.stripExtension(mainFile) === nuclideUri.stripExtension(file);
-      return isMainFile ? currDir : null;
-    } catch (error) {
-      mainFilesCache.set(currDir, null);
-    }
+const getPackageJson = memoize(async (dir: NuclideUri) => {
+  // Bail out at the FS root.
+  const parent = nuclideUri.dirname(dir);
+  if (parent === dir) {
+    return null;
   }
+
+  const packageJson = nuclideUri.join(dir, 'package.json');
+  let fileContents;
+  try {
+    fileContents = await fsPromise.readFile(packageJson, 'utf8');
+  } catch (err) {
+    return getPackageJson(parent);
+  }
+  try {
+    return {
+      dirname: dir,
+      main: nuclideUri.resolve(
+        dir,
+        JSON.parse(fileContents).main || 'index.js',
+      ),
+    };
+  } catch (err) {
+    return null;
+  }
+});
+
+/**
+ * Returns the directory of the nearest package.json if `file` matches the "main" field.
+ * This ensures that e.g. package/index.js can be imported as just "package".
+ */
+async function checkIfMain(file: NuclideUri): Promise<?NuclideUri> {
+  const pkgJson = await getPackageJson(nuclideUri.dirname(file));
+  return pkgJson != null &&
+    nuclideUri.stripExtension(pkgJson.main) === nuclideUri.stripExtension(file)
+    ? pkgJson.dirname
+    : null;
 }
 
-function addFileToIndex(
-  root: NuclideUri,
-  fileRelative: NuclideUri,
+function getExportsForFileWithMain(
+  path: NuclideUri,
+  hasteSettings: HasteSettings,
+  fileContents?: string,
 ): Promise<?ExportUpdateForFile> {
-  const file = nuclideUri.join(root, fileRelative);
   return Promise.all([
-    getExportsForFile(file),
-    checkIfMain(file),
+    getExportsForFile(path, hasteSettings, fileContents),
+    checkIfMain(path),
   ]).then(([data, directoryForMainFile]) => {
     return data
       ? decorateExportUpdateWithMainDirectory(data, directoryForMainFile)
@@ -330,45 +326,74 @@ function addFileToIndex(
   });
 }
 
-async function getExportsForFile(
+export async function getExportsForFile(
   file: NuclideUri,
+  hasteSettings: HasteSettings,
+  fileContents_?: string,
 ): Promise<?ExportUpdateForFile> {
   try {
-    const fileContents = await fsPromise.readFile(file, 'utf8');
+    const fileContents =
+      fileContents_ != null
+        ? fileContents_
+        : await fsPromise.readFile(file, 'utf8');
+    const sha1 = crypto
+      .createHash('sha1')
+      .update(fileContents)
+      .digest('hex');
+    const update = {
+      updateType: 'setExports',
+      file,
+      sha1,
+      exports: [],
+    };
     const ast = parseFile(fileContents);
     if (ast == null) {
-      return null;
+      return update;
+    }
+    const hasteName = getHasteName(file, ast, hasteSettings);
+    // TODO(hansonw): Support mixed-mode haste + non-haste imports.
+    // For now, if Haste is enabled, we'll only suggest Haste imports.
+    if (hasteSettings.isHaste && hasteName == null) {
+      return update;
     }
     const exports = getExportsFromAst(file, ast);
-    return {file, exports, updateType: 'setExports'};
+    if (hasteName != null) {
+      exports.forEach(jsExport => {
+        jsExport.hasteName = hasteName;
+      });
+    }
+
+    const updateObj: ExportUpdateForFile = {...update, exports};
+    const settings = process.env.JS_IMPORTS_INITIALIZATION_SETTINGS;
+    const {componentModulePathFilter} =
+      settings != null ? JSON.parse(settings) : {};
+    if (
+      componentModulePathFilter == null ||
+      file.includes(componentModulePathFilter)
+    ) {
+      const definition = getComponentDefinitionFromAst(file, ast);
+      if (definition != null) {
+        updateObj.componentDefinition = definition;
+      }
+    }
+    return updateObj;
   } catch (err) {
-    logger.warn(
-      `Background process encountered error indexing ${file}:\n ${err}`,
-    );
+    logger.error(`Unexpected error indexing ${file}`, err);
     return null;
   }
-}
-
-function getWatchmanSubscriptionOptions(
-  root: NuclideUri,
-): WatchmanSubscriptionOptions {
-  return {
-    expression: [
-      'allof',
-      ['match', '*.js'],
-      ...getWatchmanMatchesFromIgnoredFiles(),
-    ],
-  };
 }
 
 function setupDisconnectedParentHandler(): void {
   process.on('disconnect', () => {
     logger.debug('Parent process disconnected. AutoImportsWorker terminating.');
-    exitCleanly();
+    process.exit(0);
   });
 }
 
-function setupParentMessagesHandler(): void {
+function setupParentMessagesHandler(
+  root: string,
+  hasteSettings: HasteSettings,
+): void {
   process.on('message', async message => {
     const {fileUri, fileContents} = message;
     if (fileUri == null || fileContents == null) {
@@ -378,79 +403,65 @@ function setupParentMessagesHandler(): void {
       return;
     }
     try {
-      const ast = parseFile(fileContents);
-      if (ast == null) {
-        return null;
+      const exportUpdate = await getExportsForFileWithMain(
+        fileUri,
+        hasteSettings,
+        fileContents,
+      );
+      if (exportUpdate != null) {
+        sendUpdatesBatched([exportUpdate]);
       }
-      updatedFiles.add(fileUri);
-      sendExportUpdateToParent([
-        decorateExportUpdateWithMainDirectory(
-          {
-            file: fileUri,
-            exports: getExportsFromAst(fileUri, ast),
-            updateType: 'setExports',
-          },
-          await checkIfMain(fileUri, /* readFileSync */ true),
-        ),
-      ]);
     } catch (error) {
       logger.error(`Could not index file ${fileUri}. Error: ${error}`);
     }
   });
 }
 
-function addDefaultExportForEachFile(root: NuclideUri, files: Array<string>) {
-  sendExportUpdateToParent(
-    files.map((file): ExportUpdateForFile => {
-      return {
-        file,
-        updateType: 'setExports',
-        exports: [
-          {
-            id: idFromFileName(file),
-            uri: nuclideUri.join(root, file),
-            isTypeExport: false,
-            isDefault: true,
-          },
-        ],
-      };
-    }),
-  );
-}
-function indexNodeModulesAndSendToParent(root: NuclideUri): Promise<void> {
-  return new Promise((resolve, reject) => {
-    indexNodeModules(root).subscribe({
-      next: exportForFile => {
-        if (exportForFile) {
-          sendExportUpdateToParent([exportForFile]);
-        }
-      },
-      error: err => {
-        logger.error('Encountered error in AutoImportsWorker', err);
-        return reject(err);
-      },
-      complete: () => {
-        logger.debug(`Finished node modules for ${root}`);
-        return resolve();
-      },
-    });
-  });
-}
-
-export function indexNodeModules(
+function getHasteNames(
   root: NuclideUri,
-): Observable<?ExportUpdateForFile> {
-  return Observable.fromPromise(
-    // TODO: Use Watchman for better performance.
-    listNodeModulesWithGlob(root),
-  )
-    .switchMap(x => Observable.from(x)) // convert to Observable<string>
-    .mergeMap(file => handleNodeModule(root, file), CONCURRENCY);
+  files: Array<string>,
+  hasteSettings: HasteSettings,
+): Array<ExportUpdateForFile> {
+  return files
+    .map(
+      (file): ?ExportUpdateForFile => {
+        const hasteName = hasteReduceName(file, hasteSettings);
+        if (hasteName == null) {
+          return null;
+        }
+        return {
+          file,
+          updateType: 'setExports',
+          exports: [
+            {
+              id: idFromFileName(hasteName),
+              uri: nuclideUri.join(root, file),
+              line: 1,
+              hasteName,
+              isTypeExport: false,
+              isDefault: true,
+            },
+          ],
+        };
+      },
+    )
+    .filter(Boolean);
+}
+export function indexNodeModules({
+  root,
+  exportCache,
+  nodeModulesPackageJsonFiles,
+}: FileIndex): Observable<Array<ExportUpdateForFile>> {
+  return Observable.from(nodeModulesPackageJsonFiles)
+    .mergeMap(file => handleNodeModule(root, file, exportCache), MAX_WORKERS)
+    .let(compact)
+    .bufferCount(BATCH_SIZE);
 }
 
 async function handleNodeModule(
   root: NuclideUri,
-  packageJsonFile: NuclideUri,
+  packageJsonFile: string,
+  exportCache: ExportCache,
 ): Promise<?ExportUpdateForFile> {
   const file = nuclideUri.join(root, packageJsonFile);
   try {
@@ -459,7 +470,34 @@ async function handleNodeModule(
     const entryPoint = require.resolve(
       nuclideUri.join(nuclideUri.dirname(file), packageJson.main || ''),
     );
-    const update = await getExportsForFile(entryPoint);
+    const entryContents = await fsPromise.readFile(entryPoint, 'utf8');
+    const sha1 = crypto
+      .createHash('sha1')
+      .update(entryContents)
+      .digest('hex');
+    const cachedUpdate = exportCache.get({filePath: entryPoint, sha1});
+    if (cachedUpdate != null) {
+      return {
+        updateType: 'setExports',
+        file: entryPoint,
+        sha1,
+        exports: cachedUpdate.exports,
+        componentDefinition: cachedUpdate.componentDefinition,
+      };
+    }
+    // TODO(hansonw): How do we handle haste modules inside Node modules?
+    // For now we'll just treat them as usual.
+    const update = await getExportsForFile(
+      entryPoint,
+      {
+        isHaste: false,
+        useNameReducers: false,
+        nameReducers: [],
+        nameReducerBlacklist: [],
+        nameReducerWhitelist: [],
+      },
+      entryContents,
+    );
     return update
       ? decorateExportUpdateWithMainDirectory(
           update,
@@ -469,7 +507,7 @@ async function handleNodeModule(
   } catch (error) {
     // Some modules just can't be required; that's perfectly normal.
     if (error.code !== 'MODULE_NOT_FOUND') {
-      logger.debug(`Couldn't index ${file}`, error);
+      logger.warn(`Couldn't index ${file}`, error);
     }
     return null;
   }
@@ -479,25 +517,26 @@ function decorateExportUpdateWithMainDirectory(
   update: ExportUpdateForFile,
   directoryForMainFile: ?NuclideUri,
 ) {
-  // flowlint-next-line sketchy-null-string:off
-  if (directoryForMainFile) {
+  if (
+    update.exports.length > 0 &&
+    directoryForMainFile !== update.exports[0].directoryForMainFile
+  ) {
     update.exports = update.exports.map(exp => {
-      return {...exp, directoryForMainFile};
+      if (directoryForMainFile == null) {
+        delete exp.directoryForMainFile;
+        return exp;
+      } else {
+        return {...exp, directoryForMainFile};
+      }
     });
   }
   return update;
 }
 
-async function sendExportUpdateToParent(
-  exportsForFiles: Array<ExportUpdateForFile>,
-): Promise<void> {
-  return send(
-    exportsForFiles.filter(
-      exportsForFile =>
-        exportsForFile.updateType !== 'setExports' ||
-        exportsForFile.exports.length > 0,
-    ),
-  );
+function sendUpdatesBatched(exportsForFiles: Array<ExportUpdateForFile>): void {
+  for (let i = 0; i < exportsForFiles.length; i += BATCH_SIZE) {
+    send(exportsForFiles.slice(i, i + BATCH_SIZE));
+  }
 }
 
 async function send(message: mixed) {
@@ -512,51 +551,30 @@ async function send(message: mixed) {
   }
 }
 
-function getWatchmanMatchesFromIgnoredFiles() {
-  return TO_IGNORE.map(patternToIgnore => {
-    return [
-      'not',
-      ['match', patternToIgnore, 'wholename', {includedotfiles: true}],
-    ];
-  });
-}
-
 function runChild() {
   const SEND_CONCURRENCY = 10;
 
   setupDisconnectedParentHandler();
-  if (process.argv.length !== 5) {
-    logger.debug('Child started with incorrect number of arguments');
+  if (process.argv.length !== 4) {
+    logger.error('Child started with incorrect number of arguments');
     return;
   }
   const root: NuclideUri = process.argv[3];
-  const shouldAddAllFilesAsDefaultExport = process.argv[4] === 'true';
+  const {hasteSettings} = getConfigFromFlow(root);
   process.on('message', message => {
     const {files} = message;
+    // eslint-disable-next-line nuclide-internal/unused-subscription
     Observable.from(files)
       .concatMap((file, index) => {
-        return addFileToIndex(root, file);
+        // Note that we explicitly skip the main check here.
+        // The parent process has a index of main files which is more efficient!
+        return getExportsForFile(nuclideUri.join(root, file), hasteSettings);
       })
-      .filter(
-        exportForFile =>
-          exportForFile != null &&
-          (!shouldAddAllFilesAsDefaultExport ||
-            !isOnlyDefaultExportForFile(exportForFile.exports)),
-      )
-      // $FlowIgnore TODO: Add .bufferCount to rxjs flow-typed
+      .let(compact)
       .bufferCount(BATCH_SIZE)
-      .mergeMap(sendExportUpdateToParent, SEND_CONCURRENCY)
-      .subscribe({complete: exitCleanly});
+      .mergeMap(send, SEND_CONCURRENCY)
+      .subscribe({complete: () => process.exit(0)});
   });
-}
-
-function isOnlyDefaultExportForFile(exportsForFile: Array<JSExport>): boolean {
-  return (
-    exportsForFile.length === 1 &&
-    exportsForFile[0].isDefault &&
-    !exportsForFile[0].isTypeExport &&
-    exportsForFile[0].id === idFromFileName(exportsForFile[0].uri)
-  );
 }
 
 function shuffle(array) {
@@ -566,11 +584,6 @@ function shuffle(array) {
     array[i - 1] = array[j];
     array[j] = temp;
   }
-}
-
-function exitCleanly() {
-  disposables.dispose();
-  process.exit(0);
 }
 
 main();

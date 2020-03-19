@@ -1,0 +1,3 @@
+import type bar from 'bar';
+
+type foo<T: bar> = (arg: T) => void;

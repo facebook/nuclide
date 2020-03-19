@@ -1,0 +1,9 @@
+/**
+ * Header comment.
+ */
+
+import type {A, B} from 'AB';
+import type Baz, {C, D} from 'Baz';
+import type {Foo} from 'Foo';
+
+function foo(a: A, b: B, foo: Foo, baz: Baz<C, D>) {}

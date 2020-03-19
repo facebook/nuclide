@@ -35,6 +35,7 @@ export class Diagnostics {
     // It's too hard to match Flow's knowledge of types, particularly flow libs & flow builtins.
     // Instead, we'll rely on returning code actions for Flow's diagnostics.
     // (Of course, this is a much slower user experience, but being wrong is even worse.)
+    // $FlowFixMe (>=0.85.0) (T35986896) Flow upgrade suppress
     return this.autoImportsManager
       .findMissingImports(uri, text)
       .filter(missingImport => missingImport.symbol.type === 'value')
@@ -62,7 +63,9 @@ function missingImportToDiagnostic(
         line: symbol.location.end.line - 1,
       },
     },
-    message: `The ${symbol.type} ${symbol.id} is not imported.`,
+    message:
+      `The ${symbol.type} ${symbol.id} is not imported.\n` +
+      'Select a suggestion from the text editor.',
     source: DIAGNOSTIC_SOURCE,
   };
 }

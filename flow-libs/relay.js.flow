@@ -1,0 +1,46 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ */
+
+ type Variables = {[name: string]: any};
+ type RefetchOptions = {
+   force?: boolean, // Refetch from the server ignoring anything in the cache.
+ };
+
+ type RelayPaginationProp = {
+   /**
+    * Check if there is at least one more page.
+    */
+   hasMore: () => boolean,
+
+   /**
+    * Check if there are pending requests.
+    */
+   isLoading: () => boolean,
+
+   /**
+    * Execute the pagination query. Relay will infer the pagination direction (either 'forward'
+    * or 'backward') from the query parameters. `pageSize` is the additional number of items
+    * to load.
+    */
+   loadMore: (
+     pageSize: number,
+     callback: ?(error: ?Error) => void,
+     options: ?RefetchOptions
+   ) => ?IDisposable,
+
+   /**
+    * Refetch the items in the connection (with potentially new variables).
+    */
+   refetchConnection:(
+     totalCount: number,
+     callback: (error: ?Error) => void,
+     refetchVariables: ?Variables,
+   ) => ?IDisposable,
+ }

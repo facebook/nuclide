@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-idb-rpc",
+  "main": "./lib/IdbService.js",
+  "version": "0.0.0",
+  "description": "An RPC service for talking to idb.",
+  "author": "jackalope",
+  "private": true,
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

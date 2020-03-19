@@ -5,8 +5,12 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-export const JS_GRAMMARS = Object.freeze(['source.js', 'source.js.jsx']);
+export const JS_GRAMMARS = Object.freeze([
+  'source.js',
+  'source.js.jsx',
+  'source.flow',
+]);

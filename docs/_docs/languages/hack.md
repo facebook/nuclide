@@ -128,45 +128,49 @@ Place your cursor inside the function and press `Cmd-Shift-C` (`Ctrl-Shift-C` on
 
 ## Debugging
 
-Nuclide has support for debugging PHP and Hack projects. [HHVM](https://docs.hhvm.com/hhvm/installation/introduction) is recommended for debugging Hack and PHP code.
+Nuclide supports debugging PHP and Hack applications running on [HHVM](https://docs.hhvm.com/hhvm/installation/introduction). **HHVM version 3.25.0 or greater is required,** as older versions do not support the Visual Studio Code Debug Adapter Protocol, which is the debugging protocol Nuclide now uses.
 
-> Theoretically, PHP debugging should work on other XDebug-compatible runtimes like Zend, but we
-> have only tested this with HHVM.
+> Note: debugging PHP servers other than HHVM is no longer supported in Nuclide. In previous versions, Nuclide supported debugging via the XDebug protocol, but this is also no longer supported. Debugging older HHVM versions (< 3.25.0) with Nuclide is not possible.
 
-> Currently, we only support debugging [remote](/docs/features/remote/) projects.
+### Configuring HHVM for debugging
 
-### Xdebug
+To enable debugging Hack/PHP applications **in webserver mode**, you'll need to add
+the following to your server's config.ini:
 
-In order for the [Nuclide Debugger](/docs/features/debugger) to attach properly to the HHVM process, you must enable
-[Xdebug](https://xdebug.org/) in your HHVM configuration.
-
-> Your remote server may already have the appropriate settings, if so, this step is not necessary.
-
-You do this by specifying [Xdebug configuration](https://xdebug.org/docs/all_settings) information
-in a `.ini` file that will be passed to the HHVM executable. Here is an example `xdebug.ini` file that can
-be used:
-
-```bash
-xdebug.enable = 1
-xdebug.remote_enable = 1
-xdebug.remote_autostart = 1
-xdebug.overload_var_dump = 0
-xdebug.remote_port = 9000
+```
+hhvm.debugger.vs_debug_enable=1
 ```
 
-> In the Nuclide Settings, there is an option to specify the remote port as well. If you specify
-> the port in an `.ini` file with `xdebug.remote_port`, make sure it matches what is in the
-> Nuclide port setting found under `nuclide-debugger-php`.
-
-Make sure the **Arguments for your PHP runtime** setting points to your `.ini` file.
-
-***Example***
-
-```bash
--c /root/docker-shared/code/xdebug.ini
+By default, HHVM will listen for incoming debugger connections on port 8999. You can specify a different port by adding an additional line to your config.ini:
+```
+hhvm.debugger.vs_debug_listen_port=<port>
 ```
 
-The **Path to your PHP runtime** setting should indicate the location of HHVM on your server, such as `/usr/bin/hhvm`.
+More information about configuring HHVM can be found here: [HHVM Configuration](https://docs.hhvm.com/hhvm/configuration/introduction)
+
+If you want to debug a Hack/PHP script running in **script mode**, you simply add a couple extra command line parameters when invoking HHVM:
+
+```
+hhvm --mode vsdebug --vsDebugPort <port>
+```
+
+The above command will startup HHVM with the debugger listening on the specified port, and will wait forever for the debugger to connect before starting the script.  You can add an additional optional parameter, `--vsDebugNoWait true` to cause HHVM to begin execution of the script immediately, while still allowing the debugger to connect and break in later. This mode is especially useful for long-running scripts that you may want to break into to debug things like infinite loops, hangs, etc.
+
+
+In order for Nuclide to be able to connect to your HHVM instance, you'll need to either have Nuclide server on the same host as HHVM and use a remote project, or forward the HHVM debugger port to your local machine via SSH tunneling or some other means.
+
+We *strongly* advise against exposing the HHVM debugger port to the internet on production machines, for obvious security reasons.
+
+
+### Configuring Nuclide to debug HHVM
+
+There are two configuration options in Nuclide settings that you'll want to configure for HHVM if you want to launch scripts in debug mode. You don't need to configure these if you only want to attach to a webserver.
+
+![](/static/images/docs/debugger-hhvm-settings.png)
+
+The first is the full path to your HHVM runtime binary, and the second is any arguments Nuclide should pass when starting HHVM, such as the path to your config.ini. These arguments will be passed verbatim on the command line when invoking HHVM.
+
+Additionally, you may specify an optional attach port to use when attaching to webserver mode, if you've configured your server to listen on a port other than 8999.
 
 
 ### Debugging: HHVM Toolbar
@@ -175,74 +179,29 @@ The [Task Runner toolbar](/docs/features/task-runner) is one way to debug Hack o
 
 See the [Task Runner HHVM guide](/docs/features/task-runner/#hhvm-debug-toolbar) for instructions on debugging Hack or PHP projects.
 
-### Debugging: Command-Line
+### Debugging: Launch / Attach Dialogs
 
-You can also debug directly from the command-line.
+The HHVM debugger can also be started via our advanced configuration dialogs. You'll find these under the Nuclide menu (Nuclide -> Debugger -> [Launch | Attach] Debugger), and select the "Hack / PHP" tab, which will be offered if your current working root is a remote project that supports HHVM.
 
-1. Have a PHP or Hack file active in the [Editing Area](/docs/editor/basics/#editing-area).
-2. Click on the **Toggle Debugger** icon in the [Nuclide toolbar](/docs/features/toolbar/#buttons) or press `Cmd-Shift-A` (`Ctrl-Shift-A` on Linux or Windows) to bring up the Debugger Attach dialog.
-3. The connection will default to the location of your current working root. If necessary, click the machine name to change to another connection.
-4. Select the **PHP/Hack** tab.
-5. Click **Attach**.
+When launching, Nuclide will prompt for the path to your Hack/PHP script, and any arguments you'd like Nuclide to pass to it.
 
-    ![](/static/images/docs/feature-debugger-selection-attach-server.png)
-
-6. Set [breakpoints](/docs/features/debugger/#basics__breakpoints) in your code.
-7. Run your PHP/Hack script or server
-    1. If you are running a script: `hhvm -c xdebug.ini your-script.php`
-    2. If you are running a server: `hhvm -c xdebug.ini -m server`
-8. Start Debugging.
-
-*Note:* If you are debugging a server, you will need to send a request to that server in order for
-    the server breakpoint to be hit.
+When attaching, Nuclide will offer to connect to your webserver instance, or attach to an already-running script that was started with the `--mode vsdebug --vsDebugPort <port>` HHVM arguments.
 
 ### Console
 
-While debugging, HHVM will send its stdout to the Console below the Editing Area. This also includes output from `print()` (or similar) statements and stack traces.
+When debugging a *script*, all output from HHVM's stdout and stderr is redirected to the Nuclide console. When debugging a *webserver*, stdout is redirected, but stderr is not due to the output traffic being too high.
 
-### Evaluation
+The console also provides a REPL that allows you to execute Hack/PHP code (see below).
 
-Basic [evaluation](/docs/features/debugger/#basics__evaluation) in the REPL works out of the box.
+### Console Evaluation
 
-You can also load bindings from your project so that you can interact with them in the console. To
-do this, make sure there is a `.hhconfig` file checked in at the root of your project, as well as a
-`scripts/xdebug_includes.php` file.  The `xdebug_includes.php` file must contain at least one call to the
-`xdebug_break` function.  Here is an example of such a file:
+Basic [evaluation](/docs/features/debugger/#basics__evaluation) in the REPL works out of the box for built in Hack/PHP routines.
 
-```php
-<?hh
+Nuclide now executes console input **as Hack by default**, instead of PHP. For many commands, there is no difference, but the behavior between Hack and PHP differs in some contexts, so this is important to know. You can explicitly have the debugger run your code as Hack or PHP by beginning your input with `<?hh` or `<?php`, respectively.
 
-// This file is named 'xdebug_includes.php' and lives inside a directory named 'scripts/'.
+Note: if your input begins with `<?hh` or `<?php`, the debugger will execute whatever you type, verbatim, as a Hack/PHP script. It must therefore be a complete and syntactically valid script (including ending your statements with a `;`).
 
-// Put code here that loads context into the environment.  For example, you can use PHP's require to
-// import function and variable bindings, which will then be available via the REPL.
+When stopped a breakpoint, console commands execute in the context of the currently-broken-in request, at the location of the selected call frame and line.  While the target is running, however, console commands execute in a global context that is not specific to any currently running request. In this context, you'll probably want to reference things defined in your Hack/PHP application. It is therefore possible to have the debugger `require` or define things so that they are "in scope" for the console evaluation.
 
-xdebug_break(); // Pauses the runtime's execution when XDebug mode is enabled.
-```
-
-Now when you debug your Hack or PHP project, the Nuclide Debugger will also make a separate
-connection to the runtime and launch this script.  Any context loaded before calling
-`xdebug_break()` will be accessible via the REPL.
-
-### Filtering
-
-After you attach to a remote server with HHVM, the Debugger will utilize the *first* instance
-of HHVM that is run with the correct `.ini` configuration, etc. If you are running multiple
-instances of HHVM with that configuration, you might start debugging different code unintentionally.
-
-Nuclide provides a mechanism to filter out the proper, intended script. For example, if you know
-the script name that will be debugged, then use that as the filter.
-
-Go to `Settings | Packages | Nuclide | Settings` and look for `nuclide-debugger-hhvm: Script Path Filter Regexp`.
-
-![](/static/images/docs/feature-debugger-languages-hack-php-filtering.png)
-
-### Other Settings
-
-There are other Hack and PHP debug settings that can be set as they pertain to HHVM. These include:
-
-- Filtering debugging connections by user name (`idekey`). By default, this is set to the user that started the HHVM process (you can override this with `xdebug.idekey` in an `.ini` file).
-- HHVM logging level. The default is `INFO`.
-- Debugging Port. The default is `9000`. If you override this is in an `.ini` file, ensure that the Nuclide setting matches this setting.
-
-Go to `Settings | Packages | Nuclide | Settings` and look for the `nuclide-debugger-php` settings.
+For this to work, there must be a `.hhconfig` file at the root of your project, as well as a
+`scripts/vsdebug_includes.php` file.  The `vsdebug_includes.php` file will be invoked by the debugger when it starts up. Here you can define things, require files or include logic you want run every time the debugger connects.

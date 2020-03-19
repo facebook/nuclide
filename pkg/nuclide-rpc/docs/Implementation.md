@@ -81,7 +81,6 @@ The `generateProxy` function does not return a proxy directly, but rather return
 The client object must implement the following functions:
 
 - `callRemoteFunction` - Used to call a module-level function, or a static method of a class.
-- `createRemoteObject` - Create an instance of a remote object, using the constructor arguments. Returns a numerical id that represents the remote object.
 - `callRemoteMethod` - Call a method of a remote object.
 - `disposeRemoteObject` - Destroy the id => object mapping of a remote object, and call it's dispose method.
 - `marshal` and `unmarshal` - Serialize and deserialize a type, respectively. Likely, the client will implement these functions by delegating to a `TypeRegistry` object.

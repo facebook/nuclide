@@ -1,0 +1,2575 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`astToOutline should provide a class outline 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 14,
+          "row": 13,
+        },
+        "kind": "property",
+        "representativeName": "field",
+        "startPosition": Point {
+          "column": 2,
+          "row": 13,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "field",
+          },
+          Object {
+            "kind": "plain",
+            "value": "=",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 3,
+          "row": 17,
+        },
+        "kind": "method",
+        "representativeName": "bar",
+        "startPosition": Point {
+          "column": 2,
+          "row": 15,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "bar",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 35,
+          "row": 19,
+        },
+        "kind": "property",
+        "representativeName": "baz",
+        "startPosition": Point {
+          "column": 2,
+          "row": 19,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "baz",
+          },
+          Object {
+            "kind": "plain",
+            "value": "=",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 31,
+          "row": 21,
+        },
+        "kind": "method",
+        "representativeName": "foo",
+        "startPosition": Point {
+          "column": 2,
+          "row": 21,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "foo",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 22,
+    },
+    "kind": "class",
+    "representativeName": "Foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "class-name",
+        "value": "Foo",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide a class outline 2`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 14,
+          "row": 13,
+        },
+        "kind": "property",
+        "representativeName": "field",
+        "startPosition": Point {
+          "column": 2,
+          "row": 13,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "field",
+          },
+          Object {
+            "kind": "plain",
+            "value": "=",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 3,
+          "row": 17,
+        },
+        "kind": "method",
+        "representativeName": "bar",
+        "startPosition": Point {
+          "column": 2,
+          "row": 15,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "bar",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 35,
+          "row": 19,
+        },
+        "kind": "property",
+        "representativeName": "baz",
+        "startPosition": Point {
+          "column": 2,
+          "row": 19,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "baz",
+          },
+          Object {
+            "kind": "plain",
+            "value": "=",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 31,
+          "row": 21,
+        },
+        "kind": "method",
+        "representativeName": "foo",
+        "startPosition": Point {
+          "column": 2,
+          "row": 21,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "foo",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 22,
+    },
+    "kind": "class",
+    "representativeName": "Foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "class-name",
+        "value": "Foo",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for Jasmine specs 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 5,
+          "row": 16,
+        },
+        "kind": "function",
+        "representativeName": "should work",
+        "startPosition": Point {
+          "column": 2,
+          "row": 14,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "it",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "string",
+            "value": "should work",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 3,
+      "row": 17,
+    },
+    "kind": "function",
+    "representativeName": "foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "method",
+        "value": "describe",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "string",
+        "value": "foo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 5,
+          "row": 21,
+        },
+        "kind": "function",
+        "representativeName": "should work with a normal function",
+        "startPosition": Point {
+          "column": 2,
+          "row": 20,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "it",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "string",
+            "value": "should work with a normal function",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 3,
+      "row": 22,
+    },
+    "kind": "function",
+    "representativeName": "bar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 19,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "method",
+        "value": "describe",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "string",
+        "value": "bar",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for Jasmine specs 2`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 5,
+          "row": 16,
+        },
+        "kind": "function",
+        "representativeName": "should work",
+        "startPosition": Point {
+          "column": 2,
+          "row": 14,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "it",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "string",
+            "value": "should work",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 3,
+      "row": 17,
+    },
+    "kind": "function",
+    "representativeName": "foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "method",
+        "value": "describe",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "string",
+        "value": "foo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 5,
+          "row": 21,
+        },
+        "kind": "function",
+        "representativeName": "should work with a normal function",
+        "startPosition": Point {
+          "column": 2,
+          "row": 20,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "it",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "string",
+            "value": "should work with a normal function",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 3,
+      "row": 22,
+    },
+    "kind": "function",
+    "representativeName": "bar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 19,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "method",
+        "value": "describe",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "string",
+        "value": "bar",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for declare class, declare module and declare function 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 40,
+      "row": 0,
+    },
+    "kind": "function",
+    "representativeName": "foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 0,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "foo",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "a",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 23,
+      "row": 1,
+    },
+    "kind": "variable",
+    "representativeName": "PI",
+    "startPosition": Point {
+      "column": 0,
+      "row": 1,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "var",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "PI",
+      },
+    ],
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 19,
+          "row": 3,
+        },
+        "kind": "property",
+        "representativeName": "someString",
+        "startPosition": Point {
+          "column": 2,
+          "row": 3,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "someString",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 20,
+          "row": 4,
+        },
+        "kind": "function",
+        "representativeName": "toString",
+        "startPosition": Point {
+          "column": 2,
+          "row": 4,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "keyword",
+            "value": "function",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "method",
+            "value": "toString",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 32,
+          "row": 5,
+        },
+        "kind": "function",
+        "representativeName": "otherMethod",
+        "startPosition": Point {
+          "column": 2,
+          "row": 5,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "keyword",
+            "value": "function",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "method",
+            "value": "otherMethod",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "input",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 6,
+    },
+    "kind": "class",
+    "representativeName": "Path",
+    "startPosition": Point {
+      "column": 0,
+      "row": 2,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "class-name",
+        "value": "Path",
+      },
+    ],
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [
+          Object {
+            "children": Array [],
+            "endPosition": Point {
+              "column": 22,
+              "row": 9,
+            },
+            "kind": "function",
+            "representativeName": "toString",
+            "startPosition": Point {
+              "column": 4,
+              "row": 9,
+            },
+            "tokenizedText": Array [
+              Object {
+                "kind": "keyword",
+                "value": "function",
+              },
+              Object {
+                "kind": "whitespace",
+                "value": " ",
+              },
+              Object {
+                "kind": "method",
+                "value": "toString",
+              },
+              Object {
+                "kind": "plain",
+                "value": "(",
+              },
+              Object {
+                "kind": "plain",
+                "value": ")",
+              },
+            ],
+          },
+        ],
+        "endPosition": Point {
+          "column": 3,
+          "row": 10,
+        },
+        "kind": "class",
+        "representativeName": "Path",
+        "startPosition": Point {
+          "column": 2,
+          "row": 8,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "keyword",
+            "value": "class",
+          },
+          Object {
+            "kind": "whitespace",
+            "value": " ",
+          },
+          Object {
+            "kind": "class-name",
+            "value": "Path",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 11,
+    },
+    "kind": "interface",
+    "representativeName": "some-es-module",
+    "startPosition": Point {
+      "column": 0,
+      "row": 7,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "module",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "class-name",
+        "value": "some-es-module",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for export default () => {} 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 24,
+      "row": 10,
+    },
+    "kind": "function",
+    "representativeName": "",
+    "startPosition": Point {
+      "column": 0,
+      "row": 10,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "default",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for export default function() {} 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 28,
+      "row": 10,
+    },
+    "kind": "function",
+    "representativeName": "",
+    "startPosition": Point {
+      "column": 0,
+      "row": 10,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "default",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for miscellaneous top-level statements 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 1,
+      "row": 15,
+    },
+    "kind": "function",
+    "representativeName": "baz",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "baz",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "a",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 1,
+      "row": 19,
+    },
+    "kind": "function",
+    "representativeName": "foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 17,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "foo",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "plain",
+        "value": "{",
+      },
+      Object {
+        "kind": "param",
+        "value": "bar",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "y",
+      },
+      Object {
+        "kind": "plain",
+        "value": "}",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "[",
+      },
+      Object {
+        "kind": "param",
+        "value": "b",
+      },
+      Object {
+        "kind": "plain",
+        "value": "]",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "...",
+      },
+      Object {
+        "kind": "param",
+        "value": "bars",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 23,
+    },
+    "kind": "function",
+    "representativeName": "funExpr1",
+    "startPosition": Point {
+      "column": 0,
+      "row": 21,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "funExpr1",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "param1",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 27,
+    },
+    "kind": "function",
+    "representativeName": "funExpr2",
+    "startPosition": Point {
+      "column": 0,
+      "row": 25,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "funExpr2",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg1",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg2",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 29,
+    },
+    "kind": "constant",
+    "representativeName": "varFoo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 29,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varFoo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 16,
+      "row": 31,
+    },
+    "kind": "variable",
+    "representativeName": "varBar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 31,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "var",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varBar",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 38,
+    },
+    "kind": "variable",
+    "representativeName": "varBaz",
+    "startPosition": Point {
+      "column": 0,
+      "row": 33,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "let",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varBaz",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 36,
+      "row": 40,
+    },
+    "kind": "constant",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 40,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "{",
+      },
+      Object {
+        "kind": "param",
+        "value": "foo",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "bar",
+      },
+      Object {
+        "kind": "plain",
+        "value": "}",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 41,
+    },
+    "kind": "constant",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 41,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "[",
+      },
+      Object {
+        "kind": "param",
+        "value": "baz",
+      },
+      Object {
+        "kind": "plain",
+        "value": "]",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for miscellaneous top-level statements 2`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 1,
+      "row": 15,
+    },
+    "kind": "function",
+    "representativeName": "baz",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "baz",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "a",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 1,
+      "row": 19,
+    },
+    "kind": "function",
+    "representativeName": "foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 17,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "foo",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "plain",
+        "value": "{",
+      },
+      Object {
+        "kind": "param",
+        "value": "bar",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "y",
+      },
+      Object {
+        "kind": "plain",
+        "value": "}",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "[",
+      },
+      Object {
+        "kind": "param",
+        "value": "b",
+      },
+      Object {
+        "kind": "plain",
+        "value": "]",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "...",
+      },
+      Object {
+        "kind": "param",
+        "value": "bars",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 23,
+    },
+    "kind": "function",
+    "representativeName": "funExpr1",
+    "startPosition": Point {
+      "column": 0,
+      "row": 21,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "funExpr1",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "param1",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 27,
+    },
+    "kind": "function",
+    "representativeName": "funExpr2",
+    "startPosition": Point {
+      "column": 0,
+      "row": 25,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "function",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "method",
+        "value": "funExpr2",
+      },
+      Object {
+        "kind": "plain",
+        "value": "(",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg1",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "arg2",
+      },
+      Object {
+        "kind": "plain",
+        "value": ")",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 29,
+    },
+    "kind": "constant",
+    "representativeName": "varFoo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 29,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varFoo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 16,
+      "row": 31,
+    },
+    "kind": "variable",
+    "representativeName": "varBar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 31,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "var",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varBar",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 2,
+      "row": 38,
+    },
+    "kind": "variable",
+    "representativeName": "varBaz",
+    "startPosition": Point {
+      "column": 0,
+      "row": 33,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "let",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "varBaz",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 36,
+      "row": 40,
+    },
+    "kind": "constant",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 40,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "{",
+      },
+      Object {
+        "kind": "param",
+        "value": "foo",
+      },
+      Object {
+        "kind": "plain",
+        "value": ",",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "param",
+        "value": "bar",
+      },
+      Object {
+        "kind": "plain",
+        "value": "}",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 41,
+    },
+    "kind": "constant",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 41,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "const",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "plain",
+        "value": "[",
+      },
+      Object {
+        "kind": "param",
+        "value": "baz",
+      },
+      Object {
+        "kind": "plain",
+        "value": "]",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for module.exports 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 8,
+          "row": 13,
+        },
+        "kind": "field",
+        "representativeName": "foo",
+        "startPosition": Point {
+          "column": 2,
+          "row": 13,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "foo",
+          },
+          Object {
+            "kind": "plain",
+            "value": ":",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 3,
+          "row": 16,
+        },
+        "kind": "method",
+        "representativeName": "bar",
+        "startPosition": Point {
+          "column": 2,
+          "row": 14,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "bar",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 33,
+          "row": 17,
+        },
+        "kind": "method",
+        "representativeName": "baz",
+        "startPosition": Point {
+          "column": 2,
+          "row": 17,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "baz",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 24,
+          "row": 18,
+        },
+        "kind": "method",
+        "representativeName": "asdf",
+        "startPosition": Point {
+          "column": 2,
+          "row": 18,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "asdf",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 27,
+          "row": 19,
+        },
+        "kind": "method",
+        "representativeName": "jkl",
+        "startPosition": Point {
+          "column": 2,
+          "row": 19,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "jkl",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 17,
+          "row": 20,
+        },
+        "kind": "method",
+        "representativeName": "asdfjkl",
+        "startPosition": Point {
+          "column": 2,
+          "row": 20,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "asdfjkl",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 7,
+          "row": 21,
+        },
+        "kind": "method",
+        "representativeName": "thing",
+        "startPosition": Point {
+          "column": 2,
+          "row": 21,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "thing",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 14,
+          "row": 22,
+        },
+        "kind": "field",
+        "representativeName": "stuff",
+        "startPosition": Point {
+          "column": 2,
+          "row": 22,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "stuff",
+          },
+          Object {
+            "kind": "plain",
+            "value": ":",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 23,
+    },
+    "kind": "module",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "plain",
+        "value": "module.exports",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 23,
+      "row": 29,
+    },
+    "kind": "class",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 29,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "default",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for module.exports 2`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 8,
+          "row": 13,
+        },
+        "kind": "field",
+        "representativeName": "foo",
+        "startPosition": Point {
+          "column": 2,
+          "row": 13,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "foo",
+          },
+          Object {
+            "kind": "plain",
+            "value": ":",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 3,
+          "row": 16,
+        },
+        "kind": "method",
+        "representativeName": "bar",
+        "startPosition": Point {
+          "column": 2,
+          "row": 14,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "bar",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 33,
+          "row": 17,
+        },
+        "kind": "method",
+        "representativeName": "baz",
+        "startPosition": Point {
+          "column": 2,
+          "row": 17,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "baz",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 24,
+          "row": 18,
+        },
+        "kind": "method",
+        "representativeName": "asdf",
+        "startPosition": Point {
+          "column": 2,
+          "row": 18,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "asdf",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 27,
+          "row": 19,
+        },
+        "kind": "method",
+        "representativeName": "jkl",
+        "startPosition": Point {
+          "column": 2,
+          "row": 19,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "jkl",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 17,
+          "row": 20,
+        },
+        "kind": "method",
+        "representativeName": "asdfjkl",
+        "startPosition": Point {
+          "column": 2,
+          "row": 20,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "asdfjkl",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 7,
+          "row": 21,
+        },
+        "kind": "method",
+        "representativeName": "thing",
+        "startPosition": Point {
+          "column": 2,
+          "row": 21,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "thing",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 14,
+          "row": 22,
+        },
+        "kind": "field",
+        "representativeName": "stuff",
+        "startPosition": Point {
+          "column": 2,
+          "row": 22,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "string",
+            "value": "stuff",
+          },
+          Object {
+            "kind": "plain",
+            "value": ":",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 23,
+    },
+    "kind": "module",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "plain",
+        "value": "module.exports",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 23,
+      "row": 29,
+    },
+    "kind": "class",
+    "representativeName": undefined,
+    "startPosition": Point {
+      "column": 0,
+      "row": 29,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "default",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for module.exports class expression assignments 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 20,
+          "row": 14,
+        },
+        "kind": "property",
+        "representativeName": "_testProp",
+        "startPosition": Point {
+          "column": 2,
+          "row": 14,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "_testProp",
+          },
+          Object {
+            "kind": "plain",
+            "value": "=",
+          },
+        ],
+      },
+      Object {
+        "children": Array [],
+        "endPosition": Point {
+          "column": 20,
+          "row": 15,
+        },
+        "kind": "method",
+        "representativeName": "testMethod",
+        "startPosition": Point {
+          "column": 2,
+          "row": 15,
+        },
+        "tokenizedText": Array [
+          Object {
+            "kind": "method",
+            "value": "testMethod",
+          },
+          Object {
+            "kind": "plain",
+            "value": "(",
+          },
+          Object {
+            "kind": "param",
+            "value": "arg",
+          },
+          Object {
+            "kind": "plain",
+            "value": ")",
+          },
+        ],
+      },
+    ],
+    "endPosition": Point {
+      "column": 1,
+      "row": 16,
+    },
+    "kind": "class",
+    "representativeName": "Test",
+    "startPosition": Point {
+      "column": 17,
+      "row": 13,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "class",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "class-name",
+        "value": "Test",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for type declarations 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 12,
+    },
+    "kind": "interface",
+    "representativeName": "Foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "type",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "type",
+        "value": "Foo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 30,
+      "row": 13,
+    },
+    "kind": "interface",
+    "representativeName": "Bar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 13,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "type",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "type",
+        "value": "Bar",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline for type declarations 2`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 18,
+      "row": 12,
+    },
+    "kind": "interface",
+    "representativeName": "Foo",
+    "startPosition": Point {
+      "column": 0,
+      "row": 12,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "type",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "type",
+        "value": "Foo",
+      },
+    ],
+  },
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 30,
+      "row": 13,
+    },
+    "kind": "interface",
+    "representativeName": "Bar",
+    "startPosition": Point {
+      "column": 0,
+      "row": 13,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "type",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "type",
+        "value": "Bar",
+      },
+    ],
+  },
+]
+`;
+
+exports[`astToOutline should provide an outline with interface declarations 1`] = `
+Array [
+  Object {
+    "children": Array [],
+    "endPosition": Point {
+      "column": 1,
+      "row": 60,
+    },
+    "kind": "interface",
+    "representativeName": "ISource",
+    "startPosition": Point {
+      "column": 0,
+      "row": 50,
+    },
+    "tokenizedText": Array [
+      Object {
+        "kind": "keyword",
+        "value": "export",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "keyword",
+        "value": "interface",
+      },
+      Object {
+        "kind": "whitespace",
+        "value": " ",
+      },
+      Object {
+        "kind": "type",
+        "value": "ISource",
+      },
+    ],
+  },
+]
+`;

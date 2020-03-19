@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-ui-component-tools-common",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A set of utilities for providing metadata on React components, particularly those from the Facebook Design System. This package is intended to be used in a language server protocol provider.",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "true"
+  },
+  "private": true
+}

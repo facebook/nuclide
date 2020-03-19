@@ -5,10 +5,10 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-export const GRAMMARS = ['source.python'];
-export const GRAMMAR_SET = new Set(GRAMMARS);
+export const GRAMMARS = ['source.python', 'python'];
+export const GRAMMAR_SET: Set<string> = new Set(GRAMMARS);
 export const PACKAGE_NAME = 'nuclide-python';

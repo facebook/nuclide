@@ -5,16 +5,16 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import typeof * as FlowService from '../../pkg/nuclide-flow-rpc';
 
 import invariant from 'assert';
-import child_process from 'child_process';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import {runCommand} from 'nuclide-commons/process';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {jasmineAttachWorkspace} from 'nuclide-commons-atom/test-helpers';
 import {
@@ -25,7 +25,7 @@ import {getMountedReactRootNames} from '../../pkg/commons-atom/testHelpers';
 import {reset} from '../../pkg/nuclide-open-files';
 
 // TEST_NUCLIDE_SERVER_PORT can be set by the test runner to allow simultaneous remote tests.
-const SERVER_PORT = parseInt(process.env.TEST_NUCLIDE_SERVER_PORT, 10) || 9090;
+const SERVER_PORT = parseInt(process.env.TEST_NUCLIDE_SERVER_PORT, 10) || 9091;
 
 export function jasmineIntegrationTestSetup(): void {
   // To run remote tests, we have to star the nuclide server. It uses `nohup`, but apparently
@@ -102,8 +102,20 @@ export async function activateAllPackages(): Promise<Array<string>> {
   return atom.packages.getActivePackages().map(pack => pack.name);
 }
 
-export function deactivateAllPackages(): void {
-  atom.packages.deactivatePackages();
+/**
+ * IMPORTANT: You must wait for the returned promise to resolve before continuing! Otherwise, other
+ * code may attempt to activate or deactivate packages mid-deactivation. In fact, this is extremely
+ * likely because Atom itself [will call `atom.reset()`][1] which, in turn, [will call
+ * `atom.packages.reset()`][2], which calls `atom.packages.deactivatePackages()`. Because of the
+ * async nature of Nuclide's deactivation, this will result in Nuclide's `deactivate()` being called
+ * twice, which is invalid. This fact also makes many of our calls redundant; we may wish to remove
+ * them in the future or may not because it makes the cleanup of `activateAllPackages()` explicit.
+ *
+ * [1]: https://github.com/atom/atom/blob/495376639113a3211bc80e00328870e119a8f872/spec/spec-helper.coffee#L129-L130
+ * [2]: https://github.com/atom/atom/blob/495376639113a3211bc80e00328870e119a8f872/src/atom-environment.js#L358
+ */
+export async function deactivateAllPackages(): Promise<void> {
+  await atom.packages.deactivatePackages();
   atom.packages.unloadPackages();
 
   // The nuclide-open-files package is an npm package which subscribes to events on the global
@@ -128,11 +140,17 @@ export function deactivateAllPackages(): void {
  * Starts a local version of the nuclide server in insecure mode on the
  * specified port. The server is started in a separate process than the caller's.
  */
-export function startNuclideServer(): void {
-  child_process.spawnSync(
+export async function startNuclideServer(): Promise<void> {
+  await runCommand(
     require.resolve('../../pkg/nuclide-server/nuclide-start-server'),
     ['-k', `--port=${SERVER_PORT}`],
-  );
+  )
+    .toPromise()
+    .catch(err => {
+      // eslint-disable-next-line no-console
+      console.error('Error starting test server:', String(err));
+      process.exit(1);
+    });
 }
 
 /**
@@ -142,7 +160,7 @@ export function startNuclideServer(): void {
 export async function stopNuclideServer(
   connection: RemoteConnection,
 ): Promise<void> {
-  const path = connection.getUriForInitialWorkingDirectory();
+  const path = connection.getUri();
   // Clean up the underlying Hg repository (if it exists) by removing the project.
   // Otherwise, we'll have dangling subscriptions that error when the server exits.
   atom.project.removePath(path);
@@ -151,7 +169,7 @@ export async function stopNuclideServer(
   service.dispose();
   // If this ever fires, either ensure that your test closes all RemoteConnections
   // or we can add a force shutdown method to ServerConnection.
-  invariant(connection.isOnlyConnection());
+  invariant(connection.getConnection().hasSingleMountPoint());
   const attemptShutdown = true;
   await connection.close(attemptShutdown);
 }

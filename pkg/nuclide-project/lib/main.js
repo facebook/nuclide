@@ -31,7 +31,6 @@ class Activation {
               'Nuclide only supports mounting canonical paths as local projects.<br />' +
               '<strong>Some Nuclide features such as Flow might not work properly.</strong>',
             {
-              dismissable: true,
               detail:
                 `Mounted path: ${projectPath}\n \n ` +
                 `Try re-mounting the canonical project path instead:\n${realPath}`,

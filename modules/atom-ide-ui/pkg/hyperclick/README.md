@@ -105,4 +105,3 @@ Additional provider fields:
 
 - `grammarScopes`: An (optional) `Array` of grammar `scopeNames` to provide suggestions for.
   Your provider will only be triggered in matching text editors.
-

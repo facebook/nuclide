@@ -9,7 +9,6 @@
  * @format
  */
 
-// flowlint-next-line untyped-type-import:off
 import type Immutable from 'immutable';
 
 export class LazyTreeNode {
@@ -20,8 +19,8 @@ export class LazyTreeNode {
   __parent: ?LazyTreeNode;
 
   // Private
-  _children: ?Immutable.List;
-  _fetchChildren: (node: LazyTreeNode) => Promise<any>;
+  _children: ?Immutable.List<LazyTreeNode>;
+  _fetchChildren: (node: LazyTreeNode) => Promise<Immutable.List<LazyTreeNode>>;
   _isCacheValid: boolean;
   _pendingFetch: ?Promise<any>;
 
@@ -46,6 +45,7 @@ export class LazyTreeNode {
   }
 
   isRoot(): boolean {
+    // eslint-disable-next-line eqeqeq
     return this.__parent === null;
   }
 
@@ -61,7 +61,7 @@ export class LazyTreeNode {
     return this._children;
   }
 
-  fetchChildren(): Promise<any> {
+  fetchChildren(): Promise<Immutable.List<LazyTreeNode>> {
     let pendingFetch = this._pendingFetch;
     if (!pendingFetch) {
       pendingFetch = this._fetchChildren(this).then(children => {

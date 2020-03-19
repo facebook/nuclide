@@ -1,0 +1,21 @@
+{
+  ".platform-darwin atom-workspace": {
+    "ctrl-shift-t": "atom-ide-terminal:new-terminal",
+    "cmd-alt-shift-t": "atom-ide-terminal:toggle",
+    "ctrl-!": "atom-ide-terminal:toggle-terminal-focus"
+  },
+  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
+    "alt-shift-t": "atom-ide-terminal:new-terminal",
+    "ctrl-alt-shift-t": "atom-ide-terminal:toggle"
+  },
+  ".platform-win32 .terminal-pane, .platform-linux .terminal-pane": {
+    "ctrl-backspace": "atom-ide-terminal:add-escape-prefix"
+  },
+  ".platform-darwin .terminal-pane": {
+    "alt-backspace": "atom-ide-terminal:add-escape-prefix",
+    "cmd-right": "window:focus-pane-on-right",
+    "cmd-left": "window:focus-pane-on-left",
+    "cmd-up": "window:focus-pane-above",
+    "cmd-down": "window:focus-pane-below"
+  }
+}

@@ -47,11 +47,13 @@ export default class ProviderRegistry<T: Provider> {
     }
   }
 
+  // TODO deprecate since there can be N providers.
   getProviderForEditor(editor: atom$TextEditor): ?T {
     const grammar = editor.getGrammar().scopeName;
     return this.findProvider(grammar);
   }
 
+  // TODO create an ordering or priority aware util to prefer instead.
   getAllProvidersForEditor(editor: atom$TextEditor): Iterable<T> {
     const grammar = editor.getGrammar().scopeName;
     return this.findAllProviders(grammar);

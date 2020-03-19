@@ -5,13 +5,12 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
 export default Object.freeze({
   NONE: 0,
-  LOCAL: 1,
-  CONNECTED: 2,
-  DISCONNECTED: 3,
+  CONNECTED: 1,
+  DISCONNECTED: 2,
 });

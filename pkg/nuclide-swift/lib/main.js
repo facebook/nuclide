@@ -12,25 +12,26 @@
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
 import type {SwiftPMTaskRunner as SwiftPMTaskRunnerType} from './taskrunner/SwiftPMTaskRunner';
 import type {SwiftPMTaskRunnerStoreState} from './taskrunner/SwiftPMTaskRunnerStoreState';
+import type {AtomAutocompleteProvider} from '../../nuclide-autocomplete/lib/types';
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
 import {SwiftPMTaskRunner} from './taskrunner/SwiftPMTaskRunner';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
-let _disposables: ?CompositeDisposable = null;
+let _disposables: ?UniversalDisposable = null;
 let _taskRunner: ?SwiftPMTaskRunnerType = null;
 let _initialState: ?Object = null;
 
 export function activate(rawState: ?Object): void {
   invariant(_disposables == null);
   _initialState = rawState;
-  _disposables = new CompositeDisposable(
-    new Disposable(() => {
+  _disposables = new UniversalDisposable(
+    () => {
       _taskRunner = null;
-    }),
-    new Disposable(() => {
+    },
+    () => {
       _initialState = null;
-    }),
+    },
   );
 }
 
@@ -53,8 +54,12 @@ export function serialize(): ?SwiftPMTaskRunnerStoreState {
   }
 }
 
-export function createAutocompleteProvider(): atom$AutocompleteProvider {
+export function createAutocompleteProvider(): AtomAutocompleteProvider {
   return {
+    analytics: {
+      eventName: 'nuclide-swift',
+      shouldLogInsertedSuggestion: false,
+    },
     selector: '.source.swift',
     inclusionPriority: 1,
     disableForSelector: '.source.swift .comment',

@@ -1,0 +1,15 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ * @format
+ */
+
+type json$Json = json$JsonPrimitive | json$JsonArray | json$JsonObject;
+type json$JsonPrimitive = void | null | string | number | boolean;
+type json$JsonArray = Array<json$Json>;
+type json$JsonObject = {[string]: json$Json};

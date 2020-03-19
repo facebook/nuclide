@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 
 import {CodeSearchProvider} from './CodeSearchProvider';
 import createPackage from 'nuclide-commons-atom/createPackage';
@@ -27,7 +27,7 @@ class Activation {
     this._disposables.dispose();
   }
 
-  registerProvider(): Provider {
+  registerProvider(): Provider<FileResult> {
     return CodeSearchProvider;
   }
 }

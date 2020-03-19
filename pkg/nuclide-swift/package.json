@@ -1,13 +1,11 @@
 {
   "name": "nuclide-swift",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Swift package manager integration for Nuclide.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "configMetadata": {
       "pathComponents": [
         "Language",
@@ -43,9 +41,9 @@
     }
   },
   "providedServices": {
-    "autocomplete.provider": {
+    "nuclide-autocomplete.provider": {
       "versions": {
-        "2.0.0": "createAutocompleteProvider"
+        "0.0.0": "createAutocompleteProvider"
       }
     }
   },

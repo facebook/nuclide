@@ -1,16 +1,13 @@
 {
   "name": "nuclide-device-panel",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Device panel that shows the connected devices and provide some interactions",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
-  "activationCommands": {
-  },
+  "activationCommands": {},
   "deserializers": {
     "nuclide.DevicePanelWorkspaceView": "deserializeDevicePanelState"
   },

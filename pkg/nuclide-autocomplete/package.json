@@ -1,0 +1,31 @@
+{
+  "name": "nuclide-autocomplete",
+  "version": "0.0.0",
+  "description": "A wrapper on autocomplete-plus to provide timeout and tracking when using autocomplete-plus",
+  "author": "NEEDS OWNER",
+  "main": "./lib/main.js",
+  "nuclide": {
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "Language",
+        "General"
+      ]
+    },
+    "config": {
+      "timeout": {
+        "title": "Autocomplete Timeout (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 50
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide-autocomplete.provider": {
+      "versions": {
+        "0.0.0": "consumeProvider"
+      }
+    }
+  }
+}

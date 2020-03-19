@@ -6,11 +6,11 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   /**
@@ -24,5 +24,6 @@ type Props = {
 };
 
 /** A Progressbar for showing deterministic progress. */
-export const ProgressBar = (props: Props) =>
-  <progress value={props.value} max={props.max} {...props} />;
+export const ProgressBar = (props: Props) => (
+  <progress value={props.value} max={props.max} {...props} />
+);

@@ -6,14 +6,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 
 /* eslint-disable no-var */
 /* eslint-disable prefer-arrow-callback */
@@ -57,8 +54,11 @@
     suffix = node.getAttribute('id').match(/-[0-9]+$/);
     // If the -1, etc. suffix exists, make sure someone didn't purposely put the suffix there
     // by checking against the actual text associated with the node
-    if (suffix !== null &&
-        node.getAttribute('id').substring(0, suffix.index) === node.textContent.toLowerCase()) {
+    if (
+      suffix != null &&
+      node.getAttribute('id').substring(0, suffix.index) ===
+        node.textContent.toLowerCase()
+    ) {
       node.setAttribute('id', node.textContent.toLowerCase());
     }
 
@@ -75,7 +75,8 @@
     while (psib) {
       // Find the parent, if it exists.
       idx = possibleNodeNames.indexOf(psib.localName);
-      if (idx !== -1 && idx === nameIdx - 1) { // if we are at h3, we want h2. That's why the - 1
+      if (idx !== -1 && idx === nameIdx - 1) {
+        // if we are at h3, we want h2. That's why the - 1
         id += psib.getAttribute('id') + '__';
         break;
       }

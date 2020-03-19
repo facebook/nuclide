@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-rsync",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Set up rsync transport in order to download folders. Uses nuclide-rsync-rpc for spawning processes.",
+  "author": "NEEDS OWNER",
+  "private": true,
+  "nuclide": {
+    "packageType": "AtomLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

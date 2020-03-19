@@ -10,7 +10,7 @@
  * @format
  */
 
-import {Disposable} from 'event-kit';
+import UniversalDisposable from './UniversalDisposable';
 import {Observable} from 'rxjs';
 
 /**
@@ -22,23 +22,22 @@ export function attachEvent(
   emitter: events$EventEmitter,
   eventName: string,
   callback: Function,
-): Disposable {
+): IDisposable {
   emitter.addListener(eventName, callback);
-  return new Disposable(() => {
+  return new UniversalDisposable(() => {
     emitter.removeListener(eventName, callback);
   });
 }
 
 type SubscribeCallback<T> = (item: T) => any;
-type SubscribeFunction<T> = (callback: SubscribeCallback<T>) => IDisposable;
+type SubscribeFunction<T> = (
+  callback: SubscribeCallback<T>,
+) => IDisposable | (() => mixed);
 
 export function observableFromSubscribeFunction<T>(
   fn: SubscribeFunction<T>,
 ): Observable<T> {
-  return Observable.create(observer => {
-    const disposable = fn(observer.next.bind(observer));
-    return () => {
-      disposable.dispose();
-    };
-  });
+  return Observable.create(
+    observer => new UniversalDisposable(fn(observer.next.bind(observer))),
+  );
 }

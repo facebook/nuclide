@@ -1,0 +1,265 @@
+/**
+ * Copyright (c) 2017-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ */
+
+declare module 'adm-zip' {
+  declare class ZipEntry {
+    entryName: string,
+    +rawEntryName: string,
+    extra: Buffer,
+    comment: string,
+    +name: string,
+    isDirectory: boolean,
+    getCompressedData(): Buffer,
+    getCompressedDataAsync(callback: (data: Buffer) => mixed): void,
+    setData(value: Buffer | string): void,
+    getData(password?: string): Buffer,
+    getDataAsync(callback: (data: Buffer) => mixed, password?: string): void,
+    attr: number,
+    header: Buffer,
+    packHeader(): Buffer,
+    toString(): string,
+  }
+
+  declare class ZipFile {
+    /**
+     * Returns an array of ZipEntry objects existent in the current opened archive
+     * @return Array
+     */
+    +entries: Array<ZipEntry>,
+
+    /**
+     * Archive comment
+     * @return {String}
+     */
+    comment: string,
+
+    /**
+     * Returns a reference to the entry with the given name or null if entry is inexistent
+     *
+     * @param entryName
+     * @return ZipEntry
+     */
+    getEntry(entryName: string): ZipEntry,
+
+    /**
+     * Adds the given entry to the entry list
+     *
+     * @param entry
+     */
+    setEntry(entry: ZipEntry): void,
+
+    /**
+     * Removes the entry with the given name from the entry list.
+     *
+     * If the entry is a directory, then all nested files and directories will be removed
+     * @param entryName
+     */
+    deleteEntry(entryName: string): void,
+
+    /**
+     * Iterates and returns all nested files and directories of the given entry
+     *
+     * @param entry
+     * @return Array
+     */
+    getEntryChildren(entry: ZipEntry): Array<ZipEntry>,
+
+    /**
+     * Returns the zip file
+     *
+     * @return Buffer
+     */
+    compressToBuffer(): Buffer,
+
+    toAsyncBuffer(onSuccess: (out: Buffer)=>mixed, onFail: Function, onItemStart: (name: string)=>mixed, onItemEnd: (name: string)=>mixed): void,
+  }
+
+  declare class AdmZip {
+    constructor(): void,
+    constructor(file: string): void,
+    constructor(zipData: Buffer): void,
+    /**
+     * Extracts the given entry from the archive and returns the content as a Buffer object
+     * @param entry ZipEntry object or String with the full path of the entry
+     *
+     * @return Buffer or Null in case of error
+     */
+    readFile(entry: ZipEntry | string): Buffer,
+
+    /**
+     * Asynchronous readFile
+     * @param entry ZipEntry object or String with the full path of the entry
+     * @param callback
+     *
+     * @return Buffer or Null in case of error
+     */
+    readFileAsync(entry: ZipEntry | string, callback: (data: ?Buffer, error: string)=>void): ?Buffer,
+
+    /**
+     * Extracts the given entry from the archive and returns the content as plain text in the given encoding
+     * @param entry ZipEntry object or String with the full path of the entry
+     * @param encoding Optional. If no encoding is specified utf8 is used
+     *
+     * @return String
+     */
+    readAsText(entry: ZipEntry | string, encoding?: string): string,
+
+    /**
+     * Asynchronous readAsText
+     * @param entry ZipEntry object or String with the full path of the entry
+     * @param callback
+     * @param encoding Optional. If no encoding is specified utf8 is used
+     *
+     * @return String
+     */
+    readAsTextAsync(entry: ZipEntry | string, callback: (text: string) => mixed, encoding?: string): string,
+
+    /**
+     * Remove the entry from the file or the entry and all it's nested directories and files if the given entry is a directory
+     *
+     * @param entry
+     */
+    deleteFile(entry: ZipEntry | string): void,
+
+    /**
+     * Adds a comment to the zip. The zip must be rewritten after adding the comment.
+     *
+     * @param comment
+     */
+    addZipComment(comment: Buffer): void,
+
+    /**
+     * Returns the zip comment
+     *
+     * @return String
+     */
+    getZipComment(): string,
+
+    /**
+     * Adds a comment to a specified zipEntry. The zip must be rewritten after adding the comment
+     * The comment cannot exceed 65535 characters in length
+     *
+     * @param entry
+     * @param comment
+     */
+    addZipEntryComment(entry: ZipEntry, comment: string): void,
+
+    /**
+     * Returns the comment of the specified entry
+     *
+     * @param entry
+     * @return String
+     */
+    getZipEntryComment(entry: ZipEntry): string,
+
+    /**
+     * Updates the content of an existing entry inside the archive. The zip must be rewritten after updating the content
+     *
+     * @param entry
+     * @param content
+     */
+    updateFile(entry: ZipEntry, content: Buffer): void,
+
+    /**
+     * Adds a file from the disk to the archive
+     *
+     * @param localPath
+     */
+    addLocalFile(localPath: string, zipPath?: string, zipName?: string): void,
+
+    /**
+     * Adds a local directory and all its nested files and directories to the archive
+     *
+     * @param localPath
+     * @param zipPath optional path inside zip
+     * @param filter optional RegExp or Function if files match will
+     *               be included.
+     */
+    addLocalFolder(localPath: string, zipPath?: string, filter?: RegExp | ((string)=>boolean)): void,
+
+    /**
+     * Allows you to create a entry (file or directory) in the zip file.
+     * If you want to create a directory the entryName must end in / and a null buffer should be provided.
+     * Comment and attributes are optional
+     *
+     * @param entryName
+     * @param content
+     * @param comment
+     * @param attr
+     */
+    addFile(entryName: string, content: Buffer | null, comment?: string, attr?: number): void,
+
+    /**
+     * Returns an array of ZipEntry objects representing the files and folders inside the archive
+     *
+     * @return Array
+     */
+    getEntries(): Array<ZipEntry>,
+
+    /**
+     * Returns a ZipEntry object representing the file or folder specified by ``name``.
+     *
+     * @param name
+     * @return ZipEntry
+     */
+    getEntry(name: string): ZipEntry,
+
+    /**
+     * Extracts the given entry to the given targetPath
+     * If the entry is a directory inside the archive, the entire directory and it's subdirectories will be extracted
+     *
+     * @param entry ZipEntry object or String with the full path of the entry
+     * @param targetPath Target folder where to write the file
+     * @param maintainEntryPath If maintainEntryPath is true and the entry is inside a folder, the entry folder
+     *                          will be created in targetPath as well. Default is TRUE
+     * @param overwrite If the file already exists at the target path, the file will be overwriten if this is true.
+     *                  Default is FALSE
+     *
+     * @return Boolean
+     */
+    extractEntryTo(entry: ZipEntry | string, targetPath: string, maintainEntryPath?: boolean, overwrite?: boolean): boolean,
+
+    /**
+     * Extracts the entire archive to the given location
+     *
+     * @param targetPath Target location
+     * @param overwrite If the file already exists at the target path, the file will be overwriten if this is true.
+     *                  Default is FALSE
+     */
+    extractAllTo(targetPath: string, overwrite?: boolean): void,
+
+    /**
+     * Asynchronous extractAllTo
+     *
+     * @param targetPath Target location
+     * @param overwrite If the file already exists at the target path, the file will be overwriten if this is true.
+     *                  Default is FALSE
+     * @param callback
+     */
+    extractAllToAsync(targetPath: string, overwrite?: boolean, callback: (err: ?Error) => mixed): void,
+
+    /**
+     * Writes the newly created zip file to disk at the specified location or if a zip was opened and no ``targetFileName`` is provided, it will overwrite the opened zip
+     *
+     * @param targetFileName
+     * @param callback
+     */
+    writeZip(targetFileName: string, callback: (err: ?Error) => mixed): void,
+
+    /**
+     * Returns the content of the entire zip file as a Buffer object
+     *
+     * @return Buffer
+     */
+    toBuffer(onSuccess: (out: Buffer)=>mixed, onFail: Function, onItemStart: (name: string)=>mixed, onItemEnd: (name: string)=>mixed): Buffer,
+  }
+
+  declare export default (data?: Buffer | string) => AdmZip;
+}

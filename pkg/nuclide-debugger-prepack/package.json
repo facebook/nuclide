@@ -1,0 +1,28 @@
+{
+  "name": "nuclide-debugger-prepack",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Prepack debugger engine",
+  "author": "Prepack",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "debugger.provider": {
+      "description": "Prepack debugger engine.",
+      "versions": {
+        "0.0.0": "createDebuggerProvider"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide-deep-link.provider": {
+      "versions": {
+        "0.0.0": "consumeDeepLinkService"
+      }
+    }
+  },
+  "activationHooks": [
+    "nuclide_debugger_prepack:gk:nuclide"
+  ]
+}

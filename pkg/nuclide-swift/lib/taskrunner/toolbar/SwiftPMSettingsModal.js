@@ -9,12 +9,12 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button, ButtonTypes} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
-import {Dropdown} from '../../../../nuclide-ui/Dropdown';
-import {Modal} from '../../../../nuclide-ui/Modal';
+import {Dropdown} from 'nuclide-commons-ui/Dropdown';
+import {Modal} from 'nuclide-commons-ui/Modal';
 
 type Props = {
   configuration: string,
@@ -40,10 +40,10 @@ type State = {
   buildPath: string,
 };
 
-export default class SwiftPMSettingsModal extends React.Component {
-  props: Props;
-  state: State;
-
+export default class SwiftPMSettingsModal extends React.Component<
+  Props,
+  State,
+> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -55,7 +55,7 @@ export default class SwiftPMSettingsModal extends React.Component {
     };
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <Modal onDismiss={this.props.onDismiss}>
         <div className="block">

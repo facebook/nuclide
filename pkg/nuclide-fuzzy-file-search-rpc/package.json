@@ -1,12 +1,11 @@
 {
   "name": "nuclide-fuzzy-file-search-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/FuzzyFileSearchService.js",
   "version": "0.0.0",
   "description": "Definition and implementation of Fuzzy File Search service",
+  "author": "Nuclide : Search",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

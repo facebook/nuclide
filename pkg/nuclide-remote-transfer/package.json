@@ -1,0 +1,35 @@
+{
+  "name": "nuclide-remote-transfer",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides the ability to transfer files to and from a Remote Project",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Remote Transfer"
+      ]
+    },
+    "config": {},
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "nuclide-remote-transfer": {
+      "versions": {
+        "0.0.0": "provideService"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide-file-tree.context-menu": {
+      "versions": {
+        "0.1.0": "consumeFileTreeContextMenu"
+      }
+    }
+  },
+  "private": false,
+  "activationHooks": [
+    "nuclide_remote_transfer:gk:nuclide"
+  ]
+}

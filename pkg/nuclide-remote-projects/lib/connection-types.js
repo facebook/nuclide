@@ -5,19 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {SshHandshake} from '../../nuclide-remote-connection';
-
-export type NuclideRemoteAuthMethods =
-  // $FlowFixMe: Flow can't find the PASSWORD property on SupportedMethods.
-  | SshHandshake.SupportedMethods.PASSWORD
-  // $FlowFixMe: Flow can't find the SSL_AGENT property on SupportedMethods.
-  | SshHandshake.SupportedMethods.SSL_AGENT
-  // $FlowFixMe: Flow can't find the PRIVATE_KEY property on SupportedMethods.
-  | SshHandshake.SupportedMethods.PRIVATE_KEY;
+import type {SshHandshakeAuthMethodsType} from './ConnectionDetailsForm';
 
 export type NuclideRemoteConnectionParams = {
   username: string,
@@ -26,7 +18,7 @@ export type NuclideRemoteConnectionParams = {
   remoteServerCommand: string,
   sshPort: string,
   pathToPrivateKey: string,
-  authMethod: NuclideRemoteAuthMethods,
+  authMethod: SshHandshakeAuthMethodsType,
   displayTitle: string,
 };
 
@@ -38,7 +30,7 @@ export type NuclideNewConnectionProfileInitialFields = {
   remoteServerCommand?: string,
   sshPort: string,
   pathToPrivateKey: string,
-  authMethod: NuclideRemoteAuthMethods,
+  authMethod: SshHandshakeAuthMethodsType,
   displayTitle: string,
 };
 
@@ -62,7 +54,7 @@ export type NuclideRemoteConnectionParamsWithPassword = {
   remoteServerCommand: string,
   sshPort: string,
   pathToPrivateKey: string,
-  authMethod: NuclideRemoteAuthMethods,
+  authMethod: SshHandshakeAuthMethodsType,
   password: string,
   displayTitle: string,
 };

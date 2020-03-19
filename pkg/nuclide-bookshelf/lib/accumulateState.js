@@ -23,7 +23,7 @@ import type {
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {ActionType, EMPTY_SHORTHEAD} from './constants';
-import Immutable from 'immutable';
+import * as Immutable from 'immutable';
 import invariant from 'assert';
 
 function getEmptyRepositoryState(): BookShelfRepositoryState {
@@ -170,19 +170,20 @@ function accumulateUpdatePaneItemState(
   return {
     ...state,
     repositoryPathToState: Immutable.Map(
-      Array.from(
-        state.repositoryPathToState.entries(),
-      ).map(([repositoryPath, repositoryState]) => {
-        const fileList = (repositoryPathToEditors.get(repositoryPath) || [])
-          .map(textEditor => textEditor.getPath() || '');
-        return [
-          repositoryPath,
-          accumulateRepositoryStateUpdatePaneItemState(
-            repositoryState,
-            fileList,
-          ),
-        ];
-      }),
+      Array.from(state.repositoryPathToState.entries()).map(
+        ([repositoryPath, repositoryState]) => {
+          const fileList = (
+            repositoryPathToEditors.get(repositoryPath) || []
+          ).map(textEditor => textEditor.getPath() || '');
+          return [
+            repositoryPath,
+            accumulateRepositoryStateUpdatePaneItemState(
+              repositoryState,
+              fileList,
+            ),
+          ];
+        },
+      ),
     ),
   };
 }

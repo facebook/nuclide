@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Message} from '../../nuclide-console/lib/types';
+import type {ConsoleMessage} from 'atom-ide-ui';
 
 import {bufferUntil} from 'nuclide-commons/observable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
@@ -19,9 +19,10 @@ import {Observable} from 'rxjs';
 
 export function createMessageStream(
   line$: Observable<string>,
-): Observable<Message> {
+): Observable<ConsoleMessage> {
   // Group the lines into valid plist strings.
-  const messages = bufferUntil(line$, line => line.trim() === '</plist>')
+  const messages = line$
+    .let(bufferUntil(line => line.trim() === '</plist>'))
     // Don't include empty buffers. This happens if the stream completes since we opened a new
     // buffer when the previous record ended.
     .filter(lines => lines.length > 1)
@@ -46,7 +47,9 @@ export function createMessageStream(
   return filter(messages);
 }
 
-function filter(messages: Observable<Message>): Observable<Message> {
+function filter(
+  messages: Observable<ConsoleMessage>,
+): Observable<ConsoleMessage> {
   const patterns = featureConfig
     .observeAsStream('nuclide-ios-simulator-logs.whitelistedTags')
     .map((source: any) => {

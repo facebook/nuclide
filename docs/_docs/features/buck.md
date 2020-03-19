@@ -56,9 +56,9 @@ and type "buck" in the text box:
 > ```
 > 'atom-workspace':
 >   # note: commands are case-sensitive
->   'cmd-b': 'nuclide-task-runner:toggle-Buck-toolbar'
->   'f5': 'nuclide-task-runner:Buck-build'
->   'f6': 'nuclide-task-runner:Buck-test'
+>   'cmd-b': 'nuclide-task-runner:toggle-buck-toolbar'
+>   'f5': 'nuclide-task-runner:buck-build'
+>   'f6': 'nuclide-task-runner:buck-test'
 >   'shift-cmd-k': 'nuclide-buck:open-nearest-build-file'
 >   ...
 > ```

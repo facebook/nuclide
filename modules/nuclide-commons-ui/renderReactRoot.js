@@ -10,15 +10,18 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import ReactMountRootElement from './ReactMountRootElement';
 
 /**
  * Create a DOM element and mount the React element in it. It will be unmounted when the node is
  * detached.
  */
-export function renderReactRoot(reactElement: React.Element<any>): HTMLElement {
+export function renderReactRoot(
+  reactElement: React.Element<any>,
+  profileName?: string,
+): HTMLElement {
   const element = new ReactMountRootElement();
-  element.setReactElement(reactElement);
+  element.setReactElement(reactElement, profileName);
   return element;
 }

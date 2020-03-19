@@ -15,7 +15,7 @@ import {Point} from 'atom';
 import fuzzaldrinPlus from 'fuzzaldrin-plus';
 import AutocompleteCacher from '../../commons-atom/AutocompleteCacher';
 import {arrayFindLastIndex} from 'nuclide-commons/collection';
-import {track, trackTiming} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 import {ClangCursorToDeclarationTypes} from '../../nuclide-clang-rpc';
 import {getCompletions} from './libclang';
 
@@ -149,13 +149,14 @@ function _convertArgsToMultiLineSnippet(
     const spacesCnt =
       index === 0 ? 0 : colonPosition - arg.offset - arg.text.length;
     if (spacesCnt < 0) {
-      throw Error('This is a bug! Spaces count is negative.');
+      throw new Error('This is a bug! Spaces count is negative.');
     }
 
-    const line = `${' '.repeat(spacesCnt)}${arg.text}:\${${index +
-      1}:${arg.placeholder}}\n`;
+    const line = `${' '.repeat(spacesCnt)}${arg.text}:\${${index + 1}:${
+      arg.placeholder
+    }}\n`;
     if (index > 0 && line[colonPosition - arg.offset] !== ':') {
-      throw Error('This is a bug! Colons are not aligned!');
+      throw new Error('This is a bug! Colons are not aligned!');
     }
     return body + line;
   }, '');
@@ -220,10 +221,12 @@ type ClangAutocompleteSuggestion = atom$AutocompleteSuggestion & {
 };
 
 export default class AutocompleteHelpers {
+  // $FlowFixMe (>=0.85.0) (T35986896) Flow upgrade suppress
   static _cacher = new AutocompleteCacher(
     AutocompleteHelpers._getAutocompleteSuggestions,
     {
-      updateResults(request, results) {
+      updateResults(_originalRequest, request, results) {
+        // TODO: update the ranges once Clang LSP starts returning TextEdits.
         const {editor} = request;
         const prefix = getCompletionPrefix(editor);
         // We hit the results limit, so there may be unlisted results.
@@ -238,22 +241,24 @@ export default class AutocompleteHelpers {
     },
   );
 
-  static getAutocompleteSuggestions(
+  static async getAutocompleteSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<Array<atom$AutocompleteSuggestion>> {
-    return trackTiming('nuclide-clang-atom.autocomplete', async () => {
-      const results = await AutocompleteHelpers._cacher.getSuggestions(request);
-      if (results != null) {
-        return [...results];
-      }
-      return [];
-    });
+    const results = await AutocompleteHelpers._cacher.getSuggestions(request);
+    if (results != null) {
+      return [...results];
+    }
+    return [];
   }
 
   static async _getAutocompleteSuggestions(
     request: atom$AutocompleteRequest,
   ): Promise<?Array<ClangAutocompleteSuggestion>> {
-    const {editor, bufferPosition: {row, column}, activatedManually} = request;
+    const {
+      editor,
+      bufferPosition: {row, column},
+      activatedManually,
+    } = request;
     const prefix = getCompletionPrefix(editor);
     // Only autocomplete empty strings when it's a method (a.?, a->?) or qualifier (a::?),
     // or function call (f(...)).

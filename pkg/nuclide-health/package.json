@@ -1,10 +1,9 @@
 {
   "name": "nuclide-health",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides some simple process stats in the status bar",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -17,7 +16,7 @@
         "title": "Analytics Send Interval",
         "order": 0,
         "type": "integer",
-        "default": 10,
+        "default": 20,
         "description": "Polling interval for sending aggregated health stats as analytics (in minutes).",
         "minimum": 1,
         "maximum": 60
@@ -26,31 +25,13 @@
         "title": "View Refresh Interval",
         "order": 1,
         "type": "integer",
-        "default": 1,
+        "default": 20,
         "description": "Polling interval for showing health stats in status views (in seconds).",
         "minimum": 1,
         "maximum": 60
-      },
-      "toolbarJewel": {
-        "title": "Toolbar Jewel",
-        "order": 2,
-        "type": "string",
-        "default": "Child processes",
-        "description": "Show a statistic by the Health icon in the toolbar",
-        "enum": [
-          "None",
-          "CPU",
-          "Heap",
-          "Memory",
-          "Key latency",
-          "Handles",
-          "Child processes",
-          "Event loop"
-        ]
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "tool-bar": {

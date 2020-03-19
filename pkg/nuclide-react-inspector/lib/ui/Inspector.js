@@ -9,16 +9,14 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Webview} from '../../../nuclide-ui/Webview';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/react-inspector';
 
 type Props = {||};
 
-export default class Inspector extends React.Component {
-  props: Props;
-
+export default class Inspector extends React.Component<Props> {
   getTitle(): string {
     return 'React Inspector';
   }
@@ -31,7 +29,7 @@ export default class Inspector extends React.Component {
     return WORKSPACE_VIEW_URI;
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     return (
       <Webview
         style={{width: '100%', height: '100%'}}
@@ -54,7 +52,9 @@ export default class Inspector extends React.Component {
       theme = themes[1];
     }
 
-    const element = ((event.target: any): WebviewElement);
+    // NB: electron-flowtype-definitions doesn't yet generate a Type for WebView
+    // so we'll type it as `any` and get the WebContents out
+    const element = (event.target: any);
     const requirePaths = require.cache[__filename].paths;
     const inspectorDevTools = require.resolve('react-devtools-core/standalone');
     element.executeJavaScript(
@@ -63,6 +63,7 @@ export default class Inspector extends React.Component {
         ${JSON.stringify(requirePaths)},
         ${JSON.stringify(theme)}
       );`,
+      true,
     );
   };
 }

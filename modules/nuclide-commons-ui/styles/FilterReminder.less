@@ -1,0 +1,25 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.nuclide-filter-reminder {
+  display: flex;
+  flex-shrink: 0;
+  font-style: italic;
+  flex-wrap: wrap;
+  padding: (@component-padding / 2);
+
+  &, pre {
+    background-color: @syntax-background-color;
+  }
+
+  pre { padding: 0; }
+
+  a {
+    text-decoration: underline;
+  }
+}
+
+.nuclide-filter-reminder-message {
+  flex: 1;
+  margin-right: 1em;
+}

@@ -1,0 +1,10 @@
+[
+	"No se encuentra el sistema en tiempo de ejecución '{0}' en PATH.",
+	"No se puede iniciar el destino de depuración en el terminal ({0}).",
+	"No se puede iniciar el destino de depuración ({0}).",
+	"Tipo de consola desconocido: '{0}'.",
+	"No se puede iniciar el programa '{0}'. Configurar mapas de origen puede ser útil.",
+	"No se puede iniciar el programa '{0}'. Establecer el atributo '{1}' puede ayudar.",
+	"Cannot launch program '{0}' because corresponding JavaScript cannot be found.",
+	"No se pueden cargar las variables de entorno desde el archivo ({0})."
+]

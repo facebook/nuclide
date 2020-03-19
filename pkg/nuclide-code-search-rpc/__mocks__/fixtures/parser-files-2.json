@@ -1,0 +1,11 @@
+[
+  {
+    "column": 16,
+    "file": "file:1:2:3:::-1",
+    "line": "// filename has lots of colons",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 14,
+    "row": 0
+  }
+]

@@ -1,0 +1,12 @@
+# From https://github.com/atom/language-objective-c/blob/a0159d115d89698dec7116793163c86233e38a3a/grammars/objective-c.cson
+'scopeName': 'source.objc'
+'fileTypes': [
+  'm'
+  'h'
+  'pch'
+  'x'
+  'xm'
+  'xmi'
+]
+'name': 'Objective-C'
+'patterns': []

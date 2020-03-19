@@ -14,7 +14,6 @@
 import type FileTreeContextMenu from '../../nuclide-file-tree/lib/FileTreeContextMenu';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
 
-import {CompositeDisposable, Disposable} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import VcsLogComponent from './VcsLogComponent';
 import VcsLogGadget from './VcsLogGadget';
@@ -26,9 +25,10 @@ import {maybeToString} from 'nuclide-commons/string';
 import querystring from 'querystring';
 import {repositoryForPath} from '../../nuclide-vcs-base';
 import {shortNameForAuthor as shortNameForAuthorFn} from './util';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import url from 'url';
-import React from 'react';
+import * as React from 'react';
 import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 
 const SHOW_LOG_FILE_TREE_CONTEXT_MENU_PRIORITY = 500;
@@ -39,10 +39,10 @@ const VCS_LOG_URI_PREFIX = 'atom://nucide-vcs-log/view';
 const VCS_LOG_URI_PATHS_QUERY_PARAM = 'path';
 
 class Activation {
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor() {
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._registerOpener();
   }
 
@@ -68,17 +68,18 @@ class Activation {
     // (or at least reduce) the logic here.
 
     this._subscriptions.add(
-      atom.commands.add(
-        'atom-text-editor',
-        'nuclide-vcs-log:show-log-for-active-editor',
-        () => {
-          const uri = getActiveTextEditorURI();
-          if (uri != null) {
-            openLogPaneForURI(uri);
-            track('nuclide-vcs-log:open-from-text-editor');
-          }
+      atom.commands.add('atom-text-editor', {
+        'nuclide-vcs-log:show-log-for-active-editor': {
+          description: 'Show File History',
+          didDispatch: () => {
+            const uri = getActiveTextEditorURI();
+            if (uri != null) {
+              openLogPaneForURI(uri);
+              track('nuclide-vcs-log:open-from-text-editor');
+            }
+          },
         },
-      ),
+      }),
       atom.contextMenu.add({
         'atom-text-editor': [
           {
@@ -135,7 +136,9 @@ class Activation {
     // We don't need to dispose of the contextDisposable when the provider is disabled -
     // it needs to be handled by the provider itself. We only should remove it from the list
     // of the disposables we maintain.
-    return new Disposable(() => this._subscriptions.remove(contextDisposable));
+    return new UniversalDisposable(() =>
+      this._subscriptions.remove(contextDisposable),
+    );
   }
 
   dispose() {
@@ -222,7 +225,7 @@ function createLogPaneForPath(path: string): ?React.Element<any> {
   const contentLoader = currentDiff.switchMap(ids => {
     const {oldId, newId} = ids;
     if (oldId == null || newId == null) {
-      return Observable.of({oldContent: null, newContent: null});
+      return Observable.of({oldContent: null, newContent: null, error: null});
     }
     return Observable.forkJoin(
       oldId !== ''
@@ -233,7 +236,18 @@ function createLogPaneForPath(path: string): ?React.Element<any> {
         : Observable.of(''),
     )
       .startWith([null, null])
-      .map(([oldContent, newContent]) => ({oldContent, newContent}));
+      .map(([oldContent, newContent]) => ({
+        oldContent,
+        newContent,
+        error: null,
+      }))
+      .catch(error => {
+        return Observable.of({
+          oldContent: null,
+          newContent: null,
+          error: error.toString(),
+        });
+      });
   });
 
   const props = Observable.combineLatest(
@@ -248,6 +262,7 @@ function createLogPaneForPath(path: string): ?React.Element<any> {
       repository,
       onDiffClick,
       logEntries,
+      fileLoadingError: content.error,
       oldContent: content.oldContent,
       newContent: content.newContent,
     };

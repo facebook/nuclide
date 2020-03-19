@@ -1,0 +1,1 @@
+declare function fancy(cb: Some => Other): void;

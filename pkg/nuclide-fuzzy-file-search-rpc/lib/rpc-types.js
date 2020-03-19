@@ -10,9 +10,23 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {ClientQueryContext} from '../../commons-atom/ClientQueryContext';
 
 export type FileSearchResult = {
   path: NuclideUri,
   score: number,
   matchIndexes: Array<number>,
 };
+
+export type DirectorySearchConfig =
+  | {
+      useCustomSearch: false,
+    }
+  | {
+      useCustomSearch: true,
+      search(
+        queryString: string,
+        rootDirectory: NuclideUri,
+        context: ?ClientQueryContext,
+      ): Promise<Array<FileSearchResult>>,
+    };

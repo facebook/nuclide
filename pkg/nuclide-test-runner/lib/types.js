@@ -85,9 +85,29 @@ export type Message =
   | StdoutMessage
   | ErrorMessage;
 
+export type RunTestOptionValue =
+  | boolean
+  | number
+  | string
+  | Array<number>
+  | Array<string>;
+
+// Metadata about a run test option
+export type RunTestOption = {
+  type: string,
+  label?: string,
+  tooltip?: string,
+  placeholderText?: string,
+};
+
 export type TestRunner = {
   label: string,
   runTest: (filePath: NuclideUri) => Observable<Message>,
+  runTestWithOptions?: (
+    filePath: NuclideUri,
+    options: Map<string, RunTestOptionValue>,
+  ) => Observable<Message>,
   attachDebugger?: (filePath: NuclideUri) => Promise<void>,
   debuggerProviderName?: string,
+  supportedOptions?: Map<string, RunTestOption>,
 };

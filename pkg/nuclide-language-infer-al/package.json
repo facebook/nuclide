@@ -1,0 +1,9 @@
+{
+  "name": "nuclide-language-infer-al",
+  "version": "0.0.0",
+  "description": "Infer AL language support in Atom",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  }
+}

@@ -1,0 +1,6 @@
+const Components = require('Components');
+const React = require('React');
+
+var {A, B} = Components;
+
+var jsx = <A><B/></A>;

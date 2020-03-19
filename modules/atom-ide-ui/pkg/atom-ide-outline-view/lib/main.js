@@ -15,7 +15,7 @@ import {observeActivePaneItemDebounced} from 'nuclide-commons-atom/debounced';
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import analytics from 'nuclide-commons-atom/analytics';
+import analytics from 'nuclide-commons/analytics';
 
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
@@ -36,11 +36,7 @@ class Activation {
     );
 
     this._editorService = new ActiveEditorRegistry(
-      (provider, editor) => {
-        analytics.track('nuclide-outline-view-getoutline');
-        return provider.getOutline(editor);
-      },
-      {},
+      (provider, editor) => provider.getOutline(editor),
       getActiveEditorRegistryEventSources(),
     );
   }
@@ -53,25 +49,8 @@ class Activation {
     return this._editorService.consumeProvider(provider);
   }
 
-  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
-    const toolBar = getToolBar('nuclide-outline-view');
-    const {element} = toolBar.addButton({
-      icon: 'list-unordered',
-      callback: 'outline-view:toggle',
-      tooltip: 'Toggle Outline View',
-      priority: 200,
-    });
-    // Class added is not defined elsewhere, and is just used to mark the toolbar button
-    element.classList.add('nuclide-outline-view-toolbar-button');
-    const disposable = new UniversalDisposable(() => {
-      toolBar.removeItems();
-    });
-    this._disposables.add(disposable);
-    return disposable;
-  }
-
   _createOutlineViewPanelState(): OutlineViewPanelState {
-    analytics.track('nuclide-outline-view-show');
+    analytics.track('outline-view-show');
     return new OutlineViewPanelState(createOutlines(this._editorService));
   }
 
@@ -116,9 +95,7 @@ function getActiveEditorRegistryEventSources() {
     activeEditors: observeActivePaneItemDebounced()
       .switchMap(item => {
         if (isValidTextEditor(item)) {
-          // Flow cannot understand the type refinement provided by the isValidTextEditor function,
-          // so we have to cast.
-          return Observable.of(((item: any): atom$TextEditor));
+          return Observable.of(item);
         } else if (item instanceof OutlineViewPanelState) {
           // Ignore switching to the outline view.
           return Observable.empty();

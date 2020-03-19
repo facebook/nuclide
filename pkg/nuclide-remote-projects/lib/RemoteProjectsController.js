@@ -9,132 +9,95 @@
  * @format
  */
 
-import invariant from 'assert';
+import type {Props as StatusBarTilePropsType} from './StatusBarTile';
+
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {throttle} from 'nuclide-commons/observable';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import * as React from 'react';
+import {Observable} from 'rxjs';
 import {ServerConnection} from '../../nuclide-remote-connection';
-import React from 'react';
-import ReactDOM from 'react-dom';
-import {CompositeDisposable, Disposable} from 'atom';
-import StatusBarTile from './StatusBarTile';
-import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import ConnectionState from './ConnectionState';
+import StatusBarTile from './StatusBarTile';
+
+const THROTTLE_TIME_MS = 500;
+
+// Exported for testing.
+export function _observeConnectionState(
+  connectionStream: Observable<Array<ServerConnection>>,
+): Observable<StatusBarTilePropsType> {
+  return connectionStream
+    .switchMap(
+      (
+        connections,
+      ): Observable<Array<[string, $Values<typeof ConnectionState>]>> => {
+        if (connections.length === 0) {
+          return Observable.of([]);
+        }
+        // Observe the connection states of all connections simultaneously.
+        // $FlowFixMe: add array signature to combineLatest
+        return Observable.combineLatest(
+          connections.map(conn => {
+            const heartbeat = conn.getHeartbeat();
+            return (
+              Observable.of(
+                heartbeat.isAway()
+                  ? ConnectionState.DISCONNECTED
+                  : ConnectionState.CONNECTED,
+              )
+                .concat(
+                  Observable.merge(
+                    observableFromSubscribeFunction(cb =>
+                      heartbeat.onHeartbeat(cb),
+                    ).mapTo(ConnectionState.CONNECTED),
+                    observableFromSubscribeFunction(cb =>
+                      heartbeat.onHeartbeatError(cb),
+                    ).mapTo(ConnectionState.DISCONNECTED),
+                  ),
+                )
+                .distinctUntilChanged()
+                // Key the connection states by hostname.
+                .map(state => [conn.getRemoteHostname(), state])
+            );
+          }),
+        );
+      },
+    )
+    .map(states => ({
+      connectionStates: new Map(states),
+    }));
+}
 
 export default class RemoteProjectsController {
-  _disposables: CompositeDisposable;
-  _statusBarDiv: ?HTMLElement;
-  _statusBarTile: ?StatusBarTile;
-  _statusSubscription: ?IDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._statusBarTile = null;
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
+  }
 
-    this._statusSubscription = null;
-    this._disposables.add(
-      atom.workspace.onDidChangeActivePaneItem(
-        this._disposeSubscription.bind(this),
+  consumeStatusBar(statusBar: atom$StatusBar): IDisposable {
+    const BoundStatusBarTile = bindObservableAsProps(
+      _observeConnectionState(ServerConnection.observeRemoteConnections()).let(
+        throttle(THROTTLE_TIME_MS),
       ),
-      atom.workspace.onDidStopChangingActivePaneItem(
-        this._updateConnectionStatus.bind(this),
-      ),
+      StatusBarTile,
     );
-  }
-
-  _disposeSubscription(): void {
-    const subscription = this._statusSubscription;
-    if (subscription) {
-      this._disposables.remove(subscription);
-      subscription.dispose();
-      this._statusSubscription = null;
-    }
-  }
-
-  _updateConnectionStatus(paneItem: mixed): void {
-    this._disposeSubscription();
-
-    if (!isValidTextEditor(paneItem)) {
-      this._renderStatusBar(ConnectionState.NONE);
-      return;
-    }
-    // Flow does not understand that isTextEditor refines the type to atom$TextEditor
-    const textEditor = ((paneItem: any): atom$TextEditor);
-    const fileUri = textEditor.getPath();
-    // flowlint-next-line sketchy-null-string:off
-    if (!fileUri) {
-      return;
-    }
-    if (nuclideUri.isLocal(fileUri)) {
-      this._renderStatusBar(ConnectionState.LOCAL, fileUri);
-      return;
-    }
-
-    const updateStatus = isConnected => {
-      this._renderStatusBar(
-        isConnected ? ConnectionState.CONNECTED : ConnectionState.DISCONNECTED,
-        fileUri,
-      );
-    };
-
-    const connection = ServerConnection.getForUri(fileUri);
-    if (connection == null) {
-      updateStatus(false);
-      return;
-    }
-
-    const socket = connection.getSocket();
-    updateStatus(socket.isConnected());
-
-    this._statusSubscription = socket.onStatus(updateStatus);
-    this._disposables.add(this._statusSubscription);
-  }
-
-  consumeStatusBar(statusBar: atom$StatusBar): void {
-    this._statusBarDiv = document.createElement('div');
-    this._statusBarDiv.className = 'nuclide-remote-projects inline-block';
-
-    const tooltip = atom.tooltips.add(this._statusBarDiv, {
-      title: 'Click to show details of connection.',
-    });
-    invariant(this._statusBarDiv);
-    const rightTile = statusBar.addLeftTile({
-      item: this._statusBarDiv,
+    const item = renderReactRoot(<BoundStatusBarTile />);
+    item.className = 'inline-block';
+    const statusBarTile = statusBar.addLeftTile({
+      item,
       priority: -99,
     });
-
-    this._disposables.add(
-      new Disposable(() => {
-        invariant(this._statusBarDiv);
-        const parentNode = this._statusBarDiv.parentNode;
-        if (parentNode) {
-          parentNode.removeChild(this._statusBarDiv);
-        }
-        ReactDOM.unmountComponentAtNode(this._statusBarDiv);
-        this._statusBarDiv = null;
-        rightTile.destroy();
-        tooltip.dispose();
-      }),
-    );
-
-    const textEditor = atom.workspace.getActiveTextEditor();
-    if (textEditor != null) {
-      this._updateConnectionStatus(textEditor);
-    }
+    const disposable = new UniversalDisposable(() => statusBarTile.destroy());
+    this._disposables.add(disposable);
+    return new UniversalDisposable(() => {
+      this._disposables.remove(disposable);
+    });
   }
 
-  _renderStatusBar(connectionState: number, fileUri?: string): void {
-    if (!this._statusBarDiv) {
-      return;
-    }
-
-    const component = ReactDOM.render(
-      <StatusBarTile connectionState={connectionState} fileUri={fileUri} />,
-      this._statusBarDiv,
-    );
-    invariant(component instanceof StatusBarTile);
-    this._statusBarTile = component;
-  }
-
-  destroy(): void {
+  dispose(): void {
     this._disposables.dispose();
   }
 }

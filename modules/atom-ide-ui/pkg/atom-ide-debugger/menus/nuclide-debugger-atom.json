@@ -1,0 +1,106 @@
+{
+  "menu": [
+    {
+      "label": "View",
+      "submenu": [
+        {
+          "label": "Toggle Debugger",
+          "command": "debugger:toggle"
+        }
+      ]
+    },
+    {
+      "label": "&Debugger",
+      "submenu": [
+        {
+          "label": "&Attach Debugger...",
+          "command": "debugger:show-attach-dialog"
+        },
+        {
+          "label": "&Launch Debugger...",
+          "command": "debugger:show-launch-dialog"
+        },
+        {
+          "label": "&Restart Debugger",
+          "command": "debugger:restart-debugging"
+        },
+        {
+          "label": "Sto&p Debugging",
+          "command": "debugger:stop-debugging"
+        },
+        {
+          "type": "separator"
+        },
+        {
+          "label": "Step &Over",
+          "command": "debugger:step-over"
+        },
+        {
+          "label": "Step &Into",
+          "command": "debugger:step-into"
+        },
+        {
+          "label": "Step Out",
+          "command": "debugger:step-out"
+        },
+        {
+          "label": "Re&sume Debugger Target",
+          "command": "debugger:continue-debugging"
+        },
+        {
+          "label": "Continue to Location",
+          "command": "debugger:run-to-location"
+        },
+        {
+          "type": "separator"
+        },
+        {
+          "label": "Toggle &Breakpoint At Current Line",
+          "command": "debugger:toggle-breakpoint"
+        },
+        {
+          "label": "Toggle Breakpoint Enabled/Disabled",
+          "command": "debugger:toggle-breakpoint-enabled"
+        },
+        {
+          "label": "&Enable All Breakpoints",
+          "command": "debugger:enable-all-breakpoints"
+        },
+        {
+          "label": "Disable All Breakpoints",
+          "command": "debugger:disable-all-breakpoints"
+        },
+        {
+          "label": "Re&move Breakpoint",
+          "command": "debugger:remove-breakpoint"
+        },
+        {
+          "label": "Remove All Breakpoints",
+          "command": "debugger:remove-all-breakpoints"
+        },
+        {
+          "type": "separator"
+        },
+        {
+          "label": "&Show Debugger Pane",
+          "command": "debugger:show"
+        },
+        {
+          "label": "&Hide Debugger Pane",
+          "command": "debugger:hide"
+        },
+        {
+          "label": "Reset Debugger Layout",
+          "command": "debugger:reset-layout"
+        },
+        {
+          "type": "separator"
+        },
+        {
+          "label": "Copy Callstack",
+          "command": "debugger:copy-debugger-callstack"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+const X = require('X');
+const {Y} = require('X');
+
+const x = X + Y;

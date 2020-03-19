@@ -9,10 +9,8 @@
  * @format
  */
 
-import type {DOMMeasurements} from '../commons-atom/observe-element-dimensions';
-
-import React from 'react';
-import {MeasuredComponent} from './MeasuredComponent';
+import * as React from 'react';
+import {MeasuredComponent} from 'nuclide-commons-ui/MeasuredComponent';
 import {Button} from 'nuclide-commons-ui/Button';
 
 type Props = {
@@ -30,10 +28,7 @@ type State = {
  * aligned at the bottom. Clicking "Show More" will remove the max height restriction
  * and expand the component to full height.
  */
-export class ShowMoreComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class ShowMoreComponent extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -44,15 +39,20 @@ export class ShowMoreComponent extends React.Component {
     };
   }
 
-  _updateMeasurements = (newMeasurements: DOMMeasurements): void => {
-    if (newMeasurements.scrollHeight !== this.state.currentHeight) {
+  _updateMeasurements = (
+    newMeasurements: DOMRectReadOnly,
+    target: HTMLElement,
+  ): void => {
+    const newHeight = target.scrollHeight;
+
+    if (newHeight !== this.state.currentHeight) {
       this.setState({
-        currentHeight: newMeasurements.scrollHeight,
+        currentHeight: newHeight,
       });
     }
   };
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {showingMore, currentHeight} = this.state;
     const {maxHeight} = this.props;
 
@@ -94,6 +94,9 @@ export class ShowMoreComponent extends React.Component {
   }
 
   _toggleShowMore = (): void => {
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     this.setState({showingMore: !this.state.showingMore});
   };
 }

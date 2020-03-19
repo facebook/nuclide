@@ -1,18 +1,21 @@
 {
   "name": "nuclide-settings",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "A view of Nuclide Settings organized by features instead of by package.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "tool-bar": {
       "versions": {
         "^1.0.0": "consumeToolBar"
+      }
+    },
+    "nuclide-deep-link.provider": {
+      "versions": {
+        "0.0.0": "consumeDeepLinkService"
       }
     }
   }

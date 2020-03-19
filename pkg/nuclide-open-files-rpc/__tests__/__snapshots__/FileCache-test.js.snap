@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FileCache edit 1`] = `
+Array [
+  Object {
+    "changeCount": 3,
+    "contents": "contents1",
+    "filePath": "f1",
+    "kind": "open",
+    "languageId": "Babel ES6 JavaScript",
+  },
+  Object {
+    "changeCount": 4,
+    "filePath": "f1",
+    "kind": "edit",
+    "newRange": Range {
+      "end": Point {
+        "column": 9,
+        "row": 0,
+      },
+      "start": Point {
+        "column": 3,
+        "row": 0,
+      },
+    },
+    "newText": "eleven",
+    "oldRange": Range {
+      "end": Point {
+        "column": 6,
+        "row": 0,
+      },
+      "start": Point {
+        "column": 3,
+        "row": 0,
+      },
+    },
+    "oldText": "ten",
+  },
+]
+`;
+
+exports[`FileCache out of date sync 1`] = `"[{\\"kind\\":\\"open\\",\\"contents\\":\\"blip\\",\\"languageId\\":\\"Babel ES6 JavaScript\\",\\"filePath\\":\\"f2\\",\\"changeCount\\":42}]"`;

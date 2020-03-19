@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {Message} from 'nuclide-commons/process';
 import type {
   AppState,
   BoundActionCreators,
@@ -18,28 +19,29 @@ import type {
   TaskRunner,
   ToolbarStatePreference,
 } from './types';
-import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
+import type CwdApi from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {DistractionFreeModeProvider} from '../../nuclide-distraction-free-mode';
-import type {ConsoleService} from '../../nuclide-console/lib/types';
+import type {ConsoleService} from 'atom-ide-ui';
 
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
+import {combineEpicsFromImports} from 'nuclide-commons/epicHelpers';
 import syncAtomCommands from '../../commons-atom/sync-atom-commands';
+import {track} from 'nuclide-analytics';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {LocalStorageJsonTable} from '../../commons-atom/LocalStorageJsonTable';
-import PanelRenderer from '../../commons-atom/PanelRenderer';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {memoize} from 'lodash';
 import {arrayEqual} from 'nuclide-commons/collection';
-import {
-  combineEpics,
-  createEpicMiddleware,
-} from 'nuclide-commons/redux-observable';
+import {createEpicMiddleware} from 'nuclide-commons/redux-observable';
+import observableFromReduxStore from 'nuclide-commons/observableFromReduxStore';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import * as Actions from './redux/Actions';
 import * as Epics from './redux/Epics';
 import * as Reducers from './redux/Reducers';
-import {trackingMiddleware} from './trackingMiddleware';
-import {createPanelItem} from './ui/createPanelItem';
+import getToolbarProps from './ui/getToolbarProps';
+import Toolbar from './ui/Toolbar';
 import invariant from 'assert';
-import {Disposable} from 'atom';
 import {
   applyMiddleware,
   bindActionCreators,
@@ -47,6 +49,7 @@ import {
   createStore,
 } from 'redux';
 import {Observable} from 'rxjs';
+import * as React from 'react';
 
 // TODO: use a more general versioning mechanism.
 // Perhaps Atom should provide packages with some way of doing this.
@@ -55,6 +58,7 @@ const SERIALIZED_VERSION = 2;
 const COMMON_TASK_TYPES = ['build', 'run', 'test', 'debug'];
 
 function getVisible(event: Event): ?boolean {
+  // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
   if (event.detail != null && typeof event.detail === 'object') {
     const {visible} = event.detail;
     return visible != null ? Boolean(visible) : null;
@@ -65,7 +69,7 @@ function getVisible(event: Event): ?boolean {
 class Activation {
   _disposables: UniversalDisposable;
   _actionCreators: BoundActionCreators;
-  _panelRenderer: PanelRenderer;
+  _panel: atom$Panel;
   _store: Store;
 
   constructor(rawState: ?SerializedAppState): void {
@@ -84,30 +88,41 @@ class Activation {
       'nuclide:nuclide-task-runner:working-root-preferences',
     );
 
-    const epics = Object.keys(Epics)
-      .map(k => Epics[k])
-      .filter(epic => typeof epic === 'function');
+    const initialVisibility = getInitialVisibility(
+      serializedState,
+      preferencesForWorkingRoots,
+    );
+
+    track('nuclide-task-runner:initialized', {
+      visible: initialVisibility,
+    });
+
     const epicOptions = {preferencesForWorkingRoots};
     const rootEpic = (actions, store) =>
-      combineEpics(...epics)(actions, store, epicOptions);
+      combineEpicsFromImports(Epics, 'nuclide-task-runner')(
+        actions,
+        store,
+        epicOptions,
+      );
     this._store = createStore(
       combineReducers(Reducers),
-      {
-        visible: getInitialVisibility(
-          serializedState,
-          preferencesForWorkingRoots,
-        ),
-      },
-      applyMiddleware(createEpicMiddleware(rootEpic), trackingMiddleware),
+      {visible: initialVisibility},
+      applyMiddleware(createEpicMiddleware(rootEpic)),
     );
-    const states = Observable.from(this._store)
-      .filter((state: AppState) => state.taskRunnersReady)
+    const states: Observable<AppState> = observableFromReduxStore(this._store)
+      .filter((state: AppState) => state.initialPackagesActivated)
       .distinctUntilChanged()
       .share();
     this._actionCreators = bindActionCreators(Actions, this._store.dispatch);
-    this._panelRenderer = new PanelRenderer({
-      location: 'top',
-      createItem: () => createPanelItem(this._store),
+    this._panel = atom.workspace.addTopPanel({
+      item: {
+        getElement: memoize(() => {
+          const props = getToolbarProps(this._store);
+          const StatefulToolbar = bindObservableAsProps(props, Toolbar);
+          return renderReactRoot(<StatefulToolbar />, 'TaskRunnerToolbarRoot');
+        }),
+      },
+      visible: false,
     });
 
     this._disposables = new UniversalDisposable(
@@ -115,7 +130,9 @@ class Activation {
       activateInitialPackagesObservable().subscribe(() => {
         this._store.dispatch(Actions.didActivateInitialPackages());
       }),
-      this._panelRenderer,
+      () => {
+        this._panel.destroy();
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-task-runner:toggle-toolbar-visibility': event => {
           this._actionCreators.requestToggleToolbarVisibility(
@@ -143,8 +160,9 @@ class Activation {
           'atom-workspace': {
             [`nuclide-task-runner:${taskRunner.name
               .toLowerCase()
-              .replace(' ', '-')}-${taskMeta.type}`]: () => {
-              this._actionCreators.runTask({...taskMeta, taskRunner});
+              .replace(' ', '-')}-${taskMeta.type}`]: event => {
+              const {detail} = (event: any);
+              this._actionCreators.runTask(taskRunner, taskMeta, detail);
             },
           },
         }),
@@ -153,8 +171,11 @@ class Activation {
       syncAtomCommands(
         states
           .map(state => {
-            const {activeTaskRunner, isUpdatingTaskRunners} = state;
-            if (isUpdatingTaskRunners || !activeTaskRunner) {
+            const {activeTaskRunner, readyTaskRunners, taskRunners} = state;
+            if (
+              taskRunners.count() > readyTaskRunners.count() ||
+              !activeTaskRunner
+            ) {
               return [];
             }
             const taskRunnerState = state.statesForTaskRunners.get(
@@ -179,10 +200,11 @@ class Activation {
         taskMeta => ({
           'atom-workspace': {
             [`nuclide-task-runner:${taskMeta.type}`]: () => {
-              this._actionCreators.runTask({
-                ...taskMeta,
-                taskRunner: this._store.getState().activeTaskRunner,
-              });
+              const taskRunner: ?TaskRunner = this._store.getState()
+                .activeTaskRunner;
+              if (taskRunner != null) {
+                this._actionCreators.runTask(taskRunner, taskMeta);
+              }
             },
           },
         }),
@@ -217,7 +239,11 @@ class Activation {
         .map(state => state.visible)
         .distinctUntilChanged()
         .subscribe(visible => {
-          this._panelRenderer.render({visible});
+          if (visible) {
+            this._panel.show();
+          } else {
+            this._panel.hide();
+          }
         }),
       // Add a "stop" command when a task is running.
       states
@@ -249,12 +275,22 @@ class Activation {
     this._disposables.dispose();
   }
 
-  consumeCurrentWorkingDirectory(api: CwdApi): void {
-    this._disposables.add(
-      api.observeCwd(directory => {
-        this._actionCreators.setProjectRoot(directory);
-      }),
-    );
+  consumeCurrentWorkingDirectory(api: CwdApi): IDisposable {
+    let pkg = this;
+    const cwdSubscription = api.observeCwd(directory => {
+      invariant(pkg != null, 'callback invoked after package deactivated');
+      pkg._actionCreators.setProjectRoot(directory);
+    });
+    this._disposables.add(cwdSubscription, () => {
+      pkg = null;
+    });
+    return new UniversalDisposable(() => {
+      if (pkg != null) {
+        cwdSubscription.dispose();
+        pkg._disposables.remove(cwdSubscription);
+        pkg._actionCreators.setProjectRoot(null);
+      }
+    });
   }
 
   consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
@@ -272,9 +308,8 @@ class Activation {
     element.className += ' nuclide-task-runner-tool-bar-button';
 
     const buttonUpdatesDisposable = new UniversalDisposable(
-      // $FlowFixMe: Update rx defs to accept ish with Symbol.observable
-      Observable.from(this._store).subscribe(state => {
-        if (state.taskRunners.length > 0) {
+      observableFromReduxStore(this._store).subscribe((state: AppState) => {
+        if (state.taskRunners.count() > 0) {
           element.removeAttribute('hidden');
         } else {
           element.setAttribute('hidden', 'hidden');
@@ -283,7 +318,7 @@ class Activation {
     );
 
     // Remove the button from the toolbar.
-    const buttonPresenceDisposable = new Disposable(() => {
+    const buttonPresenceDisposable = new UniversalDisposable(() => {
       toolBar.removeItems();
     });
 
@@ -292,7 +327,7 @@ class Activation {
 
     // If tool-bar is disabled, stop updating the button state and remove tool-bar related cleanup
     // from this package's disposal actions.
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       buttonUpdatesDisposable.dispose();
       this._disposables.remove(buttonUpdatesDisposable);
       this._disposables.remove(buttonPresenceDisposable);
@@ -300,8 +335,16 @@ class Activation {
   }
 
   consumeConsole(service: ConsoleService): IDisposable {
+    let pkg = this;
+    this._disposables.add(() => {
+      pkg = null;
+    });
     this._actionCreators.setConsoleService(service);
-    return new Disposable(() => this._actionCreators.setConsoleService(null));
+    return new UniversalDisposable(() => {
+      if (pkg != null) {
+        pkg._actionCreators.setConsoleService(null);
+      }
+    });
   }
 
   provideTaskRunnerServiceApi(): TaskRunnerServiceApi {
@@ -316,10 +359,23 @@ class Activation {
           'Task runner service API used after deactivation',
         );
         pkg._actionCreators.registerTaskRunner(taskRunner);
-        return new Disposable(() => {
+        return new UniversalDisposable(() => {
           if (pkg != null) {
             pkg._actionCreators.unregisterTaskRunner(taskRunner);
           }
+        });
+      },
+      printToConsole: (message: Message, taskRunner: TaskRunner) => {
+        invariant(
+          pkg != null,
+          'Task runner service API used after deactivation',
+        );
+        this._store.dispatch({
+          type: Actions.TASK_MESSAGE,
+          payload: {
+            taskRunner,
+            message,
+          },
         });
       },
     };
@@ -355,7 +411,6 @@ class Activation {
 createPackage(module.exports, Activation);
 
 function activateInitialPackagesObservable(): Observable<void> {
-  // flowlint-next-line sketchy-null-mixed:off
   if (atom.packages.hasActivatedInitialPackages) {
     return Observable.of(undefined);
   }

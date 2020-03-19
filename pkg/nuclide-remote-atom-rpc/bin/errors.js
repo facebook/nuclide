@@ -5,18 +5,15 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import log4js from 'log4js';
 import os from 'os';
 
-import {
-  FileAppender,
-  getServerLogAppenderConfig,
-  initialUpdateConfig,
-} from '../../nuclide-logging';
+import {trackImmediate} from 'nuclide-analytics';
+import {initializeLogging} from '../../nuclide-logging';
 
 const logger = log4js.getLogger('nuclide-remote-atom-rpc');
 
@@ -44,22 +41,32 @@ export function setupErrorHandling() {
 }
 
 export function setupLogging() {
-  // Initialize logging
-  initialUpdateConfig();
-
-  const config = {
-    appenders: [FileAppender],
-  };
-
-  const serverLogAppenderConfig = getServerLogAppenderConfig();
-  if (serverLogAppenderConfig) {
-    config.appenders.push(serverLogAppenderConfig);
-  }
-
-  log4js.configure(config);
+  initializeLogging();
 }
 
-export function reportConnectionErrorAndExit(detailMessage: string): void {
+export async function trackSuccess(
+  command: string,
+  args: mixed,
+): Promise<void> {
+  await trackImmediate('nuclide-remote-atom-rpc:success', {command, args});
+}
+
+export async function trackError(
+  command: string,
+  args: mixed,
+  error: Error,
+): Promise<void> {
+  await trackImmediate('nuclide-remote-atom-rpc:error', {
+    command,
+    args,
+    error,
+  });
+}
+
+export function reportConnectionErrorAndExit(
+  error: FailedConnectionError,
+): void {
+  const detailMessage = error.message;
   process.stderr.write(
     `Error connecting to nuclide-server on ${os.hostname()}:\n`,
   );
@@ -80,8 +87,18 @@ export function reportConnectionErrorAndExit(detailMessage: string): void {
   process.exit(EXIT_CODE_CONNECTION_ERROR);
 }
 
+export function explainNuclideIsNeededAndExit(): void {
+  process.stderr.write(
+    'You need to have a Nuclide connection active. ' +
+      "This command doesn't normally exist on Linux and is powered by Nuclide magic.\n",
+  );
+  process.exit(EXIT_CODE_CONNECTION_ERROR);
+}
+
 export function reportErrorAndExit(error: Error, exitCode: number): void {
   process.stderr.write(error.stack);
   process.stderr.write('\n');
   process.exit(exitCode);
 }
+
+export class FailedConnectionError extends Error {}

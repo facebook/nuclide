@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -35,13 +35,14 @@ import {
   shortHeadChangedNotification,
   getShortHeadChangesFromStateStream,
 } from './utils';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 function createStateStream(
   actions: Observable<Action>,
   initialState: BookShelfState,
 ): BehaviorSubject<BookShelfState> {
   const states = new BehaviorSubject(initialState);
+  // eslint-disable-next-line nuclide-internal/unused-subscription
   actions
     .scan(accumulateState, initialState)
     .catch(error => {

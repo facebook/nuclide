@@ -39,12 +39,14 @@ export function commonPrefix(a: string, b: string): number {
   return len;
 }
 
+const BUCK_BUILD_FILES = ['BUCK', 'TARGETS'];
+
 // The file may be new. Look for a nearby BUCK or TARGETS file.
 export async function guessBuildFile(file: string): Promise<?string> {
   const dir = nuclideUri.dirname(file);
   let bestMatch = null;
   await Promise.all(
-    ['BUCK', 'TARGETS', 'compile_commands.json'].map(async name => {
+    [...BUCK_BUILD_FILES, 'compile_commands.json'].map(async name => {
       const nearestDir = await fsPromise.findNearestFile(name, dir);
       if (nearestDir != null) {
         const match = nuclideUri.join(nearestDir, name);
@@ -56,6 +58,10 @@ export async function guessBuildFile(file: string): Promise<?string> {
     }),
   );
   return bestMatch;
+}
+
+export function isBuckBuildFile(buildFile: string): boolean {
+  return BUCK_BUILD_FILES.includes(nuclideUri.basename(buildFile));
 }
 
 // Strip off the extension and conventional suffixes like "Internal" and "-inl".

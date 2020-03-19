@@ -9,8 +9,8 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
-import {trackTiming, track} from '../../nuclide-analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {trackTiming, track} from 'nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {getLogger} from 'log4js';
@@ -19,7 +19,7 @@ const logger = getLogger('nuclide-file-watcher');
 
 export default class FileWatcher {
   _editor: TextEditor;
-  _subscriptions: ?CompositeDisposable;
+  _subscriptions: ?UniversalDisposable;
 
   constructor(editor: TextEditor) {
     this._editor = editor;
@@ -27,7 +27,7 @@ export default class FileWatcher {
       logger.warn('No editor instance on this._editor');
       return;
     }
-    const _subscriptions = new CompositeDisposable();
+    const _subscriptions = new UniversalDisposable();
     _subscriptions.add(
       this._editor.onDidConflict(() => {
         if (this._shouldPromptToReload()) {

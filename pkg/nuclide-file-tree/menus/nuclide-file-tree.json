@@ -4,7 +4,7 @@
       "label": "View",
       "submenu": [
         {
-          "command": "nuclide-file-tree:toggle",
+          "command": "tree-view:toggle",
           "label": "Toggle File Tree"
         }
       ]
@@ -17,19 +17,19 @@
           "submenu": [
             {
               "label": "Toggle Focus",
-              "command": "nuclide-file-tree:toggle-focus"
+              "command": "tree-view:toggle-focus"
             },
             {
               "label": "Reveal Active File in File Tree",
-              "command": "nuclide-file-tree:reveal-active-file"
+              "command": "tree-view:reveal-active-file"
             },
             {
               "label": "Collapse File Tree",
-              "command": "nuclide-file-tree:recursive-collapse-all"
+              "command": "tree-view:recursive-collapse-all"
             },
             {
               "label": "New File...",
-              "command": "nuclide-file-tree:add-file-relative"
+              "command": "tree-view:add-file-relative"
             }
           ]
         }
@@ -37,9 +37,9 @@
     }
   ],
   "context-menu": {
-    "atom-pane atom-text-editor, [data-path]:not(.nuclide-file-tree-path)": [
+    "atom-pane atom-text-editor, [data-path]:not(.nuclide-file-tree):not(.nuclide-file-tree-entry-item):not(.nuclide-file-tree-path)": [
       {
-        "command": "nuclide-file-tree:reveal-active-file",
+        "command": "tree-view:reveal-active-file",
         "label": "Reveal in File Tree"
       },
       {

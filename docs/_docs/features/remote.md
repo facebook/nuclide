@@ -7,7 +7,7 @@ permalink: /docs/features/remote/
 
 In addition to local development, Nuclide supports remote development. Using one of
 three authentication methods (Password, an SSH agent, or a private key), you can connect to a
-project on a remote machine. This project is then added to your Project Explorer's [File Tree](/docs/editor/basics/#project-explorer) as a remote project where development occurs just it would with a local project.
+project on a remote machine. This project is then added to your Project Explorer's [File Tree](/docs/editor/basics/#project-explorer) as a remote project where development occurs just like it would with a local project.
 
 * TOC
 {:toc}
@@ -34,7 +34,7 @@ requires Watchman to detect file and directory changes. Follow the Watchman
 for your server's platform.
 - SSH Daemon - The Nuclide client connects to the server via SSH, so ensure that the server exposes
 an SSH daemon that you can connect to from your client machine and that you know the required credentials. You will need to have an existing private key that can be used to connect to the server.
-- Port 9090-9093 exposed.  *Note:* you can specify another port in the **Remote Server Command** box in
+- Port 9091-9093 exposed.  *Note:* you can specify another port in the **Remote Server Command** box in
 the [Connection Dialog box](#remote-connection__connection-dialog-box).
 
 ### Setup

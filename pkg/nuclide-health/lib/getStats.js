@@ -20,7 +20,7 @@ export default function getStats(): HealthStats {
 
   return {
     ...stats,
-    heapPercentage: 100 * stats.heapUsed / stats.heapTotal, // Just for convenience.
+    heapPercentage: (100 * stats.heapUsed) / stats.heapTotal, // Just for convenience.
     cpuPercentage: os.loadavg()[0], // 1 minute CPU average.
     activeHandles: activeHandles.length,
     activeRequests: getActiveRequests().length,

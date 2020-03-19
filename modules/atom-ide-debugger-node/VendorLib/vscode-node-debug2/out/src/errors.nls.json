@@ -1,0 +1,22 @@
+{
+	"messages": [
+		"Cannot find runtime '{0}' on PATH.",
+		"Cannot launch debug target in terminal ({0}).",
+		"Cannot launch debug target ({0}).",
+		"Unknown console type '{0}'.",
+		"Cannot launch program '{0}'; configuring source maps might help.",
+		"Cannot launch program '{0}'; setting the '{1}' attribute might help.",
+		"Cannot launch program '{0}' because corresponding JavaScript cannot be found.",
+		"Can't load environment variables from file ({0})."
+	],
+	"keys": [
+		"VSND2001",
+		"VSND2011",
+		"VSND2017",
+		"VSND2028",
+		"VSND2002",
+		"VSND2003",
+		"VSND2009",
+		"VSND2029"
+	]
+}

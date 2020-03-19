@@ -6,28 +6,32 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import {AtomInput} from './AtomInput';
-import React from 'react';
+import invariant from 'assert';
+import * as React from 'react';
 
 type Props = {
   text: string,
   grammar?: atom$Grammar,
-  highlights?: Array<atom$Range>,
-  startLine: number,
-  endLine: number,
-  onClick: (event: SyntheticMouseEvent) => mixed,
-  onLineClick: (event: SyntheticMouseEvent, line: number) => mixed,
+  highlights?: Array<atom$Range>, // NB: Highlights require a start/end line
+  startLine: ?number,
+  endLine: ?number,
+  onClick: (event: SyntheticMouseEvent<>) => mixed,
+  onLineClick: (event: SyntheticMouseEvent<>, line: number) => mixed,
+  onDidChange?: string => mixed,
 };
 
-export class CodeSnippet extends React.Component {
-  props: Props;
+export class CodeSnippet extends React.Component<Props> {
+  _editor: ?AtomInput;
+  _ongoingSelection: ?atom$Selection;
 
   componentDidMount() {
-    const editor = this.refs.editor.getTextEditor();
+    invariant(this._editor != null);
+    const editor = this._editor.getTextEditor();
     const {grammar, highlights, startLine} = this.props;
 
     if (grammar) {
@@ -35,6 +39,8 @@ export class CodeSnippet extends React.Component {
     }
 
     if (highlights != null) {
+      invariant(startLine != null);
+
       highlights.forEach(range => {
         const marker = editor.markBufferRange([
           [range.start.row - startLine, range.start.column],
@@ -56,28 +62,57 @@ export class CodeSnippet extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const lineNumbers = [];
-    for (let i = this.props.startLine; i <= this.props.endLine; i++) {
-      lineNumbers.push(
-        <div
-          key={i}
-          className="nuclide-ui-code-snippet-line-number"
-          onClick={evt => this.props.onLineClick(evt, i)}>
-          {i + 1}
-        </div>,
-      );
-    }
-    return (
-      <div className="nuclide-ui-code-snippet">
+    let lineNumberColumn: ?React.Node;
+
+    if (this.props.startLine != null && this.props.endLine != null) {
+      for (let i = this.props.startLine; i <= this.props.endLine; i++) {
+        lineNumbers.push(
+          <div
+            key={i}
+            className="nuclide-ui-code-snippet-line-number"
+            onClick={evt => this.props.onLineClick(evt, i)}>
+            {i + 1}
+          </div>,
+        );
+      }
+
+      lineNumberColumn = (
         <div className="nuclide-ui-code-snippet-line-number-column">
           {lineNumbers}
         </div>
+      );
+    }
+
+    return (
+      <div className="nuclide-ui-code-snippet">
+        {lineNumberColumn}
         <AtomInput
-          ref="editor"
+          ref={input => {
+            this._editor = input;
+          }}
           initialValue={this.props.text}
-          disabled={true}
-          onClick={this.props.onClick}
+          onMouseDown={e => {
+            this._ongoingSelection = null;
+          }}
+          onDidChangeSelectionRange={e => {
+            this._ongoingSelection = e.selection;
+          }}
+          onDidChange={this.props.onDidChange}
+          onClick={e => {
+            // If the user selected a range, cancel the `onClick` behavior
+            // to enable copying the selection.
+            let shouldCancel = false;
+            if (this._ongoingSelection != null) {
+              const {start, end} = this._ongoingSelection.getBufferRange();
+              shouldCancel = start.compare(end) !== 0;
+            }
+            if (!shouldCancel) {
+              this.props.onClick(e);
+            }
+            this._ongoingSelection = null;
+          }}
         />
       </div>
     );

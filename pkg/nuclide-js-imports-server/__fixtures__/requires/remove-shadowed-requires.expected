@@ -1,0 +1,4 @@
+function foo() {
+  var one = () => {};
+  one();
+}

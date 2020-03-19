@@ -5,15 +5,21 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {AtomCommands, AtomFileEvent, ConnectionDetails} from './rpc-types';
+import type {
+  AtomCommands,
+  ConnectionDetails,
+  MultiConnectionAtomCommands,
+} from './rpc-types';
 import type {FileCache} from '../../nuclide-open-files-rpc/lib/FileCache';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {ConnectableObservable} from 'rxjs';
 
+import {CommandServerConnection} from './CommandServerConnection';
+import {RoutingAtomCommands} from './RoutingAtomCommands';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
 import {
   loadServicesConfig,
@@ -21,160 +27,116 @@ import {
   SocketServer,
 } from '../../nuclide-rpc';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {createNewEntry, RPC_PROTOCOL} from '../shared/ConfigDirectory';
+import {getValidPathToSocket, RPC_PROTOCOL} from '../shared/ConfigDirectory';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
-import {
-  iterableIsEmpty,
-  filterIterable,
-  iterableContains,
-  firstOfIterable,
-  concatIterators,
-} from 'nuclide-commons/collection';
-import {Observable} from 'rxjs';
+import {firstOfIterable, concatIterators} from 'nuclide-commons/collection';
 
-// Ties the AtomCommands registered via RemoteCommandService to
-// the server side CommandService.
+/**
+ * A singleton instance of this class should exist in a Nuclide server.
+ *
+ * A client that connects to the Nuclide server can register a proxy to
+ * its implementation of CommandServerConnection via the CommandServer.
+ * The Nuclide server can then use the AtomCommands of a
+ * CommandServerConnection to make calls into a client.
+ *
+ * When the Nuclide server needs to take action on a specific client,
+ * it can check the hasOpenPath() for each CommandServerConnection until
+ * it finds the appropriate connection, if any.
+ */
 export class CommandServer {
   // The list of connected AtomCommands, most recent connection last.
   // We have no way of detecting a traumatic termination of an Atom
   // process, so the most recent connection is likely the healthiest
   // connection.
-  static _connections: Array<CommandServer> = [];
-  static _server: ?SocketServer = null;
+  _connections: Array<CommandServerConnection> = [];
+  _serverPromise: ?Promise<SocketServer> = null;
+  _multiConnectionAtomCommands: MultiConnectionAtomCommands;
 
-  static async _ensureServer(): Promise<SocketServer> {
-    if (CommandServer._server != null) {
-      return CommandServer._server;
+  /**
+   * In general, this constructor should not be invoked directly.
+   * Prefer getCommandServer() in ./command-server-singleton.js.
+   */
+  constructor() {
+    this._multiConnectionAtomCommands = new RoutingAtomCommands(this);
+  }
+
+  getConnectionCount(): number {
+    return this._connections.length;
+  }
+
+  getConnections(): Iterable<CommandServerConnection> {
+    return this._connections;
+  }
+
+  async _ensureServer(): Promise<SocketServer> {
+    if (this._serverPromise == null) {
+      this._serverPromise = this._createServer();
     }
+    const server = await this._serverPromise;
+    await server.untilListening();
+    return server;
+  }
+
+  async _createServer(): Promise<SocketServer> {
     const services = loadServicesConfig(nuclideUri.join(__dirname, '..'));
     const registry = new ServiceRegistry(
       [localNuclideUriMarshalers],
       services,
       RPC_PROTOCOL,
     );
-    const result = new SocketServer(registry);
-    CommandServer._server = result;
-    const address = await result.getAddress();
-    await createNewEntry(address.port, address.family);
-    return result;
+    const socketPath = await getValidPathToSocket();
+    return new SocketServer(registry, socketPath);
   }
 
-  static async getConnectionDetails(): Promise<?ConnectionDetails> {
-    const server = CommandServer.getCurrentServer();
-    return server == null
-      ? null
-      : (await CommandServer._ensureServer()).getAddress();
+  async getConnectionDetails(): Promise<?ConnectionDetails> {
+    const server = this.getCurrentServer();
+    return server == null ? null : (await this._ensureServer()).getAddress();
   }
 
-  _atomCommands: AtomCommands;
-  _fileCache: FileCache;
-
-  constructor(fileCache: FileCache, atomCommands: AtomCommands) {
-    this._atomCommands = atomCommands;
-    this._fileCache = fileCache;
-
-    CommandServer._ensureServer();
-  }
-
-  hasOpenPath(filePath: NuclideUri): boolean {
-    return (
-      !iterableIsEmpty(
-        filterIterable(this._fileCache.getOpenDirectories(), dir =>
-          nuclideUri.contains(dir, filePath),
-        ),
-      ) || iterableContains(this._fileCache.getOpenFiles(), filePath)
-    );
-  }
-
-  dispose(): void {
-    invariant(CommandServer._connections.includes(this));
-    CommandServer._connections.splice(
-      CommandServer._connections.indexOf(this),
-      1,
-    );
-  }
-
-  static async register(
+  async register(
     fileCache: FileCache,
     atomCommands: AtomCommands,
   ): Promise<IDisposable> {
-    const server = new CommandServer(fileCache, atomCommands);
-    CommandServer._connections.push(server);
-    return server;
+    await this._ensureServer();
+    const connection = new CommandServerConnection(fileCache, atomCommands);
+    this._connections.push(connection);
+    return new UniversalDisposable(() => this._removeConnection(connection));
   }
 
-  static getCurrentServer(): ?CommandServer {
-    if (CommandServer._connections.length === 0) {
+  _removeConnection(connection: CommandServerConnection) {
+    invariant(this._connections.includes(connection));
+    this._connections.splice(this._connections.indexOf(connection), 1);
+  }
+
+  getCurrentServer(): ?CommandServerConnection {
+    if (this._connections.length === 0) {
       return null;
     }
-    return CommandServer._connections[CommandServer._connections.length - 1];
+    return this._connections[this._connections.length - 1];
   }
 
-  static getDefaultAtomCommands(): ?AtomCommands {
-    const server = CommandServer.getCurrentServer();
-    return server == null ? null : server._atomCommands;
+  getDefaultAtomCommands(): ?AtomCommands {
+    const server = this.getCurrentServer();
+    return server == null ? null : server.getAtomCommands();
   }
 
-  static getServerByPath(filePath: NuclideUri): ?CommandServer {
+  _getConnectionByPath(filePath: NuclideUri): ?CommandServerConnection {
     return firstOfIterable(
       concatIterators(
-        CommandServer._connections.filter(server =>
-          server.hasOpenPath(filePath),
+        this._connections.filter(connection =>
+          connection.hasOpenPath(filePath),
         ),
-        [CommandServer.getCurrentServer()].filter(server => server != null),
+        [this.getCurrentServer()].filter(server => server != null),
       ),
     );
   }
 
-  static getAtomCommandsByPath(filePath: NuclideUri): ?AtomCommands {
-    const server = CommandServer.getServerByPath(filePath);
-    return server == null ? null : server._atomCommands;
+  getAtomCommandsByPath(filePath: NuclideUri): ?AtomCommands {
+    const server = this._getConnectionByPath(filePath);
+    return server == null ? null : server.getAtomCommands();
   }
 
-  static getAtomCommands(): ?AtomCommands {
-    return CommandServer._connections.length === 0
-      ? null
-      : new ServiceAtomCommands();
+  getMultiConnectionAtomCommands(): MultiConnectionAtomCommands {
+    return this._multiConnectionAtomCommands;
   }
-}
-
-class ServiceAtomCommands {
-  openFile(
-    filePath: NuclideUri,
-    line: number,
-    column: number,
-    isWaiting: boolean,
-  ): ConnectableObservable<AtomFileEvent> {
-    const commands = CommandServer.getAtomCommandsByPath(filePath);
-    if (commands != null) {
-      return commands.openFile(filePath, line, column, isWaiting);
-    } else {
-      return Observable.throw('No connected Atom windows').publish();
-    }
-  }
-
-  openRemoteFile(
-    uri: string,
-    line: number,
-    column: number,
-    isWaiting: boolean,
-  ): ConnectableObservable<AtomFileEvent> {
-    const commands = CommandServer.getAtomCommandsByPath(uri);
-    if (commands != null) {
-      return commands.openRemoteFile(uri, line, column, isWaiting);
-    } else {
-      return Observable.throw('No connected Atom windows').publish();
-    }
-  }
-
-  addProject(projectPath: NuclideUri): Promise<void> {
-    const commands = CommandServer.getAtomCommandsByPath(projectPath);
-    if (commands != null) {
-      return commands.addProject(projectPath);
-    } else {
-      throw new Error('No connected Atom windows');
-    }
-  }
-
-  dispose(): void {}
 }

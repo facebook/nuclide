@@ -1,0 +1,18 @@
+var {Component, PropTypes} = React;
+
+var Foo = React.createClass({
+  UNSAFE_componentWillReceiveProps(props, state) {
+    return shallowCompare(this, props, state);
+  },
+
+  render() {
+    return (
+      <div>
+        <Image src={MyConstants.IMAGE_SRC} />
+        <XUISingleSelector Uppercase={emptyFunction}>
+          <XUISingleSelectorOption />
+        </XUISingleSelector>
+      </div>
+    );
+  },
+});

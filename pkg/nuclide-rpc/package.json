@@ -1,12 +1,11 @@
 {
   "name": "nuclide-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/index.js",
   "version": "0.0.0",
   "description": "JSON based RPC system using flow types for marshalling.",
+  "author": "Nuclide : Remote",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

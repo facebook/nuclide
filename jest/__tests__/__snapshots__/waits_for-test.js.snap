@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`can't wait anymore 1`] = `"Expected the function to start returning \\"true\\" but it never did. Timeout = 1"`;
+
+exports[`gives a message 1`] = `"lol Timeout = 1"`;

@@ -1,11 +1,7 @@
 [
   {
-    "implementation": "../nuclide-adb-sdb-rpc/lib/AdbService.js",
+    "implementation": "../../modules/nuclide-adb/lib/AdbService.js",
     "name": "AdbService"
-  },
-  {
-    "implementation": "../nuclide-arcanist-rpc/lib/ArcanistService.js",
-    "name": "ArcanistService"
   },
   {
     "implementation": "../nuclide-buck-rpc/lib/BuckService.js",
@@ -28,6 +24,10 @@
     "name": "DefinitionPreviewService"
   },
   {
+    "implementation": "../nuclide-fbsimctl-rpc/lib/FbsimctlService.js",
+    "name": "FbsimctlService"
+  },
+  {
     "implementation": "./lib/services/FileSystemService.js",
     "name": "FileSystemService"
   },
@@ -44,12 +44,12 @@
     "name": "FuzzyFileSearchService"
   },
   {
-    "implementation": "../nuclide-graphql-rpc/lib/GraphQLService.js",
-    "name": "GraphQLService"
-  },
-  {
     "implementation": "../nuclide-grep-rpc/lib/GrepService.js",
     "name": "GrepService"
+  },
+  {
+    "implementation": "../nuclide-generated-files-rpc/lib/GeneratedFileService.js",
+    "name": "GeneratedFileService"
   },
   {
     "implementation": "../nuclide-hack-rpc/lib/HackService.js",
@@ -60,45 +60,44 @@
     "name": "HgService"
   },
   {
+    "implementation": "../nuclide-idb-rpc/lib/IdbService.js",
+    "name": "IdbService"
+  },
+  {
     "implementation": "./lib/services/InfoService.js",
     "name": "InfoService"
   },
   {
-    "implementation": "../nuclide-js-imports-client-rpc/lib/JsImportsService.js",
-    "name": "JSAutoImportsService"
+    "implementation": "../../modules/atom-ide-debugger-java/JavaDebuggerHelpersService.js",
+    "name": "JavaDebuggerHelpersService"
   },
   {
-    "implementation": "../nuclide-ocaml-rpc/lib/MerlinService.js",
-    "name": "MerlinService"
-  },
-  {
-    "definition": "../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceInterface.js",
-    "implementation": "../nuclide-debugger-native-rpc/lib/NativeDebuggerServiceImplementation.js",
-    "name": "NativeDebuggerService"
+    "implementation": "../nuclide-metro-rpc/lib/MetroService.js",
+    "name": "MetroService"
   },
   {
     "implementation": "../nuclide-open-files-rpc/lib/OpenFilesService.js",
     "name": "OpenFilesService"
   },
   {
-    "implementation": "../nuclide-debugger-php-rpc/lib/PhpDebuggerService.js",
-    "name": "PhpDebuggerService"
+    "implementation": "../nuclide-debugger-hhvm-rpc/lib/main.js",
+    "name": "HhvmDebuggerService"
+  },
+  {
+    "implementation": "../../modules/atom-ide-ui/pkg/atom-ide-terminal/lib/pty-service/PtyService.js",
+    "name": "PtyService"
   },
   {
     "implementation": "../nuclide-python-rpc/lib/PythonService.js",
     "name": "PythonService"
   },
   {
-    "implementation": "../nuclide-ocaml-rpc/lib/ReasonService.js",
-    "name": "ReasonService"
-  },
-  {
     "implementation": "../nuclide-remote-atom-rpc/lib/RemoteCommandService.js",
     "name": "RemoteCommandService"
   },
   {
-    "implementation": "../nuclide-adb-sdb-rpc/lib/SdbService.js",
-    "name": "SdbService"
+    "implementation": "../nuclide-rsync-rpc/lib/RsyncService.js",
+    "name": "RsyncService"
   },
   {
     "implementation": "../nuclide-socket-rpc/lib/SocketService.js",
@@ -111,5 +110,13 @@
   {
     "implementation": "../nuclide-vscode-language-service-rpc/lib/main.js",
     "name": "VSCodeLanguageService"
+  },
+  {
+    "implementation": "../../modules/atom-ide-debugger-python/RemoteDebuggerCommandService.js",
+    "name": "RemoteDebuggerCommandService"
+  },
+  {
+    "implementation": "../../modules/nuclide-debugger-common/VSCodeDebuggerAdapterService.js",
+    "name": "VSCodeDebuggerAdapterService"
   }
 ]

@@ -10,6 +10,12 @@
  * @format
  */
 
+import invariant from 'assert';
+
+export function ensureArray<T>(x: Array<T> | T): Array<T> {
+  return Array.isArray(x) ? x : [x];
+}
+
 export function arrayRemove<T>(array: Array<T>, element: T): void {
   const index = array.indexOf(element);
   if (index >= 0) {
@@ -18,10 +24,13 @@ export function arrayRemove<T>(array: Array<T>, element: T): void {
 }
 
 export function arrayEqual<T>(
-  array1: Array<T>,
-  array2: Array<T>,
+  array1: $ReadOnlyArray<T>,
+  array2: $ReadOnlyArray<T>,
   equalComparator?: (a: T, b: T) => boolean,
 ): boolean {
+  if (array1 === array2) {
+    return true;
+  }
   if (array1.length !== array2.length) {
     return false;
   }
@@ -33,7 +42,7 @@ export function arrayEqual<T>(
  * Returns a copy of the input Array with all `null` and `undefined` values filtered out.
  * Allows Flow to typecheck the common `filter(x => x != null)` pattern.
  */
-export function arrayCompact<T>(array: Array<?T>): Array<T> {
+export function arrayCompact<T>(array: $ReadOnlyArray<?T>): Array<T> {
   const result = [];
   for (const elem of array) {
     if (elem != null) {
@@ -46,10 +55,14 @@ export function arrayCompact<T>(array: Array<?T>): Array<T> {
 /**
  * Flattens an Array<Array<T>> into just an Array<T>
  */
-export function arrayFlatten<T>(array: Array<Array<T>>): Array<T> {
+export function arrayFlatten<T>(
+  array: $ReadOnlyArray<$ReadOnlyArray<T>>,
+): Array<T> {
   const result = [];
   for (const subArray of array) {
-    result.push(...subArray);
+    for (const element of subArray) {
+      result.push(element);
+    }
   }
   return result;
 }
@@ -59,7 +72,7 @@ export function arrayFlatten<T>(array: Array<Array<T>>): Array<T> {
  * Uses SameValueZero for equality purposes, which is like '===' except it deems
  * two NaNs equal. http://www.ecma-international.org/ecma-262/6.0/#sec-samevaluezero
  */
-export function arrayUnique<T>(array: Array<T>): Array<T> {
+export function arrayUnique<T>(array: $ReadOnlyArray<T>): Array<T> {
   return Array.from(new Set(array));
 }
 
@@ -68,8 +81,8 @@ export function arrayUnique<T>(array: Array<T>): Array<T> {
  * Returns -1 if no match is found.
  */
 export function arrayFindLastIndex<T>(
-  array: Array<T>,
-  predicate: (elem: T, index: number, array: Array<T>) => boolean,
+  array: $ReadOnlyArray<T>,
+  predicate: (elem: T, index: number, array: $ReadOnlyArray<T>) => boolean,
   thisArg?: any,
 ): number {
   for (let i = array.length - 1; i >= 0; i--) {
@@ -81,10 +94,37 @@ export function arrayFindLastIndex<T>(
 }
 
 /**
+ * Return the first index in array where subarray is equal to the next
+ * subarray-sized slice of array. Return -1 if no match is found.
+ */
+export function findSubArrayIndex<T>(
+  array: $ReadOnlyArray<T>,
+  subarr: $ReadOnlyArray<T>,
+): number {
+  return array.findIndex((_, offset) =>
+    arrayEqual(array.slice(offset, offset + subarr.length), subarr),
+  );
+}
+
+/**
+ * Separates an array into two subarrays -- the first contains all elements that
+ * match the predicate and the latter contains all the rest that fail.
+ */
+export function arrayPartition<T>(
+  array: $ReadOnlyArray<T>,
+  predicate: (elem: T) => boolean,
+): [Array<T>, Array<T>] {
+  const pass = [];
+  const fail = [];
+  array.forEach(elem => (predicate(elem) ? pass.push(elem) : fail.push(elem)));
+  return [pass, fail];
+}
+
+/**
  * Merges a given arguments of maps into one Map, with the latest maps
  * overriding the values of the prior maps.
  */
-export function mapUnion<T, X>(...maps: Array<Map<T, X>>): Map<T, X> {
+export function mapUnion<T, X>(...maps: $ReadOnlyArray<Map<T, X>>): Map<T, X> {
   const unionMap = new Map();
   for (const map of maps) {
     for (const [key, value] of map) {
@@ -131,14 +171,14 @@ export function mapTransform<T, V1, V2>(
 export function mapEqual<T, X>(
   map1: Map<T, X>,
   map2: Map<T, X>,
-  equalComparator?: (val1: X, val2: X, key1?: T, key2?: T) => boolean,
+  equalComparator?: (val1: X, val2: X, key?: T) => boolean,
 ) {
   if (map1.size !== map2.size) {
     return false;
   }
   const equalFunction = equalComparator || ((a: X, b: X) => a === b);
-  for (const [key1, value1] of map1) {
-    if (!map2.has(key1) || !equalFunction(value1, (map2.get(key1): any))) {
+  for (const [key, value1] of map1) {
+    if (!map2.has(key) || !equalFunction(value1, (map2.get(key): any))) {
       return false;
     }
   }
@@ -181,7 +221,7 @@ export function setIntersect<T>(a: Set<T>, b: Set<T>): Set<T> {
   return setFilter(a, e => b.has(e));
 }
 
-export function setUnion<T>(a: Set<T>, b: Set<T>): Set<T> {
+function setUnionTwo<T>(a: Set<T>, b: Set<T>): Set<T> {
   // Avoids the extra Array allocations that `new Set([...a, ...b])` would incur. Some quick tests
   // indicate it would be about 60% slower.
   const result = new Set(a);
@@ -189,6 +229,18 @@ export function setUnion<T>(a: Set<T>, b: Set<T>): Set<T> {
     result.add(x);
   });
   return result;
+}
+
+export function setUnion<T>(...sets: $ReadOnlyArray<Set<T>>): Set<T> {
+  if (sets.length < 1) {
+    return new Set();
+  }
+
+  const setReducer = (accumulator: Set<T>, current: Set<T>): Set<T> => {
+    return setUnionTwo(accumulator, current);
+  };
+
+  return sets.reduce(setReducer);
 }
 
 export function setDifference<T>(
@@ -242,7 +294,7 @@ export function isEmpty(obj: Object): boolean {
  *
  * Based off the equivalent function in www.
  */
-export function keyMirror<T: Object>(obj: T): {[key: $Enum<T>]: $Enum<T>} {
+export function keyMirror<T: Object>(obj: T): $ObjMapi<T, <K>(k: K) => K> {
   const ret = {};
   Object.keys(obj).forEach(key => {
     ret[key] = key;
@@ -254,7 +306,7 @@ export function keyMirror<T: Object>(obj: T): {[key: $Enum<T>]: $Enum<T>} {
  * Given an array of [key, value] pairs, construct a map where the values for
  * each key are collected into an array of values, in order.
  */
-export function collect<K, V>(pairs: Array<[K, V]>): Map<K, Array<V>> {
+export function collect<K, V>(pairs: $ReadOnlyArray<[K, V]>): Map<K, Array<V>> {
   const result = new Map();
   for (const pair of pairs) {
     const [k, v] = pair;
@@ -265,6 +317,27 @@ export function collect<K, V>(pairs: Array<[K, V]>): Map<K, Array<V>> {
     }
     list.push(v);
   }
+  return result;
+}
+
+export function objectFromPairs<T: string, U>(
+  iterable: Iterable<[T, U]>,
+): {[T]: U} {
+  const result = {};
+  for (const [key, value] of iterable) {
+    result[key] = value;
+  }
+  return result;
+}
+
+export function objectMapValues<T, U, V>(
+  object: {[T: string]: U},
+  project: (value: U, key: T) => V,
+): {[T]: V} {
+  const result = {};
+  Object.keys(object).forEach(key => {
+    result[key] = project(object[key], ((key: any): T));
+  });
   return result;
 }
 
@@ -404,7 +477,7 @@ export function objectFromMap<T>(map: Map<string, T>): {[key: string]: T} {
 }
 
 export function* concatIterators<T>(
-  ...iterators: Array<Iterable<T>>
+  ...iterators: $ReadOnlyArray<Iterable<T>>
 ): Iterator<T> {
   for (const iterator of iterators) {
     for (const element of iterator) {
@@ -457,6 +530,32 @@ export function* mapIterable<T, M>(
   }
 }
 
+export function* takeIterable<T>(
+  iterable: Iterable<T>,
+  limit: number,
+): Iterable<T> {
+  let i = 0;
+  for (const element of iterable) {
+    if (++i > limit) {
+      break;
+    }
+    yield element;
+  }
+}
+
+// Return an iterable of the numbers start (inclusive) through stop (exclusive)
+export function* range(
+  start: number,
+  stop: number,
+  step?: number = 1,
+): Iterable<number> {
+  // We don't currently support negative step values.
+  invariant(step > 0);
+  for (let i = start; i < stop; i += step) {
+    yield i;
+  }
+}
+
 export function firstOfIterable<T>(iterable: Iterable<T>): ?T {
   return findInIterable(iterable, () => true);
 }
@@ -482,4 +581,122 @@ export function count<T>(iterable: Iterable<T>): number {
     size++;
   }
   return size;
+}
+
+export function isIterable(obj: any): boolean {
+  return typeof obj[Symbol.iterator] === 'function';
+}
+
+// Traverse an array from the inside out, starting at the specified index.
+export function* insideOut<T>(
+  arr: $ReadOnlyArray<T>,
+  startingIndex?: number,
+): Iterable<[T, number]> {
+  if (arr.length === 0) {
+    return;
+  }
+
+  let i =
+    startingIndex == null
+      ? Math.floor(arr.length / 2)
+      : Math.min(arr.length, Math.max(0, startingIndex));
+  let j = i - 1;
+
+  while (i < arr.length || j >= 0) {
+    if (i < arr.length) {
+      yield [arr[i], i];
+      i++;
+    }
+    if (j >= 0) {
+      yield [arr[j], j];
+      j--;
+    }
+  }
+}
+
+export function mapFromObject<T>(obj: {[key: string]: T}): Map<string, T> {
+  return new Map(objectEntries(obj));
+}
+
+export function lastFromArray<T>(arr: $ReadOnlyArray<T>): T {
+  return arr[arr.length - 1];
+}
+
+export function distinct<T>(array: T[], keyFn?: (t: T) => string): T[] {
+  if (keyFn == null) {
+    return Array.from(new Set(array));
+  }
+
+  const seenKeys = new Set();
+  return array.filter(elem => {
+    const key = keyFn(elem);
+    if (seenKeys.has(key)) {
+      return false;
+    }
+    seenKeys.add(key);
+    return true;
+  });
+}
+
+export class DefaultMap<K, V> extends Map<K, V> {
+  _factory: K => V;
+
+  constructor(factory: K => V, iterable: ?Iterable<[K, V]>) {
+    super(iterable);
+    this._factory = factory;
+  }
+
+  get(key: K): V {
+    if (!this.has(key)) {
+      const value = this._factory(key);
+      this.set(key, value);
+      return value;
+    }
+    // If the key is present we must have a value of type V.
+    return (super.get(key): any);
+  }
+}
+
+export class DefaultWeakMap<K: {}, V> extends WeakMap<K, V> {
+  _factory: K => V;
+
+  constructor(factory: K => V, iterable: ?Iterable<[K, V]>) {
+    super(iterable);
+    this._factory = factory;
+  }
+
+  get(key: K): V {
+    if (!this.has(key)) {
+      const value = this._factory(key);
+      this.set(key, value);
+      return value;
+    }
+    // If the key is present we must have a value of type V.
+    return (super.get(key): any);
+  }
+}
+
+/**
+ * Return the highest ranked item in a list, according to the provided ranking function. A max rank
+ * may optionally be provided so the whole list doesn't have to be iterated. Items with ranks of
+ * zero or less are never returned.
+ */
+export function findTopRanked<T>(
+  items: Iterable<T>,
+  ranker: T => number,
+  maxRank?: number,
+): ?T {
+  let maxSeenRank = 0;
+  let maxRankedItem;
+  for (const item of items) {
+    const rank = ranker(item);
+    if (rank === maxRank) {
+      return item;
+    }
+    if (rank > 0 && rank > maxSeenRank) {
+      maxSeenRank = rank;
+      maxRankedItem = item;
+    }
+  }
+  return maxRankedItem;
 }

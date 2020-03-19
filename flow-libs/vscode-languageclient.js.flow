@@ -1,0 +1,300 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ * @format
+ */
+
+declare module 'vscode-languageclient' {
+  import type {
+    ClientCapabilities,
+    DocumentSelector,
+    InitializeError,
+    InitializeParams,
+    MessageReader,
+    MessageWriter,
+    ServerCapabilities,
+    RequestType,
+    NotificationType,
+  } from 'vscode-languageserver-protocol';
+  import type {CancellationToken, OutputChannel, Event} from 'vscode';
+
+  declare type ExecutableOptions = {
+    cwd?: string,
+    stdio?: string | string[],
+    env?: any,
+    detached?: boolean,
+  };
+
+  declare type Executable = {
+    command: string,
+    args?: string[],
+    options?: ExecutableOptions,
+  };
+
+  declare type ForkOptions = {
+    cwd?: string,
+    env?: any,
+    encoding?: string,
+    execArgv?: string[],
+  };
+
+  declare type TransportKind = 'stdio' | 'ipc' | 'pipe';
+
+  declare type NodeModule = {
+    module: string,
+    transport?: TransportKind,
+    args?: string[],
+    runtime?: string,
+    options?: ForkOptions,
+  };
+
+  declare export type StreamInfo = {
+    writer: stream$Writable,
+    reader: stream$Readable,
+    detached?: boolean,
+  };
+
+  declare type ChildProcessInfo = {
+    process: child_process$ChildProcess,
+    detached: boolean,
+  };
+
+  declare type MessageTransports = {
+    reader: MessageReader,
+    writer: MessageWriter,
+    detached?: boolean,
+  };
+
+  declare export type ServerOptions =
+    | Executable
+    | {run: Executable, debug: Executable}
+    | {run: NodeModule, debug: NodeModule}
+    | NodeModule
+    | (() => Thenable<
+        | child_process$ChildProcess
+        | StreamInfo
+        | MessageTransports
+        | ChildProcessInfo,
+      >);
+
+  declare export interface StaticFeature {
+    /**
+     * Called to fill the initialize params.
+     *
+     * @params the initialize params.
+     */
+    fillInitializeParams?: (params: InitializeParams) => void;
+
+    /**
+     * Called to fill in the client capabilities this feature implements.
+     *
+     * @param capabilities The client capabilities to fill.
+     */
+    fillClientCapabilities(capabilities: ClientCapabilities): void;
+
+    /**
+     * Initialize the feature. This method is called on a feature instance
+     * when the client has successfully received the initalize request from
+     * the server and before the client sends the initialized notification
+     * to the server.
+     *
+     * @param capabilities the server capabilities
+     * @param documentSelector the document selector pass to the client's constuctor.
+     *  May be `undefined` if the client was created without a selector.
+     */
+    initialize(
+      capabilities: ServerCapabilities,
+      documentSelector: ?DocumentSelector,
+    ): void;
+  }
+
+  declare export interface RPCMessageType {
+    +method: string;
+    +numberOfParams: number;
+  }
+
+  declare export interface RegistrationData {
+    id: string;
+    registerOptions: any;
+  }
+
+  declare export interface DynamicFeature {
+    /**
+     * The message for which this features support dynamic activation / registration.
+     */
+    +messages: RPCMessageType | RPCMessageType[];
+
+    /**
+     * Called to fill the initialize params.
+     *
+     * @params the initialize params.
+     */
+    fillInitializeParams?: (params: InitializeParams) => void;
+
+    /**
+     * Called to fill in the client capabilities this feature implements.
+     *
+     * @param capabilities The client capabilities to fill.
+     */
+    fillClientCapabilities(capabilities: ClientCapabilities): void;
+
+    /**
+     * Initialize the feature. This method is called on a feature instance
+     * when the client has successfully received the initalize request from
+     * the server and before the client sends the initialized notification
+     * to the server.
+     *
+     * @param capabilities the server capabilities.
+     * @param documentSelector the document selector pass to the client's constuctor.
+     *  May be `undefined` if the client was created without a selector.
+     */
+    initialize(
+      capabilities: ServerCapabilities,
+      documentSelector: ?DocumentSelector,
+    ): void;
+
+    /**
+     * Is called when the server send a register request for the given message.
+     *
+     * @param message the message to register for.
+     * @param data additional registration data as defined in the protocol.
+     */
+    register(message: RPCMessageType, data: RegistrationData): void;
+
+    /**
+     * Is called when the server wants to unregister a feature.
+     *
+     * @param id the id used when registering the feature.
+     */
+    unregister(id: string): void;
+
+    /**
+     * Called when the client is stopped to dispose this feature. Usually a feature
+     * unregisters listeners registerd hooked up with the VS Code extension host.
+     */
+    dispose(): void;
+  }
+
+  declare export interface HandleDiagnosticsSignature {
+    (uri: any, diagnostics: any[]): void;
+  }
+
+  declare export interface Middleware {
+    handleDiagnostics?: (
+      uri: any,
+      diagnostics: any[],
+      next: HandleDiagnosticsSignature,
+    ) => void;
+  }
+
+  declare export interface LanguageClientOptions {
+    documentSelector?: DocumentSelector | Array<string>;
+    synchronize?: any;
+    // diagnosticCollectionName?: string;
+    // outputChannel?: OutputChannel;
+    outputChannelName?: string;
+    // revealOutputChannelOn?: RevealOutputChannelOn;
+    /**
+     * The encoding use to read stdout and stderr. Defaults
+     * to 'utf8' if ommitted.
+     */
+    stdioEncoding?: string;
+    initializationOptions?: any | (() => any);
+    initializationFailedHandler?: (error: any) => boolean;
+    // errorHandler?: ErrorHandler;
+    middleware?: Middleware;
+    // uriConverters?: {
+    //   code2Protocol: c2p.URIConverter,
+    //   protocol2Code: p2c.URIConverter,
+    // };
+    // workspaceFolder?: VWorkspaceFolder;
+  }
+
+  declare export var ErrorAction: {
+    /**
+     * Continue running the server.
+     */
+    Continue: 1,
+    /**
+     * Shutdown the server.
+     */
+    Shutdown: 2,
+  };
+
+  declare export var CloseAction: {
+    /**
+     * Don't restart the server. The connection stays closed.
+     */
+    DoNotRestart: 1,
+    /**
+     * Restart the server.
+     */
+    Restart: 2,
+  };
+
+  declare export var RevealOutputChannelOn: {
+    Info: 1,
+    Warn: 2,
+    Error: 3,
+    Never: 4,
+  };
+
+  declare export var State: {
+    Stopped: 1,
+    Starting: 3,
+    Running: 2,
+  };
+
+  declare export interface StateChangeEvent {
+    oldState: number;
+    newState: number;
+  }
+
+  declare export class LanguageClient {
+    get clientOptions(): LanguageClientOptions;
+    get outputChannel(): OutputChannel;
+    constructor(
+      name: string,
+      serverOptions: ServerOptions,
+      clientOptions: LanguageClientOptions,
+      forceDebug?: boolean,
+    ): void;
+    constructor(
+      id: string,
+      name: string,
+      serverOptions: ServerOptions,
+      clientOptions: LanguageClientOptions,
+      forceDebug?: boolean,
+    ): void;
+    constructor(
+      arg1: string,
+      arg2: ServerOptions | string,
+      arg3: LanguageClientOptions | ServerOptions,
+      arg4?: boolean | LanguageClientOptions,
+      arg5?: boolean,
+    ): void;
+
+    info(message: string, data?: any): void;
+    warn(message: string, data?: any): void;
+    error(message: string, data?: any): void;
+
+    start(): IDisposable;
+    stop(): Thenable<void>;
+    onReady(): Thenable<void>;
+    onRequest(type: RequestType, (params: any) => mixed): void;
+    onNotification(type: NotificationType, (params: any) => mixed): void;
+    registerFeature(feature: StaticFeature | DynamicFeature): void;
+    +onDidChangeState: Event<StateChangeEvent>;
+    sendRequest<R>(method: string, param: any): Thenable<R>;
+    sendRequest<R>(
+      type: RequestType,
+      params: any,
+      token?: CancellationToken,
+    ): Thenable<R>;
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "nuclide-language-service-client",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Atom package for managing language services.",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  }
+}

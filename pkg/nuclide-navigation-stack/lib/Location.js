@@ -12,22 +12,19 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
-import {getScrollTop} from 'nuclide-commons-atom/text-editor';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 // A location which can be navigated to. Includes the file (as uri for closed files and as
-// atom$TextEditor for open files) as well as the cursor position and scroll.
+// atom$TextEditor for open files) as well as the cursor position.
 export type UriLocation = {
   type: 'uri',
   uri: NuclideUri,
   bufferPosition: atom$Point,
-  scrollTop: number,
 };
 export type EditorLocation = {
   type: 'editor',
   editor: atom$TextEditor,
   bufferPosition: atom$Point,
-  scrollTop: number,
 };
 export type Location = EditorLocation | UriLocation;
 
@@ -40,7 +37,6 @@ export function getLocationOfEditor(editor: atom$TextEditor): EditorLocation {
     type: 'editor',
     editor,
     bufferPosition: editor.getCursorBufferPosition(),
-    scrollTop: getScrollTop(editor),
   };
 }
 

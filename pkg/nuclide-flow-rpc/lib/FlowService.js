@@ -9,16 +9,23 @@
  * @format
  */
 
+import type {DeadlineRequest} from 'nuclide-commons/promise';
 import type {ConnectableObservable} from 'rxjs';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   SymbolResult,
+  Completion,
+  CodeLensData,
+  StatusData,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {HostServices} from '../../nuclide-language-service-rpc/lib/rpc-types';
+import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {
   FileVersion,
   FileNotifier,
@@ -28,17 +35,16 @@ import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
+  RenameReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
+  SignatureHelp,
 } from 'atom-ide-ui';
-import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
 import invariant from 'assert';
 
+import {Observable} from 'rxjs';
 import {setConfig} from './config';
 import {
   ServerLanguageService,
@@ -72,7 +78,9 @@ export type ServerStatusUpdate = {
 export type FlowSettings = {
   functionSnippetShouldIncludeArguments: boolean,
   stopFlowOnExit: boolean,
-  lazyServer: boolean,
+  lazyMode: boolean,
+  canUseFlowBin: boolean,
+  pathToFlow: string,
 };
 
 export type {FlowLocNoSource} from './flowOutputTypes';
@@ -117,6 +125,7 @@ class FlowLanguageService extends MultiProjectLanguageService<
       fileCache,
       host,
       ['.flowconfig'],
+      'nearest',
       ['.js', '.jsx'],
       projectDir => {
         const execInfoContainer = getState().getExecInfoContainer();
@@ -155,6 +164,32 @@ class FlowLanguageService extends MultiProjectLanguageService<
     }
   }
 
+  customFindReferences(
+    fileVersion: FileVersion,
+    position: atom$Point,
+    global_: boolean,
+    multiHop: boolean,
+  ): ConnectableObservable<?FindReferencesReturn> {
+    return Observable.defer(async () => {
+      const ls = await this.getLanguageServiceForFile(fileVersion.filePath);
+      if (ls == null) {
+        return;
+      }
+      const flowLs = ls.getSingleFileLanguageService();
+      const buffer = await getBufferAtVersion(fileVersion);
+      if (buffer == null) {
+        return null;
+      }
+      return flowLs.customFindReferences(
+        fileVersion.filePath,
+        buffer,
+        position,
+        global_,
+        multiHop,
+      );
+    }).publish();
+  }
+
   getServerStatusUpdates(): ConnectableObservable<ServerStatusUpdate> {
     return this.observeLanguageServices()
       .mergeMap(languageService => {
@@ -178,48 +213,75 @@ class FlowLanguageService extends MultiProjectLanguageService<
 
 // Unfortunately we have to duplicate a lot of things here to make FlowLanguageService remotable.
 export interface FlowLanguageServiceType {
-  getDiagnostics(fileVersion: FileVersion): Promise<?DiagnosticProviderUpdate>,
+  getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap>;
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>>,
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap>;
 
   getAutocompleteSuggestions(
     fileVersion: FileVersion,
     position: atom$Point,
     request: AutocompleteRequest,
-  ): Promise<?AutocompleteResult>,
+  ): Promise<?AutocompleteResult>;
+
+  resolveAutocompleteSuggestion(suggestion: Completion): Promise<?Completion>;
 
   getDefinition(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?DefinitionQueryResult>,
+  ): Promise<?DefinitionQueryResult>;
 
   findReferences(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?FindReferencesReturn>,
+  ): ConnectableObservable<?FindReferencesReturn>;
 
-  getCoverage(filePath: NuclideUri): Promise<?CoverageResult>,
+  customFindReferences(
+    fileVersion: FileVersion,
+    position: atom$Point,
+    global_: boolean,
+    multiHop: boolean,
+  ): ConnectableObservable<?FindReferencesReturn>;
 
-  getOutline(fileVersion: FileVersion): Promise<?Outline>,
+  rename(
+    fileVersion: FileVersion,
+    position: atom$Point,
+    newName: string,
+  ): ConnectableObservable<?RenameReturn>;
+
+  getCoverage(filePath: NuclideUri): Promise<?CoverageResult>;
+
+  getOutline(fileVersion: FileVersion): Promise<?Outline>;
+
+  onToggleCoverage(set: boolean): Promise<void>;
+
+  getCodeLens(fileVersion: FileVersion): Promise<?Array<CodeLensData>>;
+  resolveCodeLens(
+    filePath: NuclideUri,
+    codeLens: CodeLensData,
+  ): Promise<?CodeLensData>;
 
   getCodeActions(
     fileVersion: FileVersion,
     range: atom$Range,
     diagnostics: Array<FileDiagnosticMessage>,
-  ): Promise<Array<CodeAction>>,
+  ): Promise<Array<CodeAction>>;
 
-  typeHint(fileVersion: FileVersion, position: atom$Point): Promise<?TypeHint>,
+  getAdditionalLogFiles(
+    deadline: DeadlineRequest,
+  ): Promise<Array<AdditionalLogFile>>;
+
+  typeHint(fileVersion: FileVersion, position: atom$Point): Promise<?TypeHint>;
 
   highlight(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?Array<atom$Range>>,
+  ): Promise<?Array<atom$Range>>;
 
   formatSource(
     fileVersion: FileVersion,
     range: atom$Range,
     options: FormatOptions,
-  ): Promise<?Array<TextEdit>>,
+  ): Promise<?Array<TextEdit>>;
 
   formatEntireFile(
     fileVersion: FileVersion,
@@ -228,36 +290,69 @@ export interface FlowLanguageServiceType {
   ): Promise<?{
     newCursor?: number,
     formatted: string,
-  }>,
+  }>;
 
   formatAtPosition(
     fileVersion: FileVersion,
     position: atom$Point,
     triggerCharacter: string,
     options: FormatOptions,
-  ): Promise<?Array<TextEdit>>,
+  ): Promise<?Array<TextEdit>>;
 
-  getEvaluationExpression(
+  signatureHelp(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?NuclideEvaluationExpression>,
+  ): Promise<?SignatureHelp>;
 
-  supportsSymbolSearch(directories: Array<NuclideUri>): Promise<boolean>,
+  supportsSymbolSearch(directories: Array<NuclideUri>): Promise<boolean>;
 
   symbolSearch(
     query: string,
     directories: Array<NuclideUri>,
-  ): Promise<?Array<SymbolResult>>,
+  ): Promise<?Array<SymbolResult>>;
 
-  getProjectRoot(fileUri: NuclideUri): Promise<?NuclideUri>,
+  getProjectRoot(fileUri: NuclideUri): Promise<?NuclideUri>;
 
-  isFileInProject(fileUri: NuclideUri): Promise<boolean>,
+  isFileInProject(fileUri: NuclideUri): Promise<boolean>;
 
-  getServerStatusUpdates(): ConnectableObservable<ServerStatusUpdate>,
+  getServerStatusUpdates(): ConnectableObservable<ServerStatusUpdate>;
 
-  allowServerRestart(): Promise<void>,
+  allowServerRestart(): Promise<void>;
 
-  dispose(): void,
+  getExpandedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range>;
+
+  getCollapsedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range>;
+
+  observeStatus(fileVersion: FileVersion): ConnectableObservable<StatusData>;
+
+  clickStatus(
+    fileVersion: FileVersion,
+    id: string,
+    button: string,
+  ): Promise<void>;
+
+  onWillSave(fileVersion: FileVersion): ConnectableObservable<TextEdit>;
+
+  sendLspRequest(
+    filePath: NuclideUri,
+    method: string,
+    params: mixed,
+  ): Promise<mixed>;
+
+  sendLspNotification(method: string, params: mixed): Promise<void>;
+
+  observeLspNotifications(
+    notificationMethod: string,
+  ): ConnectableObservable<mixed>;
+
+  dispose(): void;
 }
 
 export function flowGetAst(

@@ -10,142 +10,149 @@
  * @format
  */
 
-import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {DiagnosticMessage} from '../../../atom-ide-diagnostics/lib/types';
+import type {
+  DiagnosticMessage,
+  DiagnosticMessageKind,
+  UiConfig,
+} from '../../../atom-ide-diagnostics/lib/types';
+import type {DiagnosticGroup} from '../types';
+import type {
+  RegExpFilterChange,
+  RegExpFilterValue,
+} from 'nuclide-commons-ui/RegExpFilter';
 
-import analytics from 'nuclide-commons-atom/analytics';
+import analytics from 'nuclide-commons/analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import DiagnosticsTable from './DiagnosticsTable';
-import {Checkbox} from 'nuclide-commons-ui/Checkbox';
+import nullthrows from 'nullthrows';
+import showModal from 'nuclide-commons-ui/showModal';
+import {Toggle} from 'nuclide-commons-ui/Toggle';
 import {Toolbar} from 'nuclide-commons-ui/Toolbar';
-import {ToolbarCenter} from 'nuclide-commons-ui/ToolbarCenter';
 import {ToolbarLeft} from 'nuclide-commons-ui/ToolbarLeft';
 import {ToolbarRight} from 'nuclide-commons-ui/ToolbarRight';
-import React from 'react';
+import * as React from 'react';
+import shallowEqual from 'shallowequal';
 import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
+import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
+import FilterButton from './FilterButton';
+import RegExpFilter from 'nuclide-commons-ui/RegExpFilter';
+import SettingsModal from './SettingsModal';
 
-export type Props = {
+export type Props = {|
   diagnostics: Array<DiagnosticMessage>,
-  pathToActiveTextEditor: ?NuclideUri,
   filterByActiveTextEditor: boolean,
   onFilterByActiveTextEditorChange: (isChecked: boolean) => mixed,
-  warnAboutLinter: boolean,
-  disableLinter: () => mixed,
+  showDirectoryColumn: boolean,
   showTraces: boolean,
   onShowTracesChange: (isChecked: boolean) => mixed,
-};
+  gotoMessageLocation: (
+    message: DiagnosticMessage,
+    options: {|focusEditor: boolean, pendingPane: boolean|},
+  ) => void,
+  selectMessage: (message: DiagnosticMessage) => void,
+  selectedMessage: ?DiagnosticMessage,
+  supportedMessageKinds: Set<DiagnosticMessageKind>,
+  uiConfig: UiConfig,
+  isVisible: boolean,
+  // Used by the DiagnosticsViewModel.
+  autoVisibility: boolean, // eslint-disable-line react/no-unused-prop-types
+
+  hiddenGroups: Set<DiagnosticGroup>,
+  onTypeFilterChange: (type: DiagnosticGroup) => mixed,
+  textFilter: RegExpFilterValue,
+  onTextFilterChange: (change: RegExpFilterChange) => mixed,
+|};
 
 /**
  * Dismissable panel that displays the diagnostics from nuclide-diagnostics-store.
  */
-export default class DiagnosticsView extends React.Component {
-  props: Props;
+export default class DiagnosticsView extends React.Component<Props> {
+  _diagnosticsTableWrapperEl: ?HTMLDivElement;
+  _disposables: ?UniversalDisposable;
+  _filterComponent: ?RegExpFilter;
+  _table: ?DiagnosticsTable;
 
-  constructor(props: Props) {
-    super(props);
-    (this: any)._onShowTracesChange = this._onShowTracesChange.bind(this);
-    (this: any)._onFilterByActiveTextEditorChange = this._onFilterByActiveTextEditorChange.bind(
-      this,
-    );
-    (this: any)._openAllFilesWithErrors = this._openAllFilesWithErrors.bind(
-      this,
+  shouldComponentUpdate(nextProps: Props): boolean {
+    return nextProps.isVisible && !shallowEqual(this.props, nextProps);
+  }
+
+  componentDidMount() {
+    this._disposables = new UniversalDisposable(
+      atom.commands.add(
+        nullthrows(this._diagnosticsTableWrapperEl),
+        'atom-ide:filter',
+        () => this._focusFilter(),
+      ),
     );
   }
 
-  render(): React.Element<any> {
-    let warningCount: number = 0;
-    let errorCount = 0;
-    let {diagnostics} = this.props;
-    const {showTraces} = this.props;
-    if (this.props.filterByActiveTextEditor) {
-      const pathToFilterBy = this.props.pathToActiveTextEditor;
-      if (pathToFilterBy !== null) {
-        diagnostics = diagnostics.filter(
-          diagnostic =>
-            diagnostic.scope === 'file' &&
-            diagnostic.filePath === pathToFilterBy,
-        );
-      } else {
-        // Current pane is not a text editor; do not show diagnostics.
-        diagnostics = [];
-      }
+  componentWillUnmount() {
+    nullthrows(this._disposables).dispose();
+  }
+
+  render(): React.Node {
+    const {diagnostics, showDirectoryColumn, showTraces} = this.props;
+
+    const groups = ['errors', 'warnings', 'info'];
+    if (this.props.supportedMessageKinds.has('review')) {
+      groups.push('review');
     }
-    diagnostics.forEach(diagnostic => {
-      if (diagnostic.type === 'Error') {
-        ++errorCount;
-      } else if (diagnostic.type === 'Warning' || diagnostic.type === 'Info') {
-        // TODO: should "Info" messages have their own category?
-        ++warningCount;
-      }
-    });
-    const isExpandable = diagnostics.find(
+    if (this.props.supportedMessageKinds.has('action')) {
+      groups.push('action');
+    }
+
+    const showFullDescriptionToggle = diagnostics.find(
       diagnostic =>
         // flowlint-next-line sketchy-null-string:off
         diagnostic.trace || (diagnostic.text && diagnostic.text.includes('\n')),
     );
 
-    let linterWarning = null;
-    if (this.props.warnAboutLinter) {
-      linterWarning = (
-        <Toolbar>
-          <ToolbarCenter>
-            <span className="inline-block highlight-info">
-              nuclide-diagnostics is not compatible with the linter package. We
-              recommend that you&nbsp;
-              <a onClick={this.props.disableLinter}>
-                disable the linter package
-              </a>
-              .&nbsp;
-              <a href="http://nuclide.io/docs/advanced-topics/linter-package-compatibility/">
-                Learn More
-              </a>.
-            </span>
-          </ToolbarCenter>
-        </Toolbar>
-      );
-    }
-
-    const errorSpanClassName = `inline-block ${errorCount > 0
-      ? 'text-error'
-      : ''}`;
-    const warningSpanClassName = `inline-block ${warningCount > 0
-      ? 'text-warning'
-      : ''}`;
-
     return (
       <div
+        onFocus={this._handleFocus}
+        tabIndex={-1}
         style={{
           display: 'flex',
           flex: 1,
           flexDirection: 'column',
           width: '100%',
         }}>
-        {linterWarning}
         <Toolbar location="top">
           <ToolbarLeft>
-            <span className={errorSpanClassName}>
-              Errors: {errorCount}
-            </span>
-            <span className={warningSpanClassName}>
-              Warnings: {warningCount}
-            </span>
+            <ButtonGroup className="inline-block">
+              {groups.map(group => (
+                <FilterButton
+                  key={group}
+                  group={group}
+                  selected={!this.props.hiddenGroups.has(group)}
+                  onClick={() => {
+                    this.props.onTypeFilterChange(group);
+                  }}
+                />
+              ))}
+            </ButtonGroup>
+            <RegExpFilter
+              ref={component => (this._filterComponent = component)}
+              value={this.props.textFilter}
+              onChange={this.props.onTextFilterChange}
+            />
+            {/* TODO: This will probably change to a dropdown to also accommodate Head Changes */}
+            <Toggle
+              className="inline-block"
+              onChange={this._handleFilterByActiveTextEditorChange}
+              toggled={this.props.filterByActiveTextEditor}
+              label="Current File Only"
+            />
           </ToolbarLeft>
           <ToolbarRight>
-            {isExpandable
-              ? <span className="inline-block">
-                  <Checkbox
-                    checked={this.props.showTraces}
-                    label="Full description"
-                    onChange={this._onShowTracesChange}
-                  />
-                </span>
-              : null}
-            <span className="inline-block">
-              <Checkbox
-                checked={this.props.filterByActiveTextEditor}
-                label="Current file only"
-                onChange={this._onFilterByActiveTextEditorChange}
+            {showFullDescriptionToggle ? (
+              <Toggle
+                className="inline-block"
+                onChange={this._handleShowTracesChange}
+                toggled={this.props.showTraces}
+                label="Full Description"
               />
-            </span>
+            ) : null}
             <Button
               onClick={this._openAllFilesWithErrors}
               size={ButtonSizes.SMALL}
@@ -154,35 +161,76 @@ export default class DiagnosticsView extends React.Component {
               title="Open All">
               Open All
             </Button>
+            <Button
+              icon="gear"
+              size={ButtonSizes.SMALL}
+              onClick={this._showSettings}
+            />
           </ToolbarRight>
         </Toolbar>
-        <DiagnosticsTable
-          showFileName={!this.props.filterByActiveTextEditor}
-          diagnostics={diagnostics}
-          showTraces={showTraces}
-        />
+        <div
+          className="atom-ide-filterable"
+          ref={el => (this._diagnosticsTableWrapperEl = el)}
+          style={{display: 'flex', flexDirection: 'column'}}>
+          <DiagnosticsTable
+            ref={table => {
+              this._table = table;
+            }}
+            showFileName={!this.props.filterByActiveTextEditor}
+            diagnostics={diagnostics}
+            showDirectoryColumn={showDirectoryColumn}
+            showTraces={showTraces}
+            selectedMessage={this.props.selectedMessage}
+            selectMessage={this.props.selectMessage}
+            gotoMessageLocation={this.props.gotoMessageLocation}
+          />
+        </div>
       </div>
     );
   }
 
-  _onShowTracesChange(isChecked: boolean) {
+  _showSettings = (): void => {
+    showModal(() => <SettingsModal config={this.props.uiConfig} />);
+  };
+
+  _handleShowTracesChange = (isChecked: boolean): void => {
     analytics.track('diagnostics-panel-toggle-show-traces', {
       isChecked: isChecked.toString(),
     });
     this.props.onShowTracesChange.call(null, isChecked);
-  }
+  };
 
-  _onFilterByActiveTextEditorChange(isChecked: boolean) {
+  _handleFilterByActiveTextEditorChange = (shouldFilter: boolean): void => {
     analytics.track('diagnostics-panel-toggle-current-file', {
-      isChecked: isChecked.toString(),
+      isChecked: shouldFilter.toString(),
     });
-    this.props.onFilterByActiveTextEditorChange.call(null, isChecked);
-  }
+    this.props.onFilterByActiveTextEditorChange.call(null, shouldFilter);
+  };
 
-  _openAllFilesWithErrors() {
+  _openAllFilesWithErrors = (): void => {
     atom.commands.dispatch(
       atom.views.getView(atom.workspace),
       'diagnostics:open-all-files-with-errors',
     );
+  };
+
+  _focusFilter(): void {
+    if (this._filterComponent != null) {
+      this._filterComponent.focus();
+    }
   }
+
+  _handleFocus = (event: SyntheticMouseEvent<*>): void => {
+    if (this._table == null) {
+      return;
+    }
+    let el = event.target;
+    while (el != null) {
+      if (el.tagName === 'INPUT' || el.tagName === 'BUTTON') {
+        return;
+      }
+      el = (el: any).parentElement;
+    }
+    this._table.focus();
+  };
 }

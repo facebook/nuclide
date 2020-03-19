@@ -24,6 +24,9 @@ export type BusySignalOptions = {|
   debounce?: boolean,
   // If onClick is set, then the tooltip will be clickable. Default = null.
   onDidClick?: () => void,
+  // If set to true, the busy signal tooltip will be immediately revealed
+  // when it first becomes visible (without explicit mouse interaction).
+  revealTooltip?: boolean,
 |};
 
 export type BusySignalService = {

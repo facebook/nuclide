@@ -26,46 +26,9 @@ import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {shellParse} from 'nuclide-commons/string';
 import {Console} from 'console';
-import electron from 'electron';
 
-const {ipcRenderer} = electron;
-invariant(ipcRenderer != null);
-
-const STDOUT_FILTERS = [
-  // Always shows:
-  /^window load time: \d+ms\n$/i,
-];
-
-const STDERR_FILTERS = [
-  // If the script takes ~1sec or more, and there's another Atom window open,
-  // then this error gets logged. It's because we set `--user-data-dir`, and
-  // our process can't get a lock on the IndexedDB file.
-  // https://github.com/atom/atom/blob/v1.7.3/src/state-store.js#L16
-  /^Could not connect to indexedDB Event { isTrusted: \[Getter] }\n$/i,
-];
-
-// eslint-disable-next-line no-unused-vars
-const debugConsole = global.console;
-
-// https://github.com/nodejs/node/blob/v5.1.1/lib/console.js
-const outputConsole = new Console(
-  {
-    /* stdout */
-    write(chunk) {
-      if (!STDOUT_FILTERS.some(re => re.test(chunk))) {
-        ipcRenderer.send('write-to-stdout', chunk);
-      }
-    },
-  },
-  {
-    /* stderr */
-    write(chunk) {
-      if (!STDERR_FILTERS.some(re => re.test(chunk))) {
-        ipcRenderer.send('write-to-stderr', chunk);
-      }
-    },
-  },
-);
+// Redirect `console` to output through to stdout/stderr.
+const outputConsole = new Console(process.stdout, process.stderr);
 
 export default (async function runTest(
   params: TestRunnerParams,
@@ -115,6 +78,13 @@ export default (async function runTest(
     outputConsole.error(e);
     exitCode = 1;
   }
+
+  // process.stdout may be asynchronous if we're piping the output somewhere else.
+  // Make sure we've finished writing everything before exiting.
+  await new Promise(resolve => {
+    // $FlowIssue
+    process.stdout.end(() => resolve());
+  });
 
   return exitCode;
 });

@@ -12,42 +12,30 @@
 import type {AtomCommands} from './rpc-types';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 
-import {CompositeDisposable} from 'event-kit';
-import {CommandServer} from './CommandServer';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {FileCache} from '../../nuclide-open-files-rpc/lib/FileCache';
+import {getCommandServer} from './command-server-singleton';
 import invariant from 'assert';
 
 // This interface is exposed by the nuclide server process to the client side
 // Atom process.
-export class RemoteCommandService {
-  _disposables: CompositeDisposable;
 
-  constructor() {
-    this._disposables = new CompositeDisposable();
-  }
+/** Dummy alias for IDisposable to satisfy Nuclide-RPC. */
+export interface Unregister {
+  dispose(): void;
+}
 
-  async _registerAtomCommands(
-    fileNotifier: FileNotifier,
-    atomCommands: AtomCommands,
-  ): Promise<void> {
-    invariant(fileNotifier instanceof FileCache);
-    const fileCache = fileNotifier;
-    this._disposables.add(
-      await CommandServer.register(fileCache, atomCommands),
-    );
-  }
+/**
+ * Called by Atom once for each new remote connection.
+ */
+export async function registerAtomCommands(
+  fileNotifier: FileNotifier,
+  atomCommands: AtomCommands,
+): Promise<Unregister> {
+  invariant(fileNotifier instanceof FileCache);
+  const fileCache = fileNotifier;
 
-  dispose(): void {
-    this._disposables.dispose();
-  }
-
-  // Called by Atom once for each new remote connection.
-  static async registerAtomCommands(
-    fileNotifier: FileNotifier,
-    atomCommands: AtomCommands,
-  ): Promise<RemoteCommandService> {
-    const result = new RemoteCommandService();
-    await result._registerAtomCommands(fileNotifier, atomCommands);
-    return result;
-  }
+  const disposables = new UniversalDisposable();
+  disposables.add(await getCommandServer().register(fileCache, atomCommands));
+  return disposables;
 }

@@ -1,0 +1,102 @@
+{
+  "name": "nuclide-debugger-hhvm-rpc",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Server side implementation of the Nuclide HHVM debugger",
+  "author": "Nuclide : Debugging",
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "contributes": {
+    "debuggers": [
+      {
+        "type": "hhvm",
+        "label": "Facebook HHVM",
+        "runtime": "hhvm",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "targetUri",
+              "launchScriptPath",
+              "hhvmRuntimeArgs"
+            ],
+            "properties": {
+              "targetUri": {
+                "type": "string",
+                "description": "The URI of the program to run"
+              },
+              "startupDocumentPath": {
+                "type": "string",
+                "description": "A script file to run at HHVM startup",
+                "default": ""
+              },
+              "launchScriptPath": {
+                "type": "string",
+                "description": "The absolute path of the script to run"
+              },
+              "scriptArgs": {
+                "type": "array",
+                "descriptions": "Arguments to the script being launched",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "hhvmRuntimePath": {
+                "type": "string",
+                "description": "The path to the HHVM runtime executable",
+                "default": "hhvm"
+              },
+              "hhvmRuntimeArgs": {
+                "type": "array",
+                "description": "Arguments to the HHVM runtime",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "deferLaunch": {
+                "type": "boolean",
+                "description": "If true, the debugger will wait to begin running until a 'continue' command is issued",
+                "default": false
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Current working directory to run script in",
+                "default": "."
+              },
+              "noDebug": {
+                "type": "boolean",
+                "description": "Run the script without attaching the debugger",
+                "default": false
+              }
+            }
+          },
+          "attach": {
+            "required": [
+              "targetUri"
+            ],
+            "properties": {
+              "targetUri": {
+                "type": "string",
+                "description": "target"
+              },
+              "startupDocumentPath": {
+                "type": "string",
+                "description": "A script file to run when attaching",
+                "default": ""
+              },
+              "debugPort": {
+                "type": "number",
+                "description": "The debug port on the HHVM server to attach to",
+                "default": 8999
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

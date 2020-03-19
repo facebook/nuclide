@@ -27,6 +27,7 @@ export class BusyMessageInstance {
   _currentTitle: ?string = null;
   _isVisibleForDebounce: boolean = true;
   _isVisibleForFile: boolean = true;
+  _revealTooltip: boolean = false;
 
   constructor(
     publishCallback: () => void,
@@ -91,6 +92,14 @@ export class BusyMessageInstance {
       this._isVisibleForDebounce &&
       this._currentTitle != null
     );
+  }
+
+  setRevealTooltip(val: boolean): void {
+    this._revealTooltip = val;
+  }
+
+  shouldRevealTooltip(): boolean {
+    return this._revealTooltip;
   }
 
   compare(that: BusyMessageInstance): number {

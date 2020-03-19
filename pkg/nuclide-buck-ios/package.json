@@ -1,13 +1,11 @@
 {
   "name": "nuclide-buck-ios",
   "description": "iOS support for buck toolbar",
-  "repository": "https://github.com/facebook/nuclide",
+  "author": "NEEDS OWNER",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide.buck-platforms": {

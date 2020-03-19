@@ -1,0 +1,220 @@
+{
+    "Object": {
+        "kind": "alias",
+        "name": "Object",
+        "location": {
+            "type": "builtin"
+        }
+    },
+    "Date": {
+        "kind": "alias",
+        "name": "Date",
+        "location": {
+            "type": "builtin"
+        }
+    },
+    "RegExp": {
+        "kind": "alias",
+        "name": "RegExp",
+        "location": {
+            "type": "builtin"
+        }
+    },
+    "Buffer": {
+        "kind": "alias",
+        "name": "Buffer",
+        "location": {
+            "type": "builtin"
+        }
+    },
+    "fs.Stats": {
+        "kind": "alias",
+        "name": "fs.Stats",
+        "location": {
+            "type": "builtin"
+        }
+    },
+    "Vector2": {
+        "kind": "interface",
+        "name": "Vector2",
+        "location": {
+            "type": "source",
+            "fileName": "InterfaceService.def",
+            "line": 1
+        },
+        "staticMethods": {
+            "distance": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 3
+                },
+                "kind": "function",
+                "argumentTypes": [
+                    {
+                        "name": "a",
+                        "type": {
+                            "kind": "named",
+                            "name": "Vector2"
+                        }
+                    },
+                    {
+                        "name": "b",
+                        "type": {
+                            "kind": "named",
+                            "name": "Vector2"
+                        }
+                    }
+                ],
+                "returnType": {
+                    "kind": "promise",
+                    "type": {
+                        "kind": "number"
+                    }
+                }
+            }
+        },
+        "instanceMethods": {
+            "len": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 4
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "promise",
+                    "type": {
+                        "kind": "number"
+                    }
+                }
+            },
+            "watchChanges": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 6
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "observable",
+                    "type": {
+                        "kind": "number"
+                    }
+                }
+            },
+            "dispose": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 11
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "void"
+                }
+            }
+        }
+    },
+    "getCurrentDirection": {
+        "kind": "function",
+        "name": "getCurrentDirection",
+        "location": {
+            "type": "source",
+            "fileName": "InterfaceService.def",
+            "line": 14
+        },
+        "type": {
+            "location": {
+                "type": "source",
+                "fileName": "InterfaceService.def",
+                "line": 14
+            },
+            "kind": "function",
+            "argumentTypes": [],
+            "returnType": {
+                "kind": "promise",
+                "type": {
+                    "kind": "named",
+                    "name": "Vector2"
+                }
+            }
+        }
+    },
+    "Iface": {
+        "kind": "interface",
+        "name": "Iface",
+        "location": {
+            "type": "source",
+            "fileName": "InterfaceService.def",
+            "line": 30
+        },
+        "staticMethods": {},
+        "instanceMethods": {
+            "p": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 31
+                },
+                "kind": "function",
+                "argumentTypes": [
+                    {
+                        "name": "a",
+                        "type": {
+                            "kind": "number"
+                        }
+                    }
+                ],
+                "returnType": {
+                    "kind": "promise",
+                    "type": {
+                        "kind": "number"
+                    }
+                }
+            },
+            "f": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 32
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "void"
+                }
+            },
+            "o": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 33
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "observable",
+                    "type": {
+                        "kind": "string"
+                    }
+                }
+            },
+            "dispose": {
+                "location": {
+                    "type": "source",
+                    "fileName": "InterfaceService.def",
+                    "line": 35
+                },
+                "kind": "function",
+                "argumentTypes": [],
+                "returnType": {
+                    "kind": "void"
+                }
+            }
+        }
+    }
+}

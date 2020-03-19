@@ -1,0 +1,31 @@
+
+const {a} = require('Z');
+const {b} = require('Z');
+
+import type {A} from 'Z';
+import type {B} from 'Z';
+
+require('P');
+require('P');
+
+const M = require('M');
+const M = require('M');
+
+import type N from 'N';
+import type N from 'N';
+
+import typeof O from 'O';
+import typeof O from 'O';
+
+const [j] = require('Y');
+const [j, k] = require('Y');
+
+import F from 'F';
+import F from 'F';
+
+import {g} from 'G';
+import {h} from 'G';
+
+const x: A<B, N, O> = a(b, M, j, k, F, g, h);
+
+// @nolint

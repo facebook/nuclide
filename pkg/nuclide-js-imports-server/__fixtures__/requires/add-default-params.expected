@@ -1,0 +1,11 @@
+const b = require('b');
+
+function one(a = b, c = 1) {
+  a(c);
+}
+
+class two {
+  three(e, f = 2) {
+    e(f);
+  }
+}

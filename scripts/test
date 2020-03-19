@@ -17,7 +17,7 @@ import sys
 from datetime import datetime
 
 # Set up the logging early on in the process.
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 from lib import utils
 from lib.dependencies import check_dependencies
@@ -25,92 +25,114 @@ from lib.js_test_runner import JsTestRunner
 from lib.lint_py_headers import LintPyHeaders
 from lib.package_manager import PackageManager, NUCLIDE_PATH
 
-# Supress stack traces when stopped by CTRL+C.
+# Suppress stack traces when stopped by CTRL+C.
 def keyboard_interrupt(exctype, value, traceback):
     if exctype == KeyboardInterrupt:
         print()
     else:
         sys.__excepthook__(exctype, value, traceback)
+
+
 sys.excepthook = keyboard_interrupt
 
 # Parse the command-line arguments.
 parser = optparse.OptionParser(
-    usage='usage: %prog [options] [package-names or integration-tests]',
-    description='Run all tests for Nuclide. '
-                'Can explicitly list individual packages or integration-tests '
-                'to run.')
-parser.add_option('--dev', action='store_true',
-                  help='Target ~/.atom/dev/packages/ instead of ~/.atom/packages',
-                  default=False)
-parser.add_option('--no-module-cycle-check', action='store_true',
-                  help='Skip `./module-cycle-check.sh` step')
-parser.add_option('--verbose', action='store_true',
-                  help='Verbose output')
-parser.add_option('--no-atom', action='store_true',
-                  help='Exclude packages that depend on Atom')
-parser.add_option('--parallel', action='store_true',
-                  help='Run parallelable tests in parallel')
-parser.add_option('--no-version', action='store_true',
-                  help='Ignore mismatched versions of Atom/npm/node/apm')
-parser.add_option('--run-integration-tests', action='store_true',
-                  help='Only run tests in Nuclide/spec')
-parser.add_option('--continue-on-errors', action='store_true',
-                  help='Run all tests, regardless of failures')
-parser.add_option('--destructive-compile', action='store_true',
-                  help='Transpile and generate RPC proxies as if this were a '
-                       'prod build. THIS WILL DESTROY THE ORIGINAL SOURCE!!!',
-                  default=False)
+    usage="usage: %prog [options] [package-names or integration-tests]",
+    description="Run all tests for Nuclide. "
+    "Can explicitly list individual packages or integration-tests "
+    "to run.",
+)
+parser.add_option(
+    "--dev",
+    action="store_true",
+    help="Target ~/.atom/dev/packages/ instead of ~/.atom/packages",
+    default=False,
+)
+parser.add_option("--verbose", action="store_true", help="Verbose output")
+parser.add_option(
+    "--no-atom", action="store_true", help="Exclude packages that depend on Atom"
+)
+parser.add_option(
+    "--parallel", action="store_true", help="Run parallelable tests in parallel"
+)
+parser.add_option(
+    "--no-version",
+    action="store_true",
+    help="Ignore mismatched versions of Atom/npm/node/apm",
+)
+parser.add_option(
+    "--run-integration-tests",
+    action="store_true",
+    help="Only run tests in Nuclide/spec",
+)
+parser.add_option(
+    "--continue-on-errors",
+    action="store_true",
+    help="Run all tests, regardless of failures",
+)
+parser.add_option(
+    "--destructive-compile",
+    action="store_true",
+    help="Transpile and generate RPC proxies as if this were a "
+    "prod build. THIS WILL DESTROY THE ORIGINAL SOURCE!!!",
+    default=False,
+)
 
 options, args = parser.parse_args(sys.argv[1:])
 
 try:
     from lib import fb_env_dev
+
     fb_env_dev.add_node_to_path()
 except ImportError as _:
     pass
 
-def run(name, cmd, cwd=NUCLIDE_PATH):
+
+def run(name, cmd, cwd=NUCLIDE_PATH, env=None):
     try:
         start = datetime.now()
-        logging.info('Running %s...', name)
-        subprocess.check_call(cmd, cwd=cwd)
+        logging.info("Running %s...", name)
+        subprocess.check_call(cmd, cwd=cwd, env=env)
     except subprocess.CalledProcessError as err:
-        logging.info('FAILED: %s', name)
+        logging.info("FAILED: %s", name)
         sys.exit(err.returncode)
     else:
         end = datetime.now()
-        logging.info('Finished %s (%s seconds)', name, (end - start).seconds)
+        logging.info("Finished %s (%s seconds)", name, (end - start).seconds)
+
 
 def lint_py_headers():
-    print('Linting python file license headers.')
+    print("Linting python file license headers.")
     errors = LintPyHeaders().get_errors()
     for lint_error in errors:
         print(lint_error, file=sys.stderr)
     if errors:
-        raise utils.TestFailureError('FAILED: Python file license header lint.')
+        raise utils.TestFailureError("FAILED: Python file license header lint.")
 
-def test_eslint_plugin_nuclide_internal():
-    run('lint_eslint-plugin-nuclide-internal',
-        ['npm', 'test'],
-        os.path.join(NUCLIDE_PATH, 'resources/eslint-plugin-nuclide-internal'))
 
 def test_modules():
-    for root, dirs, _ in os.walk(os.path.join(NUCLIDE_PATH, 'modules')):
+    for root, dirs, _ in os.walk(os.path.join(NUCLIDE_PATH, "modules")):
         for module in dirs:
             module_path = os.path.join(root, module)
-            run('test_module_%s' % module, ['npm', 'test'], module_path)
+            if os.path.exists(os.path.join(module_path, "package.json")):
+                run("test_module_%s" % module, ["npm", "test"], module_path)
         break
 
+
 def run_compile_steps(destructive_compile=False):
-    if destructive_compile:
+    # Coverage relies on having accurate sources.
+    if destructive_compile and not os.getenv("COVERAGE_DIR"):
         # This will destroy the original source and create untracked files!
-        run('generate_proxies',
-            ['scripts/release-generate-proxies.js', '--save'])
-        run('transpile',
-            ['scripts/release-transpile.js', '--overwrite'])
+        run("generate_proxies", ["scripts/release-generate-proxies.js", "--save"])
+        run(
+            "transpile",
+            ["npm", "run", "release-transpile", "--", "--overwrite"],
+            env=dict(os.environ, NUCLIDE_TRANSPILE_ENV="production"),
+        )
     else:
         # This only warms up the transpile cache.
-        run('transpile', ['scripts/release-transpile.js'])
+        run("transpile", ["npm", "run", "release-transpile"])
+
 
 # Some tests compare created files and all their properties to an oracle. If
 # they are created with a different umask, then the permissions are different
@@ -120,7 +142,7 @@ os.umask(022)
 package_manager = PackageManager()
 test_runner = JsTestRunner(
     package_manager,
-    not options.no_atom,
+    False,
     args,
     options.verbose,
     options.parallel,
@@ -135,13 +157,7 @@ try:
         run_compile_steps(destructive_compile=options.destructive_compile)
         test_runner.run_integration_tests()
     else:
-        run('lint_packages', ['scripts/lint-packages'])
-        run('flow', ['flow', 'check', '--show-all-errors'])
-        run('eslint', ['scripts/lint-eslint.js'])
-        test_eslint_plugin_nuclide_internal()
         lint_py_headers()
-        if not options.no_module_cycle_check:
-            run('module_cycle_check', ['scripts/module-cycle-check.sh'])
         # Some tests have fixtures that are services. These should be declared
         # in a services-3.json file first.
         run_compile_steps(destructive_compile=False)

@@ -6,13 +6,13 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {RegExpFilterChange} from './RegExpFilter';
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from './Block';
 import RegExpFilter, {getFilterPattern} from './RegExpFilter';
 
@@ -22,23 +22,23 @@ type State = {
   invalid: boolean,
 };
 
-class Example extends React.Component {
-  state: State;
+class Example extends React.Component<{}, State> {
+  state = {
+    text: '',
+    isRegExp: false,
+    invalid: false,
+  };
 
-  constructor() {
-    super();
-    this.state = {
-      text: '',
-      isRegExp: false,
-      invalid: false,
-    };
-  }
+  render(): React.Node {
+    const {text, isRegExp, invalid} = this.state;
 
-  render(): React.Element<any> {
     return (
       <div>
         <Block>
-          <RegExpFilter value={this.state} onChange={this._handleChange} />
+          <RegExpFilter
+            value={{text, isRegExp, invalid}}
+            onChange={this._handleChange}
+          />
         </Block>
       </div>
     );

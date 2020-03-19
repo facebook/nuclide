@@ -1,0 +1,57 @@
+{
+  "pkg/*/lib/*.js": {
+    "alternate": "pkg/{}/spec/{}-spec.js"
+  },
+  "pkg/*/spec/*-spec.js": {
+    "alternate": [
+      "pkg/{}/lib/{}.js",
+      "pkg/{}/{}.js"
+    ],
+    "type": "test"
+  },
+  "pkg/*/*.js": {
+    "alternate": "pkg/{}/spec/{}-spec.js"
+  },
+  "pkg/*/**/Epics.js": {
+    "alternate": [
+      "pkg/{}/{}/Actions.js",
+      "pkg/{}/{}/Reducers.js"
+    ],
+    "type": "epics"
+  },
+  "pkg/*/**/Reducers.js": {
+    "alternate": [
+      "pkg/{}/{}/Actions.js",
+      "pkg/{}/{}/Selectors.js",
+      "pkg/{}/{}/Epics.js"
+    ],
+    "type": "reducers"
+  },
+  "pkg/*/**/Actions.js": {
+    "alternate": [
+      "pkg/{}/{}/Reducers.js",
+      "pkg/{}/{}/Epics.js"
+    ],
+    "type": "actions"
+  },
+  "pkg/*/**/Selectors.js": {
+    "alternate": [
+      "pkg/{}/{}/Reducers.js"
+    ],
+    "type": "actions"
+  },
+  "modules/*/*.js": {
+    "alternate": "modules/{}/spec/{}-spec.js"
+  },
+  "modules/*/spec/*-spec.js": {
+    "alternate": "modules/{}/{}.js",
+    "type": "test"
+  },
+  "modules/*/pkg/*/lib/*.js": {
+    "alternate": "modules/{}/pkg/{}/spec/{}-spec.js"
+  },
+  "modules/*/pkg/*/spec/*-spec.js": {
+    "alternate": "modules/{}/pkg/{}/lib/{}.js",
+    "type": "test"
+  }
+}

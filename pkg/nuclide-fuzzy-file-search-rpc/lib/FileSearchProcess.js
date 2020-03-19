@@ -5,10 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
+import type {FileSearchOptions} from './process/FileSearch';
 import type {FileSearchResult} from './rpc-types';
 
 import {getLogger} from 'log4js';
@@ -33,7 +34,7 @@ class FileSearchProcess {
   }
 
   async initialize(): Promise<void> {
-    const task = new Task();
+    const task = new Task('FileSearchProcess');
     this._task = task;
     task.onError(buffer => {
       logger.error(
@@ -56,7 +57,10 @@ class FileSearchProcess {
     }
   }
 
-  async query(query: string): Promise<Array<FileSearchResult>> {
+  async query(
+    query: string,
+    options: FileSearchOptions,
+  ): Promise<Array<FileSearchResult>> {
     const task = this._task;
     if (task == null) {
       throw new Error('Task has been disposed');
@@ -64,7 +68,7 @@ class FileSearchProcess {
     return task.invokeRemoteMethod({
       file: require.resolve('./process/FileSearch'),
       method: 'doSearch',
-      args: [this._directory, query],
+      args: [this._directory, query, options],
     });
   }
 

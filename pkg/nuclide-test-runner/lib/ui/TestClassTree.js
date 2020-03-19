@@ -12,7 +12,8 @@
 import type {LazyTreeNode} from '../../../nuclide-ui/LazyTreeNode';
 import type TestSuiteModel from '../TestSuiteModel';
 
-import React from 'react';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
 import {PanelComponentScroller} from 'nuclide-commons-ui/PanelComponentScroller';
 import TestClassTreeNode from './TestClassTreeNode';
 import {TreeRootComponent} from '../../../nuclide-ui/TreeRootComponent';
@@ -26,8 +27,8 @@ type Props = {
   testSuiteModel: ?TestSuiteModel,
 };
 
-export default class TestClassTree extends React.Component {
-  props: Props;
+export default class TestClassTree extends React.Component<Props> {
+  _tree: ?TreeRootComponent;
 
   componentDidUpdate(prevProps: Object) {
     const {testSuiteModel} = this.props;
@@ -38,7 +39,7 @@ export default class TestClassTree extends React.Component {
           roots.push(new TestClassTreeNode(testClass));
         }
       }
-      this.refs.tree.setRoots(roots);
+      nullthrows(this._tree).setRoots(roots);
     }
 
     (this: any).rowClassNameForNode = this.rowClassNameForNode.bind(this);
@@ -51,9 +52,7 @@ export default class TestClassTree extends React.Component {
         <ol>
           <li>Open the file you want to test</li>
           <li>Choose the appropriate runner from the dropdown</li>
-          <li>
-            {'Click "Test" to run tests for that file\'s directory'}
-          </li>
+          <li>{'Click "Test" to run tests for that file\'s directory'}</li>
         </ol>
       </div>
     );
@@ -67,7 +66,9 @@ export default class TestClassTree extends React.Component {
             initialRoots={[]}
             labelClassNameForNode={labelClassNameForNode}
             onKeepSelection={() => {}}
-            ref="tree"
+            ref={tree => {
+              this._tree = tree;
+            }}
             rowClassNameForNode={this.rowClassNameForNode}
           />
         </div>

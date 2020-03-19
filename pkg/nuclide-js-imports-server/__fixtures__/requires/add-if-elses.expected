@@ -1,0 +1,10 @@
+const one = require('one');
+const two = require('two');
+
+if (one) {
+  // Nothing.
+} else if (two) {
+  // Nothing.
+} else {
+  // Nothing.
+}

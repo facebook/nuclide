@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -19,8 +19,7 @@ export type OutlineProvider = {
   // If there are multiple providers for a given grammar, the one with the highest priority will be
   // used.
   priority: number,
-  grammarScopes: Array<string>,
-  updateOnEdit?: boolean,
+  +grammarScopes?: Array<string>,
   getOutline(editor: TextEditor): Promise<?Outline>,
 };
 
@@ -31,10 +30,13 @@ export type OutlineTree = {
   // Must be one or the other. If both are present, tokenizedText is preferred.
   plainText?: string,
   tokenizedText?: TokenizedText,
+
+  // If user has atom-ide-outline-view.nameOnly then representativeName is used instead.
   representativeName?: string,
 
   startPosition: atom$Point,
   endPosition?: atom$Point,
+  landingPosition?: atom$Point,
   children: Array<OutlineTree>,
 };
 

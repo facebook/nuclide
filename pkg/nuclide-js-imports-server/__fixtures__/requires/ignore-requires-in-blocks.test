@@ -1,0 +1,10 @@
+const c = require('c');
+const a = require('a');
+const d = require('d');
+
+if (true) {
+  const b = require('b');
+}
+
+a();
+c();

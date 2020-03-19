@@ -1,0 +1,24 @@
+{
+  "name": "root-package",
+  "version": "0.0.1",
+  "description": "A suite of language service UIs for Atom.",
+  "author": "NEEDS OWNER",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://nuclide.io/",
+  "main": "index.js",
+  "repository": "https://github.com/facebook/nuclide",
+  "scripts": {
+    "test": "scripts/test.js"
+  },
+  "dependencies": {
+    "classnames": "2.2.5",
+    "log4js": "1.1.1",
+    "nuclide-commons": "0.1.0",
+    "nuclide-commons-atom": "0.1.0",
+    "nuclide-commons-ui": "0.1.0",
+    "react": "15.3.1",
+    "react-dom": "15.3.1",
+    "rxjs": "5.3.1"
+  },
+  "devDependencies": {}
+}

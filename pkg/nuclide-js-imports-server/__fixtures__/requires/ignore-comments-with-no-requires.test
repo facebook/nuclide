@@ -1,0 +1,6 @@
+/* @flow */
+/**
+ * Header comment
+ */
+
+function foo() {}

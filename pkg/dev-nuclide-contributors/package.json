@@ -1,0 +1,17 @@
+{
+  "name": "dev-nuclide-contributors",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Utilities useful for hacking on Nuclide",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide-dash-register-provider": {
+      "versions": {
+        "0.0.0": "consumeDash"
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "nuclide-watchman-helpers",
+  "publisher": "Facebook",
+  "main": "./lib/main.js",
+  "version": "0.7.3-dev",
+  "description": "Helper methods for interacting with fb-watchman",
+  "author": "NEEDS OWNER",
+  "license": "BSD-3-Clause",
+  "nuclide": {
+    "packageType": "NodeLibrary",
+    "testsCannotBeRunInParallel": true
+  },
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-watchman-helpers",
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "dependencies": {
+    "event-kit": "2.2.0",
+    "fb-watchman": "2.0.0",
+    "log4js": "1.1.1",
+    "rxjs-compat": "6.3.3",
+    "nuclide-commons": "0.7.3-dev"
+  }
+}

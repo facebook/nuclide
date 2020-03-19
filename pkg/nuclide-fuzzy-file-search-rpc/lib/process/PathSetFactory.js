@@ -11,7 +11,7 @@
 
 import child_process from 'child_process';
 import split from 'split';
-import {WatchmanClient} from '../../../nuclide-watchman-helpers';
+import {WatchmanClient} from 'nuclide-watchman-helpers';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {runCommand} from 'nuclide-commons/process';
@@ -152,7 +152,7 @@ function getFilesFromGit(localDirectory: string): Promise<Array<string>> {
 async function getFilesFromRepo(
   localDirectory: string,
 ): Promise<Array<string>> {
-  if (!await fsPromise.exists(nuclideUri.join(localDirectory, '.repo'))) {
+  if (!(await fsPromise.exists(nuclideUri.join(localDirectory, '.repo')))) {
     throw new Error(`${localDirectory} is not a repo root`);
   }
   const subRoots = (await runCommand('repo', ['list', '-p'], {

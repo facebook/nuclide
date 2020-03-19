@@ -1,0 +1,7 @@
+{
+  "name": "nuclide-fake-node-apm-package-1",
+  "version": "0.0.0",
+  "nuclide": {
+    "packageType": "AtomLibrary"
+  }
+}

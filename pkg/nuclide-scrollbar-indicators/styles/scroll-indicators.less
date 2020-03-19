@@ -1,0 +1,73 @@
+@import 'ui-variables';
+@import "syntax-variables";
+
+#nuclide-theme-detector-app-background-color {
+  background-color: @app-background-color;
+}
+
+#nuclide-theme-detector-text-color {
+  background-color: @text-color;
+}
+
+#nuclide-theme-detector-syntax-background-clor {
+  background-color: @syntax-background-color;
+}
+
+#nuclide-theme-detector-syntax-selection-color {
+  background-color: @syntax-selection-color;
+}
+
+#nuclide-theme-detector-syntax-cursor-color {
+  background-color: @syntax-cursor-color;
+}
+
+#nuclide-theme-detector-syntax-gutter-background-color-selected {
+  background-color: @syntax-gutter-background-color-selected;
+}
+
+#nuclide-theme-detector-syntax-text-color {
+  background-color: @syntax-text-color;
+}
+
+#nuclide-theme-detector-background-color-info {
+  background-color: @background-color-info;
+}
+
+#nuclide-theme-detector-text-color-subtle {
+  background-color: @text-color-subtle;
+}
+
+@thumb-color: fadeout(@syntax-gutter-background-color-selected, 0%, 'relative');
+// Note: This should ideally be a multiple of three since we display indicators
+// in three columns.
+@scrollbar-width: 15px;
+
+.scroll-marker-view {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: @scrollbar-width;
+  z-index: 4;
+  pointer-events: none;
+  background-color: fadeout(@thumb-color, 70%, 'relative');
+  canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+}
+
+atom-text-editor:not(.nuclide-wrapped-editor) .vertical-scrollbar::-webkit-scrollbar {
+  width: @scrollbar-width;
+
+  &-thumb:vertical {
+    background-color: @thumb-color;
+    z-index: 5;
+  }
+
+  &-corner {
+    background-color: @syntax-background-color;
+  }
+}

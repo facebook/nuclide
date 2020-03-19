@@ -1,0 +1,29 @@
+[
+  {
+    "column": 11,
+    "file": "directory/file2.js",
+    "line": "        // console.log(x);",
+    "matchLength": 14,
+    "row": 1,
+    "leadingContext": [],
+    "trailingContext": []
+  },
+  {
+    "column": 8,
+    "file": "directory/file2.js",
+    "line": "        console.log(a); // good",
+    "matchLength": 14,
+    "row": 4,
+    "leadingContext": [],
+    "trailingContext": []
+  },
+  {
+    "column": 8,
+    "file": "file1.js",
+    "line": "        console.log(n); //bad",
+    "matchLength": 14,
+    "row": 4,
+    "leadingContext": [],
+    "trailingContext": []
+  }
+]

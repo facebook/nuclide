@@ -10,4 +10,13 @@
 cd "$( cd "$(dirname $0)" ; pwd -P )" > /dev/null 2>&1
 # This will make the current directory the path that contains the scripts dir
 cd "$(dirname "$(readlink "$0" || printf %s "$0")")" > /dev/null 2>&1
-python2.7 scripts/nuclide_server_manager.py "$@"
+
+# Use the new nuclide-server2 codepath with the '--big-dig' flag.
+if [ "$1" == "--big-dig" ]; then
+  shift
+  # Try to enable core dumps (not doable from with Node)
+  ulimit -c unlimited || true
+  node ../nuclide-server2/lib/main.js "$@"
+else
+  python2.7 scripts/nuclide_server_manager.py "$@"
+fi

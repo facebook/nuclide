@@ -1,0 +1,13 @@
+/**
+ * A silly no-op style that forces custom scrollbars when scrollbars are set to "always show".
+ * A Chromium bug prevents custom scrollbars from triggering a redraw if they load after render.
+ * Themes are loaded *after* Nuclide has finished activating, so we're stuck with ugly scrollbars.
+ * If we pre-emptively create a custom scrollbar, this mitigates the bug...
+ * All major Atom themes use custom scrollbars in "always show" mode.. so this is fairly safe.
+ *
+ * Will likely be fixed when this patch lands in Electron (Committed on 2017/08/11)
+ * https://bugs.chromium.org/p/chromium/issues/detail?id=454346
+ */
+.scrollbars-visible-always .nuclide-scrollbar-style-fix::-webkit-scrollbar {
+  display: block;
+}

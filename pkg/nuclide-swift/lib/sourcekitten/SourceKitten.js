@@ -33,7 +33,7 @@ export function getSourceKittenDisabled(): boolean {
 }
 
 /**
- * Executes a SourceKitten request asyncrhonously.
+ * Executes a SourceKitten request asynchronously.
  * If an error occurs, displays an error and returns null.
  * Otherwise, returns the stdout from SourceKitten.
  */
@@ -72,14 +72,17 @@ export async function asyncExecuteSourceKitten(
     return null;
   }
   if (result.exitCode !== 0 || result.stdout.length === 0) {
-    atom.notifications.addError('An error occured when invoking SourceKitten', {
-      description:
-        'Please file a bug.<br>' +
-        `**exit code:** \`${String(result.exitCode)}\`<br>` +
-        `**stdout:** <pre>${String(result.stdout)}</pre><br>` +
-        `**stderr:** <pre>${String(result.stderr)}</pre><br>` +
-        `**command:** <pre>${[command].concat(args).join(' ')}</pre><br>`,
-    });
+    atom.notifications.addError(
+      'An error occurred when invoking SourceKitten',
+      {
+        description:
+          'Please file a bug.<br>' +
+          `**exit code:** \`${String(result.exitCode)}\`<br>` +
+          `**stdout:** <pre>${String(result.stdout)}</pre><br>` +
+          `**stderr:** <pre>${String(result.stderr)}</pre><br>` +
+          `**command:** <pre>${[command].concat(args).join(' ')}</pre><br>`,
+      },
+    );
     return null;
   }
 

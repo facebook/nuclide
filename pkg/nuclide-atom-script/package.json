@@ -1,12 +1,12 @@
 {
   "name": "nuclide-atom-script",
-  "repository": "https://github.com/facebook/nuclide",
   "version": "0.0.0",
   "description": "Facilitates dumping data from Atom",
+  "author": "NEEDS OWNER",
   "main": "./lib/test-runner-entry.js",
   "atomTestRunner": "./lib/test-runner-entry.js",
   "nuclide": {
-    "packageType": "Node",
+    "packageType": "AtomLibrary",
     "testRunner": "apm"
   },
   "bin": {

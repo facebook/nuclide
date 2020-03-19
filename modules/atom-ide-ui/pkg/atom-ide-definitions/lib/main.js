@@ -33,17 +33,23 @@ import type {
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
+import {Range} from 'atom';
 
-import analytics from 'nuclide-commons-atom/analytics';
+import analytics from 'nuclide-commons/analytics';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import FeatureConfig from 'nuclide-commons-atom/feature-config';
+import {wordAtPosition} from 'nuclide-commons-atom/range';
+import {distinct} from 'nuclide-commons/collection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
+import performanceNow from 'nuclide-commons/performanceNow';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 import DefinitionCache from './DefinitionCache';
 import getPreviewDatatipFromDefinitionResult from './getPreviewDatatipFromDefinitionResult';
+
+const TRACK_TIMING_SAMPLE_RATIO = 0.1;
 
 class Activation {
   _providers: ProviderRegistry<DefinitionProvider>;
@@ -83,6 +89,20 @@ class Activation {
         // eslint-disable-next-line no-await-in-loop
         const result = await provider.getDefinition(editor, position);
         if (result != null) {
+          if (result.queryRange == null) {
+            const match = wordAtPosition(
+              editor,
+              position,
+              provider.wordRegExp != null
+                ? provider.wordRegExp
+                : {
+                    includeNonWordCharacters: false,
+                  },
+            );
+            result.queryRange = [
+              match != null ? match.range : new Range(position, position),
+            ];
+          }
           return result;
         }
       } catch (err) {
@@ -95,28 +115,51 @@ class Activation {
     return null;
   }
 
+  _getDefinitionCached(
+    editor: atom$TextEditor,
+    position: atom$Point,
+  ): Promise<?DefinitionQueryResult> {
+    return this._definitionCache.get(editor, position, () => {
+      return analytics.trackTimingSampled(
+        'get-definition',
+        () => this._getDefinition(editor, position),
+        TRACK_TIMING_SAMPLE_RATIO,
+        {path: editor.getPath()},
+      );
+    });
+  }
+
   async getSuggestion(
     editor: atom$TextEditor,
     position: atom$Point,
   ): Promise<?HyperclickSuggestion> {
-    const result = await this._definitionCache.get(editor, position, () =>
-      this._getDefinition(editor, position),
-    );
-
+    const startTime = performanceNow();
+    const result = await this._getDefinitionCached(editor, position);
+    const duration = performanceNow() - startTime;
     if (result == null) {
       return null;
     }
 
-    const {definitions} = result;
+    const {queryRange, definitions} = result;
     invariant(definitions.length > 0);
+    // queryRange might be null coming out of the provider, but the output
+    // of _getDefinition has ensured it's not null.
+    invariant(queryRange != null);
 
     function createCallback(definition) {
       return () => {
-        goToLocation(
-          definition.path,
-          definition.position.row,
-          definition.position.column,
-        );
+        goToLocation(definition.path, {
+          line: definition.position.row,
+          column: definition.position.column,
+        });
+        analytics.track('go-to-definition', {
+          path: definition.path,
+          line: definition.position.row,
+          column: definition.position.column,
+          from: editor.getPath(),
+          name: definition.name,
+          duration,
+        });
       };
     }
 
@@ -132,15 +175,20 @@ class Activation {
       return `${definition.name} (${filePath})`;
     }
 
-    if (definitions.length === 1) {
+    const distictDefinitions = distinct(
+      definitions,
+      def => `path:${def.path}\nrow:${def.position.row}`,
+    );
+
+    if (distictDefinitions.length === 1) {
       return {
-        range: result.queryRange,
-        callback: createCallback(definitions[0]),
+        range: queryRange,
+        callback: createCallback(distictDefinitions[0]),
       };
     } else {
       return {
-        range: result.queryRange,
-        callback: definitions.map(definition => {
+        range: queryRange,
+        callback: distictDefinitions.map(definition => {
           return {
             title: createTitle(definition),
             callback: createCallback(definition),
@@ -163,19 +211,28 @@ class Activation {
       return;
     }
 
-    const result = await this._getDefinition(editor, position);
+    // Datatips are debounced, so this request should always come in after the getDefinition request.
+    // Thus we should always be able to rely on the value being in the cache.
+    // If it's not in the cache, this implies that a newer getDefinition request came in,
+    // in which case the result of this function will be ignored anyway.
+    const result = await this._definitionCache.getCached(editor, position);
     if (result == null) {
       return null;
     }
+    const queryRange = result.queryRange;
+    // queryRange might be null coming out of the provider, but the output
+    // of _getDefinition has ensured it's not null.
+    invariant(queryRange != null);
 
     const grammar = editor.getGrammar();
     const previewDatatip = getPreviewDatatipFromDefinitionResult(
-      result,
+      queryRange[0],
+      result.definitions,
       this._definitionPreviewProvider,
       grammar,
     );
 
-    // flowlint-next-line sketchy-null-mixed:off
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     if (previewDatatip != null && previewDatatip.markedStrings) {
       analytics.track('hyperclick-preview-popup', {
         grammar: grammar.name,

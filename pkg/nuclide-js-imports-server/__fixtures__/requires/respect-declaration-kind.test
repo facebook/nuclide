@@ -1,0 +1,5 @@
+const three = require('three');
+let two = require('two');
+var one = require('one');
+
+one(two(three));

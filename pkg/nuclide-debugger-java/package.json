@@ -1,0 +1,46 @@
+{
+  "name": "nuclide-debugger-java",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Nuclide java debugger client",
+  "author": "Nuclide : Debugging",
+  "private": true,
+  "nuclide": {
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "Debugger",
+        "Java"
+      ]
+    },
+    "config": {
+      "sourceFilePaths": {
+        "title": "Source file paths",
+        "type": "string",
+        "default": "",
+        "description": "Semicolon-delimited list of additional paths to search for Java source files"
+      }
+    }
+  },
+  "providedServices": {
+    "debugger.provider": {
+      "description": "Java debugger client.",
+      "versions": {
+        "0.0.0": "createDebuggerProvider"
+      }
+    },
+    "additional-log-files": {
+      "description": "Java debugger log files",
+      "versions": {
+        "0.0.0": "createJavaAdditionalLogFilesProvider"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide.devices": {
+      "versions": {
+        "0.0.0": "consumeDevicePanelServiceApi"
+      }
+    }
+  }
+}

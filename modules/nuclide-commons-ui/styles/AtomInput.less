@@ -1,3 +1,5 @@
+@import 'ui-variables';
+
 /*
  * Use element + class selectors, as opposed to just the class selector, to match the specificity of
  * `atom-text-editor[mini]`.
@@ -13,4 +15,14 @@ atom-text-editor[mini].atom-text-editor-sm {
  */
 atom-panel.modal .atom-text-editor-unstyled[mini] {
   margin: 0;
+}
+
+/*
+ * Use element + class selectors to have greater specificity than
+ * atom-text-editor[mini].is-focused
+ */
+atom-text-editor[mini].atom-text-editor-invalid.atom-text-editor-invalid {
+  border-color: @background-color-error;
+  box-shadow: none;
+  color: @text-color-error;
 }

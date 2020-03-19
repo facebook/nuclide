@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -21,7 +21,7 @@ const MAX_STACK_DEPTH = 100;
 // while browsing code.
 //
 // Stack entries include the file (as uri for closed files and as
-// atom$TextEditor for open files) as well as the cursor position and scroll.
+// atom$TextEditor for open files) as well as the cursor position.
 // openEditor/closeEditor converts entries to/from editor/uri locations.
 // Note that closeEditor may remove entries if the editor being closed does not
 // have a path (aka has not been saved).
@@ -35,7 +35,7 @@ const MAX_STACK_DEPTH = 100;
 // if the current location has been updated, or null of current is already at the
 // top/bottom of the stack.
 //
-// The buffer position and scroll top of the current location can also be
+// The buffer position of the current location can also be
 // updated in place with attemptUpdate. If the editor of the new location matches
 // the current location, then the current location is updated, otherwise a new
 // entry is pushed.
@@ -98,7 +98,6 @@ export class NavigationStack {
     if (this.getCurrentEditor() === newTop.editor) {
       const current = this.getCurrent();
       current.bufferPosition = newTop.bufferPosition;
-      current.scrollTop = newTop.scrollTop;
     } else {
       this.push(newTop);
     }
@@ -151,7 +150,6 @@ export class NavigationStack {
         this._elements[index] = {
           type: 'editor',
           editor,
-          scrollTop: location.scrollTop,
           bufferPosition: location.bufferPosition,
         };
       }
@@ -171,7 +169,6 @@ export class NavigationStack {
           this._elements[index] = {
             type: 'uri',
             uri,
-            scrollTop: location.scrollTop,
             bufferPosition: location.bufferPosition,
           };
         }

@@ -1,0 +1,5 @@
+const one = require('one');
+const three = require('three');
+const two = require('two');
+
+new one(two, {three});

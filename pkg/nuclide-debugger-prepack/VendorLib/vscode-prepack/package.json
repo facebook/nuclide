@@ -1,0 +1,10 @@
+{
+  "name": "vscode-prepack",
+  "version": "1.0.0",
+  "description": "Debugger for Prepack's interpreter",
+  "main": "adapter/DebugAdapter.js",
+  "repository": "https://github.com/facebook/prepack",
+  "author": "prepack",
+  "license": "BSD (See LICENSE)",
+  "private": true
+}

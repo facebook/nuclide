@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,6 +17,7 @@ import invariant from 'assert';
 import electron from 'electron';
 // eslint-disable-next-line nuclide-internal/prefer-nuclide-uri
 import path from 'path';
+import {sleep} from 'nuclide-commons/promise';
 
 const {ipcRenderer, remote} = electron;
 invariant(ipcRenderer != null && remote != null);
@@ -35,13 +36,13 @@ export default (async function runCommand(
   ipcRenderer.send('run-package-specs', packageSpecPath);
 
   // Wait for the window to load
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await sleep(1000);
 
-  const testWindow = remote.BrowserWindow
-    .getAllWindows()
-    .find(browserWindow => {
+  const testWindow = remote.BrowserWindow.getAllWindows().find(
+    browserWindow => {
       return !initialWindows.includes(browserWindow);
-    });
+    },
+  );
 
   if (testWindow == null) {
     console.error('Could not find spec browser window.');

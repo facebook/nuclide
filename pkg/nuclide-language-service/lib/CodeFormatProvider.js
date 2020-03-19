@@ -5,12 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {FormatOptions, LanguageService} from './LanguageService';
-import type {BusySignalProvider} from './AtomLanguageService';
 import type {
   RangeCodeFormatProvider,
   FileCodeFormatProvider,
@@ -19,7 +18,7 @@ import type {
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
@@ -36,6 +35,10 @@ export type CodeFormatConfig = {|
   // If true, support formatting at a position (such as for as-you-type
   // formatting). If false, don't support that.
   canFormatAtPosition: boolean,
+
+  // If true, cursor will be moved back to original position after TextEdit(s)
+  // are applied. If false, TextEdit(s) may move the cursor.
+  keepCursorPosition?: boolean,
 |};
 
 export class CodeFormatProvider<T: LanguageService> {
@@ -44,7 +47,6 @@ export class CodeFormatProvider<T: LanguageService> {
   priority: number;
   _analyticsEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
-  _busySignalProvider: BusySignalProvider;
 
   constructor(
     name: string,
@@ -52,14 +54,12 @@ export class CodeFormatProvider<T: LanguageService> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     this.name = name;
     this.grammarScopes = grammarScopes;
     this.priority = priority;
     this._analyticsEventName = analyticsEventName;
     this._connectionToLanguageService = connectionToLanguageService;
-    this._busySignalProvider = busySignalProvider;
   }
 
   static register(
@@ -67,7 +67,6 @@ export class CodeFormatProvider<T: LanguageService> {
     grammarScopes: Array<string>,
     config: CodeFormatConfig,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ): IDisposable {
     const disposable = new UniversalDisposable(
       config.canFormatRanges
@@ -80,7 +79,6 @@ export class CodeFormatProvider<T: LanguageService> {
               config.priority,
               config.analyticsEventName,
               connectionToLanguageService,
-              busySignalProvider,
             ).provide(),
           )
         : atom.packages.serviceHub.provide(
@@ -92,7 +90,6 @@ export class CodeFormatProvider<T: LanguageService> {
               config.priority,
               config.analyticsEventName,
               connectionToLanguageService,
-              busySignalProvider,
             ).provide(),
           ),
     );
@@ -108,7 +105,7 @@ export class CodeFormatProvider<T: LanguageService> {
             config.priority,
             config.analyticsEventName,
             connectionToLanguageService,
-            busySignalProvider,
+            config.keepCursorPosition,
           ).provide(),
         ),
       );
@@ -125,7 +122,6 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     super(
       name,
@@ -133,7 +129,6 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
       priority,
       analyticsEventName,
       connectionToLanguageService,
-      busySignalProvider,
     );
   }
 
@@ -147,15 +142,10 @@ class RangeFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatSource(
-              fileVersion,
-              range,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatSource(
+          fileVersion,
+          range,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;
@@ -182,7 +172,6 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
     priority: number,
     analyticsEventName: string,
     connectionToLanguageService: ConnectionCache<T>,
-    busySignalProvider: BusySignalProvider,
   ) {
     super(
       name,
@@ -190,14 +179,13 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
       priority,
       analyticsEventName,
       connectionToLanguageService,
-      busySignalProvider,
     );
   }
 
   formatEntireFile(
     editor: atom$TextEditor,
     range: atom$Range,
-  ): Promise<{
+  ): Promise<?{
     newCursor?: number,
     formatted: string,
   }> {
@@ -207,22 +195,17 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatEntireFile(
-              fileVersion,
-              range,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatEntireFile(
+          fileVersion,
+          range,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;
         }
       }
 
-      return {formatted: editor.getText()};
+      return null;
     });
   }
 
@@ -236,6 +219,26 @@ class FileFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
 }
 
 class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
+  keepCursorPosition: boolean;
+
+  constructor(
+    name: string,
+    grammarScopes: Array<string>,
+    priority: number,
+    analyticsEventName: string,
+    connectionToLanguageService: ConnectionCache<T>,
+    keepCursorPosition?: boolean = false,
+  ) {
+    super(
+      name,
+      grammarScopes,
+      priority,
+      analyticsEventName,
+      connectionToLanguageService,
+    );
+    this.keepCursorPosition = keepCursorPosition;
+  }
+
   formatAtPosition(
     editor: atom$TextEditor,
     position: atom$Point,
@@ -247,16 +250,11 @@ class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
         editor.getPath(),
       );
       if (languageService != null && fileVersion != null) {
-        const result = await this._busySignalProvider.reportBusyWhile(
-          `${this.name}: Formatting ${fileVersion.filePath}`,
-          async () => {
-            return (await languageService).formatAtPosition(
-              fileVersion,
-              position,
-              character,
-              getFormatOptions(editor),
-            );
-          },
+        const result = await (await languageService).formatAtPosition(
+          fileVersion,
+          position,
+          character,
+          getFormatOptions(editor),
         );
         if (result != null) {
           return result;
@@ -272,11 +270,12 @@ class PositionFormatProvider<T: LanguageService> extends CodeFormatProvider<T> {
       formatAtPosition: this.formatAtPosition.bind(this),
       grammarScopes: this.grammarScopes,
       priority: this.priority,
+      keepCursorPosition: this.keepCursorPosition,
     };
   }
 }
 
-function getFormatOptions(editor: atom$TextEditor): FormatOptions {
+export function getFormatOptions(editor: atom$TextEditor): FormatOptions {
   return {
     tabSize: editor.getTabLength(),
     insertSpaces: editor.getSoftTabs(),

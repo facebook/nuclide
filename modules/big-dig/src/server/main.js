@@ -10,111 +10,210 @@
  * @format
  */
 
-import child_process from 'child_process';
-import fs from '../common/fs';
-import invariant from 'assert';
-import nuclideUri from 'nuclide-commons/nuclideUri';
-import {getLogger} from 'log4js';
-import {generateCertificates} from './certificates';
+import type {LauncherScriptParams} from './launchServer';
 
-export async function generateCertificatesAndStartServer(
-  clientCommonName: string,
-  serverCommonName: string,
-  openSSLConfigPath: string,
-  port: number,
+import {timeoutPromise, TimedOutError} from 'nuclide-commons/promise';
+import fs from '../common/fs';
+import child_process from 'child_process';
+import {getLogger} from 'log4js';
+import os from 'os';
+import temp from 'temp';
+import {generateCertificates} from './certificates';
+import invariant from 'assert';
+
+export type CertificateStrategy =
+  | {
+      type: 'reuse',
+      paths: {serverKey: string, serverCert: string, caCert: string},
+    }
+  | {
+      type: 'generate',
+      clientCommonName: string,
+      serverCommonName: string,
+      openSSLConfigPath: string,
+    }
+  | {
+      type: 'rootcanal',
+    };
+
+export type StartServerParams = {
+  certificateStrategy: CertificateStrategy,
+  ports: string,
+  timeout: number,
   expirationDays: number,
+  exclusive: ?string,
   jsonOutputFile: string,
   absolutePathToServerMain: string,
+  useRootCanalCerts: boolean,
   serverParams: mixed,
-): Promise<void> {
+};
+
+export async function startServer({
+  certificateStrategy,
+  ports,
+  timeout,
+  expirationDays,
+  exclusive,
+  jsonOutputFile,
+  absolutePathToServerMain,
+  useRootCanalCerts,
+  serverParams,
+}: StartServerParams): Promise<void> {
   const logger = getLogger();
-  logger.info('in generateCertificatesAndStartServer()');
+  logger.info('in startServer()');
 
-  // flowlint-next-line sketchy-null-string:off
-  const homeDir = process.env.HOME || process.env.USERPROFILE;
-  // flowlint-next-line sketchy-null-string:off
-  invariant(homeDir);
+  let paths;
+  let certificateGeneratorOutput = {};
+  switch (certificateStrategy.type) {
+    case 'generate':
+      const {
+        clientCommonName,
+        serverCommonName,
+        openSSLConfigPath,
+      } = certificateStrategy;
+      paths = await generateCertificates(
+        clientCommonName,
+        serverCommonName,
+        openSSLConfigPath,
+        expirationDays,
+      );
+      logger.info('generateCertificates() succeeded!');
+      certificateGeneratorOutput = {
+        hostname: serverCommonName,
+        cert: await fs.readFileAsString(paths.clientCert),
+        key: await fs.readFileAsString(paths.clientKey),
+      };
+      break;
+    case 'rootcanal':
+      logger.info('using rootcanal certificates');
+      const env = getOriginalEnvironment(process.env);
+      const hostname = env.HOSTNAME;
+      invariant(hostname != null);
+      paths = {
+        serverCert: `/etc/pki/tls/certs/${hostname}.crt`,
+        serverKey: `/etc/pki/tls/certs/${hostname}.key`,
+        caCert: '/var/facebook/rootcanal/corp_root.pem',
+      };
+      break;
+    case 'reuse':
+      logger.info('reusing existing certificates');
+      paths = certificateStrategy.paths;
 
-  const sharedCertsDir = nuclideUri.join(homeDir, '.certs');
-  try {
-    await fs.mkdir(sharedCertsDir);
-  } catch (error) {
-    if (error.code !== 'EEXIST') {
-      throw error;
-    }
+      break;
+    default:
+      (certificateStrategy.type: empty);
+      throw new Error('invalid certificate strategy');
   }
-
-  // HACK: kill existing servers on the given port.
-  try {
-    child_process.execFileSync('pkill', [
-      '-f',
-      `launchServer-entry.js.*"port":${port}`,
-    ]);
-  } catch (e) {}
-
-  const paths = await generateCertificates(
-    clientCommonName,
-    serverCommonName,
-    openSSLConfigPath,
-    sharedCertsDir,
-    expirationDays,
-  );
-  logger.info('generateCertificates() succeeded!');
 
   const [key, cert, ca] = await Promise.all([
     fs.readFileAsBuffer(paths.serverKey),
     fs.readFileAsBuffer(paths.serverCert),
     fs.readFileAsBuffer(paths.caCert),
   ]);
-  const params = {
+
+  const params: LauncherScriptParams = {
     key: key.toString(),
     cert: cert.toString(),
     ca: ca.toString(),
-    port,
-    launcher: absolutePathToServerMain,
+    ports,
+    expirationDays,
+    exclusive,
+    absolutePathToServerMain,
+    useRootCanalCerts,
     serverParams,
   };
+
+  // Redirect child stderr to a file so that we can read it.
+  // (If we just pipe it, there's no safe way of disconnecting it after.)
+  temp.track();
+  const stderrLog = temp.openSync('big-dig-stderr');
 
   const launcherScript = require.resolve('./launchServer-entry.js');
   logger.info(`About to spawn ${launcherScript} to launch Big Dig server.`);
   const child = child_process.spawn(
     process.execPath,
-    [launcherScript, JSON.stringify(params)],
+    [
+      // Increase stack trace limit for better debug logs.
+      // For reference, Atom/Electron does not have a stack trace limit.
+      '--stack-trace-limit=50',
+      // Increase the maximum heap size if we have enough memory.
+      ...(os.totalmem() > 8 * 1024 * 1024 * 1024
+        ? ['--max-old-space-size=4096']
+        : []),
+      launcherScript,
+    ],
     {
       detached: true,
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      stdio: ['ignore', 'ignore', stderrLog.fd, 'ipc'],
     },
   );
   logger.info(`spawn called for ${launcherScript}`);
+  // Send launch parameters over IPC to avoid making them visible in `ps`.
+  child.send(params);
 
-  const childPort = await new Promise((resolve, reject) => {
-    const onMessage = ({port: result}) => {
-      resolve(result);
-      child.removeAllListeners();
-    };
-    child.on('message', onMessage);
-    child.on('error', reject);
-    child.on('exit', code => {
-      logger.info(`${launcherScript} exited with code ${code}`);
-      reject(Error(`child exited early with code ${code}`));
-    });
+  const childPort = await timeoutPromise(
+    new Promise((resolve, reject) => {
+      const onMessage = ({port: result}) => {
+        resolve(result);
+        child.removeAllListeners();
+      };
+      child.on('message', onMessage);
+      child.on('error', reject);
+      child.on('exit', async code => {
+        const stderr = await fs
+          .readFileAsString(stderrLog.path)
+          .catch(() => '');
+        reject(
+          Error(`Child exited early with code ${code}.\nstderr: ${stderr}`),
+        );
+      });
+    }),
+    timeout,
+  ).catch(err => {
+    // Make sure we clean up hung children.
+    if (err instanceof TimedOutError) {
+      child.kill('SIGKILL');
+    }
+    return Promise.reject(err);
   });
 
   const {version} = require('../../package.json');
   const json = JSON.stringify(
     // These properties are the ones currently written by nuclide-server.
     {
-      pid: process.pid,
+      ...certificateGeneratorOutput,
+      pid: child.pid,
       version,
-      hostname: serverCommonName,
       port: childPort,
       ca: ca.toString(),
-      cert: await fs.readFileAsString(paths.clientCert),
-      key: await fs.readFileAsString(paths.clientKey),
+      ca_path: paths.caCert,
+      server_cert_path: paths.serverCert,
+      server_key_path: paths.serverKey,
+      protocol_version: 2,
       success: true,
     },
   );
   await fs.writeFile(jsonOutputFile, json, {mode: 0o600});
   logger.info(`Server config written to ${jsonOutputFile}.`);
   child.unref();
+}
+
+type DevserverEnvironment = {
+  HOSTNAME?: string,
+};
+
+function getOriginalEnvironment(nuclideEnvironment): DevserverEnvironment {
+  const {NUCLIDE_ORIGINAL_ENV} = nuclideEnvironment;
+  let result = {};
+  if (NUCLIDE_ORIGINAL_ENV != null && NUCLIDE_ORIGINAL_ENV.trim() !== '') {
+    result = new Buffer(NUCLIDE_ORIGINAL_ENV, 'base64')
+      .toString()
+      .split('\0')
+      .reduce((env, curr) => {
+        const keyAndValue = curr.split('=');
+        env[keyAndValue[0]] = keyAndValue[1];
+        return env;
+      }, {});
+  }
+  return result;
 }

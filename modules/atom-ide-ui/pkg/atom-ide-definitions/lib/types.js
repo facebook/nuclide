@@ -33,9 +33,10 @@ export type Definition = {
 // Definition queries supply a point.
 // The returned queryRange is the range within which the returned definition is valid.
 // Typically queryRange spans the containing identifier around the query point.
+// (If a null queryRange is returned, the range of the word containing the point is used.)
 export type DefinitionQueryResult = {
-  queryRange: Array<atom$Range>,
-  definitions: Array<Definition>,
+  queryRange: ?Array<atom$Range>,
+  definitions: Array<Definition>, // Must be non-empty.
 };
 
 // Provides definitions for a set of language grammars.
@@ -43,7 +44,10 @@ export type DefinitionProvider = {
   // If there are multiple providers for a given grammar,
   // the one with the highest priority will be used.
   priority: number,
-  grammarScopes: Array<string>,
+  +grammarScopes?: Array<string>,
+  wordRegExp: ?RegExp,
+  // Obtains the definition in an editor at the given point.
+  // This should return null if no definition is available.
   getDefinition: (
     editor: TextEditor,
     position: atom$Point,

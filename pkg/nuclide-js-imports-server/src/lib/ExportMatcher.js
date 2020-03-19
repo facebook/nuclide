@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import {
   Matcher,
   type MatcherOptions,
   type MatchResult,
-} from '../../../nuclide-fuzzy-native';
+} from 'nuclide-fuzzy-native';
 
 /**
  * This class batches all adds/removes from the same tick into one batch add/remove call.

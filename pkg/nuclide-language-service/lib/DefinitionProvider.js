@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,12 +13,13 @@ import type {DefinitionQueryResult} from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 
 import {ConnectionCache} from '../../nuclide-remote-connection';
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 
 export type DefinitionConfig = {|
   version: '0.1.0',
   priority: number,
+  wordRegExp?: RegExp,
   definitionEventName: string,
 |};
 
@@ -26,6 +27,7 @@ export class DefinitionProvider<T: LanguageService> {
   name: string;
   priority: number;
   grammarScopes: Array<string>;
+  wordRegExp: ?RegExp;
   _definitionEventName: string;
   _connectionToLanguageService: ConnectionCache<T>;
 
@@ -34,11 +36,13 @@ export class DefinitionProvider<T: LanguageService> {
     grammars: Array<string>,
     priority: number,
     definitionEventName: string,
+    wordRegExp: ?RegExp,
     connectionToLanguageService: ConnectionCache<T>,
   ) {
     this.name = name;
     this.priority = priority;
     this.grammarScopes = grammars;
+    this.wordRegExp = wordRegExp;
     this._definitionEventName = definitionEventName;
     this._connectionToLanguageService = connectionToLanguageService;
   }
@@ -57,6 +61,7 @@ export class DefinitionProvider<T: LanguageService> {
         grammars,
         config.priority,
         config.definitionEventName,
+        config.wordRegExp,
         connectionToLanguageService,
       ),
     );

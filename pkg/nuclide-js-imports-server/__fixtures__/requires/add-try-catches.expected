@@ -1,0 +1,7 @@
+try {
+  // Nothing.
+} catch (e) {
+  // Nothing.
+} finally {
+  // Nothing.
+}

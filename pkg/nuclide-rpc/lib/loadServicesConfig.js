@@ -12,7 +12,7 @@
 import fs from 'fs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
-import type {ConfigEntry} from '../../nuclide-rpc';
+import type {ConfigEntry} from '../../nuclide-rpc/lib/types';
 
 /**
  * Load service configs, and resolve all of the paths to absolute paths.

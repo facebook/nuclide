@@ -1,0 +1,947 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ * @format
+ */
+
+// From https://github.com/Microsoft/vscode-languageserver-node/blob/master/jsonrpc/src/main.ts
+// For v3.3.0
+// TODO: Contribute this back to flow-typed.
+
+declare module 'vscode-jsonrpc' {
+  // thenable.d.ts
+
+  declare type Thenable<R> = Promise<R>;
+
+  // events.d.ts
+
+  declare export interface Disposable {
+    /**
+     * Dispose this object.
+     */
+    dispose(): void;
+  }
+
+  // declare var Disposable: {
+  //     create(func: () => void): Disposable;
+  // }
+  /**
+   * Represents a typed event.
+   */
+  declare export interface Event<T> {
+    /**
+     *
+     * @param listener The listener function will be call when the event happens.
+     * @param thisArgs The 'this' which will be used when calling the event listener.
+     * @param disposables An array to which a {{IDisposable}} will be added. The
+     * @return
+     */
+    (
+      listener: (e: T) => any,
+      thisArgs?: any,
+      disposables?: Disposable[],
+    ): Disposable;
+  }
+  // declare export namespace Event = {
+  //     const None: Event<any>;
+  // }
+  declare export interface EmitterOptions {
+    onFirstListenerAdd?: Function;
+    onLastListenerRemove?: Function;
+  }
+  declare export class Emitter<T> {
+    // private _options;
+    // private static _noop;
+    // private _event;
+    // private _callbacks;
+    constructor(_options?: EmitterOptions): void;
+    /**
+     * For the public to allow to subscribe
+     * to events from this Emitter
+     */
+    +event: Event<T>;
+    /**
+     * To be kept private to fire an event to
+     * subscribers
+     */
+    fire(event: T): any;
+    dispose(): void;
+  }
+
+  // cancellation.d.ts
+
+  /**
+   * Defines a CancellationToken. This interface is not
+   * intended to be implemented. A CancellationToken must
+   * be created via a CancellationTokenSource.
+   */
+  declare export interface CancellationToken {
+    /**
+     * Is `true` when the token has been cancelled, `false` otherwise.
+     */
+    +isCancellationRequested: boolean;
+    /**
+     * An [event](#Event) which fires upon cancellation.
+     */
+    +onCancellationRequested: Event<any>;
+  }
+  // declare export namespace CancellationToken {
+  //     const None: CancellationToken;
+  //     const Cancelled: CancellationToken;
+  //     is(value: any): boolean;
+  // }
+  declare export class CancellationTokenSource {
+    // private _token;
+    +token: CancellationToken;
+    cancel(): void;
+    dispose(): void;
+  }
+
+  // messages.d.ts
+
+  /**
+   * A language server message
+   */
+  declare export interface Message {
+    jsonrpc: string;
+  }
+  /**
+   * Request message
+   */
+  declare export interface RequestMessage extends Message {
+    /**
+     * The request id.
+     */
+    id: number | string;
+    /**
+     * The method to be invoked.
+     */
+    method: string;
+    /**
+     * The method's params.
+     */
+    params?: any;
+  }
+  /**
+   * Predefined error codes.
+   */
+  declare export var ErrorCodes: {
+    ParseError: number,
+    InvalidRequest: number,
+    MethodNotFound: number,
+    InvalidParams: number,
+    InternalError: number,
+    serverErrorStart: number,
+    serverErrorEnd: number,
+    ServerNotInitialized: number,
+    UnknownErrorCode: number,
+    RequestCancelled: number,
+    MessageWriteError: number,
+    MessageReadError: number,
+  };
+  declare export interface ResponseErrorLiteral<D> {
+    /**
+     * A number indicating the error type that occured.
+     */
+    code: number;
+    /**
+     * A string providing a short decription of the error.
+     */
+    message: string;
+    /**
+     * A Primitive or Structured value that contains additional
+     * information about the error. Can be omitted.
+     */
+    data?: D;
+  }
+  /**
+   * A error object return in a response in case a request
+   * has failed.
+   */
+  declare export class ResponseError<D> extends Error {
+    +code: number;
+    +data: D;
+    constructor(code: number, message: string, data?: D): void;
+    toJson(): ResponseErrorLiteral<D>;
+  }
+  /**
+   * A response message.
+   */
+  declare export interface ResponseMessage extends Message {
+    /**
+     * The request id.
+     */
+    id: number | string | null;
+    /**
+     * The result of a request. This can be omitted in
+     * the case of an error.
+     */
+    result?: any;
+    /**
+     * The error object in case a request fails.
+     */
+    error?: ResponseErrorLiteral<any>;
+  }
+  /**
+   * An interface to type messages.
+   */
+  declare export interface MessageType {
+    +method: string;
+    +numberOfParams: number;
+  }
+  /**
+   * An abstract implementation of a MessageType.
+   */
+  declare class AbstractMessageType {
+    // private _method;
+    // private _numberOfParams;
+    constructor(_method: string, _numberOfParams: number): void;
+    +method: string;
+    +numberOfParams: number;
+  }
+  /**
+   * End marker interface for request and notification types.
+   */
+  declare interface _EM {
+    _$endMarker$_: number;
+  }
+  /**
+   * Classes to type request response pairs
+   */
+  declare export type RequestType0<R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType<P, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType1<P1, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType2<P1, P2, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType3<P1, P2, P3, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType4<P1, P2, P3, P4, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType5<P1, P2, P3, P4, P5, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType6<P1, P2, P3, P4, P5, P6, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType7<P1, P2, P3, P4, P5, P6, P7, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType8<P1, P2, P3, P4, P5, P6, P7, P8, R, E, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type RequestType9<
+    P1,
+    P2,
+    P3,
+    P4,
+    P5,
+    P6,
+    P7,
+    P8,
+    P9,
+    R,
+    E,
+    RO,
+  > = {
+    // private _?;
+    +method: string,
+  };
+  /**
+   * Notification Message
+   */
+  declare interface NotificationMessage extends Message {
+    /**
+     * The method to be invoked.
+     */
+    method: string;
+    /**
+     * The notification's params.
+     */
+    params?: any;
+  }
+  declare export type NotificationType<P, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType0<RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType1<P1, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType2<P1, P2, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType3<P1, P2, P3, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType4<P1, P2, P3, P4, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType5<P1, P2, P3, P4, P5, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType6<P1, P2, P3, P4, P5, P6, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType7<P1, P2, P3, P4, P5, P6, P7, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType8<P1, P2, P3, P4, P5, P6, P7, P8, RO> = {
+    // private _?;
+    +method: string,
+  };
+  declare export type NotificationType9<
+    P1,
+    P2,
+    P3,
+    P4,
+    P5,
+    P6,
+    P7,
+    P8,
+    P9,
+    RO,
+  > = {
+    // private _?;
+    +method: string,
+  };
+  /**
+   * Tests if the given message is a request message
+   */
+  declare function isRequestMessage(message: Message | void): boolean;
+  /**
+   * Tests if the given message is a notification message
+   */
+  declare function isNotificationMessage(message: Message | void): boolean;
+  /**
+   * Tests if the given message is a response message
+   */
+  declare function isReponseMessage(message: Message | void): boolean;
+
+  // messageReader.d.ts
+
+  declare export interface DataCallback {
+    (data: Message): void;
+  }
+  declare export interface PartialMessageInfo {
+    +messageToken: number;
+    +waitingTime: number;
+  }
+  declare export interface MessageReader {
+    +onError: Event<Error>;
+    +onClose: Event<void>;
+    +onPartialMessage: Event<PartialMessageInfo>;
+    listen(callback: DataCallback): void;
+    dispose(): void;
+  }
+  declare class AbstractMessageReader {
+    // private errorEmitter;
+    // private closeEmitter;
+    // private partialMessageEmitter;
+    constructor(): void;
+    dispose(): void;
+    +onError: Event<Error>;
+    /* protected */ fireError(error: any): void;
+    +onClose: Event<void>;
+    /* protected */ fireClose(): void;
+    +onPartialMessage: Event<PartialMessageInfo>;
+    /* protected */ firePartialMessage(info: PartialMessageInfo): void;
+    /* private */ asError(error: any): any;
+  }
+  declare export class StreamMessageReader extends AbstractMessageReader {
+    readable: stream$Readable;
+    // private callback;
+    // private buffer;
+    // private nextMessageLength;
+    // private messageToken;
+    // private partialMessageTimer;
+    // private _partialMessageTimeout;
+    constructor(readable: stream$Readable, encoding?: string): void;
+    partialMessageTimeout: number;
+    listen(callback: DataCallback): void;
+    /* private */ onData(data: any): any;
+    // private clearPartialMessageTimer();
+    // private setPartialMessageTimer();
+  }
+  declare export class IPCMessageReader extends AbstractMessageReader {
+    // private process;
+    constructor(process: Process | child_process$ChildProcess): void;
+    listen(callback: DataCallback): void;
+  }
+  declare export class SocketMessageReader extends StreamMessageReader {
+    constructor(socket: net$Socket, encoding?: string): void;
+  }
+
+  // messageWriter.d.ts
+
+  declare export interface MessageWriter {
+    +onError: Event<[Error, Message | void, number | void]>;
+    +onClose: Event<void>;
+    write(msg: Message): void;
+    dispose(): void;
+  }
+  declare class AbstractMessageWriter {
+    // private errorEmitter;
+    // private closeEmitter;
+    constructor(): void;
+    dispose(): void;
+    +onError: Event<[Error, Message | void, number | void]>;
+    // protected fireError(error: any, message?: Message, count?: number): void;
+    +onClose: Event<void>;
+    // protected fireClose(): void;
+    // private asError(error);
+  }
+  declare export class StreamMessageWriter extends AbstractMessageWriter {
+    // private writable;
+    // private encoding;
+    // private errorCount;
+    constructor(writable: stream$Writable, encoding?: string): void;
+    write(msg: Message): void;
+  }
+  declare export class IPCMessageWriter extends AbstractMessageWriter {
+    // private process;
+    // private queue;
+    // private sending;
+    // private errorCount;
+    constructor(process: Process | child_process$ChildProcess): void;
+    write(msg: Message): void;
+    doWriteMessage(msg: Message): void;
+  }
+  declare export class SocketMessageWriter extends AbstractMessageWriter {
+    // private socket;
+    // private queue;
+    // private sending;
+    // private encoding;
+    // private errorCount;
+    constructor(socket: net$Socket, encoding?: string): void;
+    write(msg: Message): void;
+    doWriteMessage(msg: Message): void;
+    // private handleError(error, msg);
+  }
+
+  // pipeSupport.d.ts
+
+  declare export function generateRandomPipeName(): string;
+  declare export interface PipeTransport {
+    onConnected(): Thenable<[MessageReader, MessageWriter]>;
+  }
+  declare export function createClientPipeTransport(
+    pipeName: string,
+    encoding?: string,
+  ): Thenable<PipeTransport>;
+  declare export function createServerPipeTransport(
+    pipeName: string,
+    encoding?: string,
+  ): [MessageReader, MessageWriter];
+
+  // main.d.ts
+
+  declare type HandlerResult<R, E> =
+    | R
+    | ResponseError<E>
+    | Thenable<R>
+    | Thenable<ResponseError<E>>;
+  declare interface StarRequestHandler {
+    (method: string, ...params: any[]): HandlerResult<any, any>;
+  }
+  declare interface GenericRequestHandler<R, E> {
+    (...params: any[]): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler0<R, E> {
+    (token: CancellationToken): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler<P, R, E> {
+    (params: P, token: CancellationToken): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler1<P1, R, E> {
+    (p1: P1, token: CancellationToken): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler2<P1, P2, R, E> {
+    (p1: P1, p2: P2, token: CancellationToken): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler3<P1, P2, P3, R, E> {
+    (p1: P1, p2: P2, p3: P3, token: CancellationToken): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler4<P1, P2, P3, P4, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler5<P1, P2, P3, P4, P5, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler6<P1, P2, P3, P4, P5, P6, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler7<P1, P2, P3, P4, P5, P6, P7, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler8<P1, P2, P3, P4, P5, P6, P7, P8, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface RequestHandler9<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      p9: P9,
+      token: CancellationToken,
+    ): HandlerResult<R, E>;
+  }
+  declare interface StarNotificationHandler {
+    (method: string, ...params: any[]): void;
+  }
+  declare interface GenericNotificationHandler {
+    (...params: any[]): void;
+  }
+  declare interface NotificationHandler0 {
+    (): void;
+  }
+  declare interface NotificationHandler<P> {
+    (params: P): void;
+  }
+  declare interface NotificationHandler1<P1> {
+    (p1: P1): void;
+  }
+  declare interface NotificationHandler2<P1, P2> {
+    (p1: P1, p2: P2): void;
+  }
+  declare interface NotificationHandler3<P1, P2, P3> {
+    (p1: P1, p2: P2, p3: P3): void;
+  }
+  declare interface NotificationHandler4<P1, P2, P3, P4> {
+    (p1: P1, p2: P2, p3: P3, p4: P4): void;
+  }
+  declare interface NotificationHandler5<P1, P2, P3, P4, P5> {
+    (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5): void;
+  }
+  declare interface NotificationHandler6<P1, P2, P3, P4, P5, P6> {
+    (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5, p6: P6): void;
+  }
+  declare interface NotificationHandler7<P1, P2, P3, P4, P5, P6, P7> {
+    (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5, p6: P6, p7: P7): void;
+  }
+  declare interface NotificationHandler8<P1, P2, P3, P4, P5, P6, P7, P8> {
+    (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5, p6: P6, p7: P7, p8: P8): void;
+  }
+  declare interface NotificationHandler9<P1, P2, P3, P4, P5, P6, P7, P8, P9> {
+    (
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      p9: P9,
+    ): void;
+  }
+  declare interface Logger {
+    error(message: string): void;
+    warn(message: string): void;
+    info(message: string): void;
+    log(message: string): void;
+  }
+  declare export var Trace: {
+    Off: 0,
+    Messages: 1,
+    Verbose: 2,
+    fromString(value: string): $Values<typeof Trace>,
+    toString(value: $Values<typeof Trace>): TraceValues,
+  };
+  declare type TraceValues = 'off' | 'messages' | 'verbose';
+  declare interface SetTraceParams {
+    value: TraceValues;
+  }
+  declare export var SetTraceNotification: {
+    type: NotificationType<SetTraceParams, void>,
+  };
+  declare interface LogTraceParams {
+    message: string;
+    verbose?: string;
+  }
+  declare export var LogTraceNotification: {
+    type: NotificationType<LogTraceParams, void>,
+  };
+  declare interface Tracer {
+    log(message: string, data?: string): void;
+  }
+  declare export var ConnectionErrors: {
+    /**
+     * The connection is closed.
+     */
+    Closed: 1,
+    /**
+     * The connection got disposed.
+     */
+    Disposed: 2,
+    /**
+     * The connection is already in listening mode.
+     */
+    AlreadyListening: 3,
+  };
+  declare export class ConnectionError extends Error {
+    +code: $Values<typeof ConnectionErrors>;
+    constructor(code: $Values<typeof ConnectionErrors>, message: string): void;
+  }
+  // declare type MessageQueue = LinkedMap<string, Message>;
+  declare type ConnectionStrategy = {
+    cancelUndispatched?: (
+      message: Message,
+      next: (message: Message) => ResponseMessage | void,
+    ) => ResponseMessage | void,
+  };
+  // declare export var ConnectionStrategy: {
+  //   is(value: any): boolean,
+  // };
+  declare export interface MessageConnection {
+    sendRequest<R, E, RO>(
+      type: RequestType0<R, E, RO>,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P, R, E, RO>(
+      type: RequestType<P, R, E, RO>,
+      params: P,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, R, E, RO>(
+      type: RequestType1<P1, R, E, RO>,
+      p1: P1,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, R, E, RO>(
+      type: RequestType2<P1, P2, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, R, E, RO>(
+      type: RequestType3<P1, P2, P3, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, R, E, RO>(
+      type: RequestType4<P1, P2, P3, P4, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, P5, R, E, RO>(
+      type: RequestType5<P1, P2, P3, P4, P5, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, P5, P6, R, E, RO>(
+      type: RequestType6<P1, P2, P3, P4, P5, P6, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, P5, P6, P7, R, E, RO>(
+      type: RequestType7<P1, P2, P3, P4, P5, P6, P7, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, P5, P6, P7, P8, R, E, RO>(
+      type: RequestType8<P1, P2, P3, P4, P5, P6, P7, P8, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E, RO>(
+      type: RequestType9<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      p9: P9,
+      token?: CancellationToken,
+    ): Thenable<R>;
+    sendRequest<R>(method: string, ...params: any[]): Thenable<R>;
+    onRequest<R, E, RO>(
+      type: RequestType0<R, E, RO>,
+      handler: RequestHandler0<R, E>,
+    ): void;
+    onRequest<P1, R, E, RO>(
+      type: RequestType1<P1, R, E, RO>,
+      handler: RequestHandler1<P1, R, E>,
+    ): void;
+    onRequest<P1, P2, R, E, RO>(
+      type: RequestType2<P1, P2, R, E, RO>,
+      handler: RequestHandler2<P1, P2, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, R, E, RO>(
+      type: RequestType3<P1, P2, P3, R, E, RO>,
+      handler: RequestHandler3<P1, P2, P3, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, R, E, RO>(
+      type: RequestType4<P1, P2, P3, P4, R, E, RO>,
+      handler: RequestHandler4<P1, P2, P3, P4, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, P5, R, E, RO>(
+      type: RequestType5<P1, P2, P3, P4, P5, R, E, RO>,
+      handler: RequestHandler5<P1, P2, P3, P4, P5, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, P5, P6, R, E, RO>(
+      type: RequestType6<P1, P2, P3, P4, P5, P6, R, E, RO>,
+      handler: RequestHandler6<P1, P2, P3, P4, P5, P6, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, P5, P6, P7, R, E, RO>(
+      type: RequestType7<P1, P2, P3, P4, P5, P6, P7, R, E, RO>,
+      handler: RequestHandler7<P1, P2, P3, P4, P5, P6, P7, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, P5, P6, P7, P8, R, E, RO>(
+      type: RequestType8<P1, P2, P3, P4, P5, P6, P7, P8, R, E, RO>,
+      handler: RequestHandler8<P1, P2, P3, P4, P5, P6, P7, P8, R, E>,
+    ): void;
+    onRequest<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E, RO>(
+      type: RequestType9<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E, RO>,
+      handler: RequestHandler9<P1, P2, P3, P4, P5, P6, P7, P8, P9, R, E>,
+    ): void;
+    onRequest<R, E>(method: string, handler: GenericRequestHandler<R, E>): void;
+    onRequest(handler: StarRequestHandler): void;
+    sendNotification<RO>(type: NotificationType0<RO>): void;
+    sendNotification<P, RO>(type: NotificationType<P, RO>, params?: P): void;
+    sendNotification<P1, RO>(type: NotificationType1<P1, RO>, p1: P1): void;
+    sendNotification<P1, P2, RO>(
+      type: NotificationType2<P1, P2, RO>,
+      p1: P1,
+      p2: P2,
+    ): void;
+    sendNotification<P1, P2, P3, RO>(
+      type: NotificationType3<P1, P2, P3, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+    ): void;
+    sendNotification<P1, P2, P3, P4, RO>(
+      type: NotificationType4<P1, P2, P3, P4, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+    ): void;
+    sendNotification<P1, P2, P3, P4, P5, RO>(
+      type: NotificationType5<P1, P2, P3, P4, P5, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+    ): void;
+    sendNotification<P1, P2, P3, P4, P5, P6, RO>(
+      type: NotificationType6<P1, P2, P3, P4, P5, P6, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+    ): void;
+    sendNotification<P1, P2, P3, P4, P5, P6, P7, RO>(
+      type: NotificationType7<P1, P2, P3, P4, P5, P6, P7, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+    ): void;
+    sendNotification<P1, P2, P3, P4, P5, P6, P7, P8, RO>(
+      type: NotificationType8<P1, P2, P3, P4, P5, P6, P7, P8, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+    ): void;
+    sendNotification<P1, P2, P3, P4, P5, P6, P7, P8, P9, RO>(
+      type: NotificationType9<P1, P2, P3, P4, P5, P6, P7, P8, P9, RO>,
+      p1: P1,
+      p2: P2,
+      p3: P3,
+      p4: P4,
+      p5: P5,
+      p6: P6,
+      p7: P7,
+      p8: P8,
+      p9: P9,
+    ): void;
+    sendNotification(method: string, ...params: any[]): void;
+    onNotification<RO>(
+      type: NotificationType0<RO>,
+      handler: NotificationHandler0,
+    ): void;
+    onNotification<P1, RO>(
+      type: NotificationType1<P1, RO>,
+      handler: NotificationHandler1<P1>,
+    ): void;
+    onNotification<P1, P2, RO>(
+      type: NotificationType2<P1, P2, RO>,
+      handler: NotificationHandler2<P1, P2>,
+    ): void;
+    onNotification<P1, P2, P3, RO>(
+      type: NotificationType3<P1, P2, P3, RO>,
+      handler: NotificationHandler3<P1, P2, P3>,
+    ): void;
+    onNotification<P1, P2, P3, P4, RO>(
+      type: NotificationType4<P1, P2, P3, P4, RO>,
+      handler: NotificationHandler4<P1, P2, P3, P4>,
+    ): void;
+    onNotification<P1, P2, P3, P4, P5, RO>(
+      type: NotificationType5<P1, P2, P3, P4, P5, RO>,
+      handler: NotificationHandler5<P1, P2, P3, P4, P5>,
+    ): void;
+    onNotification<P1, P2, P3, P4, P5, P6, RO>(
+      type: NotificationType6<P1, P2, P3, P4, P5, P6, RO>,
+      handler: NotificationHandler6<P1, P2, P3, P4, P5, P6>,
+    ): void;
+    onNotification<P1, P2, P3, P4, P5, P6, P7, RO>(
+      type: NotificationType7<P1, P2, P3, P4, P5, P6, P7, RO>,
+      handler: NotificationHandler7<P1, P2, P3, P4, P5, P6, P7>,
+    ): void;
+    onNotification<P1, P2, P3, P4, P5, P6, P7, P8, RO>(
+      type: NotificationType8<P1, P2, P3, P4, P5, P6, P7, P8, RO>,
+      handler: NotificationHandler8<P1, P2, P3, P4, P5, P6, P7, P8>,
+    ): void;
+    onNotification<P1, P2, P3, P4, P5, P6, P7, P8, P9, RO>(
+      type: NotificationType9<P1, P2, P3, P4, P5, P6, P7, P8, P9, RO>,
+      handler: NotificationHandler9<P1, P2, P3, P4, P5, P6, P7, P8, P9>,
+    ): void;
+    onNotification(method: string, handler: GenericNotificationHandler): void;
+    onNotification(handler: StarNotificationHandler): void;
+    trace(
+      value: $Values<typeof Trace>,
+      tracer: Tracer,
+      sendNotification?: boolean,
+    ): void;
+    onError: Event<[Error, Message, number]>;
+    onClose: Event<void>;
+    onUnhandledNotification: Event<NotificationMessage>;
+    listen(): void;
+    onDispose: Event<void>;
+    dispose(): void;
+    inspect(): void;
+  }
+  declare export function createMessageConnection(
+    reader: MessageReader,
+    writer: MessageWriter,
+    logger: Logger,
+    strategy?: ConnectionStrategy,
+  ): MessageConnection;
+  declare export function createMessageConnection(
+    inputStream: stream$Readable,
+    outputStream: stream$Writable,
+    logger: Logger,
+    strategy?: ConnectionStrategy,
+  ): MessageConnection;
+}

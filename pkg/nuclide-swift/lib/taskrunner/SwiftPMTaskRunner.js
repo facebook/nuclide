@@ -9,13 +9,13 @@
  * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Task} from '../../../commons-node/tasks';
 import type {TaskMetadata} from '../../../nuclide-task-runner/lib/types';
-import type {Directory} from '../../../nuclide-remote-connection';
 import type {SwiftPMTaskRunnerStoreState} from './SwiftPMTaskRunnerStoreState';
 
 import {Observable, Subject} from 'rxjs';
-import React from 'react';
+import * as React from 'react';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {observeProcess, exitEventToMessage} from 'nuclide-commons/process';
@@ -89,18 +89,19 @@ export class SwiftPMTaskRunner {
     return this._getFlux().store.serialize();
   }
 
-  getExtraUi(): ReactClass<any> {
+  getExtraUi(): React.ComponentType<any> {
     const {store, actions} = this._getFlux();
-    return class ExtraUi extends React.Component {
-      render(): React.Element<any> {
+    return class ExtraUi extends React.Component<{}> {
+      render(): React.Node {
         return <SwiftPMTaskRunnerToolbar store={store} actions={actions} />;
       }
     };
   }
 
-  getIcon(): ReactClass<any> {
-    return () =>
-      <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />;
+  getIcon(): React.ComponentType<any> {
+    return () => (
+      <Icon icon="nuclicon-swift" className="nuclide-swift-task-runner-icon" />
+    );
   }
 
   runTask(taskName: string): Task {
@@ -182,17 +183,15 @@ export class SwiftPMTaskRunner {
   }
 
   setProjectRoot(
-    projectRoot: ?Directory,
+    projectRoot: ?NuclideUri,
     callback: (enabled: boolean, taskList: Array<TaskMetadata>) => mixed,
   ): IDisposable {
-    const path = projectRoot == null ? null : projectRoot.getPath();
-
     const storeReady = observableFromSubscribeFunction(
       this._getFlux().store.subscribe.bind(this._getFlux().store),
     )
       .map(() => this._getFlux().store)
       .startWith(this._getFlux().store)
-      .filter(store => store.getProjectRoot() === path)
+      .filter(store => store.getProjectRoot() === projectRoot)
       .share();
 
     const enabledObservable = storeReady
@@ -216,7 +215,7 @@ export class SwiftPMTaskRunner {
       tasksObservable,
     ).subscribe(([enabled, tasks]) => callback(enabled, tasks));
 
-    this._projectRoot.next(path);
+    this._projectRoot.next(projectRoot);
 
     return new UniversalDisposable(subscription);
   }

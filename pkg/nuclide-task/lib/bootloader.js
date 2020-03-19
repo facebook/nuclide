@@ -11,8 +11,9 @@
 
 import child_process from 'child_process';
 import EventEmitter from 'events';
+import {getLogger} from 'log4js';
 import invariant from 'assert';
-import {__DEV__} from '../../nuclide-node-transpiler/lib/env';
+import {__DEV__} from 'nuclide-commons/runtime-info';
 
 export type InvokeRemoteMethodParams = {
   file: string,
@@ -23,7 +24,7 @@ export type InvokeRemoteMethodParams = {
 export type RemoteMessage = {id: string} & InvokeRemoteMethodParams;
 
 const BOOTSTRAP_PATH = require.resolve('./bootstrap');
-const TRANSPILER_PATH = require.resolve('../../nuclide-node-transpiler');
+const TRANSPILER_PATH = require.resolve('../../commons-node/load-transpiler');
 
 /**
  * Task creates and manages communication with another Node process. In addition
@@ -32,11 +33,18 @@ const TRANSPILER_PATH = require.resolve('../../nuclide-node-transpiler');
  */
 export default class Task {
   _id: number;
+  _name: string;
   _emitter: EventEmitter;
   _child: ?child_process$ChildProcess;
 
-  constructor() {
+  /**
+   * The constructor takes a single string, `name`, used for tracking purposes.
+   * In particular, the "name" makes it easy to distinguish between bootloader
+   * processes in a system processes list.
+   */
+  constructor(name: string) {
     this._id = 0;
+    this._name = name;
     this._emitter = new EventEmitter();
     this._child = null;
   }
@@ -46,7 +54,7 @@ export default class Task {
     const child = (this._child = this._fork());
     const log = buffer => {
       // eslint-disable-next-line no-console
-      console.log(`TASK(${child.pid}): ${buffer}`);
+      console.log(`TASK(${this._name}, ${child.pid}): ${buffer}`);
     };
     child.stdout.on('data', log);
     child.stderr.on('data', log);
@@ -56,6 +64,9 @@ export default class Task {
     });
     child.on('error', buffer => {
       log(buffer);
+      getLogger('nuclide-task').error(
+        `Error from task ${this._name}: ${buffer}`,
+      );
       child.kill();
       this._emitter.emit('error', buffer.toString());
       this._emitter.emit('child-process-error', buffer);
@@ -76,13 +87,14 @@ export default class Task {
     if (__DEV__) {
       return child_process.fork(
         '--require',
-        [TRANSPILER_PATH, BOOTSTRAP_PATH],
+        // _name is not used, but just passed along as a tag for `ps`.
+        [TRANSPILER_PATH, BOOTSTRAP_PATH, this._name],
         {silent: true}, // Needed so stdout/stderr are available.
       );
     } else {
       return child_process.fork(
         BOOTSTRAP_PATH,
-        [],
+        [this._name],
         {silent: true}, // Needed so stdout/stderr are available.
       );
     }

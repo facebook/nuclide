@@ -1,0 +1,18 @@
+/**
+ * Header comment.
+ */
+
+const a = require('a');
+
+const b = require('b');
+
+const c = require('c');
+
+const D = require('D');
+
+const E = require('E');
+
+const F = require('F');
+
+
+a(b, c, D, E, F);

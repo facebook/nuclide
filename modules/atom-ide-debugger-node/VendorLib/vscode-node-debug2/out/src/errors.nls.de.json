@@ -1,0 +1,10 @@
+[
+	"Die Laufzeit \"{0}\" wurde in PATH nicht gefunden.",
+	"Das Debugziel im Terminal kann nicht gestartet werden ({0}).",
+	"Das Debugziel kann nicht gestartet werden ({0}).",
+	"Unbekannter Konsolentyp \"{0}\".",
+	"Das Programm \"{0}\" kann nicht gestartet werden. Das Konfigurieren von Quellzuordnungen ist ggf. hilfreich.",
+	"Das Programm \"{0}\" kann nicht gestartet werden. Das Festlegen des Attributs \"{1}\" ist ggf. hilfreich.",
+	"Cannot launch program '{0}' because corresponding JavaScript cannot be found.",
+	"Umgebungsvariablen können nicht aus Datei \"{0}\" geladen werden."
+]

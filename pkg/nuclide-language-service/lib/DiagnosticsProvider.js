@@ -15,15 +15,18 @@ import type {
   DiagnosticInvalidationMessage,
   DiagnosticProviderUpdate,
   DiagnosticUpdateCallback,
-  FileDiagnosticMessages,
 } from 'atom-ide-ui';
-import type {LanguageService} from './LanguageService';
+import type {
+  FileDiagnosticMap,
+  LanguageService,
+  FileDiagnosticProviderUpdate,
+} from './LanguageService';
 import type {BusySignalProvider} from './AtomLanguageService';
 
 import {Cache} from 'nuclide-commons/cache';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {track, trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {RequestSerializer} from 'nuclide-commons/promise';
 import {DiagnosticsProviderBase} from './DiagnosticsProviderBase';
 import {onDidRemoveProjectPath} from 'nuclide-commons-atom/projects';
@@ -31,7 +34,6 @@ import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import {Observable} from 'rxjs';
 import {ServerConnection} from '../../nuclide-remote-connection';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ensureInvalidations} from '../../nuclide-language-service-rpc';
 
@@ -81,6 +83,7 @@ export function registerDiagnostics<T: LanguageService>(
       );
       break;
     default:
+      (config.version: empty);
       throw new Error('Unexpected diagnostics version');
   }
   result.add(
@@ -195,19 +198,17 @@ export class FileDiagnosticsProvider<T: LanguageService> {
           pathsForHackLanguage.add(path);
         }
       };
-      if (diagnostics.filePathToMessages != null) {
-        diagnostics.filePathToMessages.forEach((messages, messagePath) => {
-          addPath(messagePath);
-          messages.forEach(message => {
-            addPath(message.filePath);
-            if (message.trace != null) {
-              message.trace.forEach(trace => {
-                addPath(trace.filePath);
-              });
-            }
-          });
+      diagnostics.forEach((messages, messagePath) => {
+        addPath(messagePath);
+        messages.forEach(message => {
+          addPath(message.filePath);
+          if (message.trace != null) {
+            message.trace.forEach(trace => {
+              addPath(trace.filePath);
+            });
+          }
         });
-      }
+      });
 
       this._providerBase.publishMessageUpdate(diagnostics);
     });
@@ -228,10 +229,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
     // Once we provide all diagnostics, instead of just the current file, we can
     // probably remove the activeTextEditor parameter.
     const activeTextEditor = atom.workspace.getActiveTextEditor();
-    if (
-      activeTextEditor &&
-      !nuclideUri.isBrokenDeserializedUri(activeTextEditor.getPath())
-    ) {
+    if (activeTextEditor) {
       if (
         this._providerBase
           .getGrammarScopes()
@@ -285,9 +283,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
     this._subscriptions.dispose();
   }
 
-  async findDiagnostics(
-    editor: atom$TextEditor,
-  ): Promise<?DiagnosticProviderUpdate> {
+  async findDiagnostics(editor: atom$TextEditor): Promise<?FileDiagnosticMap> {
     const fileVersion = await getFileVersionOfEditor(editor);
     const languageService = this._connectionToLanguageService.getForUri(
       editor.getPath(),
@@ -301,7 +297,7 @@ export class FileDiagnosticsProvider<T: LanguageService> {
 }
 
 export class ObservableDiagnosticProvider<T: LanguageService> {
-  updates: Observable<DiagnosticProviderUpdate>;
+  updates: Observable<FileDiagnosticProviderUpdate>;
   invalidations: Observable<DiagnosticInvalidationMessage>;
   _analyticsEventName: string;
   _grammarScopes: Set<string>;
@@ -326,56 +322,50 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
       .mergeMap(([connection, languageService]) => {
         const connectionName = ServerConnection.toDebugString(connection);
         this._logger.debug(
-          `Starting observing diagnostics ${connectionName}, ${this
-            ._analyticsEventName}`,
+          `Starting observing diagnostics ${connectionName}, ${
+            this._analyticsEventName
+          }`,
         );
         return Observable.fromPromise(languageService)
           .catch(error => {
             this._logger.error(
-              `Error: languageService, ${this._analyticsEventName} ${error}`,
+              `Error: languageService, ${this._analyticsEventName}`,
+              error,
             );
             return Observable.empty();
           })
           .mergeMap((language: LanguageService) => {
             this._logger.debug(
-              `Observing diagnostics ${connectionName}, ${this
-                ._analyticsEventName}`,
+              `Observing diagnostics ${connectionName}, ${
+                this._analyticsEventName
+              }`,
             );
             return ensureInvalidations(
               this._logger,
-              language.observeDiagnostics().refCount().catch(error => {
-                this._logger.error(
-                  `Error: observeDiagnostics, ${this._analyticsEventName}`,
-                  error,
-                );
-                return Observable.empty();
-              }),
+              language
+                .observeDiagnostics()
+                .refCount()
+                .catch(error => {
+                  this._logger.error(
+                    `Error: observeDiagnostics, ${this._analyticsEventName}`,
+                    error,
+                  );
+                  return Observable.empty();
+                }),
             );
           })
-          .map((updates: Array<FileDiagnosticMessages>) => {
+          .map((updates: FileDiagnosticMap) => {
             const filePathToMessages = new Map();
-            updates.forEach(update => {
-              const {filePath, messages} = update;
-              track(this._analyticsEventName);
+            updates.forEach((messages, filePath) => {
               const fileCache = this._connectionToFiles.get(connection);
               if (messages.length === 0) {
-                this._logger.debug(
-                  `Observing diagnostics: removing ${filePath}, ${this
-                    ._analyticsEventName}`,
-                );
                 fileCache.delete(filePath);
               } else {
-                this._logger.debug(
-                  `Observing diagnostics: adding ${filePath}, ${this
-                    ._analyticsEventName}`,
-                );
                 fileCache.add(filePath);
               }
               filePathToMessages.set(filePath, messages);
             });
-            return {
-              filePathToMessages,
-            };
+            return filePathToMessages;
           });
       })
       .catch(error => {
@@ -391,8 +381,9 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
     )
       .map(connection => {
         this._logger.debug(
-          `Diagnostics closing ${connection.getRemoteHostname()}, ${this
-            ._analyticsEventName}`,
+          `Diagnostics closing ${connection.getRemoteHostname()}, ${
+            this._analyticsEventName
+          }`,
         );
         const files = Array.from(this._connectionToFiles.get(connection));
         this._connectionToFiles.delete(connection);
@@ -412,7 +403,7 @@ export class ObservableDiagnosticProvider<T: LanguageService> {
     // a file belonging to the connection is open.
     // Monitor open text editors and trigger a connection for each one, if needed.
     this._subscriptions = new UniversalDisposable(
-      observeTextEditors(editor => {
+      atom.workspace.observeTextEditors(editor => {
         const path = editor.getPath();
         if (
           path != null &&

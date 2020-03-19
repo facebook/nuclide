@@ -14,7 +14,6 @@ import type {TestRunner} from './types';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 import {TestRunnerController, WORKSPACE_VIEW_URI} from './TestRunnerController';
@@ -42,12 +41,12 @@ function limitString(str: string, length?: number = 20): string {
 
 class Activation {
   _controller: ?TestRunnerController;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _testRunners: Set<TestRunner>;
 
   constructor() {
     this._testRunners = new Set();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     // Listen for run events on files in the file tree
     this._disposables.add(
       atom.commands.add(
@@ -120,7 +119,7 @@ class Activation {
       shouldDisplay: separatorShouldDisplay,
     };
 
-    const menuItemSubscriptions = new CompositeDisposable();
+    const menuItemSubscriptions = new UniversalDisposable();
     menuItemSubscriptions.add(
       contextMenu.addItemToTestSection(
         fileItem,
@@ -137,15 +136,17 @@ class Activation {
     );
     this._disposables.add(menuItemSubscriptions);
 
-    return new Disposable(() =>
+    return new UniversalDisposable(() =>
       this._disposables.remove(menuItemSubscriptions),
     );
   }
 
-  consumeTestRunner(testRunner: TestRunner): ?Disposable {
+  consumeTestRunner(testRunner: TestRunner): ?UniversalDisposable {
     if (this._testRunners.has(testRunner)) {
       logger.info(
-        `Attempted to add test runner "${testRunner.label}" that was already added`,
+        `Attempted to add test runner "${
+          testRunner.label
+        }" that was already added`,
       );
       return;
     }
@@ -160,7 +161,7 @@ class Activation {
       this.getController().didUpdateTestRunners();
     }
 
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._testRunners.delete(testRunner);
       // Tell the controller to re-render only if it exists so test runner services won't force
       // construction if the panel is still invisible.
@@ -172,13 +173,14 @@ class Activation {
 
   consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
     const toolBar = getToolBar('nuclide-test-runner');
+
     toolBar.addButton({
       icon: 'checklist',
       callback: 'nuclide-test-runner:toggle-panel',
       tooltip: 'Toggle Test Runner',
       priority: 600,
     });
-    const disposable = new Disposable(() => {
+    const disposable = new UniversalDisposable(() => {
       toolBar.removeItems();
     });
     this._disposables.add(disposable);
@@ -266,7 +268,9 @@ class Activation {
     return new UniversalDisposable(
       atom.workspace.addOpener(uri => {
         if (uri === WORKSPACE_VIEW_URI) {
-          return this.getController();
+          const controller = this.getController();
+          controller.reinitialize();
+          return controller;
         }
       }),
       () => destroyItemWhere(item => item instanceof TestRunnerController),

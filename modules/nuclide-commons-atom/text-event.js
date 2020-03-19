@@ -6,16 +6,15 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import invariant from 'assert';
-import {Disposable, CompositeDisposable} from 'atom';
 import {Observable} from 'rxjs';
 import debounce from 'nuclide-commons/debounce';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {observeTextEditors} from './text-editor';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 type EventCallback = (editor: TextEditor) => mixed;
 
@@ -175,7 +174,7 @@ class TextCallbackContainer<CallbackArg> {
 export class TextEventDispatcher {
   _callbackContainer: TextCallbackContainer<TextEditor>;
 
-  _editorListenerDisposable: ?CompositeDisposable;
+  _editorListenerDisposable: ?UniversalDisposable;
 
   _pendingEvents: WeakMap<atom$TextBuffer, Set<Event>>;
 
@@ -201,7 +200,7 @@ export class TextEventDispatcher {
       events,
       debouncedCallback,
     );
-    const disposables = new Disposable(() => {
+    const disposables = new UniversalDisposable(() => {
       this._callbackContainer.removeCallback(
         grammarScopes,
         events,
@@ -220,6 +219,7 @@ export class TextEventDispatcher {
   ): IDisposable {
     return this._onEvents(grammarScopes, FILE_CHANGE_EVENTS, callback);
   }
+
   onAnyFileChange(callback: EventCallback): IDisposable {
     return this._onEvents('all', FILE_CHANGE_EVENTS, callback);
   }
@@ -237,7 +237,7 @@ export class TextEventDispatcher {
 
   _registerEditorListeners(): void {
     if (!this._editorListenerDisposable) {
-      this._editorListenerDisposable = new CompositeDisposable();
+      this._editorListenerDisposable = new UniversalDisposable();
     }
 
     // Whenever the active pane item changes, we check to see if there are any
@@ -260,20 +260,17 @@ export class TextEventDispatcher {
     );
 
     this._getEditorListenerDisposable().add(
-      observeTextEditors(editor => {
+      atom.workspace.observeTextEditors(editor => {
         const buffer = editor.getBuffer();
         const makeDispatch = (event: Event) => {
           return () => {
             this._dispatchEvents(editor, event);
           };
         };
-        this._getEditorListenerDisposable().add(
+        this._getEditorListenerDisposable().addUntilDestroyed(
+          editor,
           buffer.onDidStopChanging(makeDispatch('did-change')),
-        );
-        this._getEditorListenerDisposable().add(
           buffer.onDidSave(makeDispatch('did-save')),
-        );
-        this._getEditorListenerDisposable().add(
           buffer.onDidReload(makeDispatch('did-reload')),
         );
         // During reload, many text editors are opened simultaneously.
@@ -320,7 +317,7 @@ export class TextEventDispatcher {
     }
   }
 
-  _getEditorListenerDisposable(): CompositeDisposable {
+  _getEditorListenerDisposable(): UniversalDisposable {
     const disposable = this._editorListenerDisposable;
     invariant(disposable, 'TextEventDispatcher disposable is not initialized');
     return disposable;

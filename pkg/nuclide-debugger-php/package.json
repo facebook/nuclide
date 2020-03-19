@@ -1,10 +1,9 @@
 {
   "name": "nuclide-debugger-php",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Allows debugging of PHP from Nuclide",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Debugging",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -13,73 +12,32 @@
       ]
     },
     "config": {
-      "attachScriptRegex": {
-        "title": "Script Path Filter Regexp",
-        "type": "string",
-        "default": "^(?!/var.*)",
-        "description": "Regular expression to filter connection script path.  Only applies to connections when in attach mode."
-      },
-      "idekeyRegex": {
-        "title": "Connection IDE Key Regexp",
+      "hhvmRuntimeArgs": {
+        "title": "Arguments for your HHVM runtime",
         "type": "string",
         "default": "",
-        "description": "Regular expression to filter connection idekey. Usually your OS user id.  Only applies to connections when in attach mode."
+        "description": "Arguments to call the HHVM runtime with, e.g. to pass a config file."
       },
-      "xdebugAttachPort": {
-        "title": "DBGP Attach Port",
+      "hhvmRuntimePath": {
+        "title": "Path to your HHVM runtime",
+        "type": "string",
+        "default": "/usr/local/bin/hhvm",
+        "description": "Path to the HHVM runtime on your server."
+      },
+      "hhvmServerAttachPort": {
+        "title": "Webserver debugger port",
         "type": "number",
-        "default": 9000,
-        "description": "Port for DBGP connection to HHVM running in server mode."
-      },
-      "xdebugLaunchingPort": {
-        "title": "DBGP Launch Port",
-        "type": "number",
-        "default": 10112,
-        "description": "Port for DBGP connection to HHVM used for launching scripts."
-      },
-      "phpRuntimePath": {
-        "title": "Path to your PHP runtime",
-        "type": "string",
-        "default": "/usr/local/bin/php",
-        "description": "Path to the PHP runtime on your server."
-      },
-      "phpRuntimeArgs": {
-        "title": "Arguments for your PHP runtime",
-        "type": "string",
-        "default": "",
-        "description": "Arguments to call the PHP runtime with, e.g. to pass a config file."
-      },
-      "logLevel": {
-        "title": "Log Level",
-        "type": "string",
-        "default": "INFO",
-        "description": "Specify that level of logging from debugger, supported values: ALL | TRACE | DEBUG | INFO | WARN | ERROR | FATAL | OFF.",
-        "enum": [
-          "ALL",
-          "TRACE",
-          "DEBUG",
-          "INFO",
-          "WARN",
-          "ERROR",
-          "FATAL",
-          "OFF"
-        ]
-      },
-     "stopOneStopAll": {
-       "title": "Stop one, stop all",
-       "type": "boolean",
-       "default": true,
-       "description": "Specifies whether we stop all requests once we hit a breakpoint"
+        "default": "8999",
+        "description": "Port to use when attaching to webserver"
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "providedServices": {
-    "nuclide-debugger.provider": {
-      "description": "PHP debugger provider.",
+    "additional-log-files": {
+      "description": "HHVM debugger log files",
       "versions": {
-        "0.0.0": "createDebuggerProvider"
+        "0.0.0": "createAdditionalLogFilesProvider"
       }
     },
     "nuclide-home.homeFragments": {

@@ -15,7 +15,10 @@ import invariant from 'assert';
 const config: FlowSettings = {
   functionSnippetShouldIncludeArguments: true,
   stopFlowOnExit: true,
-  lazyServer: false,
+  lazyMode: false,
+  canUseFlowBin: false,
+  // This can be a full path or just a command to run.
+  pathToFlow: 'flow',
 };
 
 export function getConfig(key: $Keys<typeof config>): mixed {

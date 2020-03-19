@@ -126,6 +126,7 @@ export function validateDefinitions(definitions: Definitions): void {
         }
         break;
       default:
+        (type: empty);
         throw new Error(JSON.stringify(type));
     }
   }
@@ -246,12 +247,6 @@ export function validateDefinitions(definitions: Definitions): void {
           }
           break;
         case 'interface':
-          if (definition.constructorArgs != null) {
-            contextLocation = definition.location;
-            definition.constructorArgs.forEach(parameter => {
-              validateType(parameter.type);
-            });
-          }
           Object.keys(definition.instanceMethods).forEach(methodName => {
             const method = definition.instanceMethods[methodName];
             contextLocation = method.location;
@@ -299,7 +294,7 @@ export function validateDefinitions(definitions: Definitions): void {
         }
         break;
       case 'named':
-        // No need to recurse, as the target alias definition will get validated seperately.
+        // No need to recurse, as the target alias definition will get validated separately.
         break;
       default:
         validateType(type);
@@ -325,7 +320,9 @@ export function validateDefinitions(definitions: Definitions): void {
       if (fieldNames.has(field.name)) {
         // TODO allow duplicate field names if they have the same type.
         throw error(
-          `Duplicate field name '${field.name}' in intersection types are not supported.`,
+          `Duplicate field name '${
+            field.name
+          }' in intersection types are not supported.`,
         );
       }
       fieldNames.add(field.name);
@@ -396,7 +393,9 @@ export function validateDefinitions(definitions: Definitions): void {
       // Ensure alternates match
       if (alternate.kind !== 'object') {
         throw error(
-          `Union alternates must be of the same type. (mismatch: ${alternate.kind})`,
+          `Union alternates must be of the same type. (mismatch: ${
+            alternate.kind
+          })`,
         );
       }
     });
@@ -414,9 +413,7 @@ export function validateDefinitions(definitions: Definitions): void {
     // Get set of fields which are literal types in al alternates.
     invariant(alternates.length > 0);
     // $FlowFixMe
-    const possibleFields: Set<
-      string,
-    > = alternates.reduce(
+    const possibleFields: Set<string> = alternates.reduce(
       (possibilities: ?Set<string>, alternate: ObjectType) => {
         const alternatePossibilities = possibleDiscriminantFieldsOfUnionAlternate(
           alternate,
@@ -502,12 +499,12 @@ export function validateDefinitions(definitions: Definitions): void {
       case 'string-literal':
       case 'boolean-literal':
       case 'number-literal':
-        break;
       case 'void':
+        break;
       case 'promise':
       case 'observable':
         throw error(
-          'Promise, void and Observable types may only be used as return types',
+          'Promise and Observable types may only be used as return types',
         );
       case 'array':
         validateType(type.type);
@@ -717,12 +714,6 @@ export function validateDefinitions(definitions: Definitions): void {
           }
           break;
         case 'interface':
-          if (definition.constructorArgs != null) {
-            contextLocation = definition.location;
-            definition.constructorArgs.forEach(parameter => {
-              operation(parameter.type);
-            });
-          }
           Object.keys(definition.instanceMethods).forEach(methodName => {
             const method = definition.instanceMethods[methodName];
             contextLocation = method.location;
@@ -760,9 +751,9 @@ export function validateDefinitions(definitions: Definitions): void {
         .slice(1)
         .map(
           definition =>
-            `\n${locationToString(
-              definition.location,
-            )}: Related definition ${definition.name}`,
+            `\n${locationToString(definition.location)}: Related definition ${
+              definition.name
+            }`,
         ),
     );
     return new Error(fullMessage);

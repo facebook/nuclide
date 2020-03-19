@@ -7,14 +7,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 
 const webfontsGenerator = require('webfonts-generator');
 const glob = require('glob');
@@ -23,7 +20,7 @@ const fs = require('fs');
 
 const basedir = path.join(__dirname, '..');
 const nucliconsDir = path.join(basedir, 'resources/nuclicons');
-const stylesDir = path.join(basedir, 'pkg/nuclide-ui/styles');
+const stylesDir = path.join(basedir, 'modules/nuclide-commons-ui/styles');
 const svgs = glob.sync(path.join(basedir, 'resources/nuclicons/*.svg'));
 
 webfontsGenerator(
@@ -41,7 +38,7 @@ webfontsGenerator(
     normalize: true,
     fontHeight: 96,
     ascent: 84,
-    // Similar to how Github genereated their fonts for octicons,
+    // Similar to how Github generated their fonts for octicons,
     // use `descent` option to set the icon baselines 12px lower so that
     // the generated nuclicons are centered.
     // https://github.com/primer/octicons/blob/v4.4.0/Gruntfile.js#L89-L92
@@ -57,5 +54,5 @@ webfontsGenerator(
       // config. Just delete it.
       fs.unlinkSync(path.join(stylesDir, 'nuclicons.svg'));
     }
-  }
+  },
 );

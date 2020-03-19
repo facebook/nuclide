@@ -1,0 +1,295 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ClangServer can handle requests 1`] = `
+"{
+  \\"diagnostics\\": [
+    {
+      \\"spelling\\": \\"no matching function for call to 'main'\\",
+      \\"severity\\": 3,
+      \\"location\\": {
+        \\"file\\": \\"<REPLACED>\\",
+        \\"point\\": {
+          \\"row\\": 5,
+          \\"column\\": 2
+        }
+      },
+      \\"ranges\\": [
+        {
+          \\"file\\": \\"<REPLACED>\\",
+          \\"range\\": {
+            \\"start\\": {
+              \\"row\\": 5,
+              \\"column\\": 2
+            },
+            \\"end\\": {
+              \\"row\\": 5,
+              \\"column\\": 6
+            }
+          }
+        }
+      ],
+      \\"fixits\\": [],
+      \\"children\\": [
+        {
+          \\"spelling\\": \\"candidate function not viable: requires 0 arguments, but 1 was provided\\",
+          \\"location\\": {
+            \\"file\\": \\"<REPLACED>\\",
+            \\"point\\": {
+              \\"row\\": 3,
+              \\"column\\": 4
+            }
+          },
+          \\"ranges\\": []
+        }
+      ]
+    },
+    {
+      \\"spelling\\": \\"expected ';' after return statement\\",
+      \\"severity\\": 3,
+      \\"location\\": {
+        \\"file\\": \\"<REPLACED>\\",
+        \\"point\\": {
+          \\"row\\": 6,
+          \\"column\\": 10
+        }
+      },
+      \\"ranges\\": null,
+      \\"fixits\\": [
+        {
+          \\"range\\": {
+            \\"file\\": \\"<REPLACED>\\",
+            \\"range\\": {
+              \\"start\\": {
+                \\"row\\": 6,
+                \\"column\\": 10
+              },
+              \\"end\\": {
+                \\"row\\": 6,
+                \\"column\\": 10
+              }
+            }
+          },
+          \\"value\\": \\";\\"
+        }
+      ],
+      \\"children\\": []
+    }
+  ],
+  \\"accurateFlags\\": true
+}"
+`;
+
+exports[`ClangServer can handle requests 2`] = `
+Array [
+  Object {
+    "cursor_kind": "FUNCTION_DECL",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 1,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 0,
+      },
+    },
+    "name": "f",
+    "params": Array [
+      "x",
+    ],
+    "tparams": Array [],
+  },
+  Object {
+    "cursor_kind": "FUNCTION_DECL",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 7,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 3,
+      },
+    },
+    "name": "main",
+    "params": Array [],
+    "tparams": Array [],
+  },
+]
+`;
+
+exports[`ClangServer supports get_local_references 1`] = `
+Object {
+  "cursor_kind": "PARM_DECL",
+  "cursor_name": "var1",
+  "references": Array [
+    Range {
+      "end": Point {
+        "column": 28,
+        "row": 1,
+      },
+      "start": Point {
+        "column": 24,
+        "row": 1,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 17,
+        "row": 2,
+      },
+      "start": Point {
+        "column": 13,
+        "row": 2,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 24,
+        "row": 2,
+      },
+      "start": Point {
+        "column": 20,
+        "row": 2,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 24,
+        "row": 3,
+      },
+      "start": Point {
+        "column": 20,
+        "row": 3,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 6,
+        "row": 4,
+      },
+      "start": Point {
+        "column": 2,
+        "row": 4,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 13,
+        "row": 9,
+      },
+      "start": Point {
+        "column": 9,
+        "row": 9,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 20,
+        "row": 9,
+      },
+      "start": Point {
+        "column": 16,
+        "row": 9,
+      },
+    },
+  ],
+}
+`;
+
+exports[`ClangServer supports get_local_references 2`] = `
+Object {
+  "cursor_kind": "VAR_DECL",
+  "cursor_name": "var2",
+  "references": Array [
+    Range {
+      "end": Point {
+        "column": 10,
+        "row": 2,
+      },
+      "start": Point {
+        "column": 6,
+        "row": 2,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 13,
+        "row": 4,
+      },
+      "start": Point {
+        "column": 9,
+        "row": 4,
+      },
+    },
+  ],
+}
+`;
+
+exports[`ClangServer supports get_local_references 3`] = `
+Object {
+  "cursor_kind": "VAR_DECL",
+  "cursor_name": "var3",
+  "references": Array [
+    Range {
+      "end": Point {
+        "column": 30,
+        "row": 2,
+      },
+      "start": Point {
+        "column": 26,
+        "row": 2,
+      },
+    },
+  ],
+}
+`;
+
+exports[`ClangServer supports get_local_references 4`] = `
+Object {
+  "cursor_kind": "VAR_DECL",
+  "cursor_name": "var1",
+  "references": Array [
+    Range {
+      "end": Point {
+        "column": 15,
+        "row": 6,
+      },
+      "start": Point {
+        "column": 11,
+        "row": 6,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 26,
+        "row": 6,
+      },
+      "start": Point {
+        "column": 22,
+        "row": 6,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 37,
+        "row": 6,
+      },
+      "start": Point {
+        "column": 33,
+        "row": 6,
+      },
+    },
+    Range {
+      "end": Point {
+        "column": 15,
+        "row": 7,
+      },
+      "start": Point {
+        "column": 11,
+        "row": 7,
+      },
+    },
+  ],
+}
+`;

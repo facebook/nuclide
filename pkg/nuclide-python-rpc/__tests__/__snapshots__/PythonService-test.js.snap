@@ -1,0 +1,405 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PythonService Outlines can generate an outline for a basic python script 1`] = `
+Array [
+  Object {
+    "end": Object {
+      "column": 5,
+      "line": 7,
+    },
+    "kind": "statement",
+    "name": "a",
+    "start": Object {
+      "column": 0,
+      "line": 7,
+    },
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 14,
+        },
+        "kind": "function",
+        "name": "__init__",
+        "params": Array [
+          "self",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 12,
+        },
+      },
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 17,
+        },
+        "kind": "function",
+        "name": "hello",
+        "params": Array [
+          "self",
+          "name",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 15,
+        },
+      },
+    ],
+    "end": Object {
+      "column": 0,
+      "line": 17,
+    },
+    "kind": "class",
+    "name": "Test",
+    "params": Array [],
+    "start": Object {
+      "column": 0,
+      "line": 10,
+    },
+  },
+]
+`;
+
+exports[`PythonService Outlines can generate an outline when decorated functions are present 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 13,
+        },
+        "kind": "function",
+        "name": "__init__",
+        "params": Array [
+          "self",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 11,
+        },
+      },
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 17,
+        },
+        "kind": "function",
+        "name": "hello",
+        "params": Array [
+          "self",
+          "name",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 15,
+        },
+      },
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 21,
+        },
+        "kind": "function",
+        "name": "hey",
+        "params": Array [],
+        "start": Object {
+          "column": 4,
+          "line": 19,
+        },
+      },
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 25,
+        },
+        "kind": "function",
+        "name": "meth",
+        "params": Array [],
+        "start": Object {
+          "column": 4,
+          "line": 23,
+        },
+      },
+    ],
+    "end": Object {
+      "column": 0,
+      "line": 25,
+    },
+    "kind": "class",
+    "name": "Test3",
+    "params": Array [],
+    "start": Object {
+      "column": 0,
+      "line": 9,
+    },
+  },
+  Object {
+    "children": Array [],
+    "end": Object {
+      "column": 0,
+      "line": 31,
+    },
+    "kind": "function",
+    "name": "func",
+    "params": Array [],
+    "start": Object {
+      "column": 0,
+      "line": 29,
+    },
+  },
+]
+`;
+
+exports[`PythonService Outlines can generate an outline when minor syntax errors exist 1`] = `
+Array [
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 17,
+        },
+        "kind": "function",
+        "name": "__init__",
+        "params": Array [
+          "self",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 14,
+        },
+      },
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 21,
+        },
+        "kind": "function",
+        "name": "hello",
+        "params": Array [
+          "self",
+          "name",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 18,
+        },
+      },
+    ],
+    "end": Object {
+      "column": 0,
+      "line": 21,
+    },
+    "kind": "class",
+    "name": "Test2",
+    "params": Array [],
+    "start": Object {
+      "column": 0,
+      "line": 10,
+    },
+  },
+]
+`;
+
+exports[`PythonService Outlines properly includes multiple assignments in the outline 1`] = `
+Array [
+  Object {
+    "end": Object {
+      "column": 23,
+      "line": 7,
+    },
+    "kind": "statement",
+    "name": "a",
+    "start": Object {
+      "column": 0,
+      "line": 7,
+    },
+  },
+  Object {
+    "end": Object {
+      "column": 23,
+      "line": 7,
+    },
+    "kind": "statement",
+    "name": "b",
+    "start": Object {
+      "column": 0,
+      "line": 7,
+    },
+  },
+  Object {
+    "end": Object {
+      "column": 23,
+      "line": 7,
+    },
+    "kind": "statement",
+    "name": "c",
+    "start": Object {
+      "column": 0,
+      "line": 7,
+    },
+  },
+  Object {
+    "end": Object {
+      "column": 23,
+      "line": 7,
+    },
+    "kind": "statement",
+    "name": "d",
+    "start": Object {
+      "column": 0,
+      "line": 7,
+    },
+  },
+]
+`;
+
+exports[`PythonService Outlines works with Python 3 features 1`] = `
+Array [
+  Object {
+    "end": Object {
+      "column": 16,
+      "line": 12,
+    },
+    "kind": "statement",
+    "name": "T",
+    "start": Object {
+      "column": 0,
+      "line": 12,
+    },
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [],
+        "end": Object {
+          "column": 0,
+          "line": 18,
+        },
+        "kind": "function",
+        "name": "__init__",
+        "params": Array [
+          "self",
+          "label",
+        ],
+        "start": Object {
+          "column": 4,
+          "line": 16,
+        },
+      },
+    ],
+    "end": Object {
+      "column": 0,
+      "line": 18,
+    },
+    "kind": "class",
+    "name": "Node",
+    "params": Array [
+      "label",
+    ],
+    "start": Object {
+      "column": 0,
+      "line": 15,
+    },
+  },
+  Object {
+    "children": Array [],
+    "end": Object {
+      "column": 0,
+      "line": 22,
+    },
+    "kind": "function",
+    "name": "fun",
+    "params": Array [
+      "arg1",
+      "arg2",
+    ],
+    "start": Object {
+      "column": 0,
+      "line": 20,
+    },
+  },
+  Object {
+    "children": Array [],
+    "end": Object {
+      "column": 0,
+      "line": 26,
+    },
+    "kind": "function",
+    "name": "fun2",
+    "params": Array [
+      "a",
+      "b",
+    ],
+    "start": Object {
+      "column": 0,
+      "line": 24,
+    },
+  },
+]
+`;
+
+exports[`PythonService References can find the references of imported modules 1`] = `
+Array [
+  Object {
+    "column": 0,
+    "file": "<REPLACED>/__mocks__/fixtures/decorated.py",
+    "line": 0,
+    "text": "decorated",
+    "type": "module",
+  },
+  Object {
+    "column": 5,
+    "file": "<REPLACED>/__mocks__/fixtures/serverdummy.py",
+    "line": 8,
+    "text": "decorated",
+    "type": "module",
+  },
+  Object {
+    "column": 7,
+    "file": "<REPLACED>/__mocks__/fixtures/serverdummy.py",
+    "line": 28,
+    "text": "decorated",
+    "type": "module",
+  },
+  Object {
+    "column": 4,
+    "file": "<REPLACED>/__mocks__/fixtures/serverdummy.py",
+    "line": 30,
+    "text": "decorated",
+    "type": "statement",
+  },
+]
+`;
+
+exports[`PythonService References displays the caller name for references within functions 1`] = `
+Array [
+  Object {
+    "column": 0,
+    "file": "<REPLACED>/__mocks__/fixtures/serverdummy.py",
+    "line": 19,
+    "text": "test_parent_name",
+    "type": "statement",
+  },
+  Object {
+    "column": 10,
+    "file": "<REPLACED>/__mocks__/fixtures/serverdummy.py",
+    "line": 23,
+    "parentName": "test_fn",
+    "text": "test_parent_name",
+    "type": "statement",
+  },
+]
+`;

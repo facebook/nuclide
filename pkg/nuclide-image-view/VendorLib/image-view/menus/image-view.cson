@@ -1,0 +1,5 @@
+# @generated SignedSource<<f4e009f718ca76885621f77828fcf41a>>
+'context-menu':
+  '.image-view': [
+    {label: 'Reload Image', command: 'image-view:reload'}
+  ]

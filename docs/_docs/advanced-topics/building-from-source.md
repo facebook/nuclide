@@ -22,6 +22,7 @@ addition, you must have
   <li>Xcode (for Command Line Tools)</li>
   <li class="node"></li>
   <li>Atom Shell Commands (open Atom and go to `Atom | Install Shell Commands`) installed as well.</li>
+  <li>The <a href="https://yarnpkg.com">Yarn</a> package manager (run <code>npm install -g yarn</code>)</li>
 </ul>
 
 > Xcode can be installed from the App Store. Installation can take a *long, long* time. So be patient.
@@ -34,12 +35,9 @@ You can verify all the appropriate dependencies. All the following should be in 
 ```bash
 $ git --version
 $ node --version
-$ npm --version
+$ yarn --version
 $ apm --version
 ```
-
-> Don't worry about the `apm` versions of `npm`, etc. Those are internal to `atom`. Your
-system uses ones associated with `node --version`, etc.
 
 ### Building
 
@@ -50,7 +48,7 @@ Run the following commands to build Nuclide from source.
 $ git clone https://github.com/facebook/nuclide.git
 $ cd nuclide
 # Install dependencies
-$ npm install
+$ yarn --pure-lockfile
 # Link the 'nuclide' package to Atom's package directory
 # You could also use apm link --dev ... see Development Mode below.
 $ apm link
@@ -73,17 +71,16 @@ You must have the [general prerequisites](/docs/editor/setup#linux__prerequisite
 
 To install Node, see [Node.js's download page](https://nodejs.org/en/download/) for steps that work best for your setup.
 
+You'll also need the [Yarn](https://yarnpkg.com) package manager (run `npm install -g yarn`).
+
 You can verify all the appropriate dependencies. All the following should be in your `$PATH` environment variable (usually `usr/bin` or `usr/local/bin`).
 
 ```bash
 $ git --version
 $ node --version
-$ npm --version
+$ yarn --version
 $ apm --version
 ```
-
->Don't worry about the `apm` versions of `npm`, etc. Those are internal to `atom`. Your
-system uses the ones associated with `node --version`, etc.
 
 ### Building
 
@@ -94,7 +91,7 @@ Run the following commands to build Nuclide from source.
 $ git clone https://github.com/facebook/nuclide.git
 $ cd nuclide
 # Install dependencies
-$ npm install
+$ yarn --pure-lockfile
 # Link the 'nuclide' package to Atom's package directory
 # You could also use apm link --dev ... see Development Mode below.
 $ apm link

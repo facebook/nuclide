@@ -45,20 +45,18 @@ export function applyActionMiddleware(
   const output = Observable.merge(
     // Let the unhandled ActionTypes pass through.
     actions.filter(action => HANDLED_ACTION_TYPES.indexOf(action.type) === -1),
-    getActionsOfType(
-      actions,
-      ActionType.ADD_PROJECT_REPOSITORY,
-    ).flatMap(action => {
-      invariant(action.type === ActionType.ADD_PROJECT_REPOSITORY);
-      return watchProjectRepository(action, getState);
-    }),
-    getActionsOfType(
-      actions,
-      ActionType.RESTORE_PANE_ITEM_STATE,
-    ).switchMap(action => {
-      invariant(action.type === ActionType.RESTORE_PANE_ITEM_STATE);
-      return restorePaneItemState(action, getState);
-    }),
+    getActionsOfType(actions, ActionType.ADD_PROJECT_REPOSITORY).flatMap(
+      action => {
+        invariant(action.type === ActionType.ADD_PROJECT_REPOSITORY);
+        return watchProjectRepository(action, getState);
+      },
+    ),
+    getActionsOfType(actions, ActionType.RESTORE_PANE_ITEM_STATE).switchMap(
+      action => {
+        invariant(action.type === ActionType.RESTORE_PANE_ITEM_STATE);
+        return restorePaneItemState(action, getState);
+      },
+    ),
   );
   return output.share();
 }

@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Message} from '../../nuclide-console/lib/types';
+import type {ConsoleMessage} from 'atom-ide-ui';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
 
 import {Subject} from 'rxjs';
@@ -34,7 +34,7 @@ export function changeConsoleVisibility(visible: boolean): void {
 
 export function pipeProcessMessagesToConsole(
   processName: string,
-  progressUpdates: Subject<Message>,
+  progressUpdates: Subject<ConsoleMessage>,
   showNotificationOnCompletion: boolean,
   processMessage: LegacyProcessMessage /* TODO(T17463635) */,
 ): void {

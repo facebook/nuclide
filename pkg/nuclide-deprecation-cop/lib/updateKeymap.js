@@ -11,7 +11,7 @@
 
 import escapeRegExp from 'escape-string-regexp';
 import fsPromise from 'nuclide-commons/fsPromise';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 function quoteRegExp(str: string): string {
   const boundary = '([\'"])';

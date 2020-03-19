@@ -1,12 +1,11 @@
 {
   "name": "nuclide-filewatcher-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "version": "0.0.0",
   "description": "Watches files and directories on a remote directory using watchman.",
+  "author": "NEEDS OWNER",
   "main": "./lib/FileWatcherService.js",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

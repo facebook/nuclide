@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import classnames from 'classnames';
 
 type Props = {
@@ -17,9 +17,9 @@ type Props = {
   found: boolean,
 };
 
-export default class FileTreeSidebarFilterComponent extends React.Component {
-  props: Props;
-
+export default class FileTreeSidebarFilterComponent extends React.Component<
+  Props,
+> {
   render() {
     const {filter, found} = this.props;
 
@@ -30,10 +30,6 @@ export default class FileTreeSidebarFilterComponent extends React.Component {
     });
     const text = `search for: ${filter}`;
 
-    return (
-      <div className={classes}>
-        {text}
-      </div>
-    );
+    return <div className={classes}>{text}</div>;
   }
 }

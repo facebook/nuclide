@@ -1,12 +1,11 @@
 {
   "name": "nuclide-flow-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/FlowService.js",
   "version": "0.0.0",
   "description": "Provides base support for flow utilities.",
+  "author": "Flow",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

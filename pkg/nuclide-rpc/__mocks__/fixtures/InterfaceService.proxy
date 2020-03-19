@@ -1,0 +1,355 @@
+"use strict";
+
+module.exports = _client => {
+  const remoteModule = {};
+  remoteModule.Vector2 = class {
+    static distance(arg0, arg1) {
+      return _client.callRemoteFunction("Vector2/distance", "promise", _client.marshalArguments(Array.from(arguments), [{
+        name: "a",
+        type: {
+          kind: "named",
+          name: "Vector2"
+        }
+      }, {
+        name: "b",
+        type: {
+          kind: "named",
+          name: "Vector2"
+        }
+      }])).then(value => {
+        return _client.unmarshal(value, {
+          kind: "number"
+        });
+      });
+    }
+
+    constructor() {
+      throw Error("constructors are not supported for remote objects");
+    }
+
+    len() {
+      return _client.callRemoteMethod(_client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 1
+        },
+        name: "Vector2"
+      }), "len", "promise", _client.marshalArguments(Array.from(arguments), [])).then(value => {
+        return _client.unmarshal(value, {
+          kind: "number"
+        });
+      });
+    }
+
+    watchChanges() {
+      return _client.callRemoteMethod(_client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 1
+        },
+        name: "Vector2"
+      }), "watchChanges", "observable", _client.marshalArguments(Array.from(arguments), [])).map(value => {
+        return _client.unmarshal(value, {
+          kind: "number"
+        });
+      }).publish();
+    }
+
+    dispose() {
+      return _client.disposeRemoteObject(this);
+    }
+
+  };
+
+  remoteModule.getCurrentDirection = function () {
+    return _client.callRemoteFunction("InterfaceService/getCurrentDirection", "promise", _client.marshalArguments(Array.from(arguments), [])).then(value => {
+      return _client.unmarshal(value, {
+        kind: "named",
+        name: "Vector2"
+      });
+    });
+  };
+
+  remoteModule.Iface = class {
+    constructor() {
+      throw Error("constructors are not supported for remote objects");
+    }
+
+    p(arg0) {
+      return _client.callRemoteMethod(_client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      }), "p", "promise", _client.marshalArguments(Array.from(arguments), [{
+        name: "a",
+        type: {
+          kind: "number"
+        }
+      }])).then(value => {
+        return _client.unmarshal(value, {
+          kind: "number"
+        });
+      });
+    }
+
+    f() {
+      return _client.callRemoteMethod(_client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      }), "f", "void", _client.marshalArguments(Array.from(arguments), []));
+    }
+
+    o() {
+      return _client.callRemoteMethod(_client.marshal(this, {
+        kind: "named",
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 30
+        },
+        name: "Iface"
+      }), "o", "observable", _client.marshalArguments(Array.from(arguments), [])).map(value => {
+        return _client.unmarshal(value, {
+          kind: "string"
+        });
+      }).publish();
+    }
+
+    dispose() {
+      return _client.disposeRemoteObject(this);
+    }
+
+  };
+  return remoteModule;
+};
+
+Object.defineProperty(module.exports, "defs", {
+  value: {
+    Object: {
+      kind: "alias",
+      name: "Object",
+      location: {
+        type: "builtin"
+      }
+    },
+    Date: {
+      kind: "alias",
+      name: "Date",
+      location: {
+        type: "builtin"
+      }
+    },
+    RegExp: {
+      kind: "alias",
+      name: "RegExp",
+      location: {
+        type: "builtin"
+      }
+    },
+    Buffer: {
+      kind: "alias",
+      name: "Buffer",
+      location: {
+        type: "builtin"
+      }
+    },
+    "fs.Stats": {
+      kind: "alias",
+      name: "fs.Stats",
+      location: {
+        type: "builtin"
+      }
+    },
+    Vector2: {
+      kind: "interface",
+      name: "Vector2",
+      location: {
+        type: "source",
+        fileName: "InterfaceService.def",
+        line: 1
+      },
+      staticMethods: {
+        distance: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 3
+          },
+          kind: "function",
+          argumentTypes: [{
+            name: "a",
+            type: {
+              kind: "named",
+              name: "Vector2"
+            }
+          }, {
+            name: "b",
+            type: {
+              kind: "named",
+              name: "Vector2"
+            }
+          }],
+          returnType: {
+            kind: "promise",
+            type: {
+              kind: "number"
+            }
+          }
+        }
+      },
+      instanceMethods: {
+        len: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 4
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "promise",
+            type: {
+              kind: "number"
+            }
+          }
+        },
+        watchChanges: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 6
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "observable",
+            type: {
+              kind: "number"
+            }
+          }
+        },
+        dispose: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 11
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "void"
+          }
+        }
+      }
+    },
+    getCurrentDirection: {
+      kind: "function",
+      name: "getCurrentDirection",
+      location: {
+        type: "source",
+        fileName: "InterfaceService.def",
+        line: 14
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "InterfaceService.def",
+          line: 14
+        },
+        kind: "function",
+        argumentTypes: [],
+        returnType: {
+          kind: "promise",
+          type: {
+            kind: "named",
+            name: "Vector2"
+          }
+        }
+      }
+    },
+    Iface: {
+      kind: "interface",
+      name: "Iface",
+      location: {
+        type: "source",
+        fileName: "InterfaceService.def",
+        line: 30
+      },
+      staticMethods: {},
+      instanceMethods: {
+        p: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 31
+          },
+          kind: "function",
+          argumentTypes: [{
+            name: "a",
+            type: {
+              kind: "number"
+            }
+          }],
+          returnType: {
+            kind: "promise",
+            type: {
+              kind: "number"
+            }
+          }
+        },
+        f: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 32
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "void"
+          }
+        },
+        o: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 33
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "observable",
+            type: {
+              kind: "string"
+            }
+          }
+        },
+        dispose: {
+          location: {
+            type: "source",
+            fileName: "InterfaceService.def",
+            line: 35
+          },
+          kind: "function",
+          argumentTypes: [],
+          returnType: {
+            kind: "void"
+          }
+        }
+      }
+    }
+  }
+});

@@ -1,0 +1,3 @@
+const Immutable = require('immutable');
+
+Immutable.List();

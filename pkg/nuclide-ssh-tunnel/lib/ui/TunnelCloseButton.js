@@ -9,14 +9,14 @@
  * @format
  */
 
-import type {Tunnel} from '../types';
+import type {ResolvedTunnel} from 'nuclide-adb/lib/types';
 
 import {Button} from 'nuclide-commons-ui/Button';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
-  tunnel: Tunnel,
-  closeTunnel: (tunnel: Tunnel) => void,
+  tunnel: ResolvedTunnel,
+  closeTunnel: (tunnel: ResolvedTunnel) => void,
 };
 
 export default function TunnelCloseButton(props: Props) {

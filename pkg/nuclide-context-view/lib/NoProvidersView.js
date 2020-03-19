@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 /**
  * This view is rendered when no context providers are registered.

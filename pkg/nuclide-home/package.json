@@ -1,10 +1,9 @@
 {
   "name": "nuclide-home",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides a welcome message and other links for first time users.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -18,16 +17,9 @@
         "type": "boolean",
         "default": true,
         "description": "Show the home pane (by default shown on first startup)."
-      },
-      "showChangelogs": {
-        "title": "Show Changelogs",
-        "type": "boolean",
-        "default": true,
-        "description": "Open the changelog after each update."
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide-home.homeFragments": {

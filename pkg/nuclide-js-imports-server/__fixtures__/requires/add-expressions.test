@@ -1,0 +1,9 @@
+one ? two : three;
+!four;
+five++;
+six += seven;
+eight < nine;
+var ten = eleven ? twelve : {thirteen};
+var fourteen = fifteen || sixteen && seventeen;
+var eighteen = new nineteen();
+twenty;

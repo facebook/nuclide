@@ -5,20 +5,25 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Action, TaskRunner, TaskRunnerState, TaskStatus} from '../types';
-import type {Directory} from '../../../nuclide-remote-connection';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
-  ConsoleApi,
-  ConsoleService,
-} from '../../../nuclide-console/lib/types';
+  Action,
+  TaskRunner,
+  TaskRunnerState,
+  TaskStatus,
+  TaskOutcome,
+} from '../types';
+import textFromOutcomeAction from './textFromOutcomeAction';
+import type {ConsoleApi, ConsoleService} from 'atom-ide-ui';
 
 import * as Actions from './Actions';
+import * as Immutable from 'immutable';
 
-export function taskRunnersReady(
+export function initialPackagesActivated(
   state: boolean = false,
   action: Action,
 ): boolean {
@@ -30,36 +35,40 @@ export function taskRunnersReady(
   }
 }
 
-export function isUpdatingTaskRunners(
-  state: boolean = true,
+export function readyTaskRunners(
+  state: Immutable.Set<TaskRunner> = Immutable.Set(),
   action: Action,
-): boolean {
+): Immutable.Set<TaskRunner> {
   switch (action.type) {
     case Actions.SET_PROJECT_ROOT:
-      return true;
+      return Immutable.Set();
+    case Actions.SET_STATE_FOR_TASK_RUNNER:
+      return state.add(action.payload.taskRunner);
     case Actions.SET_STATES_FOR_TASK_RUNNERS:
-      return false;
+      return state.concat(action.payload.statesForTaskRunners.keys());
+    case Actions.UNREGISTER_TASK_RUNNER:
+      return state.remove(action.payload.taskRunner);
     default:
       return state;
   }
 }
 
 export function taskRunners(
-  state: Array<TaskRunner> = [],
+  state: Immutable.List<TaskRunner> = Immutable.List(),
   action: Action,
-): Array<TaskRunner> {
+): Immutable.List<TaskRunner> {
   switch (action.type) {
     case Actions.REGISTER_TASK_RUNNER: {
       const {taskRunner} = action.payload;
       return state
-        .concat(taskRunner)
+        .push(taskRunner)
         .sort((a, b) =>
           a.name.toUpperCase().localeCompare(b.name.toUpperCase()),
         );
     }
     case Actions.UNREGISTER_TASK_RUNNER: {
       const {taskRunner} = action.payload;
-      return state.slice().filter(element => element !== taskRunner);
+      return state.delete(state.indexOf(taskRunner));
     }
     default: {
       return state;
@@ -68,33 +77,28 @@ export function taskRunners(
 }
 
 export function statesForTaskRunners(
-  state: Map<TaskRunner, TaskRunnerState> = new Map(),
+  state: Immutable.Map<TaskRunner, TaskRunnerState> = Immutable.Map(),
   action: Action,
-): Map<TaskRunner, TaskRunnerState> {
+): Immutable.Map<TaskRunner, TaskRunnerState> {
   switch (action.type) {
     case Actions.SET_PROJECT_ROOT:
-      return new Map();
+      return Immutable.Map();
     case Actions.UNREGISTER_TASK_RUNNER:
-      const newMap = new Map(state.entries());
-      newMap.delete(action.payload.taskRunner);
-      return newMap;
+      return state.delete(action.payload.taskRunner);
     case Actions.SET_STATES_FOR_TASK_RUNNERS:
-      return new Map([
-        ...state.entries(),
-        ...action.payload.statesForTaskRunners.entries(),
-      ]);
+      return state.merge(action.payload.statesForTaskRunners);
     case Actions.SET_STATE_FOR_TASK_RUNNER:
       const {taskRunner, taskRunnerState} = action.payload;
-      return new Map(state.entries()).set(taskRunner, taskRunnerState);
+      return state.set(taskRunner, taskRunnerState);
     default:
       return state;
   }
 }
 
 export function projectRoot(
-  state: ?Directory = null,
+  state: ?NuclideUri = null,
   action: Action,
-): ?Directory {
+): ?NuclideUri {
   switch (action.type) {
     case Actions.SET_PROJECT_ROOT:
       return action.payload.projectRoot;
@@ -135,11 +139,31 @@ export function runningTask(
       return null;
     case Actions.TASK_PROGRESS:
       return {...state, progress: action.payload.progress};
+    case Actions.TASK_STATUS:
+      return {...state, status: action.payload.status};
     case Actions.TASK_ERRORED:
       return null;
     case Actions.TASK_STARTED:
       return action.payload.taskStatus;
     case Actions.TASK_STOPPED:
+      return null;
+    default:
+      return state;
+  }
+}
+
+export function mostRecentTaskOutcome(
+  state: ?TaskOutcome = null,
+  action: Action,
+): ?TaskOutcome {
+  switch (action.type) {
+    case Actions.TASK_COMPLETED:
+      return {type: 'success', message: textFromOutcomeAction(action)};
+    case Actions.TASK_ERRORED:
+      return {type: 'error', message: textFromOutcomeAction(action)};
+    case Actions.TASK_STOPPED:
+      return {type: 'cancelled', message: textFromOutcomeAction(action)};
+    case Actions.TASK_STARTED:
       return null;
     default:
       return state;
@@ -159,28 +183,25 @@ export function consoleService(
 }
 
 export function consolesForTaskRunners(
-  state: Map<TaskRunner, ConsoleApi> = new Map(),
+  state: Immutable.Map<TaskRunner, ConsoleApi> = Immutable.Map(),
   action: Action,
-): Map<TaskRunner, ConsoleApi> {
+): Immutable.Map<TaskRunner, ConsoleApi> {
   switch (action.type) {
     case Actions.SET_CONSOLES_FOR_TASK_RUNNERS:
-      state.forEach((value, key) => {
-        value.dispose();
-      });
+      state.forEach(value => value.dispose());
       return action.payload.consolesForTaskRunners;
-    case Actions.SET_CONSOLE_SERVICE:
-      return new Map();
     case Actions.ADD_CONSOLE_FOR_TASK_RUNNER:
       const {consoleApi, taskRunner} = action.payload;
-      return new Map(state.entries()).set(taskRunner, consoleApi);
+      return state.set(taskRunner, consoleApi);
     case Actions.REMOVE_CONSOLE_FOR_TASK_RUNNER:
       const previous = state.get(action.payload.taskRunner);
-      const newState = new Map(state.entries());
       if (previous) {
         previous.dispose();
-        newState.delete(action.payload.taskRunner);
       }
-      return newState;
+      return state.delete(action.payload.taskRunner);
+    case Actions.SET_CONSOLE_SERVICE:
+      state.forEach(value => value.dispose());
+      return Immutable.Map();
     default:
       return state;
   }

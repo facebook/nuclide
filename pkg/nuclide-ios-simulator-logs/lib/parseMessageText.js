@@ -5,15 +5,15 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Level} from '../../nuclide-console/lib/types';
+import type {ConsoleLevel} from 'atom-ide-ui';
 
 type Parsed = {
   text: string,
-  level: ?Level,
+  level: ?ConsoleLevel,
   tags: Array<string>,
 };
 

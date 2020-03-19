@@ -10,10 +10,11 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {VcsLogEntry} from '../../nuclide-hg-rpc/lib/HgService';
+import type {VcsLogEntry} from '../../nuclide-hg-rpc/lib/types';
 import type {HgRepositoryClient} from '../../nuclide-hg-repository-client/lib/HgRepositoryClient.js';
 
-import React from 'react';
+import {EmptyState} from 'nuclide-commons-ui/EmptyState';
+import * as React from 'react';
 import {getAtomProjectRelativePath} from 'nuclide-commons-atom/projects';
 import {shell} from 'electron';
 import {shortNameForAuthor} from './util';
@@ -30,18 +31,18 @@ type Props = {
   repository: HgRepositoryClient,
   onDiffClick: (oldId: string, newId: string) => void,
   logEntries: ?Array<VcsLogEntry>,
+  fileLoadingError: ?string,
   oldContent: ?string,
   newContent: ?string,
 };
 
 type State = {
   showDiffContainer: boolean,
-  diffIndex: number,
+  baseDiffIndex: ?number,
+  targetDiffIndex: ?number,
 };
 
-export default class VcsLogComponent extends React.Component {
-  props: Props;
-  state: State;
+export default class VcsLogComponent extends React.Component<Props, State> {
   _files: Array<string>;
 
   constructor(props: Props) {
@@ -56,12 +57,13 @@ export default class VcsLogComponent extends React.Component {
 
     this.state = {
       showDiffContainer: false,
-      diffIndex: -1,
+      baseDiffIndex: null,
+      targetDiffIndex: null,
     };
   }
 
-  render(): React.Element<any> {
-    const {logEntries} = this.props;
+  render(): React.Node {
+    const {logEntries, fileLoadingError} = this.props;
     if (logEntries != null) {
       // Even if the "Show Differential Revision" preference is enabled, only show the column if
       // there is at least one row with a Differential revision. This way, enabling the preference
@@ -82,75 +84,7 @@ export default class VcsLogComponent extends React.Component {
       }
 
       const rows = logEntries.map((logEntry: VcsLogEntry, index: number) => {
-        let differentialCell;
-        if (showDifferentialRevision) {
-          const url = differentialUrls[index];
-          let revision;
-          let onClick;
-          if (url != null) {
-            revision = url.substring(url.lastIndexOf('/') + 1);
-            onClick = () => shell.openExternal(url);
-          } else {
-            revision = null;
-            onClick = null;
-          }
-          differentialCell = (
-            <td className="nuclide-vcs-log-differential-cell">
-              <span
-                className="nuclide-vcs-log-differential-cell-text"
-                onClick={onClick}>
-                {revision}
-              </span>
-            </td>
-          );
-        } else {
-          differentialCell = null;
-        }
-
-        let showDiffCell = null;
-        if (this.props.files.length === 1) {
-          const newContentNode = logEntries[index]
-            ? logEntries[index].node
-            : '';
-          const oldContentNode = logEntries[index + 1]
-            ? logEntries[index + 1].node
-            : '';
-          showDiffCell = (
-            <input
-              className="input-radio"
-              type="radio"
-              checked={index === this.state.diffIndex}
-              onChange={() => {
-                this.setState({
-                  showDiffContainer: true,
-                  diffIndex: index,
-                });
-                this.props.onDiffClick(oldContentNode, newContentNode);
-              }}
-            />
-          );
-        }
-
-        return (
-          <tr key={logEntry.node}>
-            <td className="nuclide-vcs-log-date-cell">
-              {this._toDateString(logEntry.date[0])}
-            </td>
-            <td className="nuclide-vcs-log-id-cell">
-              {logEntry.node.substring(0, 8)}
-            </td>
-            {differentialCell}
-            <td className="nuclide-vcs-log-author-cell">
-              {shortNameForAuthor(logEntry.user)}
-            </td>
-            <td className="nuclide-vcs-log-summary-cell" title={logEntry.desc}>
-              {parseFirstLine(logEntry.desc)}
-            </td>
-            <td className="nuclide-vcs-log-show-diff-cell">
-              {showDiffCell}
-            </td>
-          </tr>
-        );
+        return this._renderRow(logEntries, index, differentialUrls);
       });
 
       // Note that we use the native-key-bindings/tabIndex=-1 trick to make it possible to
@@ -164,10 +98,10 @@ export default class VcsLogComponent extends React.Component {
               <tbody>
                 <tr>
                   <th className="nuclide-vcs-log-header-cell">Date</th>
-                  <th className="nuclide-vcs-log-header-cell">ID</th>
-                  {showDifferentialRevision
-                    ? <th className="nuclide-vcs-log-header-cell">Revision</th>
-                    : null}
+                  <th className="nuclide-vcs-log-header-cell">Hash</th>
+                  {showDifferentialRevision ? (
+                    <th className="nuclide-vcs-log-header-cell">Diff</th>
+                  ) : null}
                   <th className="nuclide-vcs-log-header-cell">Author</th>
                   <th className="nuclide-vcs-log-header-cell">Summary</th>
                   <th className="nuclide-vcs-log-header-cell">Show diff</th>
@@ -185,12 +119,22 @@ export default class VcsLogComponent extends React.Component {
         const filePath = this.props.files[0];
         const {oldContent, newContent} = this.props;
         const props = {filePath, oldContent, newContent};
+        const diffSection =
+          fileLoadingError != null ? (
+            <EmptyState
+              title={'Error loading diffs'}
+              message={fileLoadingError}
+            />
+          ) : (
+            <ShowDiff {...props} />
+          );
         return (
+          // $FlowFixMe(>=0.53.0) Flow suppress
           <ResizableFlexContainer
             direction={FlexDirections.VERTICAL}
             className={'nuclide-vcs-log-container'}>
             <ResizableFlexItem initialFlexScale={3}>
-              <ShowDiff {...props} />
+              {diffSection}
             </ResizableFlexItem>
             <ResizableFlexItem
               initialFlexScale={1}
@@ -202,18 +146,122 @@ export default class VcsLogComponent extends React.Component {
       }
     } else {
       return (
-        <div>
-          <div>
-            <em>
-              Loading hg log {this._files.join(' ')}
-            </em>
-          </div>
-          <div className="nuclide-vcs-log-spinner">
-            <div className="loading-spinner-large inline-block" />
-          </div>
-        </div>
+        <EmptyState
+          title={'Loading hg log ' + this._files.join(' ')}
+          message={
+            <div className="nuclide-vcs-log-spinner">
+              <div className="loading-spinner-large inline-block" />
+            </div>
+          }
+        />
       );
     }
+  }
+
+  _renderRow(
+    logEntries: Array<VcsLogEntry>,
+    index: number,
+    differentialUrls: Array<string>,
+  ): React.Element<any> {
+    const showDifferentialRevision =
+      this.props.showDifferentialRevision && differentialUrls.length > 0;
+    let differentialCell;
+    if (showDifferentialRevision) {
+      const url = differentialUrls[index];
+      let revision;
+      let onClick;
+      if (url != null) {
+        revision = url.substring(url.lastIndexOf('/') + 1);
+        onClick = () => shell.openExternal(url);
+      } else {
+        revision = null;
+        onClick = null;
+      }
+      differentialCell = (
+        <td className="nuclide-vcs-log-differential-cell">
+          <span
+            className="nuclide-vcs-log-differential-cell-text"
+            onClick={onClick}>
+            {revision}
+          </span>
+        </td>
+      );
+    } else {
+      differentialCell = null;
+    }
+
+    const nodeAtIndex = (nodeIndex: number) =>
+      logEntries[nodeIndex] ? logEntries[nodeIndex].node : '';
+    const {baseDiffIndex, targetDiffIndex} = this.state;
+    let showDiffCell = null;
+    if (this.props.files.length === 1) {
+      showDiffCell = (
+        <span className="input-radio-container">
+          {index !== 0 ? (
+            <input
+              className="input-radio"
+              type="radio"
+              checked={index === baseDiffIndex}
+              disabled={targetDiffIndex != null && index <= targetDiffIndex}
+              onChange={() => {
+                const newTargetDiffIndex =
+                  targetDiffIndex != null ? targetDiffIndex : index - 1;
+                this.setState({
+                  showDiffContainer: true,
+                  baseDiffIndex: index,
+                  targetDiffIndex: newTargetDiffIndex,
+                });
+                this.props.onDiffClick(
+                  nodeAtIndex(index),
+                  nodeAtIndex(newTargetDiffIndex),
+                );
+              }}
+            />
+          ) : null}
+          {index !== logEntries.length - 1 || index === 0 ? (
+            <input
+              className="input-radio right-align"
+              type="radio"
+              checked={index === targetDiffIndex}
+              disabled={baseDiffIndex != null && index >= baseDiffIndex}
+              onChange={() => {
+                const newBaseDiffIndex =
+                  baseDiffIndex != null ? baseDiffIndex : index + 1;
+                this.setState({
+                  showDiffContainer: true,
+                  baseDiffIndex: newBaseDiffIndex,
+                  targetDiffIndex: index,
+                });
+                this.props.onDiffClick(
+                  nodeAtIndex(newBaseDiffIndex),
+                  nodeAtIndex(index),
+                );
+              }}
+            />
+          ) : null}
+        </span>
+      );
+    }
+
+    const logEntry = logEntries[index];
+    return (
+      <tr key={logEntry.node}>
+        <td className="nuclide-vcs-log-date-cell">
+          {this._toDateString(logEntry.date[0])}
+        </td>
+        <td className="nuclide-vcs-log-id-cell">
+          {logEntry.node.substring(0, 8)}
+        </td>
+        {differentialCell}
+        <td className="nuclide-vcs-log-author-cell">
+          {shortNameForAuthor(logEntry.author)}
+        </td>
+        <td className="nuclide-vcs-log-summary-cell" title={logEntry.desc}>
+          {parseFirstLine(logEntry.desc)}
+        </td>
+        <td className="nuclide-vcs-log-show-diff-cell">{showDiffCell}</td>
+      </tr>
+    );
   }
 
   _toDateString(secondsSince1970: number): string {

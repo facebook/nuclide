@@ -1,0 +1,41 @@
+{
+  "name": "atom-ide-debugger-ocaml",
+  "version": "0.7.3-dev",
+  "main": "./lib/main.js",
+  "description": "OCaml Debugger for Atom IDE.",
+  "author": "NEEDS OWNER",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/atom-ide-debugger-ocaml",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec",
+    "lint": "../../node_modules/.bin/eslint .",
+    "flow": "../../node_modules/.bin/flow"
+  },
+  "engines": {
+    "atom": ">= 1.17.0"
+  },
+  "providedServices": {
+    "debugger.provider": {
+      "description": "OCaml debugger engine.",
+      "versions": {
+        "0.0.0": "createDebuggerProvider"
+      }
+    }
+  },
+  "dependencies": {
+    "log4js": "1.1.1",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nuclide-debugger-common": "0.7.3-dev",
+    "vscode-debugadapter": "1.24.0",
+    "vscode-debugprotocol": "1.24.0"
+  },
+  "devDependencies": {
+    "nuclide-node-transpiler": "0.7.3-dev"
+  },
+  "package-deps": [
+    "atom-ide-ui"
+  ]
+}

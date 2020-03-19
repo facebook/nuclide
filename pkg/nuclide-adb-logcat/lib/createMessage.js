@@ -5,17 +5,17 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Level, Message} from '../../nuclide-console/lib/types';
+import type {ConsoleLevel, ConsoleMessage} from 'atom-ide-ui';
 import type {LogcatEntry, Priority} from './types';
 
 /**
  * Convert a structured logcat entry into the format that nuclide-console wants.
  */
-export default function createMessage(entry: LogcatEntry): Message {
+export default function createMessage(entry: LogcatEntry): ConsoleMessage {
   const priority = (entry.metadata && entry.metadata.priority) || 'I';
   const tag = (entry.metadata && entry.metadata.tag) || null;
   return {
@@ -25,7 +25,7 @@ export default function createMessage(entry: LogcatEntry): Message {
   };
 }
 
-function priorityToLevel(priority: Priority): Level {
+function priorityToLevel(priority: Priority): ConsoleLevel {
   switch (priority) {
     case 'W': // warn
       return 'warning';

@@ -1,10 +1,9 @@
 {
   "name": "nuclide-hg-repository",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides support for Mercurial source control repositories",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -16,12 +15,11 @@
       "enableDiffStats": {
         "title": "Enables `git-diff` and `status-bar` diff stats to display added, changed or removed lines in the editor gutter and status bar",
         "type": "boolean",
-        "default": false,
+        "default": true,
         "description": "Comes at the cost of more calls to the repository, potentially slowing things down in a large repository."
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide-file-tree.context-menu": {
@@ -34,6 +32,12 @@
     "atom.repository-provider": {
       "versions": {
         "0.1.0": "createHgRepositoryProvider"
+      }
+    },
+    "additional-log-files": {
+      "description": "Hg log files",
+      "versions": {
+        "0.0.0": "createHgAdditionalLogFilesProvider"
       }
     }
   }

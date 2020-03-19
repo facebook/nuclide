@@ -10,29 +10,33 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {AdditionalLogFile} from '../../nuclide-logging/lib/rpc-types';
 import type {FileVersion} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {TextEdit} from 'nuclide-commons-atom/text-edit';
 import type {TypeHint} from '../../nuclide-type-hint/lib/rpc-types';
 import type {CoverageResult} from '../../nuclide-type-coverage/lib/rpc-types';
 import type {
   DefinitionQueryResult,
-  DiagnosticProviderUpdate,
-  FileDiagnosticMessages,
   FindReferencesReturn,
+  RenameReturn,
   Outline,
   CodeAction,
-  FileDiagnosticMessage,
+  SignatureHelp,
 } from 'atom-ide-ui';
 import type {
   AutocompleteRequest,
   AutocompleteResult,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   FormatOptions,
   LanguageService,
   SymbolResult,
+  Completion,
+  CodeLensData,
+  StatusData,
 } from '../../nuclide-language-service/lib/LanguageService';
 import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 import type {ConnectableObservable} from 'rxjs';
-import type {NuclideEvaluationExpression} from '../../nuclide-debugger-interfaces/rpc-types';
 
 import invariant from 'assert';
 import {getBufferAtVersion} from '../../nuclide-open-files-rpc';
@@ -47,9 +51,9 @@ export type SingleFileLanguageService = {
   getDiagnostics(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
-  ): Promise<?DiagnosticProviderUpdate>,
+  ): Promise<?FileDiagnosticMap>,
 
-  observeDiagnostics(): Observable<Array<FileDiagnosticMessages>>,
+  observeDiagnostics(): Observable<FileDiagnosticMap>,
 
   getAutocompleteSuggestions(
     filePath: NuclideUri,
@@ -58,6 +62,8 @@ export type SingleFileLanguageService = {
     activatedManually: boolean,
     prefix: string,
   ): Promise<?AutocompleteResult>,
+
+  resolveAutocompleteSuggestion(suggestion: Completion): Promise<?Completion>,
 
   getDefinition(
     filePath: NuclideUri,
@@ -69,7 +75,14 @@ export type SingleFileLanguageService = {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
-  ): Promise<?FindReferencesReturn>,
+  ): Observable<?FindReferencesReturn>,
+
+  rename(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    position: atom$Point,
+    newName: string,
+  ): Observable<?RenameReturn>,
 
   getCoverage(filePath: NuclideUri): Promise<?CoverageResult>,
 
@@ -77,6 +90,8 @@ export type SingleFileLanguageService = {
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
   ): Promise<?Outline>,
+
+  onToggleCoverage(set: boolean): Promise<void>,
 
   getCodeActions(
     filePath: NuclideUri,
@@ -121,15 +136,28 @@ export type SingleFileLanguageService = {
     options: FormatOptions,
   ): Promise<?Array<TextEdit>>,
 
-  getEvaluationExpression(
+  signatureHelp(
     filePath: NuclideUri,
     buffer: simpleTextBuffer$TextBuffer,
     position: atom$Point,
-  ): Promise<?NuclideEvaluationExpression>,
+  ): Promise<?SignatureHelp>,
 
   getProjectRoot(fileUri: NuclideUri): Promise<?NuclideUri>,
 
   isFileInProject(fileUri: NuclideUri): Promise<boolean>,
+
+  getExpandedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range>,
+
+  getCollapsedSelectionRange(
+    filePath: NuclideUri,
+    buffer: simpleTextBuffer$TextBuffer,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range>,
 
   dispose(): void,
 };
@@ -150,9 +178,7 @@ export class ServerLanguageService<
     return this._service;
   }
 
-  async getDiagnostics(
-    fileVersion: FileVersion,
-  ): Promise<?DiagnosticProviderUpdate> {
+  async getDiagnostics(fileVersion: FileVersion): Promise<?FileDiagnosticMap> {
     const filePath = fileVersion.filePath;
     const buffer = await getBufferAtVersion(fileVersion);
     if (buffer == null) {
@@ -161,7 +187,7 @@ export class ServerLanguageService<
     return this._service.getDiagnostics(filePath, buffer);
   }
 
-  observeDiagnostics(): ConnectableObservable<Array<FileDiagnosticMessages>> {
+  observeDiagnostics(): ConnectableObservable<FileDiagnosticMap> {
     return this._service.observeDiagnostics().publish();
   }
 
@@ -185,6 +211,12 @@ export class ServerLanguageService<
     );
   }
 
+  async resolveAutocompleteSuggestion(
+    suggestion: Completion,
+  ): Promise<?Completion> {
+    return this._service.resolveAutocompleteSuggestion(suggestion);
+  }
+
   async getDefinition(
     fileVersion: FileVersion,
     position: atom$Point,
@@ -197,20 +229,48 @@ export class ServerLanguageService<
     return this._service.getDefinition(filePath, buffer, position);
   }
 
-  async findReferences(
+  findReferences(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?FindReferencesReturn> {
+  ): ConnectableObservable<?FindReferencesReturn> {
     const filePath = fileVersion.filePath;
-    const buffer = await getBufferAtVersion(fileVersion);
-    if (buffer == null) {
-      return null;
-    }
-    return this._service.findReferences(filePath, buffer, position);
+    return Observable.fromPromise(getBufferAtVersion(fileVersion))
+      .concatMap(buffer => {
+        if (buffer == null) {
+          return Observable.of(null);
+        }
+        return this._service.findReferences(filePath, buffer, position);
+      })
+      .publish();
+  }
+
+  rename(
+    fileVersion: FileVersion,
+    position: atom$Point,
+    newName: string,
+  ): ConnectableObservable<?RenameReturn> {
+    const filePath = fileVersion.filePath;
+    return Observable.fromPromise(getBufferAtVersion(fileVersion))
+      .concatMap(buffer => {
+        if (buffer == null) {
+          return Observable.of(null);
+        }
+        return this._service.rename(filePath, buffer, position, newName);
+      })
+      .publish();
   }
 
   getCoverage(filePath: NuclideUri): Promise<?CoverageResult> {
     return this._service.getCoverage(filePath);
+  }
+
+  onToggleCoverage(set: boolean): Promise<void> {
+    return this._service.onToggleCoverage(set);
+  }
+
+  async getAdditionalLogFiles(): Promise<Array<AdditionalLogFile>> {
+    // TODO (if it's ever needed): push this request to the this._service
+    return [];
   }
 
   async getCodeActions(
@@ -229,6 +289,17 @@ export class ServerLanguageService<
       return null;
     }
     return this._service.getOutline(filePath, buffer);
+  }
+
+  async getCodeLens(fileVersion: FileVersion): Promise<?Array<CodeLensData>> {
+    return null;
+  }
+
+  async resolveCodeLens(
+    filePath: NuclideUri,
+    codeLens: CodeLensData,
+  ): Promise<?CodeLensData> {
+    return null;
   }
 
   async typeHint(
@@ -304,16 +375,16 @@ export class ServerLanguageService<
     );
   }
 
-  async getEvaluationExpression(
+  async signatureHelp(
     fileVersion: FileVersion,
     position: atom$Point,
-  ): Promise<?NuclideEvaluationExpression> {
+  ): Promise<?SignatureHelp> {
     const filePath = fileVersion.filePath;
     const buffer = await getBufferAtVersion(fileVersion);
     if (buffer == null) {
       return null;
     }
-    return this._service.getEvaluationExpression(filePath, buffer, position);
+    return this._service.signatureHelp(filePath, buffer, position);
   }
 
   supportsSymbolSearch(directories: Array<NuclideUri>): Promise<boolean> {
@@ -338,6 +409,70 @@ export class ServerLanguageService<
     return this._service.isFileInProject(fileUri);
   }
 
+  async getExpandedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+  ): Promise<?atom$Range> {
+    const filePath = fileVersion.filePath;
+    const buffer = await getBufferAtVersion(fileVersion);
+    if (buffer == null) {
+      return null;
+    }
+
+    return this._service.getExpandedSelectionRange(
+      filePath,
+      buffer,
+      currentSelection,
+    );
+  }
+
+  async getCollapsedSelectionRange(
+    fileVersion: FileVersion,
+    currentSelection: atom$Range,
+    originalCursorPosition: atom$Point,
+  ): Promise<?atom$Range> {
+    const filePath = fileVersion.filePath;
+    const buffer = await getBufferAtVersion(fileVersion);
+    if (buffer == null) {
+      return null;
+    }
+
+    return this._service.getCollapsedSelectionRange(
+      filePath,
+      buffer,
+      currentSelection,
+      originalCursorPosition,
+    );
+  }
+
+  observeStatus(fileVersion: FileVersion): ConnectableObservable<StatusData> {
+    return Observable.of({kind: 'null'}).publish();
+  }
+
+  onWillSave(fileVersion: FileVersion): ConnectableObservable<TextEdit> {
+    return Observable.empty().publish();
+  }
+
+  async clickStatus(
+    fileVersion: FileVersion,
+    id: string,
+    button: string,
+  ): Promise<void> {}
+
+  async sendLspRequest(
+    filePath: NuclideUri,
+    method: string,
+    params: mixed,
+  ): Promise<mixed> {}
+
+  async sendLspNotification(method: string, params: mixed): Promise<void> {}
+
+  observeLspNotifications(
+    notificationMethod: string,
+  ): ConnectableObservable<mixed> {
+    return Observable.empty().publish();
+  }
+
   dispose(): void {
     this._service.dispose();
   }
@@ -348,38 +483,36 @@ export class ServerLanguageService<
 
 export function ensureInvalidations(
   logger: log4js$Logger,
-  diagnostics: Observable<Array<FileDiagnosticMessages>>,
-): Observable<Array<FileDiagnosticMessages>> {
+  diagnostics: Observable<FileDiagnosticMap>,
+): Observable<FileDiagnosticMap> {
   const filesWithErrors = new Set();
-  const trackedDiagnostics: Observable<
-    Array<FileDiagnosticMessages>,
-  > = diagnostics.do((diagnosticArray: Array<FileDiagnosticMessages>) => {
-    for (const diagnostic of diagnosticArray) {
-      const filePath = diagnostic.filePath;
-      if (diagnostic.messages.length === 0) {
-        logger.debug(`Removing ${filePath} from files with errors`);
-        filesWithErrors.delete(filePath);
-      } else {
-        logger.debug(`Adding ${filePath} to files with errors`);
-        filesWithErrors.add(filePath);
+  const trackedDiagnostics: Observable<FileDiagnosticMap> = diagnostics.do(
+    (diagnosticMap: FileDiagnosticMap) => {
+      for (const [filePath, messages] of diagnosticMap) {
+        if (messages.length === 0) {
+          logger.trace(`Removing ${filePath} from files with errors`);
+          filesWithErrors.delete(filePath);
+        } else {
+          logger.trace(`Adding ${filePath} to files with errors`);
+          filesWithErrors.add(filePath);
+        }
       }
-    }
-  });
+    },
+  );
 
-  const fileInvalidations: Observable<
-    Array<FileDiagnosticMessages>,
-  > = Observable.defer(() => {
-    logger.debug('Clearing errors after stream closed');
-    return Observable.of(
-      Array.from(filesWithErrors).map(file => {
-        logger.debug(`Clearing errors for ${file} after connection closed`);
-        return {
-          filePath: file,
-          messages: [],
-        };
-      }),
-    );
-  });
+  const fileInvalidations: Observable<FileDiagnosticMap> = Observable.defer(
+    () => {
+      logger.debug('Clearing errors after stream closed');
+      return Observable.of(
+        new Map(
+          Array.from(filesWithErrors).map(file => {
+            logger.debug(`Clearing errors for ${file} after connection closed`);
+            return [file, []];
+          }),
+        ),
+      );
+    },
+  );
 
   return trackedDiagnostics.concat(fileInvalidations);
 }

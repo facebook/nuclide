@@ -50,7 +50,7 @@ for the most common shortcuts provided by Nuclide.
 | `Cmd-T` | `Ctrl-T` | Use [OmniSearch](/docs/features/quick-open/#omnisearch) to open files, etc. |
 | `Cmd-\` | `Ctrl-\` | Toggle the [Project Explorer](/docs/editor/basics/#project-explorer). |
 | `Ctrl-0` | `Ctrl-0` | Toggle between the [Editing Area](/docs/editor/basics/#editing-area) and the [Project Explorer](/docs/editor/basics/#project-explorer)'s File Tree. |
-| `Cmd-K-<arrow>` | `Ctrl-K-<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
+| `Cmd-K,<arrow>` | `Ctrl-K,<arrow>` | Split the current file to the pane represented by `<arrow>`, where `<arrow>` is the down, up, left or right arrow. |
 | `Option-Shift-D` | `Alt-Shift-D` | Open the [Code Diagnostics](/docs/editor/basics/#status-bar__code-diagnostics) window. |
 
 ## Development
@@ -137,17 +137,17 @@ The [Nuclide Debugger](/docs/features/debugger/) attaches to a running process. 
 | Key (macOS) | Key (Linux) | Command | Description |
 |-----------|-------------|---------|-------------|
 | `Option-Cmd-I` | `Alt-Ctrl-I` | `window:toggle-dev-tools` | Toggle the developer tools UI. |
-| `Shift-Cmd-A` | `Shift-Ctrl-A` | `nuclide-debugger:show-attach-dialog` | Shows the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
-| `Cmd-F8` | `Ctrl-F8` | `nuclide-debugger:show-launch-dialog` | Shows the process launch UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Shift-Cmd-A` | `Shift-Ctrl-A` | `debugger:show-attach-dialog` | Shows the process attachment UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
+| `Cmd-F8` | `Ctrl-F8` | `debugger:show-launch-dialog` | Shows the process launch UI where you will choose the process on which you would like to debug (e.g., a Node process, etc.) |
 | `Cmd-Alt-J` | `Ctrl-Shift-J` | `nuclide-output:toggle` | Toggle the [Console](/docs/features/debugger/#basics__evaluation) pane. |
-| `F8` | `F8` | `nuclide-debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping through code, this will enable debugging to continue to the next breakpoint or end of the process. |
-| `Shift-F8` | `Shift-F8` | `nuclide-debugger:run-to-location` | After breaking at a certain position or breakpoint, it will continue to cursor location. |
-| `F9` | `F9` | `nuclide-debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint and vice-versa. |
-| `F10` | `F10` | `nuclide-debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
-| `F11` | `F11` | `nuclide-debugger:step-into` | Step into a piece of code. For example, if you are stopped at a method call, this will go into the first line of that method. |
-| `Shift-F11` | `Shift-F11` | `nuclide-debugger:step-out` | If you have stepped into a piece of code, this will step out to the point on which you entered that piece of code. For example, if you stepped into a method, this will step out back to the method call itself. |
-| `Shift-F5` | `Shift-F5` | `nuclide-debugger:stop-debugging` | Detach debugger. |
-| `Cmd-Shift-F8` | `Ctrl-Shift-F8` | `nuclide-debugger:restart-debugging` | Restart the current debugging session with the same configuration settings. |
+| `F8` | `F8` | `debugger:continue-debugging` | After stopping at a breakpoint, and possibly stepping through code, this will enable debugging to continue to the next breakpoint or end of the process. |
+| `Shift-F8` | `Shift-F8` | `debugger:run-to-location` | After breaking at a certain position or breakpoint, it will continue to cursor location. |
+| `F9` | `F9` | `debugger:toggle-breakpoint` | If a breakpoint is set, this will unset that breakpoint and vice-versa. |
+| `F10` | `F10` | `debugger:step-over` | Step over a piece of code. For example, if you are stopped at a method call, this will execute that method without stepping through it line-by-line. |
+| `F11` | `F11` | `debugger:step-into` | Step into a piece of code. For example, if you are stopped at a method call, this will go into the first line of that method. |
+| `Shift-F11` | `Shift-F11` | `debugger:step-out` | If you have stepped into a piece of code, this will step out to the point on which you entered that piece of code. For example, if you stepped into a method, this will step out back to the method call itself. |
+| `Shift-F5` | `Shift-F5` | `debugger:stop-debugging` | Detach debugger. |
+| `Cmd-Shift-F8` | `Ctrl-Shift-F8` | `debugger:restart-debugging` | Restart the current debugging session with the same configuration settings. |
 
 ## Editor Panes
 
@@ -189,7 +189,7 @@ Hyperclick Trigger keys are configurable.
 
 1. Open the [Nuclide Settings](/docs/editor/basics/#preferences-pane) tab either by pressing `Cmd+,` (`Ctrl-,` on Linux) or by going to `Package | Settings View | Open`.
 2. Select **Packages** from the list at the left, and search for `nuclide`.
-3. Click on the **Settings** button for the `nuclide` package.  
+3. Click on the **Settings** button for the `nuclide` package.
 
 The Hyperclick Trigger key settings are right at the top and set to the defaults.  You can change them by clicking on the selection bar and choosing from the provided list.
 

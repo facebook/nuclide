@@ -1,13 +1,11 @@
 {
   "name": "nuclide-context-view",
   "description": "UI for Context View sidebar",
-  "repository": "https://github.com/facebook/nuclide",
+  "author": "NEEDS OWNER",
   "main": "./lib/main.js",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "version": "0.0.0",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "deserializers": {
     "nuclide.ContextViewPanelState": "deserializeContextViewPanelState"

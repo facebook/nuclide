@@ -1,0 +1,191 @@
+"use strict";
+
+module.exports = _client => {
+  const remoteModule = {};
+
+  remoteModule.intersectionFunction = function (arg0) {
+    return _client.callRemoteFunction("IntersectionTypes/intersectionFunction", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "baz",
+      type: {
+        kind: "named",
+        name: "Baz"
+      }
+    }]));
+  };
+
+  return remoteModule;
+};
+
+Object.defineProperty(module.exports, "defs", {
+  value: {
+    Object: {
+      kind: "alias",
+      name: "Object",
+      location: {
+        type: "builtin"
+      }
+    },
+    Date: {
+      kind: "alias",
+      name: "Date",
+      location: {
+        type: "builtin"
+      }
+    },
+    RegExp: {
+      kind: "alias",
+      name: "RegExp",
+      location: {
+        type: "builtin"
+      }
+    },
+    Buffer: {
+      kind: "alias",
+      name: "Buffer",
+      location: {
+        type: "builtin"
+      }
+    },
+    "fs.Stats": {
+      kind: "alias",
+      name: "fs.Stats",
+      location: {
+        type: "builtin"
+      }
+    },
+    Foo: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "IntersectionTypes.def",
+        line: 1
+      },
+      name: "Foo",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "x",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }]
+      }
+    },
+    Bar: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "IntersectionTypes.def",
+        line: 5
+      },
+      name: "Bar",
+      definition: {
+        kind: "intersection",
+        types: [{
+          kind: "named",
+          name: "Foo"
+        }, {
+          kind: "object",
+          fields: [{
+            name: "y",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }],
+        flattened: {
+          kind: "object",
+          fields: [{
+            name: "x",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "y",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }
+      }
+    },
+    Baz: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "IntersectionTypes.def",
+        line: 9
+      },
+      name: "Baz",
+      definition: {
+        kind: "intersection",
+        types: [{
+          kind: "named",
+          name: "Bar"
+        }, {
+          kind: "object",
+          fields: [{
+            name: "z",
+            type: {
+              kind: "boolean"
+            },
+            optional: false
+          }]
+        }],
+        flattened: {
+          kind: "object",
+          fields: [{
+            name: "x",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "y",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }, {
+            name: "z",
+            type: {
+              kind: "boolean"
+            },
+            optional: false
+          }]
+        }
+      }
+    },
+    intersectionFunction: {
+      kind: "function",
+      name: "intersectionFunction",
+      location: {
+        type: "source",
+        fileName: "IntersectionTypes.def",
+        line: 13
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "IntersectionTypes.def",
+          line: 13
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "baz",
+          type: {
+            kind: "named",
+            name: "Baz"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    }
+  }
+});

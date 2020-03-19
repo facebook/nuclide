@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse-pydev version="1.0"?><pydev_project>
+<pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
+<path>/${PROJECT_DIR_NAME}</path>
+<path>/${PROJECT_DIR_NAME}/build_tools</path>
+<path>/${PROJECT_DIR_NAME}/jython_test_deps/ant.jar</path>
+<path>/${PROJECT_DIR_NAME}/jython_test_deps/junit.jar</path>
+</pydev_pathproperty>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 3.0</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_ADDITIONAL_GRAMMAR_VALIDATION">2.6, 2.7, 3.6</pydev_property>
+</pydev_project>

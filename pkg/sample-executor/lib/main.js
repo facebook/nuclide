@@ -9,17 +9,17 @@
  * @format
  */
 
-import type {RegisterExecutorFunction} from '../../nuclide-console/lib/types';
+import type {ConsoleMessage, RegisterExecutorFunction} from 'atom-ide-ui';
 
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {Subject} from 'rxjs';
 
-let disposables: ?CompositeDisposable = null;
+let disposables: ?UniversalDisposable = null;
 
 export function activate(state: ?Object): void {
   invariant(disposables == null);
-  disposables = new CompositeDisposable();
+  disposables = new UniversalDisposable();
 }
 
 export function deactivate(): void {
@@ -32,18 +32,16 @@ export function consumeRegisterExecutor(
   registerExecutor: RegisterExecutorFunction,
 ): void {
   invariant(disposables != null);
-  const messages: Subject<{result?: Object}> = new Subject();
+  const messages: Subject<ConsoleMessage> = new Subject();
   disposables.add(
     registerExecutor({
       id: 'echo',
       name: 'Echo',
+      scopeName: () => 'text.plain',
       send(code: string): void {
         messages.next({
           level: 'log',
-          data: {
-            value: code,
-            type: 'text',
-          },
+          text: code,
         });
       },
       output: messages.asObservable(),

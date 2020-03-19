@@ -13,18 +13,20 @@
 /* global localStorage */
 
 import type {HyperclickSuggestion} from './types';
-import type Hyperclick from './Hyperclick';
 
-import {CompositeDisposable, Disposable, Point} from 'atom';
+import {Point} from 'atom';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {isPositionInRange} from 'nuclide-commons/range';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import showTriggerConflictWarning from './showTriggerConflictWarning';
 import invariant from 'assert';
+import {Subject, Observable} from 'rxjs';
 
 import {getLogger} from 'log4js';
 
 const WARN_ABOUT_TRIGGER_CONFLICT_KEY = 'hyperclick.warnAboutTriggerConflict';
+const LOADING_DELAY = 250;
 
 /**
  * Construct this object to enable Hyperclick in a text editor.
@@ -33,49 +35,49 @@ const WARN_ABOUT_TRIGGER_CONFLICT_KEY = 'hyperclick.warnAboutTriggerConflict';
 export default class HyperclickForTextEditor {
   _textEditor: atom$TextEditor;
   _textEditorView: atom$TextEditorElement;
-  _hyperclick: Hyperclick;
-  _lastMouseEvent: ?MouseEvent;
-  _lastPosition: ?atom$Point;
-  _lastSuggestionAtMousePromise: ?Promise<?HyperclickSuggestion>;
-  _lastSuggestionAtMouse: ?HyperclickSuggestion;
-  _navigationMarkers: ?Array<atom$Marker>;
-  _lastWordRange: ?atom$Range;
-  _onMouseMove: (event: Event) => void;
-  _onMouseDown: (event: Event) => void;
-  _onKeyDown: (event: Event) => void;
-  _onKeyUp: (event: Event) => void;
-  _subscriptions: atom$CompositeDisposable;
-  _isDestroyed: boolean;
-  _isLoading: boolean;
+  _getSuggestion: (
+    textEditor: TextEditor,
+    position: atom$Point,
+  ) => Promise<?HyperclickSuggestion>;
+  _showSuggestionList: (
+    textEditor: TextEditor,
+    suggestion: HyperclickSuggestion,
+  ) => void;
+  _lastMouseEvent: ?MouseEvent = null;
+  // Cache the most recent suggestion so we can avoid unnecessary fetching.
+  _lastSuggestionAtMouse: ?HyperclickSuggestion = null;
+  _navigationMarkers: ?Array<atom$Marker> = null;
+  _lastWordRange: ?atom$Range = null;
+  _subscriptions: UniversalDisposable = new UniversalDisposable();
+  _isDestroyed: boolean = false;
+  _loadingTimer: ?number;
   _triggerKeys: Set<'shiftKey' | 'ctrlKey' | 'altKey' | 'metaKey'>;
 
-  constructor(textEditor: atom$TextEditor, hyperclick: Hyperclick) {
+  // A central "event bus" for all fetch events.
+  // TODO: Rx-ify all incoming events to avoid using a subject.
+  _fetchStream: Subject<?MouseEvent> = new Subject();
+  // Stored for testing.
+  _suggestionStream: Observable<?HyperclickSuggestion>;
+
+  constructor(
+    textEditor: atom$TextEditor,
+    getSuggestion: (
+      textEditor: TextEditor,
+      position: atom$Point,
+    ) => Promise<?HyperclickSuggestion>,
+    showSuggestionList: (
+      textEditor: TextEditor,
+      suggestion: HyperclickSuggestion,
+    ) => void,
+  ) {
     this._textEditor = textEditor;
+    this._getSuggestion = getSuggestion;
+    this._showSuggestionList = showSuggestionList;
     this._textEditorView = atom.views.getView(textEditor);
-
-    this._hyperclick = hyperclick;
-
-    this._lastMouseEvent = null;
-    this._lastPosition = null;
-    // We store the original promise that we use to retrieve the last suggestion
-    // so callers can also await it to know when it's available.
-    this._lastSuggestionAtMousePromise = null;
-    // We store the last suggestion since we must await it immediately anyway.
-    this._lastSuggestionAtMouse = null;
-    this._navigationMarkers = null;
-
-    this._lastWordRange = null;
-    this._subscriptions = new CompositeDisposable();
-
-    this._onMouseMove = this._onMouseMove.bind(this);
-    this._onMouseDown = this._onMouseDown.bind(this);
     this._setupMouseListeners();
 
-    this._onKeyDown = this._onKeyDown.bind(this);
     this._textEditorView.addEventListener('keydown', this._onKeyDown);
-    this._onKeyUp = this._onKeyUp.bind(this);
     this._textEditorView.addEventListener('keyup', this._onKeyUp);
-    (this: any)._onContextMenu = this._onContextMenu.bind(this);
     this._textEditorView.addEventListener('contextmenu', this._onContextMenu);
 
     this._subscriptions.add(
@@ -84,8 +86,7 @@ export default class HyperclickForTextEditor {
       }),
     );
 
-    this._isDestroyed = false;
-    this._isLoading = false;
+    this._suggestionStream = this._observeSuggestions().share();
 
     this._subscriptions.add(
       featureConfig.observe(
@@ -100,29 +101,23 @@ export default class HyperclickForTextEditor {
           this._triggerKeys = (new Set(newValue.split(',')): Set<any>);
         },
       ),
+      this._suggestionStream.subscribe(suggestion =>
+        this._updateSuggestion(suggestion),
+      ),
     );
   }
 
   _setupMouseListeners(): void {
-    const getLinesDomNode = (): ?HTMLElement => {
-      const {component} = this._textEditorView;
-      invariant(component);
-      if (component.refs != null) {
-        return component.refs.lineTiles;
-      } else {
-        return component.linesComponent.getDomNode();
-      }
-    };
     const addMouseListeners = () => {
       const {component} = this._textEditorView;
       invariant(component);
-      const linesDomNode = getLinesDomNode();
+      const linesDomNode = component.refs.lineTiles;
       if (linesDomNode == null) {
         return;
       }
       linesDomNode.addEventListener('mousedown', this._onMouseDown);
       linesDomNode.addEventListener('mousemove', this._onMouseMove);
-      const removalDisposable = new Disposable(() => {
+      const removalDisposable = new UniversalDisposable(() => {
         linesDomNode.removeEventListener('mousedown', this._onMouseDown);
         linesDomNode.removeEventListener('mousemove', this._onMouseMove);
       });
@@ -145,31 +140,24 @@ export default class HyperclickForTextEditor {
 
   _confirmSuggestion(suggestion: HyperclickSuggestion): void {
     if (Array.isArray(suggestion.callback) && suggestion.callback.length > 0) {
-      this._hyperclick.showSuggestionList(this._textEditor, suggestion);
+      this._showSuggestionList(this._textEditor, suggestion);
     } else {
       invariant(typeof suggestion.callback === 'function');
       suggestion.callback();
     }
   }
 
-  _onContextMenu(event: Event): void {
-    const mouseEvent: MouseEvent = (event: any);
+  _onContextMenu = (mouseEvent: MouseEvent): void => {
     // If the key trigger happens to cause the context menu to show up, then
     // cancel it. By this point, it's too late to know if you're at a suggestion
     // position to be more fine grained. So if your trigger keys are "ctrl+cmd",
     // then you can't use that combination to bring up the context menu.
     if (this._isHyperclickEvent(mouseEvent)) {
-      event.stopPropagation();
+      mouseEvent.stopPropagation();
     }
-  }
+  };
 
-  _onMouseMove(event: Event): void {
-    const mouseEvent: MouseEvent = (event: any);
-    if (this._isLoading) {
-      // Show the loading cursor.
-      this._textEditorView.classList.add('hyperclick-loading');
-    }
-
+  _onMouseMove = (mouseEvent: MouseEvent): void => {
     // We save the last `MouseEvent` so the user can trigger Hyperclick by
     // pressing the key without moving the mouse again. We only save the
     // relevant properties to prevent retaining a reference to the event.
@@ -178,42 +166,20 @@ export default class HyperclickForTextEditor {
       clientY: mouseEvent.clientY,
     }: any);
 
-    // Don't fetch suggestions if the mouse is still in the same 'word', where
-    // 'word' is defined by the wordRegExp at the current position.
-    //
-    // If the last suggestion had multiple ranges, we have no choice but to
-    // fetch suggestions because the new word might be between those ranges.
-    // This should be ok because it will reuse that last suggestion until the
-    // mouse moves off of it.
-    const lastSuggestionIsNotMultiRange =
-      !this._lastSuggestionAtMouse ||
-      !Array.isArray(this._lastSuggestionAtMouse.range);
-    if (this._isMouseAtLastWordRange() && lastSuggestionIsNotMultiRange) {
-      return;
-    }
-    const match = wordAtPosition(
-      this._textEditor,
-      this._getMousePositionAsBufferPosition(),
-    );
-    this._lastWordRange = match != null ? match.range : null;
-
     if (this._isHyperclickEvent(mouseEvent)) {
-      // Clear the suggestion if the mouse moved out of the range.
-      if (!this._isMouseAtLastSuggestion()) {
-        this._clearSuggestion();
-      }
-      this._setSuggestionForLastMouseEvent();
+      this._fetchStream.next(mouseEvent);
     } else {
       this._clearSuggestion();
     }
-  }
+  };
 
-  _onMouseDown(event: Event): void {
-    const mouseEvent: MouseEvent = (event: any);
-    const isHyperclickEvent = this._isHyperclickEvent(mouseEvent);
+  _onMouseDown = (mouseEvent: MouseEvent): void => {
+    if (!this._isHyperclickEvent(mouseEvent)) {
+      return;
+    }
 
     // If hyperclick and multicursor are using the same trigger, prevent multicursor.
-    if (isHyperclickEvent && isMulticursorEvent(mouseEvent)) {
+    if (isMulticursorEvent(mouseEvent)) {
       mouseEvent.stopPropagation();
       if (localStorage.getItem(WARN_ABOUT_TRIGGER_CONFLICT_KEY) !== 'false') {
         localStorage.setItem(WARN_ABOUT_TRIGGER_CONFLICT_KEY, 'false');
@@ -221,112 +187,145 @@ export default class HyperclickForTextEditor {
       }
     }
 
-    if (!isHyperclickEvent || !this._isMouseAtLastSuggestion()) {
+    if (this._lastMouseEvent == null) {
+      return;
+    }
+    const lastPosition = this._getMousePositionAsBufferPosition(
+      this._lastMouseEvent,
+    );
+    if (lastPosition == null || !this._isInLastSuggestion(lastPosition)) {
       return;
     }
 
     if (this._lastSuggestionAtMouse) {
       const lastSuggestionAtMouse = this._lastSuggestionAtMouse;
       // Move the cursor to the click location to force a navigation-stack push.
-      const newCursorPosition = this._getMousePositionAsBufferPosition();
-      this._textEditor.setCursorBufferPosition(newCursorPosition);
+      this._textEditor.setCursorBufferPosition(lastPosition);
 
       this._confirmSuggestion(lastSuggestionAtMouse);
       // Prevent the <meta-click> event from adding another cursor.
-      event.stopPropagation();
+      mouseEvent.stopPropagation();
     }
 
     this._clearSuggestion();
-  }
+  };
 
-  _onKeyDown(event: Event): void {
-    const mouseEvent: MouseEvent = (event: any);
+  _onKeyDown = (event: KeyboardEvent): void => {
     // Show the suggestion at the last known mouse position.
-    if (this._isHyperclickEvent(mouseEvent)) {
-      this._setSuggestionForLastMouseEvent();
+    if (this._isHyperclickEvent(event) && this._lastMouseEvent != null) {
+      this._fetchStream.next(this._lastMouseEvent);
     }
-  }
+  };
 
-  _onKeyUp(event: Event): void {
-    const mouseEvent: MouseEvent = (event: any);
-    if (!this._isHyperclickEvent(mouseEvent)) {
+  _onKeyUp = (event: KeyboardEvent): void => {
+    if (!this._isHyperclickEvent(event)) {
       this._clearSuggestion();
     }
-  }
+  };
 
   /**
    * Returns a `Promise` that's resolved when the latest suggestion's available.
+   * (Exposed for testing.)
    */
   getSuggestionAtMouse(): Promise<?HyperclickSuggestion> {
-    return this._lastSuggestionAtMousePromise || Promise.resolve(null);
+    return this._suggestionStream.take(1).toPromise();
   }
 
-  async _setSuggestionForLastMouseEvent(): Promise<void> {
-    if (!this._lastMouseEvent) {
-      return;
-    }
+  _observeSuggestions(): Observable<?HyperclickSuggestion> {
+    return this._fetchStream
+      .map(mouseEvent => {
+        if (mouseEvent == null) {
+          return null;
+        }
+        return this._getMousePositionAsBufferPosition(mouseEvent);
+      })
+      .distinctUntilChanged((x, y) => {
+        if (x == null || y == null) {
+          return (x == null) === (y == null);
+        }
+        return x.compare(y) === 0;
+      })
+      .filter(position => {
+        if (position == null) {
+          return true;
+        }
 
-    const position = this._getMousePositionAsBufferPosition();
+        // Don't fetch suggestions if the mouse is still in the same 'word', where
+        // 'word' is defined by the wordRegExp at the current position.
+        //
+        // If the last suggestion had multiple ranges, we have no choice but to
+        // fetch suggestions because the new word might be between those ranges.
+        // This should be ok because it will reuse that last suggestion until the
+        // mouse moves off of it.
+        if (
+          (this._lastSuggestionAtMouse == null ||
+            !Array.isArray(this._lastSuggestionAtMouse.range)) &&
+          this._isInLastWordRange(position)
+        ) {
+          return false;
+        }
 
-    if (this._lastSuggestionAtMouse != null) {
-      const {range} = this._lastSuggestionAtMouse;
-      invariant(range, 'Hyperclick result must have a valid Range');
-      if (isPositionInRange(position, range)) {
-        return;
-      }
-    }
+        // Don't refetch if we're already inside the previously emitted suggestion.
+        if (this._isInLastSuggestion(position)) {
+          return false;
+        }
 
-    // if we don't have any prior hyperclick position data, or we don't
-    // have any prior suggestion data, or the cursor has moved since the
-    // last suggestion, then refetch hyperclick suggestions. Otherwise,
-    // we might be able to reuse it below.
-    if (
-      !this._lastPosition ||
-      !this._lastSuggestionAtMouse ||
-      position.compare(this._lastPosition) !== 0
-    ) {
-      this._isLoading = true;
-      this._lastPosition = position;
+        return true;
+      })
+      .do(position => {
+        if (position == null) {
+          this._lastWordRange = null;
+        } else {
+          const match = wordAtPosition(this._textEditor, position);
+          this._lastWordRange = match != null ? match.range : null;
+        }
+      })
+      .switchMap(position => {
+        if (position == null) {
+          return Observable.of(null);
+        }
 
-      try {
-        this._lastSuggestionAtMousePromise = this._hyperclick.getSuggestion(
-          this._textEditor,
-          position,
+        return Observable.using(
+          () => this._showLoading(),
+          () =>
+            Observable.defer(() =>
+              this._getSuggestion(this._textEditor, position),
+            )
+              .startWith(null) // Clear the previous suggestion immediately.
+              .catch(e => {
+                getLogger('hyperclick').error(
+                  'Error getting Hyperclick suggestion:',
+                  e,
+                );
+                return Observable.of(null);
+              }),
         );
-        this._lastSuggestionAtMouse = await this._lastSuggestionAtMousePromise;
-      } catch (e) {
-        getLogger('hyperclick').error(
-          'Error getting Hyperclick suggestion:',
-          e,
-        );
-      } finally {
-        this._doneLoading();
-      }
-    }
+      })
+      .distinctUntilChanged();
+  }
 
-    // it's possible that the text editor buffer (and therefore this hyperclick
-    // provider for the editor) has been closed by the user since we
-    // asynchronously queried for suggestions.
-    if (this._isDestroyed) {
-      return;
-    }
-
-    if (this._lastSuggestionAtMouse && this._isMouseAtLastSuggestion()) {
+  _updateSuggestion(suggestion: ?HyperclickSuggestion): void {
+    this._lastSuggestionAtMouse = suggestion;
+    if (suggestion != null) {
       // Add the hyperclick markers if there's a new suggestion and it's under the mouse.
-      this._updateNavigationMarkers(this._lastSuggestionAtMouse.range);
+      this._updateNavigationMarkers(suggestion.range);
     } else {
       // Remove all the markers if we've finished loading and there's no suggestion.
       this._updateNavigationMarkers(null);
     }
   }
 
-  _getMousePositionAsBufferPosition(): atom$Point {
+  _getMousePositionAsBufferPosition(mouseEvent: MouseEvent): ?atom$Point {
     const {component} = this._textEditorView;
     invariant(component);
-    invariant(this._lastMouseEvent);
-    const screenPosition = component.screenPositionForMouseEvent(
-      this._lastMouseEvent,
+    const screenPosition = component.screenPositionForMouseEvent(mouseEvent);
+    const screenLine = this._textEditor.lineTextForScreenRow(
+      screenPosition.row,
     );
+    if (screenPosition.column >= screenLine.length) {
+      // We shouldn't try to fetch suggestions for trailing whitespace.
+      return null;
+    }
     try {
       return this._textEditor.bufferPositionForScreenPosition(screenPosition);
     } catch (error) {
@@ -342,35 +341,28 @@ export default class HyperclickForTextEditor {
     }
   }
 
-  _isMouseAtLastSuggestion(): boolean {
+  _isInLastSuggestion(position: atom$Point): boolean {
     if (!this._lastSuggestionAtMouse) {
       return false;
     }
     const {range} = this._lastSuggestionAtMouse;
-    invariant(range, 'Hyperclick result must have a valid Range');
-    return isPositionInRange(this._getMousePositionAsBufferPosition(), range);
+    return isPositionInRange(position, range);
   }
 
-  _isMouseAtLastWordRange(): boolean {
+  _isInLastWordRange(position: atom$Point): boolean {
     const lastWordRange = this._lastWordRange;
     if (lastWordRange == null) {
       return false;
     }
-    return isPositionInRange(
-      this._getMousePositionAsBufferPosition(),
-      lastWordRange,
-    );
+    return isPositionInRange(position, lastWordRange);
   }
 
   _clearSuggestion(): void {
-    this._doneLoading();
-    this._lastSuggestionAtMousePromise = null;
-    this._lastSuggestionAtMouse = null;
-    this._updateNavigationMarkers(null);
+    this._fetchStream.next(null);
   }
 
   async _confirmSuggestionAtCursor(): Promise<void> {
-    const suggestion = await this._hyperclick.getSuggestion(
+    const suggestion = await this._getSuggestion(
       this._textEditor,
       this._textEditor.getCursorBufferPosition(),
     );
@@ -411,7 +403,7 @@ export default class HyperclickForTextEditor {
   /**
    * Returns whether an event should be handled by hyperclick or not.
    */
-  _isHyperclickEvent(event: SyntheticKeyboardEvent | MouseEvent): boolean {
+  _isHyperclickEvent(event: KeyboardEvent | MouseEvent): boolean {
     return (
       event.shiftKey === this._triggerKeys.has('shiftKey') &&
       event.ctrlKey === this._triggerKeys.has('ctrlKey') &&
@@ -420,9 +412,19 @@ export default class HyperclickForTextEditor {
     );
   }
 
-  _doneLoading(): void {
-    this._isLoading = false;
-    this._textEditorView.classList.remove('hyperclick-loading');
+  // A subscription that encapsulates the cursor loading spinner.
+  // There should only be one subscription active at a given time!
+  _showLoading(): rxjs$Subscription {
+    return Observable.timer(LOADING_DELAY)
+      .switchMap(() =>
+        Observable.create(() => {
+          this._textEditorView.classList.add('hyperclick-loading');
+          return () => {
+            this._textEditorView.classList.remove('hyperclick-loading');
+          };
+        }),
+      )
+      .subscribe();
   }
 
   dispose() {

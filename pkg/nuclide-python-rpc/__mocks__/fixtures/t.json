@@ -1,0 +1,132 @@
+[
+  {
+    "kind": "statement",
+    "name": "CONST",
+    "start": {
+      "line": 10,
+      "column": 0
+    },
+    "end": {
+      "line": 10,
+      "column": 10
+    }
+  },
+  {
+    "kind": "function",
+    "name": "check_output",
+    "start": {
+      "line": 13,
+      "column": 0
+    },
+    "end": {
+      "line": 17,
+      "column": 0
+    },
+    "children": [],
+    "params": ["*popenargs", "**kwargs"]
+  },
+  {
+    "kind": "class",
+    "name": "MyClass",
+    "start": {
+      "line": 17,
+      "column": 0
+    },
+    "end": {
+      "line": 22,
+      "column": 0
+    },
+    "children": [
+      {
+        "kind": "function",
+        "name": "__init",
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "end": {
+          "line": 22,
+          "column": 0
+        },
+        "children": [],
+        "params": ["self"]
+      }
+    ],
+    "params": []
+  },
+  {
+    "kind": "function",
+    "name": "load_package_configs",
+    "start": {
+      "line": 22,
+      "column": 0
+    },
+    "end": {
+      "line": 40,
+      "column": 0
+    },
+    "children": [
+      {
+        "kind": "statement",
+        "name": "package_map",
+        "start": {
+          "line": 23,
+          "column": 4
+        },
+        "end": {
+          "line": 23,
+          "column": 20
+        }
+      },
+      {
+        "kind": "statement",
+        "name": "package_json",
+        "start": {
+          "line": 30,
+          "column": 12
+        },
+        "end": {
+          "line": 30,
+          "column": 61
+        }
+      },
+      {
+        "kind": "statement",
+        "name": "config",
+        "start": {
+          "line": 31,
+          "column": 12
+        },
+        "end": {
+          "line": 31,
+          "column": 60
+        }
+      },
+      {
+        "kind": "statement",
+        "name": "package_name",
+        "start": {
+          "line": 34,
+          "column": 16
+        },
+        "end": {
+          "line": 34,
+          "column": 45
+        }
+      }
+    ],
+    "params": []
+  },
+  {
+    "kind": "statement",
+    "name": "var",
+    "start": {
+      "line": 43,
+      "column": 0
+    },
+    "end": {
+      "line": 43,
+      "column": 8
+    }
+  }
+]

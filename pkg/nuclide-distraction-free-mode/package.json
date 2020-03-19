@@ -1,10 +1,9 @@
 {
   "name": "nuclide-distraction-free-mode",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Hide the cruft and focus on your code",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -32,8 +31,7 @@
         "default": false
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide-distraction-free-mode": {

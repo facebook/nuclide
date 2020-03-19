@@ -1,0 +1,6 @@
+{
+  "workspaces": [
+    "yarn_workspaces/*",
+    "yarn_workspaces2/module"
+  ]
+}

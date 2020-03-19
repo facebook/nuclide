@@ -36,6 +36,12 @@ export type Location = {
   range: Range,
 };
 
+// Nuclide-only.
+export type LocationWithTitle = Location & {
+  // (Nuclide-only) A human readable name to use for display purposes.
+  title?: string,
+};
+
 export type Diagnostic = {
   // The range at which the message applies.
   range: Range,
@@ -50,7 +56,9 @@ export type Diagnostic = {
   // The diagnostic's message.
   message: string,
   // Any related locations.
-  relatedLocations?: RelatedLocation[],
+  relatedLocations?: Array<RelatedLocation>,
+  // FB extension: whether this diagnostic should be considered "stale".
+  stale?: boolean,
 };
 
 export type RelatedLocation = {
@@ -75,7 +83,7 @@ export type Command = {
   // The identifier of the actual command handler.
   command: string,
   // Arguments that the command handler should be invoked with.
-  arguments?: any[],
+  arguments?: Array<any>,
 };
 
 export type TextEdit = {
@@ -88,13 +96,13 @@ export type TextEdit = {
 
 export type WorkspaceEdit = {
   // Holds changes to existing resources.
-  changes?: {[uri: string]: TextEdit[]},
+  changes?: {[uri: string]: Array<TextEdit>},
 
   // An array of `TextDocumentEdit`s to express changes to n different text documents
   // where each text document edit addresses a specific version of a text document.
   // Whether a client supports versioned document edits is expressed via
   // `WorkspaceClientCapabilities.workspaceEdit.documentChanges`.
-  documentChanges?: TextDocumentEdit[],
+  documentChanges?: Array<TextDocumentEdit>,
 };
 
 export type TextDocumentIdentifier = {
@@ -126,6 +134,10 @@ export type TextDocumentPositionParams = {
   position: Position,
 };
 
+export type TextDocumentRegistrationOptions = {
+  documentSelector: ?DocumentSelector,
+};
+
 // General
 
 export const ErrorCodes = {
@@ -138,6 +150,7 @@ export const ErrorCodes = {
   serverErrorEnd: -32000,
   ServerNotInitialized: -32002,
   UnknownErrorCode: -32001,
+  // eslint-disable-next-line nuclide-internal/api-spelling
   RequestCancelled: -32800,
 };
 
@@ -274,6 +287,11 @@ export type TextDocumentClientCapabilities = {|
 |};
 
 export type WindowClientCapabilities = {|
+  //  Capabilities specific to the `window/showStatus` request.
+  status?: {|
+    //  Status requests supports dynamic registration.
+    dynamicRegistration?: boolean,
+  |},
   //  Capabilities specific to the `window/progress` notification.
   progress?: {|
     //  Progress notification supports dynamic registration.
@@ -304,7 +322,7 @@ export type InitializeResult = {
 
 export type InitializeError = {
   //  Indicates whether the client should retry to send the
-  //  initilize request after showing the message provided
+  //  initialize request after showing the message provided
   //  in the ResponseError.
   retry: boolean,
 };
@@ -325,13 +343,13 @@ export type CompletionOptions = {
   // The server provides support to resolve additional information for a completion item.
   resolveProvider?: boolean,
   // The characters that trigger completion automatically.
-  triggerCharacters?: string[],
+  triggerCharacters?: Array<string>,
 };
 
 // Signature help options.
 export type SignatureHelpOptions = {
   // The characters that trigger signature help automatically.
-  triggerCharacters?: string[],
+  triggerCharacters?: Array<string>,
 };
 
 // Code Lens options.
@@ -345,7 +363,7 @@ export type DocumentOnTypeFormattingOptions = {
   // A character on which formatting should be triggered, like `};`.
   firstTriggerCharacter: string,
   // More trigger characters.
-  moreTriggerCharacter?: string[],
+  moreTriggerCharacter?: Array<string>,
 };
 
 // Save options.
@@ -398,8 +416,17 @@ export type ServerCapabilities = {
   documentOnTypeFormattingProvider?: DocumentOnTypeFormattingOptions,
   // The server provides rename support.
   renameProvider?: boolean,
-  // The server provides type coverage support.
+  // nuclide-specific The server provides type coverage support.
   typeCoverageProvider?: boolean,
+  // nuclide-specific The server responds to rage requests
+  rageProvider?: boolean,
+};
+
+export type RageItem = {
+  // Title convention is [host:]/path/file[:meta] - if omitted, client picks
+  title?: string,
+  // Arbitrary text for the rage report
+  data: string,
 };
 
 // Document
@@ -408,7 +435,7 @@ export type PublishDiagnosticsParams = {
   // The URI for which diagnostic information is reported.
   uri: string,
   // An array of diagnostic information items.
-  diagnostics: Diagnostic[],
+  diagnostics: Array<Diagnostic>,
 };
 
 // Represents a collection of [completion items](#CompletionItem) to be presented in the editor.
@@ -416,13 +443,23 @@ export type CompletionList = {
   // This list it not complete. Further typing should result in recomputing this list.
   isIncomplete: boolean,
   // The completion items.
-  items: CompletionItem[],
+  items: Array<CompletionItem>,
 };
 
 // Defines whether the insert text in a completion item should be interpreted as plain text or a snippet.
 export const InsertTextFormat = {
   PlainText: 1,
   Snippet: 2,
+};
+
+export type MarkupKind = 'plaintext' | 'markdown';
+
+export type MarkupContent = {
+  // The type of the Markup
+  kind: MarkupKind,
+
+  // The content itself
+  value: string,
 };
 
 export type CompletionItem = {
@@ -435,21 +472,9 @@ export type CompletionItem = {
   // A human-readable string with additional information
   // about this item, like type or symbol information.
   detail?: string,
-  // (Nuclide-specific) A human-readable string that should be displayed along
-  // with the label. This is typically a subset of what's present in detail
-  // and/or documentation fields; those fields, however, are typically
-  // only shown when the user selects a label. If absent, then it won't be
-  // displayed alongside the label.
-  inlineDetail?: string,
-  // (Nuclide-specific) The type of the item, if applicable. The editor may
-  // chose to also display this along with the label. The type is typically
-  // a subset of what's present in detail and/or documentation fields; by
-  // putting the information here as well, the editor has more flexibility.
-  // If absent, then the type of the item won't be displayed.
-  itemType?: string,
   // A human-readable string that represents a doc-comment.
-  documentation?: string,
-  //  A string that shoud be used when comparing this item
+  documentation?: string | MarkupContent,
+  //  A string that should be used when comparing this item
   //  with other items. When `falsy` the label is used.
   sortText?: string,
   //  A string that should be used when filtering a set of
@@ -468,7 +493,7 @@ export type CompletionItem = {
   //  An optional array of additional text edits that are applied when
   //  selecting this completion. Edits must not overlap with the main edit
   //  nor with themselves.
-  additionalTextEdits?: TextEdit[],
+  additionalTextEdits?: Array<TextEdit>,
   //  An optional command that is executed *after* inserting this completion. *Note* that
   //  additional modifications to the current document should be described with the
   //  additionalTextEdits-property.
@@ -500,10 +525,25 @@ export const CompletionItemKind = {
   Reference: 18,
 };
 
+export type CompletionRegistrationOptions = TextDocumentRegistrationOptions & {
+  // Most tools trigger completion request automatically without explicitly requesting
+  // it using a keyboard shortcut (e.g. Ctrl+Space). Typically they do so when the user
+  // starts to type an identifier. For example if the user types `c` in a JavaScript file
+  // code complete will automatically pop up present `console` besides others as a
+  // completion item. Characters that make up identifiers don't need to be listed here.
+  //
+  // If code complete should automatically be trigger on characters not being valid inside
+  // an identifier (for example `.` in JavaScript) list them in `triggerCharacters`.
+  triggerCharacters?: Array<string>,
+  // The server provides support to resolve additional
+  // information for a completion item.
+  resolveProvider?: boolean,
+};
+
 // The result of a hover request.
 export type Hover = {
   // The hover's content
-  contents: MarkedString | MarkedString[],
+  contents: MarkedString | Array<MarkedString>,
   // An optional range is a range inside a text document
   // that is used to visualize a hover, e.g. by changing the background color.
   range?: Range,
@@ -512,7 +552,7 @@ export type Hover = {
 /**
  * The marked string is rendered:
  * - as markdown if it is represented as a string
- * - as code block of the given langauge if it is represented as a pair of a language and a value
+ * - as code block of the given language if it is represented as a pair of a language and a value
  *
  * The pair of a language and a value is an equivalent to markdown:
  * ```${language};
@@ -528,7 +568,7 @@ export type MarkedString = string | {language: string, value: string};
  */
 export type SignatureHelp = {
   // One or more signatures.
-  signatures: SignatureInformation[],
+  signatures: Array<SignatureInformation>,
   // The active signature.
   activeSignature?: number,
   // The active parameter of the active signature.
@@ -543,10 +583,10 @@ export type SignatureHelp = {
 export type SignatureInformation = {
   // The label of this signature. Will be shown in the UI.
   label: string,
-  //  The human-readable doc-comment of this signature. Will be shown in the UI but can be omitted.
-  documentation?: string,
+  // The human-readable doc-comment of this signature. Will be shown in the UI but can be omitted.
+  documentation?: string | MarkupContent,
   // The parameters of this signature.
-  parameters?: ParameterInformation[],
+  parameters?: Array<ParameterInformation>,
 };
 
 /**
@@ -557,7 +597,12 @@ export type ParameterInformation = {
   // The label of this parameter. Will be shown in the UI.
   label: string,
   // The human-readable doc-comment of this parameter. Will be shown in the UI but can be omitted.
-  documentation?: string,
+  documentation?: string | MarkupContent,
+};
+
+export type SignatureHelpRegistrationOptions = TextDocumentRegistrationOptions & {
+  // The characters that trigger signature help automatically.
+  triggerCharacters?: Array<string>,
 };
 
 export type ReferenceParams = TextDocumentPositionParams & {
@@ -583,7 +628,7 @@ export type DocumentHighlight = {
 };
 
 export const DocumentHighlightKind = {
-  // A textual occurrance.
+  // A textual occurrence.
   Text: 1,
   // Read-access of a symbol, like reading a variable.
   Read: 2,
@@ -630,6 +675,14 @@ export const SymbolKind = {
   Number: 16,
   Boolean: 17,
   Array: 18,
+  Object: 19,
+  Key: 20,
+  Null: 21,
+  EnumMember: 22,
+  Struct: 23,
+  Event: 24,
+  Operator: 25,
+  TypeParameter: 26,
 };
 
 // The parameters of a Workspace Symbol Request.
@@ -651,7 +704,7 @@ export type CodeActionParams = {
 // Contains additional diagnostic information about the context in which a code action is run.
 export type CodeActionContext = {
   // An array of diagnostics.
-  diagnostics: Diagnostic[],
+  diagnostics: Array<Diagnostic>,
 };
 
 export type CodeLensParams = {
@@ -676,6 +729,11 @@ export type CodeLens = {
   data?: any,
 };
 
+export type CodeLensRegistrationOptions = TextDocumentRegistrationOptions & {
+  // Code lens has a resolve provider as well.
+  resolveProvider?: boolean,
+};
+
 export type DocumentLinkParams = {
   // The document to provide document links for.
   textDocument: TextDocumentIdentifier,
@@ -683,7 +741,7 @@ export type DocumentLinkParams = {
 
 /**
  * A document link is a range in a text document that links to an internal or
-* external resource, like another
+ * external resource, like another
  * text document or a web site.
  */
 export type DocumentLink = {
@@ -691,6 +749,11 @@ export type DocumentLink = {
   range: Range,
   // The uri this link points to.
   target: string,
+};
+
+export type DocumentLinkRegistrationOptions = TextDocumentRegistrationOptions & {
+  // Document links have a resolve provider as well.
+  resolveProvider?: boolean,
 };
 
 export type DocumentFormattingParams = {
@@ -730,6 +793,13 @@ export type DocumentOnTypeFormattingParams = {
   options: FormattingOptions,
 };
 
+export type DocumentOnTypeFormattingRegistrationOptions = TextDocumentRegistrationOptions & {
+  // A character on which formatting should be triggered, like `}`.
+  firstTriggerCharacter: string,
+  // More trigger characters.
+  moreTriggerCharacter?: Array<string>,
+};
+
 export type RenameParams = {
   // The document to format.
   textDocument: TextDocumentIdentifier,
@@ -750,12 +820,17 @@ export type TypeCoverageParams = {
 
 export type TypeCoverageResult = {
   coveredPercent: number, // what percent of the file is covered?
-  uncoveredRanges: UncoveredRange[],
+  uncoveredRanges: Array<UncoveredRange>,
+  defaultMessage: string, // human-readable explanation, maybe with suggested fix
 };
 
 export type UncoveredRange = {
   range: Range,
-  message: string, // human-readable explanation, maybe with suggested fix
+  message?: string, // will use the default message if this isn't provided
+};
+
+export type ToggleTypeCoverageParams = {
+  toggle: boolean,
 };
 
 // Window
@@ -784,12 +859,28 @@ export type ShowMessageRequestParams = {
   // The actual message
   message: string,
   // The message action items to present.
-  actions?: MessageActionItem[],
+  actions?: Array<MessageActionItem>,
 };
 
 export type MessageActionItem = {
   // A short title like 'Retry', 'Open Log' etc.
   title: string,
+};
+
+// window/showStatus is a Nuclide-specific extension to LSP
+// for reporting whether the LSP server is ready to handle requests
+export type ShowStatusParams = {
+  // The message type, {@link MessageType}. Permits only Error, Warning, Info.
+  type: number,
+  // The message action items to present. Only allowed for Error.
+  actions?: Array<MessageActionItem>,
+  // The actual message. Mandatory for Error, Warning.
+  message?: string,
+  // An optional short message, hopefully <8chars, to appear prominently
+  shortMessage?: string,
+  // The client might display a progress bar "numerator/denominator" if both are
+  // present, or an indeterminate progress bar if only numerator is present.
+  progress?: {numerator: number, denominator?: number},
 };
 
 export type LogMessageParams = {
@@ -831,7 +922,24 @@ export type DidChangeTextDocumentParams = {
   // been applied.
   textDocument: VersionedTextDocumentIdentifier,
   // The actual content changes.
-  contentChanges: TextDocumentContentChangeEvent[],
+  contentChanges: Array<TextDocumentContentChangeEvent>,
+};
+
+export type WillSaveWaitUntilTextDocumentParams = {
+  // The document that will be saved.
+  textDocument: TextDocumentIdentifier,
+  // The 'TextDocumentSaveReason'.
+  reason: number,
+};
+
+export const TextDocumentSaveReason = {
+  // Manually triggered, e.g. by the user pressing save, by starting debugging,
+  // or by an API call.
+  Manual: 1,
+  // Automatic after a delay.
+  AfterDelay: 2,
+  // When the editor lost focus.
+  FocusOut: 3,
 };
 
 // An event describing a change to a text document. If range and rangeLength are omitted
@@ -845,6 +953,13 @@ export type TextDocumentContentChangeEvent = {
   text: string,
 };
 
+// Describe options to be used when registered for text document change events.
+export type TextDocumentChangeRegistrationOption = TextDocumentRegistrationOptions & {
+  // How documents are synced to the server. See TextDocumentSyncKind.Full
+  // and TextDocumentSyncKind.Incremental.
+  syncKind: number,
+};
+
 export type DidCloseTextDocumentParams = {
   // The document that was closed.
   textDocument: TextDocumentIdentifier,
@@ -853,11 +968,19 @@ export type DidCloseTextDocumentParams = {
 export type DidSaveTextDocumentParams = {
   // The document that was saved.
   textDocument: TextDocumentIdentifier,
+  // Optional the content when saved. Depends on the includeText value
+  // when the save notification was requested.
+  text: ?string,
+};
+
+export type TextDocumentSaveRegistrationOptions = TextDocumentRegistrationOptions & {
+  // The client is supposed to include the content on save.
+  includeText?: boolean,
 };
 
 export type DidChangeWatchedFilesParams = {
   // The actual file events.
-  changes: FileEvent[],
+  changes: Array<FileEvent>,
 };
 
 // The file event type.
@@ -878,11 +1001,43 @@ export type FileEvent = {
   type: number,
 };
 
+// Describe options to be used when registered for text document change events.
+export type DidChangeWatchedFilesRegistrationOptions = {
+  // The watchers to register.
+  watchers: FileSystemWatcher[],
+};
+
+export type FileSystemWatcher = {
+  // The glob pattern to watch
+  globPattern: string,
+  /**
+   * The kind of events of interest. If omitted it defaults
+   * to WatchKind.Create | WatchKind.Change | WatchKind.Delete
+   * which is 7.
+   */
+  kind?: number,
+};
+
+export const WatchKind = {
+  // Interested in create events
+  Create: 1,
+  // Interested in change events
+  Change: 2,
+  // Interested in delete events
+  Delete: 4,
+};
+
 export type ExecuteCommandParams = {
   // The identifier of the actual command handler.
   command: string,
   // Arguments that the command should be invoked with.
-  arguments?: any[],
+  arguments?: Array<any>,
+};
+
+// Execute command registration options.
+export type ExecuteCommandRegistrationOptions = {
+  // The commands to be executed on the server.
+  commands: Array<string>,
 };
 
 export type ApplyWorkspaceEditParams = {
@@ -898,7 +1053,38 @@ export type ApplyWorkspaceEditResponse = {
 export type TextDocumentEdit = {
   // The text document to change.
   textDocument: VersionedTextDocumentIdentifier,
-
   // The edits to be applied.
-  edits: TextEdit[],
+  edits: Array<TextEdit>,
 };
+
+export type Registration = {
+  id: string,
+  method: string,
+  registerOptions?: any,
+};
+
+export type RegistrationParams = {
+  registrations: Array<Registration>,
+};
+
+export type Unregistration = {
+  id: string,
+  method: string,
+};
+
+export type UnregistrationParams = {
+  // NOTE: This mispelling is intentional and is present in the official LSP
+  // spec. See https://github.com/Microsoft/language-server-protocol/issues/522
+  unregisterations: Array<Unregistration>,
+};
+
+export type DocumentFilter = {
+  // A language id, like `typescript`.
+  language?: string,
+  // A Uri [scheme](#Uri.scheme), like `file` or `untitled`.
+  scheme?: string,
+  // A glob pattern, like `*.{ts,js}`.
+  pattern?: string,
+};
+
+export type DocumentSelector = Array<DocumentFilter>;

@@ -45,6 +45,8 @@ type Action = {type: any};
 type Store<T: Action, U> = {
   dispatch(action: T): void,
   getState(): U,
+  subscribe(listener: () => void): () => void,
+  replaceReducer(reducer: () => mixed): void,
 };
 type Next<T: Action> = (action: T) => T;
 export type Epic<T: Action, U, E> = (
@@ -72,6 +74,7 @@ export function createEpicMiddleware<T: Action, U>(
 
   return (store: Store<T, U>) => (next: Next<T>) => {
     if (rootEpic != null) {
+      // eslint-disable-next-line nuclide-internal/unused-subscription
       rootEpic(actionsObs, store).subscribe(store.dispatch);
     }
     return (action: T) => {
@@ -83,7 +86,6 @@ export function createEpicMiddleware<T: Action, U>(
 }
 
 export class ActionsObservable<T: Action> extends Observable<T> {
-  source: Observable<any>;
   operator: any;
 
   constructor(actionsSubject: Observable<any>) {

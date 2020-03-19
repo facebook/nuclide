@@ -12,17 +12,17 @@
 import type {TextBuffer} from 'atom';
 
 import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   textBuffer: TextBuffer,
 };
 
-export default class Console extends React.Component {
-  props: Props;
+export default class Console extends React.Component<Props> {
   render() {
     return (
       <AtomTextEditor
+        correctContainerWidth={false}
         gutterHidden={true}
         path=".ansi"
         readOnly={true}

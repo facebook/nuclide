@@ -5,13 +5,19 @@ Utilities for end-users.
 from __future__ import absolute_import
 import __main__
 from collections import namedtuple
+import logging
+import traceback
 import re
 import os
 import sys
 
+from parso import split_lines
+
 from jedi import Interpreter
-from jedi.api.helpers import completion_parts
-from jedi.parser.user_context import UserContext
+from jedi.api.helpers import get_on_completion_name
+
+
+READLINE_DEBUG = False
 
 
 def setup_readline(namespace_module=__main__):
@@ -55,6 +61,13 @@ def setup_readline(namespace_module=__main__):
     bash).
 
     """
+    if READLINE_DEBUG:
+        logging.basicConfig(
+            filename='/tmp/jedi.log',
+            filemode='a',
+            level=logging.DEBUG
+        )
+
     class JediRL(object):
         def complete(self, text, state):
             """
@@ -70,12 +83,21 @@ def setup_readline(namespace_module=__main__):
                 sys.path.insert(0, os.getcwd())
                 # Calling python doesn't have a path, so add to sys.path.
                 try:
+                    logging.debug("Start REPL completion: " + repr(text))
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    path = UserContext(text, (1, len(text))).get_path_until_cursor()
-                    path, dot, like = completion_parts(path)
-                    before = text[:len(text) - len(like)]
+                    lines = split_lines(text)
+                    position = (len(lines), len(lines[-1]))
+                    name = get_on_completion_name(
+                        interpreter._get_module_node(),
+                        lines,
+                        position
+                    )
+                    before = text[:len(text) - len(name)]
                     completions = interpreter.completions()
+                except:
+                    logging.error("REPL Completion error:\n" + traceback.format_exc())
+                    raise
                 finally:
                     sys.path.pop(0)
 
@@ -88,7 +110,7 @@ def setup_readline(namespace_module=__main__):
     try:
         import readline
     except ImportError:
-        print("Module readline not available.")
+        print("Jedi: Module readline not available.")
     else:
         readline.set_completer(JediRL().complete)
         readline.parse_and_bind("tab: complete")

@@ -1,0 +1,4 @@
+class one {}
+class two extends three {}
+class four extends one {}
+class five extends six() {}

@@ -12,7 +12,7 @@
 export type ReturnType = 'promise' | 'observable' | 'void';
 
 /**
- * `Definitions` encodes all of the information in a service defintion file that is required to
+ * `Definitions` encodes all of the information in a service definition file that is required to
  * generate a remote proxy.
  */
 export type Definitions = {[name: string]: Definition};
@@ -40,7 +40,6 @@ export type InterfaceDefinition = {
   kind: 'interface',
   name: string,
   location: Location,
-  constructorArgs: ?Array<Parameter>,
   instanceMethods: {[name: string]: FunctionType},
   staticMethods: {[name: string]: FunctionType},
 };
@@ -186,3 +185,63 @@ export type Babel$Range = {
 export type Babel$Location = {
   line: number,
 };
+
+/*
+ * This type represents a Transformer function, which takes in a value, and either serializes
+ * or deserializes it. Transformer's are added to a registry and indexed by the name of
+ * the type they handle (eg: 'Date'). The second argument is the actual type object that represent
+ * the value. Parameterized types like Array, or Object can use this to recursively call other
+ * transformers.
+ */
+export type Transformer = (
+  value: any,
+  type: Type,
+  context: ObjectRegistryInterface,
+) => any;
+
+export type NamedTransformer = (
+  value: any,
+  context: ObjectRegistryInterface,
+) => any;
+
+export type PredefinedTransformer = {
+  typeName: string,
+  marshaller: NamedTransformer,
+  unmarshaller: NamedTransformer,
+};
+
+export type ConfigEntry = {
+  name: string,
+  definition: string,
+  implementation: string,
+  // When true, doesn't mangle in the service name into the method names for functions.
+  preserveFunctionNames?: boolean,
+};
+
+// All remotable objects have some set of named functions,
+// and they also have a dispose method.
+export type RemoteObject = {
+  [id: string]: Function,
+  dispose: () => void,
+};
+
+export interface ObjectRegistryInterface {
+  onRegisterLocal(callback: (number) => void): IDisposable;
+  onUnregisterLocal(callback: (number) => void): IDisposable;
+  onRegisterRemote(callback: (number) => void): IDisposable;
+  getService(serviceName: string): Object;
+  unmarshal(
+    id: number,
+    interfaceName?: string,
+    proxyClass?: Function,
+  ): RemoteObject;
+  getInterface(id: number): string;
+  disposeObject(remoteId: number): Promise<void>;
+  disposeSubscription(id: number): void;
+  marshal(interfaceName: string, object: Object): number;
+  addSubscription(id: number, subscription: rxjs$ISubscription): void;
+  removeSubscription(id: number): ?rxjs$ISubscription;
+  dispose(): Promise<void>;
+  disposeProxy(proxy: Object): ?number;
+  isRegistered(object: Object): boolean;
+}

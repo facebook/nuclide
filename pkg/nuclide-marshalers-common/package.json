@@ -1,12 +1,11 @@
 {
   "name": "nuclide-marshalers-common",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Shared marshalers for Nuclide",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

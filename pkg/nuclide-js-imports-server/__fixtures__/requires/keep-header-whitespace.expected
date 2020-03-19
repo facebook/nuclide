@@ -1,0 +1,12 @@
+/**
+ * @formout
+ */
+
+'use strict';
+
+jest
+  .enableAutomock()
+
+const Y = require('Y');
+
+const x = Y;

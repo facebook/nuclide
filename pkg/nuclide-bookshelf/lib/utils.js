@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -22,13 +22,13 @@ import {
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import Immutable from 'immutable';
+import * as Immutable from 'immutable';
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {repositoryForPath} from '../../nuclide-vcs-base';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 export function getEmptBookShelfState(): BookShelfState {
   return {
@@ -177,12 +177,10 @@ export function getShortHeadChangesFromStateStream(
   return states
     .pairwise()
     .flatMap(
-      (
-        [oldBookShelfState, newBookShelfState]: [
-          BookShelfState,
-          BookShelfState,
-        ],
-      ) => {
+      ([oldBookShelfState, newBookShelfState]: [
+        BookShelfState,
+        BookShelfState,
+      ]) => {
         const {
           repositoryPathToState: oldRepositoryPathToState,
         } = oldBookShelfState;

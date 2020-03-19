@@ -1,0 +1,11 @@
+/**
+ * ahoj
+ */
+
+'use strict';
+
+/**
+ * very fancy comment
+ */
+// less fancy comment
+type T = {};

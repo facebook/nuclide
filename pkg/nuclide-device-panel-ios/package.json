@@ -1,0 +1,17 @@
+{
+  "name": "nuclide-device-panel-ios",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Device panel support for iOS devices",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide.devices": {
+      "versions": {
+        "0.0.0": "consumeDevicePanelServiceApi"
+      }
+    }
+  }
+}

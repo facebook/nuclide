@@ -1,0 +1,3 @@
+function foo({one: {two, three: [four]}}) {
+  five(two, four);
+}

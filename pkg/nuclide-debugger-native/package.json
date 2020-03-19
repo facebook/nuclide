@@ -1,86 +1,14 @@
 {
   "name": "nuclide-debugger-native",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Nuclide lldb debugging client",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Debugging",
   "nuclide": {
-    "configMetadata": {
-      "pathComponents": [
-        "Debugger",
-        "LLDB"
-      ]
-    },
-    "config": {
-      "clientLogLevel": {
-        "title": "Client Log Level",
-        "type": "string",
-        "default": "INFO",
-        "description": "Specify that level of logging from lldb debugger client",
-        "enum": [
-          "ALL",
-          "TRACE",
-          "DEBUG",
-          "INFO",
-          "WARN",
-          "ERROR",
-          "FATAL",
-          "OFF"
-        ]
-      },
-      "serverLogLevel": {
-        "title": "Server Log Level",
-        "type": "string",
-        "default": "DEBUG",
-        "description": "Specify that level of logging from lldb debugger server",
-        "enum": [
-          "ALL",
-          "TRACE",
-          "DEBUG",
-          "INFO",
-          "WARN",
-          "ERROR",
-          "FATAL",
-          "OFF"
-        ]
-      },
-      "pythonBinaryPath": {
-        "title": "Python Path",
-        "type": "string",
-        "default": "",
-        "description": "Path to the python binary used to run the LLDB backend."
-      },
-      "lldbPythonPath": {
-        "title": "LLDB Python Module Path",
-        "type": "string",
-        "default": "",
-        "description": "Custom path to Python 'lldb' module. The directory should be called lldb and contain __init__.py and _lldb.so."
-      },
-      "buckConfigRootFile": {
-        "title": "Buck Build Root",
-        "type": "string",
-        "default": ".",
-        "description": "Path of the buck config root directory. The source file paths in debug symbol will be relative to this directory."
-      },
-      "debugPort": {
-        "title": "Debug Port",
-        "type": "string",
-        "default": "",
-        "description": "The port used by debugger UI connecting with backend"
-      }
-    },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "providedServices": {
-    "nuclide-debugger.provider": {
-      "description": "LLDB debugger provider.",
-      "versions": {
-        "0.0.0": "createDebuggerProvider"
-      }
-    },
-    "nuclide-debugger.native-debugger-service": {
+    "debugger.native-debugger-service": {
       "description": "LLDB debugger provider.",
       "versions": {
         "0.0.0": "createNativeDebuggerService"

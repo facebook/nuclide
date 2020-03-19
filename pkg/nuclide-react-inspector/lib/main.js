@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElem
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import Inspector, {WORKSPACE_VIEW_URI} from './ui/Inspector';
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
 let disposables: ?UniversalDisposable = null;

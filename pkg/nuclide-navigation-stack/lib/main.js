@@ -10,16 +10,23 @@
  */
 
 import {onDidRemoveProjectPath} from 'nuclide-commons-atom/projects';
-import {
-  getViewOfEditor,
-  isValidTextEditor,
-} from 'nuclide-commons-atom/text-editor';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import {NavigationStackController} from './NavigationStackController';
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observeNavigatingEditors} from 'nuclide-commons-atom/go-to-location';
 import createPackage from 'nuclide-commons-atom/createPackage';
-import {consumeStatusBar} from './StatusBar';
+
+export type NavigationStackService = {
+  navigateBackwards: () => Promise<void>,
+  navigateForwards: () => Promise<void>,
+  subscribe: (
+    ({
+      hasPrevious: boolean,
+      hasNext: boolean,
+    }) => void,
+  ) => UniversalDisposable,
+};
 
 const controller = new NavigationStackController();
 
@@ -30,25 +37,15 @@ class Activation {
     this._disposables = new UniversalDisposable();
 
     const subscribeEditor = (editor: atom$TextEditor) => {
-      const cursorSubscription = editor.onDidChangeCursorPosition(
-        (event: ChangeCursorPositionEvent) => {
-          controller.updatePosition(editor, event.newBufferPosition);
-        },
-      );
-      const scrollSubscription = getViewOfEditor(
+      this._disposables.addUntilDestroyed(
         editor,
-      ).onDidChangeScrollTop(scrollTop => {
-        controller.updateScroll(editor, scrollTop);
-      });
-      this._disposables.add(cursorSubscription);
-      this._disposables.add(scrollSubscription);
-      const destroySubscription = editor.onDidDestroy(() => {
-        controller.onDestroy(editor);
-        this._disposables.remove(cursorSubscription);
-        this._disposables.remove(scrollSubscription);
-        this._disposables.remove(destroySubscription);
-      });
-      this._disposables.add(destroySubscription);
+        editor.onDidDestroy(() => {
+          controller.onDestroy(editor);
+        }),
+        editor.onDidChangeCursorPosition(event => {
+          controller.updatePosition(editor, event.newBufferPosition);
+        }),
+      );
     };
 
     const addEditor = (addEvent: AddTextEditorEvent) => {
@@ -61,15 +58,16 @@ class Activation {
 
     atom.workspace.getTextEditors().forEach(subscribeEditor);
     this._disposables.add(
+      atom.workspace.observeActivePaneItem(item => {
+        if (!isValidTextEditor(item)) {
+          return;
+        }
+        controller.onActivate((item: any));
+      }),
       atom.workspace.onDidAddTextEditor(addEditor),
       atom.workspace.onDidOpen((event: OnDidOpenEvent) => {
         if (isValidTextEditor(event.item)) {
           controller.onOpen((event.item: any));
-        }
-      }),
-      atom.workspace.observeActivePaneItem(item => {
-        if (isValidTextEditor(item)) {
-          controller.onActivate((item: any));
         }
       }),
       atom.workspace.onDidStopChangingActivePaneItem(item => {
@@ -107,10 +105,17 @@ class Activation {
     );
   }
 
-  consumeStatusBar(statusBar: atom$StatusBar): IDisposable {
-    const disposable = consumeStatusBar(statusBar, controller);
-    this._disposables.add(disposable);
-    return disposable;
+  getNavigationStackProvider(): NavigationStackService {
+    const stackChanges = controller.observeStackChanges().map(stack => ({
+      hasPrevious: stack.hasPrevious(),
+      hasNext: stack.hasNext(),
+    }));
+    return {
+      subscribe: callback =>
+        new UniversalDisposable(stackChanges.subscribe(callback)),
+      navigateForwards: () => controller.navigateForwards(),
+      navigateBackwards: () => controller.navigateBackwards(),
+    };
   }
 
   dispose() {

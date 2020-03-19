@@ -9,84 +9,44 @@
  * @format
  */
 
-import React from 'react';
-import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import type Immutable from 'immutable';
+import type {AppState} from '../lib/types';
 
-import {FileTreeStore} from '../lib/FileTreeStore';
+import * as React from 'react';
+import {connect} from 'react-redux';
+import * as Selectors from '../lib/redux/Selectors';
 import TruncatedButton from 'nuclide-commons-ui/TruncatedButton';
 
-type Props = {};
+type Props = {|
+  remeasureHeight: () => mixed,
+  extraContent: Immutable.List<React.Element<any>>,
+|};
 
-type State = {
-  extraContent: ?Array<React.Element<any>>,
-};
-
-export class ProjectSelection extends React.Component {
-  _store: FileTreeStore;
-  _disposables: UniversalDisposable;
-  state: State;
-
-  constructor(props: Props) {
-    super(props);
-    this._store = FileTreeStore.getInstance();
-    this._disposables = new UniversalDisposable();
-    this.state = {
-      extraContent: this.calculateExtraContent(),
-    };
+class ProjectSelection extends React.PureComponent<Props> {
+  componentDidUpdate(): void {
+    this.props.remeasureHeight();
   }
 
-  componentDidMount(): void {
-    this._processExternalUpdate();
+  render(): React.Node {
+    // The only time we re-render is when this prop changes, so no need to memoize this. If this
+    // component had a bunch of other props, the story might be different.
+    const renderedExtraContent = this.props.extraContent.isEmpty()
+      ? null
+      : this.props.extraContent.toArray();
 
-    this._disposables.add(
-      this._store.subscribe(this._processExternalUpdate.bind(this)),
-    );
-  }
-
-  componentWillUnmount(): void {
-    this._disposables.dispose();
-  }
-
-  _processExternalUpdate(): void {
-    if (this._disposables.disposed) {
-      // If an emitted event results in the disposal of a subscription to that
-      // same emitted event, the disposal will not take effect until the next
-      // emission. This is because event-kit handler arrays are immutable.
-      //
-      // Since this method subscribes to store updates, and store updates can
-      // also cause this component to become unmounted, there is a possiblity
-      // that the subscription disposal in `componentWillUnmount` may not
-      // prevent this method from running on an unmounted instance. So, we
-      // manually check the component's mounted state.
-      return;
-    }
-    this.setState({
-      extraContent: this.calculateExtraContent(),
-    });
-  }
-
-  calculateExtraContent() {
-    const list = this._store.getExtraProjectSelectionContent();
-    if (list.isEmpty()) {
-      return null;
-    }
-    return list.toJS();
-  }
-
-  render(): React.Element<any> {
     return (
       <div className="padded">
         <TruncatedButton
           onClick={() => this.runCommand('application:add-project-folder')}
           icon="device-desktop"
-          label="Add Project Folder"
+          label="Add Local Folder"
         />
         <TruncatedButton
           onClick={() => this.runCommand('nuclide-remote-projects:connect')}
           icon="cloud-upload"
-          label="Add Remote Project Folder"
+          label="Add Remote Folder"
         />
-        {this.state.extraContent}
+        {renderedExtraContent}
       </div>
     );
   }
@@ -95,3 +55,13 @@ export class ProjectSelection extends React.Component {
     atom.commands.dispatch(atom.views.getView(atom.workspace), command);
   }
 }
+
+const mapStateToProps = (state: AppState): $Shape<Props> => ({
+  extraContent: Selectors.getExtraProjectSelectionContent(state),
+});
+
+// $FlowFixMe (>=0.85.0) (T35986896) Flow upgrade suppress
+export default connect(
+  mapStateToProps,
+  () => ({}),
+)(ProjectSelection);

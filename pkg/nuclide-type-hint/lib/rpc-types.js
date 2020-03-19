@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -13,6 +13,6 @@ export type TypeHint = {
   /**
    * A type hint string to display.
    */
-  hint: string,
+  hint: Array<{type: 'snippet' | 'markdown', value: string}>,
   range: atom$Range,
 };

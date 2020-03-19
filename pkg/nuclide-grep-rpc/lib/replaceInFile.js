@@ -58,7 +58,7 @@ export default function replaceInFile(
       // Copy the permissions from the orignal file.
       Observable.defer(() => copyPermissions(path, tempPath)).ignoreElements(),
       // Overwrite the original file with the temporary file.
-      Observable.defer(() => fsPromise.rename(tempPath, path)).ignoreElements(),
+      Observable.defer(() => fsPromise.mv(tempPath, path)).ignoreElements(),
     ).catch(err => {
       // Make sure we clean up the temporary file if an error occurs.
       fsPromise.unlink(tempPath).catch(() => {});

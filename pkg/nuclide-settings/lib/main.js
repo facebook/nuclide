@@ -9,11 +9,17 @@
  * @format
  */
 
-import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
+import type {
+  DeepLinkService,
+  DeepLinkParams,
+} from '../../nuclide-deep-link/lib/types';
+
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import React from 'react';
+import querystring from 'querystring';
 import SettingsPaneItem, {WORKSPACE_VIEW_URI} from './SettingsPaneItem';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import openSettingsView from './openSettingsView';
 
 let subscriptions: UniversalDisposable = (null: any);
 
@@ -28,11 +34,7 @@ export function deactivate(): void {
 
 function registerCommandAndOpener(): UniversalDisposable {
   return new UniversalDisposable(
-    atom.workspace.addOpener(uri => {
-      if (uri === WORKSPACE_VIEW_URI) {
-        return viewableFromReactElement(<SettingsPaneItem />);
-      }
-    }),
+    atom.workspace.addOpener(openSettingsView),
     () => destroyItemWhere(item => item instanceof SettingsPaneItem),
     atom.commands.add('atom-workspace', 'nuclide-settings:toggle', () => {
       atom.workspace.toggle(WORKSPACE_VIEW_URI);
@@ -54,6 +56,22 @@ export function consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
   const disposable = new UniversalDisposable(() => {
     toolBar.removeItems();
   });
+  subscriptions.add(disposable);
+  return disposable;
+}
+
+export function consumeDeepLinkService(service: DeepLinkService): IDisposable {
+  const disposable = service.subscribeToPath(
+    'settings',
+    (params: DeepLinkParams): void => {
+      const {filter} = params;
+      let uri = WORKSPACE_VIEW_URI;
+      if (typeof filter === 'string') {
+        uri += '?' + querystring.stringify({filter});
+      }
+      goToLocation(uri);
+    },
+  );
   subscriptions.add(disposable);
   return disposable;
 }

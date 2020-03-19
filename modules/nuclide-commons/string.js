@@ -14,7 +14,9 @@ import invariant from 'assert';
 import {parse, quote} from './_shell-quote';
 
 export function stringifyError(error: Error): string {
-  return `name: ${error.name}, message: ${error.message}, stack: ${error.stack}.`;
+  return `name: ${error.name}, message: ${error.message}, stack: ${
+    error.stack
+  }.`;
 }
 
 // As of Flow v0.28, Flow does not alllow implicit string coercion of null or undefined. Use this to
@@ -70,10 +72,27 @@ const longFormats = [
   [Number.MAX_VALUE, 'years ago', YEAR],
 ];
 
+const longFormatsNumbers = [
+  [0.7 * MINUTE, 'just now'],
+  [1.5 * MINUTE, '1 minute ago'],
+  [60 * MINUTE, 'minutes ago', MINUTE],
+  [1.5 * HOUR, '1 hour ago'],
+  [DAY, 'hours ago', HOUR],
+  [2 * DAY, 'yesterday'],
+  [7 * DAY, 'days ago', DAY],
+  [1.5 * WEEK, '1 week ago'],
+  [MONTH, 'weeks ago', WEEK],
+  [1.5 * MONTH, '1 month ago'],
+  [YEAR, 'months ago', MONTH],
+  [1.5 * YEAR, '1 year ago'],
+  [Number.MAX_VALUE, 'years ago', YEAR],
+];
+
 export function relativeDate(
   input_: number | Date,
   reference_?: number | Date,
   useShortVariant?: boolean = false,
+  useNumbersOnly?: boolean = false,
 ): string {
   let input = input_;
   let reference = reference_;
@@ -89,7 +108,11 @@ export function relativeDate(
   }
 
   const delta = reference - input;
-  const formats = useShortVariant ? shortFormats : longFormats;
+  const formats = useShortVariant
+    ? shortFormats
+    : useNumbersOnly
+      ? longFormatsNumbers
+      : longFormats;
   for (const [limit, relativeFormat, remainder] of formats) {
     if (delta < limit) {
       if (typeof remainder === 'number') {
@@ -133,6 +156,30 @@ export function shellParse(str: string, env?: Object): Array<string> {
   for (let i = 0; i < result.length; i++) {
     if (typeof result[i] !== 'string') {
       if (result[i].op != null) {
+        throw new Error(
+          `Unexpected operator "${result[i].op}" provided to shellParse`,
+        );
+      } else {
+        throw new Error(
+          `Unexpected comment "${result[i].comment}" provided to shellParse`,
+        );
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * shell-quote's parse allows pipe operators and comments and globs
+ * We treat glob patterns as normal strings. For the other operators, we throw.
+ */
+export function shellParseWithGlobs(str: string, env?: Object): Array<string> {
+  const result = parse(str, env);
+  for (let i = 0; i < result.length; i++) {
+    if (typeof result[i] !== 'string') {
+      if (result[i].op === 'glob') {
+        result[i] = result[i].pattern;
+      } else if (result[i].op != null) {
         throw new Error(
           `Unexpected operator "${result[i].op}" provided to shellParse`,
         );
@@ -212,7 +259,50 @@ export function pluralize(noun: string, count: number) {
 export function capitalize(str: string): string {
   return str.length === 0
     ? str
-    : str.charAt(0).toUpperCase().concat(str.slice(1));
+    : str
+        .charAt(0)
+        .toUpperCase()
+        .concat(str.slice(1));
+}
+
+type MatchRange = [/* start */ number, /* end */ number];
+
+/**
+ * Returns a list of ranges where needle occurs in haystack.
+ * This will *not* return overlapping matches; i.e. the returned list will be disjoint.
+ * This makes it easier to use for e.g. highlighting matches in a UI.
+ */
+export function getMatchRanges(
+  haystack: string,
+  needle: string,
+): Array<MatchRange> {
+  if (needle === '') {
+    // Not really a valid use.
+    return [];
+  }
+
+  const ranges = [];
+  let matchIndex = 0;
+  while ((matchIndex = haystack.indexOf(needle, matchIndex)) !== -1) {
+    const prevRange = ranges[ranges.length - 1];
+    if (prevRange != null && prevRange[1] === matchIndex) {
+      prevRange[1] += needle.length;
+    } else {
+      ranges.push([matchIndex, matchIndex + needle.length]);
+    }
+    matchIndex += needle.length;
+  }
+  return ranges;
+}
+
+export function escapeMarkdown(markdown: string): string {
+  // Which characters can be backslash-escaped?
+  // markdown:   ! #    ()*+ -.        [\] _`{ }   https://daringfireball.net/projects/markdown/syntax#backslash
+  // commonMark: !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~  https://spec.commonmark.org/0.28/#backslash-escapes
+  // We'll only backslash-escape the lowest common denominator.
+  const slashEscaped = markdown.replace(/[#!()*+\-.[\\\]_`{}]/g, '\\$&');
+  // And HTML tags need to be &lt; &gt; escaped.
+  return slashEscaped.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // Originally copied from:
@@ -223,3 +313,6 @@ export function capitalize(str: string): string {
 // Added a single matching group for use with String.split.
 // eslint-disable-next-line max-len
 export const URL_REGEX = /(https?:\/\/(?:www\.)?[-\w@:%.+~#=]{2,256}\.[a-z]{2,6}\b[-\w@:%+.~#?&/=!]*|www\.[-\w@:%.+~#=]{2,256}\.[a-z]{2,6}\b[-\w@:%+.~#?&/=!]*)/;
+
+export const ELLIPSIS_CHAR = '\u2026';
+export const ZERO_WIDTH_SPACE = '\u200B';

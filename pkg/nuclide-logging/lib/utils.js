@@ -13,6 +13,7 @@ import log4js from 'log4js';
 import StackTrace from 'stack-trace';
 
 import type {LoggingEvent} from './types';
+import safeStringify from 'json-stringify-safe';
 
 /**
  * JSON.stringify can't stringify instance of Error. To solve this problem, we
@@ -34,7 +35,12 @@ export function patchErrorsOfLoggingEvent(
 
   loggingEventCopy.data = loggingEventCopy.data.map(item => {
     if (item instanceof Error) {
-      const stackTrace = StackTrace.parse(item).map(callsite => ({
+      // Atom already parses stack traces and stores them as rawStack -
+      // so no need to manually parse things in that case.
+      const rawStack = Array.isArray(item.rawStack)
+        ? item.rawStack
+        : StackTrace.parse(item);
+      const stackTrace = rawStack.map(callsite => ({
         functionName: callsite.getFunctionName(),
         methodName: callsite.getMethodName(),
         fileName: callsite.getFileName(),
@@ -58,7 +64,7 @@ export function patchErrorsOfLoggingEvent(
  * Takes a loggingEvent object, returns string representation of it.
  */
 export function serializeLoggingEvent(loggingEvent: mixed): string {
-  return JSON.stringify(loggingEvent);
+  return safeStringify(loggingEvent);
 }
 
 /**

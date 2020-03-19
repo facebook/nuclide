@@ -21,7 +21,7 @@ import fsPromise from 'nuclide-commons/fsPromise';
  */
 export async function readCompileCommands(
   path: string,
-): Promise<Map<string, string>> {
+): Promise<Map<string, Array<string>>> {
   // Read the YAML file into memory.
   let data;
   try {
@@ -50,9 +50,45 @@ export async function readCompileCommands(
       const otherArgs = llbuildCommand['other-args']
         ? llbuildCommand['other-args']
         : [];
+      const moduleName = llbuildCommand['module-name']
+        ? llbuildCommand['module-name']
+        : '';
+      const moduleNameArgs = [
+        '-module-name',
+        moduleName,
+        '-Onone',
+        '-enable-batch-mode',
+        '-enforce-exclusivity=checked',
+        '-DSWIFT_PACKAGE',
+        '-DDEBUG',
+        '-DXcode',
+      ];
+      const importPaths = llbuildCommand['import-paths']
+        ? llbuildCommand['import-paths']
+        : [];
+      const importPathsArgs = [];
+      for (let i = importPaths.length - 1; i >= 0; i--) {
+        importPathsArgs.push(
+          '-Xcc',
+          '-I',
+          '-Xcc',
+          importPaths[i],
+          '-I',
+          importPaths[i],
+          '-Xcc',
+          '-F',
+          '-Xcc',
+          importPaths[i],
+          '-F',
+          importPaths[i],
+        );
+      }
       compileCommands.set(
         source,
-        otherArgs.concat(llbuildCommand.sources).join(' '),
+        moduleNameArgs
+          .concat(importPathsArgs)
+          .concat(otherArgs)
+          .concat(llbuildCommand.sources),
       );
     });
   }

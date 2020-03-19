@@ -1,0 +1,6 @@
+const W = require('W.x');
+const X = require('X.x');
+const Y = require('Y.x');
+const X_ = require('X_.x')
+
+const x = W + X + X_ + Y;

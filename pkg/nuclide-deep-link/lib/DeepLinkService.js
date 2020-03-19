@@ -12,19 +12,64 @@
 import type {DeepLinkParams} from './types';
 
 import electron from 'electron';
-import invariant from 'invariant';
-import {Observable} from 'rxjs';
-import querystring from 'querystring';
+import type {BrowserWindow} from 'nuclide-commons/electron-remote';
+
+import invariant from 'assert';
 import url from 'url';
+import {Observable} from 'rxjs';
+import {maxBy} from 'lodash';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {observeDeepLinks, sendDeepLink} from '../../commons-atom/deep-link';
 import SharedObservableCache from '../../commons-node/SharedObservableCache';
 
 const {ipcRenderer, remote} = electron;
 invariant(ipcRenderer != null && remote != null);
 
-const CHANNEL = 'nuclide-url-open';
-const WIN32_DEEP_LINK = process.platform === 'win32';
+// This function relies on each step being synchronous.
+// May break in future Atom versions.
+export function _openInNewWindow(uri: string): void {
+  const windows = remote.BrowserWindow.getAllWindows();
+
+  // First, open a new window.
+  // There's no explicit API but we'll send the standard command.
+  atom.commands.dispatch(
+    atom.views.getView(atom.workspace),
+    'application:new-window',
+  );
+
+  const newWindows = remote.BrowserWindow.getAllWindows();
+  invariant(
+    newWindows.length > windows.length,
+    'Expected new window to appear',
+  );
+
+  // We'll assume the highest ID is new. (Electron IDs are auto-incrementing.)
+  // (This is also non-null because the invariant above guarantees > 0).
+  const newWindow = maxBy(newWindows, w => w.id);
+  // Atom's definition of 'window:loaded' waits for all packages to load.
+  // Thus, it's safe to send the URI after this point.
+  // https://github.com/atom/atom/blob/910fbeee31d67eb711ec0771e7c26fa408c091eb/static/index.js#L106
+  newWindow.once(('window:loaded': any), () => {
+    // Needs to match sendURIMessage:
+    // https://github.com/atom/atom/blob/d2d3ad9fb8a4aadb2fe0e53edf7d95bd109fc0f7/src/main-process/atom-window.js#L286
+    newWindow.webContents.send('uri-message', uri);
+  });
+}
+
+function isWindowBlank(lastDeepLinkUptime: ?number): boolean {
+  // A window is considered empty if:
+  // 1) it has no open projects
+  // 2) it has no visible modal panels
+  // 3) no deep link was opened recently
+  const BLANK_DEEP_LINK_EXPIRY = 3;
+  return (
+    atom.project.getPaths().length === 0 &&
+    !atom.workspace.getModalPanels().some(x => x.isVisible()) &&
+    (lastDeepLinkUptime == null ||
+      process.uptime() - lastDeepLinkUptime > BLANK_DEEP_LINK_EXPIRY)
+  );
+}
 
 export default class DeepLinkService {
   _disposable: UniversalDisposable;
@@ -42,46 +87,35 @@ export default class DeepLinkService {
       }).share();
     });
 
+    let lastDeepLinkUptime = null;
     this._disposable = new UniversalDisposable(
-      // These events will be sent from lib/url-main.js.
-      // TODO: Use real Atom URI handler from
-      // https://github.com/atom/atom/pull/11399.
-      Observable.fromEvent(
-        ipcRenderer,
-        CHANNEL,
-        (event, data) => data,
-      ).subscribe(({message, params}) => {
+      observeDeepLinks().subscribe(({message, params}) => {
+        // This is a special feature that mimics the browser's target=_blank.
+        // Opens up a new Atom window and sends it back to the Atom URI handler.
+        // If the current window is already 'blank' then we'll use the current one, though.
+        if (params.target === '_blank' && !isWindowBlank(lastDeepLinkUptime)) {
+          // Can't recurse indefinitely!
+          const {target, ...paramsWithoutTarget} = params;
+          _openInNewWindow(
+            url.format({
+              protocol: 'atom:',
+              slashes: true,
+              host: 'nuclide',
+              pathname: message,
+              query: paramsWithoutTarget,
+            }),
+          );
+          return;
+        }
         const path = message.replace(/\/+$/, '');
         const observer = this._observers.get(path);
         if (observer != null) {
           observer.next(params);
         }
-
-        if (WIN32_DEEP_LINK) {
-          if (observer == null) {
-            // No observer is subscribed to events for this path yet, save the
-            // message and fire it later when a subscriber is added for the path.
-            const pendingEvents = this._pendingEvents.get(message);
-            if (pendingEvents != null) {
-              pendingEvents.push(params);
-            } else {
-              this._pendingEvents.set(message, [params]);
-            }
-          }
-        }
+        lastDeepLinkUptime = process.uptime();
       }),
       () => this._observers.forEach(observer => observer.complete()),
     );
-
-    // Special protocol handling on Windows. Atom's protocol handler does not get
-    // invoked, so the way the argument is passed to atom looks like a regular file
-    // open operation. To handle this, we register a file opener that looks for a
-    // special Win32 protocol prefix (atom://nuclide-win32) that is prepended to the
-    // real atom://nuclide URI that we're trying to open. When we see that, unpack
-    // the real URI and send it as a deep link to the first opened Atom window.
-    if (WIN32_DEEP_LINK) {
-      this._registerWin32LinkHandler();
-    }
   }
 
   dispose(): void {
@@ -96,84 +130,15 @@ export default class DeepLinkService {
       this._observables.get(path).subscribe(callback),
     );
 
-    if (WIN32_DEEP_LINK) {
-      // If there are pending events for this subscription path, return the
-      // observable and then fire them.
-      this._firePendingEventsWin32(path);
-    }
-
     return result;
   }
 
   sendDeepLink(
-    browserWindow: electron$BrowserWindow,
+    browserWindow: BrowserWindow,
     path: string,
     params: DeepLinkParams,
   ): void {
-    browserWindow.webContents.send(CHANNEL, {message: path, params});
+    sendDeepLink(browserWindow, path, params);
     browserWindow.focus();
-  }
-
-  // Helpers for making deep links work on Windows.
-  _registerWin32LinkHandler() {
-    const win32Prefix = 'atom://nuclide-win32/';
-    // $FlowIgnore
-    remote.app.setAsDefaultProtocolClient('atom', 'cmd', [
-      '/c',
-      'atom',
-      '"' + win32Prefix + '%1"',
-    ]);
-    this._disposable.add(
-      atom.workspace.addOpener(uri => {
-        const protocolPrefix = 'atom://nuclide/';
-        if (uri.startsWith(win32Prefix + protocolPrefix)) {
-          const {host, pathname, query} = url.parse(
-            uri.substring(win32Prefix.length),
-          );
-          invariant(
-            host === 'nuclide' && pathname != null && pathname !== '',
-            `Invalid URL ${uri}`,
-          );
-
-          const message = pathname.substr(1);
-          const params = querystring.parse(query || '');
-
-          // Forward the command to the first open Atom window, if there is more than one.
-          const currentWindow = remote.getCurrentWindow();
-          const targetBlank = params.target === '_blank';
-          const targetWindow = targetBlank
-            ? currentWindow
-            : remote.BrowserWindow
-                .getAllWindows()
-                .filter(browserWindow => browserWindow.isVisible())[0];
-          if (targetWindow != null) {
-            this.sendDeepLink(targetWindow, message, params);
-
-            // If this is not the first instance of atom, close this window.
-            if (
-              targetWindow !== remote.getCurrentWindow() &&
-              targetWindow !== currentWindow.getParentWindow()
-            ) {
-              // $FlowIgnore
-              atom.close();
-            }
-          }
-
-          const textEditor = atom.workspace.buildTextEditor({});
-          setImmediate(() => textEditor.destroy());
-          return textEditor;
-        }
-      }),
-    );
-  }
-
-  _firePendingEventsWin32(path: string) {
-    const pendingEvents = this._pendingEvents.get(path);
-    if (pendingEvents != null) {
-      for (const event of pendingEvents) {
-        this.sendDeepLink(remote.getCurrentWindow(), path, event);
-      }
-      this._pendingEvents.delete(path);
-    }
   }
 }

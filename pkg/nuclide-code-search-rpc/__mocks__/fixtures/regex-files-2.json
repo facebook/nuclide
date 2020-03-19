@@ -1,0 +1,11 @@
+[
+  {
+    "column": 8,
+    "file": "directory/file2.js",
+    "line": "        console.log(a); // good",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 19,
+    "row": 4
+  }
+]

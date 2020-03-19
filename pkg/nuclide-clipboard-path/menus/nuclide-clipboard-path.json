@@ -11,6 +11,14 @@
               "command": "nuclide-clipboard-path:copy-absolute-path"
             },
             {
+              "label": "Copy Basename of Current Path",
+              "command": "nuclide-clipboard-path:copy-basename-of-current-path"
+            },
+            {
+              "label": "Copy Hostname of Current Path",
+              "command": "nuclide-clipboard-path:copy-hostname-of-current-path"
+            },
+            {
               "label": "Copy Repository Relative Path",
               "command": "nuclide-clipboard-path:copy-repository-relative-path"
             },

@@ -12,7 +12,6 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {EditorLocation, Location} from './Location';
 
-import {setPositionAndScroll} from 'nuclide-commons-atom/text-editor';
 import {maybeToString} from 'nuclide-commons/string';
 import {NavigationStack} from './NavigationStack';
 import invariant from 'assert';
@@ -31,29 +30,29 @@ function log(message: string): void {
 
 // Handles the state machine that responds to various atom events.
 //
-// After a Nav move, any non-nav moves or scroll changes update the current
-// nav location. So that a nav-stack move(forward/backwards) will return
-// position and scroll after the non-nav move/scrolls.
+// After a Nav move, any non-nav moves update the current
+// nav location. So that a nav-stack move(forward/backwards) will always
+// return to the same location.
 //
 // When doing a forwards/backwards nav-stack move, ignore all events
 // until the move is complete.
 //
 // There are several user scenarios, each which spawn different event orders:
 // - startup - open file
-//     - onActivate, activePaneStopChanging
+//     - activate, activePaneStopChanging
 // - changing tabs
-//     - onActivate, activePaneStopChanging
+//     - activate, activePaneStopChanging
 // - atom.workspace.open of closed file
-//     - create, scroll, activate, open, scroll, activePaneStopChanging
-// - atom.workspace.open of open file, no scroll or move
+//     - create, activate, open, activePaneStopChanging
+// - atom.workspace.open of open file, no move
 //     - activate, open, activePaneStopChanging
 // - atom.workspace.open of open file, with move
-//     - activate, position, open, scroll, activePaneStopChanging
+//     - activate, position, open, activePaneStopChanging
 // - atom.workspace.open of current file
-//     - position, open, scroll
+//     - position, open
 //
 // - nuclide-atom-helpers.goToLocationInEditor
-//     - position, onOptInNavigation, [scroll]
+//     - position, onOptInNavigation
 //
 // In general, when we get a new event, if the editor is not the current,
 // then we push a new element on the nav stack; if the editor of the new event
@@ -85,7 +84,10 @@ export class NavigationStackController {
     this._lastLocation = null;
   }
 
-  _updateStackLocation(editor: atom$TextEditor): void {
+  _updateStackLocation(
+    editor: atom$TextEditor,
+    location?: EditorLocation,
+  ): void {
     if (this._isNavigating) {
       return;
     }
@@ -97,7 +99,9 @@ export class NavigationStackController {
       invariant(previousLocation != null && previousLocation.type === 'editor');
       this._lastLocation = {...previousLocation};
     }
-    this._navigationStack.attemptUpdate(getLocationOfEditor(editor));
+    this._navigationStack.attemptUpdate(
+      location || getLocationOfEditor(editor),
+    );
   }
 
   updatePosition(editor: atom$TextEditor, newBufferPosition: atom$Point): void {
@@ -106,14 +110,11 @@ export class NavigationStackController {
         `${newBufferPosition.column} ${maybeToString(editor.getPath())}`,
     );
 
-    this._updateStackLocation(editor);
-  }
-
-  // scrollTop is in Pixels
-  updateScroll(editor: atom$TextEditor, scrollTop: number): void {
-    log(`updateScroll ${scrollTop} ${maybeToString(editor.getPath())}`);
-
-    this._updateStackLocation(editor);
+    this._updateStackLocation(editor, {
+      type: 'editor',
+      editor,
+      bufferPosition: newBufferPosition,
+    });
   }
 
   onCreate(editor: atom$TextEditor): void {
@@ -149,7 +150,6 @@ export class NavigationStackController {
     } else {
       this._updateStackLocation(editor);
     }
-    this._lastLocation = null;
   }
 
   onActivate(editor: atom$TextEditor): void {
@@ -165,7 +165,7 @@ export class NavigationStackController {
 
   onOptInNavigation(editor: atom$TextEditor): void {
     log(`onOptInNavigation ${maybeToString(editor.getPath())}`);
-    // Opt-in navigation is handled in the same way as a file open with no preceeding activation
+    // Opt-in navigation is handled in the same way as a file open with no preceding activation
     this.onOpen(editor);
   }
 
@@ -201,14 +201,8 @@ export class NavigationStackController {
     this._isNavigating = true;
     try {
       const editor = await editorOfLocation(location);
-      // Note that this will not actually update the scroll position
-      // The scroll position update will happen on the next tick.
-      log(
-        `navigating to: ${location.scrollTop} ${JSON.stringify(
-          location.bufferPosition,
-        )}`,
-      );
-      setPositionAndScroll(editor, location.bufferPosition, location.scrollTop);
+      log(`navigating ${JSON.stringify(location.bufferPosition)}`);
+      editor.setCursorBufferPosition(location.bufferPosition);
     } finally {
       this._isNavigating = false;
     }

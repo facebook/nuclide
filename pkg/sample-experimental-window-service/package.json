@@ -1,0 +1,21 @@
+{
+  "name": "sample-experimental-window-service",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Experimental window service",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "experimental": {
+    "main": "./lib/main.js",
+    "runInAtom_UNSAFE": true,
+    "providedServices": {
+      "window": {
+        "name": "sample-experimental-window-service",
+        "version": "1.0.0",
+        "client": "./lib/WindowServiceClient.js"
+      }
+    }
+  }
+}

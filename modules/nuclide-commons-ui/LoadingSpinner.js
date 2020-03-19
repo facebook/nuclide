@@ -6,15 +6,15 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import addTooltip from './addTooltip';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
-type LoadingSpinnerSize = 'EXTRA_SMALL' | 'SMALL' | 'MEDIUM' | 'LARGE';
+export type LoadingSpinnerSize = 'EXTRA_SMALL' | 'SMALL' | 'MEDIUM' | 'LARGE';
 type Props = {
   className?: string,
   /** The size of the LoadingSpinner. Defaults to MEDIUM. */
@@ -44,10 +44,11 @@ const LoadingSpinnerClassnames = Object.freeze({
 /**
  * Shows an indefinite, animated LoadingSpinner.
  */
-export class LoadingSpinner extends React.Component {
-  props: Props;
-  state: {shouldRender: boolean};
-  _timeout: ?number;
+export class LoadingSpinner extends React.Component<
+  Props,
+  {shouldRender: boolean},
+> {
+  _timeout: ?TimeoutID;
 
   constructor(props: Props) {
     super(props);
@@ -69,7 +70,7 @@ export class LoadingSpinner extends React.Component {
     }
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     const {className, size, tooltip} = this.props;
     if (!this.state.shouldRender) {
       return null;
@@ -82,6 +83,12 @@ export class LoadingSpinner extends React.Component {
         : LoadingSpinnerSizes.MEDIUM;
     const sizeClassname = LoadingSpinnerClassnames[safeSize];
     const newClassName = classnames(className, 'loading', sizeClassname);
-    return <div className={newClassName} ref={ref} />;
+    return (
+      <div
+        className={newClassName}
+        // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
+        ref={ref}
+      />
+    );
   }
 }

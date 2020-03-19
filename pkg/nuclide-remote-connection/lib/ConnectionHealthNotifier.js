@@ -9,10 +9,11 @@
  * @format
  */
 
+import type {XhrConnectionHeartbeat} from 'big-dig/src/client/XhrConnectionHeartbeat';
+
 import invariant from 'assert';
-import {trackEvent} from '../../nuclide-analytics';
-import {CompositeDisposable} from 'atom';
-import {NuclideSocket} from '../../nuclide-server/lib/NuclideSocket';
+import {trackEvent} from 'nuclide-analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getLogger} from 'log4js';
 
 const logger = getLogger('nuclide-remote-connection');
@@ -29,18 +30,18 @@ type HeartbeatNotification = {
 // Returning true short-circuits the default error handling in onHeartbeatError()
 export type OnHeartbeatErrorCallback = (errorCode: string) => boolean;
 
-// Provides feedback to the user of the health of a NuclideSocket.
+// Provides feedback to the user of the health of a ReliableSocket.
 export class ConnectionHealthNotifier {
   _heartbeatNetworkAwayCount: number;
   _lastHeartbeatNotification: ?HeartbeatNotification;
   _subscription: IDisposable;
   _onHeartbeatError: ?OnHeartbeatErrorCallback;
 
-  constructor(host: string, socket: NuclideSocket) {
+  constructor(host: string, port: number, heartbeat: XhrConnectionHeartbeat) {
     this._heartbeatNetworkAwayCount = 0;
     this._lastHeartbeatNotification = null;
 
-    const serverUri = socket.getServerUri();
+    const uri = `https://${host}:${port}`;
 
     /**
      * Adds an Atom notification for the detected heartbeat network status
@@ -99,7 +100,7 @@ export class ConnectionHealthNotifier {
         const {notification} = this._lastHeartbeatNotification;
         notification.dismiss();
         atom.notifications.addSuccess(
-          'Connection restored to Nuclide Server at: ' + serverUri,
+          'Connection restored to Nuclide Server at: ' + uri,
         );
         this._heartbeatNetworkAwayCount = 0;
         this._lastHeartbeatNotification = null;
@@ -112,8 +113,8 @@ export class ConnectionHealthNotifier {
         addHeartbeatNotification(
           HEARTBEAT_NOTIFICATION_WARNING,
           code,
-          `Nuclide server cannot be reached at "${serverUri}".<br/>` +
-            'Nuclide will reconnect when the network is restored.',
+          `Nuclide server cannot be reached at "${uri}".<br/>` +
+            ' Nuclide will reconnect when the network is restored.',
           /* dismissable */ true,
           /* askToReload */ false,
         );
@@ -122,14 +123,22 @@ export class ConnectionHealthNotifier {
 
     const onHeartbeatError = (error: any) => {
       const {code, message, originalCode} = error;
-      trackEvent({
-        type: 'heartbeat-error',
-        data: {
-          code: code || '',
-          message: message || '',
-          host,
-        },
-      });
+      // Don't keep tracking consecutive NETWORK_AWAY events:
+      // the user's probably offline anyway so analytics events just pile up.
+      if (
+        code !== 'NETWORK_AWAY' ||
+        this._heartbeatNetworkAwayCount < HEARTBEAT_AWAY_REPORT_COUNT
+      ) {
+        trackEvent({
+          type: 'heartbeat-error',
+          data: {
+            code: code || '',
+            originalCode: originalCode || '',
+            message: message || '',
+            host,
+          },
+        });
+      }
       logger.info('Heartbeat network error:', code, originalCode, message);
 
       if (this._onHeartbeatError != null && this._onHeartbeatError(error)) {
@@ -156,7 +165,6 @@ export class ConnectionHealthNotifier {
           break;
         case 'PORT_NOT_ACCESSIBLE':
           // Notify never heard a heartbeat from the server.
-          const port = socket.getServerPort();
           addHeartbeatNotification(
             HEARTBEAT_NOTIFICATION_ERROR,
             code,
@@ -184,15 +192,28 @@ export class ConnectionHealthNotifier {
             /* askToReload */ true,
           );
           break;
+        case 'CERT_SIGNATURE_FAILURE':
+          addHeartbeatNotification(
+            HEARTBEAT_NOTIFICATION_ERROR,
+            code,
+            '**Certificate No Longer Valid**<br/>' +
+              'The Nuclide server cert is no longer valid for this client.<br>' +
+              'This can happen  when you connect to the server with another ' +
+              'client, which is not currently supported.<br>' +
+              'Please reload Atom to restore your remote project connection.',
+            /* dismissable */ true,
+            /* askToReload */ true,
+          );
+          break;
         default:
           notifyNetworkAway(code);
           logger.error('Unrecongnized heartbeat error code: ' + code, message);
           break;
       }
     };
-    this._subscription = new CompositeDisposable(
-      socket.onHeartbeat(onHeartbeat),
-      socket.onHeartbeatError(onHeartbeatError),
+    this._subscription = new UniversalDisposable(
+      heartbeat.onHeartbeat(onHeartbeat),
+      heartbeat.onHeartbeatError(onHeartbeatError),
     );
   }
 

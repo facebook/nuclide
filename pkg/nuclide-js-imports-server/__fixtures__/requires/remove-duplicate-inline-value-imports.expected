@@ -1,0 +1,3 @@
+import {a, b, b as c} from 'a';
+
+const x = a(b, c);

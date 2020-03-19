@@ -1,0 +1,116 @@
+language: python
+
+matrix:
+  include:
+    # Note: python is always 2.7 because it's the installed version
+    # in the travis system (so, faster to startup).
+    # We'll always use conda later on anyways to get what we want.
+
+    # Note: some envs commented out to have a faster test suite.
+    
+    # Jython
+    - python: 2.7
+      env:
+        - PYDEVD_USE_CYTHON=NO
+        - PYDEVD_TEST_JYTHON=YES
+        - JYTHON_URL=http://search.maven.org/remotecontent?filepath=org/python/jython-installer/2.7.1/jython-installer-2.7.1.jar
+    
+    # Python 2.6 (with and without cython)
+#     - python: 2.7
+#       env:
+#         - PYDEVD_PYTHON_VERSION=2.6
+#         - PYDEVD_USE_CYTHON=NO
+#         - PYDEVD_TEST_JYTHON=NO
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=2.6
+        - PYDEVD_USE_CYTHON=YES
+        - PYDEVD_TEST_JYTHON=NO
+      
+    # Python 2.7 (with and without cython)
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=2.7
+        - PYDEVD_USE_CYTHON=NO
+        - PYDEVD_TEST_JYTHON=NO
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=2.7
+        - PYDEVD_USE_CYTHON=YES
+        - PYDEVD_TEST_JYTHON=NO
+      
+    # Python 3.5 (with and without cython)
+#     - python: 2.7
+#       env:
+#         - PYDEVD_PYTHON_VERSION=3.5
+#         - PYDEVD_USE_CYTHON=NO
+#         - PYDEVD_TEST_JYTHON=NO
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=3.5
+        - PYDEVD_USE_CYTHON=YES
+        - PYDEVD_TEST_JYTHON=NO
+      
+    # Python 3.6 (with and without cython)
+#     - python: 2.7
+#       env:
+#         - PYDEVD_PYTHON_VERSION=3.6
+#         - PYDEVD_USE_CYTHON=NO
+#         - PYDEVD_TEST_JYTHON=NO
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=3.6
+        - PYDEVD_USE_CYTHON=YES
+        - PYDEVD_TEST_JYTHON=NO
+      
+    # Python 3.7 (with and without cython)
+    - python: 2.7
+      env:
+        - PYDEVD_PYTHON_VERSION=3.7
+        - PYDEVD_USE_CYTHON=NO
+        - PYDEVD_TEST_JYTHON=NO
+#     - python: 2.7
+#       env:
+#         - PYDEVD_PYTHON_VERSION=3.7
+#         - PYDEVD_USE_CYTHON=YES
+#         - PYDEVD_TEST_JYTHON=NO
+
+before_install:
+  # CPython setup
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then chmod +x miniconda.sh; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then ./miniconda.sh -b; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then export PATH=/home/travis/miniconda2/bin:$PATH; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then conda update --yes conda; fi
+  # Jython setup
+  - if [ "$PYDEVD_TEST_JYTHON" == "YES" ]; then wget $JYTHON_URL -O jython_installer.jar; java -jar jython_installer.jar -s -d $HOME/jython; export PATH=$HOME/jython:$HOME/jython/bin:$PATH; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "YES" ]; then jython -c "print('')"; fi
+  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+  # Fix issue with testGui
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+# Install packages
+install:
+  # Both
+  - export PYTHONPATH=.
+  # Python setup
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then conda create --yes -n build_env python=$PYDEVD_PYTHON_VERSION; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then source activate build_env; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then chmod +x ./.travis_install_python_deps.sh; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then ./.travis_install_python_deps.sh; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "NO" ]; then source activate build_env; python build_tools/build.py; fi
+  # Jython setup
+  - if [ "$PYDEVD_TEST_JYTHON" == "YES" ]; then chmod +x ./.travis_install_jython_deps.sh; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "YES" ]; then ./.travis_install_jython_deps.sh; fi
+
+# Run test
+# On local machine with jython: c:\bin\jython2.7.0\bin\jython.exe -Dpython.path=.;jython_test_deps/ant.jar;jython_test_deps/junit.jar -m pytest
+# On remove machine with python: c:\bin\python27\python.exe -m pytest
+script:
+  # pytest-xdist not available for python == 2.6 and timing out without output with 2.7
+  - if [[ ("$PYDEVD_TEST_JYTHON" == "NO") && ("$PYDEVD_PYTHON_VERSION" == "2.6" || "$PYDEVD_PYTHON_VERSION" == "2.7") ]]; then source activate build_env; python -m pytest; fi
+  - if [[ ("$PYDEVD_TEST_JYTHON" == "NO") && ("$PYDEVD_PYTHON_VERSION" != "2.6" && "$PYDEVD_PYTHON_VERSION" != "2.7") ]]; then source activate build_env; python -m pytest -n auto; fi
+  - if [ "$PYDEVD_TEST_JYTHON" == "YES" ]; then jython -Dpython.path=.:jython_test_deps/ant.jar:jython_test_deps/junit.jar -m pytest; fi
+  

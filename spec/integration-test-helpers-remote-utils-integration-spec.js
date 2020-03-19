@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -38,7 +38,7 @@ describe('remote connection for testing', () => {
 
       const pathToProject = await generateHgRepo1Fixture();
 
-      startNuclideServer();
+      await startNuclideServer();
       const connection = await addRemoteProject(pathToProject);
       invariant(connection != null);
 
@@ -47,7 +47,7 @@ describe('remote connection for testing', () => {
 
       await stopNuclideServer(connection);
 
-      deactivateAllPackages();
+      await deactivateAllPackages();
     });
   });
 });

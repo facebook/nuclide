@@ -1,0 +1,14 @@
+const p = require('C');
+const q = require('A');
+const r = require('b');
+const U = require('b');
+const V = require('E');
+const W = require('D');
+import type X from 'b';
+import type Y from 'C';
+import type Z from 'A';
+require('A');
+require('b');
+require('C');
+
+const m: [X, Y, Z] = p(q(r(U, V, W)));

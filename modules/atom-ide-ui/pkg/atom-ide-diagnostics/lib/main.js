@@ -6,10 +6,11 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
+import type {GatekeeperService} from 'nuclide-commons-atom/types';
 import type {
   CallbackDiagnosticProvider,
   LinterProvider,
@@ -18,14 +19,19 @@ import type {
   Store,
 } from './types';
 import type {LinterAdapter} from './services/LinterAdapter';
+import type {BusySignalService} from '../../atom-ide-busy-signal/lib/types';
+import type {CodeActionFetcher} from '../../atom-ide-code-actions/lib/types';
 
+import invariant from 'assert';
 import createPackage from 'nuclide-commons-atom/createPackage';
+import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {BehaviorSubject, Observable} from 'rxjs';
 import MessageRangeTracker from './MessageRangeTracker';
 import DiagnosticUpdater from './services/DiagnosticUpdater';
 import IndieLinterRegistry from './services/IndieLinterRegistry';
-import {createAdapters} from './services/LinterAdapterFactory';
+import {createAdapter} from './services/LinterAdapterFactory';
 import * as Actions from './redux/Actions';
 import createStore from './redux/createStore';
 
@@ -33,6 +39,8 @@ class Activation {
   _disposables: UniversalDisposable;
   _allLinterAdapters: Set<LinterAdapter>;
   _store: Store;
+  _busySignalService: ?BusySignalService;
+  _gatekeeperServices: BehaviorSubject<?GatekeeperService> = new BehaviorSubject();
 
   constructor() {
     this._allLinterAdapters = new Set();
@@ -40,10 +48,14 @@ class Activation {
     const messageRangeTracker = new MessageRangeTracker();
     this._store = createStore(messageRangeTracker);
 
-    this._disposables = new UniversalDisposable(messageRangeTracker, () => {
-      this._allLinterAdapters.forEach(adapter => adapter.dispose());
-      this._allLinterAdapters.clear();
-    });
+    this._disposables = new UniversalDisposable(
+      messageRangeTracker,
+      () => {
+        this._allLinterAdapters.forEach(adapter => adapter.dispose());
+        this._allLinterAdapters.clear();
+      },
+      this._observeActivePaneItemAndMarkMessagesStale(),
+    );
   }
 
   dispose() {
@@ -70,12 +82,64 @@ class Activation {
     };
   }
 
+  consumeBusySignal(service: BusySignalService): IDisposable {
+    this._busySignalService = service;
+    return new UniversalDisposable(() => {
+      this._busySignalService = null;
+    });
+  }
+
+  _observeActivePaneItemAndMarkMessagesStale() {
+    return this._gatekeeperServices
+      .switchMap(gatekeeperService => {
+        if (gatekeeperService == null) {
+          return Observable.of(null);
+        }
+        return gatekeeperService.passesGK('nuclide_diagnostics_stale');
+      })
+      .filter(Boolean)
+      .switchMap(() => {
+        return observableFromSubscribeFunction(
+          atom.workspace.observeActivePaneItem.bind(atom.workspace),
+        )
+          .map(editor => (isValidTextEditor(editor) ? editor : null))
+          .filter(Boolean)
+          .switchMap(editor => {
+            return observableFromSubscribeFunction(
+              editor.getBuffer().onDidChange.bind(editor.getBuffer()),
+            ).map(() => editor.getPath());
+          });
+      })
+      .subscribe(filePath => {
+        this._store.dispatch(Actions.markMessagesStale(filePath));
+      });
+  }
+
+  _reportBusy(title: string): IDisposable {
+    if (this._busySignalService != null) {
+      return this._busySignalService.reportBusy(title);
+    }
+    return new UniversalDisposable();
+  }
+
+  consumeCodeActionFetcher(fetcher: CodeActionFetcher): IDisposable {
+    this._store.dispatch(Actions.setCodeActionFetcher(fetcher));
+    return new UniversalDisposable(() => {
+      invariant(this._store.getState().codeActionFetcher === fetcher);
+      this._store.dispatch(Actions.setCodeActionFetcher(null));
+    });
+  }
+
   consumeLinterProvider(
-    provider: LinterProvider | Array<LinterProvider>,
+    providers_: LinterProvider | Array<LinterProvider>,
   ): IDisposable {
-    const newAdapters = createAdapters(provider);
+    const providers = Array.isArray(providers_) ? providers_ : [providers_];
     const adapterDisposables = new UniversalDisposable();
-    for (const adapter of newAdapters) {
+    for (const provider of providers) {
+      const adapter = createAdapter(provider, title => this._reportBusy(title));
+      if (adapter == null) {
+        continue;
+      }
       this._allLinterAdapters.add(adapter);
       const diagnosticDisposable = this.consumeDiagnosticsProviderV2({
         updates: adapter.getUpdates(),
@@ -111,6 +175,15 @@ class Activation {
     this._store.dispatch(Actions.addProvider(provider));
     return new UniversalDisposable(() => {
       this._store.dispatch(Actions.removeProvider(provider));
+    });
+  }
+
+  consumeGatekeeperService(service: GatekeeperService): IDisposable {
+    this._gatekeeperServices.next(service);
+    return new UniversalDisposable(() => {
+      if (this._gatekeeperServices.getValue() === service) {
+        this._gatekeeperServices.next(null);
+      }
     });
   }
 }

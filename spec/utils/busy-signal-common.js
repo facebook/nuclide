@@ -5,14 +5,14 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
 function getElement(): ?HTMLElement {
   const element = atom.views
     .getView(atom.workspace)
-    .querySelector('.atom-ide-busy-signal-status-bar');
+    .querySelector('.busy-signal-status-bar');
   return element;
 }
 

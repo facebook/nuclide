@@ -1,13 +1,11 @@
 {
   "name": "nuclide-code-search",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Grep-like service for searching code",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "configMetadata": {
       "pathComponents": [
         "IDE",
@@ -15,18 +13,71 @@
       ]
     },
     "config": {
-      "tool": {
-        "title": "Code Search Tool",
+      "localTool": {
+        "title": "Local Code Search Tool",
         "type": "string",
-        "default": "ag",
-        "enum": ["ag", "ack", "rg"],
-        "description": "The chosen tool must be available in your PATH. On windows only rg works well."
+        "default": "",
+        "enum": [
+          {
+            "value": "",
+            "description": "Let Nuclide use any available tool"
+          },
+          {
+            "value": "rg",
+            "description": "ripgrep (rg)"
+          },
+          {
+            "value": "ack",
+            "description": "ack"
+          },
+          {
+            "value": "grep",
+            "description": "grep"
+          }
+        ],
+        "description": "The chosen tool must be available in your PATH. On windows only rg is supported."
+      },
+      "localUseVcsSearch": {
+        "title": "Use git/hg grep if possible on local folders",
+        "type": "boolean",
+        "default": true,
+        "description": "If in a git or hg repository, favor using git/hg grep over the search tool above."
+      },
+      "remoteTool": {
+        "title": "Remote Code Search Tool",
+        "type": "string",
+        "default": "",
+        "enum": [
+          {
+            "value": "",
+            "description": "Let Nuclide use any available tool"
+          },
+          {
+            "value": "rg",
+            "description": "ripgrep (rg)"
+          },
+          {
+            "value": "ack",
+            "description": "ack"
+          },
+          {
+            "value": "grep",
+            "description": "grep"
+          }
+        ],
+        "description": "The chosen tool must be available in your remote host's PATH. On windows only rg is supported."
+      },
+      "remoteUseVcsSearch": {
+        "title": "Use git/hg grep if possible on remote folders",
+        "type": "boolean",
+        "default": true,
+        "description": "If in a git or hg repository, favor using git/hg grep over the search tool above."
       },
       "maxResults": {
         "title": "Maximum number of results per project folder",
         "type": "integer",
         "default": 30,
-        "description": "A much higher number might affect the CPU usage and the rendering of Quick-Open"
+        "description": "A much higher number might affect the CPU usage and the rendering of Quick Open"
       }
     }
   },

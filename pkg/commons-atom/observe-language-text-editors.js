@@ -9,8 +9,9 @@
  * @format
  */
 
-import {CompositeDisposable, Emitter} from 'atom';
-import observeGrammarForTextEditors from './observe-grammar-for-text-editors';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import observeGrammarForTextEditors from 'nuclide-commons-atom/observe-grammar-for-text-editors';
 
 const START_OBSERVING_TEXT_EDITOR_EVENT = 'start-observing-text-editor';
 const STOP_OBSERVING_TEXT_EDITOR_EVENT = 'stop-observing-text-editor';
@@ -25,18 +26,17 @@ class LanguageTextEditorsListener {
   _grammarScopes: Set<string>;
   _emitter: Emitter;
   _observedTextEditors: Set<TextEditor>;
-  _destroySubscriptionsMap: Map<TextEditor, IDisposable>;
-  _grammarSubscription: IDisposable;
+  _subscriptions: UniversalDisposable;
 
   constructor(grammarScopes: Set<string>) {
     this._grammarScopes = grammarScopes;
 
     this._emitter = new Emitter();
     this._observedTextEditors = new Set();
-    this._destroySubscriptionsMap = new Map();
 
-    this._grammarSubscription = observeGrammarForTextEditors(
-      (textEditor, grammar) => {
+    this._subscriptions = new UniversalDisposable();
+    this._subscriptions.add(
+      observeGrammarForTextEditors((textEditor, grammar) => {
         const textEditorHasTheRightGrammar = this._grammarScopes.has(
           grammar.scopeName,
         );
@@ -49,19 +49,18 @@ class LanguageTextEditorsListener {
           this._observedTextEditors.delete(textEditor);
         }
 
-        const destroySubscription = textEditor.onDidDestroy(() => {
-          // When a text editor that we were observing is destroyed, we need to
-          // do clean-up even if its grammar hasn't changed.
-          if (this._observedTextEditors.has(textEditor)) {
-            this._emitter.emit(STOP_OBSERVING_TEXT_EDITOR_EVENT, textEditor);
-            this._observedTextEditors.delete(textEditor);
-          }
-
-          destroySubscription.dispose();
-          this._destroySubscriptionsMap.delete(textEditor);
-        });
-        this._destroySubscriptionsMap.set(textEditor, destroySubscription);
-      },
+        this._subscriptions.addUntilDestroyed(
+          textEditor,
+          textEditor.onDidDestroy(() => {
+            // When a text editor that we were observing is destroyed, we need to
+            // do clean-up even if its grammar hasn't changed.
+            if (this._observedTextEditors.has(textEditor)) {
+              this._emitter.emit(STOP_OBSERVING_TEXT_EDITOR_EVENT, textEditor);
+              this._observedTextEditors.delete(textEditor);
+            }
+          }),
+        );
+      }),
     );
   }
 
@@ -80,7 +79,7 @@ class LanguageTextEditorsListener {
       // gets called with one arg (i.e. it matches the Flow annotation).
       .forEach(textEditor => fn(textEditor));
 
-    return new CompositeDisposable(
+    return new UniversalDisposable(
       this._emitter.on(START_OBSERVING_TEXT_EDITOR_EVENT, fn),
       this._emitter.on(STOP_OBSERVING_TEXT_EDITOR_EVENT, cleanupFn),
     );
@@ -89,11 +88,7 @@ class LanguageTextEditorsListener {
   dispose(): void {
     this._emitter.dispose();
     this._observedTextEditors.clear();
-    this._destroySubscriptionsMap.forEach(subscription =>
-      subscription.dispose(),
-    );
-    this._destroySubscriptionsMap.clear();
-    this._grammarSubscription.dispose();
+    this._subscriptions.dispose();
   }
 }
 
@@ -110,7 +105,7 @@ export default function observeLanguageTextEditors(
   fn: (textEditor: TextEditor) => void,
   cleanupFn?: (textEditor: TextEditor) => void,
 ): IDisposable {
-  const subscriptions = new CompositeDisposable();
+  const subscriptions = new UniversalDisposable();
   const listener = new LanguageTextEditorsListener(new Set(grammarScopes));
   subscriptions.add(listener);
   subscriptions.add(

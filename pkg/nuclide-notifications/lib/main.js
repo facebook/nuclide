@@ -11,17 +11,17 @@
 
 import invariant from 'assert';
 import electron from 'electron';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
-import {Disposable} from 'atom';
+import sanitizeHtml from 'nuclide-commons/sanitizeHtml';
 
 const {remote} = electron;
 invariant(remote != null);
 
-let subscriptions: CompositeDisposable = (null: any);
+let subscriptions: UniversalDisposable = (null: any);
 
 export function activate(state: ?Object): void {
-  subscriptions = new CompositeDisposable(
+  subscriptions = new UniversalDisposable(
     // Listen for Atom notifications:
     atom.notifications.onDidAddNotification(proxyToNativeNotification),
   );
@@ -38,9 +38,19 @@ function proxyToNativeNotification(notification: atom$Notification): void {
     return;
   }
 
+  const sanitizedMessage = sanitizeHtml(notification.getMessage(), {
+    condenseWhitespaces: true,
+  });
+  // If the message is multiline, take the first line for the title. Titles can only be a single
+  // line and anything after the first line break will be ignored, at least on OSX.
+  const [title, ...body] = sanitizedMessage.split(/\n/g);
+  const sanitizedDescription =
+    options.description == null
+      ? ''
+      : sanitizeHtml(options.description, {condenseWhitespaces: true});
   raiseNativeNotification(
-    `${upperCaseFirst(notification.getType())}: ${notification.getMessage()}`,
-    options.detail,
+    `${upperCaseFirst(notification.getType())}: ${title}`,
+    [...body, ...sanitizedDescription.split(/\n/g)].filter(Boolean).join('\n'),
     0,
     false,
   );
@@ -65,6 +75,10 @@ function raiseNativeNotification(
     new Notification(title, {
       body,
       icon: 'atom://nuclide/pkg/nuclide-notifications/notification.png',
+      onclick: () => {
+        // Windows does not properly bring the window into focus.
+        remote.getCurrentWindow().show();
+      },
     });
   };
 
@@ -81,7 +95,7 @@ function raiseNativeNotification(
         clearTimeout(timeoutId);
       });
 
-      return new Disposable(() => clearTimeout(timeoutId));
+      return new UniversalDisposable(() => clearTimeout(timeoutId));
     }
   }
 

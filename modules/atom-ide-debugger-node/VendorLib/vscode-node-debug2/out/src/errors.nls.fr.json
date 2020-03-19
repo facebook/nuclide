@@ -1,0 +1,10 @@
+[
+	"Runtime '{0}' introuvable dans PATH.",
+	"Impossible de lancer la cible de débogage dans le terminal ({0}).",
+	"Impossible de lancer la cible de débogage ({0}).",
+	"Type de console inconnu '{0}'.",
+	"Impossible de lancer le programme '{0}'. Essayez éventuellement de configurer les mappages de sources.",
+	"Impossible de lancer le programme '{0}' ; essayez de définir l'attribut '{1}'.",
+	"Cannot launch program '{0}' because corresponding JavaScript cannot be found.",
+	"Impossible de charger les variables d'environnement à partir du fichier ({0})."
+]

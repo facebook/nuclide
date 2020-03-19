@@ -1,12 +1,11 @@
 {
   "name": "nuclide-ctags-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/CtagsService.js",
   "version": "0.0.0",
   "description": "Provides a service to access ctags files remotely.",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

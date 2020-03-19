@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {RevisionInfo, RevisionSuccessorInfo} from './HgService';
+import type {RevisionInfo, RevisionSuccessorInfo} from './types';
 import type {ConnectableObservable} from 'rxjs';
 
 import {hgAsyncExecute, hgRunCommand} from './hg-utils';
@@ -38,6 +38,12 @@ const ESCAPED_NULL_CHAR = '\\0';
 const NO_NODE_HASH = '000000000000';
 const HEAD_MARKER = '@';
 
+const SHORT_HASH_LENGTH = 12; // {node|short} results in a fixed length 12 char hash
+
+// comma-separated list of successors, used when tracking multi-step succession from commit cloud
+const commitCloudSuccessionTemplate =
+  "{join(succsandmarkers % '{join(successors % \\'{node|short}\\', \\',\\')}',',')}";
+
 const REVISION_INFO_TEMPLATE = `{rev}
 {desc|firstline}
 {author}
@@ -50,12 +56,14 @@ const REVISION_INFO_TEMPLATE = `{rev}
 {tags % '{tag}${ESCAPED_NULL_CHAR}'}
 {p1node|short}${ESCAPED_NULL_CHAR}{p2node|short}${ESCAPED_NULL_CHAR}
 {ifcontains(rev, revset('.'), '${HEAD_MARKER}')}
+{files|json}
 {singlepublicsuccessor}
 {amendsuccessors}
 {rebasesuccessors}
 {splitsuccessors}
 {foldsuccessors}
 {histeditsuccessors}
+${commitCloudSuccessionTemplate}
 {desc}
 ${INFO_REV_END_MARK}
 `;
@@ -67,6 +75,7 @@ const SUCCESSOR_TEMPLATE_ORDER = [
   SuccessorType.SPLIT,
   SuccessorType.FOLD,
   SuccessorType.HISTEDIT,
+  SuccessorType.REWRITTEN,
 ];
 
 /**
@@ -186,7 +195,7 @@ export function fetchRevisionsInfo(
           ` ${revisionExpression}: ${e.stderr || e}, ${e.command}`,
       );
       throw new Error(
-        `Could not fetch revision info for revisions: ${revisionExpression}`,
+        `Could not fetch revision info for revisions: ${revisionExpression} ${e}`,
       );
     });
 }
@@ -222,12 +231,22 @@ export async function fetchRevisionInfo(
   return revisionInfo;
 }
 
+export function fetchHeadRevisionInfo(
+  workingDirectory: string,
+): ConnectableObservable<Array<RevisionInfo>> {
+  return fetchRevisionsInfo(
+    `predecessors(${HEAD_REVISION_EXPRESSION})`,
+    workingDirectory,
+    {
+      hidden: true,
+    },
+  ).publish();
+}
+
 export function fetchSmartlogRevisions(
   workingDirectory: string,
 ): ConnectableObservable<Array<RevisionInfo>> {
-  // This will get the `smartlog()` expression revisions
-  // and the head revision commits to the nearest public commit parent.
-  const revisionExpression = 'smartlog() + parents(smartlog())';
+  const revisionExpression = 'smartlog()';
   return fetchRevisionsInfo(revisionExpression, workingDirectory, {
     shouldLimit: false,
   }).publish();
@@ -246,7 +265,7 @@ export function parseRevisionInfoOutput(
     if (revisionLines.length < 18) {
       continue;
     }
-    const successorInfo = parseSuccessorData(revisionLines.slice(12, 18));
+    const successorInfo = parseSuccessorData(revisionLines.slice(13, 20));
     revisionInfo.push({
       id: parseInt(revisionLines[0], 10),
       title: revisionLines[1],
@@ -264,26 +283,53 @@ export function parseRevisionInfoOutput(
         hash => hash !== NO_NODE_HASH,
       ),
       isHead: revisionLines[11] === HEAD_MARKER,
+      files: JSON.parse(revisionLines[12]),
       successorInfo,
-      description: revisionLines.slice(18).join('\n'),
+      description: revisionLines.slice(20).join('\n'),
     });
   }
   return revisionInfo;
 }
 
-function parseSuccessorData(
+export function parseSuccessorData(
   successorLines: Array<string>,
 ): ?RevisionSuccessorInfo {
   invariant(successorLines.length === SUCCESSOR_TEMPLATE_ORDER.length);
   for (let i = 0; i < SUCCESSOR_TEMPLATE_ORDER.length; i++) {
     if (successorLines[i].length > 0) {
       return {
-        hash: successorLines[i],
+        hash: successorLines[i].slice(0, SHORT_HASH_LENGTH), // take only first hash if multiple given
         type: SUCCESSOR_TEMPLATE_ORDER[i],
       };
     }
   }
   return null;
+}
+
+export function successorInfoToDisplay(
+  successorInfo: ?RevisionSuccessorInfo,
+): string {
+  if (successorInfo == null) {
+    return '';
+  }
+  switch (successorInfo.type) {
+    case 'public':
+      return 'Landed as a newer commit';
+    case 'amend':
+      return 'Amended as a newer commit';
+    case 'rebase':
+      return 'Rebased as a newer commit';
+    case 'split':
+      return 'Split as a newer commit';
+    case 'fold':
+      return 'Folded as a newer commit';
+    case 'histedit':
+      return 'Histedited as a newer commit';
+    case 'rewritten':
+      return 'Rewritten as a newer commit';
+    default:
+      return '';
+  }
 }
 
 function splitLine(line: string): Array<string> {

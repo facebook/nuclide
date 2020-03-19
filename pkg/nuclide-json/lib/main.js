@@ -9,25 +9,16 @@
  * @format
  */
 
-import type {
-  CodeFormatProvider,
-  HyperclickProvider,
-  Outline,
-  OutlineProvider,
-} from 'atom-ide-ui';
-
-import {CompositeDisposable} from 'atom';
-
+import type {HyperclickProvider, Outline, OutlineProvider} from 'atom-ide-ui';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getOutline} from './JSONOutlineProvider';
 import {getNPMHyperclickProvider} from './NPMHyperclickProvider';
 
-import CodeFormatHelpers from './CodeFormatHelpers';
-
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(state: ?Object) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   dispose(): void {
@@ -63,14 +54,4 @@ export function provideOutlines(): OutlineProvider {
 
 export function getHyperclickProvider(): HyperclickProvider {
   return getNPMHyperclickProvider();
-}
-
-export function provideCodeFormat(): CodeFormatProvider {
-  return {
-    grammarScopes: ['source.json'],
-    priority: 1,
-    formatEntireFile(editor, range) {
-      return CodeFormatHelpers.formatEntireFile(editor, range);
-    },
-  };
 }

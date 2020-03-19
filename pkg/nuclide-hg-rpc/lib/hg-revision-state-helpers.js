@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {RevisionFileChanges} from './HgService';
+import type {RevisionFileChanges} from './types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {ConnectableObservable} from 'rxjs';
 
@@ -49,6 +49,27 @@ export function fetchFileContentAtRevision(
     cwd: workingDirectory,
   };
   return hgRunCommand(args, execOptions).publish();
+}
+
+export function batchFetchFileContentsAtRevision(
+  filePaths: Array<NuclideUri>,
+  revision: string,
+  workingDirectory: string,
+): ConnectableObservable<Map<NuclideUri, string>> {
+  const args = ['cat', '--rev', revision, ...filePaths, '-Tjson'];
+  const execOptions = {
+    cwd: workingDirectory,
+  };
+  return hgRunCommand(args, execOptions)
+    .map(fileData => {
+      return new Map(
+        JSON.parse(fileData).map(({abspath, data}) => [
+          nuclideUri.join(workingDirectory, abspath),
+          data,
+        ]),
+      );
+    })
+    .publish();
 }
 
 /**

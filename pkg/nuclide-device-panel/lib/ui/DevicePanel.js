@@ -9,15 +9,20 @@
  * @format
  */
 
-import type {Expected} from '../../../commons-node/expected';
-import type {Process, ProcessTask} from '../types';
+import type {Expected} from 'nuclide-commons/expected';
+import type {
+  Process,
+  Task,
+  ProcessTask,
+  AppInfoRow,
+} from 'nuclide-debugger-common/types';
 import type {Props as TaskButtonPropsType} from './TaskButton';
 import type {TaskEvent} from 'nuclide-commons/process';
 
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
-import {DeviceTask} from '../DeviceTask';
 import {Icon} from 'nuclide-commons-ui/Icon';
-import React from 'react';
+import * as React from 'react';
+import {AppInfoTable} from './AppInfoTable';
 import {InfoTable} from './InfoTable';
 import {ProcessTable} from './ProcessTable';
 import {TaskButton} from './TaskButton';
@@ -27,31 +32,58 @@ type Props = {|
   toggleProcessPolling: (isActive: boolean) => void,
   goToRootPanel: () => void,
   infoTables: Expected<Map<string, Map<string, string>>>,
-  processes: Process[],
+  appInfoTables: Expected<Map<string, Array<AppInfoRow>>>,
+  processes: Expected<Process[]>,
   processTasks: ProcessTask[],
-  deviceTasks: DeviceTask[],
+  deviceTasks: Array<Task>,
   isDeviceConnected: boolean,
 |};
 
-export class DevicePanel extends React.Component {
-  props: Props;
-
+export class DevicePanel extends React.Component<Props> {
   _createInfoTables(): React.Element<any>[] {
     if (this.props.infoTables.isError) {
       return [
         <div className="block" key="infoTableError">
-          {this.props.infoTables.error}
+          {
+            // $FlowFixMe
+            this.props.infoTables.error
+          }
         </div>,
       ];
     } else if (this.props.infoTables.isPending) {
       return [<LoadingSpinner size="EXTRA_SMALL" key="infoTableLoading" />];
     } else {
-      return Array.from(
-        this.props.infoTables.value.entries(),
-      ).map(([title, infoTable]) =>
-        <div className="block" key={title}>
-          <InfoTable title={title} table={infoTable} />
+      return Array.from(this.props.infoTables.value.entries()).map(
+        ([title, infoTable]) => (
+          <div className="block" key={title}>
+            <InfoTable title={title} table={infoTable} />
+          </div>
+        ),
+      );
+    }
+  }
+
+  _createAppInfoTables(): React.Element<any>[] {
+    const appInfoTables = this.props.appInfoTables;
+
+    if (appInfoTables.isError) {
+      return [
+        <div className="block" key="infoTableError">
+          {
+            // $FlowFixMe
+            appInfoTables.error
+          }
         </div>,
+      ];
+    } else if (appInfoTables.isPending) {
+      return [<LoadingSpinner size="EXTRA_SMALL" key="infoTableLoading" />];
+    } else {
+      return Array.from(appInfoTables.value.entries()).map(
+        ([appName, appInfoRows]) => (
+          <div className="block" key={appName}>
+            <AppInfoTable title={appName} rows={appInfoRows} />
+          </div>
+        ),
       );
     }
   }
@@ -68,10 +100,7 @@ export class DevicePanel extends React.Component {
     );
   }
 
-  _taskEventsToProps(
-    task: DeviceTask,
-    taskEvent: ?TaskEvent,
-  ): TaskButtonPropsType {
+  _taskEventsToProps(task: Task, taskEvent: ?TaskEvent): TaskButtonPropsType {
     return {
       name: task.getName(),
       start: () => task.start(),
@@ -93,9 +122,7 @@ export class DevicePanel extends React.Component {
       return <StreamedTaskButton key={task.getName()} />;
     });
     return (
-      <div className="block nuclide-device-panel-tasks-container">
-        {tasks}
-      </div>
+      <div className="block nuclide-device-panel-tasks-container">{tasks}</div>
     );
   }
 
@@ -112,6 +139,7 @@ export class DevicePanel extends React.Component {
       </div>
     );
   }
+
   _getStatus(): ?React.Element<any> {
     if (this.props.isDeviceConnected) {
       return null;
@@ -126,13 +154,14 @@ export class DevicePanel extends React.Component {
     );
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div>
         {this._getBackButton()}
         {this._getStatus()}
         {this._getTasks()}
         {this._createInfoTables()}
+        {this._createAppInfoTables()}
         {this._createProcessTable()}
       </div>
     );

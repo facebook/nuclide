@@ -5,19 +5,23 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {AtomCommands, ConnectionDetails} from './rpc-types';
+import type {ConnectionDetails, MultiConnectionAtomCommands} from './rpc-types';
 
-import {CommandServer} from './CommandServer';
+import {getCommandServer} from './command-server-singleton';
 
-// Called by the server side command line 'atom' command.
-export function getAtomCommands(): Promise<?AtomCommands> {
-  return Promise.resolve(CommandServer.getAtomCommands());
+// This file defines a service that is expected to be used by
+// command-line tools that run local to a Nuclide server.
+// To that end, it is defined in ../services-3.json, which can
+// be loaded via the Nuclide-RPC framework.
+
+export function getAtomCommands(): Promise<MultiConnectionAtomCommands> {
+  return Promise.resolve(getCommandServer().getMultiConnectionAtomCommands());
 }
 
 export function getConnectionDetails(): Promise<?ConnectionDetails> {
-  return CommandServer.getConnectionDetails();
+  return getCommandServer().getConnectionDetails();
 }

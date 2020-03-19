@@ -1,0 +1,41 @@
+{
+  "name": "nuclide-node-transpiler",
+  "version": "0.7.3-dev",
+  "description": "Transpiles JavaScript files",
+  "author": "NEEDS OWNER",
+  "main": "./lib/main.js",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-node-transpiler",
+  "private": true,
+  "scripts": {
+    "test": "../../node_modules/.bin/jasmine-node spec"
+  },
+  "dependencies": {
+    "glob": "7.1.1",
+    "mkdirp": "0.5.1",
+    "uuid": "3.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "7.0.0-beta.48",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "7.0.0-beta.48",
+    "@babel/plugin-proposal-object-rest-spread": "7.0.0-beta.48",
+    "@babel/plugin-proposal-optional-chaining": "7.0.0-beta.48",
+    "@babel/plugin-transform-flow-strip-types": "7.0.0-beta.48",
+    "@babel/plugin-transform-modules-commonjs": "7.0.0-beta.48",
+    "@babel/plugin-transform-react-display-name": "7.0.0-beta.48",
+    "@babel/plugin-transform-react-jsx": "7.0.0-beta.48",
+    "@babel/plugin-transform-strict-mode": "7.0.0-beta.48",
+    "babel-plugin-idx": "2.0.0",
+    "babel-plugin-istanbul": "4.1.6",
+    "babel-plugin-lodash": "3.3.4",
+    "babel-plugin-module-resolver": "3.1.1",
+    "babel-plugin-relay": "1.4.1",
+    "babel-plugin-transform-class-properties": "6.24.1",
+    "dedent": "0.7.0",
+    "is-builtin-module": "1.0.0",
+    "jasmine-node": "1.14.5",
+    "progress": "2.0.0",
+    "yargs": "3.32.0"
+  }
+}

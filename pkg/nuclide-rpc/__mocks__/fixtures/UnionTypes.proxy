@@ -1,0 +1,2391 @@
+"use strict";
+
+module.exports = _client => {
+  const remoteModule = {};
+
+  remoteModule.UnionFunc = function (arg0, arg1) {
+    return _client.callRemoteFunction("UnionTypes/UnionFunc", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "s",
+      type: {
+        kind: "named",
+        name: "SSU"
+      }
+    }, {
+      name: "m",
+      type: {
+        kind: "named",
+        name: "MixedUnion"
+      }
+    }]));
+  };
+
+  remoteModule.ObjectUnionFunc = function (arg0) {
+    return _client.callRemoteFunction("UnionTypes/ObjectUnionFunc", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "loc",
+      type: {
+        kind: "named",
+        name: "Location"
+      }
+    }]));
+  };
+
+  remoteModule.TypeFunc = function (arg0) {
+    return _client.callRemoteFunction("UnionTypes/TypeFunc", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "type",
+      type: {
+        kind: "named",
+        name: "Type"
+      }
+    }]));
+  };
+
+  remoteModule.MDUFunc = function (arg0) {
+    return _client.callRemoteFunction("UnionTypes/MDUFunc", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "mdu",
+      type: {
+        kind: "named",
+        name: "MultipleDiscriminantUnion"
+      }
+    }]));
+  };
+
+  return remoteModule;
+};
+
+Object.defineProperty(module.exports, "defs", {
+  value: {
+    Object: {
+      kind: "alias",
+      name: "Object",
+      location: {
+        type: "builtin"
+      }
+    },
+    Date: {
+      kind: "alias",
+      name: "Date",
+      location: {
+        type: "builtin"
+      }
+    },
+    RegExp: {
+      kind: "alias",
+      name: "RegExp",
+      location: {
+        type: "builtin"
+      }
+    },
+    Buffer: {
+      kind: "alias",
+      name: "Buffer",
+      location: {
+        type: "builtin"
+      }
+    },
+    "fs.Stats": {
+      kind: "alias",
+      name: "fs.Stats",
+      location: {
+        type: "builtin"
+      }
+    },
+    SU: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 1
+      },
+      name: "SU",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "string-literal",
+          value: "bork"
+        }, {
+          kind: "string-literal",
+          value: "bork bork"
+        }]
+      }
+    },
+    SSU: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 2
+      },
+      name: "SSU",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "string-literal",
+          value: "bork"
+        }, {
+          kind: "string-literal",
+          value: "bork bork"
+        }, {
+          kind: "string-literal",
+          value: "bork!"
+        }]
+      }
+    },
+    MixedUnion: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 4
+      },
+      name: "MixedUnion",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "string-literal",
+          value: "bork"
+        }, {
+          kind: "number-literal",
+          value: 42
+        }]
+      }
+    },
+    UnionFunc: {
+      kind: "function",
+      name: "UnionFunc",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 6
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "UnionTypes.def",
+          line: 6
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "s",
+          type: {
+            kind: "named",
+            name: "SSU"
+          }
+        }, {
+          name: "m",
+          type: {
+            kind: "named",
+            name: "MixedUnion"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    SourceLocation: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 10
+      },
+      name: "SourceLocation",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "type",
+          type: {
+            kind: "string-literal",
+            value: "source"
+          },
+          optional: false
+        }, {
+          name: "fileName",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "line",
+          type: {
+            kind: "number"
+          },
+          optional: false
+        }]
+      }
+    },
+    BuiltinLocation: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 16
+      },
+      name: "BuiltinLocation",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "type",
+          type: {
+            kind: "string-literal",
+            value: "builtin"
+          },
+          optional: false
+        }]
+      }
+    },
+    Location: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 8
+      },
+      name: "Location",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "type",
+            type: {
+              kind: "string-literal",
+              value: "source"
+            },
+            optional: false
+          }, {
+            name: "fileName",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "line",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "type",
+            type: {
+              kind: "string-literal",
+              value: "builtin"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "type"
+      }
+    },
+    ObjectUnionFunc: {
+      kind: "function",
+      name: "ObjectUnionFunc",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 20
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "UnionTypes.def",
+          line: 20
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "loc",
+          type: {
+            kind: "named",
+            name: "Location"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    NullableType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 57
+      },
+      name: "NullableType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "nullable"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    MixedType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 70
+      },
+      name: "MixedType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "mixed"
+          },
+          optional: false
+        }]
+      }
+    },
+    AnyType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 69
+      },
+      name: "AnyType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "any"
+          },
+          optional: false
+        }]
+      }
+    },
+    StringType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 71
+      },
+      name: "StringType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "string"
+          },
+          optional: false
+        }]
+      }
+    },
+    BooleanType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 72
+      },
+      name: "BooleanType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "boolean"
+          },
+          optional: false
+        }]
+      }
+    },
+    NumberType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 73
+      },
+      name: "NumberType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "number"
+          },
+          optional: false
+        }]
+      }
+    },
+    PrimitiveType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 68
+      },
+      name: "PrimitiveType",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "mixed"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "any"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "boolean"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "number"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    ObjectField: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 93
+      },
+      name: "ObjectField",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "name",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }, {
+          name: "optional",
+          type: {
+            kind: "boolean"
+          },
+          optional: false
+        }]
+      }
+    },
+    ObjectType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 92
+      },
+      name: "ObjectType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "object"
+          },
+          optional: false
+        }, {
+          name: "fields",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "ObjectField"
+            }
+          },
+          optional: false
+        }]
+      }
+    },
+    ArrayType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 89
+      },
+      name: "ArrayType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "array"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    MapType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 91
+      },
+      name: "MapType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "map"
+          },
+          optional: false
+        }, {
+          name: "keyType",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }, {
+          name: "valueType",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    SetType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 90
+      },
+      name: "SetType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "set"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    TupleType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 99
+      },
+      name: "TupleType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "tuple"
+          },
+          optional: false
+        }, {
+          name: "types",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "Type"
+            }
+          },
+          optional: false
+        }]
+      }
+    },
+    ContainerType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 88
+      },
+      name: "ContainerType",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "array"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "map"
+            },
+            optional: false
+          }, {
+            name: "keyType",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }, {
+            name: "valueType",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "set"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "tuple"
+            },
+            optional: false
+          }, {
+            name: "types",
+            type: {
+              kind: "array",
+              type: {
+                kind: "named",
+                name: "Type"
+              }
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    VoidType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 83
+      },
+      name: "VoidType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "void"
+          },
+          optional: false
+        }]
+      }
+    },
+    PromiseType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 84
+      },
+      name: "PromiseType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "promise"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    ObservableType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 85
+      },
+      name: "ObservableType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "observable"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: false
+        }]
+      }
+    },
+    ReturnType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 82
+      },
+      name: "ReturnType",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "void"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "promise"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "observable"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    StringLiteralType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 77
+      },
+      name: "StringLiteralType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "string-literal"
+          },
+          optional: false
+        }, {
+          name: "value",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }]
+      }
+    },
+    NumberLiteralType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 78
+      },
+      name: "NumberLiteralType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "number-literal"
+          },
+          optional: false
+        }, {
+          name: "value",
+          type: {
+            kind: "number"
+          },
+          optional: false
+        }]
+      }
+    },
+    BooleanLiteralType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 79
+      },
+      name: "BooleanLiteralType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "boolean-literal"
+          },
+          optional: false
+        }, {
+          name: "value",
+          type: {
+            kind: "boolean"
+          },
+          optional: false
+        }]
+      }
+    },
+    LiteralType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 76
+      },
+      name: "LiteralType",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "string-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "number-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "boolean-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "boolean"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    NamedType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 109
+      },
+      name: "NamedType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "named"
+          },
+          optional: false
+        }, {
+          name: "name",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }]
+      }
+    },
+    Type: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 53
+      },
+      name: "Type",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "nullable"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "mixed"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "any"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "boolean"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "number"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "object"
+            },
+            optional: false
+          }, {
+            name: "fields",
+            type: {
+              kind: "array",
+              type: {
+                kind: "named",
+                name: "ObjectField"
+              }
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "array"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "map"
+            },
+            optional: false
+          }, {
+            name: "keyType",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }, {
+            name: "valueType",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "set"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "tuple"
+            },
+            optional: false
+          }, {
+            name: "types",
+            type: {
+              kind: "array",
+              type: {
+                kind: "named",
+                name: "Type"
+              }
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "void"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "promise"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "observable"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "string-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "number-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "boolean-literal"
+            },
+            optional: false
+          }, {
+            name: "value",
+            type: {
+              kind: "boolean"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "named"
+            },
+            optional: false
+          }, {
+            name: "name",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "function"
+            },
+            optional: false
+          }, {
+            name: "argumentTypes",
+            type: {
+              kind: "array",
+              type: {
+                kind: "named",
+                name: "Type"
+              }
+            },
+            optional: false
+          }, {
+            name: "returnType",
+            type: {
+              kind: "union",
+              types: [{
+                kind: "object",
+                fields: [{
+                  name: "location",
+                  type: {
+                    kind: "named",
+                    name: "Location"
+                  },
+                  optional: false
+                }, {
+                  name: "kind",
+                  type: {
+                    kind: "string-literal",
+                    value: "void"
+                  },
+                  optional: false
+                }]
+              }, {
+                kind: "object",
+                fields: [{
+                  name: "location",
+                  type: {
+                    kind: "named",
+                    name: "Location"
+                  },
+                  optional: false
+                }, {
+                  name: "kind",
+                  type: {
+                    kind: "string-literal",
+                    value: "promise"
+                  },
+                  optional: false
+                }, {
+                  name: "type",
+                  type: {
+                    kind: "named",
+                    name: "Type"
+                  },
+                  optional: false
+                }]
+              }, {
+                kind: "object",
+                fields: [{
+                  name: "location",
+                  type: {
+                    kind: "named",
+                    name: "Location"
+                  },
+                  optional: false
+                }, {
+                  name: "kind",
+                  type: {
+                    kind: "string-literal",
+                    value: "observable"
+                  },
+                  optional: false
+                }, {
+                  name: "type",
+                  type: {
+                    kind: "named",
+                    name: "Type"
+                  },
+                  optional: false
+                }]
+              }],
+              discriminantField: "kind"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    FunctionType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 60
+      },
+      name: "FunctionType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "function"
+          },
+          optional: false
+        }, {
+          name: "argumentTypes",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "Type"
+            }
+          },
+          optional: false
+        }, {
+          name: "returnType",
+          type: {
+            kind: "union",
+            types: [{
+              kind: "object",
+              fields: [{
+                name: "location",
+                type: {
+                  kind: "named",
+                  name: "Location"
+                },
+                optional: false
+              }, {
+                name: "kind",
+                type: {
+                  kind: "string-literal",
+                  value: "void"
+                },
+                optional: false
+              }]
+            }, {
+              kind: "object",
+              fields: [{
+                name: "location",
+                type: {
+                  kind: "named",
+                  name: "Location"
+                },
+                optional: false
+              }, {
+                name: "kind",
+                type: {
+                  kind: "string-literal",
+                  value: "promise"
+                },
+                optional: false
+              }, {
+                name: "type",
+                type: {
+                  kind: "named",
+                  name: "Type"
+                },
+                optional: false
+              }]
+            }, {
+              kind: "object",
+              fields: [{
+                name: "location",
+                type: {
+                  kind: "named",
+                  name: "Location"
+                },
+                optional: false
+              }, {
+                name: "kind",
+                type: {
+                  kind: "string-literal",
+                  value: "observable"
+                },
+                optional: false
+              }, {
+                name: "type",
+                type: {
+                  kind: "named",
+                  name: "Type"
+                },
+                optional: false
+              }]
+            }],
+            discriminantField: "kind"
+          },
+          optional: false
+        }]
+      }
+    },
+    FunctionDefinition: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 27
+      },
+      name: "FunctionDefinition",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "function"
+          },
+          optional: false
+        }, {
+          name: "name",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "type",
+          type: {
+            kind: "named",
+            name: "FunctionType"
+          },
+          optional: false
+        }]
+      }
+    },
+    InterfaceDefinition: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 35
+      },
+      name: "InterfaceDefinition",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "interface"
+          },
+          optional: false
+        }, {
+          name: "name",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "constructorArgs",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "Type"
+            }
+          },
+          optional: false
+        }, {
+          name: "instanceMethods",
+          type: {
+            kind: "map",
+            keyType: {
+              kind: "string"
+            },
+            valueType: {
+              kind: "named",
+              name: "FunctionType"
+            }
+          },
+          optional: false
+        }, {
+          name: "staticMethods",
+          type: {
+            kind: "map",
+            keyType: {
+              kind: "string"
+            },
+            valueType: {
+              kind: "named",
+              name: "FunctionType"
+            }
+          },
+          optional: false
+        }]
+      }
+    },
+    AliasDefinition: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 45
+      },
+      name: "AliasDefinition",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "alias"
+          },
+          optional: false
+        }, {
+          name: "name",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "definition",
+          type: {
+            kind: "named",
+            name: "Type"
+          },
+          optional: true
+        }]
+      }
+    },
+    Definition: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 24
+      },
+      name: "Definition",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "function"
+            },
+            optional: false
+          }, {
+            name: "name",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "named",
+              name: "FunctionType"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "interface"
+            },
+            optional: false
+          }, {
+            name: "name",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "constructorArgs",
+            type: {
+              kind: "array",
+              type: {
+                kind: "named",
+                name: "Type"
+              }
+            },
+            optional: false
+          }, {
+            name: "instanceMethods",
+            type: {
+              kind: "map",
+              keyType: {
+                kind: "string"
+              },
+              valueType: {
+                kind: "named",
+                name: "FunctionType"
+              }
+            },
+            optional: false
+          }, {
+            name: "staticMethods",
+            type: {
+              kind: "map",
+              keyType: {
+                kind: "string"
+              },
+              valueType: {
+                kind: "named",
+                name: "FunctionType"
+              }
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "alias"
+            },
+            optional: false
+          }, {
+            name: "name",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }, {
+            name: "location",
+            type: {
+              kind: "named",
+              name: "Location"
+            },
+            optional: false
+          }, {
+            name: "definition",
+            type: {
+              kind: "named",
+              name: "Type"
+            },
+            optional: true
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    Definitions: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 22
+      },
+      name: "Definitions",
+      definition: {
+        kind: "map",
+        keyType: {
+          kind: "string"
+        },
+        valueType: {
+          kind: "named",
+          name: "Definition"
+        }
+      }
+    },
+    UnionType: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 101
+      },
+      name: "UnionType",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "location",
+          type: {
+            kind: "named",
+            name: "Location"
+          },
+          optional: false
+        }, {
+          name: "kind",
+          type: {
+            kind: "string-literal",
+            value: "union"
+          },
+          optional: false
+        }, {
+          name: "types",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "Type"
+            }
+          },
+          optional: false
+        }, {
+          name: "discriminantField",
+          type: {
+            kind: "string"
+          },
+          optional: true
+        }]
+      }
+    },
+    TypeFunc: {
+      kind: "function",
+      name: "TypeFunc",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 111
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "UnionTypes.def",
+          line: 111
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "type",
+          type: {
+            kind: "named",
+            name: "Type"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    MultipleDiscriminantUnion: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 113
+      },
+      name: "MultipleDiscriminantUnion",
+      definition: {
+        kind: "union",
+        types: [{
+          kind: "object",
+          fields: [{
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "k1"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "string-literal",
+              value: "t1"
+            },
+            optional: false
+          }, {
+            name: "value1",
+            type: {
+              kind: "string"
+            },
+            optional: false
+          }]
+        }, {
+          kind: "object",
+          fields: [{
+            name: "kind",
+            type: {
+              kind: "string-literal",
+              value: "k2"
+            },
+            optional: false
+          }, {
+            name: "type",
+            type: {
+              kind: "string-literal",
+              value: "t2"
+            },
+            optional: false
+          }, {
+            name: "value2",
+            type: {
+              kind: "number"
+            },
+            optional: false
+          }]
+        }],
+        discriminantField: "kind"
+      }
+    },
+    MDUFunc: {
+      kind: "function",
+      name: "MDUFunc",
+      location: {
+        type: "source",
+        fileName: "UnionTypes.def",
+        line: 116
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "UnionTypes.def",
+          line: 116
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "mdu",
+          type: {
+            kind: "named",
+            name: "MultipleDiscriminantUnion"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    }
+  }
+});

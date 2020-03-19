@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-generated-files-rpc",
+  "main": "./lib/GeneratedFileService.js",
+  "version": "0.0.0",
+  "description": "Determines whether a file is auto-generated",
+  "author": "NEEDS OWNER",
+  "private": true,
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

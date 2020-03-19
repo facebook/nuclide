@@ -1,0 +1,10 @@
+/**
+ * @formout
+ */
+
+'use strict';
+
+jest
+  .enableAutomock()
+
+const x = Y;

@@ -1,23 +1,38 @@
 {
   "name": "nuclide-commons-ui",
-  "version": "0.1.11",
+  "version": "0.7.3-dev",
   "description": "Common Nuclide UI components.",
+  "author": "Nuclide: Core UI",
   "license": "BSD-3-Clause",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-commons-ui",
   "scripts": {
-    "prepublish": "../../scripts/modules-prepublish.sh",
-    "test": "atom --dev --test spec"
+    "test": "true",
+    "prepublish": "../scripts/prepublish.sh"
   },
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "dependencies": {
-    "async-to-generator": "1.1.0",
+    "anser": "1.4.6",
     "classnames": "2.2.5",
+    "dedent": "0.7.0",
+    "diffparser": "1.1.0",
+    "escape-carriage": "1.2.0",
+    "escape-html": "1.0.3",
     "escape-string-regexp": "1.0.5",
-    "nuclide-commons": "0.1.11",
-    "nuclide-commons-atom": "0.1.11",
-    "react": "15.3.1",
-    "react-dom": "15.3.1",
-    "rxjs": "5.3.1"
+    "idx": "1.2.0",
+    "invariant": "2.2.2",
+    "lodash": "4.17.10",
+    "log4js": "1.1.1",
+    "moment": "2.21.0",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "react": "16.6.3",
+    "react-dom": "16.6.3",
+    "react-virtualized": "9.20.1",
+    "rxjs-compat": "6.3.3",
+    "semver": "5.5.0",
+    "shallowequal": "1.1.0",
+    "tabbable": "1.1.0",
+    "tiny-date-picker": "3.2.6"
   }
 }

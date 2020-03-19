@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {SignatureHelp} from 'atom-ide-ui';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 // This file contains RPC definitions for jediserver.py.
@@ -17,7 +18,7 @@ export type JediCompletion = {
   type: string,
   text: string,
   description?: string,
-  params?: Array<string>,
+  params: ?Array<string>,
 };
 
 export type JediDefinition = {
@@ -79,6 +80,7 @@ export type JediOutlineItem =
 export async function get_completions(
   src: NuclideUri,
   contents: string,
+  sysPath: Array<string>,
   line: number,
   column: number,
 ): Promise<?Array<JediCompletion>> {
@@ -88,6 +90,7 @@ export async function get_completions(
 export async function get_definitions(
   src: NuclideUri,
   contents: string,
+  sysPath: Array<string>,
   line: number,
   column: number,
 ): Promise<?Array<JediDefinition>> {
@@ -97,9 +100,22 @@ export async function get_definitions(
 export async function get_references(
   src: NuclideUri,
   contents: string,
+  sysPath: Array<string>,
   line: number,
   column: number,
 ): Promise<?Array<JediReference>> {
+  throw new Error('RPC Stub');
+}
+
+export async function get_hover(
+  src: NuclideUri,
+  contents: string,
+  sysPath: Array<string>,
+  // It's much easier to get the current word from JavaScript.
+  word: string,
+  line: number,
+  column: number,
+): Promise<?string> {
   throw new Error('RPC Stub');
 }
 
@@ -110,6 +126,12 @@ export function get_outline(
   throw new Error('RPC Stub');
 }
 
-export function add_paths(paths: Array<string>): Promise<?Array<string>> {
+export function get_signature_help(
+  src: NuclideUri,
+  contents: string,
+  sysPath: Array<string>,
+  line: number,
+  column: number,
+): Promise<?SignatureHelp> {
   throw new Error('RPC Stub');
 }

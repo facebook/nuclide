@@ -1,0 +1,11 @@
+[
+	"Cannot find Windows Subsystem for Linux installation.",
+	"La combinazione di minuscole/maiuscole usata nel percorso del programma è diversa rispetto al file su disco. È possibile che i punti di interruzione non vengano rilevati.",
+	"Console di debug nodo",
+	"L'attributo '{0}' non esiste ('{1}').",
+	"L'attributo '{0}' non è assoluto ('{1}'). Per renderlo assoluto, provare ad aggiungere '{2}' come prefisso.",
+	"Il runtime '{0}' non è stato trovato in PATH.",
+	"Altre informazioni",
+	"contenuto di sola lettura di Node.js",
+	"modulo principale di sola lettura"
+]

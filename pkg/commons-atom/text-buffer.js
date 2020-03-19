@@ -13,23 +13,14 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import {Observable} from 'rxjs';
 
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-
-export function observeBuffers(
-  observeBuffer: (buffer: atom$TextBuffer) => mixed,
-): IDisposable {
-  return atom.project.observeBuffers(buffer => {
-    if (!nuclideUri.isBrokenDeserializedUri(buffer.getPath())) {
-      observeBuffer(buffer);
-    }
-  });
-}
 
 // Observes all buffer opens.
 // Buffer renames are sent as an open of the new name.
 export function observeBufferOpen(): Observable<atom$TextBuffer> {
-  return observableFromSubscribeFunction(observeBuffers).mergeMap(buffer => {
+  return observableFromSubscribeFunction(cb =>
+    atom.project.observeBuffers(cb),
+  ).mergeMap(buffer => {
     const end = observableFromSubscribeFunction(
       buffer.onDidDestroy.bind(buffer),
     );

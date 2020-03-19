@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,7 +17,7 @@ export function getHyperclickProvider(): HyperclickProvider {
   return {
     providerName: 'url-hyperclick',
     // Allow all language-specific providers to take priority.
-    priority: 5,
+    priority: 99,
     wordRegExp: /[^\s]+/g,
     getSuggestionForWord(textEditor, text, range) {
       return HyperclickProviderHelpers.getSuggestionForWord(

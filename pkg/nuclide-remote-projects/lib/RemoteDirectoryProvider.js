@@ -5,13 +5,13 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import {
   RemoteConnection,
-  RemoteDirectory,
+  RemoteDirectoryPlaceholder,
 } from '../../nuclide-remote-connection';
 
 /**
@@ -22,7 +22,7 @@ import {
 const REMOTE_PATH_URI_PREFIX = 'nuclide://';
 
 export default class RemoteDirectoryProvider {
-  directoryForURISync(uri: string): ?RemoteDirectory {
+  directoryForURISync(uri: string): mixed {
     if (!uri.startsWith(REMOTE_PATH_URI_PREFIX)) {
       return null;
     }
@@ -30,14 +30,15 @@ export default class RemoteDirectoryProvider {
     if (connection) {
       return connection.createDirectory(uri);
     } else {
-      // Return null here. In response, Atom will create a generic Directory for
-      // this URI, and add it to the list of root project paths (atom.project.getPaths()).
-      // In remote-projects/main.js, we remove these generic directories.
-      return null;
+      // Return a placeholder that always return true for existsSync.
+      // This is to prevent Atom from displaying an error at startup.
+      // We remove all remote projects in Nuclide's main.js file, and then
+      // later reload them manually in the remote-projects main file.
+      return new RemoteDirectoryPlaceholder(uri);
     }
   }
 
-  directoryForURI(uri: string): Promise<any> {
+  directoryForURI(uri: string): Promise<mixed> {
     return Promise.resolve(this.directoryForURISync(uri));
   }
 }

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -120,6 +120,12 @@ export async function getCompletions(
   line: number,
   column: number,
 ): Promise<?Array<PythonCompletion>> {
-  const service = await serverManager.getJediService(src);
-  return service.get_completions(src, contents, line, column);
+  const service = await serverManager.getJediService();
+  return service.get_completions(
+    src,
+    contents,
+    serverManager.getSysPath(src),
+    line,
+    column,
+  );
 }

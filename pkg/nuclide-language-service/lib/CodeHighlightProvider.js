@@ -12,7 +12,7 @@
 import type {CodeHighlightProvider as CodeHighlightProviderType} from 'atom-ide-ui';
 import type {LanguageService} from './LanguageService';
 
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {ConnectionCache} from '../../nuclide-remote-connection';
 import {getFileVersionOfEditor} from '../../nuclide-open-files';
 import {Range} from 'atom';

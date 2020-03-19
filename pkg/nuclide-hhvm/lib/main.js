@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
+import type CwdApi from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {
   DeepLinkParams,
   DeepLinkService,
@@ -17,28 +17,24 @@ import type {
 import type {RemoteProjectsService} from '../../nuclide-remote-projects';
 import type {TaskRunnerServiceApi} from '../../nuclide-task-runner/lib/types';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
-import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
-import {track} from '../../nuclide-analytics';
-import invariant from 'invariant';
-
+import {track} from 'nuclide-analytics';
+import invariant from 'assert';
 // eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {AttachProcessInfo} from '../../nuclide-debugger-php/lib/AttachProcessInfo';
-
+import {startAttachProcessConfig} from '../../nuclide-debugger-vsp/lib/HhvmLaunchAttachProvider';
 import HhvmBuildSystem from './HhvmBuildSystem';
 
 class Activation {
   _buildSystem: ?HhvmBuildSystem;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _cwdApi: ?CwdApi;
   _remoteProjectsService: ?RemoteProjectsService;
 
   constructor(state: ?Object) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   dispose() {
@@ -82,7 +78,6 @@ class Activation {
 
   async _debugDeepWithHhvm(params: DeepLinkParams): Promise<void> {
     const {nuclidePath, hackRoot, line, addBreakpoint, source} = params;
-
     if (
       typeof nuclidePath !== 'string' ||
       !nuclideUri.isRemote(nuclidePath) ||
@@ -94,6 +89,9 @@ class Activation {
 
     const pathString = decodeURIComponent(String(nuclidePath));
     const hackRootString = decodeURIComponent(String(hackRoot));
+
+    const startDebugger =
+      params.noDebugger == null || params.noDebugger !== 'true';
 
     track('nuclide-attach-hhvm-deeplink', {
       pathString,
@@ -113,9 +111,22 @@ class Activation {
     }
 
     const host = nuclideUri.getHostname(pathString);
+
+    // Allow only valid hostname characters, per RFC 952:
+    // https://tools.ietf.org/html/rfc952
+    const invalidMatch = host.match(/[^A-Za-z0-9\-._]+/);
+    if (invalidMatch != null) {
+      atom.notifications.addError(
+        'The specified host name contained invalid characters.',
+      );
+      return;
+    }
+
     const cwd = nuclideUri.createRemoteUri(host, hackRootString);
     const notification = atom.notifications.addInfo(
-      `Connecting to ${host} and attaching debugger...`,
+      startDebugger
+        ? `Connecting to ${host} and attaching debugger...`
+        : `Connecting to ${host}...`,
       {
         dismissable: true,
       },
@@ -125,7 +136,7 @@ class Activation {
     const remoteConnection = await this._remoteProjectsService.createRemoteConnection(
       {
         host,
-        cwd: nuclideUri.getPath(cwd),
+        path: nuclideUri.getPath(cwd),
         displayTitle: host,
       },
     );
@@ -137,10 +148,12 @@ class Activation {
 
     // The hostname might have changed slightly from what was passed in due to
     // DNS lookup, so create a new remote URI rather than using cwd from above.
-    const hackRootUri = remoteConnection.getUriOfRemotePath(hackRootString);
-    const navUri = remoteConnection.getUriOfRemotePath(
-      nuclideUri.getPath(pathString),
-    );
+    const hackRootUri = remoteConnection
+      .getConnection()
+      .getUriOfRemotePath(hackRootString);
+    const navUri = remoteConnection
+      .getConnection()
+      .getUriOfRemotePath(nuclideUri.getPath(pathString));
 
     // Set the current project root.
     if (this._cwdApi != null) {
@@ -150,24 +163,28 @@ class Activation {
     // Open the script path in the editor.
     const lineNumber = parseInt(line, 10);
     if (Number.isNaN(lineNumber)) {
-      goToLocation(navUri);
+      await goToLocation(navUri);
     } else {
-      // NOTE: line numbers start at 0, so subtract 1.
-      goToLocation(navUri, lineNumber - 1);
+      // Note: editor line numbers are 0-based, so subtract 1.
+      await goToLocation(navUri, {line: lineNumber - 1});
     }
 
-    // Debug the remote HHVM server!
-    const debuggerService = await consumeFirstProvider(
-      'nuclide-debugger.remote',
-    );
+    if (startDebugger) {
+      if (addBreakpoint === 'true' && !Number.isNaN(lineNumber)) {
+        // Insert a breakpoint if requested.
+        atom.commands.dispatch(
+          atom.views.getView(atom.workspace),
+          'debugger:add-breakpoint',
+        );
+      }
 
-    if (addBreakpoint === 'true' && !Number.isNaN(lineNumber)) {
-      // Insert a breakpoint if requested.
-      // NOTE: Nuclide protocol breakpoint line numbers start at 0, so subtract 1.
-      debuggerService.addBreakpoint(navUri, lineNumber - 1);
+      await startAttachProcessConfig(
+        hackRootUri,
+        null /* attachPort */,
+        true /* serverAttach */,
+      );
     }
 
-    await debuggerService.startDebugging(new AttachProcessInfo(hackRootUri));
     notification.dismiss();
   }
 }

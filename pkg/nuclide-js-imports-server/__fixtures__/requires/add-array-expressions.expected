@@ -1,0 +1,4 @@
+const three = require('three');
+const two = require('two');
+
+var one = [two, [three]];

@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -40,7 +40,7 @@ export type HyperclickProvider = {
 
 export type HyperclickSuggestion = {
   // The range(s) to underline to provide as a visual cue for clicking.
-  range: ?atom$Range | ?Array<atom$Range>,
+  range: atom$Range | Array<atom$Range>,
 
   // The function to call when the underlined text is clicked.
   callback:

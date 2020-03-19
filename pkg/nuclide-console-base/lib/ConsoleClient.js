@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {Message} from '../../nuclide-console/lib/types';
+import type {ConsoleMessage} from 'atom-ide-ui';
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
 
 import {Subject} from 'rxjs';
@@ -21,12 +21,12 @@ const SHOW_CONSOLE_ON_PROCESS_EVENTS = ['stdout', 'stderr', 'error'];
 export default class ConsoleClient {
   _consoleShown: boolean;
   _processName: string;
-  _progressUpdates: Subject<Message>;
+  _progressUpdates: Subject<ConsoleMessage>;
   _showNotificationOnCompletion: boolean;
 
   constructor(
     processName: string,
-    progressUpdates: Subject<Message>,
+    progressUpdates: Subject<ConsoleMessage>,
     showNotificationOnCompletion?: boolean = true,
   ) {
     this._processName = processName;

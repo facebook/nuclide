@@ -5,22 +5,18 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import passesGK from 'nuclide-commons/passesGK';
 import typeof * as HackService from '../../nuclide-hack-rpc/lib/HackService';
 import type {LanguageService} from '../../nuclide-language-service/lib/LanguageService';
 import type {ServerConnection} from '../../nuclide-remote-connection';
 import type {AtomLanguageServiceConfig} from '../../nuclide-language-service/lib/AtomLanguageService';
-import type {
-  AutocompleteResult,
-  Completion,
-} from '../../nuclide-language-service/lib/LanguageService';
 
-import invariant from 'assert';
-
+import {NullLanguageService} from '../../nuclide-language-service-rpc';
 import {getServiceByConnection} from '../../nuclide-remote-connection';
 import {
   HACK_CONFIG_FILE_NAME,
@@ -35,25 +31,9 @@ import {
   updateAutocompleteFirstResults,
 } from '../../nuclide-language-service';
 import {HACK_GRAMMARS} from '../../nuclide-hack-common';
-import {
-  sortAndFilterCompletions,
-  getResultPrefix,
-  getReplacementPrefix,
-  findHackPrefix,
-} from '../../nuclide-hack-common/lib/autocomplete';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
-import passesGK from '../../commons-node/passesGK';
-import {getEvaluationExpression} from './evaluationExpression';
 
 const HACK_SERVICE_NAME = 'HackService';
-
-async function getUseLspConnection(): Promise<boolean> {
-  return passesGK('nuclide_hack_use_lsp_connection');
-}
-
-async function getUseFfpAutocomplete(): Promise<boolean> {
-  return passesGK('nuclide_hack_use_ffp_autocomplete');
-}
 
 async function connectionToHackService(
   connection: ?ServerConnection,
@@ -65,33 +45,26 @@ async function connectionToHackService(
   const config = getConfig();
   const fileNotifier = await getNotifierByConnection(connection);
 
-  if (await getUseLspConnection()) {
-    const host = await getHostServices();
-    const autocompleteArg = (await getUseFfpAutocomplete())
-      ? ['--ffp-autocomplete']
-      : [];
-    return hackService.initializeLsp(
-      config.hhClientPath, // command
-      ['lsp', '--from', 'nuclide', ...autocompleteArg], // arguments
-      [HACK_CONFIG_FILE_NAME], // project file
-      HACK_FILE_EXTENSIONS, // which file-notifications should be sent to LSP
-      config.logLevel,
-      fileNotifier,
-      host,
-    );
-  } else {
-    return hackService.initialize(
-      config.hhClientPath,
-      config.logLevel,
-      fileNotifier,
-    );
-  }
+  const host = await getHostServices();
+  const lspService = await hackService.initializeLsp(
+    config.hhClientPath, // command
+    ['lsp', '--from', 'nuclide', '--enhanced-hover'], // arguments
+    [HACK_CONFIG_FILE_NAME], // project file
+    HACK_FILE_EXTENSIONS, // which file-notifications should be sent to LSP
+    config.logLevel,
+    fileNotifier,
+    host,
+    {
+      useTextEditAutocomplete: true,
+    },
+  );
+  return lspService || new NullLanguageService();
 }
 
 async function createLanguageService(): Promise<
   AtomLanguageService<LanguageService>,
 > {
-  const usingLsp = await getUseLspConnection();
+  const isStatusEnabled = await passesGK('nuclide_hack_status');
   const atomConfig: AtomLanguageServiceConfig = {
     name: 'Hack',
     grammars: HACK_GRAMMARS,
@@ -126,39 +99,48 @@ async function createLanguageService(): Promise<
       priority: 1,
       analyticsEventName: 'hack.formatCode',
       canFormatRanges: true,
-      canFormatAtPosition: usingLsp,
+      canFormatAtPosition: true,
     },
     findReferences: {
       version: '0.1.0',
       analyticsEventName: 'hack:findReferences',
     },
-    evaluationExpression: {
+    rename: {
       version: '0.0.0',
-      analyticsEventName: 'hack.evaluationExpression',
-      matcher: {kind: 'custom', matcher: getEvaluationExpression},
+      priority: 1,
+      analyticsEventName: 'hack:rename',
     },
     autocomplete: {
-      version: '2.0.0',
       inclusionPriority: 1,
       // The context-sensitive hack autocompletions are more relevant than snippets.
       suggestionPriority: 3,
       disableForSelector: null,
       excludeLowerPriority: false,
-      analyticsEventName: 'hack.getAutocompleteSuggestions',
-      autocompleteCacherConfig: usingLsp
-        ? {
-            updateResults: updateAutocompleteResults,
-            updateFirstResults: updateAutocompleteFirstResults,
-          }
-        : {
-            updateResults: hackUpdateAutocompleteResults,
-          },
-      onDidInsertSuggestionAnalyticsEventName: 'hack.autocomplete-chosen',
+      analytics: {
+        eventName: 'nuclide-hack',
+        shouldLogInsertedSuggestion: true,
+      },
+      autocompleteCacherConfig: {
+        updateResults: updateAutocompleteResults,
+        updateFirstResults: updateAutocompleteFirstResults,
+      },
+      supportsResolve: true,
     },
     diagnostics: {
       version: '0.2.0',
       analyticsEventName: 'hack.observe-diagnostics',
     },
+    status: isStatusEnabled
+      ? {
+          version: '0.1.0',
+          priority: 1,
+          observeEventName: 'hack.status.observe',
+          clickEventName: 'hack.status.click',
+          icon: 'nuclicon-hack',
+          description:
+            '__hh_server__ provides provides autocomplete, hyperclick, hover, errors and outline.',
+        }
+      : undefined,
   };
 
   return new AtomLanguageService(
@@ -196,49 +178,4 @@ export async function isFileInHackProject(
     fileUri,
   );
   return foundDir != null;
-}
-
-function hackUpdateAutocompleteResults(
-  request: atom$AutocompleteRequest,
-  firstResult: AutocompleteResult,
-): ?AutocompleteResult {
-  if (firstResult.isIncomplete) {
-    return null;
-  }
-  const replacementPrefix = findHackPrefix(
-    request.editor.getBuffer(),
-    request.bufferPosition,
-  );
-  const updatedCompletions = updateReplacementPrefix(
-    request,
-    firstResult.items,
-    replacementPrefix,
-  );
-  return {
-    ...firstResult,
-    items: sortAndFilterCompletions(updatedCompletions, replacementPrefix),
-  };
-}
-
-function updateReplacementPrefix(
-  request: atom$AutocompleteRequest,
-  firstResult: Array<Completion>,
-  prefixCandidate: string,
-): Array<Completion> {
-  const {editor, bufferPosition} = request;
-  const contents = editor.getText();
-  const offset = editor.getBuffer().characterIndexForPosition(bufferPosition);
-  return firstResult.map(completion => {
-    const name = completion.displayText;
-    invariant(name != null);
-    const resultPrefix = getResultPrefix(contents, offset, name);
-    const replacementPrefix = getReplacementPrefix(
-      resultPrefix,
-      prefixCandidate,
-    );
-    return {
-      ...completion,
-      replacementPrefix,
-    };
-  });
 }

@@ -5,14 +5,16 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 export type {WorkingSetsStore} from './WorkingSetsStore';
 
-export type WorkingSetDefinition = {
+export type WorkingSetDefinition = {|
   name: string,
   active: boolean,
   uris: Array<string>,
-};
+  originURLs?: Array<string>,
+  sourceType: 'user' | 'project',
+|};

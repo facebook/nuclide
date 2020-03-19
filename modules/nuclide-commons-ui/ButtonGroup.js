@@ -6,12 +6,12 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type ButtonGroupSize = 'EXTRA_SMALL' | 'SMALL' | 'LARGE';
 
@@ -46,8 +46,7 @@ export const ButtonGroup = (props: Props) => {
     [sizeClassName]: size != null,
   });
   return (
-    <div className={newClassName}>
-      {children}
-    </div>
+    // $FlowFixMe(>=0.53.0) Flow suppress
+    <div className={newClassName}>{children}</div>
   );
 };

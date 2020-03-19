@@ -12,7 +12,7 @@
 import type {DistractionFreeModeProvider, DistractionFreeModeState} from '..';
 
 import invariant from 'assert';
-import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export class DistractionFreeMode {
   _providers: Set<DistractionFreeModeProvider>;
@@ -52,7 +52,7 @@ export class DistractionFreeMode {
     ) {
       this._addToRestoreState(provider);
     }
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._providers.delete(provider);
     });
   }

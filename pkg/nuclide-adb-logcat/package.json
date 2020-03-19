@@ -1,13 +1,11 @@
 {
   "name": "nuclide-adb-logcat",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "A nuclide-output provider for adb logcat",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "configMetadata": {
       "pathComponents": [
         "IDE",
@@ -30,9 +28,9 @@
     }
   },
   "consumedServices": {
-    "nuclide-output": {
+    "console": {
       "versions": {
-        "0.0.0": "consumeOutputService"
+        "0.1.0": "consumeConsole"
       }
     }
   }

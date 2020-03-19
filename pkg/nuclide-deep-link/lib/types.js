@@ -5,11 +5,14 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-export type DeepLinkParams = {[key: string]: string | Array<string>};
+import type {DeepLinkParams} from '../../commons-atom/deep-link';
+import type {BrowserWindow} from 'nuclide-commons/electron-remote';
+
+export type {DeepLinkParams};
 
 export type DeepLinkService = {
   /**
@@ -26,7 +29,7 @@ export type DeepLinkService = {
    * Manually send a deep link to another Atom window.
    */
   sendDeepLink(
-    browserWindow: electron$BrowserWindow,
+    browserWindow: BrowserWindow,
     path: string,
     params: DeepLinkParams,
   ): void,

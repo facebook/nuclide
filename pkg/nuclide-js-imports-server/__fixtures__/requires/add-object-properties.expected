@@ -1,0 +1,7 @@
+const four = require('four');
+const three = require('three');
+
+var one = {
+  two: three,
+  four,
+};

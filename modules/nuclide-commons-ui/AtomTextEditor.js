@@ -12,14 +12,15 @@
 
 import invariant from 'assert';
 import classnames from 'classnames';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as React from 'react';
 import {TextBuffer} from 'atom';
 import {
-  enforceReadOnly,
+  enforceReadOnlyEditor,
   enforceSoftWrap,
 } from 'nuclide-commons-atom/text-editor';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {Observable} from 'rxjs';
+import atomTabIndexForwarder from './atomTabIndexForwarder';
 
 const doNothing = () => {};
 
@@ -32,12 +33,13 @@ function setupTextEditor(props: Props): TextEditorSetup {
   const textBuffer = props.textBuffer || new TextBuffer();
   // flowlint-next-line sketchy-null-string:off
   if (props.path) {
+    // $FlowIgnore
     textBuffer.setPath(props.path);
   }
 
   const disposables = new UniversalDisposable();
   if (props.onDidTextBufferChange != null) {
-    disposables.add(textBuffer.onDidChange(props.onDidTextBufferChange));
+    disposables.add(textBuffer.onDidChangeText(props.onDidTextBufferChange));
   }
 
   const textEditorParams = {
@@ -49,9 +51,10 @@ function setupTextEditor(props: Props): TextEditorSetup {
     textEditorParams,
   );
   disposables.add(() => textEditor.destroy());
-
   if (props.grammar != null) {
     textEditor.setGrammar(props.grammar);
+  } else {
+    atom.grammars.autoAssignLanguageMode(textBuffer);
   }
   disposables.add(enforceSoftWrap(textEditor, props.softWrapped));
 
@@ -61,14 +64,8 @@ function setupTextEditor(props: Props): TextEditorSetup {
   }
 
   if (props.readOnly) {
-    enforceReadOnly(textEditor);
-
-    // Remove the cursor line decorations because that's distracting in read-only mode.
-    textEditor.getDecorations({class: 'cursor-line'}).forEach(decoration => {
-      decoration.destroy();
-    });
+    enforceReadOnlyEditor(textEditor);
   }
-
   return {
     disposables,
     textEditor,
@@ -94,17 +91,23 @@ type Props = {
   disabled: boolean,
   gutterHidden: boolean,
   grammar?: ?Object,
-  onDidTextBufferChange?: (event: atom$TextEditEvent) => mixed,
+  // these are processed in setupTextEditor below
+  /* eslint-disable react/no-unused-prop-types */
+  onDidTextBufferChange?: ?(event: atom$AggregatedTextEditEvent) => mixed,
   path?: string,
   placeholderText?: string,
+  syncTextContents: boolean,
+  /* eslint-enable react/no-unused-prop-types */
   readOnly: boolean,
   textBuffer?: TextBuffer,
-  syncTextContents: boolean,
   tabIndex: string,
   softWrapped: boolean,
+  onConfirm?: () => mixed,
+  // Called with text editor  as input after initializing and attaching to DOM.
+  onInitialized?: atom$TextEditor => IDisposable,
 };
 
-export class AtomTextEditor extends React.Component {
+export class AtomTextEditor extends React.Component<Props, void> {
   static defaultProps: DefaultProps = {
     correctContainerWidth: true,
     disabled: false,
@@ -117,7 +120,7 @@ export class AtomTextEditor extends React.Component {
     softWrapped: false,
   };
 
-  props: Props;
+  _rootElement: ?HTMLDivElement;
   _textEditorElement: ?atom$TextEditorElement;
   _editorDisposables: UniversalDisposable;
 
@@ -131,15 +134,36 @@ export class AtomTextEditor extends React.Component {
   }
 
   _updateTextEditor(setup: TextEditorSetup): void {
+    const container = this._rootElement;
+    if (container == null) {
+      return;
+    }
+
     this._editorDisposables.dispose();
     const {textEditor, disposables} = setup;
 
     this._editorDisposables = new UniversalDisposable(disposables);
 
-    const container = ReactDOM.findDOMNode(this);
     const textEditorElement: atom$TextEditorElement = (this._textEditorElement = (document.createElement(
       'atom-text-editor',
     ): any));
+
+    textEditorElement.classList.add('nuclide-wrapped-editor');
+
+    if (parseInt(this.props.tabIndex, 10) >= 0) {
+      // Make tab move to next element instead of inserting a 'tab' character
+      this._editorDisposables.add(
+        // Make AtomTextEditor properly shift-tabbable
+        atomTabIndexForwarder(textEditorElement),
+        // Make 'Tab' change focus instead of inserting tab character
+        Observable.fromEvent(textEditorElement, 'keydown').subscribe(event => {
+          if (event.key === 'Tab') {
+            event.stopPropagation();
+          }
+        }),
+      );
+    }
+
     textEditorElement.setModel(textEditor);
     textEditorElement.setAttribute('tabindex', this.props.tabIndex);
     // HACK! This is a workaround for the ViewRegistry where Atom has a default view provider for
@@ -154,31 +178,37 @@ export class AtomTextEditor extends React.Component {
       this._editorDisposables.add(
         textEditorElement.onDidAttach(() => {
           const correctlySizedElement = textEditorElement.querySelector(
-            '* /deep/ .lines > :first-child',
+            '.lines > :first-child',
           );
           if (correctlySizedElement == null) {
             return;
           }
-          let {width} = correctlySizedElement.style;
-          // For compatibility with Atom < 1.19.
-          // TODO(#19829039): Remove this after upgrading.
-          if (!width && correctlySizedElement.children.length > 0) {
-            width = correctlySizedElement.children[0].style.width;
-          }
-          // $FlowFixMe
-          container.style.width = width;
+          container.style.width = correctlySizedElement.style.width;
         }),
       );
     }
 
     // Attach to DOM.
-    // $FlowFixMe
     container.innerHTML = '';
-    // $FlowFixMe
     container.appendChild(textEditorElement);
+
+    if (this.props.onConfirm != null) {
+      this._editorDisposables.add(
+        atom.commands.add(textEditorElement, {
+          'core:confirm': () => {
+            invariant(this.props.onConfirm != null);
+            this.props.onConfirm();
+          },
+        }),
+      );
+    }
+
+    if (this.props.onInitialized != null) {
+      this._editorDisposables.add(this.props.onInitialized(textEditor));
+    }
   }
 
-  componentWillReceiveProps(nextProps: Props): void {
+  UNSAFE_componentWillReceiveProps(nextProps: Props): void {
     if (
       nextProps.textBuffer !== this.props.textBuffer ||
       nextProps.readOnly !== this.props.readOnly
@@ -199,6 +229,7 @@ export class AtomTextEditor extends React.Component {
       }
     }
     if (nextProps.path !== this.props.path) {
+      // $FlowIgnore
       this.getTextBuffer().setPath(nextProps.path || '');
     }
     if (nextProps.gutterHidden !== this.props.gutterHidden) {
@@ -212,6 +243,10 @@ export class AtomTextEditor extends React.Component {
     }
     if (nextProps.disabled !== this.props.disabled) {
       this._updateDisabledState(nextProps.disabled);
+    }
+    if (nextProps.placeholderText !== this.props.placeholderText) {
+      this.getModel().setPlaceholderText(nextProps.placeholderText || '');
+      this.getModel().scheduleComponentUpdate();
     }
   }
 
@@ -259,7 +294,7 @@ export class AtomTextEditor extends React.Component {
     return this._textEditorElement;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const className = classnames(
       this.props.className,
       'nuclide-text-editor-container',
@@ -267,7 +302,12 @@ export class AtomTextEditor extends React.Component {
         'no-auto-grow': !this.props.autoGrow,
       },
     );
-    return <div className={className} />;
+    return (
+      <div
+        className={className}
+        ref={rootElement => (this._rootElement = rootElement)}
+      />
+    );
   }
 
   // This component wraps the imperative API of `<atom-text-editor>`, and so React's rendering
@@ -277,6 +317,6 @@ export class AtomTextEditor extends React.Component {
   }
 
   componentWillUnmount(): void {
-    this._editorDisposables.dispose();
+    process.nextTick(() => this._editorDisposables.dispose());
   }
 }

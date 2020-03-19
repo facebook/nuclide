@@ -1,0 +1,16 @@
+require('aaa-side-effect');
+require('bbb-side-effect');
+require('ccc-side-effect');
+
+const AAA = require('AAA');
+const BBB = require('BBB');
+const CCC = require('CCC');
+
+const aaa = require('aaa');
+const bbb = require('bbb');
+const ccc = require('ccc');
+
+// Make sure they are used.
+aaa(AAA);
+bbb(BBB);
+ccc(CCC);

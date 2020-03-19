@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   Action,
   AppState,
@@ -16,45 +17,49 @@ import type {
   Store,
   TaskMetadata,
   TaskRunner,
+  TaskOptions,
   TaskRunnerState,
 } from '../types';
-import type {Directory} from '../../../nuclide-remote-connection';
+import textFromOutcomeAction from './textFromOutcomeAction';
 import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 
-import {saveBuffer} from '../../../nuclide-remote-connection';
+import {isConsoleVisible} from 'nuclide-commons-atom/pane-item';
+import {compact} from 'nuclide-commons/observable';
+import {ProcessExitError} from 'nuclide-commons/process';
 import {observableFromTask} from '../../../commons-node/tasks';
+import {trackEvent} from 'nuclide-analytics';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getLogger} from 'log4js';
 import * as Actions from './Actions';
+import * as Immutable from 'immutable';
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
-import {Observable} from 'rxjs';
-
-export function setProjectRootEpic(
-  actions: ActionsObservable<Action>,
-  store: Store,
-): Observable<Action> {
-  return actions
-    .ofType(Actions.DID_ACTIVATE_INITIAL_PACKAGES)
-    .map(() => Actions.setProjectRoot(store.getState().projectRoot));
-}
+import {Observable, Scheduler} from 'rxjs';
 
 export function setProjectRootForNewTaskRunnerEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions.ofType(Actions.REGISTER_TASK_RUNNER).switchMap(action => {
+  return actions.ofType(Actions.REGISTER_TASK_RUNNER).mergeMap(action => {
     invariant(action.type === Actions.REGISTER_TASK_RUNNER);
     const {taskRunner} = action.payload;
-    const {projectRoot, taskRunnersReady} = store.getState();
-
-    if (!taskRunnersReady) {
+    const unregistered = actions.filter(
+      a =>
+        a.type === Actions.UNREGISTER_TASK_RUNNER &&
+        a.payload.taskRunner === taskRunner,
+    );
+    const {projectRoot, initialPackagesActivated} = store.getState();
+    if (!initialPackagesActivated || projectRoot == null) {
       return Observable.empty();
     }
-
-    return getTaskRunnerState(taskRunner, projectRoot).map(result =>
-      Actions.setStateForTaskRunner(result.taskRunner, result.taskRunnerState),
-    );
+    return getTaskRunnerState(taskRunner, projectRoot)
+      .map(result =>
+        Actions.setStateForTaskRunner(
+          result.taskRunner,
+          result.taskRunnerState,
+        ),
+      )
+      .takeUntil(unregistered);
   });
 }
 
@@ -62,24 +67,22 @@ export function setConsolesForTaskRunnersEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
-  return actions
-    .ofType(Actions.SET_CONSOLE_SERVICE, Actions.DID_ACTIVATE_INITIAL_PACKAGES)
-    .switchMap(() => {
-      const {consoleService, taskRunnersReady} = store.getState();
-      if (consoleService == null || !taskRunnersReady) {
-        return Observable.empty();
-      }
+  return actions.ofType(Actions.SET_CONSOLE_SERVICE).switchMap(() => {
+    const {consoleService} = store.getState();
+    if (consoleService == null) {
+      return Observable.empty();
+    }
 
-      const consolesForTaskRunners = store
-        .getState()
-        .taskRunners.map(runner => [
-          runner,
-          consoleService({id: runner.name, name: runner.name}),
-        ]);
-      return Observable.of(
-        Actions.setConsolesForTaskRunners(new Map(consolesForTaskRunners)),
-      );
-    });
+    const consolesForTaskRunners = store
+      .getState()
+      .taskRunners.map(runner => [
+        runner,
+        consoleService({id: runner.id, name: runner.name}),
+      ]);
+    return Observable.of(
+      Actions.setConsolesForTaskRunners(Immutable.Map(consolesForTaskRunners)),
+    );
+  });
 }
 
 export function addConsoleForTaskRunnerEpic(
@@ -87,8 +90,8 @@ export function addConsoleForTaskRunnerEpic(
   store: Store,
 ): Observable<Action> {
   return actions.ofType(Actions.REGISTER_TASK_RUNNER).switchMap(action => {
-    const {consoleService, taskRunnersReady} = store.getState();
-    if (consoleService == null || !taskRunnersReady) {
+    const {consoleService} = store.getState();
+    if (consoleService == null) {
       return Observable.empty();
     }
 
@@ -106,8 +109,8 @@ export function removeConsoleForTaskRunnerEpic(
   store: Store,
 ): Observable<Action> {
   return actions.ofType(Actions.UNREGISTER_TASK_RUNNER).switchMap(action => {
-    const {consoleService, taskRunnersReady} = store.getState();
-    if (consoleService == null || !taskRunnersReady) {
+    const {consoleService} = store.getState();
+    if (consoleService == null) {
       return Observable.empty();
     }
 
@@ -127,13 +130,14 @@ export function setActiveTaskRunnerEpic(
     .filter(
       action =>
         action.type === Actions.SET_STATES_FOR_TASK_RUNNERS ||
+        action.type === Actions.SET_STATE_FOR_TASK_RUNNER ||
         (action.type === Actions.UNREGISTER_TASK_RUNNER &&
           action.payload.taskRunner === store.getState().activeTaskRunner),
     )
     .switchMap(action => {
       const {projectRoot} = store.getState();
 
-      if (!projectRoot) {
+      if (projectRoot == null) {
         return Observable.of(Actions.selectTaskRunner(null, false));
       }
 
@@ -143,9 +147,7 @@ export function setActiveTaskRunnerEpic(
         statesForTaskRunners,
       } = store.getState();
       const {preferencesForWorkingRoots} = options;
-      const preference = preferencesForWorkingRoots.getItem(
-        projectRoot.getPath(),
-      );
+      const preference = preferencesForWorkingRoots.getItem(projectRoot);
 
       let visibilityAction;
       let taskRunner = activeTaskRunner;
@@ -205,25 +207,28 @@ export function combineTaskRunnerStatesEpic(
   store: Store,
   options: EpicOptions,
 ): Observable<Action> {
-  return actions.ofType(Actions.SET_PROJECT_ROOT).switchMap(() => {
-    const {projectRoot, taskRunners, taskRunnersReady} = store.getState();
+  return actions
+    .ofType(Actions.SET_PROJECT_ROOT, Actions.DID_ACTIVATE_INITIAL_PACKAGES)
+    .switchMap(() => {
+      const {
+        projectRoot,
+        taskRunners,
+        initialPackagesActivated,
+      } = store.getState();
 
-    if (!taskRunnersReady) {
-      // We will dispatch another set project root when everyone is ready.
-      return Observable.empty();
-    }
+      if (!initialPackagesActivated) {
+        return Observable.empty();
+      }
 
-    if (taskRunners.length === 0) {
-      return Observable.of(Actions.setStatesForTaskRunners(new Map()));
-    }
+      if (taskRunners.count() === 0) {
+        return Observable.of(Actions.setStatesForTaskRunners(Immutable.Map()));
+      }
 
-    const runnersAndStates = taskRunners.map(taskRunner =>
-      getTaskRunnerState(taskRunner, projectRoot),
-    );
+      const runnersAndStates = taskRunners.map(taskRunner =>
+        getTaskRunnerState(taskRunner, projectRoot),
+      );
 
-    return (
-      Observable.from(runnersAndStates)
-        // $FlowFixMe: type combineAll
+      return Observable.from(runnersAndStates)
         .combineAll()
         .map(tuples => {
           const statesForTaskRunners = new Map();
@@ -235,10 +240,11 @@ export function combineTaskRunnerStatesEpic(
               );
             }
           });
-          return Actions.setStatesForTaskRunners(statesForTaskRunners);
-        })
-    );
-  });
+          return Actions.setStatesForTaskRunners(
+            Immutable.Map(statesForTaskRunners),
+          );
+        });
+    });
 }
 
 export function toggleToolbarVisibilityEpic(
@@ -254,6 +260,7 @@ export function toggleToolbarVisibilityEpic(
       const currentlyVisible = state.visible;
       const {visible, taskRunner} = action.payload;
 
+      // eslint-disable-next-line eqeqeq
       if (visible === true || (visible === null && !currentlyVisible)) {
         if (projectRoot == null) {
           atom.notifications.addError(
@@ -299,7 +306,7 @@ export function updatePreferredVisibilityEpic(
       ) {
         // The user explicitly changed the visibility, remember this state
         const {preferencesForWorkingRoots} = options;
-        preferencesForWorkingRoots.setItem(projectRoot.getPath(), {
+        preferencesForWorkingRoots.setItem(projectRoot, {
           taskRunnerId: activeTaskRunner.id,
           visible,
         });
@@ -320,17 +327,14 @@ export function updatePreferredTaskRunnerEpic(
       const {updateUserPreferences} = action.payload;
       const {projectRoot, activeTaskRunner} = store.getState();
 
-      if (updateUserPreferences && projectRoot && activeTaskRunner) {
+      if (updateUserPreferences && projectRoot != null && activeTaskRunner) {
         // The user explicitly selected this task runner, remember this state
         const {preferencesForWorkingRoots} = options;
         const updatedPreference = {
           visible: true,
           taskRunnerId: activeTaskRunner.id,
         };
-        preferencesForWorkingRoots.setItem(
-          projectRoot.getPath(),
-          updatedPreference,
-        );
+        preferencesForWorkingRoots.setItem(projectRoot, updatedPreference);
       }
     })
     .ignoreElements();
@@ -350,14 +354,16 @@ export function verifySavedBeforeRunningTaskEpic(
     )
     .switchMap(action => {
       invariant(action.type === Actions.RUN_TASK);
-      const {taskMeta} = action.payload;
+      const {taskRunner, taskMeta, options} = action.payload;
       const unsavedEditors = atom.workspace
         .getTextEditors()
         .filter(editor => editor.getPath() != null && editor.isModified());
 
       // Everything saved? Run it!
       if (unsavedEditors.length === 0) {
-        return Observable.of(Actions.runTask(taskMeta, false));
+        return Observable.of(
+          Actions.runTask(taskRunner, taskMeta, options, false),
+        );
       }
 
       return promptForShouldSave(taskMeta).switchMap(shouldSave => {
@@ -371,12 +377,12 @@ export function verifySavedBeforeRunningTaskEpic(
             return Promise.all(
               unsavedEditors
                 .filter(editor => stillUnsaved.indexOf(editor) !== -1)
-                .map(editor => saveBuffer(editor.getBuffer())),
+                .map(editor => editor.save()),
             );
           });
           return Observable.concat(
             saveAll.ignoreElements(),
-            Observable.of(Actions.runTask(taskMeta)),
+            Observable.of(Actions.runTask(taskRunner, taskMeta, options)),
           ).catch(err => {
             atom.notifications.addError(
               'An unexpected error occurred while saving the files.',
@@ -385,7 +391,9 @@ export function verifySavedBeforeRunningTaskEpic(
             return Observable.empty();
           });
         }
-        return Observable.of(Actions.runTask(taskMeta, false));
+        return Observable.of(
+          Actions.runTask(taskRunner, taskMeta, options, false),
+        );
       });
     });
 }
@@ -405,17 +413,16 @@ export function runTaskEpic(
       const state = store.getState();
       const stopRunningTask = state.runningTask != null;
 
-      const {taskMeta} = action.payload;
+      const {taskMeta, taskRunner, options} = action.payload;
       const {activeTaskRunner} = state;
-      const newTaskRunner = taskMeta.taskRunner;
 
       return Observable.concat(
         stopRunningTask
           ? Observable.of(Actions.stopTask())
           : Observable.empty(),
-        activeTaskRunner === newTaskRunner
+        activeTaskRunner === taskRunner
           ? Observable.empty()
-          : Observable.of(Actions.selectTaskRunner(newTaskRunner, true)),
+          : Observable.of(Actions.selectTaskRunner(taskRunner, true)),
         store.getState().visible
           ? Observable.empty()
           : Observable.of(Actions.setToolbarVisibility(true, true)),
@@ -425,7 +432,7 @@ export function runTaskEpic(
           }
 
           return (
-            createTaskObservable(taskMeta, store.getState)
+            createTaskObservable(taskRunner, taskMeta, options, store.getState)
               // Stop listening once the task is done.
               .takeUntil(
                 actions.ofType(
@@ -492,19 +499,92 @@ export function setToolbarVisibilityEpic(
   });
 }
 
-export function printTaskCancelledEpic(
+export function trackEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<empty> {
+  const trackingEvents = actions
+    .map(action => {
+      switch (action.type) {
+        case Actions.TASK_STARTED:
+          return {
+            type: 'nuclide-task-runner:task-started',
+            data: getTaskTrackEventData(action, store.getState()),
+          };
+        case Actions.TASK_STOPPED:
+          return {
+            type: 'nuclide-task-runner:task-stopped',
+            data: getTaskTrackEventData(action, store.getState()),
+          };
+        case Actions.TASK_COMPLETED:
+          return {
+            type: 'nuclide-task-runner:task-completed',
+            data: getTaskTrackEventData(action, store.getState()),
+          };
+
+        case Actions.TASK_ERRORED:
+          return {
+            type: 'nuclide-task-runner:task-errored',
+            data: getTaskTrackEventData(action, store.getState()),
+          };
+        case Actions.SET_TOOLBAR_VISIBILITY:
+          const visible = action.payload.visible;
+          return visible
+            ? {type: 'nuclide-task-runner:show'}
+            : {type: 'nuclide-task-runner: hide'};
+        default:
+          return null;
+      }
+    })
+    .let(compact);
+
+  return trackingEvents.do(trackEvent).ignoreElements();
+}
+
+function getTaskTrackEventData(action: Action, state: AppState): Object {
+  invariant(
+    action.type === Actions.TASK_STARTED ||
+      action.type === Actions.TASK_STOPPED ||
+      action.type === Actions.TASK_COMPLETED ||
+      action.type === Actions.TASK_ERRORED,
+  );
+  const {activeTaskRunner, projectRoot} = state;
+  invariant(projectRoot != null);
+  invariant(activeTaskRunner);
+  const {taskStatus} = action.payload;
+  const {task} = taskStatus;
+  const taskTrackingData =
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+    typeof task.getTrackingData === 'function' ? task.getTrackingData() : {};
+  const error =
+    action.type === Actions.TASK_ERRORED ? action.payload.error : null;
+  const duration =
+    action.type === Actions.TASK_STARTED
+      ? null
+      : new Date().getTime() -
+        parseInt(action.payload.taskStatus.startDate.getTime(), 10);
+  return {
+    ...taskTrackingData,
+    projectRoot,
+    taskRunnerId: activeTaskRunner.id,
+    taskType: taskStatus.metadata.type,
+    errorMessage: error != null ? error.message : null,
+    stackTrace: error != null ? String(error.stack) : null,
+    duration,
+  };
+}
+
+export function printTaskCanceledEpic(
   actions: ActionsObservable<Action>,
   store: Store,
 ): Observable<Action> {
   return actions.ofType(Actions.TASK_STOPPED).map(action => {
     invariant(action.type === Actions.TASK_STOPPED);
-    const {type} = action.payload.taskStatus.metadata;
     const {taskRunner} = action.payload;
-    const capitalizedType = type.slice(0, 1).toUpperCase() + type.slice(1);
     return {
       type: Actions.TASK_MESSAGE,
       payload: {
-        message: {text: `${capitalizedType} cancelled.`, level: 'warning'},
+        message: {text: textFromOutcomeAction(action), level: 'warning'},
         taskRunner,
       },
     };
@@ -517,16 +597,88 @@ export function printTaskSucceededEpic(
 ): Observable<Action> {
   return actions.ofType(Actions.TASK_COMPLETED).map(action => {
     invariant(action.type === Actions.TASK_COMPLETED);
-    const {type} = action.payload.taskStatus.metadata;
     const {taskRunner} = action.payload;
-    const capitalizedType = type.slice(0, 1).toUpperCase() + type.slice(1);
     return {
       type: Actions.TASK_MESSAGE,
       payload: {
-        message: {text: `${capitalizedType} succeeded.`, level: 'success'},
+        message: {text: textFromOutcomeAction(action), level: 'success'},
         taskRunner,
       },
     };
+  });
+}
+
+export function printTaskErroredEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions.ofType(Actions.TASK_ERRORED).switchMap(action => {
+    invariant(action.type === Actions.TASK_ERRORED);
+    const {
+      error,
+      taskRunner,
+      taskStatus: {
+        metadata: {label},
+      },
+    } = action.payload;
+
+    let description;
+    let buttons;
+    if (error instanceof ProcessExitError) {
+      description = formatProcessExitError(error);
+      buttons = [
+        {
+          text: 'Copy command',
+          className: 'icon icon-clippy',
+          onDidClick: () =>
+            atom.clipboard.write(error.command + ' ' + error.args.join(' ')),
+        },
+      ];
+    } else {
+      description = error.message;
+    }
+
+    // Show error notification only if console is not visible. The error message
+    // is automatically forwarded to the nuclide console in this case through
+    // the globally registered `atom.notifications.onDidAddNotification` callback.
+    if (!isConsoleVisible()) {
+      addAtomErrorNotification(label, buttons, description);
+      return Observable.empty();
+    }
+
+    // Otherwise if the console is visible, we manually register the error
+    // message.
+    return Observable.of({
+      type: Actions.TASK_MESSAGE,
+      payload: {
+        message: {
+          text: `The task "${label}" failed: ${description}`,
+          level: 'error',
+        },
+        taskRunner,
+      },
+    });
+  });
+}
+
+let taskFailedNotification;
+
+function addAtomErrorNotification(
+  label: string,
+  buttons: $PropertyType<atom$NotificationOptions, 'buttons'>,
+  description: string,
+): void {
+  taskFailedNotification = atom.notifications.addError(
+    `The task "${label}" failed`,
+    {
+      buttons,
+      description,
+      dismissable: true,
+    },
+  );
+
+  taskFailedNotification.onDidDismiss(() => {
+    taskFailedNotification = null;
   });
 }
 
@@ -549,21 +701,28 @@ export function appendMessageToConsoleEpic(
     .ignoreElements();
 }
 
-let taskFailedNotification;
-
 /**
  * Run a task and transform its output into domain-specific actions.
  */
 function createTaskObservable(
-  taskMeta: TaskMetadata & {taskRunner: TaskRunner},
+  taskRunner: TaskRunner,
+  taskMeta: TaskMetadata,
+  options: ?TaskOptions,
   getState: () => AppState,
 ): Observable<Action> {
   return Observable.defer(() => {
+    // dismiss any non-dismissed notification
     if (taskFailedNotification != null) {
       taskFailedNotification.dismiss();
     }
-    const task = taskMeta.taskRunner.runTask(taskMeta.type);
-    const taskStatus = {metadata: taskMeta, task};
+    const task = taskRunner.runTask(taskMeta.type, options);
+    const taskStatus = {
+      metadata: taskMeta,
+      task,
+      progress: null,
+      status: null,
+      startDate: new Date(),
+    };
     const events = observableFromTask(task);
 
     return Observable.of({
@@ -577,12 +736,17 @@ function createTaskObservable(
               type: Actions.TASK_PROGRESS,
               payload: {progress: event.progress},
             });
+          } else if (event.type === 'status') {
+            return Observable.of({
+              type: Actions.TASK_STATUS,
+              payload: {status: event.status},
+            });
           } else if (event.type === 'message') {
             return Observable.of({
               type: Actions.TASK_MESSAGE,
               payload: {
                 message: event.message,
-                taskRunner: taskMeta.taskRunner,
+                taskRunner,
               },
             });
           } else if (event.type === 'status' && event.status != null) {
@@ -590,7 +754,7 @@ function createTaskObservable(
               type: Actions.TASK_MESSAGE,
               payload: {
                 message: {text: event.status, level: 'info'},
-                taskRunner: taskMeta.taskRunner,
+                taskRunner,
               },
             });
           } else {
@@ -603,22 +767,12 @@ function createTaskObservable(
           type: Actions.TASK_COMPLETED,
           payload: {
             taskStatus: {...taskStatus, progress: 1},
-            taskRunner: taskMeta.taskRunner,
+            taskRunner,
           },
         }),
       );
   })
     .catch(error => {
-      taskFailedNotification = atom.notifications.addError(
-        `The task "${taskMeta.label}" failed`,
-        {
-          description: error.message,
-          dismissable: true,
-        },
-      );
-      taskFailedNotification.onDidDismiss(() => {
-        taskFailedNotification = null;
-      });
       const taskMetaForLogging = {...taskMeta, taskRunner: undefined};
       getLogger('nuclide-task-runner').debug(
         'Error running task:',
@@ -629,6 +783,7 @@ function createTaskObservable(
         type: Actions.TASK_ERRORED,
         payload: {
           error,
+          taskRunner,
           taskStatus: nullthrows(getState().runningTask),
         },
       });
@@ -637,8 +792,8 @@ function createTaskObservable(
 }
 
 function getBestEffortTaskRunner(
-  taskRunners: Array<TaskRunner>,
-  statesForTaskRunners: Map<TaskRunner, TaskRunnerState>,
+  taskRunners: Immutable.List<TaskRunner>,
+  statesForTaskRunners: Immutable.Map<TaskRunner, TaskRunnerState>,
 ): ?TaskRunner {
   return taskRunners.reduce((memo, runner) => {
     const state = statesForTaskRunners.get(runner);
@@ -676,7 +831,9 @@ function promptForShouldSave(taskMeta: TaskMetadata): Observable<boolean> {
       'You have files with unsaved changes.',
       {
         dismissable: true,
-        description: `Do you want to save them before running the ${taskMeta.label} task?`,
+        description: `Do you want to save them before running the ${
+          taskMeta.label
+        } task?`,
         buttons: [
           {
             text: `Save All & ${taskMeta.label}`,
@@ -712,17 +869,60 @@ function promptForShouldSave(taskMeta: TaskMetadata): Observable<boolean> {
 
 function getTaskRunnerState(
   taskRunner: TaskRunner,
-  projectRoot: ?Directory,
+  projectRoot: ?NuclideUri,
 ): Observable<{taskRunner: TaskRunner, taskRunnerState: TaskRunnerState}> {
-  return Observable.create(
-    observer =>
-      new UniversalDisposable(
-        taskRunner.setProjectRoot(projectRoot, (enabled, tasks) => {
-          observer.next({
-            taskRunner,
-            taskRunnerState: {enabled, tasks: enabled ? tasks : []},
-          });
-        }),
-      ),
+  return (
+    Observable.create(
+      observer =>
+        new UniversalDisposable(
+          taskRunner.setProjectRoot(projectRoot, (enabled, tasks) => {
+            observer.next({
+              taskRunner,
+              taskRunnerState: {enabled, tasks: enabled ? tasks : []},
+            });
+          }),
+        ),
+    )
+      // Process task runner updates on the next tick rather than immediately.
+      // Otherwise if active task runner changes, the new task runner could synchronously send
+      // a state update before epics are fully processed.
+      .observeOn(Scheduler.asap)
+      // We need the initial state to return within reasonable time, otherwise the toolbar hangs.
+      // We don't want to start with all runners disabled because it causes UI jumps
+      // when a preferred runner gets enabled after a non-preferred one.
+      .race(
+        Observable.timer(10000).switchMap(() =>
+          Observable.throw('Enabling timed out'),
+        ),
+      )
+      .catch(error => {
+        getLogger('nuclide-task-runner').error(
+          `Disabling ${
+            taskRunner.name
+          } task runner, because setProjectRoot failed.\n\n${error}`,
+        );
+        return Observable.of({
+          taskRunner,
+          taskRunnerState: {enabled: false, tasks: []},
+        });
+      })
   );
+}
+
+function formatProcessExitError(error: ProcessExitError): string {
+  let message = '```\n';
+  message += error.command + ' ' + error.args.join(' ');
+  message += '\n```\n<br />';
+  if (error.stderr !== '') {
+    message += 'Stderr:\n';
+    message += '```\n';
+    message += error.stderr;
+    message += '\n```\n<br />';
+  }
+  if (error.exitCode != null) {
+    message += `Exit code: ${error.exitCode}\n<br />`;
+  } else if (error.signal != null) {
+    message += `Signal: ${error.signal}\n<br />`;
+  }
+  return message;
 }

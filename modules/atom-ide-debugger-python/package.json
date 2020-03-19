@@ -1,0 +1,63 @@
+{
+  "name": "atom-ide-debugger-python",
+  "version": "0.7.3-dev",
+  "main": "./main.js",
+  "description": "Python Debugger for Atom IDE.",
+  "author": "NEEDS OWNER",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/atom-ide-debugger-python",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec",
+    "lint": "../../node_modules/.bin/eslint .",
+    "flow": "../../node_modules/.bin/flow"
+  },
+  "engines": {
+    "atom": ">= 1.17.0"
+  },
+  "providedServices": {
+    "debugger.provider": {
+      "description": "Python debugger engine.",
+      "versions": {
+        "0.0.0": "createDebuggerProvider"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide-rpc-services": {
+      "versions": {
+        "0.0.0": "consumeRpcService"
+      }
+    }
+  },
+  "dependencies": {
+    "arch": "2.1.0",
+    "dotenv": "5.0.1",
+    "fs-extra": "4.0.3",
+    "getos": "3.1.0",
+    "inversify": "4.11.1",
+    "line-by-line": "0.1.5",
+    "lodash": "4.17.10",
+    "log4js": "1.1.1",
+    "minimatch": "3.0.4",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nuclide-debugger-common": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "react": "16.6.3",
+    "reflect-metadata": "0.1.12",
+    "rxjs": "5.5.9",
+    "semver": "5.5.0",
+    "tmp": "0.0.29",
+    "tree-kill": "1.1.0",
+    "uint64be": "1.0.1",
+    "untildify": "3.0.2",
+    "vscode-debugadapter": "1.24.0",
+    "vscode-debugprotocol": "1.24.0",
+    "xml2js": "0.4.17"
+  },
+  "package-deps": [
+    "atom-ide-ui"
+  ]
+}

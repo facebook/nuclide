@@ -5,32 +5,22 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-export type FilePath = string;
-export type TimeStamp = number;
-export type FileList = Array<{path: FilePath, timestamp: TimeStamp}>;
+import type {FileList} from '..';
 
-import {CompositeDisposable} from 'atom';
+import * as RecentFilesDB from './RecentFilesDB';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class RecentFilesService {
-  // Map uses `Map`'s insertion ordering to keep files in order.
-  _fileList: Map<FilePath, TimeStamp>;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
-  constructor(state: ?{filelist?: FileList}) {
-    this._fileList = new Map();
-    if (state != null && state.filelist != null) {
-      // Serialized state is in reverse chronological order. Reverse it to insert items correctly.
-      state.filelist.reduceRight((_, fileItem) => {
-        this._fileList.set(fileItem.path, fileItem.timestamp);
-      }, null);
-    }
-    this._subscriptions = new CompositeDisposable();
+  constructor() {
+    this._subscriptions = new UniversalDisposable();
     this._subscriptions.add(
-      atom.workspace.onDidStopChangingActivePaneItem((item: ?mixed) => {
+      atom.workspace.onDidChangeActivePaneItem((item: ?mixed) => {
         // Not all `item`s are instances of TextEditor (e.g. the diff view).
         // flowlint-next-line sketchy-null-mixed:off
         if (!item || typeof item.getPath !== 'function') {
@@ -44,23 +34,27 @@ export default class RecentFilesService {
     );
   }
 
-  touchFile(path: string): void {
-    // Delete first to force a new insertion.
-    this._fileList.delete(path);
-    this._fileList.set(path, Date.now());
+  async touchFile(path: string): Promise<void> {
+    await RecentFilesDB.touchFileDB(path, Date.now());
   }
 
   /**
    * Returns a reverse-chronological list of recently opened files.
    */
-  getRecentFiles(): FileList {
-    return Array.from(this._fileList).reverse().map(pair => ({
-      path: pair[0],
-      timestamp: pair[1],
+  async getRecentFiles(): Promise<FileList> {
+    const fileList = await RecentFilesDB.getAllRecents();
+    return fileList.dump().map(({k, v}) => ({
+      resultType: 'FILE',
+      path: k,
+      timestamp: v,
     }));
   }
 
-  dispose() {
+  async dispose(): Promise<void> {
     this._subscriptions.dispose();
+    // Try one last time to sync back. Changes should be periodically saved,
+    // so if this doesn't run before we quit, that's OK. If package deactivation
+    // were async, then we could wait for the DB save to complete.
+    await RecentFilesDB.syncCache(true);
   }
 }

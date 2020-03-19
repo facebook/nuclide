@@ -1,12 +1,11 @@
 {
   "name": "nuclide-working-sets-common",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "The logic classes used by the Working Sets feature",
+  "author": "Nuclide : Core UI",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

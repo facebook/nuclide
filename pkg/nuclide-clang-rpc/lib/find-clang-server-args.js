@@ -13,7 +13,15 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 
 import {runCommand} from 'nuclide-commons/process';
 
+export const VENDOR_PYTHONPATH = nuclideUri.join(__dirname, '../VendorLib');
+
 let fbFindClangServerArgs: ?(src: ?string) => {[string]: ?string};
+
+export type PartialClangServerArgs = {
+  libClangLibraryFile?: string,
+  pythonExecutable?: string,
+  pythonPathEnv?: string,
+};
 
 export type ClangServerArgs = {
   libClangLibraryFile: ?string,
@@ -22,8 +30,9 @@ export type ClangServerArgs = {
 };
 
 export default (async function findClangServerArgs(
-  src?: string,
+  src: ?string,
   libclangPath: ?string = null,
+  configLibclangPath: ?string,
 ): Promise<ClangServerArgs> {
   if (fbFindClangServerArgs === undefined) {
     fbFindClangServerArgs = null;
@@ -50,21 +59,14 @@ export default (async function findClangServerArgs(
     } catch (err) {}
   }
 
-  // TODO(asuarez): Fix this when we have server-side settings.
-  if (global.atom) {
-    const path = ((atom.config.get(
-      'nuclide.nuclide-clang.libclangPath',
-    ): any): ?string);
-    // flowlint-next-line sketchy-null-string:off
-    if (path) {
-      libClangLibraryFile = path.trim();
-    }
+  if (configLibclangPath != null) {
+    libClangLibraryFile = configLibclangPath.trim();
   }
 
   let clangServerArgs = {
     libClangLibraryFile,
     pythonExecutable: 'python2.7',
-    pythonPathEnv: nuclideUri.join(__dirname, '../VendorLib'),
+    pythonPathEnv: VENDOR_PYTHONPATH,
   };
 
   if (typeof fbFindClangServerArgs === 'function') {

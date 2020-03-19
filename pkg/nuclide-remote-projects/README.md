@@ -19,7 +19,7 @@ calling `ssh-add` and select "Use ssh-agent".
 Lastly, specify the remote server command to where it is installed to.
 `nuclide-start-server` will pick an open port from a predefined list. If your
 remote server has specific port that shall be used, you can append port number
-to the command. For example,`nuclide-start-server -p 9090`
+to the command. For example,`nuclide-start-server -p 9091`
 
 Upon submtting the connect dialog, Nuclide will try to establish an SSH connection
 to your remote server, and run `nuclide-start-server` command to start Nuclide

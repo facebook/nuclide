@@ -1,0 +1,7 @@
+const [c, d] = require('bar');
+const [e, f] = require('baz');
+const x = require('x');
+
+e(f);
+c(d);
+x();

@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 
+
 # http://www.tldp.org/LDP/abs/html/exitcodes.html
 EXIT_KEYBOARD_INTERRUPT = 130
 
@@ -32,7 +33,7 @@ def check_output(*popenargs, **kwargs):
     output, _ = process.communicate()
     retcode = process.poll()
     if retcode:
-        cmd = kwargs.get('args')
+        cmd = kwargs.get("args")
         if cmd is None:
             cmd = popenargs[0]
         error = subprocess.CalledProcessError(retcode, cmd)
@@ -51,6 +52,7 @@ def retryable(num_retries=0, sleep_time=0, exponential=False):
     sleep_time      - number of seconds to sleep between each falure
     exponential     - progressively double sleep_time between retries
     """
+
     def _decorator(fn):
         def _wrapper(*args, **kwargs):
             run = 0
@@ -63,9 +65,13 @@ def retryable(num_retries=0, sleep_time=0, exponential=False):
                 except Exception as e:
                     exception = e
                     time.sleep(cur_sleep_time)
-                    cur_sleep_time = cur_sleep_time * 2 if exponential else cur_sleep_time
+                    cur_sleep_time = (
+                        cur_sleep_time * 2 if exponential else cur_sleep_time
+                    )
             raise exception
+
         return _wrapper
+
     return _decorator
 
 
@@ -80,8 +86,9 @@ def symlink(src, dest, relative=False):
     dest_dir = os.path.dirname(dest)
     if not os.path.isdir(dest_dir):
         os.makedirs(dest_dir)
-    if (not os.path.islink(dest) or
-            os.path.realpath(os.path.join(dest_dir, src)) != os.path.realpath(dest)):
+    if not os.path.islink(dest) or os.path.realpath(
+        os.path.join(dest_dir, src)
+    ) != os.path.realpath(dest):
         try:
             if relative and os.path.isabs(src):
                 src = os.path.relpath(src, os.path.dirname(dest))
@@ -93,22 +100,22 @@ def symlink(src, dest, relative=False):
 
 
 def json_dump(obj, path, sort_keys=True):
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         # Separators must be specified to avoid trailing whitespace.
         # Python is dumb: http://bugs.python.org/issue16333.
-        json.dump(obj, f, indent=2, separators=(',', ': '), sort_keys=sort_keys)
+        json.dump(obj, f, indent=2, separators=(",", ": "), sort_keys=sort_keys)
         # Make sure all files we write out end with a trailing newline.
-        f.write('\n')
+        f.write("\n")
 
 
 def json_dumps(obj, indent=2, sort_keys=True):
-    return json.dumps(obj, indent=indent, separators=(',', ': '), sort_keys=sort_keys)
+    return json.dumps(obj, indent=indent, separators=(",", ": "), sort_keys=sort_keys)
 
 
 def json_load(path):
     # We use codecs here because sometimes Python decides to use the ascii
     # codec and chokes on utf-8 characters. This has bitten us in the past.
-    with codecs.open(path, 'r', 'utf-8') as f:
+    with codecs.open(path, "r", "utf-8") as f:
         if sys.version_info >= (2, 7):
             # object_pairs_hook=... preserves member order iteration in the
             # resulting objects Member order is used by package linting

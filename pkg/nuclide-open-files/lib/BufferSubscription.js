@@ -19,7 +19,7 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {NotifiersByConnection} from './NotifiersByConnection';
 
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getLogger} from 'log4js';
 import {FileEventKind} from '../../nuclide-open-files-rpc';
 
@@ -44,7 +44,7 @@ export class BufferSubscription {
   _notifiers: NotifiersByConnection;
   _buffer: atom$TextBuffer;
   _notifier: ?Promise<FileNotifier>;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
   _serverVersion: number;
   _lastAttemptedSync: number;
   _changeCount: number;
@@ -59,11 +59,13 @@ export class BufferSubscription {
     this._changeCount = 1;
     this._sentOpen = false;
 
-    const subscriptions = new CompositeDisposable();
+    const subscriptions = new UniversalDisposable();
 
     subscriptions.add(
-      buffer.onDidChange(async (event: atom$TextEditEvent) => {
-        this._changeCount++;
+      buffer.onDidChangeText(async (event: atom$AggregatedTextEditEvent) => {
+        // It's important that we increment the change count *before* waiting on the notifier.
+        // This makes sure that any users who use `getVersion` in between obtain the correct version.
+        this._changeCount += event.changes.length;
         if (this._notifier == null) {
           return;
         }
@@ -75,22 +77,53 @@ export class BufferSubscription {
         const version = this._changeCount;
 
         invariant(this._notifier != null);
-        const notifier = await this._notifier;
+        if (this._sentOpen) {
+          const notifier = await this._notifier;
+          // Changes must be sent in reverse order to ensure that they are applied cleanly.
+          // (Atom ensures that they are sent over in increasing lexicographic order).
+          for (let i = event.changes.length - 1; i >= 0; i--) {
+            const edit = event.changes[i];
+            this.sendEvent({
+              kind: FileEventKind.EDIT,
+              fileVersion: {
+                notifier,
+                filePath,
+                version: version - i,
+              },
+              oldRange: edit.oldRange,
+              newRange: edit.newRange,
+              oldText: edit.oldText,
+              newText: edit.newText,
+            });
+          }
+        } else {
+          this._sendOpenByNotifier(this._notifier, version);
+        }
+      }),
+    );
+
+    subscriptions.add(
+      buffer.onDidSave(async () => {
+        if (this._notifier == null) {
+          return;
+        }
+
+        const filePath = this._buffer.getPath();
+        invariant(filePath != null);
+
+        invariant(this._notifier != null);
+        const version = this._changeCount;
         if (this._sentOpen) {
           this.sendEvent({
-            kind: FileEventKind.EDIT,
+            kind: FileEventKind.SAVE,
             fileVersion: {
-              notifier,
+              notifier: await this._notifier,
               filePath,
               version,
             },
-            oldRange: event.oldRange,
-            newRange: event.newRange,
-            oldText: event.oldText,
-            newText: event.newText,
           });
         } else {
-          this._sendOpenByNotifier(notifier, version);
+          this._sendOpenByNotifier(this._notifier, version);
         }
       }),
     );
@@ -105,26 +138,34 @@ export class BufferSubscription {
     // TODO: Could watch onDidReload() which will catch the case where an empty file is opened
     // after startup, leaving the only failure the reopening of empty files at startup.
     if (this._buffer.getText() !== '' && this._notifier != null) {
-      this._notifier.then(notifier =>
-        this._sendOpenByNotifier(notifier, this._changeCount),
-      );
+      this._sendOpenByNotifier(this._notifier, this._changeCount);
     }
   }
 
-  _sendOpenByNotifier(notifier: FileNotifier, version: number): void {
+  async _sendOpenByNotifier(
+    notifier: Promise<FileNotifier>,
+    version: number,
+  ): Promise<void> {
+    const contents = this._buffer.getText();
     const filePath = this._buffer.getPath();
     invariant(filePath != null);
 
+    const languageId = this._getLanguageId(filePath, contents);
     this._sentOpen = true;
     this.sendEvent({
       kind: FileEventKind.OPEN,
       fileVersion: {
-        notifier,
+        notifier: await notifier,
         filePath,
         version,
       },
-      contents: this._buffer.getText(),
+      contents,
+      languageId,
     });
+  }
+
+  _getLanguageId(filePath: string, contents: string): string {
+    return this._buffer.getLanguageMode().getLanguageId();
   }
 
   getVersion(): number {
@@ -182,6 +223,9 @@ export class BufferSubscription {
         } else if (resyncVersion !== this._changeCount) {
           logger.error('Resync preempted by later edit');
         } else {
+          const contents = this._buffer.getText();
+          const languageId = this._getLanguageId(filePath, contents);
+
           const syncEvent: FileSyncEvent = {
             kind: FileEventKind.SYNC,
             fileVersion: {
@@ -189,7 +233,8 @@ export class BufferSubscription {
               filePath,
               version: resyncVersion,
             },
-            contents: this._buffer.getText(),
+            contents,
+            languageId,
           };
           try {
             await notifier.onFileEvent(syncEvent);

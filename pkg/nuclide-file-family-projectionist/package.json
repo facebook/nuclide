@@ -1,0 +1,26 @@
+{
+  "name": "nuclide-file-family-projectionist",
+  "main": "./lib/main.js",
+  "author": "NEEDS OWNER",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A projectionist backend for File Family",
+  "keywords": [],
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCwdApi"
+      }
+    }
+  },
+  "providedServices": {
+    "file-family-backend": {
+      "versions": {
+        "0.0.0": "provideFileFamilyService"
+      }
+    }
+  }
+}

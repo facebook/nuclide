@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,19 +17,14 @@ import type {
   Platform,
   PlatformGroup,
   PlatformProviderUi,
+  PreferredNames,
 } from './types';
 
 import invariant from 'assert';
 
-type PreferredNames = {
-  platformGroupName: ?string,
-  platformName: ?string,
-  deviceGroupName: ?string,
-  deviceName: ?string,
-};
-
 export function getDeploymentTargetPreference(state: AppState): PreferredNames {
-  const target = state.selectedDeploymentTarget;
+  const target =
+    state.userSelectedDeploymentTarget || state.selectedDeploymentTarget;
   // If a deployment target exists, that's our first choice, otherwise look at the last session
   if (target != null) {
     return {
@@ -99,6 +94,7 @@ function getPreferred<T: PlatformGroup | Platform | DeviceGroup | Device>(
   }
   let match;
   // We want === in case of an empty string
+  // eslint-disable-next-line eqeqeq
   if (name === null || chooseFirst) {
     match = null;
   } else {
@@ -125,4 +121,21 @@ export function getPlatformProviderUiForDeploymentTarget(
     return null;
   }
   return deploymentTarget.platform.extraUiWhenSelected(deploymentTarget.device);
+}
+
+export function formatDeploymentTarget(
+  deploymentTarget: ?DeploymentTarget,
+): string {
+  if (deploymentTarget == null) {
+    return '';
+  }
+  const {device, deviceGroup, platform, platformGroup} = deploymentTarget;
+  const deviceString = device != null ? `: ${device.name}` : '';
+  const deviceGroupString =
+    deviceGroup != null && deviceGroup.name !== ''
+      ? ` (${deviceGroup.name})`
+      : '';
+  return `${platformGroup.name} ${
+    platform.name
+  }${deviceString}${deviceGroupString}`;
 }

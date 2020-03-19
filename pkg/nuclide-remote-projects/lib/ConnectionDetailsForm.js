@@ -5,30 +5,35 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {DnsLookup} from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
-import type {
-  NuclideRemoteAuthMethods,
-  NuclideRemoteConnectionParamsWithPassword,
-} from './connection-types';
+import type {NuclideRemoteConnectionParamsWithPassword} from './connection-types';
 
 import {getOfficialRemoteServerCommand} from './connection-profile-utils';
 
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import nullthrows from 'nullthrows';
 import {getIPsForHosts} from './connection-profile-utils';
 import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-ip-v6';
-import RadioGroup from '../../nuclide-ui/RadioGroup';
-import React from 'react';
+import RadioGroup from 'nuclide-commons-ui/RadioGroup';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
-import {SshHandshake} from '../../nuclide-remote-connection';
+import {SupportedMethods} from 'big-dig/src/client/SshHandshake';
+import {Message} from 'nuclide-commons-ui/Message';
+import Link from 'nuclide-commons-ui/Link';
+import passesGK from 'nuclide-commons/passesGK';
 
-const {SupportedMethods} = SshHandshake;
-const authMethods = [
+export type SshHandshakeAuthMethodsType = $Values<typeof SupportedMethods>;
+
+// @fb-only: const PKEY_LINK = 'https://fburl.com/deprecationnotice';
+const PKEY_LINK = null; // @oss-only
+
+let authMethods: Array<SshHandshakeAuthMethodsType> = [
   SupportedMethods.PASSWORD,
   SupportedMethods.SSL_AGENT,
   SupportedMethods.PRIVATE_KEY,
@@ -42,11 +47,12 @@ type Props = {
   initialRemoteServerCommand: string,
   initialSshPort: string,
   initialPathToPrivateKey: string,
-  initialAuthMethod: $Enum<typeof SupportedMethods>,
+  initialAuthMethod: SshHandshakeAuthMethodsType,
   initialDisplayTitle: string,
   onCancel: () => mixed,
   onConfirm: () => mixed,
   onDidChange: () => mixed,
+  needsPasswordValue: boolean,
   profileHosts: ?Array<string>,
 };
 
@@ -61,15 +67,24 @@ type State = {
   shouldDisplayTooltipWarning: boolean,
   sshPort: string,
   username: string,
+  showRootCanalOption: boolean,
 };
 
 /** Component to prompt the user for connection details. */
-export default class ConnectionDetailsForm extends React.Component {
-  props: Props;
-  state: State;
-
-  _disposables: ?CompositeDisposable;
+export default class ConnectionDetailsForm extends React.Component<
+  Props,
+  State,
+> {
+  _disposables: ?UniversalDisposable;
   _promptChanged: boolean;
+
+  _cwd: ?AtomInput;
+  _username: ?AtomInput;
+  _password: ?HTMLInputElement;
+  _pathToPrivateKey: ?AtomInput;
+  _remoteServerCommand: ?AtomInput;
+  _server: ?AtomInput;
+  _sshPort: ?AtomInput;
 
   constructor(props: Props) {
     super(props);
@@ -86,10 +101,23 @@ export default class ConnectionDetailsForm extends React.Component {
       displayTitle: props.initialDisplayTitle,
       IPs: null,
       shouldDisplayTooltipWarning: false,
+      showRootCanalOption: false,
     };
+
+    passesGK('nuclide_rootcanal').then(showRootCanal => {
+      if (showRootCanal) {
+        authMethods = [
+          SupportedMethods.PASSWORD,
+          SupportedMethods.SSL_AGENT,
+          SupportedMethods.ROOTCANAL,
+          SupportedMethods.PRIVATE_KEY,
+        ];
+        this.setState({showRootCanalOption: true});
+      }
+    });
   }
 
-  _onKeyPress(e: SyntheticKeyboardEvent): void {
+  _onKeyPress(e: SyntheticKeyboardEvent<>): void {
     if (e.key === 'Enter') {
       this.props.onConfirm();
     }
@@ -114,13 +142,13 @@ export default class ConnectionDetailsForm extends React.Component {
     // If the input changed due to a higher level change in the
     // ConnectionDetailsPrompt, don't check for host collisions
     if (!this._promptChanged) {
-      this._checkForHostCollisions(this._getText('server'));
+      this._checkForHostCollisions(this._getText(this._server));
       this.props.onDidChange();
     }
     this._promptChanged = false;
   };
 
-  _handleKeyFileInputClick = (event: SyntheticEvent): void => {
+  _handleKeyFileInputClick = (event: SyntheticEvent<>): void => {
     const privateKeyAuthMethodIndex = authMethods.indexOf(
       SupportedMethods.PRIVATE_KEY,
     );
@@ -132,13 +160,13 @@ export default class ConnectionDetailsForm extends React.Component {
         // when setting this immediately, Atom will unset the focus...
         setTimeout(() => {
           // $FlowFixMe
-          ReactDOM.findDOMNode(this.refs.pathToPrivateKey).focus();
+          ReactDOM.findDOMNode(this._pathToPrivateKey).focus();
         }, 0);
       },
     );
   };
 
-  _handlePasswordInputClick = (event: SyntheticEvent): void => {
+  _handlePasswordInputClick = (event: SyntheticEvent<>): void => {
     const passwordAuthMethodIndex = authMethods.indexOf(
       SupportedMethods.PASSWORD,
     );
@@ -147,8 +175,7 @@ export default class ConnectionDetailsForm extends React.Component {
         selectedAuthMethodIndex: passwordAuthMethodIndex,
       },
       () => {
-        // $FlowFixMe
-        ReactDOM.findDOMNode(this.refs.password).focus();
+        nullthrows(this._password).focus();
       },
     );
   };
@@ -181,26 +208,31 @@ export default class ConnectionDetailsForm extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
-    const {className} = this.props;
+  render(): React.Node {
+    const {className, needsPasswordValue} = this.props;
     const activeAuthMethod = authMethods[this.state.selectedAuthMethodIndex];
     // We need native-key-bindings so that delete works and we need
     // _onKeyPress so that escape and enter work
+    const passwordLabelName = 'Password' + (needsPasswordValue ? ':' : '');
     const passwordLabel = (
       <div className="nuclide-auth-method">
-        <div className="nuclide-auth-method-label">Password:</div>
-        <div
-          className="nuclide-auth-method-input nuclide-auth-method-password"
-          onClick={this._handlePasswordInputClick}>
-          <input
-            type="password"
-            className="nuclide-password native-key-bindings"
-            disabled={activeAuthMethod !== SupportedMethods.PASSWORD}
-            onChange={this._handleInputDidChange}
-            onKeyPress={this._onKeyPress.bind(this)}
-            ref="password"
-          />
-        </div>
+        <div className="nuclide-auth-method-label">{passwordLabelName}</div>
+        {needsPasswordValue ? (
+          <div
+            className="nuclide-auth-method-input nuclide-auth-method-password"
+            onClick={this._handlePasswordInputClick}>
+            <input
+              type="password"
+              className="nuclide-password native-key-bindings"
+              disabled={activeAuthMethod !== SupportedMethods.PASSWORD}
+              onChange={this._handleInputDidChange}
+              onKeyPress={this._onKeyPress.bind(this)}
+              ref={el => {
+                this._password = el;
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     );
     const privateKeyLabel = (
@@ -213,7 +245,9 @@ export default class ConnectionDetailsForm extends React.Component {
             onClick={this._handleKeyFileInputClick}
             onDidChange={this._handleInputDidChange}
             placeholder="Path to private key"
-            ref="pathToPrivateKey"
+            ref={input => {
+              this._pathToPrivateKey = input;
+            }}
             unstyled={true}
           />
         </div>
@@ -222,6 +256,17 @@ export default class ConnectionDetailsForm extends React.Component {
     const sshAgentLabel = (
       <div className="nuclide-auth-method">Use ssh-agent</div>
     );
+    const rootCanalLabel = (
+      <div className="nuclide-auth-method">
+        Use CorpCanal Certificate (EXPERIMENTAL)
+      </div>
+    );
+    const labels = [passwordLabel, sshAgentLabel, privateKeyLabel];
+
+    if (this.state.showRootCanalOption) {
+      labels.splice(2, 0, rootCanalLabel);
+    }
+
     let toolTipWarning;
     if (this.state.shouldDisplayTooltipWarning) {
       toolTipWarning = (
@@ -230,6 +275,7 @@ export default class ConnectionDetailsForm extends React.Component {
           className={
             'icon icon-info pull-right nuclide-remote-projects-tooltip-warning'
           }
+          // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
           ref={addTooltip({
             // Intentionally *not* an arrow function so the jQuery
             // Tooltip plugin can set the context to the Tooltip
@@ -256,7 +302,9 @@ export default class ConnectionDetailsForm extends React.Component {
           <AtomInput
             initialValue={this.state.username}
             onDidChange={this._handleInputDidChange}
-            ref="username"
+            ref={input => {
+              this._username = input;
+            }}
             unstyled={true}
           />
         </div>
@@ -269,7 +317,9 @@ export default class ConnectionDetailsForm extends React.Component {
             <AtomInput
               initialValue={this.state.server}
               onDidChange={this._handleInputDidChangeForServer}
-              ref="server"
+              ref={input => {
+                this._server = input;
+              }}
               unstyled={true}
             />
           </div>
@@ -278,7 +328,9 @@ export default class ConnectionDetailsForm extends React.Component {
             <AtomInput
               initialValue={this.state.sshPort}
               onDidChange={this._handleInputDidChange}
-              ref="sshPort"
+              ref={input => {
+                this._sshPort = input;
+              }}
               unstyled={true}
             />
           </div>
@@ -288,24 +340,36 @@ export default class ConnectionDetailsForm extends React.Component {
           <AtomInput
             initialValue={this.state.cwd}
             onDidChange={this._handleInputDidChange}
-            ref="cwd"
+            ref={input => {
+              this._cwd = input;
+            }}
             unstyled={true}
           />
         </div>
         <div className="form-group">
           <label>Authentication method:</label>
           <RadioGroup
-            optionLabels={[passwordLabel, sshAgentLabel, privateKeyLabel]}
+            optionLabels={labels}
             onSelectedChange={this._handleAuthMethodChange}
             selectedIndex={this.state.selectedAuthMethodIndex}
           />
+          {PKEY_LINK != null &&
+            this.state.selectedAuthMethodIndex ===
+              authMethods.indexOf(SupportedMethods.PRIVATE_KEY) && (
+              <Message type="warning">
+                Private keys are going away soon. Please see{' '}
+                <Link href={PKEY_LINK}>this post</Link>.
+              </Message>
+            )}
         </div>
         <div className="form-group">
           <label>Remote Server Command:</label>
           <AtomInput
             initialValue={this.state.remoteServerCommand}
             onDidChange={this._handleInputDidChange}
-            ref="remoteServerCommand"
+            ref={input => {
+              this._remoteServerCommand = input;
+            }}
             unstyled={true}
           />
         </div>
@@ -314,7 +378,7 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   componentDidMount() {
-    const disposables = new CompositeDisposable();
+    const disposables = new UniversalDisposable();
     this._disposables = disposables;
     const root = ReactDOM.findDOMNode(this);
 
@@ -348,14 +412,14 @@ export default class ConnectionDetailsForm extends React.Component {
 
   getFormFields(): NuclideRemoteConnectionParamsWithPassword {
     return {
-      username: this._getText('username'),
-      server: this._getText('server'),
-      cwd: this._getText('cwd'),
+      username: this._getText(this._username),
+      server: this._getText(this._server),
+      cwd: this._getText(this._cwd),
       remoteServerCommand:
-        this._getText('remoteServerCommand') ||
+        this._getText(this._remoteServerCommand) ||
         getOfficialRemoteServerCommand(),
-      sshPort: this._getText('sshPort'),
-      pathToPrivateKey: this._getText('pathToPrivateKey'),
+      sshPort: this._getText(this._sshPort),
+      pathToPrivateKey: this._getText(this._pathToPrivateKey),
       authMethod: this._getAuthMethod(),
       password: this._getPassword(),
       displayTitle: this.state.displayTitle,
@@ -363,7 +427,7 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   focus(): void {
-    this.refs.username.focus();
+    nullthrows(this._username).focus();
   }
 
   // Note: 'password' is not settable. The only exposed method is 'clearPassword'.
@@ -374,42 +438,39 @@ export default class ConnectionDetailsForm extends React.Component {
     remoteServerCommand?: string,
     sshPort?: string,
     pathToPrivateKey?: string,
-    authMethod?: NuclideRemoteAuthMethods,
+    authMethod?: SshHandshakeAuthMethodsType,
     displayTitle?: string,
   }): void {
-    this._setText('username', fields.username);
-    this._setText('server', fields.server);
-    this._setText('cwd', fields.cwd);
-    this._setText('remoteServerCommand', fields.remoteServerCommand);
-    this._setText('sshPort', fields.sshPort);
-    this._setText('pathToPrivateKey', fields.pathToPrivateKey);
+    this._setText(this._username, fields.username);
+    this._setText(this._server, fields.server);
+    this._setText(this._cwd, fields.cwd);
+    this._setText(this._remoteServerCommand, fields.remoteServerCommand);
+    this._setText(this._sshPort, fields.sshPort);
+    this._setText(this._pathToPrivateKey, fields.pathToPrivateKey);
     this._setAuthMethod(fields.authMethod);
     // `displayTitle` is not editable and therefore has no `<atom-text-editor mini>`. Its value is
     // stored only in local state.
     this.setState({displayTitle: fields.displayTitle});
   }
 
-  _getText(fieldName: string): string {
-    return (
-      (this.refs[fieldName] && this.refs[fieldName].getText().trim()) || ''
-    );
+  _getText(atomInput: ?AtomInput): string {
+    return (atomInput && atomInput.getText().trim()) || '';
   }
 
-  _setText(fieldName: string, text: ?string): void {
+  _setText(atomInput: ?AtomInput, text: ?string): void {
     if (text == null) {
       return;
     }
-    const atomInput = this.refs[fieldName];
     if (atomInput) {
       atomInput.setText(text);
     }
   }
 
-  _getAuthMethod(): string {
+  _getAuthMethod(): SshHandshakeAuthMethodsType {
     return authMethods[this.state.selectedAuthMethodIndex];
   }
 
-  _setAuthMethod(authMethod: ?NuclideRemoteAuthMethods): void {
+  _setAuthMethod(authMethod: ?SshHandshakeAuthMethodsType): void {
     if (authMethod == null) {
       return;
     }
@@ -420,15 +481,11 @@ export default class ConnectionDetailsForm extends React.Component {
   }
 
   _getPassword(): string {
-    return (
-      // $FlowFixMe
-      (this.refs.password && ReactDOM.findDOMNode(this.refs.password).value) ||
-      ''
-    );
+    return (this._password && this._password.value) || '';
   }
 
   clearPassword(): void {
-    const passwordInput = this.refs.password;
+    const passwordInput = this._password;
     if (passwordInput) {
       passwordInput.value = '';
     }

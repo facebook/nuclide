@@ -10,7 +10,10 @@
  */
 
 import type {HyperclickProvider} from 'atom-ide-ui';
-import type {Provider as QuickOpenProviderType} from '../../nuclide-quick-open/lib/types';
+import type {
+  FileResult,
+  Provider as QuickOpenProviderType,
+} from '../../nuclide-quick-open/lib/types';
 
 import HyperclickHelpers from './HyperclickHelpers';
 import QuickOpenHelpers from './QuickOpenHelpers';
@@ -27,7 +30,7 @@ export function getHyperclickProvider(): HyperclickProvider {
   };
 }
 
-export function getQuickOpenProvider(): QuickOpenProviderType {
+export function getQuickOpenProvider(): QuickOpenProviderType<FileResult> {
   return {
     providerType: 'DIRECTORY',
     name: 'CtagsSymbolProvider',

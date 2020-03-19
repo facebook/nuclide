@@ -1,10 +1,9 @@
 {
   "name": "nuclide-python",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides support for Python in Nuclide",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Python Foundation",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -41,16 +40,14 @@
         "title": "Lint extension blacklist",
         "type": "array",
         "description": "File extensions that should not be linted with flake8.",
-        "default": [".tw", ""],
+        "default": [
+          ".bzl",
+          ".tw",
+          ""
+        ],
         "items": {
           "type": "string"
         }
-      },
-      "lintOnFly": {
-        "title": "Lint on the fly",
-        "type": "boolean",
-        "default": false,
-        "description": "Lint code on the fly, refreshing whenever the file contents are changed rather than when files are saved. Requires restarting Nuclide to take effect."
       },
       "pathToFlake8": {
         "title": "Path to Flake8 Executable",
@@ -63,28 +60,35 @@
         "type": "boolean",
         "default": true,
         "description": "Show assignments to all global variables."
+      },
+      "showSignatureHelp": {
+        "title": "Show signature help",
+        "type": "boolean",
+        "default": false,
+        "description": "Display signature help while typing function/method calls. (requires restart)"
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
-    "atom-ide-busy-signal": {
+    "linter-indie": {
       "versions": {
-        "0.1.0": "consumeBusySignal"
+        "2.0.0": "consumeLinterIndie"
       }
     },
     "nuclide.buck-platforms": {
       "versions": {
         "0.0.0": "consumePlatformService"
       }
-    }
-  },
-
-  "providedServices": {
-    "linter": {
+    },
+    "nuclide.buck-task-runner": {
       "versions": {
-        "1.0.0": "provideLint"
+        "0.0.0": "consumeBuckTaskRunner"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCwdApi"
       }
     }
   }

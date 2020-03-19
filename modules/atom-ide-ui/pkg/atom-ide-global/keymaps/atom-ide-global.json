@@ -1,0 +1,5 @@
+{
+  ".atom-ide-filterable": {
+    "/": "atom-ide:filter"
+  }
+}

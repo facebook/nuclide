@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Level, Message} from '../../nuclide-console/lib/types';
+import type {ConsoleLevel, ConsoleMessage} from 'atom-ide-ui';
 import type {AslLevel, AslRecord} from './types';
 
 import {parseMessageText} from './parseMessageText';
@@ -17,7 +17,7 @@ import {parseMessageText} from './parseMessageText';
 /**
  * Convert a structured logcat entry into the format that nuclide-console wants.
  */
-export function createMessage(record: AslRecord): Message {
+export function createMessage(record: AslRecord): ConsoleMessage {
   const {text, level, tags} = parseMessageText(record.Message);
   if (record.Facility) {
     tags.push(record.Facility);
@@ -29,7 +29,7 @@ export function createMessage(record: AslRecord): Message {
   };
 }
 
-function getLevel(level: AslLevel): Level {
+function getLevel(level: AslLevel): ConsoleLevel {
   switch (level) {
     case '0': // Emergency
     case '1': // Alert
@@ -45,6 +45,7 @@ function getLevel(level: AslLevel): Level {
     case '7': // Debug
       return 'debug';
     default:
+      (level: empty);
       throw new Error(`Invalid ASL level: ${level}`);
   }
 }

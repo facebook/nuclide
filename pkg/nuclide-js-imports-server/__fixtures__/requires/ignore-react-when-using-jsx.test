@@ -1,0 +1,3 @@
+const React = require('React');
+
+var paragraph = <p>lorem ipsum</p>;

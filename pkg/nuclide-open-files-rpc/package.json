@@ -1,12 +1,11 @@
 {
   "name": "nuclide-open-files-rpc",
-  "repository": "https://github.com/facebook/nuclide",
   "version": "0.0.0",
   "description": "Provides open file notifications in Nuclide server",
+  "author": "NEEDS OWNER",
   "main": "./lib/main.js",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

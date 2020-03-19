@@ -16,7 +16,7 @@ import type {HyperclickSuggestion} from 'atom-ide-ui';
 import type {Point} from 'atom';
 
 import {getBuckProjectRoot} from '../../nuclide-buck-base';
-import {getBuildFileName} from './buildFiles';
+import {getBuildFileName, getCellLocation} from './buildFiles';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
@@ -104,6 +104,7 @@ export async function findTargetLocation(target: Target): Promise<any> {
 }
 
 const VALID_BUILD_FILE_NAMES = new Set(['BUCK', 'BUCK.autodeps', 'TARGETS']);
+const VALID_BUILD_FILE_EXTENSIONS = new Set(['.bzl']);
 
 export async function getSuggestion(
   textEditor: TextEditor,
@@ -115,7 +116,10 @@ export async function getSuggestion(
   }
 
   const baseName = nuclideUri.basename(absolutePath);
-  if (!VALID_BUILD_FILE_NAMES.has(baseName)) {
+  if (
+    !VALID_BUILD_FILE_NAMES.has(baseName) &&
+    !VALID_BUILD_FILE_EXTENSIONS.has(nuclideUri.extname(baseName))
+  ) {
     return null;
   }
 
@@ -126,6 +130,8 @@ export async function getSuggestion(
   }
 
   const results = await Promise.all([
+    // look for load targets first since they are more specific
+    findLoadTarget(textEditor, position, absolutePath, buckRoot),
     findBuildTarget(textEditor, position, absolutePath, buckRoot),
     findRelativeFilePath(
       textEditor,
@@ -140,7 +146,7 @@ export async function getSuggestion(
     return {
       range: match.range,
       callback() {
-        goToLocation(match.path, match.line, match.column);
+        goToLocation(match.path, {line: match.line, column: match.column});
       },
     };
   } else {
@@ -183,6 +189,50 @@ async function findBuildTarget(
   } else {
     return null;
   }
+}
+
+// matches "@cell//pkg/subpkg:ext.bzl" as (cell, package and target name)
+const LOAD_REGEX = /(@[\w-]+)?\/\/([\w.\-/]*):([\w.-]+\.bzl)/;
+
+/**
+ * @return HyperclickMatch if (textEditor, position) identifies a load target.
+ */
+async function findLoadTarget(
+  textEditor: atom$TextEditor,
+  position: atom$Point,
+  absolutePath: string,
+  buckRoot: string,
+): Promise<?HyperclickMatch> {
+  const loadMatchAndRange = wordAtPosition(textEditor, position, LOAD_REGEX);
+  if (loadMatchAndRange == null) {
+    return null;
+  }
+  const {wordMatch, range} = loadMatchAndRange;
+  const path = await resolveLoadTargetPath(wordMatch, buckRoot);
+  const location = {path, line: 0, column: 0};
+  return {...location, range};
+}
+
+/**
+ * Resolves a load target regex match into a referenced .bzl file path.
+ * For example, input match
+ * ['@cell//pkg/subpkg:ext.bzl', '@cell', '//pkg/subpkg', 'ext.bzl'] would be
+ * resolved to "$buckRoot/cell/pkg/subpkg/ext.bzl".
+ */
+export async function resolveLoadTargetPath(
+  wordMatch: Array<string>,
+  buckRoot: string,
+): Promise<string> {
+  const cellName = wordMatch[1]
+    ? wordMatch[1].substring('@'.length)
+    : wordMatch[1];
+  const cellLocation = cellName
+    ? await getCellLocation(buckRoot, cellName)
+    : ''; // resolve relative to buck root in case cell is not specified
+  const packagePath = wordMatch[2];
+  const filePath = wordMatch[3];
+  const path = nuclideUri.join(buckRoot, cellLocation, packagePath, filePath);
+  return path;
 }
 
 const RELATIVE_FILE_PATH_REGEX = /(['"])(.*)(['"])/;

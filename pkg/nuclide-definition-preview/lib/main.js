@@ -15,7 +15,7 @@ import type {
 } from '../../nuclide-context-view/lib/types';
 
 import {DefinitionPreviewView} from './DefinitionPreviewView';
-import React from 'react';
+import * as React from 'react';
 import invariant from 'assert';
 
 // Unique ID of this context provider
@@ -27,6 +27,7 @@ class Activation {
   contextViewRegistration: ?IDisposable;
 
   constructor() {
+    // $FlowFixMe(>=0.53.0) Flow suppress
     this.provider = {
       getElementFactory: () => React.createFactory(DefinitionPreviewView),
       id: PROVIDER_ID,

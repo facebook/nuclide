@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -17,7 +17,7 @@ export type BatchHandler<T> = (batch: Array<T>) => void;
 export default class BatchProcessedQueue<T> {
   _batchPeriod: number;
   _handler: BatchHandler<T>;
-  _timeoutId: ?number;
+  _timeoutId: ?TimeoutID;
   _items: Array<T>;
 
   constructor(batchPeriod: number, handler: BatchHandler<T>) {
@@ -29,6 +29,7 @@ export default class BatchProcessedQueue<T> {
 
   add(item: T): void {
     this._items.push(item);
+    // eslint-disable-next-line eqeqeq
     if (this._timeoutId === null) {
       this._timeoutId = setTimeout(() => {
         this._handleBatch();
@@ -44,6 +45,7 @@ export default class BatchProcessedQueue<T> {
   }
 
   dispose(): void {
+    // eslint-disable-next-line eqeqeq
     if (this._timeoutId !== null) {
       clearTimeout(this._timeoutId);
       this._handleBatch();

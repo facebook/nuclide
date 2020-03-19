@@ -1,0 +1,87 @@
+@import 'ui-variables';
+@import "syntax-variables";
+
+.nuclide-refactorizer-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: @component-padding;
+}
+
+.nuclide-refactorizer-selectable {
+  cursor: pointer;
+}
+
+.nuclide-refactorizer-selectable-text {
+  color: @text-color-highlight;
+}
+
+.nuclide-refactorizer-selected-text {
+  color: @text-color-selected;
+}
+
+.nuclide-refactorizer-selected {
+  background-color: @button-background-color-selected;
+}
+
+.nuclide-refactorizer-unselectable-text {
+  color: @text-color-subtle;
+  opacity: 0.5;
+}
+
+.nuclide-refactorizer-button {
+  margin-right: @component-padding;
+}
+
+.nuclide-refactorizer-freeform-group {
+  margin-bottom: @component-padding;
+}
+
+.nuclide-refactorizer-freeform-label {
+  margin-bottom: @component-icon-padding;
+}
+
+.nuclide-refactorizer-confirm-list {
+  margin-top: @component-padding;
+  max-height: 500px;
+  overflow: auto;
+}
+
+.nuclide-refactorizer-confirm-list-item {
+  max-width:100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+.nuclide-refactorizer-confirm-list-path {
+  color: @text-color-selected;
+}
+
+.nuclide-refactorizer-diff-preview-icon {
+  display: inline-block;
+  color: @text-color-info;
+}
+
+.nuclide-refactorizer-diff-preview-icon:hover {
+  cursor: pointer;
+  color: @text-color-highlight;
+}
+
+.nuclide-refactorizer-progress {
+  margin-top: @component-padding;
+
+  progress {
+    width: 100%;
+  }
+}
+
+.nuclide-refactorizer-rename-container {
+  background: @app-background-color;
+  box-shadow: 0px 1px 4px 0px rgba(0,0,0,1);
+  color: @syntax-text-color;
+  font-size: @font-size;
+  margin-top: -2px; // Compensate for shadow
+  position: relative;
+  white-space: nowrap;
+}

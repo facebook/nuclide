@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -15,15 +15,14 @@ import type {HomeFragments} from '../../nuclide-home/lib/types';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {ContextViewManager, WORKSPACE_VIEW_URI} from './ContextViewManager';
-import {Disposable, CompositeDisposable} from 'atom';
 import invariant from 'assert';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
 let manager: ?ContextViewManager = null;
-let disposables: CompositeDisposable;
+let disposables: UniversalDisposable;
 
 export function activate(): void {
-  disposables = new CompositeDisposable(_registerCommandAndOpener());
+  disposables = new UniversalDisposable(_registerCommandAndOpener());
 }
 
 export function deactivate(): void {
@@ -49,11 +48,11 @@ function getContextViewManager(): ContextViewManager {
  * nuclide-context-view service and register themselves as a provider.
  */
 const Service: NuclideContextView = {
-  registerProvider(provider: ContextProvider): Disposable {
+  registerProvider(provider: ContextProvider): IDisposable {
     invariant(provider != null, 'Cannot register null context provider');
     const contextViewManager = getContextViewManager();
     contextViewManager.registerProvider(provider);
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       contextViewManager.unregisterProvider(provider.id);
     });
   },

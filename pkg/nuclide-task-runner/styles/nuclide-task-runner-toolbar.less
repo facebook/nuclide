@@ -65,9 +65,15 @@
 .nuclide-task-runner-tool-bar-button[hidden] {
   display: none;
 }
-
-.nuclide-task-button {
+.nuclide-task-button, .nuclide-task-button.btn.btn-sm, .nuclide-task-button.nuclide-ui-split-button-dropdown {
+  padding-left: 2px;
+  padding-right: 2px;
   min-width: 35px;
+}
+
+.nuclide-task-button .nuclide-ui-dropdown {
+  border-left: 0px;
+  margin-left: -13px;
 }
 
 .nuclide-task-runner-task-runner-button {

@@ -15,7 +15,6 @@ import type {FileNotifier} from '../../nuclide-open-files-rpc/lib/rpc-types';
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   observeBufferOpen,
@@ -117,9 +116,6 @@ export async function getFileVersionOfBuffer(
   buffer: atom$TextBuffer,
 ): Promise<?FileVersion> {
   const filePath = buffer.getPath();
-  if (nuclideUri.isBrokenDeserializedUri(filePath)) {
-    return null;
-  }
   const notifier = await getActivation().notifiers.getForUri(filePath);
   if (notifier == null || buffer.isDestroyed()) {
     return null;

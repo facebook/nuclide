@@ -1,0 +1,5 @@
+import type Foo from 'Foo';
+
+class Foo {}
+
+function foo(value: Foo) {}

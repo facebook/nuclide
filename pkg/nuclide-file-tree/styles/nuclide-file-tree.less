@@ -35,6 +35,11 @@
       content: '';
       position: absolute;
     }
+
+    .name {
+      // Give the text a little breathing room.
+      padding-right: @component-padding / 2;
+    }
   }
 
   .nuclide-ui-checkbox[type="checkbox"] {
@@ -57,6 +62,49 @@
     }
   }
 
+  &:focus .selected {
+    .list-item,
+    .name {
+      color: contrast(@button-background-color-selected) !important;
+    }
+
+    &::before {
+      background: @button-background-color-selected;
+    }
+  }
+
+  .selection-indicator::before {
+    // We explicitly set the height on the selection indicator, so we want to
+    // make sure the pseudoelement (which gets the background color) takes up
+    // all of it.
+    height: 100% !important;
+  }
+
+  // Our selection indicators are behind the entries; we don't want to use the
+  // selected entries themselves (like the normal Atom tree-view does).
+  .entry.selected::before {
+    display: none !important;
+  }
+}
+
+// This is almost identical to the .nuclide-ui-panel-component-scroller, but without the
+// overflow: scroll, since the scrolling is being done by the react-virtualized elements
+.file-tree-scroller {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /*
+   * Chromium on OS X with a Touchpad acts like scrolling containers have
+   * `overflow-scrolling: touch;` content, which creates large, extraneous layers in the
+   * nuclide-file-tree because of the new stacking context. Force a new stacking context and
+   * wrapping layer to prevent Chromium from creating those extraneous layers.
+   *
+   * This dramatically reduces the cost of layer tree updates ("Update Layer Tree" events in the
+   * devtools "Timeline" tab) that occur frequently while typing.
+   */
+  isolation: isolate;
 }
 
 .nuclide-file-tree-filter {
@@ -150,7 +198,8 @@
 
 .nuclide-file-tree-open-files {
   display: flex;
-  max-height: 20vh;
+  height: 100%;
+  max-height: inherit;
 }
 
 .nuclide-file-tree-open-files-list {
@@ -184,9 +233,13 @@
   position: absolute;
 }
 
+.nuclide-file-tree-sidebar-uncommitted-changes-container {
+  height: 100%;
+  max-height: inherit;
+}
+
 .nuclide-file-tree-sidebar-uncommitted-changes {
   display: flex;
-  max-height: 20vh;
   width: 100%;
 }
 
@@ -196,4 +249,16 @@
 
 .nuclide-file-tree .list-item::before {
   vertical-align: middle;
+}
+
+.nuclide-file-tree.tree-view .list-item.selected.selected {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+// Override the One themes' negative margins which make the row too wide and
+// force the horizontal scrollbar always.
+// See https://github.com/atom/one-light-ui/blob/739a62d551183a464045bf08d9ca43dda3dc56c3/styles/config.less#L114
+.tree-view.tree-view.tree-view .project-root.project-root {
+  margin-right: 0;
 }

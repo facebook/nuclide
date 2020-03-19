@@ -5,9 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
+
+import type {BookmarkInfo} from './types';
 
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -32,6 +34,36 @@ export async function fetchActiveBookmark(repoPath: string): Promise<string> {
       logger.error(e);
     }
     result = '';
+  }
+  return result;
+}
+
+export async function fetchBookmarks(
+  repoPath: string,
+): Promise<Array<BookmarkInfo>> {
+  const bookmarkFile = nuclideUri.join(repoPath, 'bookmarks');
+  let result;
+  try {
+    const bookmarks = await fsPromise.readFile(bookmarkFile, 'utf-8');
+    const activeBookmark = await fetchActiveBookmark(repoPath);
+    result = bookmarks
+      .split('\n')
+      .filter(bookmark => bookmark.length > 0)
+      .map(bookmarkEntry => {
+        const [node, bookmark] = bookmarkEntry.split(' ');
+        return {
+          node,
+          bookmark,
+          active: activeBookmark === bookmark,
+        };
+      });
+  } catch (e) {
+    if (!(e.code === 'ENOENT')) {
+      // We expect an error if the bookmark file doesn't exist. Otherwise, the
+      // error is unexpected, so log it.
+      logger.error(e);
+    }
+    result = [];
   }
   return result;
 }

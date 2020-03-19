@@ -10,7 +10,7 @@
  */
 
 import installErrorReporter from '../lib/installErrorReporter';
-import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 let disposable;
 
@@ -22,10 +22,16 @@ const install = () => {
 
 describe('installErrorReporter', () => {
   let onWillThrowErrorDisposable;
+  let onDidAddNotification;
   beforeEach(() => {
-    onWillThrowErrorDisposable = new Disposable();
+    onWillThrowErrorDisposable = new UniversalDisposable();
+    onDidAddNotification = new UniversalDisposable();
     spyOn(onWillThrowErrorDisposable, 'dispose');
+    spyOn(onDidAddNotification, 'dispose');
     spyOn(atom, 'onWillThrowError').andReturn(onWillThrowErrorDisposable);
+    spyOn(atom.notifications, 'onDidAddNotification').andReturn(
+      onDidAddNotification,
+    );
     spyOn(window, 'addEventListener');
     spyOn(window, 'removeEventListener');
   });
@@ -54,13 +60,41 @@ describe('installErrorReporter', () => {
     expect(atom.onWillThrowError).toHaveBeenCalled();
   });
 
-  it('gets cleaned up when you disposae of it', () => {
+  it('adds an onDidAddNotification event listener', () => {
+    install();
+    expect(atom.notifications.onDidAddNotification).toHaveBeenCalled();
+  });
+
+  it('gets cleaned up when you dispose of it', () => {
     const disp = install();
     disp.dispose();
     expect(onWillThrowErrorDisposable.dispose).toHaveBeenCalled();
+    expect(onDidAddNotification.dispose).toHaveBeenCalled();
     expect(window.removeEventListener).toHaveBeenCalled();
     expect(window.removeEventListener.mostRecentCall.args[0]).toBe(
       'unhandledrejection',
     );
+  });
+});
+
+describe('call stack from atom notification', () => {
+  it('has nuclide in the call stack', () => {
+    atom.notifications.onDidAddNotification(notification => {
+      try {
+        throw new Error();
+      } catch (err) {
+        // Ignore the first call because it comes from this function.
+        const testCallSite = err
+          .getRawStack()
+          .slice(1)
+          .find(callSite => {
+            return callSite.toString().includes('installErrorReporter-spec.js');
+          });
+        expect(testCallSite).not.toBe(undefined);
+      }
+    });
+
+    // This is the expected testCallSite.
+    atom.notifications.addError('ERROR!');
   });
 });

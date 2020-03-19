@@ -113,25 +113,31 @@ export type ClangLocalReferences = {
 
 export type ClangRequestSettings = {|
   compilationDatabase: ?ClangCompilationDatabase,
-  projectRoot: ?string,
+  projectRoot: ?NuclideUri,
 |};
 
-export type ClangCompilationDatabase = {|
-  file: ?string,
-  flagsFile: ?string,
+export type ClangServerSettings = {|
+  defaultFlags: ?Array<string>,
   libclangPath: ?string,
 |};
 
+export type ClangCompilationDatabase = {|
+  file: ?NuclideUri,
+  flagsFile: ?NuclideUri,
+  libclangPath: ?NuclideUri,
+|};
+
+// https://clang.llvm.org/docs/JSONCompilationDatabase.html
 export type ClangCompilationDatabaseEntry = {|
-  command: string,
+  command?: string,
   file: string,
   directory: string,
   arguments?: Array<string>,
 |};
 
+// Merges the command and arguments fields of the database entry into 'flags'.
 export type ClangFlags = {|
-  // Will be computed and memoized from rawData on demand.
-  flags?: ?Array<string>,
-  rawData: ?ClangCompilationDatabaseEntry,
+  flags: Array<string>,
+  directory: string,
   flagsFile: ?string,
 |};

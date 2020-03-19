@@ -1,0 +1,34 @@
+/**
+ * Copyright (c) 2017-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ */
+
+/*
+ * APIs listed in this file are ones that should be built into nuclide-prebuilt-libs/pty and need to be upstreamed.
+ */
+
+declare module 'nuclide-prebuilt-libs/pty' {
+  declare export type ProcessEnv = {
+    +[key: string]: string;
+  };
+
+  declare export type IPtyForkOptions = {
+    name?: string;
+    cols?: number;
+    rows?: number;
+    cwd?: string;
+    env?: ProcessEnv;
+    uid?: number;
+    gid?: number;
+  };
+
+  declare export type IPtyOpenOptions = {
+    cols?: number;
+    rows?: number;
+  };
+}

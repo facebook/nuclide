@@ -10,15 +10,14 @@
  */
 
 import fs from 'fs';
+import {memoize} from 'lodash';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import invariant from 'assert';
 import Module from 'module';
+import os from 'os';
 
-import {generateProxy} from './proxy-generator';
+import memoizeWithDisk from '../../commons-node/memoizeWithDisk';
 import {parseServiceDefinition} from './service-parser';
-
-// Proxy dependencies
-import {Observable} from 'rxjs';
 
 import type {ReturnKind, Type, Parameter} from './types';
 
@@ -34,23 +33,11 @@ export type RpcContext = {
     returnType: ReturnKind,
     args: Object,
   ): any,
-  createRemoteObject(
-    interfaceName: string,
-    thisArg: Object,
-    unmarshalledArgs: Array<any>,
-    argTypes: Array<Parameter>,
-  ): void,
   disposeRemoteObject(object: Object): Promise<void>,
   marshal(value: any, type: Type): any,
   unmarshal(value: any, type: Type): any,
-  marshalArguments(
-    args: Array<any>,
-    argTypes: Array<Parameter>,
-  ): Promise<Object>,
-  unmarshalArguments(
-    args: Object,
-    argTypes: Array<Parameter>,
-  ): Promise<Array<any>>,
+  marshalArguments(args: Array<any>, argTypes: Array<Parameter>): Object,
+  unmarshalArguments(args: Object, argTypes: Array<Parameter>): Array<any>,
 };
 
 export type ProxyFactory = (context: RpcContext) => Object;
@@ -91,12 +78,10 @@ export function createProxyFactory(
         definitionSource,
         predefinedTypes,
       );
-      code = generateProxy(serviceName, preserveFunctionNames, defs);
+      code = memoizedGenerateProxy(serviceName, preserveFunctionNames, defs);
     }
 
     const m = loadCodeAsModule(code, filename);
-    m.exports.inject(Observable);
-
     proxiesCache.set(definitionPath, m.exports);
   }
 
@@ -105,6 +90,35 @@ export function createProxyFactory(
 
   return factory;
 }
+
+const memoizedReadFile = memoize(
+  (filename: string): string => {
+    return fs.readFileSync(filename, 'utf8');
+  },
+);
+
+const memoizedGenerateProxy = memoizeWithDisk(
+  function generateProxy(serviceName, preserveFunctionNames, defs) {
+    // External dependencies: ensure that they're included in the key below.
+    const createProxyGenerator = require('./proxy-generator').default;
+    const generate = require('@babel/generator').default;
+    const t = require('@babel/types');
+    return createProxyGenerator(t, generate).generateProxy(
+      serviceName,
+      preserveFunctionNames,
+      defs,
+    );
+  },
+  (serviceName, preserveFunctionNames, defs) => [
+    serviceName,
+    preserveFunctionNames,
+    defs,
+    memoizedReadFile(require.resolve('./proxy-generator')),
+    require('@babel/generator/package.json').version,
+    require('@babel/types/package.json').version,
+  ],
+  nuclideUri.join(os.tmpdir(), 'nuclide-rpc-cache'),
+);
 
 function loadCodeAsModule(code: string, filename: string): Module {
   invariant(code.length > 0, 'Code must not be empty.');

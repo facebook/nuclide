@@ -1,0 +1,132 @@
+@import 'ui-variables';
+
+.nuclide-ui-date-selector {
+  &.nuclide-ui-dropdown-date-selector {
+    position: absolute;
+    z-index: 100;
+  }
+
+  .dp-months, .dp-years {
+    display: flex;
+    flex-wrap: wrap;
+    padding: @component-padding;
+  }
+
+  .dp-cal-month,
+  .dp-cal-year,
+  .dp-day,
+  .dp-month,
+  .dp-year {
+    background: transparent;
+    border: 0;
+    position: relative;
+  }
+
+  .dp-cal-month,
+  .dp-cal-year {
+    font-size: 1.1em;
+    padding: @component-padding;
+  }
+
+  .dp-cal-header {
+    position: relative;
+    text-align: center;
+  }
+
+  .dp-next,
+  .dp-prev {
+    background: transparent;
+    border: 0;
+    height: 100%;
+    padding: @component-padding;
+    position: absolute;
+  }
+
+  .dp-next:focus,
+  .dp-prev:focus,
+  .dp-next:hover,
+  .dp-prev:hover {
+    color: inherit;
+  }
+
+  .dp-prev {
+    left: 0;
+  }
+
+  .dp-next {
+    right: 0;
+  }
+
+  .dp-day-today:after {
+    border: 0.5em solid @text-color;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+
+  .dp-col-header,
+  .dp-day {
+    display: inline-block;
+    padding: @component-padding;
+    text-align: center;
+    width: 100% / 7;
+  }
+
+  .dp-col-header {
+    font-size: 0.8em;
+    padding: @component-padding 0;
+    text-transform: uppercase;
+  }
+
+  .dp-month {
+    flex-grow: 1;
+    padding: @component-padding;
+    width: 33%;
+  }
+
+  .dp-year {
+    padding: @component-padding;
+    width: 100%;
+  }
+
+  .dr-in-range,
+  .dr-selected,
+  .dp-months .dp-current,
+  .dp-years .dp-current {
+    background: @button-background-color-selected;
+    color: contrast(@button-background-color-selected);
+  }
+
+  .dr-cals {
+    background: @tool-panel-background-color;
+    border: 1px solid @base-border-color;
+    border-radius: @component-border-radius;
+    height: ~"calc(16 * @{component-padding} + 12em)";
+    overflow: scroll;
+    width: 26em;
+  }
+
+  .dp-edge-day {
+    visibility: hidden;
+  }
+
+  .dp-cal-footer,
+  .dr-cal-end {
+    display: none;
+  }
+
+  .dp {
+    border: 0;
+  }
+
+  .dp-day-disabled,
+  .dp-day-disabled:focus,
+  .dp-day-disabled:hover {
+    background: transparent;
+    color: @text-color-subtle;
+    cursor: default;
+  }
+}

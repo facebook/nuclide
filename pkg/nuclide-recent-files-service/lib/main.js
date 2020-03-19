@@ -9,56 +9,28 @@
  * @format
  */
 
-import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import createPackage from 'nuclide-commons-atom/createPackage';
 import RecentFilesService from './RecentFilesService';
 
+export type FilePath = string;
+export type TimeStamp = number;
+export type FileList = Array<{path: FilePath, timestamp: TimeStamp}>;
+export type RecentFilesSerializedState = {filelist?: FileList};
+
 class Activation {
-  _subscriptions: CompositeDisposable;
   _service: RecentFilesService;
 
-  constructor(state: ?Object) {
-    this._subscriptions = new CompositeDisposable();
-    this._service = new RecentFilesService(state);
-    this._subscriptions.add(
-      new Disposable(() => {
-        this._service.dispose();
-      }),
-    );
+  constructor() {
+    this._service = new RecentFilesService();
   }
 
-  getService(): RecentFilesService {
+  provideRecentFilesService(): RecentFilesService {
     return this._service;
   }
 
   dispose() {
-    this._subscriptions.dispose();
+    this._service.dispose();
   }
 }
 
-let activation: ?Activation = null;
-
-export function activate(state: ?Object): void {
-  if (activation == null) {
-    activation = new Activation(state);
-  }
-}
-
-export function provideRecentFilesService(): RecentFilesService {
-  invariant(activation);
-  return activation.getService();
-}
-
-export function serialize(): Object {
-  invariant(activation);
-  return {
-    filelist: activation.getService().getRecentFiles(),
-  };
-}
-
-export function deactivate(): void {
-  if (activation) {
-    activation.dispose();
-    activation = null;
-  }
-}
+createPackage(module.exports, Activation);

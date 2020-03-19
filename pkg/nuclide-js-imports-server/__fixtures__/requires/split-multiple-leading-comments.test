@@ -1,0 +1,10 @@
+/**
+ * Header comment
+ */
+
+/**
+ * Function description.
+ */
+function foo() {
+  one();
+}

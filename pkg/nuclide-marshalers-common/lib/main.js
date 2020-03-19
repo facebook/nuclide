@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {PredefinedTransformer} from '../../nuclide-rpc';
+import type {PredefinedTransformer} from '../../nuclide-rpc/lib/types';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Range as ServerRange, Point as ServerPoint} from 'simple-text-buffer';

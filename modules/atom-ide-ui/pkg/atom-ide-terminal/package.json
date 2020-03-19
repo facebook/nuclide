@@ -1,0 +1,281 @@
+{
+  "name": "atom-ide-terminal",
+  "displayName": "Terminal",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A terminal integrated into Atom IDE.",
+  "author": "NEEDS OWNER",
+  "private": true,
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
+  "deserializers": {
+    "TerminalView": "deserializeTerminalView"
+  },
+  "nuclide": {
+    "packageType": "AtomPackage",
+    "configMetadata": {
+      "pathComponents": [
+        "IDE",
+        "Terminal"
+      ]
+    }
+  },
+  "atomConfig": {
+    "scrollback": {
+      "title": "Scrollback",
+      "type": "integer",
+      "default": 1000,
+      "minimum": 1000
+    },
+    "cursorStyle": {
+      "title": "Cursor Style",
+      "type": "string",
+      "default": "block",
+      "enum": [
+        "block",
+        "underline",
+        "bar"
+      ]
+    },
+    "cursorBlink": {
+      "title": "Cursor Blink",
+      "type": "boolean",
+      "default": false
+    },
+    "optionIsMeta": {
+      "title": "Use Option as Meta key (MacOS only)",
+      "type": "boolean",
+      "default": false
+    },
+    "allowTransparency": {
+      "title": "Allow Transparency",
+      "description": "Enables transparent terminal foreground or background theme colors. Also disables subpixel anti-aliasing. Warning: can reduce performance.",
+      "type": "boolean",
+      "default": false
+    },
+    "copyOnSelect": {
+      "title": "Copy on Select",
+      "description": "Selecting text in terminal also copies it to the clipboard. (Macos and Linux only)",
+      "type": "boolean",
+      "default": false
+    },
+    "charAtlas": {
+      "title": "Character atlas implementation",
+      "type": "string",
+      "default": "dynamic",
+      "enum": [
+        {
+          "value": "none",
+          "description": "None (No character atlas, not recommended)"
+        },
+        {
+          "value": "static",
+          "description": "Static (Generate a small character atlas on instantiation)"
+        },
+        {
+          "value": "dynamic",
+          "description": "Dynamic (Experimental; Use an LRU cache to improve the cache hit rate)"
+        }
+      ]
+    },
+    "renderer": {
+      "title": "Terminal renderer implementation",
+      "type": "string",
+      "default": "auto",
+      "enum": [
+        {
+          "value": "auto",
+          "description": "Automatically select best setting"
+        },
+        {
+          "value": "canvas",
+          "description": "Canvas (normally faster)"
+        },
+        {
+          "value": "dom",
+          "description": "DOM (Experimental fallback; may work better on some hardware)"
+        }
+      ]
+    },
+    "fontFamily": {
+      "title": "Font Family",
+      "type": "string",
+      "default": "courier-new, courier, monospace"
+    },
+    "fontScale": {
+      "title": "Font Scale",
+      "description": "The scale of the font used in the terminal relative to the editor font size.",
+      "type": "number",
+      "default": 1,
+      "minimum": 0.1
+    },
+    "lineHeight": {
+      "title": "Line Height",
+      "type": "number",
+      "default": 1.5
+    },
+    "documentationMessage": {
+      "title": "Documentation Message",
+      "type": "boolean",
+      "description": "Hide/show documentation url at the top of new terminal instances",
+      "default": true
+    },
+    "preservedCommands": {
+      "title": "Preserved Commands",
+      "type": "array",
+      "description": "Editor commands that still function when terminal is active",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "command-palette:toggle",
+        "fb-interactive-smartlog:toggle",
+        "nuclide-quick-open:find-anything",
+        "atom-ide-terminal:add-escape-prefix",
+        "atom-ide-terminal:new-terminal",
+        "atom-ide-terminal:toggle-terminal-focus",
+        "pane:move-active-item-to-top-of-stack",
+        "pane:show-next-recently-used-item",
+        "window:focus-next-pane",
+        "window:focus-previous-pane",
+        "window:focus-pane-above",
+        "window:focus-pane-below",
+        "window:focus-pane-on-left",
+        "window:focus-pane-on-right"
+      ]
+    },
+    "black": {
+      "title": "Black",
+      "type": "color",
+      "order": 1,
+      "default": "#2e3436"
+    },
+    "red": {
+      "title": "Red",
+      "type": "color",
+      "order": 2,
+      "default": "#cc0000"
+    },
+    "green": {
+      "title": "Green",
+      "type": "color",
+      "order": 3,
+      "default": "#4e9a06"
+    },
+    "yellow": {
+      "title": "Yellow",
+      "type": "color",
+      "order": 4,
+      "default": "#c4a000"
+    },
+    "blue": {
+      "title": "Blue",
+      "type": "color",
+      "order": 5,
+      "default": "#3465a4"
+    },
+    "magenta": {
+      "title": "Magenta",
+      "type": "color",
+      "order": 6,
+      "default": "#75507b"
+    },
+    "cyan": {
+      "title": "Cyan",
+      "type": "color",
+      "order": 7,
+      "default": "#06989a"
+    },
+    "white": {
+      "title": "White",
+      "type": "color",
+      "order": 8,
+      "default": "#d3d7cf"
+    },
+    "brightBlack": {
+      "title": "Bright Black",
+      "type": "color",
+      "order": 9,
+      "default": "#555753"
+    },
+    "brightRed": {
+      "title": "Bright Red",
+      "type": "color",
+      "order": 10,
+      "default": "#ef2929"
+    },
+    "brightGreen": {
+      "title": "Bright Green",
+      "type": "color",
+      "order": 11,
+      "default": "#8ae234"
+    },
+    "brightYellow": {
+      "title": "Bright Yellow",
+      "type": "color",
+      "order": 12,
+      "default": "#fce94f"
+    },
+    "brightBlue": {
+      "title": "Bright Blue",
+      "type": "color",
+      "order": 13,
+      "default": "#729fcf"
+    },
+    "brightMagenta": {
+      "title": "Bright Magenta",
+      "type": "color",
+      "order": 14,
+      "default": "#ad7fa8"
+    },
+    "brightCyan": {
+      "title": "Bright Cyan",
+      "type": "color",
+      "order": 15,
+      "default": "#34e2e2"
+    },
+    "brightWhite": {
+      "title": "Bright White",
+      "type": "color",
+      "order": 16,
+      "default": "#eeeeec"
+    }
+  },
+  "styleSheets": [
+    "../../../../../node_modules/vscode-xterm/lib/xterm.css",
+    "nuclide-terminal-view.less"
+  ],
+  "consumedServices": {
+    "fb-gatekeeper": {
+      "versions": {
+        "0.0.0": "consumeGatekeeperService"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "initializeCwdApi"
+      }
+    },
+    "nuclide-rpc-services": {
+      "versions": {
+        "0.0.0": "consumeRpcService"
+      }
+    },
+    "nuclide-paste": {
+      "versions": {
+        "0.0.0": "consumePasteProvider"
+      }
+    },
+    "tool-bar": {
+      "versions": {
+        "^1.0.0": "consumeToolBar"
+      }
+    }
+  },
+  "providedServices": {
+    "nuclide-terminal": {
+      "versions": {
+        "0.0.0": "provideTerminal"
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+const two = require('two');
+
+const one = two;

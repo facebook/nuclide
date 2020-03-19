@@ -1,0 +1,7 @@
+const Zaz = require('Zaz');
+
+const _ = require('underscore');
+const $ = require('jQuery');
+const foo = require('foo');
+
+const r = _($(foo(Zaz)));

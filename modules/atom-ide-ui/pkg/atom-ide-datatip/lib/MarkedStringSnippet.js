@@ -11,42 +11,44 @@
  */
 
 import {TextBuffer} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 
 // Complex types can end up being super long. Truncate them.
 const MAX_LENGTH = 100;
 
-export default class MarkedStringSnippet extends React.Component {
-  props: {
-    value: string,
-    grammar: atom$Grammar,
-  };
+type Props = {
+  value: string,
+  grammar: atom$Grammar,
+};
+
+type State = {
+  isExpanded: boolean,
+};
+
+export default class MarkedStringSnippet extends React.Component<Props, State> {
   state = {
     isExpanded: false,
   };
 
-  render(): React.Element<any> {
-    const {value} = this.props;
+  render(): React.Node {
+    const {grammar, value} = this.props;
     const shouldTruncate = value.length > MAX_LENGTH && !this.state.isExpanded;
     const buffer = new TextBuffer(
       shouldTruncate ? value.substr(0, MAX_LENGTH) + '...' : value,
     );
-    // Improve the display of Hack snippets.
-    let {grammar} = this.props;
-    if (grammar.scopeName === 'text.html.hack') {
-      grammar =
-        atom.grammars.grammarForScopeName('source.hackfragment') || grammar;
-    }
     return (
       <div
-        className="nuclide-datatip-marked-text-editor-container"
-        onClick={(e: SyntheticEvent) => {
+        className="datatip-marked-text-editor-container"
+        onClick={(e: SyntheticEvent<>) => {
+          // TODO: (wbinnssmith) T30771435 this setState depends on current state
+          // and should use an updater function rather than an object
+          // eslint-disable-next-line react/no-access-state-in-setstate
           this.setState({isExpanded: !this.state.isExpanded});
           e.stopPropagation();
         }}>
         <AtomTextEditor
-          className="nuclide-datatip-marked-text-editor"
+          className="datatip-marked-text-editor"
           gutterHidden={true}
           readOnly={true}
           syncTextContents={false}

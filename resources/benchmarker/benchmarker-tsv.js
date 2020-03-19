@@ -20,10 +20,8 @@ function writeTsv(
 ): void {
   const file = fs.openSync(location, 'a');
   if (record) {
-    // $FlowFixMe: Bad upstream definition
     fs.writeSync(file, columns.map(column => record[column]).join('\t') + '\n');
   } else {
-    // $FlowFixMe: Bad upstream definition
     fs.writeSync(file, columns.join('\t') + '\n');
   }
   fs.closeSync(file);
@@ -43,22 +41,24 @@ function readAllTsv(
 ): {columns: Array<string>, records: Array<Object>} {
   let columns = [];
   const records = [];
-  fs.readFileSync(location, 'utf8').split('\n').forEach((row, r) => {
-    if (r === 0) {
-      // First line has column headings.
-      columns = row.split('\t');
-    } else if (row === '') {
-      // Skip empty lines; the last line, for example.
-      return;
-    } else {
-      // Anything else is a record.
-      const record = {};
-      row.split('\t').forEach((cell, c) => {
-        record[columns[c]] = cell;
-      });
-      records.push(record);
-    }
-  });
+  fs.readFileSync(location, 'utf8')
+    .split('\n')
+    .forEach((row, r) => {
+      if (r === 0) {
+        // First line has column headings.
+        columns = row.split('\t');
+      } else if (row === '') {
+        // Skip empty lines; the last line, for example.
+        return;
+      } else {
+        // Anything else is a record.
+        const record = {};
+        row.split('\t').forEach((cell, c) => {
+          record[columns[c]] = cell;
+        });
+        records.push(record);
+      }
+    });
   return {columns, records};
 }
 

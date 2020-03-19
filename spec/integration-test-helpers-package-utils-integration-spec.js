@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -24,7 +24,7 @@ describe('activate/deactivate all packages', () => {
       expect(activatedPackages.length).toBeGreaterThan(20); // Inaccurate, just a sanity check.
       expect(activatedPackages.indexOf('nuclide') >= 0).toBe(true);
       expect(activatedPackages.indexOf('autocomplete-plus') >= 0).toBe(true);
-      deactivateAllPackages();
+      await deactivateAllPackages();
       expect(atom.packages.getActivePackages().length).toBe(0);
     });
   });

@@ -1,0 +1,18 @@
+const b = require('b');
+const d = require('d');
+const f = require('f');
+
+function foo(...a) {
+  a;
+  b;
+}
+
+(function(...c) {
+  c;
+  d;
+})();
+
+((...e) => {
+  e;
+  f;
+})();

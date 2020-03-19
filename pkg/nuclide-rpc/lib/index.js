@@ -10,7 +10,6 @@
  */
 
 import type {Observable} from 'rxjs';
-import type {ObjectRegistry} from './ObjectRegistry';
 
 export {ServiceRegistry} from './ServiceRegistry';
 export {RpcConnection, RpcTimeoutError} from './RpcConnection';
@@ -27,25 +26,6 @@ export type MessageLogger = (
   direction: 'send' | 'receive',
   message: string,
 ) => void;
-
-export type ConfigEntry = {
-  name: string,
-  definition: string,
-  implementation: string,
-  // When true, doesn't mangle in the service name into the method names for functions.
-  preserveFunctionNames?: boolean,
-};
-
-export type NamedTransformer = (
-  value: any,
-  context: ObjectRegistry,
-) => any | Promise<any>;
-
-export type PredefinedTransformer = {
-  typeName: string,
-  marshaller: NamedTransformer,
-  unmarshaller: NamedTransformer,
-};
 
 export type Transport = {
   send(message: string): void,

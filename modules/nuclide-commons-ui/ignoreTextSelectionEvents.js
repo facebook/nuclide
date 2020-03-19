@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -29,8 +29,10 @@
  *   onClick={ignoreTextSelectionEvents(this._onClick)}
  */
 
-const ignoreTextSelectionEvents = (cb?: (e: SyntheticMouseEvent) => mixed) => {
-  return (e: SyntheticMouseEvent) => {
+const ignoreTextSelectionEvents = (
+  cb?: (e: SyntheticMouseEvent<>) => mixed,
+) => {
+  return (e: SyntheticMouseEvent<>) => {
     // Ignore text selection
     const selection = getSelection();
     if (selection != null && selection.type === 'Range') {

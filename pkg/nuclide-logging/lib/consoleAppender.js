@@ -29,7 +29,7 @@ function layout(loggingEvent: any): Array<any> {
     data.unshift(eventInfo);
   }
 
-  // When logging an Error object, just print the messsage and the stack trace.
+  // When logging an Error object, just print the message and the stack trace.
   // Since we attach other properties to the object like `stackTrace`, these
   // can be really noisy.
   for (let i = 0; i < data.length; i++) {
@@ -47,10 +47,15 @@ function layout(loggingEvent: any): Array<any> {
  * Comparing to log4js's console appender(https://fburl.com/69861669), you can expand and explore
  * the object in console logged by this Appender.
  */
-function consoleAppender(): (loggingEvent: any) => void {
+function consoleAppender(config: Object): (loggingEvent: any) => void {
   return loggingEvent => {
-    // eslint-disable-next-line no-console
-    console.log(...layout(loggingEvent));
+    if (config.stderr) {
+      // eslint-disable-next-line no-console
+      console.error(...layout(loggingEvent));
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(...layout(loggingEvent));
+    }
   };
 }
 

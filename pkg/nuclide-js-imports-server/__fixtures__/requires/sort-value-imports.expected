@@ -1,0 +1,16 @@
+import 'aaa-side-effect';
+import 'bbb-side-effect';
+import 'ccc-side-effect';
+
+import AAA from 'AAA';
+import BBB from 'BBB';
+import CCC from 'CCC';
+
+import aaa from 'aaa';
+import bbb from 'bbb';
+import ccc from 'ccc';
+
+// Make sure they are used.
+aaa(AAA);
+bbb(BBB);
+ccc(CCC);

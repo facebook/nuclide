@@ -1,0 +1,27 @@
+const eight = require('eight');
+const eleven = require('eleven');
+const fifteen = require('fifteen');
+const five = require('five');
+const four = require('four');
+const nine = require('nine');
+const nineteen = require('nineteen');
+const one = require('one');
+const seven = require('seven');
+const seventeen = require('seventeen');
+const six = require('six');
+const sixteen = require('sixteen');
+const thirteen = require('thirteen');
+const three = require('three');
+const twelve = require('twelve');
+const twenty = require('twenty');
+const two = require('two');
+
+one ? two : three;
+!four;
+five++;
+six += seven;
+eight < nine;
+var ten = eleven ? twelve : {thirteen};
+var fourteen = fifteen || sixteen && seventeen;
+var eighteen = new nineteen();
+twenty;

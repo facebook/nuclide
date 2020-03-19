@@ -1,0 +1,28 @@
+# @generated SignedSource<<047bf0a57a5785143111f03f7b6c0b00>>
+version: "{build}"
+
+platform: x64
+
+branches:
+    only:
+      - master
+
+clone_depth: 10
+
+skip_tags: true
+
+environment:
+  APM_TEST_PACKAGES:
+
+  matrix:
+  - ATOM_CHANNEL: stable
+  - ATOM_CHANNEL: beta
+
+install:
+  - ps: Install-Product node 4
+
+build_script:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/atom/ci/master/build-package.ps1'))
+
+test: off
+deploy: off

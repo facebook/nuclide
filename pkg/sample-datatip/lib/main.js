@@ -11,7 +11,7 @@
 
 import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
 import {datatip} from './SampleDatatip';
 
@@ -25,10 +25,10 @@ const datatipProvider: DatatipProvider = {
 };
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(state: ?mixed) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   consumeDatatipService(service: DatatipService): IDisposable {

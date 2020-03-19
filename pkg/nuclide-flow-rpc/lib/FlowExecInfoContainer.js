@@ -12,12 +12,14 @@
 import type {LRUCache} from 'lru-cache';
 
 import LRU from 'lru-cache';
-import {CompositeDisposable} from 'event-kit';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import which from 'nuclide-commons/which';
 import {runCommand} from 'nuclide-commons/process';
 import {ConfigCache} from 'nuclide-commons/ConfigCache';
+
+import {getConfig} from './config';
 
 const FLOW_BIN_PATH = 'node_modules/.bin/flow';
 
@@ -44,9 +46,9 @@ export class FlowExecInfoContainer {
   // unsaved files. Useful for outline view) to FlowExecInfo. A null value means that the Flow
   // binary cannot be found for that root. It is possible for Flow to be available in some roots but
   // not others because we will support root-specific installations of flow-bin.
-  _flowExecInfoCache: LRUCache<?string, ?FlowExecInfo>;
+  _flowExecInfoCache: LRUCache<?string, Promise<?FlowExecInfo>>;
 
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   _pathToFlow: string;
   _canUseFlowBin: boolean;
@@ -60,10 +62,11 @@ export class FlowExecInfoContainer {
       maxAge: 1000 * 30, // 30 seconds
     });
 
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._versionInfo = versionInfo;
 
-    this._observeSettings();
+    this._canUseFlowBin = Boolean(getConfig('canUseFlowBin'));
+    this._pathToFlow = ((getConfig('pathToFlow'): any): string);
   }
 
   dispose() {
@@ -73,12 +76,13 @@ export class FlowExecInfoContainer {
   }
 
   // Returns null iff Flow cannot be found.
-  async getFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
-    if (!this._flowExecInfoCache.has(root)) {
-      const info = await this._computeFlowExecInfo(root);
+  getFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
+    let info = this._flowExecInfoCache.get(root);
+    if (info == null) {
+      info = this._computeFlowExecInfo(root);
       this._flowExecInfoCache.set(root, info);
     }
-    return this._flowExecInfoCache.get(root);
+    return info;
   }
 
   reallyGetFlowExecInfo(root: string | null): Promise<?FlowExecInfo> {
@@ -151,29 +155,6 @@ export class FlowExecInfoContainer {
   async findFlowConfigDir(localFile: string): Promise<?string> {
     return this._flowConfigDirCache.getConfigDir(localFile);
   }
-
-  _observeSettings(): void {
-    if (global.atom == null) {
-      this._pathToFlow = 'flow';
-      this._canUseFlowBin = false;
-    } else {
-      // $UPFixMe: This should use nuclide-features-config
-      // Does not currently do so because this is an npm module that may run on the server.
-      this._disposables.add(
-        atom.config.observe('nuclide.nuclide-flow.pathToFlow', path => {
-          this._pathToFlow = path;
-          this._flowExecInfoCache.reset();
-        }),
-        atom.config.observe(
-          'nuclide.nuclide-flow.canUseFlowBin',
-          canUseFlowBin => {
-            this._canUseFlowBin = canUseFlowBin;
-            this._flowExecInfoCache.reset();
-          },
-        ),
-      );
-    }
-  }
 }
 
 async function getFlowVersionInformation(
@@ -202,10 +183,7 @@ async function canFindFlow(flowPath: string): Promise<boolean> {
     // "flow.exe", format the path correctly to pass to `where <flow>`
     const dirPath = nuclideUri.dirname(flowPath);
     if (dirPath != null && dirPath !== '' && dirPath !== '.') {
-      const whichPath = `${nuclideUri.dirname(flowPath)}:${nuclideUri.basename(
-        flowPath,
-      )}`;
-      return (await which(whichPath)) != null;
+      return (await which(flowPath)) != null;
     }
   }
 

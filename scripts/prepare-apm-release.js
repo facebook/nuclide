@@ -7,14 +7,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +41,7 @@ gitIgnoreLines.push(
   '# "apm" doesn\'t honor ".npmignore" files. As a workaround, we merge the',
   '# ".npmignore" content into ".gitignore":',
   npmIgnore,
-  ''
+  '',
 );
 fs.writeFileSync(gitIgnorePath, gitIgnoreLines.join('\n'));
 

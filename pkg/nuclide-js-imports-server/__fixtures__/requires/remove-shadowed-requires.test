@@ -1,0 +1,6 @@
+var one = require('one');
+
+function foo() {
+  var one = () => {};
+  one();
+}

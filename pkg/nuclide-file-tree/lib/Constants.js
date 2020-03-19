@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -32,3 +32,5 @@ export const ShowUncommittedChangesKind = Object.freeze({
 (ShowUncommittedChangesKind: {[key: string]: ShowUncommittedChangesKindValue});
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/file-tree';
+
+export const PREFERRED_WIDTH = 300;

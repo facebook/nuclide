@@ -1,0 +1,7 @@
+# By default, paths map to the directory in which the project file lives.
+# paths = []
+
+[atom]
+  [atom.config."*".nuclide]
+    # For now, no feature groups are specified, so Nuclide will load them all.
+    # enabledFeatureGroups = []

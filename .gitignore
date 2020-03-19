@@ -3,6 +3,7 @@ npm-debug.log*
 *.pyc
 /node_modules
 /modules/**/node_modules
+/coverage
 
 ## DOCS ##
 
@@ -12,3 +13,6 @@ npm-debug.log*
 # Ignore locked gems because GitHub Pages controls the gems in production,
 # not Nuclide. Omit the lock so `bundle install` always installs the latest.
 /docs/Gemfile.lock
+
+/modules/jest-atom-runner/build
+.vscode-test/

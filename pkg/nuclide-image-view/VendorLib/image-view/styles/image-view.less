@@ -1,0 +1,117 @@
+// @generated SignedSource<<b88a246cf405eeeda522b5d2fa43824c>>
+@import "ui-variables";
+
+@spacing: @component-padding/2;
+@transparent-background-image: "atom://image-view/images/transparent-background.png";
+
+.image-view {
+  display: flex;
+  flex-direction: column;
+  background-color: @pane-item-background-color;
+
+
+  // Image Controls -------------------
+
+  .image-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: @spacing;
+    border-bottom: 1px solid @panel-heading-border-color;
+    background-color: @panel-heading-background-color;
+
+    a {
+      display: inline-block;
+      position: relative;
+      width: 24px;
+      height: 24px;
+      margin: @spacing;
+      vertical-align: middle;
+      font-size: 0;
+      border-radius: 22px;
+      border: 2px solid #fff;
+      box-shadow: inset 0 1px 2px hsla(0,0%,0%,.4), 0 0 0 1px hsla(0,0%,0%,.1), 0 2px 2px hsla(0,0%,0%,.2);
+      background-clip: content-box;
+
+      &:hover {
+        border-color: #ccc;
+      }
+      &:active {
+        border-color: #999;
+      }
+    }
+
+    &-color-white {
+      color: #000;
+      background-color: #fff;
+      background-image: url(@transparent-background-image);
+    }
+
+    &-color-black {
+      color: #fff;
+      background-color: #000;
+      background-image: url(@transparent-background-image);
+    }
+
+    .btn-group {
+      margin: @spacing;
+    }
+
+    .reset-zoom-button {
+      min-width: 5em;
+    }
+
+    // disabled once the button is selected
+    .zoom-to-fit-button.selected {
+      pointer-events: none;
+      cursor: default;
+    }
+  }
+
+
+  // Image -------------------
+
+  .image-container {
+    flex: 1 1 0;
+    display: flex;
+    overflow: auto;
+
+    img {
+      flex: none;
+      margin: auto;
+    }
+  }
+
+  // Background color
+  [background="white"] {
+    background-color: white;
+    background-image: url(@transparent-background-image);
+  }
+  [background="black"] {
+    background-color: black;
+    background-image: url(@transparent-background-image);
+  }
+
+
+
+  // Zoom to fit -------------------
+  // Scales the image to fit the available space.
+
+  .zoom-to-fit {
+    &.image-container {
+      padding: @component-padding;
+
+      img {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0;
+
+        // Alternative: object-fit: contain;
+        // then it would also scale larger than its original size
+        object-fit: scale-down;
+      }
+    }
+  }
+
+}

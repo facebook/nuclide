@@ -32,8 +32,15 @@ def range(start, stop=None, step=1):
 class file():
     def __iter__(self):
         yield ''
+
     def next(self):
         return ''
+
+    def readlines(self):
+        return ['']
+
+    def __enter__(self):
+        return self
 
 
 class xrange():
@@ -124,7 +131,7 @@ class list():
         return self.__iterable[y]
 
     def pop(self):
-        return self.__iterable[-1]
+        return self.__iterable[int()]
 
 
 class tuple():
@@ -202,9 +209,27 @@ class dict():
         except KeyError:
             return d
 
+    def values(self):
+        return self.__elements.values()
+
     def setdefault(self, k, d):
         # TODO maybe also return the content
         return d
+
+
+class enumerate():
+    def __init__(self, sequence, start=0):
+        self.__sequence = sequence
+
+    def __iter__(self):
+        for i in self.__sequence:
+            yield 1, i
+
+    def __next__(self):
+        return next(self.__iter__())
+
+    def next(self):
+        return next(self.__iter__())
 
 
 class reversed():
@@ -238,6 +263,11 @@ class str():
     def __init__(self, obj):
         pass
 
+    def strip(self):
+        return str()
+
+    def split(self):
+        return [str()]
 
 class type():
     def mro():

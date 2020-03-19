@@ -27,7 +27,7 @@ describe('Task runner behavior', () => {
   });
 
   afterEach(() => {
-    deactivateAllPackages();
+    waitsForPromise(deactivateAllPackages);
   });
 
   it('does not show task runner for empty projects', () => {

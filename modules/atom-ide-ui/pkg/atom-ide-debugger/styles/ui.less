@@ -1,0 +1,548 @@
+@import "ui-variables";
+
+.debugger-container {
+  display: flex;
+}
+
+.debugger-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: @component-padding;
+}
+
+.debugger-root select.form-control {
+  color: @text-color;
+  background-color: @button-background-color;
+  border-color: @button-border-color;
+}
+
+.debugger-root .control-bar {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.debugger-root .inspector {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.debugger-container-old-enabled {
+  display: flex;
+  flex-grow: 1;
+}
+
+.debugger-container-new {
+  flex-grow: 1;
+  flex-basis: 0;
+  overflow: auto;
+  padding-right: 0.5em;
+  display: flex;
+  flex-direction: column;
+
+  span {
+    -webkit-user-select: initial;
+  }
+}
+
+.debugger-container-new-disabled {
+  opacity: 0.5;
+}
+
+.debugger-state-notice {
+  color: @text-color-highlight;
+  font-weight: bold;
+  padding-top: 1.0em;
+  padding-bottom: 0.5em;
+  text-align: center;
+  justify-content: center;
+}
+
+.debugger-target-description {
+  color: @text-color-highlight;
+   padding-bottom: 0.5em;
+  text-align: center;
+  font-size: 8pt;
+}
+
+.debugger-section-header {
+  padding: 0px 5px;
+}
+
+.debugger-controls-section {
+  border: 1px @base-border-color solid;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+/* General debugger UI */
+.debugger-starting-message {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: @component-padding;
+  padding: 5px;
+}
+
+.debugger-section-content {
+  max-height: 20em;
+  overflow-y: visible;
+  overflow-x: visible;
+  margin-bottom: 5px;
+}
+
+.debugger-pane-content {
+  max-height: 20em;
+  overflow-y: visible;
+  overflow-x: visible;
+  margin-bottom: 5px;
+  padding: 10px;
+}
+
+.debugger-breakpoint {
+  padding-left: 0.25em;
+  position: relative;
+  span {
+    -webkit-user-select: none;
+  }
+}
+
+.debugger-breakpoint-section h3 {
+  font-size: 0.9em;
+}
+
+.debugger-breakpoint-condition {
+  font-size: 8pt;
+  padding: 3px 0px 3px 25px;
+  color: @text-color-warning;
+  .icon {
+    height: 8px;
+  }
+}
+
+.debugger-breakpoint-hitcount {
+  font-size: 8pt;
+  padding: 3px 0px 3px 25px;
+  color: @text-color-success;
+}
+
+.debugger-breakpoint-unresolved {
+  text-decoration: line-through;
+}
+
+.debugger-breakpoint-checkbox {
+  padding: 3px;
+}
+
+.debugger-breakpoint-disabled {
+  text-decoration: line-through;
+}
+
+.debugger-breakpoint-with-condition {
+  color: @text-color-warning;
+}
+
+/* Watch Expressions */
+@leftMargin: 0.5em;
+
+.debugger-expression-value-list {
+  margin: 0 @leftMargin;
+}
+
+.debugger-expression-value-row {
+  display: flex;
+  flex-direction: row;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  justify-content: space-between;
+  min-height: 23px; // Match height of AtomInput to prevent list items from jumping around.
+  overflow: visible;
+  position: relative;
+}
+
+.debugger-expression-value-content {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  overflow-x: visible;
+}
+
+.debugger-watch-expression-value-content {
+  width: 100%;
+  overflow: visible;
+}
+
+.debugger-scopes-view-controls {
+  opacity: 0;
+  background-color: @background-color-highlight;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.debugger-scopes-view-edit-control {
+  cursor: pointer;
+  color: @text-color-highlight;
+}
+
+.debugger-scopes-view-edit-control::before {
+  margin-right: 0px;
+  text-align: center;
+}
+
+.debugger-scopes-view-edit-control:hover {
+  opacity: 1;
+  color: @text-color-highlight;
+}
+
+.debugger-scope:hover {
+  background-color: @background-color-highlight;
+}
+
+.debugger-watch-expression-controls {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  background-color: @background-color-highlight;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.debugger-watch-expression-control {
+  cursor: pointer;
+  color: @text-color-highlight;
+}
+
+.debugger-watch-expression-control.icon::before {
+  margin-right: 0px;
+  text-align: center;
+}
+
+.debugger-breakpoint-condition-controls {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  background-color: @background-color-highlight;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.debugger-breakpoint-condition-control {
+  cursor: pointer;
+  color: @text-color-highlight;
+  padding-left: 4px;
+}
+
+.debugger-breakpoint-condition-control.icon::before {
+  margin-right: 0px;
+  text-align: center;
+}
+
+.debugger-breakpoint-condition-control.debugger-breakpoint-condition-control:hover {
+  opacity: 1;
+  color: @text-color-highlight;
+}
+
+.debugger-breakpoint:hover {
+  background-color: @background-color-highlight;
+
+  .debugger-breakpoint-condition-controls {
+    opacity: 1;
+    color: fade(@text-color-highlight, 50%);
+  }
+}
+
+.debugger-watch-expression-row:hover {
+  background-color: @background-color-highlight;
+
+  .debugger-watch-expression-controls {
+    opacity: 1;
+    color: fade(@text-color-highlight, 50%);
+  }
+}
+
+.debugger-watch-expression-controls.debugger-watch-expression-controls:hover {
+  opacity: 1;
+  color: @text-color-highlight;
+}
+
+.debugger-watch-expression-input {
+  // Vertically align listed watch expressions with input.
+  margin-left: -@leftMargin;
+}
+
+.debugger-watch-expression-add-new-input {
+  margin-top: 0.5em;
+}
+
+/* Call stack */
+.debugger-callstack-item {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  &:hover {
+    color: @text-color-highlight;
+  }
+}
+
+.debugger-callstack-item-selected {
+  color: @text-color-highlight;
+  font-weight: bold;
+}
+
+.debugger-callstack-list-empty {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}
+
+.debugger-callstack-name {
+  font-family: Menlo, Monaco, Consolas, monospace;
+}
+
+/* Stepping controls */
+.debugger-stepping-button-separated {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.debugger-stepping-component {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.debugger-stepping-svg-button {
+  div {
+    width: 10px;
+  }
+  svg {
+    width: 20px;
+    fill: @text-color;
+    margin: 0 auto;
+    position: relative;
+    left: -5px;
+    vertical-align: baseline;
+    top: 3px;
+  }
+  svg:hover {
+    fill: @text-color-highlight;
+  }
+}
+
+.debugger-stepping-playpause-button {
+  width: 10px;
+  text-align: left;
+}
+
+.debugger-stepping-playpause-button-loading {
+  position: relative;
+  left: -2px;
+}
+
+.debugger-stepping-buttongroup {
+  margin-right: 1em;
+}
+
+.debugger-buttongroup-center {
+  justify-content: center;
+}
+
+.debugger-exception-checkbox {
+  cursor: pointer;
+}
+
+.debugger-set-source-path-button {
+  position: relative;
+  left: 10px;
+}
+
+.debugger-exception-fragment {
+  margin: 5px 0 0 0.5em;
+}
+
+/* Thread list */
+.debugger-thread-list-item-selected {
+  color: @text-color-highlight;
+  font-weight: bold;
+}
+
+.debugger-thread-list-empty {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}
+
+.debugger-thread-list-item-current-indicator {
+  text-align: center;
+}
+
+/* Thread switch datatip */
+.debugger-thread-switch-alert {
+    padding: 1px 4px;
+    font-weight: bold;
+    color: @text-color-warning;
+}
+
+.debugger-thread-loading {
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Breakpoint config dialog */
+.debugger-bp-config-header {
+  align-items: baseline;
+  margin-bottom: 1em;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.debugger-bp-config-actions {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  padding-top: 10px;
+  position: relative;
+  right: 8px;
+  bottom: 8px;
+}
+
+.debugger-bp-dialog {
+  font-family: @font-family;
+  font-size: 12pt;
+}
+
+.debugger-breakpoint-separator {
+  margin: 4px 0px 1px 0px;
+}
+
+.debugger-callstack-table-div {
+  overflow-y: visible;
+  overflow-x: visible;
+  margin-left: 25px;
+  margin-bottom: 5px;
+  padding: 10px;
+}
+
+.debugger-tree {
+  overflow: scroll;
+  width: 100%;
+}
+
+@backgroundColor: fade(@background-color-info, 30%);
+@pseudoBorderColor: fade(@background-color-info, 80%);
+.debugger-tree-frame-selected {
+  background: linear-gradient(
+    to bottom,
+    @pseudoBorderColor 0%,
+    @pseudoBorderColor 5%,
+    @backgroundColor 5%,
+    @backgroundColor 95%,
+    @pseudoBorderColor 95%,
+    @pseudoBorderColor 100%
+  )
+}
+
+
+.debugger-tree-frame {
+  padding-left: 20px;
+}
+
+.debugger-tree-no-frames {
+  padding-left: 20px;
+}
+
+.debugger-tree-process-thread-selected {
+  font-weight: 900
+}
+
+.debugger-unavailable-breakpoint-help {
+  font-size: 8pt;
+  margin: 10px;
+}
+
+.debugger-tree-right-align {
+  float: right;
+}
+
+.debugger-tree-file-icon {
+  margin-right: 5px;
+}
+
+.debugger-thread-filter-box {
+  padding-right: 5px;
+  flex-grow: 1;
+}
+
+.debugger-thread-no-match-text {
+  margin-left: 35px;
+  font-style: italic;
+}
+
+.debugger-thread-filter-row {
+  margin: 5px 15px 15px 29px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.debugger-tree-process {
+  font-size: 14px;
+}
+
+.debugger-fetch-frames-link {
+  display: inline-block;
+  color: @text-color-info;
+  margin-left: 20px;
+  margin-bottom: 10px;
+  text-decoration: underline;
+}
+
+.debugger-terminate-thread-control {
+  opacity: 0.4;
+  cursor: pointer;
+  color: @text-color-error;
+  padding-left: 4px;
+}
+
+.debugger-terminate-thread-control:hover {
+  opacity: 1;
+}
+
+.expression-tree-value-box {
+  width: inherit;
+  flex-grow: 1;
+}
+
+.expression-tree-edit-button-confirm {
+  color: @text-color-success;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.expression-tree-edit-button-cancel {
+  color: @text-color-error;
+  cursor: pointer;
+}
+
+.expression-tree-line-control {
+  display: flex;
+  width: 100%;
+  padding-right: 1em;
+  word-wrap: break-word;
+}
+
+.expression-tree-line-control:hover {
+  .debugger-scopes-view-controls {
+    opacity: 1;
+    color: fade(@text-color-highlight, 50%);
+  }
+}

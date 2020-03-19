@@ -1,11 +1,9 @@
 {
   "name": "commons-atom",
-  "repository": "https://github.com/facebook/nuclide",
   "version": "0.0.0",
   "description": "Provides common helper functions for Nuclide packages in Atom",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "apm"
+    "packageType": "AtomLibrary"
   }
 }

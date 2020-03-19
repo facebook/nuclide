@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import type {Action, BookShelfState} from './types';
 
 import {ActionType} from './constants';
 import {getRepoPathToEditors} from './utils';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 export class Commands {
   _dispatch: (action: Action) => void;

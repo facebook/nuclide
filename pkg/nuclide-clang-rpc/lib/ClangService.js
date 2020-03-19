@@ -18,15 +18,18 @@ import type {
   ClangDeclaration,
   ClangLocalReferences,
   ClangOutlineTree,
-  ClangCompilationDatabaseEntry,
   ClangRequestSettings,
+  ClangFlags,
+  ClangServerSettings,
 } from './rpc-types';
 import type {ConnectableObservable} from 'rxjs';
 
-import {keyMirror, mapTransform, mapCompact} from 'nuclide-commons/collection';
+import {keyMirror} from 'nuclide-commons/collection';
 import {Observable} from 'rxjs';
 import {runCommand} from 'nuclide-commons/process';
 import ClangServerManager from './ClangServerManager';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import fsPromise from 'nuclide-commons/fsPromise';
 
 const serverManager = new ClangServerManager();
 
@@ -85,14 +88,14 @@ async function getClangService(
   src: NuclideUri,
   contents: string,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
   blocking?: boolean,
 ): Promise<?ClangProcessService> {
   const server = serverManager.getClangServer(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
   );
   if (!server.isReady()) {
     if (blocking) {
@@ -117,7 +120,7 @@ export function compile(
   src: NuclideUri,
   contents: string,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags?: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): ConnectableObservable<?ClangCompileResult> {
   const doCompile = async () => {
     // Note: restarts the server if the flags changed.
@@ -125,7 +128,7 @@ export function compile(
       src,
       contents,
       requestSettings,
-      defaultFlags,
+      defaultSettings,
       true,
     );
     if (!server.isDisposed()) {
@@ -143,13 +146,13 @@ export async function getCompletions(
   tokenStartColumn: number,
   prefix: string,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags?: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): Promise<?Array<ClangCompletion>> {
   const service = await getClangService(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
   );
   if (service != null) {
     return service.get_completions(
@@ -168,13 +171,13 @@ export async function getDeclaration(
   line: number,
   column: number,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags?: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): Promise<?ClangDeclaration> {
   const service = await getClangService(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
   );
   if (service != null) {
     return service.get_declaration(contents, line, column);
@@ -190,13 +193,13 @@ export async function getDeclarationInfo(
   line: number,
   column: number,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): Promise<?Array<ClangCursor>> {
   const service = await getClangService(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
   );
   if (service != null) {
     return service.get_declaration_info(contents, line, column);
@@ -219,13 +222,13 @@ export async function getOutline(
   src: NuclideUri,
   contents: string,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): Promise<?Array<ClangOutlineTree>> {
   const service = await getClangService(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
     true,
   );
   if (service != null) {
@@ -239,13 +242,13 @@ export async function getLocalReferences(
   line: number,
   column: number,
   requestSettings: ?ClangRequestSettings,
-  defaultFlags: ?Array<string>,
+  defaultSettings?: ClangServerSettings,
 ): Promise<?ClangLocalReferences> {
   const service = await getClangService(
     src,
     contents,
     requestSettings,
-    defaultFlags,
+    defaultSettings,
     true,
   );
   if (service != null) {
@@ -267,7 +270,9 @@ export async function formatCode(
   if (length != null) {
     args.push(`-length=${length}`);
   }
-  const stdout = await runCommand('clang-format', args, {
+  const binary = await getArcanistClangFormatBinary(src);
+  const command = binary == null ? 'clang-format' : binary;
+  const stdout = await runCommand(command, args, {
     input: contents,
   }).toPromise();
 
@@ -279,15 +284,62 @@ export async function formatCode(
   };
 }
 
-export function loadFlagsFromCompilationDatabaseAndCacheThem(
-  requestSettings: ClangRequestSettings,
-): Promise<Map<string, ClangCompilationDatabaseEntry>> {
-  return serverManager
-    .getClangFlagsManager()
-    .loadFlagsFromCompilationDatabase(requestSettings)
-    .then(fullFlags =>
-      mapCompact(mapTransform(fullFlags, flags => flags.rawData)),
+async function getArcanistClangFormatBinary(src: string): Promise<?string> {
+  try {
+    // $FlowFB
+    const arcService = require('../../fb-arcanist-rpc/lib/ArcanistService');
+    const [arcConfigDirectory, arcConfig] = await Promise.all([
+      arcService.findArcConfigDirectory(src),
+      arcService.readArcConfig(src),
+    ]);
+    if (arcConfigDirectory == null || arcConfig == null) {
+      return null;
+    }
+    const lintClangFormatBinary = arcConfig['lint.clang-format.binary'];
+    if (lintClangFormatBinary == null) {
+      return null;
+    }
+    return nuclideUri.join(
+      await fsPromise.realpath(arcConfigDirectory),
+      lintClangFormatBinary,
     );
+  } catch (err) {
+    return null;
+  }
+}
+
+// Read the provided database file, optionally associate it with the provided
+// flags file, and return an observable of the filenames it contains.
+export function loadFilesFromCompilationDatabaseAndCacheThem(
+  dbFile: string,
+  flagsFile: ?string,
+): ConnectableObservable<string> {
+  const flagsManager = serverManager.getClangFlagsManager();
+  return Observable.from(
+    flagsManager.loadFlagsFromCompilationDatabase(dbFile, flagsFile),
+  )
+    .flatMap(flagsMap => flagsMap.keys())
+    .publish();
+}
+
+// Remark: this isn't really rpc-safe, the big databases can be > 1 GB.
+export async function loadFlagsFromCompilationDatabaseAndCacheThem(
+  dbFile: string,
+  flagsFile: ?string,
+): Promise<Map<string, ClangFlags>> {
+  const flagsManager = serverManager.getClangFlagsManager();
+  const flagHandles = await flagsManager.loadFlagsFromCompilationDatabase(
+    dbFile,
+    flagsFile,
+  );
+  const compilationFlags = new Map();
+  for (const [src, handle] of flagHandles) {
+    const flags = flagsManager.getFlags(handle);
+    if (flags != null) {
+      compilationFlags.set(src, flags);
+    }
+  }
+  return compilationFlags;
 }
 
 /**
@@ -307,4 +359,8 @@ export function reset(): void {
 
 export function dispose(): void {
   serverManager.dispose();
+}
+
+export function setMemoryLimit(percent: number): void {
+  serverManager.setMemoryLimit(percent);
 }

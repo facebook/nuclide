@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -16,61 +16,6 @@ import {wordAtPosition, trimRange} from 'nuclide-commons-atom/range';
 import {getLogger} from 'log4js';
 
 const logger = getLogger('nuclide-python');
-
-function tokenizedLineForRow(
-  editor: atom$TextEditor,
-  line: number,
-): any /* atom$TokenizedLine */ {
-  const tokenBuffer = editor.hasOwnProperty('displayBuffer')
-    ? (editor: any).displayBuffer.tokenizedBuffer
-    : (editor: any).tokenizedBuffer;
-  return tokenBuffer.tokenizedLineForRow(line);
-}
-
-// Finds the range of the module name from a pyflakes F4XX message.
-// Assumes that the module name exists.
-// Ported from https://github.com/AtomLinter/linter-flake8
-function getModuleNameRange(
-  message: string,
-  line: number,
-  editor: atom$TextEditor,
-): ?Range {
-  // Split on space or dot to get the basename or alias, i.e. retrieve <a> in
-  // "from .. import <a>" or "from .. import .. as <a>".
-  const match = /'([^']+)'/.exec(message);
-  if (match == null) {
-    return null;
-  }
-  const symbol = match[1].split(/\s|\./).pop();
-
-  let foundImport = false;
-  let lineNumber = line;
-  for (;;) {
-    let offset = 0;
-    const tokenizedLine = tokenizedLineForRow(editor, lineNumber);
-    if (!tokenizedLine) {
-      break;
-    }
-    for (let i = 0; i < tokenizedLine.tokens.length; i++) {
-      const token = tokenizedLine.tokens[i];
-      if (foundImport && token.value === symbol) {
-        return new Range(
-          [lineNumber, offset],
-          [lineNumber, offset + token.value.length],
-        );
-      }
-      if (
-        token.value === 'import' &&
-        token.scopes.indexOf('keyword.control.import.python') >= 0
-      ) {
-        foundImport = true;
-      }
-      offset += token.value.length;
-    }
-    lineNumber += 1;
-  }
-  logger.warn(`getModuleNameRange failed for message: ${message}`);
-}
 
 // Computes an appropriate underline range using the diagnostic type information.
 // Range variants include underlining the entire line, entire trimmed line,
@@ -140,13 +85,7 @@ export function getDiagnosticRange(
         break;
       // pyflakes - import related messages
       case 'F4':
-        if (code === 'F401') {
-          // 'XXX' is imported but not used
-          const range = getModuleNameRange(message, line, editor);
-          if (range != null) {
-            return range;
-          }
-        } else if (code === 'F405') {
+        if (code === 'F405') {
           // <XXX> may be undefined, or defined from import *
           const word = wordAtPosition(editor, new Point(line, column));
           if (word) {
@@ -170,7 +109,9 @@ export function getDiagnosticRange(
         break;
     }
   } catch (e) {
-    const diagnosticAsString = `${diagnostic.file}:${unsafeLine}:${column} - ${code}: ${message}`;
+    const diagnosticAsString = `${
+      diagnostic.file
+    }:${unsafeLine}:${column} - ${code}: ${message}`;
     logger.error(
       `Failed to find flake8 diagnostic range: ${diagnosticAsString}`,
       e,

@@ -11,9 +11,18 @@
  */
 
 import type {Observable} from 'rxjs';
-import type {WebSocketTransport} from './WebSocketTransport';
+import type {ReliableSocket} from '../socket/ReliableSocket';
+import type {XhrConnectionHeartbeat} from './XhrConnectionHeartbeat';
+import type {Tunnel} from '../services/tunnel/Tunnel';
+import type {ThriftServiceConfig} from '../services/thrift/types';
 
 import {Subject} from 'rxjs';
+import {getLogger} from 'log4js';
+import {CLOSE_TAG} from '../server/BigDigServer';
+import {THRIFT_SERVICE_TAG, ThriftClient} from '../services/thrift/types';
+
+import {TunnelManager} from '../services/tunnel/TunnelManager';
+import {ThriftClientManager} from '../services/thrift/ThriftClientManager';
 
 /**
  * This class is responsible for talking to a Big Dig server, which enables the
@@ -21,14 +30,39 @@ import {Subject} from 'rxjs';
  * and stderr.
  */
 export class BigDigClient {
-  _webSocketTransport: WebSocketTransport;
+  _logger: log4js$Logger;
   _tagToSubject: Map<string, Subject<string>>;
+  _transport: ReliableSocket;
+  _tunnelManager: TunnelManager;
+  _thriftClientManager: ThriftClientManager;
 
-  constructor(webSocketTransport: WebSocketTransport) {
-    this._webSocketTransport = webSocketTransport;
+  constructor(reliableSocketTransport: ReliableSocket) {
+    this._logger = getLogger();
+    this._transport = reliableSocketTransport;
     this._tagToSubject = new Map();
+    this._tunnelManager = new TunnelManager({
+      onMessage: () => {
+        return this.onMessage('tunnel');
+      },
+      send: (message: string) => {
+        this.sendMessage('tunnel', message);
+      },
+    });
 
-    const observable = webSocketTransport.onMessage();
+    this._thriftClientManager = new ThriftClientManager(
+      {
+        onMessage: () => {
+          return this.onMessage(THRIFT_SERVICE_TAG);
+        },
+        send: (message: string) => {
+          this.sendMessage(THRIFT_SERVICE_TAG, message);
+        },
+      },
+      this._tunnelManager,
+    );
+
+    const observable = reliableSocketTransport.onMessage();
+    // eslint-disable-next-line nuclide-internal/unused-subscription
     observable.subscribe({
       // Must use arrow function so that `this` is bound correctly.
       next: message => {
@@ -39,23 +73,71 @@ export class BigDigClient {
           const body = message.substring(index + 1);
           subject.next(body);
         } else {
-          // eslint-disable-next-line no-console
-          console.warn(`No one listening for tag "${tag}".`);
+          this._logger.warn(`No one listening for tag "${tag}".`);
         }
       },
       error(err) {
-        // eslint-disable-next-line no-console
-        console.error('Error received in ConnectionWrapper', err);
+        this._logger.error('Error received in ConnectionWrapper', err);
       },
       complete() {
-        // eslint-disable-next-line no-console
-        console.error('ConnectionWrapper completed()?');
+        this._logger.error('ConnectionWrapper completed()?');
       },
     });
   }
 
+  isClosed(): boolean {
+    return this._transport.isClosed();
+  }
+
+  onClose(callback: () => mixed): IDisposable {
+    return this._transport.onClose(callback);
+  }
+
+  async createTunnel(
+    localPort: number,
+    remotePort: number,
+    options: {
+      isReverse?: boolean,
+      useIPv4?: boolean,
+    } = {},
+  ): Promise<Tunnel> {
+    const useIPv4 = options.useIPv4 || false;
+    const tunnelConfig = {
+      local: {useIPv4, port: localPort},
+      remote: {useIPv4, port: remotePort},
+    };
+    if (options.isReverse) {
+      return this._tunnelManager.createReverseTunnel(tunnelConfig);
+    } else {
+      return this._tunnelManager.createTunnel(tunnelConfig);
+    }
+  }
+
+  getOrCreateThriftClient(
+    serviceConfig: ThriftServiceConfig,
+  ): Promise<ThriftClient> {
+    return this._thriftClientManager.createThriftClient(serviceConfig);
+  }
+
+  close(): void {
+    this._logger.info('close called');
+    this._tunnelManager.close();
+    this._thriftClientManager.close();
+    if (!this.isClosed()) {
+      this.sendMessage(CLOSE_TAG, '');
+    }
+    this._transport.close();
+  }
+
   sendMessage(tag: string, body: string) {
-    this._webSocketTransport.send(`${tag}\0${body}`);
+    const message = `${tag}\0${body}`;
+    if (this.isClosed()) {
+      this._logger.warn(
+        `Attempting to send message to ${this.getAddress()} on closed BigDigClient: ${message}`,
+      );
+      return;
+    }
+    this._transport.send(message);
   }
 
   onMessage(tag: string): Observable<string> {
@@ -67,11 +149,11 @@ export class BigDigClient {
     return subject.asObservable();
   }
 
-  getAddress(): string {
-    return this._webSocketTransport.getAddress();
+  getHeartbeat(): XhrConnectionHeartbeat {
+    return this._transport.getHeartbeat();
   }
 
-  dispose() {
-    // TODO(mbolin)
+  getAddress(): string {
+    return this._transport.getAddress();
   }
 }

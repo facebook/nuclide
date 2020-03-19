@@ -1,0 +1,30 @@
+{
+  "menu": [
+    {
+      "label": "View",
+      "submenu": [
+        {
+          "label": "Toggle Console",
+          "command": "console:toggle"
+        }
+      ]
+    },
+    {
+      "label": "Edit",
+      "submenu": [
+        {
+          "label": "Clear Console",
+          "command": "console:clear"
+        }
+      ]
+    }
+  ],
+  "context-menu": {
+    ".console-table-wrapper": [
+      {
+        "label": "Copy",
+        "command": "core:copy"
+      }
+    ]
+  }
+}

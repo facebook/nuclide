@@ -1,0 +1,5 @@
+const Components = require('Components');
+
+var {A, B} = Components;
+
+var jsx = <A><B/></A>;

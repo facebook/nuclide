@@ -1,8 +1,0 @@
-{
-  ".platform-darwin atom-workspace": {
-    "cmd-alt-n": "nuclide-related-files:jump-to-next-related-file"
-  },
-  ".platform-win32 atom-workspace": {
-    "ctrl-alt-n": "nuclide-related-files:jump-to-next-related-file"
-  }
-}

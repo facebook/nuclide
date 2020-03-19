@@ -1,0 +1,27 @@
+const Image = require('Image.react');
+const MyConstants = require('MyConstants');
+const React = require('React');
+const XUISingleSelector = require('XUISingleSelector.react');
+const XUISingleSelectorOption = require('XUISingleSelectorOption.react');
+
+const emptyFunction = require('emptyFunction');
+const shallowCompare = require('shallowCompare');
+
+var {Component, PropTypes} = React;
+
+var Foo = React.createClass({
+  UNSAFE_componentWillReceiveProps(props, state) {
+    return shallowCompare(this, props, state);
+  },
+
+  render() {
+    return (
+      <div>
+        <Image src={MyConstants.IMAGE_SRC} />
+        <XUISingleSelector Uppercase={emptyFunction}>
+          <XUISingleSelectorOption />
+        </XUISingleSelector>
+      </div>
+    );
+  },
+});

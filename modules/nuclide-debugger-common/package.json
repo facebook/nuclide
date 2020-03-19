@@ -1,0 +1,28 @@
+{
+  "name": "nuclide-debugger-common",
+  "version": "0.7.3-dev",
+  "description": "Provides common Node functionality for the Nuclide debugger",
+  "author": "Nuclide : Debugging",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-debugger-common",
+  "main": "./main.js",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "dependencies": {
+    "idx": "1.2.0",
+    "immutable": "4.0.0-rc.9",
+    "invariant": "2.2.2",
+    "nuclide-adb": "0.7.3-dev",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nuclide-commons-ui": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "react": "16.6.3",
+    "rxjs-compat": "6.3.3",
+    "uuid": "3.0.1",
+    "vscode-debugprotocol": "1.24.0"
+  }
+}

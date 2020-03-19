@@ -1,0 +1,5 @@
+'use strict';
+
+const one = require('one');
+
+one();

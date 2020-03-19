@@ -1,0 +1,11 @@
+[
+  {
+    "column": 20,
+    "file": "directory/file2.js",
+    "line": "../file1.js:3:6: // looks like a grep output",
+    "leadingContext": [],
+    "trailingContext": [],
+    "matchLength": 24,
+    "row": 5
+  }
+]

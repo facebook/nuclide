@@ -1,0 +1,20 @@
+{
+  "name": "sample-experimental-console-service",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Experimental console provider",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "experimental": {
+    "main": "./lib/main.js",
+    "providedServices": {
+      "console": {
+        "name": "sample-experimental-service-simple-console",
+        "version": "1.0.0",
+        "client": "./lib/SimpleConsoleClient"
+      }
+    }
+  }
+}

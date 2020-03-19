@@ -1,9 +1,9 @@
 {
   "name": "nuclide-file-tree",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides the new file tree panel for Nuclide",
+  "author": "Nuclide : Core UI",
   "consumedServices": {
     "nuclide-current-working-directory": {
       "versions": {
@@ -15,25 +15,45 @@
         "0.0.0": "consumeWorkingSetsStore"
       }
     },
+    "nuclide-terminal": {
+      "versions": {
+        "0.0.0": "consumeTerminal"
+      }
+    },
     "nuclide-remote-projects": {
       "versions": {
         "0.0.0": "consumeRemoteProjectsService"
+      }
+    },
+    "nuclide-remote-transfer": {
+      "versions": {
+        "0.0.0": "consumeRemoteFileTransfer"
       }
     }
   },
   "providedServices": {
     "nuclide-file-tree.context-menu": {
       "versions": {
-        "0.1.0": "getContextMenuForFileTree"
+        "0.1.0": "provideContextMenuForFileTree"
       }
     },
     "nuclide-file-tree.project-selection": {
       "versions": {
-        "0.0.0": "getProjectSelectionManagerForFileTree"
+        "0.0.0": "provideProjectSelectionManagerForFileTree"
+      }
+    },
+    "additional-log-files": {
+      "description": "File tree state files",
+      "versions": {
+        "0.0.0": "provideFileTreeAdditionalLogFilesProvider"
+      }
+    },
+    "nuclide-services.diff-compare-id-changes": {
+      "versions": {
+        "0.0.0": "getCompareIdChanges"
       }
     }
   },
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "deserializers": {
     "nuclide.FileTreeSidebarComponent": "deserializeFileTreeSidebarComponent"
   },
@@ -48,7 +68,7 @@
       "revealFileOnSwitch": {
         "title": "Reveal File on Switch",
         "type": "boolean",
-        "default": true,
+        "default": false,
         "description": "Automatically reveal the current file when you switch tabs"
       },
       "hideIgnoredNames": {
@@ -56,6 +76,12 @@
         "type": "boolean",
         "default": true,
         "description": "Hide paths that match the \"Ignored Names\" under \"Settings > Core Settings\""
+      },
+      "hideVcsIgnoredPaths": {
+        "title": "Hide VCS Ignored Paths",
+        "type": "boolean",
+        "default": true,
+        "description": "Files and directories ignored by the current project's version control system will be hidden."
       },
       "allowKeyboardPrefixNavigation": {
         "title": "Enable prefix-based keyboard navigation",
@@ -91,9 +117,14 @@
         "type": "boolean",
         "default": true,
         "description": "Automatically expand single child directory when parent is expanded"
+      },
+      "focusEditorOnFileSelection": {
+        "title": "Focus editor on file selection",
+        "type": "boolean",
+        "default": false,
+        "description": "Focuses the editor when a file is selected and previewed"
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   }
 }

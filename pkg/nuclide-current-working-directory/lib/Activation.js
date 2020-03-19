@@ -9,25 +9,23 @@
  * @format
  */
 
-import type {Directory} from '../../nuclide-remote-connection';
-
-import {CwdApi} from './CwdApi';
-import {CompositeDisposable} from 'atom';
+import CwdApi from './CwdApi';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {getAtomProjectRootPath} from 'nuclide-commons-atom/projects';
-import getElementFilePath from '../../commons-atom/getElementFilePath';
+import getElementFilePath from 'nuclide-commons-atom/getElementFilePath';
 
-export class Activation {
+export default class Activation {
   _cwdApi: CwdApi;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _lastWorkingRootPath: ?string;
-  _currentWorkingRootDirectory: ?Directory;
+  _currentWorkingRootDirectory: ?string;
 
   constructor(rawState: ?Object) {
     const state = rawState || {};
     const {initialCwdPath} = state;
     this._cwdApi = new CwdApi(initialCwdPath);
     this._currentWorkingRootDirectory = this._cwdApi.getCwd();
-    this._disposables = new CompositeDisposable(
+    this._disposables = new UniversalDisposable(
       this._cwdApi,
       atom.commands.add(
         'atom-workspace',
@@ -41,7 +39,7 @@ export class Activation {
       ),
       this._cwdApi.observeCwd(newCwd => {
         if (this._currentWorkingRootDirectory != null) {
-          const oldCwd = this._currentWorkingRootDirectory.getPath();
+          const oldCwd = this._currentWorkingRootDirectory;
           if (newCwd === oldCwd) {
             return;
           }
@@ -63,7 +61,7 @@ export class Activation {
   serialize(): Object {
     const cwd = this._cwdApi.getCwd();
     return {
-      initialCwdPath: cwd == null ? null : cwd.getPath(),
+      initialCwdPath: cwd,
     };
   }
 

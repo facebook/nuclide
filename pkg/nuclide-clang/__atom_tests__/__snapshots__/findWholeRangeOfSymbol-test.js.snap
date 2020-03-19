@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`findWholeRangeOfSymbol finds the range of a fully qualified non-selector symbol. 1`] = `
+Array [
+  Range {
+    "end": Point {
+      "column": 35,
+      "row": 8,
+    },
+    "start": Point {
+      "column": 31,
+      "row": 8,
+    },
+  },
+]
+`;
+
+exports[`findWholeRangeOfSymbol finds the range of a non-selector symbol. 1`] = `
+Array [
+  Range {
+    "end": Point {
+      "column": 35,
+      "row": 8,
+    },
+    "start": Point {
+      "column": 31,
+      "row": 8,
+    },
+  },
+]
+`;
+
+exports[`findWholeRangeOfSymbol finds the range of a selector with multiple arguments, when any of the segments is the selected "text". 1`] = `Array []`;
+
+exports[`findWholeRangeOfSymbol finds the range of a selector with multiple arguments, when any of the segments is the selected "text". 2`] = `Array []`;
+
+exports[`findWholeRangeOfSymbol finds the range of a selector with multiple arguments, when any of the segments is the selected "text". 3`] = `Array []`;
+
+exports[`findWholeRangeOfSymbol finds the range of a selector with multiple arguments, when any of the segments is the selected "text". 4`] = `Array []`;
+
+exports[`findWholeRangeOfSymbol finds the range of a selector with one argument. 1`] = `
+Array [
+  Range {
+    "end": Point {
+      "column": 60,
+      "row": 12,
+    },
+    "start": Point {
+      "column": 39,
+      "row": 12,
+    },
+  },
+]
+`;

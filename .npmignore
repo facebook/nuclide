@@ -8,10 +8,12 @@
 /docs
 /flow-libs
 /flow-typed
+/pkg/dev-*
 /pkg/sample-*
 /resources/benchmarker
 /resources/nuclicons
 /scripts
+DEVELOPMENT
 spec
 
 # Ignore "BUCK" files, but not "buck/" directories.
@@ -23,4 +25,6 @@ BUCK
 /pkg/fb-java-rpc/**/*.java
 /pkg/fb-java-rpc/.idea
 /pkg/fb-java-rpc/*.iml
-/pkg/fb-debugger-java-rpc/**/*.java
+/pkg/fb-java/eclipse.jdt.ls
+/pkg/fb-xml/**/*.java
+/pkg/fb-cquery-rpc/third-party/VendorLib

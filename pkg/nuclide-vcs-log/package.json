@@ -1,10 +1,9 @@
 {
   "name": "nuclide-vcs-log",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "General display mechanism for the VCS log of a file",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Source Control",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -20,8 +19,7 @@
         "description": "This column will appear only if at least one commit in the history being displayed has a Differential Revision"
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide-file-tree.context-menu": {

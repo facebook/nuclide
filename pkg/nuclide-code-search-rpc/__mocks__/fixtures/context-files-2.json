@@ -1,0 +1,16 @@
+[
+  {
+    "column": 11,
+    "file": "file1.js",
+    "leadingContext": [
+      "var a = 4;"
+    ],
+    "line": "        // console.trace(x);",
+    "matchLength": 13,
+    "row": 1,
+    "trailingContext": [
+      "        console3log(b);",
+      "        // var x = a + 2;"
+    ]
+  }
+]

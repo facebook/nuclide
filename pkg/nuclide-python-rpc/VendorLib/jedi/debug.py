@@ -1,25 +1,53 @@
 from jedi._compatibility import encoding, is_py3, u
-import inspect
 import os
 import time
 
+def _lazy_colorama_init():
+    """
+    Lazily init colorama if necessary, not to screw up stdout is debug not
+    enabled.
+
+    This version of the function does nothing.
+    """
+    pass
+
+_inited=False
+
 try:
     if os.name == 'nt':
-        # does not work on Windows, as pyreadline and colorama interfere
+        # Does not work on Windows, as pyreadline and colorama interfere
         raise ImportError
     else:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         from colorama import initialise
-        # pytest resets the stream at the end - causes troubles. Since after
-        # every output the stream is reset automatically we don't need this.
-        initialise.atexit_done = True
-        init()
+        def _lazy_colorama_init():
+            """
+            Lazily init colorama if necessary, not to screw up stdout is
+            debug not enabled.
+
+            This version of the function does init colorama.
+            """
+            global _inited
+            if not _inited:
+                # pytest resets the stream at the end - causes troubles. Since
+                # after every output the stream is reset automatically we don't
+                # need this.
+                initialise.atexit_done = True
+                try:
+                    init()
+                except Exception:
+                    # Colorama fails with initializing under vim and is buggy in
+                    # version 0.3.6.
+                    pass
+            _inited = True
+
 except ImportError:
     class Fore(object):
         RED = ''
         GREEN = ''
         YELLOW = ''
+        MAGENTA = ''
         RESET = ''
 
 NOTICE = object()
@@ -32,15 +60,14 @@ enable_notice = False
 
 # callback, interface: level, str
 debug_function = None
-ignored_modules = ['jedi.evaluate.builtin', 'jedi.parser']
-_debug_indent = -1
+_debug_indent = 0
 _start_time = time.time()
 
 
 def reset_time():
     global _start_time, _debug_indent
     _start_time = time.time()
-    _debug_indent = -1
+    _debug_indent = 0
 
 
 def increase_indent(func):
@@ -49,44 +76,50 @@ def increase_indent(func):
         global _debug_indent
         _debug_indent += 1
         try:
-            result = func(*args, **kwargs)
+            return func(*args, **kwargs)
         finally:
             _debug_indent -= 1
-        return result
     return wrapper
 
 
-def dbg(message, *args):
+def dbg(message, *args, **kwargs):
     """ Looks at the stack, to see if a debug message should be printed. """
+    # Python 2 compatibility, because it doesn't understand default args
+    color = kwargs.pop('color', 'GREEN')
+    assert color
+
     if debug_function and enable_notice:
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
-        if not (mod.__name__ in ignored_modules):
-            i = ' ' * _debug_indent
-            debug_function(NOTICE, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
+        i = ' ' * _debug_indent
+        _lazy_colorama_init()
+        debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
-def warning(message, *args):
+def warning(message, *args, **kwargs):
+    format = kwargs.pop('format', True)
+    assert not kwargs
+
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
-        debug_function(WARNING, i + 'warning: ' + message % tuple(u(repr(a)) for a in args))
+        if format:
+            message = message % tuple(u(repr(a)) for a in args)
+        debug_function('RED', i + 'warning: ' + message)
 
 
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
         i = ' ' * _debug_indent
-        debug_function(SPEED, i + 'speed: ' + '%s %s' % (name, now - _start_time))
+        debug_function('YELLOW', i + 'speed: ' + '%s %s' % (name, now - _start_time))
 
 
-def print_to_stdout(level, str_out):
-    """ The default debug function """
-    if level == NOTICE:
-        col = Fore.GREEN
-    elif level == WARNING:
-        col = Fore.RED
-    else:
-        col = Fore.YELLOW
+def print_to_stdout(color, str_out):
+    """
+    The default debug function that prints to standard out.
+
+    :param str color: A string that is an attribute of ``colorama.Fore``.
+    """
+    col = getattr(Fore, color)
+    _lazy_colorama_init()
     if not is_py3:
         str_out = str_out.encode(encoding, 'replace')
     print(col + str_out + Fore.RESET)

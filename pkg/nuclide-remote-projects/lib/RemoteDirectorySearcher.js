@@ -9,18 +9,19 @@
  * @format
  */
 
-import typeof * as GrepService from '../../nuclide-grep-rpc';
-import type {search$FileResult} from '../../nuclide-grep-rpc';
+import typeof * as CodeSearchService from '../../nuclide-code-search-rpc';
+import type {search$FileResult} from '../../nuclide-code-search-rpc/lib/types';
 import type {WorkingSetsStore} from '../../nuclide-working-sets/lib/types';
+import type {NuclideCodeSearchConfig} from '../../nuclide-code-search/lib/types';
 
-import invariant from 'assert';
-import {Observable, ReplaySubject} from 'rxjs';
-import {arrayFlatten} from 'nuclide-commons/collection';
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import {RemoteDirectory} from '../../nuclide-remote-connection';
 import {WORKING_SET_PATH_MARKER} from '../../nuclide-working-sets-common/lib/constants';
-
 import {logger} from './constants';
+import invariant from 'assert';
+import {arrayFlatten} from 'nuclide-commons/collection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {Observable, ReplaySubject} from 'rxjs';
 
 type RemoteDirectorySearch = {
   then: (onFullfilled: any, onRejected: any) => Promise<any>,
@@ -28,13 +29,13 @@ type RemoteDirectorySearch = {
 };
 
 export default class RemoteDirectorySearcher {
-  _serviceProvider: (dir: RemoteDirectory) => GrepService;
+  _serviceProvider: (dir: RemoteDirectory) => CodeSearchService;
   _getWorkingSetsStore: () => ?WorkingSetsStore;
 
   // When constructed, RemoteDirectorySearcher must be passed a function that
-  // it can use to get a 'GrepService' for a given remote path.
+  // it can use to get a 'CodeSearchService' for a given remote path.
   constructor(
-    serviceProvider: (dir: RemoteDirectory) => GrepService,
+    serviceProvider: (dir: RemoteDirectory) => CodeSearchService,
     getWorkingSetsStore: () => ?WorkingSetsStore,
   ) {
     this._serviceProvider = serviceProvider;
@@ -50,6 +51,9 @@ export default class RemoteDirectorySearcher {
     regex: RegExp,
     options: Object,
   ): RemoteDirectorySearch {
+    const config: NuclideCodeSearchConfig = (featureConfig.get(
+      'nuclide-code-search',
+    ): any);
     // Track the files that we have seen updates for.
     const seenFiles = new Set();
 
@@ -69,7 +73,15 @@ export default class RemoteDirectorySearcher {
         // happen if we're searching in a working set that excludes the directory.
         inclusion
           ? services[index]
-              .grepSearch(directories[index].getPath(), regex, inclusion)
+              .remoteAtomSearch(
+                directories[index].getPath(),
+                regex,
+                inclusion,
+                config.remoteUseVcsSearch,
+                config.remoteTool.length === 0 ? null : config.remoteTool,
+                options.leadingContextLineCount,
+                options.trailingContextLineCount,
+              )
               .refCount()
           : Observable.empty(),
     );

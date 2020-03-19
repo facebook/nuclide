@@ -1,0 +1,12 @@
+{
+  "name": "nuclide-lsp-implementation-common",
+  "author": "NEEDS OWNER",
+  "version": "0.0.0",
+  "description": "Provides common helper function for Implementation of LSP Server for Nuclide",
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

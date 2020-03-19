@@ -28,6 +28,7 @@ export type PartialAppState = {
 };
 
 export type Store = {
+  subscribe(() => mixed): () => void,
   getState(): AppState,
   dispatch(action: Action): void,
 };

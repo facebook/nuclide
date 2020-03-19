@@ -3,13 +3,10 @@
   "packages": [
     "modules/*"
   ],
-  "version": "independent",
+  "version": "0.7.3-dev",
   "command": {
     "publish": {
-      "exact": true,
-      "ignore": [
-        "big-dig-samples"
-      ]
+      "exact": true
     }
   }
 }

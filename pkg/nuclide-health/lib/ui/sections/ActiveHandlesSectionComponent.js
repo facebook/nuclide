@@ -5,23 +5,23 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {HandlesByType} from '../../types';
 
-import React from 'react';
+import * as React from 'react';
 import HandlesTableComponent from './HandlesTableComponent';
 
 type Props = {
   activeHandlesByType: HandlesByType,
 };
 
-export default class ActiveHandlesSectionComponent extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class ActiveHandlesSectionComponent extends React.Component<
+  Props,
+> {
+  render(): React.Node {
     if (
       !this.props.activeHandlesByType ||
       Object.keys(this.props.activeHandlesByType).length === 0

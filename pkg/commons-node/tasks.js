@@ -13,7 +13,7 @@
 // interface](https://atom.io/docs/api/latest/Task). These are utilities for converting between the
 // two.
 
-import type {TaskEvent, Message, Level} from 'nuclide-commons/process';
+import type {TaskEvent, Message, Level, Status} from 'nuclide-commons/process';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
@@ -30,7 +30,7 @@ export type Task = {
   +onMessage?: (callback: (message: Message) => mixed) => IDisposable,
   +onProgress?: (callback: (progress: ?number) => mixed) => IDisposable,
   +onResult?: (callback: (result: mixed) => mixed) => IDisposable,
-  +onStatusChange?: (callback: (status: ?string) => mixed) => IDisposable,
+  +onStatusChange?: (callback: (status: ?Status) => mixed) => IDisposable,
 };
 
 /**
@@ -94,7 +94,7 @@ export function taskFromObservable(observable: Observable<TaskEvent>): Task {
           .subscribe({next: callback, error: () => {}}),
       );
     },
-    onStatusChange(callback: (status: ?string) => mixed): IDisposable {
+    onStatusChange(callback: (status: ?Status) => mixed): IDisposable {
       return new UniversalDisposable(
         events
           .filter(event => event.type === 'status')
@@ -118,27 +118,27 @@ export function observableFromTask(task: Task): Observable<TaskEvent> {
 
     const messages =
       typeof task.onMessage === 'function'
-        ? observableFromSubscribeFunction(
-            task.onMessage.bind(task),
-          ).map(message => ({type: 'message', message}))
+        ? observableFromSubscribeFunction(task.onMessage.bind(task)).map(
+            message => ({type: 'message', message}),
+          )
         : Observable.never();
     const progresses =
       typeof task.onProgress === 'function'
-        ? observableFromSubscribeFunction(
-            task.onProgress.bind(task),
-          ).map(progress => ({type: 'progress', progress}))
+        ? observableFromSubscribeFunction(task.onProgress.bind(task)).map(
+            progress => ({type: 'progress', progress}),
+          )
         : Observable.never();
     const results =
       typeof task.onResult === 'function'
-        ? observableFromSubscribeFunction(
-            task.onResult.bind(task),
-          ).map(result => ({type: 'result', result}))
+        ? observableFromSubscribeFunction(task.onResult.bind(task)).map(
+            result => ({type: 'result', result}),
+          )
         : Observable.never();
     const statuses =
       typeof task.onStatusChange === 'function'
-        ? observableFromSubscribeFunction(
-            task.onStatusChange.bind(task),
-          ).map(status => ({type: 'status', status}))
+        ? observableFromSubscribeFunction(task.onStatusChange.bind(task)).map(
+            status => ({type: 'status', status}),
+          )
         : Observable.never();
 
     const completeEvents = observableFromSubscribeFunction(
@@ -193,19 +193,37 @@ export function createResult(result: mixed): Observable<TaskEvent> {
   });
 }
 
-export function createStatus(status: string): Observable<TaskEvent> {
-  return Observable.of({type: 'status', status});
+export function createStatus(
+  type: string,
+  object: mixed,
+): Observable<TaskEvent> {
+  return Observable.of({
+    type: 'status',
+    status: {type, object},
+  });
+}
+
+export function createProgress(progress: ?number): Observable<TaskEvent> {
+  return Observable.of({
+    type: 'progress',
+    progress,
+  });
 }
 
 export function createStep(
   stepName: ?string,
-  action: () => Observable<TaskEvent>,
+  action: () => Observable<TaskEvent> | Promise<TaskEvent>,
 ): Observable<TaskEvent> {
   return Observable.concat(
     Observable.of({type: 'progress', progress: null}),
-    // flowlint-next-line sketchy-null-string:off
-    stepName
-      ? Observable.of({type: 'status', status: stepName})
+    Boolean(stepName)
+      ? Observable.of({
+          type: 'status',
+          status: {
+            type: 'string',
+            object: stepName,
+          },
+        })
       : Observable.empty(),
     Observable.defer(action),
   );

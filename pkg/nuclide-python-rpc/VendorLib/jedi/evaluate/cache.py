@@ -1,15 +1,13 @@
 """
-- the popular ``memoize_default`` works like a typical memoize and returns the
+- the popular ``_memoize_default`` works like a typical memoize and returns the
   default otherwise.
-- ``CachedMetaClass`` uses ``memoize_default`` to do the same with classes.
+- ``CachedMetaClass`` uses ``_memoize_default`` to do the same with classes.
 """
 
-import inspect
-
-NO_DEFAULT = object()
+_NO_DEFAULT = object()
 
 
-def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
+def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -19,12 +17,13 @@ def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg
     """
     def func(function):
         def wrapper(obj, *args, **kwargs):
+            # TODO These checks are kind of ugly and slow.
             if evaluator_is_first_arg:
                 cache = obj.memoize_cache
-            elif second_arg_is_evaluator:  # needed for meta classes
-                cache = args[0].memoize_cache
+            elif second_arg_is_evaluator:
+                cache = args[0].memoize_cache  # needed for meta classes
             else:
-                cache = obj._evaluator.memoize_cache
+                cache = obj.evaluator.memoize_cache
 
             try:
                 memo = cache[function]
@@ -36,15 +35,35 @@ def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg
             if key in memo:
                 return memo[key]
             else:
-                if default is not NO_DEFAULT:
+                if default is not _NO_DEFAULT:
                     memo[key] = default
                 rv = function(obj, *args, **kwargs)
-                if inspect.isgenerator(rv):
-                    rv = list(rv)
                 memo[key] = rv
                 return rv
         return wrapper
+
     return func
+
+
+def evaluator_function_cache(default=_NO_DEFAULT):
+    def decorator(func):
+        return _memoize_default(default=default, evaluator_is_first_arg=True)(func)
+
+    return decorator
+
+
+def evaluator_method_cache(default=_NO_DEFAULT):
+    def decorator(func):
+        return _memoize_default(default=default)(func)
+
+    return decorator
+
+
+def _memoize_meta_class():
+    def decorator(call):
+        return _memoize_default(second_arg_is_evaluator=True)(call)
+
+    return decorator
 
 
 class CachedMetaClass(type):
@@ -53,6 +72,6 @@ class CachedMetaClass(type):
     class initializations. Either you do it this way or with decorators, but
     with decorators you lose class access (isinstance, etc).
     """
-    @memoize_default(None, second_arg_is_evaluator=True)
+    @_memoize_meta_class()
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)

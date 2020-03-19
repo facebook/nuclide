@@ -1,0 +1,90 @@
+{
+  "name": "atom-ide-debugger",
+  "displayName": "Debugger",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Allows debugging of various types of processes",
+  "author": "Debugging",
+  "atomTestRunner": "../../../scripts/atom-test-runner.js",
+  "nuclide": {
+    "configMetadata": {
+      "pathComponents": [
+        "Debugger",
+        "General Settings"
+      ]
+    }
+  },
+  "atomConfig": {
+    "showDebuggerOnBpSet": {
+      "title": "Show debugger on breakpoint set",
+      "type": "boolean",
+      "default": true,
+      "description": "Shows the debugger, if it is currently hidden, when the user sets a breakpoint in a file via the gutter."
+    }
+  },
+  "providedServices": {
+    "debugger.remote": {
+      "versions": {
+        "description": "Remote control for launching debugger.",
+        "0.0.0": "provideRemoteControlService"
+      }
+    },
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "createAutocompleteProvider"
+      }
+    }
+  },
+  "consumedServices": {
+    "DEPRECATED-nuclide.registerExecutor": {
+      "versions": {
+        "0.0.0": "consumeRegisterExecutor"
+      }
+    },
+    "datatip": {
+      "versions": {
+        "0.1.0": "consumeDatatipService"
+      }
+    },
+    "tool-bar": {
+      "versions": {
+        "^1.0.0": "consumeToolBar"
+      }
+    },
+    "nuclide-notifications.provideRaiseNativeNotification": {
+      "versions": {
+        "0.0.0": "consumeNotifications"
+      }
+    },
+    "debugger.provider": {
+      "versions": {
+        "0.0.0": "consumeDebuggerProvider"
+      }
+    },
+    "debugger.configurator": {
+      "versions": {
+        "0.0.0": "consumeDebuggerConfigurationProviders"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCurrentWorkingDirectory"
+      }
+    },
+    "nuclide-terminal": {
+      "versions": {
+        "0.0.0": "consumeTerminal"
+      }
+    },
+    "nuclide-rpc-services": {
+      "versions": {
+        "0.0.0": "consumeRpcService"
+      }
+    },
+    "console": {
+      "versions": {
+        "0.1.0": "consumeConsole"
+      }
+    }
+  }
+}

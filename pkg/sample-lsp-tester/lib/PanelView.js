@@ -17,7 +17,8 @@ import {AtomTextEditor} from 'nuclide-commons-ui/AtomTextEditor';
 import {Button} from 'nuclide-commons-ui/Button';
 import {ButtonGroup} from 'nuclide-commons-ui/ButtonGroup';
 import invariant from 'assert';
-import React from 'react';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
 import {Observable} from 'rxjs';
 
 export type Message =
@@ -44,10 +45,11 @@ type State = {
   grammar: ?atom$Grammar,
 };
 
-export class PanelView extends React.Component {
-  props: Props;
-  state: State;
+export class PanelView extends React.Component<Props, State> {
   _disposables: ?UniversalDisposable;
+  _commandField: ?AtomInput;
+  _inputField: ?AtomTextEditor;
+  _outputField: ?AtomTextEditor;
 
   constructor(props: Props) {
     super(props);
@@ -61,12 +63,14 @@ export class PanelView extends React.Component {
     this._disposables.unsubscribe();
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     return (
       <div className="sample-lsp-tester-panel padded">
         <div className="sample-lsp-tester-command-wrapper">
           <AtomInput
-            ref="commandField"
+            ref={input => {
+              this._commandField = input;
+            }}
             className="sample-lsp-tester-command"
             placeholderText="Command to Run (e.g. node jsonServerMain.js --stdio)"
           />
@@ -84,7 +88,9 @@ export class PanelView extends React.Component {
           </ButtonGroup>
         </div>
         <AtomTextEditor
-          ref="inputField"
+          ref={editor => {
+            this._inputField = editor;
+          }}
           className="sample-lsp-tester-input"
           grammar={this.state.grammar}
           gutterHidden={true}
@@ -99,7 +105,9 @@ export class PanelView extends React.Component {
         <div className="sample-lsp-tester-output-wrapper">
           <label>Output:</label>
           <AtomTextEditor
-            ref="outputField"
+            ref={editor => {
+              this._outputField = editor;
+            }}
             className="sample-lsp-tester-output"
             gutterHidden={true}
             disabled={true}
@@ -110,16 +118,18 @@ export class PanelView extends React.Component {
   }
 
   _handleStartButtonClick = (): void => {
-    const commandString = this.refs.commandField.getText();
+    const commandString = nullthrows(this._commandField).getText();
     this.props.startServer(commandString.trim());
   };
 
   componentDidMount(): void {
     // Fill in initial command
-    this.refs.commandField.setText(this.props.initialCommand || '');
+    nullthrows(this._commandField).setText(this.props.initialCommand || '');
 
     // Fill in initial message text.
-    this.refs.inputField.getModel().setText(this.props.initialMessage);
+    nullthrows(this._inputField)
+      .getModel()
+      .setText(this.props.initialMessage);
 
     this._disposables = new UniversalDisposable(
       // Subscribe to the responses. Note that we don't handle this prop changing after mount.
@@ -129,7 +139,7 @@ export class PanelView extends React.Component {
             `${message.kind.toUpperCase()}...\n${indent(message.body)}`,
         )
         .subscribe(data => {
-          const textEditor = this.refs.outputField.getModel();
+          const textEditor = nullthrows(this._outputField).getModel();
           textEditor.getBuffer().append(`${data}\n\n`);
           (atom.views.getView(textEditor): any).scrollToBottom();
         }),
@@ -139,8 +149,8 @@ export class PanelView extends React.Component {
     );
   }
 
-  _handleSendButtonClick = (event: SyntheticMouseEvent): void => {
-    const {inputField} = this.refs;
+  _handleSendButtonClick = (event: SyntheticMouseEvent<>): void => {
+    const inputField = nullthrows(this._inputField);
     const rawMessage = inputField.getModel().getText();
     let parsed;
     try {

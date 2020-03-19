@@ -1,0 +1,463 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ClangServer can return outline data 1`] = `
+Array [
+  Object {
+    "cursor_kind": "VAR_DECL",
+    "cursor_type": "int",
+    "extent": Range {
+      "end": Point {
+        "column": 14,
+        "row": 0,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 0,
+      },
+    },
+    "name": "global_var",
+  },
+  Object {
+    "children": Array [
+      Object {
+        "children": Array [
+          Object {
+            "cursor_kind": "PRAGMA_MARK",
+            "extent": Range {
+              "end": Point {
+                "column": 0,
+                "row": 5,
+              },
+              "start": Point {
+                "column": 0,
+                "row": 4,
+              },
+            },
+            "name": "before function",
+          },
+          Object {
+            "cursor_kind": "FUNCTION_DECL",
+            "extent": Range {
+              "end": Point {
+                "column": 1,
+                "row": 6,
+              },
+              "start": Point {
+                "column": 0,
+                "row": 5,
+              },
+            },
+            "name": "function",
+            "params": Array [
+              "const int",
+              "param",
+            ],
+            "tparams": Array [],
+          },
+          Object {
+            "cursor_kind": "PRAGMA_MARK",
+            "extent": Range {
+              "end": Point {
+                "column": 0,
+                "row": 8,
+              },
+              "start": Point {
+                "column": 0,
+                "row": 7,
+              },
+            },
+            "name": "after function",
+          },
+        ],
+        "cursor_kind": "NAMESPACE",
+        "extent": Range {
+          "end": Point {
+            "column": 1,
+            "row": 8,
+          },
+          "start": Point {
+            "column": 0,
+            "row": 3,
+          },
+        },
+        "name": "",
+      },
+    ],
+    "cursor_kind": "NAMESPACE",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 9,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 2,
+      },
+    },
+    "name": "test_namespace",
+  },
+  Object {
+    "cursor_kind": "FUNCTION_TEMPLATE",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 14,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 11,
+      },
+    },
+    "name": "templated_function",
+    "params": Array [
+      "x",
+    ],
+    "tparams": Array [
+      "T",
+    ],
+  },
+  Object {
+    "children": Array [
+      Object {
+        "cursor_kind": "FUNCTION_TEMPLATE",
+        "extent": Range {
+          "end": Point {
+            "column": 3,
+            "row": 19,
+          },
+          "start": Point {
+            "column": 2,
+            "row": 17,
+          },
+        },
+        "name": "method",
+        "params": Array [
+          "param",
+        ],
+        "tparams": Array [
+          "T",
+        ],
+      },
+      Object {
+        "cursor_kind": "PRAGMA_MARK",
+        "extent": Range {
+          "end": Point {
+            "column": 0,
+            "row": 21,
+          },
+          "start": Point {
+            "column": 0,
+            "row": 20,
+          },
+        },
+        "name": "inside TestClass",
+      },
+      Object {
+        "cursor_kind": "CXX_METHOD",
+        "extent": Range {
+          "end": Point {
+            "column": 22,
+            "row": 21,
+          },
+          "start": Point {
+            "column": 2,
+            "row": 21,
+          },
+        },
+        "name": "partialMethod",
+        "params": Array [],
+        "tparams": Array [],
+      },
+      Object {
+        "cursor_kind": "VAR_DECL",
+        "cursor_type": "int",
+        "extent": Range {
+          "end": Point {
+            "column": 23,
+            "row": 22,
+          },
+          "start": Point {
+            "column": 2,
+            "row": 22,
+          },
+        },
+        "name": "partialVar",
+      },
+    ],
+    "cursor_kind": "CLASS_DECL",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 23,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 16,
+      },
+    },
+    "name": "TestClass",
+  },
+  Object {
+    "cursor_kind": "VAR_DECL",
+    "cursor_type": "int",
+    "extent": Range {
+      "end": Point {
+        "column": 25,
+        "row": 25,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 25,
+      },
+    },
+    "name": "TestClass::partialVar",
+  },
+  Object {
+    "cursor_kind": "CXX_METHOD",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 28,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 27,
+      },
+    },
+    "name": "TestClass::partialMethod",
+    "params": Array [],
+    "tparams": Array [],
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 30,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 29,
+      },
+    },
+    "name": "Section 2",
+  },
+  Object {
+    "children": Array [],
+    "cursor_kind": "CLASS_TEMPLATE",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 32,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 30,
+      },
+    },
+    "name": "TemplateClass<Ty>",
+  },
+  Object {
+    "children": Array [
+      Object {
+        "cursor_kind": "ENUM_CONSTANT_DECL",
+        "extent": Range {
+          "end": Point {
+            "column": 14,
+            "row": 35,
+          },
+          "start": Point {
+            "column": 2,
+            "row": 35,
+          },
+        },
+        "name": "ENUM_VALUE_1",
+      },
+      Object {
+        "cursor_kind": "ENUM_CONSTANT_DECL",
+        "extent": Range {
+          "end": Point {
+            "column": 14,
+            "row": 36,
+          },
+          "start": Point {
+            "column": 2,
+            "row": 36,
+          },
+        },
+        "name": "ENUM_VALUE_2",
+      },
+    ],
+    "cursor_kind": "ENUM_DECL",
+    "extent": Range {
+      "end": Point {
+        "column": 1,
+        "row": 37,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 34,
+      },
+    },
+    "name": "TestEnum",
+  },
+  Object {
+    "cursor_kind": "MACRO_INSTANTIATION",
+    "extent": Range {
+      "end": Point {
+        "column": 16,
+        "row": 41,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 41,
+      },
+    },
+    "name": "TEST_F",
+    "params": Array [
+      "a",
+      "b",
+    ],
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 44,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 43,
+      },
+    },
+    "name": "Section 3",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 45,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 44,
+      },
+    },
+    "name": "Section 4",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 46,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 45,
+      },
+    },
+    "name": "Section 5",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 47,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 46,
+      },
+    },
+    "name": "Section 5",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 48,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 47,
+      },
+    },
+    "name": "Section 6",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 49,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 48,
+      },
+    },
+    "name": "Section 7",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 50,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 49,
+      },
+    },
+    "name": "//MARK: Section8",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 51,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 50,
+      },
+    },
+    "name": "// MARK: Section9",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 52,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 51,
+      },
+    },
+    "name": "#pragma mark - Section 10",
+  },
+  Object {
+    "cursor_kind": "PRAGMA_MARK",
+    "extent": Range {
+      "end": Point {
+        "column": 0,
+        "row": 54,
+      },
+      "start": Point {
+        "column": 0,
+        "row": 53,
+      },
+    },
+    "name": "end of file",
+  },
+]
+`;

@@ -5,6 +5,10 @@ possible. The
 certain limitations around distribution. However, this does not affect your
 ability to fork the project and make contributions.
 
+## Code of Conduct
+
+Facebook has adopted a Code of Conduct that we expect project participants to adhere to. Please [read the full text](https://code.fb.com/codeofconduct/) so that you can understand what actions will and will not be tolerated.
+
 ## Our Development Process
 Nuclide is currently developed in Facebook's internal repositories and then
 exported out to GitHub by a Facebook team member. We invite you to submit pull
@@ -16,19 +20,19 @@ project.
 Follow this guide to start developing on Nuclide:
 https://nuclide.io/docs/advanced-topics/building-from-source/
 
-## `atom-ide-ui`
+## atom-ide-ui
 
-The development process for `atom-ide-ui` is similar, since it's a subset
-of the Nuclide repository. Please see the separate
-[CONTRIBUTING.md](modules/atom-ide-ui/CONTRIBUTING.md) file for details.
+atom-ide-ui should be developed in its own repository - see the [CONTRIBUTING.md](
+https://github.com/facebook-atom/atom-ide-ui/blob/master/CONTRIBUTING.md)
+guide in https://github.com/facebook-atom/atom-ide-ui.
 
 ## Pull Requests
 
 1. Fork the repo and create your branch from `master` for core changes, or
 `gh-pages` for docs and website changes.
-2. If you've added code that should be tested, add tests.
+2. If you've added code that should be tested, [add tests](https://github.com/facebook/nuclide/wiki/Tips-for-Testing#writing-tests).
 3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes by running `scripts/test`.
+4. Ensure the test suite passes by [running `scripts/test`, or run the affected tests individually](https://github.com/facebook/nuclide/wiki/Tips-for-Testing#running-tests).
 5. Make sure your JavaScript code lints by using Flow.
 6. If you haven't already, complete the Contributor License Agreement ("CLA").
 

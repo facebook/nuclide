@@ -1,0 +1,153 @@
+@import "ui-variables";
+
+@tab-border: 1px solid @tab-border-color;
+@title-padding: .66em;
+@icon-padding-top: .5em; // 2.5 (total) - 1.5 (text) / 2
+@icon-padding-right: .5em;
+
+@accent-text-color: #000;
+@accent-color: #568af2;
+
+.nuclide-taskbar-status-container {
+  min-width: 235px;
+  background-color: @button-background-color;
+  z-index: 3;
+  font-family: @font-family;
+  position: relative;
+  border: @tab-border;
+  margin-right: 30px;
+  .close-icon {
+    top: @icon-padding-top;
+    right: @icon-padding-right;
+    z-index: 2;
+    font-size: 1em;
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5;
+    text-align: center;
+    border-radius: @component-border-radius;
+    background-color: inherit;
+    overflow: hidden;
+    transform: scale(0);
+    transition: transform .08s;
+    font-family: 'Octicons Regular';
+    -webkit-font-smoothing: antialiased;
+    margin: 0.2em;
+
+    &:hover {
+      color: @accent-text-color;
+      background-color: @accent-color;
+    }
+    &:active {
+      background-color: fade(@accent-color, 50%);
+    }
+    &::before {
+      z-index: 1;
+      font-size: 1.1em;
+      vertical-align: -.05em; // Adjust center for the 0.1em font-size increase
+      width: auto;
+      height: auto;
+      pointer-events: none;
+      content: "\f081";
+    }
+  }
+  &:hover .close-icon {
+    transform: scale(1);
+    transition-duration: .16s;
+  }
+}
+
+.outcome-success {
+  .nuclide-taskbar-status-container > .nuclide-ui-full-width-progress-bar > .nuclide-ui-full-width-progress-bar-bar {
+    background-color: @text-color-success;
+  }
+  .nuclide-taskbar-status-container >
+  .nuclide-taskbar-status-providers-container >
+  .nuclide-taskbar-status-provider {
+    color: @text-color-success;
+  }
+}
+.outcome-cancelled {
+  .nuclide-taskbar-status-container > .nuclide-ui-full-width-progress-bar > .nuclide-ui-full-width-progress-bar-bar {
+    background-color: @text-color-warning;
+  }
+  .nuclide-taskbar-status-container >
+  .nuclide-taskbar-status-providers-container >
+  .nuclide-taskbar-status-provider {
+    color: @text-color-warning;
+  }
+}
+.outcome-error {
+  .nuclide-taskbar-status-container > .nuclide-ui-full-width-progress-bar > .nuclide-ui-full-width-progress-bar-bar {
+    background-color: @text-color-error;
+  }
+  .nuclide-taskbar-status-container >
+  .nuclide-taskbar-status-providers-container >
+  .nuclide-taskbar-status-provider {
+    color: @text-color-error;
+  }
+}
+
+.nuclide-taskbar-status-tooltip-content {
+  line-height: 1.2;
+}
+
+div.tooltip.nuclide-taskbar-status-tooltip-green .tooltip-arrow {
+  border-bottom-color: @button-background-color;
+}
+div.tooltip.nuclide-taskbar-status-tooltip-green .tooltip-inner {
+   background-color: @button-background-color;
+}
+
+.nuclide-taskbar-beta-small {
+  position: absolute;
+  top: -6px;
+  right: -13px;
+  opacity: 0.65;
+}
+
+.nuclide-taskbar-status-provider {
+    display: inline-block;
+    height: 21px;
+    overflow: hidden;
+    min-width: 26px;
+    padding: 0em 1em;
+    cursor: default;
+    width:100%;
+    font-family: Menlo, Consolas, DejaVu Sans Mono, monospace;
+
+    font-size: 0.9em;
+    font-style: italic;
+    line-height:2;
+    z-index:4;
+}
+
+.nuclide-taskbar-status-provider span.task-seconds {
+  color: lighten(@ui-site-color-1, 15%);
+}
+
+.nuclide-taskbar-status-pre {
+  color: inherit;
+  background: inherit;
+  font-size: 1.2em;
+  padding: 0px;
+}
+
+.nuclide-taskbar-status-providers-container {
+  display: flex;
+  right: 0;
+  font-size:11px;
+  top: 1px;
+}
+
+.nuclide-taskbar-status-tooltip-content {
+  padding: 0.75em 0.975em;
+  white-space: pre;
+  overflow:hidden;
+  text-align: left;
+  overflow-wrap: break-word;
+  color: @text-color;
+  font-family: Menlo, Consolas, DejaVu Sans Mono, monospace;
+  font-size: 0.8em;
+  font-style: italic;
+}

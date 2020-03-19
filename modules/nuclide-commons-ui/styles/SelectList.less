@@ -1,0 +1,17 @@
+@import 'ui-variables';
+
+@active-background-color: @button-background-color-selected;
+
+.nuclide-select-list.select-list ol.list-group > li {
+  color: @text-color;
+
+  &.active {
+    background-color: @active-background-color;
+    color: fadeout(contrast(@active-background-color), 5%);
+  }
+
+  &::before {
+    // Hide the check marks. This is hacky.
+    display: none !important;
+  }
+}

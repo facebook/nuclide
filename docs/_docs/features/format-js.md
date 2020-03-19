@@ -8,7 +8,7 @@ permalink: /docs/features/format-js/
 >[Format-js](https://atom.io/packages/nuclide-format-js) is now available as a separate Atom package for use with Nuclide. However, it is currently experimental. For example, this currently does not handle using relative paths for the automatic requires.
 
 Format-js is a package with a goal of getting rid of worrying about every little formatting detail you might run across while writing
-[Flow](/docs/languages/flow) or [JavaScript](/docs/langauges/other/#javascript) code.  For more information about the Format-js package visit the [Format-js Atom package page](https://atom.io/packages/nuclide-format-js).
+[Flow](/docs/languages/flow) or [JavaScript](/docs/languages/other/#javascript) code.  For more information about the Format-js package visit the [Format-js Atom package page](https://atom.io/packages/nuclide-format-js).
 
 To install the Format-js package:
 

@@ -1,0 +1,18 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "Welcome Page",
+          "submenu": [
+            {
+              "label": "Show All Welcome Pages",
+              "command": "nuclide-welcome-page:show-all-welcome-pages"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

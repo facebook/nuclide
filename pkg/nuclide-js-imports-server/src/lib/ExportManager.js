@@ -9,12 +9,11 @@
  * @format
  */
 
-import * as t from 'babel-types';
+import * as t from '@babel/types';
 import {ExportIndex} from './ExportIndex';
 import {getLogger} from 'log4js';
 import {arrayCompact} from 'nuclide-commons/collection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {Settings} from '../Settings';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {JSExport} from './types';
@@ -66,9 +65,10 @@ export class ExportManager {
 
 function isModuleExports(node: Object): boolean {
   return (
-    t.isMemberExpression(node.left) &&
-    node.left.object.name === 'module' &&
-    node.left.property.name === 'exports'
+    (t.isMemberExpression(node) &&
+      node.object.name === 'module' &&
+      node.property.name === 'exports') ||
+    (t.isIdentifier(node) && node.name === 'exports')
   );
 }
 
@@ -96,7 +96,13 @@ function addDefaultDeclarationToExportIndex(
     // (ex: export default {someObject, otherObject})
     // Assume the id will be the name of the file.
     const id = idFromFileName(fileUri);
-    exportIndex.push({id, uri: fileUri, isDefault, isTypeExport});
+    exportIndex.push({
+      id,
+      uri: fileUri,
+      line: node.loc.start.line,
+      isDefault,
+      isTypeExport,
+    });
     return;
   }
 
@@ -149,6 +155,7 @@ function specifierToExport(
   return {
     id: node.exported.name,
     uri: fileUri,
+    line: node.loc.start.line,
     isTypeExport,
     isDefault,
   };
@@ -159,68 +166,65 @@ function expressionToExports(
   isTypeExport: boolean,
   fileUri: NuclideUri,
 ): Array<JSExport> {
-  if (expression.id || expression.name) {
-    return [
-      {
-        id: expression.name || expression.id.name,
-        uri: fileUri,
-        type: expression.type,
-        isTypeExport,
-        isDefault: true, // Treated as default export
-      },
-    ];
-  }
-  if (t.isObjectExpression(expression)) {
-    const {
-      shouldIndexObjectAsDefault,
-      shouldIndexEachObjectProperty,
-    } = Settings.moduleExportsSettings;
+  // Index the entire 'module.exports' as a default export.
+  const defaultId = idFromFileName(fileUri);
+  const result = [
+    {
+      id: defaultId,
+      uri: fileUri,
+      line: expression.loc.start.line,
+      type: 'ObjectExpression',
+      isTypeExport,
+      isDefault: true,
+    },
+  ];
 
-    // Index the entire object as a default export
-    const defaultExport = shouldIndexObjectAsDefault
-      ? [
-          {
-            id: idFromFileName(fileUri),
-            uri: fileUri,
-            type: 'ObjectExpression',
-            isTypeExport,
-            isDefault: true, // Treated as a default export.
-          },
-        ]
-      : [];
-
+  const ident = expression.id != null ? expression.id.name : expression.name;
+  if (ident && ident !== defaultId) {
+    result.push({
+      id: ident,
+      uri: fileUri,
+      line: expression.loc.start.line,
+      type: expression.type,
+      isTypeExport,
+      isDefault: true, // Treated as default export
+    });
+  } else if (t.isObjectExpression(expression)) {
     // Index each property of the object
-    const propertyExports = shouldIndexEachObjectProperty
-      ? arrayCompact(
-          expression.properties.map(property => {
-            if (property.type === 'SpreadProperty') {
-              return null;
-            }
-            return {
-              id: property.key.name,
-              uri: fileUri,
-              type: expression.type,
-              isTypeExport,
-              isDefault: false,
-            };
-          }),
-        )
-      : [];
-
-    return defaultExport.concat(propertyExports);
+    const propertyExports = arrayCompact(
+      expression.properties.map(property => {
+        if (property.type === 'SpreadElement' || property.computed) {
+          return null;
+        }
+        return {
+          id:
+            property.key.type === 'StringLiteral'
+              ? property.key.value
+              : property.key.name,
+          uri: fileUri,
+          line: property.key.loc.start.line,
+          type: expression.type,
+          isTypeExport,
+          isDefault: false,
+        };
+      }),
+    );
+    return result.concat(propertyExports);
+  } else if (
+    t.isAssignmentExpression(expression) &&
+    t.isIdentifier(expression.left) &&
+    expression.left.name !== defaultId
+  ) {
+    result.push({
+      id: expression.left.name,
+      uri: fileUri,
+      line: expression.left.loc.start.line,
+      type: expression.right.type,
+      isTypeExport,
+      isDefault: true, // Treated as default export
+    });
   }
-  if (t.isAssignmentExpression(expression) && t.isIdentifier(expression.left)) {
-    return [
-      {
-        id: expression.left.name,
-        uri: fileUri,
-        type: expression.type,
-        isTypeExport,
-        isDefault: true, // Treated as default export
-      },
-    ];
-  }
-  return [];
+  return result;
 }
 
 function declarationToExport(
@@ -235,6 +239,7 @@ function declarationToExport(
       {
         id: declaration.name || declaration.id.name,
         uri: fileUri,
+        line: declaration.loc.start.line,
         type: declaration.type,
         isTypeExport,
         isDefault,
@@ -250,6 +255,7 @@ function declarationToExport(
       return {
         id: decl.id.name,
         uri: fileUri,
+        line: decl.id.loc.start.line,
         type: declaration.type,
         isTypeExport,
         isDefault,
@@ -262,6 +268,7 @@ function declarationToExport(
       {
         id: idFromFileName(fileUri),
         uri: fileUri,
+        line: declaration.loc.start.line,
         isTypeExport: false,
         type: declaration.type,
         isDefault,
@@ -291,10 +298,32 @@ function traverseTreeAndIndexExports(
         case 'ExpressionStatement':
           if (
             node.expression &&
-            node.expression.type === 'AssignmentExpression' &&
-            isModuleExports(node.expression)
+            node.expression.type === 'AssignmentExpression'
           ) {
-            addModuleExports(node.expression.right, fileUri, exportIndex);
+            const {left, right} = node.expression;
+            if (isModuleExports(left)) {
+              addModuleExports(right, fileUri, exportIndex);
+            } else if (
+              t.isMemberExpression(left) &&
+              isModuleExports(left.object) &&
+              t.isIdentifier(left.property)
+            ) {
+              exportIndex.push({
+                id: left.property.name,
+                uri: fileUri,
+                line: left.property.loc.start.line,
+                type:
+                  // Exclude easy cases from being imported as types.
+                  right.type === 'ObjectExpression' ||
+                  right.type === 'FunctionExpression' ||
+                  right.type === 'NumericLiteral' ||
+                  right.type === 'StringLiteral'
+                    ? right.type
+                    : undefined,
+                isTypeExport: false,
+                isDefault: false,
+              });
+            }
           }
           break;
       }
@@ -311,7 +340,10 @@ export function idFromFileName(fileUri: NuclideUri): string {
 
 function dashToCamelCase(string: string): string {
   return string // Maintain capitalization of the first "word"
-    ? string.split('-').map((el, i) => (i === 0 ? el : capitalize(el))).join('')
+    ? string
+        .split('-')
+        .map((el, i) => (i === 0 ? el : capitalize(el)))
+        .join('')
     : '';
 }
 

@@ -6,24 +6,23 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import {Button} from './Button';
 import classnames from 'classnames';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   className?: string,
+  // $FlowFixMe(>=0.53.0) Flow suppress
   children?: React.Children,
   label?: string,
 };
 
-export default class TruncatedButton extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export default class TruncatedButton extends React.Component<Props> {
+  render(): React.Node {
     const {children, className, label, ...props} = this.props;
     return (
       <Button

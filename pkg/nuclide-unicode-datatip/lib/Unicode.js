@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -69,8 +69,9 @@ export function decodeSurrogateCodePoints(
 export function extractCodePoints(word: string): Array<number> {
   const escapeRe = /(?:\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})|\\u{([0-9a-fA-F]{1,8})}|([a-zA-Z0-9_-]+))/g;
   let result = [];
-  let matches;
-  while ((matches = escapeRe.exec(word)) !== null) {
+  let matches = escapeRe.exec(word);
+  // eslint-disable-next-line eqeqeq
+  while (matches !== null) {
     // Groups 1, 2, and 3 hold hexadecimal code points
     for (let i = 1; i < 4; i++) {
       if (matches[i] != null) {
@@ -82,6 +83,7 @@ export function extractCodePoints(word: string): Array<number> {
     if (matches[4] != null) {
       result = result.concat(matches[4].split('').map(c => c.charCodeAt(0)));
     }
+    matches = escapeRe.exec(word);
   }
   return result;
 }

@@ -241,6 +241,7 @@ export default {
   mkdtemp,
   readFileAsBuffer,
   readFileAsString,
+  readFile,
   remove,
   rmdir,
   stat,

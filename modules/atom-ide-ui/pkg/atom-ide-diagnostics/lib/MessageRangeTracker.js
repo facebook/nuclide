@@ -6,16 +6,15 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {FileDiagnosticMessage} from './types';
+import type {DiagnosticMessage} from './types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 import {MultiMap} from 'nuclide-commons/collection';
 
 /**
@@ -25,16 +24,16 @@ import {MultiMap} from 'nuclide-commons/collection';
  */
 export default class MessageRangeTracker {
   /**
-   * Stores all current FileDiagnosticMessages, indexed by file. Includes those for files that are
+   * Stores all current DiagnosticMessages, indexed by file. Includes those for files that are
    * not open.
    */
-  _fileToMessages: MultiMap<NuclideUri, FileDiagnosticMessage>;
+  _fileToMessages: MultiMap<NuclideUri, DiagnosticMessage>;
 
   /**
-   * Stores all current markers, indexed by FileDiagnosticMessage.
+   * Stores all current markers, indexed by DiagnosticMessage.
    * invariant: No messages for closed files, no destroyed markers.
    */
-  _messageToMarker: Map<FileDiagnosticMessage, atom$Marker>;
+  _messageToMarker: Map<DiagnosticMessage, atom$Marker>;
 
   _disposables: UniversalDisposable;
 
@@ -43,7 +42,7 @@ export default class MessageRangeTracker {
     this._fileToMessages = new MultiMap();
 
     this._disposables = new UniversalDisposable(
-      observeTextEditors(editor => {
+      atom.workspace.observeTextEditors(editor => {
         const path = editor.getPath();
         if (path == null) {
           return;
@@ -72,7 +71,7 @@ export default class MessageRangeTracker {
   }
 
   /** Return a Range if the marker is still valid, otherwise return null */
-  getCurrentRange(message: FileDiagnosticMessage): ?atom$Range {
+  getCurrentRange(message: DiagnosticMessage): ?atom$Range {
     this._assertNotDisposed();
     const marker = this._messageToMarker.get(message);
 
@@ -83,7 +82,7 @@ export default class MessageRangeTracker {
     }
   }
 
-  addFileMessages(messages: Iterable<FileDiagnosticMessage>): void {
+  addFileMessages(messages: Iterable<DiagnosticMessage>): void {
     this._assertNotDisposed();
 
     for (const message of messages) {
@@ -107,7 +106,7 @@ export default class MessageRangeTracker {
   }
 
   /** Remove the given messages, if they are currently present */
-  removeFileMessages(messages: Iterable<FileDiagnosticMessage>): void {
+  removeFileMessages(messages: Iterable<DiagnosticMessage>): void {
     this._assertNotDisposed();
 
     for (const message of messages) {
@@ -122,7 +121,7 @@ export default class MessageRangeTracker {
     }
   }
 
-  _addMarker(editor: atom$TextEditor, message: FileDiagnosticMessage): void {
+  _addMarker(editor: atom$TextEditor, message: DiagnosticMessage): void {
     const fix = message.fix;
     invariant(fix != null);
 

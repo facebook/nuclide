@@ -98,6 +98,7 @@ export class RpcProcess {
    * only if it is currently null.
    */
   _ensureConnection(): Promise<RpcConnection<StreamTransport>> {
+    this._disposed = false;
     if (this._rpcConnection == null) {
       const processStream = this._processStream
         .do({
@@ -147,7 +148,6 @@ export class RpcProcess {
       this._subscription = processStream.connect();
       return connection;
     }
-    this._disposed = false;
     return this._rpcConnection;
   }
 

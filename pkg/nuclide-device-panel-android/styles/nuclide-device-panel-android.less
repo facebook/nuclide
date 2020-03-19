@@ -1,0 +1,37 @@
+@import "ui-variables";
+
+.nuclide-device-panel-android-emulator-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.nuclide-device-panel-android-emulator-running {
+  color: @text-color-highlight;
+}
+
+.nuclide-device-panel-android-emulator-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.nuclide-device-panel-android-emulator-empty-message {
+  font-style: italic;
+  padding: 1em;
+  text-align: center;
+}
+
+.nuclide-device-panel-android-tunnel-control {
+  order: -1;
+
+  &.active {
+    color: @text-color-info;
+    &:hover {
+      color: @text-color-info;
+    }
+  }
+
+  &.inactive {
+    color: @text-color-subtle;
+  }
+}

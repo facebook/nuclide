@@ -14,13 +14,13 @@ import type {FlowStatusOutput, FlowAutocompleteOutput} from './flowOutputTypes';
 import type {FileCache} from '../../nuclide-open-files-rpc';
 import type {LocalFileEvent} from '../../nuclide-open-files-rpc/lib/rpc-types';
 
-import {Disposable} from 'event-kit';
 import {Observable} from 'rxjs';
 import * as rpc from 'vscode-jsonrpc';
 import through from 'through';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
-import {track} from '../../nuclide-analytics';
+import SafeStreamMessageReader from 'nuclide-commons/SafeStreamMessageReader';
+import {track} from 'nuclide-analytics';
 import {getLogger} from 'log4js';
 
 import {FileEventKind} from '../../nuclide-open-files-rpc';
@@ -93,8 +93,9 @@ export class FlowIDEConnection {
       }),
     );
     this._connection = rpc.createMessageConnection(
-      new rpc.StreamMessageReader(this._ideProcess.stdout),
+      new SafeStreamMessageReader(this._ideProcess.stdout),
       new rpc.StreamMessageWriter(this._ideProcess.stdin),
+      getLogger('FlowIDEConnection-jsonrpc'),
     );
     this._connection.listen();
 
@@ -119,7 +120,6 @@ export class FlowIDEConnection {
         Array<LocalFileEvent>,
       > = this._fileCache
         .observeFileEvents()
-        // $FlowFixMe (bufferTime isn't in the libdef for rxjs)
         .bufferTime(100 /* ms */)
         .filter(fileEvents => fileEvents.length !== 0);
 
@@ -137,6 +137,9 @@ export class FlowIDEConnection {
               break;
             case FileEventKind.EDIT:
               // TODO: errors-as-you-type
+              break;
+            case FileEventKind.SAVE:
+              // TODO: handle saves correctly
               break;
             default:
               (fileEvent.kind: empty);
@@ -185,7 +188,7 @@ export class FlowIDEConnection {
 
   onWillDispose(callback: () => mixed): IDisposable {
     this._disposables.add(callback);
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._disposables.remove(callback);
     });
   }

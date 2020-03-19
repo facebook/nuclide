@@ -1,0 +1,40 @@
+{
+  "name": "nuclide-file-family",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Allows jumping between files in the same family",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "file-family": {
+      "versions": {
+        "0.0.0": "provideFileFamilyService"
+      }
+    },
+    "nuclide-quick-open-register-provider": {
+      "description": "Register ourselves with the quick-open package",
+      "versions": {
+        "0.0.0": "registerQuickOpenProvider"
+      }
+    }
+  },
+  "consumedServices": {
+    "file-family-backend": {
+      "versions": {
+        "0.0.0": "consumeFileFamilyProvider"
+      }
+    },
+    "nuclide-current-working-directory": {
+      "versions": {
+        "0.0.0": "consumeCwd"
+      }
+    },
+    "nuclide-dash-register-provider": {
+      "versions": {
+        "0.0.0": "consumeDash"
+      }
+    }
+  }
+}

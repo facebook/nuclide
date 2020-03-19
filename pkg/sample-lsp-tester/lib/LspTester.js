@@ -12,6 +12,7 @@
 import type {LegacyProcessMessage} from 'nuclide-commons/process';
 import type {Message} from './PanelView';
 
+import {getLogger} from 'log4js';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import {bufferUntil, takeWhileInclusive} from 'nuclide-commons/observable';
 import {splitOnce} from 'nuclide-commons/string';
@@ -19,8 +20,9 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {spawn, getOutputStream} from 'nuclide-commons/process';
 import Model from 'nuclide-commons/Model';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import SafeStreamMessageReader from 'nuclide-commons/SafeStreamMessageReader';
 import {PanelView} from './PanelView';
-import React from 'react';
+import * as React from 'react';
 import * as rpc from 'vscode-jsonrpc';
 import invariant from 'assert';
 import {Observable, ReplaySubject, Scheduler} from 'rxjs';
@@ -114,23 +116,33 @@ export class LspTester {
   _startServer = (commandString: string): void => {
     this._stopServer();
     const [command, ...args] = shellParse(commandString);
-    const events = takeWhileInclusive(
+    const events =
       // Use the async scheduler so that `disposable.dispose()` can still be called in
       // error/complete handlers.
       spawn(command, args)
         .do(process => {
           this._writer = new rpc.StreamMessageWriter(process.stdin);
-          const reader = new rpc.StreamMessageReader(process.stdout);
-          rpc.createMessageConnection(reader, this._writer).listen();
+          const reader = new SafeStreamMessageReader(process.stdout);
+          rpc
+            .createMessageConnection(
+              reader,
+              this._writer,
+              getLogger('LspTester-jsonrpc'),
+            )
+            .listen();
         })
         .flatMap(proc =>
           getOutputStream(proc, {
             /* TODO(T17353599) */ isExitError: () => false,
           }),
         )
-        .subscribeOn(Scheduler.async),
-      event => event.kind !== 'error' && event.kind !== 'exit',
-    ).share();
+        .subscribeOn(Scheduler.async)
+        .let(
+          takeWhileInclusive(
+            event => event.kind !== 'error' && event.kind !== 'exit',
+          ),
+        )
+        .share();
     const responses = parseResponses(
       events
         .catch(() => Observable.empty()) // We'll handle them on the "other" stream.
@@ -223,7 +235,8 @@ function parseChunks(chunks: Array<string>): ?{header: string, body: mixed} {
 
 function parseResponses(raw: Observable<string>): Observable<string> {
   // TODO: We're parsing twice out of laziness here: once for validation, then for usage.
-  return bufferUntil(raw, (_, chunks) => parseChunks(chunks) != null)
+  return raw
+    .let(bufferUntil((_, chunks) => parseChunks(chunks) != null))
     .map(chunks => {
       const parsed = parseChunks(chunks);
       invariant(parsed != null);

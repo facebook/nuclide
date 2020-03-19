@@ -174,9 +174,11 @@ h1, h2, h3, h4 {
       }
 
       .projectLogo {
+        pointer-events: none;
         img {
           height: 100px;
           margin-bottom: 0px;
+          pointer-events: auto;
         }
       }
 

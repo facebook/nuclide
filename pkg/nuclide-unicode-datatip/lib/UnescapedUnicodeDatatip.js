@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -18,9 +18,10 @@ import {decodeSurrogateCodePoints, extractCodePoints} from './Unicode';
 // Our "word" for the datatip is a contiguous alphanumeric string
 // containing at least one Unicode escape: \uXXXX, \UXXXXXXXX, or
 // \u{XXXX}.
+// TODO(hansonw): Remove the "[u]" workaround: https://github.com/atom/superstring/issues/52
 //
 // eslint-disable-next-line max-len
-const WORD_REGEX = /[a-zA-Z0-9_-]*(?:\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\u{[0-9a-fA-F]{1,8}})+(?:\\u[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\u{[0-9a-fA-F]{1,8}}|[a-zA-Z0-9_-])*/g;
+const WORD_REGEX = /[a-zA-Z0-9_-]*(?:\\[u][0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\[u]{[0-9a-fA-F]{1,8}})+(?:\\[u][0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}|\\[u]{[0-9a-fA-F]{1,8}}|[a-zA-Z0-9_-])*/g;
 
 export default (async function unescapedUnicodeDatatip(
   editor: TextEditor,

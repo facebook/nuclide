@@ -1,0 +1,15 @@
+Build/*
+*.class
+.api_description
+.options
+ECLIPSE_.RSA
+ECLIPSE_.SF
+MANIFEST.MF
+about.html
+dependency-reduced-pom.xml
+*.jar
+plugin.xml
+pom.properties
+createdFiles.lst
+inputFiles.lst
+plugin.properties

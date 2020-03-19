@@ -11,6 +11,8 @@
 
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
+import * as React from 'react';
+import ReactDOM from 'react-dom';
 
 /**
  * Use this function to simulate keyboard shortcuts or special keys, e.g. cmd-v,
@@ -150,37 +152,46 @@ export function waitsForFilePosition(
 }
 
 /**
- * Reaches into React's internals to look for components that have not been
+ * Patches React's internals to keep record of components that are never
  * unmounted. Having mounted React components after the creator has been
  * disposed is a sign that there are problems in the cleanup logic.
- *
- * If ReactComponentTreeHook ever goes missing, make sure we're not testing
- * with the bundled version of React. If it's still missing, then retire this
- * test.
- *
- * If the displayNames are not helpful in identifying the unmounted component,
- * open Atom with `atom --dev` and inspect the components with:
- *
- *    ReactComponentTreeHook = require.cache[
- *      Object.keys(require.cache).find(x => x.endsWith('/ReactComponentTreeHook.js'))
- *    ].exports;
- *
- *    ReactComponentTreeHook.getRootIDs().map(rootID => {
- *      console.log(ReactComponentTreeHook.getElement(rootID));
- *    });
  */
+const mountedRootComponents: Map<Element, React.Node> = new Map();
+
+const oldReactRender = ReactDOM.render.bind(ReactDOM);
+// $FlowFixMe Patching for test
+ReactDOM.render = function render<ElementType: React$ElementType>(
+  element: React$Element<ElementType>,
+  container: Element,
+  callback?: () => void,
+): React$ElementRef<ElementType> {
+  mountedRootComponents.set(container, element);
+  return oldReactRender(element, container, callback);
+};
+
+const oldReactUnmountComponentAtNode = ReactDOM.unmountComponentAtNode.bind(
+  ReactDOM,
+);
+// $FlowFixMe Patching for test
+ReactDOM.unmountComponentAtNode = function unmountComponentAtNode(
+  container: Element,
+): boolean {
+  mountedRootComponents.delete(container);
+  return oldReactUnmountComponentAtNode(container);
+};
+
 export function getMountedReactRootNames(): Array<string> {
-  const ReactComponentTreeHookPath = Object.keys(require.cache).find(x =>
-    x.endsWith('react/lib/ReactComponentTreeHook.js'),
-  );
-  invariant(
-    ReactComponentTreeHookPath != null,
-    'ReactComponentTreeHook could not be found in the module cache.',
-  );
-  const ReactComponentTreeHook =
-    require.cache[ReactComponentTreeHookPath].exports;
-  const reactRootNames = ReactComponentTreeHook.getRootIDs().map(rootID => {
-    return ReactComponentTreeHook.getDisplayName(rootID);
-  });
-  return reactRootNames;
+  return Array.from(mountedRootComponents)
+    .map(([element, container]) => element)
+    .map(element => {
+      const constructor = element.constructor;
+      // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+      if (typeof constructor.displayName === 'string') {
+        return constructor.displayName;
+      } else if (typeof constructor.name === 'string') {
+        return constructor.name;
+      } else {
+        return 'Unknown';
+      }
+    });
 }

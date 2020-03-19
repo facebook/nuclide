@@ -6,11 +6,14 @@
 
 import logging
 import os
+from collections import defaultdict
 
 import utils
 
-NUCLIDE_PATH = os.path.realpath(os.path.join(os.path.dirname(__file__), '../..'))
-PACKAGES_PATH = os.path.join(NUCLIDE_PATH, 'pkg')
+
+NUCLIDE_PATH = os.path.realpath(os.path.join(os.path.dirname(__file__), "../.."))
+PACKAGES_PATH = os.path.join(NUCLIDE_PATH, "pkg")
+ATOM_IDE_UI_PACKAGES_PATH = os.path.join(NUCLIDE_PATH, "modules", "atom-ide-ui", "pkg")
 
 
 class PackageManager(object):
@@ -19,10 +22,9 @@ class PackageManager(object):
         self._package_map = load_package_configs(package_dir)
 
     def get_configs(self):
-        sorted_packages = sorted(self._package_map.items(),
-                                 key=lambda x: x[1]['name'])
+        sorted_packages = sorted(self._package_map.items(), key=lambda x: x[1]["name"])
         for package_name, package_config in sorted_packages:
-            logging.debug('Including package: %s', package_name)
+            logging.debug("Including package: %s", package_name)
             yield package_config
 
     def is_local_dependency(self, package_name):
@@ -36,27 +38,57 @@ class PackageManager(object):
 
 
 def load_package_configs(package_dir=PACKAGES_PATH):
-    '''Returns a map where keys are names of packages and values are package configs.'''
+    """Returns a map where keys are names of packages and values are package configs."""
     package_map = {}
 
     # Performs a depth-first search of the project root for package.json files.
     for (path, dirs, files) in os.walk(package_dir):
-        if 'package.json' in files:
+        if "node_modules" in path:
+            continue
+        if "package.json" in files:
             # No need to explore subdirectories once package.json is found.
             del dirs[:]
-            package_json = os.path.join(path, 'package.json')
+            package_json = os.path.join(path, "package.json")
             config = create_config_for_package(package_json)
             # config will be None for packages such as sample packages.
             if config:
-                package_name = config['name']
+                package_name = config["name"]
                 # Update the map now that the config is complete.
                 package_map[package_name] = config
 
     return package_map
 
 
+def load_feature_groups():
+    """Returns a map where keys are feature groups and values are features."""
+    result = {}
+
+    feature_groups_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "../../lib/featureGroups.json")
+    )
+    result[feature_groups_path] = utils.json_load(feature_groups_path)
+
+    fb_feature_groups_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "../../lib/fb-featureGroups.json")
+    )
+    try:
+        result[fb_feature_groups_path] = utils.json_load(fb_feature_groups_path)
+    except IOError:
+        pass
+
+    return result
+
+
+def merge_feature_groups(groups):
+    merged = defaultdict(set)
+    for group in groups:
+        for group_name, features in group.items():
+            merged[group_name].update(features)
+    return dict(merged)
+
+
 def create_config_for_package(path):
-    '''Create a config for a parsed package.json. Returns None if it is not a
+    """Create a config for a parsed package.json. Returns None if it is not a
     Nuclide package.
 
     No code in this library should parse a package.json file directly. Instead,
@@ -64,39 +96,45 @@ def create_config_for_package(path):
     Because we may read extra properties in package.json, such as "customDeps",
     it is critical that all scripts operate on a normalized package config
     rather than a raw package.json.
-    '''
+    """
     pkg = utils.json_load(path)
-    nuclide_config = pkg.get('nuclide', {})
+    nuclide_config = pkg.get("nuclide", {})
 
     config = {}
 
     # Standard package.json fields
-    config['name'] = pkg['name']
-    config['repository'] = pkg.get('repository')
-    config['version'] = pkg.get('version')
-    config['description'] = pkg.get('description')
-    config['license'] = pkg.get('license')
-    config['main'] = pkg.get('main')
-    config['dependencies'] = pkg.get('dependencies', {})
-    config['optionalDependencies'] = pkg.get('optionalDependencies', {})
-    config['devDependencies'] = pkg.get('devDependencies', {})
+    config["name"] = pkg["name"]
+    config["repository"] = pkg.get("repository")
+    config["version"] = pkg.get("version")
+    config["description"] = pkg.get("description")
+    config["license"] = pkg.get("license")
+    config["main"] = pkg.get("main")
+    config["author"] = pkg.get("author", "")
+    config["dependencies"] = pkg.get("dependencies", {})
+    config["optionalDependencies"] = pkg.get("optionalDependencies", {})
+    config["devDependencies"] = pkg.get("devDependencies", {})
+    config["providedServices"] = pkg.get("providedServices", {})
+    config["consumedServices"] = pkg.get("consumedServices", {})
     # Both spellings are acceptable:
-    config['bundleDependencies'] = pkg.get('bundleDependencies', {})
-    config['bundledDependencies'] = pkg.get('bundledDependencies', {})
-    config['scripts'] = pkg.get('scripts', {})
-    config['private'] = pkg.get('private', False)
-    config['engines'] = pkg.get('engines')
+    config["bundleDependencies"] = pkg.get("bundleDependencies", {})
+    config["bundledDependencies"] = pkg.get("bundledDependencies", {})
+    config["scripts"] = pkg.get("scripts", {})
+    config["private"] = pkg.get("private", False)
+    config["engines"] = pkg.get("engines")
 
     # Custom Nuclide fields
-    config['packageRootAbsolutePath'] = os.path.dirname(path)
-    config['packageType'] = nuclide_config.get('packageType')
-    config['isNodePackage'] = nuclide_config.get('packageType') == 'Node'
-    config['testRunner'] = nuclide_config.get('testRunner')
-    config['testsCannotBeRunInParallel'] = nuclide_config.get(
-        'testsCannotBeRunInParallel', False)
-    config['excludeTestsFromContinuousIntegration'] = nuclide_config.get(
-        'excludeTestsFromContinuousIntegration', False)
-    config['atomTestRunner'] = pkg.get('atomTestRunner')
-    config['_atomModuleCache'] = pkg.get('_atomModuleCache')
+    config["packageRootAbsolutePath"] = os.path.dirname(path)
+    config["packageType"] = nuclide_config.get("packageType")
+    config["isNodePackage"] = nuclide_config.get("packageType") == "Node"
+    config["testRunner"] = nuclide_config.get("testRunner")
+    config["testsCannotBeRunInParallel"] = nuclide_config.get(
+        "testsCannotBeRunInParallel", False
+    )
+    config["excludeTestsFromContinuousIntegration"] = nuclide_config.get(
+        "excludeTestsFromContinuousIntegration", False
+    )
+    config["atomTestRunner"] = pkg.get("atomTestRunner")
+    config["_atomModuleCache"] = pkg.get("_atomModuleCache")
+    config["_rawPkg"] = pkg
 
     return config

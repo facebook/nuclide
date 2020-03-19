@@ -1,0 +1,384 @@
+"use strict";
+
+module.exports = _client => {
+  const remoteModule = {};
+
+  remoteModule.ValueTypeTestA = function (arg0, arg1) {
+    return _client.callRemoteFunction("ValueTypes/ValueTypeTestA", "promise", _client.marshalArguments(Array.from(arguments), [{
+      name: "arg0",
+      type: {
+        kind: "named",
+        name: "ValueTypeA"
+      }
+    }, {
+      name: "arg1",
+      type: {
+        kind: "nullable",
+        type: {
+          kind: "named",
+          name: "ValueTypeB"
+        }
+      }
+    }])).then(value => {
+      return _client.unmarshal(value, {
+        kind: "named",
+        name: "ValueTypeA"
+      });
+    });
+  };
+
+  remoteModule.ValueTypeTestB = function (arg0, arg1) {
+    return _client.callRemoteFunction("ValueTypes/ValueTypeTestB", "promise", _client.marshalArguments(Array.from(arguments), [{
+      name: "arg0",
+      type: {
+        kind: "named",
+        name: "ValueTypeA"
+      }
+    }, {
+      name: "arg1",
+      type: {
+        kind: "array",
+        type: {
+          kind: "named",
+          name: "ValueTypeB"
+        }
+      }
+    }])).then(value => {
+      return _client.unmarshal(value, {
+        kind: "object",
+        fields: [{
+          name: "field1",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "field2",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }]
+      });
+    });
+  };
+
+  remoteModule.QualifiedTypeNameTest = function (arg0) {
+    return _client.callRemoteFunction("ValueTypes/QualifiedTypeNameTest", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "arg0",
+      type: {
+        kind: "named",
+        name: "fs.Stats"
+      }
+    }]));
+  };
+
+  return remoteModule;
+};
+
+Object.defineProperty(module.exports, "defs", {
+  value: {
+    Object: {
+      kind: "alias",
+      name: "Object",
+      location: {
+        type: "builtin"
+      }
+    },
+    Date: {
+      kind: "alias",
+      name: "Date",
+      location: {
+        type: "builtin"
+      }
+    },
+    RegExp: {
+      kind: "alias",
+      name: "RegExp",
+      location: {
+        type: "builtin"
+      }
+    },
+    Buffer: {
+      kind: "alias",
+      name: "Buffer",
+      location: {
+        type: "builtin"
+      }
+    },
+    "fs.Stats": {
+      kind: "alias",
+      name: "fs.Stats",
+      location: {
+        type: "builtin"
+      }
+    },
+    ValueTypeB: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 10
+      },
+      name: "ValueTypeB",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "valueA",
+          type: {
+            kind: "tuple",
+            types: [{
+              kind: "number"
+            }, {
+              kind: "string"
+            }]
+          },
+          optional: false
+        }, {
+          name: "valueC",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }]
+      }
+    },
+    ValueTypeA: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 1
+      },
+      name: "ValueTypeA",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "valueA",
+          type: {
+            kind: "string"
+          },
+          optional: false
+        }, {
+          name: "valueB",
+          type: {
+            kind: "nullable",
+            type: {
+              kind: "named",
+              name: "ValueTypeB"
+            }
+          },
+          optional: false
+        }, {
+          name: "valueC",
+          type: {
+            kind: "boolean"
+          },
+          optional: true
+        }, {
+          name: "valueD",
+          type: {
+            kind: "any"
+          },
+          optional: false
+        }, {
+          name: "valueE",
+          type: {
+            kind: "mixed"
+          },
+          optional: false
+        }, {
+          name: "valueF",
+          type: {
+            kind: "named",
+            name: "Object"
+          },
+          optional: false
+        }]
+      }
+    },
+    ValueTypeTestA: {
+      kind: "function",
+      name: "ValueTypeTestA",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 15
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "ValueTypes.def",
+          line: 15
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "arg0",
+          type: {
+            kind: "named",
+            name: "ValueTypeA"
+          }
+        }, {
+          name: "arg1",
+          type: {
+            kind: "nullable",
+            type: {
+              kind: "named",
+              name: "ValueTypeB"
+            }
+          }
+        }],
+        returnType: {
+          kind: "promise",
+          type: {
+            kind: "named",
+            name: "ValueTypeA"
+          }
+        }
+      }
+    },
+    ValueTypeTestB: {
+      kind: "function",
+      name: "ValueTypeTestB",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 17
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "ValueTypes.def",
+          line: 17
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "arg0",
+          type: {
+            kind: "named",
+            name: "ValueTypeA"
+          }
+        }, {
+          name: "arg1",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "ValueTypeB"
+            }
+          }
+        }],
+        returnType: {
+          kind: "promise",
+          type: {
+            kind: "object",
+            fields: [{
+              name: "field1",
+              type: {
+                kind: "string"
+              },
+              optional: false
+            }, {
+              name: "field2",
+              type: {
+                kind: "string"
+              },
+              optional: false
+            }]
+          }
+        }
+      }
+    },
+    QualifiedTypeNameTest: {
+      kind: "function",
+      name: "QualifiedTypeNameTest",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 23
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "ValueTypes.def",
+          line: 23
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "arg0",
+          type: {
+            kind: "named",
+            name: "fs.Stats"
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    A: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "ValueTypes.def",
+        line: 26
+      },
+      name: "A",
+      definition: {
+        kind: "object",
+        fields: [{
+          name: "f",
+          type: {
+            kind: "nullable",
+            type: {
+              kind: "named",
+              name: "A"
+            }
+          },
+          optional: false
+        }, {
+          name: "o",
+          type: {
+            kind: "named",
+            name: "A"
+          },
+          optional: true
+        }, {
+          name: "a",
+          type: {
+            kind: "array",
+            type: {
+              kind: "named",
+              name: "A"
+            }
+          },
+          optional: false
+        }, {
+          name: "m",
+          type: {
+            kind: "map",
+            keyType: {
+              kind: "named",
+              name: "A"
+            },
+            valueType: {
+              kind: "named",
+              name: "A"
+            }
+          },
+          optional: false
+        }, {
+          name: "s",
+          type: {
+            kind: "set",
+            type: {
+              kind: "named",
+              name: "A"
+            }
+          },
+          optional: false
+        }]
+      }
+    }
+  }
+});

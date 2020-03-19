@@ -1,11 +1,10 @@
 {
   "name": "nuclide-ocaml",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides support for OCaml in Nuclide",
+  "author": "NEEDS OWNER",
   "activationCommands": {},
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -29,15 +28,29 @@
         "type": "string",
         "default": ""
       },
-      "enableDiagnostics": {
-        "title": "Enable diagnostic messages (e.g. compiler errors) from Merlin",
-        "description": "In some cases, Merlin cannot resolve all symbols, so many of its errors are just noise.",
-        "type": "boolean",
-        "default": true
+      "pathToOcpIndent": {
+        "title": "Path to ocp-indent, the OCaml formatter. If no path is given, will use the server default ('ocp-indent')",
+        "type": "string",
+        "default": ""
+      },
+      "logLevel": {
+        "title": "Log Level",
+        "type": "string",
+        "default": "DEBUG",
+        "description": "Specify the level of logging. (restart to take effect)",
+        "enum": [
+          "ALL",
+          "TRACE",
+          "DEBUG",
+          "INFO",
+          "WARN",
+          "ERROR",
+          "FATAL",
+          "OFF"
+        ]
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "activationHooks": [
     "language-ocaml:grammar-used",

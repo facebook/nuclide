@@ -23,6 +23,6 @@ function hgRepositoryForPath(filePath: string): HgRepositoryClient {
   return (repository: any);
 }
 
-export function waitsForRepositoryReady(filePath: string): Promise<void> {
-  return hgRepositoryForPath(filePath)._initializationPromise;
+export async function waitsForRepositoryReady(filePath: string): Promise<void> {
+  await hgRepositoryForPath(filePath)._sharedMembers.repoSubscriptions;
 }

@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "nuclide-internal/license-header": [1, {"useBSDLicense": true}],
+    "nuclide-internal/no-fb-deps-from-oss": [1, {}],
+  }
+}

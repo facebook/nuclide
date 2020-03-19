@@ -1,0 +1,477 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+@console-border-size: 0.1em;
+@console-record-background-color-normal: @syntax-background-color;
+@console-record-text-color-normal: @syntax-text-color;
+// Don't use @base-border-color because that's a UI color, and makes light/dark
+// combinations look bad.
+@console-record-border-color-normal: darken(@syntax-background-color, 5%);
+@console-record-text-color-error: @text-color-error;
+@console-record-border-color-error: @background-color-error;
+@console-record-text-color-warning: @text-color-warning;
+@console-record-border-color-warning: @background-color-warning;
+@console-record-text-color-success: @text-color-success;
+@console-record-border-color-success: @background-color-success;
+@console-record-vertical-padding: 0.1em;
+@console-record-horizontal-padding: 0.5em;
+@console-icon-size: 11px;
+
+// Color variables for `level-color` classes.
+@console-record-background-color-red: lighten(@background-color-error, 25%);
+@console-record-text-color-red: darken(@text-color-error, 40%);
+@console-record-background-color-orange: lighten(@ui-site-color-3, 25%);
+@console-record-text-color-orange: darken(@ui-site-color-3, 40%);
+@console-record-background-color-yellow: lighten(@ui-site-color-5, 25%);
+@console-record-text-color-yellow: darken(@ui-site-color-5, 50%);
+@console-record-background-color-green: lighten(@ui-site-color-2, 25%);
+@console-record-text-color-green: darken(@ui-site-color-2, 40%);
+@console-record-background-color-blue: lighten(@ui-site-color-1, 25%);
+@console-record-text-color-blue: darken(@ui-site-color-1, 40%);
+@console-record-background-color-purple: lighten(@ui-site-color-4, 25%);
+@console-record-text-color-purple: darken(@ui-site-color-4, 40%);
+@console-record-background-color-violet: lighten(@ui-site-color-4, 35%);
+@console-record-text-color-violet: darken(@ui-site-color-4, 30%);
+@console-record-text-color-rainbow: #000;
+
+// Console text should be smaller than normal text. Gotta fit more!
+@console-record-font-size: @font-size * 0.9;
+
+.console {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+// If the console is displayed in a pane, change the color of the header to
+// match.
+.ui-toolbar {
+  background-color: @pane-item-background-color;
+
+  atom-dock &,
+  atom-panel & { // TODO(matthewwithanm): Remove this selector when killing workspace views
+    background-color: @tool-panel-background-color;
+  }
+}
+
+.console-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  font-size: @console-record-font-size;
+  background-color: @syntax-background-color;
+  line-height: 1.5;
+  min-height: 0;
+}
+
+.console-expression-tree-value div, .console-expression-tree-value span {
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  white-space: pre-wrap;
+  word-break: normal;
+  word-wrap: break-word;
+}
+
+.console-expression-tree-value {
+  display: flex;
+
+  // The following selectors style the tree components inside of the ExpressionTreeComponent
+  // instance that is used by the console.
+
+  .list-item::before {
+    div {
+      display: flex;
+    }
+  }
+
+  .list-tree li:not(.list-nested-item) {
+    line-height: 1.6em;
+  }
+
+  div.list-item > div {
+    display: inline-block;
+  }
+}
+
+.console-multiple-objects {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  justify-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.console-table-wrapper {
+  display: flex;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  background-color: @syntax-background-color;
+  // Make sure that record text is selectable.
+  -webkit-user-select: text;
+}
+
+.console-record {
+  display: flex;
+  padding: @console-record-vertical-padding @console-record-horizontal-padding;
+  padding-left: 2 * @console-record-horizontal-padding;
+
+  &::before {
+    width: @console-record-horizontal-padding;
+    position: absolute;
+    left: 0;
+    bottom: @console-border-size;
+    top: 0;
+    content: '';
+  }
+
+  border-radius: 0;
+  border-top: @console-border-size solid @console-record-border-color-normal;
+
+  cursor: text;
+  border-left: (@component-padding / 2) solid transparent;
+  pre, code {
+    font-size: inherit;
+    background-color: transparent;
+
+    // Break on words
+    word-break: normal;
+    white-space: pre-wrap;
+  }
+
+  .icon {
+    font-size: inherit;
+    text-align: center;
+  }
+
+  .icon::before {
+    margin-right: 0.5em;
+  }
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:last-child {
+    border-bottom: @console-border-size solid @console-record-border-color-normal;
+  }
+
+  .console-record-colors(
+    @console-record-text-color-normal;
+    @console-record-background-color-normal;
+  );
+
+  &.level-info {
+    .console-record-colors(
+      @console-record-text-color-normal;
+      @console-record-background-color-normal;
+      @text-color-info;
+    );
+  }
+
+  &.level-warning {
+    .console-record-colors(
+      @console-record-text-color-warning;
+      @console-record-background-color-normal;
+      @console-record-border-color-warning;
+      @console-record-border-color-warning;
+    );
+  }
+
+  &.level-success {
+    .console-record-colors(
+      @console-record-text-color-success;
+      @console-record-background-color-normal;
+      @console-record-border-color-success;
+      @console-record-border-color-success;
+    );
+  }
+
+  &.level-error {
+    .console-record-colors(
+      @console-record-text-color-error;
+      @console-record-background-color-normal;
+      @console-record-border-color-error;
+      @console-record-border-color-error;
+    );
+  }
+
+  // Console record colors for `level-color` classes.
+  &.level-red {
+    .console-record-colors(@console-record-text-color-red; @console-record-background-color-red);
+  }
+
+  &.level-orange {
+    .console-record-colors(@console-record-text-color-orange; @console-record-background-color-orange);
+  }
+
+  &.level-yellow {
+    .console-record-colors(@console-record-text-color-yellow; @console-record-background-color-yellow);
+  }
+
+  &.level-green {
+    .console-record-colors(@console-record-text-color-green; @console-record-background-color-green);
+  }
+
+  &.level-blue {
+    .console-record-colors(@console-record-text-color-blue; @console-record-background-color-blue);
+  }
+
+  &.level-purple {
+    .console-record-colors(@console-record-text-color-purple, @console-record-background-color-purple);
+  }
+
+  &.level-violet {
+    .console-record-colors(@console-record-text-color-violet; @console-record-background-color-violet);
+  }
+
+  &.level-rainbow {
+    .console-record-colors(@console-record-text-color-rainbow; #fff);
+    background-image: linear-gradient(
+      to right,
+      rgba(255, 0, 0, .4) 0%,
+      rgba(255, 165, 0, .4) 20%,
+      rgba(255, 255, 0, .4) 40%,
+      rgba(173, 255, 47, .4) 60%,
+      rgba(0, 191, 255, .4) 80%,
+      rgba(138, 43, 226, .4) 100%
+    );
+    &:hover {
+      background-image: linear-gradient(
+        to right,
+        rgba(255, 0, 0, 0.45) 0%,
+        rgba(255, 165, 0, 0.45) 20%,
+        rgba(255, 255, 0, 0.45) 40%,
+        rgba(173, 255, 47, 0.45) 60%,
+        rgba(0, 191, 255, 0.45) 80%,
+        rgba(138, 43, 226, 0.45) 100%
+      );
+    }
+  }
+
+  pre {
+    display: inline;
+    padding: 0;
+    background-color: transparent;
+  }
+
+  &.request {
+    display: flex;
+    background-color: @syntax-background-color;
+  }
+}
+
+.console-record-content-wrapper {
+  display: flex;
+  width: 100%;
+
+  // Give the source label a little breathing room. We don't apply this directly
+  // to the label because that would affect text wrapping around it.
+  padding-top: 1px;
+  padding-bottom: 1px;
+
+  .ui-expression-tree-value-treelist {
+
+    // Inherit the line-height so that it's the same as other records. If we
+    // don't do this, the expandable items will be taller.
+    li.list-nested-item > .list-item,
+    .list-item {
+      line-height: inherit;
+    }
+  }
+}
+
+.console-record-duplicate-number {
+  background: @console-record-text-color-normal;
+  border-radius: 1em;
+  color: @console-record-background-color-normal;
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  height: 1.4em;
+  justify-content: center;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-right: @component-padding / 2;
+  min-width: 1.4em;
+  padding: 0 0.4em;
+  text-align: center;
+}
+
+.console-record-content {
+  flex: 1;
+}
+
+.console-record-source-label,
+.console-record-timestamp {
+  align-self: flex-start;
+  margin: 2px 0 0 4px;
+  white-space: nowrap;
+  font-size: 0.8em; // This makes the label < 1 line tall in most themes.
+
+  // Ramp up the specificity and override Atom's default label padding.
+  span& {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.console-record-timestamp {
+  padding: 1px 2px;
+}
+
+.console-input-wrapper {
+  display: flex;
+  background-color: @syntax-background-color;
+  padding: @console-record-vertical-padding 0;
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.console-prompt {
+  display: flex;
+  padding: 5px @console-record-horizontal-padding;
+  border-top: 1px solid @pane-item-border-color;
+  background-color: @syntax-background-color;
+  color: @syntax-text-color;
+  min-height: 30px;
+  margin-top: auto;
+}
+
+.console-multiline-tip {
+  padding: 0px 0px 5px 100px;
+  font-size: 0.8em;
+}
+
+.console-multiline-tip-dim {
+  opacity: 0.5;
+}
+
+.console-multiline-tip-not-dim {
+  opacity: 0.8;
+}
+
+.console-prompt-wrapper {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.console-prompt-label {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.8em;
+  padding-right: 1em;
+}
+
+.console-scroll-pane-wrapper {
+  position: relative;
+  display: flex;
+  flex: 1 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.console-new-messages-notification {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  text-align: center;
+  padding-left: @component-padding;
+  padding-right: @component-padding;
+  cursor: pointer;
+
+  // Use a timing function that approximates easeOutBack.
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  &.visible {
+    // Using both margin-bottom and translateY allows us to combine percentage-
+    // and pixel-based sizes.
+    margin-bottom: @component-padding / 2;
+    // translateX to center horizontally, translateY for hiding.
+    transform: translateX(-50%) translateY(0);
+  }
+
+  &:not(.visible) {
+    margin-bottom: 0;
+    transform: translateX(-50%) translateY(100%);
+  }
+}
+
+.console-new-messages-notification-icon {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: left;
+
+  &::before {
+    width: auto !important;
+  }
+}
+
+// This is for T21237354
+// There is an issue with chrome rendering where the button is not redrawn when
+// its surrounding <li> is selected. This causes the background color of the
+// <li> to cover up the button. This is a workaround that forces a redraw
+.console-process-control-button {
+  transform: translate3d(0,0,0);
+}
+
+.console-process-starting-spinner {
+  margin: 0 0.5em 0 0.5em;
+}
+
+.console-table-row-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 3px;
+}
+
+// A mixin for coloring the record. By using this mixin, we can guarantee that
+// all of the different colors behave the same. All record coloring should go
+// through this!
+.console-record-colors(
+  @fg-color;
+  @bg-color;
+  @icon-color: fadeout(@fg-color, 70%);
+  @border-color: none;
+) {
+  background-color: @bg-color;
+
+  &,
+  // Make sure the specificity is high enough to override list item styling.
+  // (List items are used in the debugger records.)
+  &.console-record.console-record .list-item,
+  pre,
+  code,
+  pre a,
+  .console-expression-tree-value div,
+  .console-expression-tree-value span {
+    color: @fg-color;
+  }
+
+  .console-record-duplicate-number {
+    background-color: @fg-color;
+    color: @bg-color;
+  }
+
+  // Aid visual tracking while hovering over a record (esp. when the console window is very wide).
+  &:hover {
+    & when (lightness(@bg-color) <= 50%) {
+      background-color: lighten(@bg-color, 2%);
+    }
+    & when (lightness(@bg-color) > 50%) {
+      background-color: darken(@bg-color, 3%);
+    }
+  }
+
+  &::before {
+    background-color: @border-color;
+  }
+
+  .icon {
+    color: @icon-color;
+  }
+}
+
+.nuclide-console-default-text-colors {
+  color: @console-record-text-color-normal;
+}

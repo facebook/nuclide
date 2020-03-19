@@ -6,14 +6,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 
 // This code runs in the main process, so no transpiling!
 
@@ -32,7 +29,7 @@ function createBrowserWindow(loadSettings, parent) {
       pathname: path.join(loadSettings.resourcePath, 'static/index.html'),
       // TODO(hansonw): Remove when Atom 1.15 is deployed.
       hash: encodeURIComponent(JSON.stringify(loadSettings)),
-    })
+    }),
   );
   return newWindow;
 }

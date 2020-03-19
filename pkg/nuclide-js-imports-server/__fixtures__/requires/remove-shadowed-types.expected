@@ -1,0 +1,3 @@
+class Foo {}
+
+function foo(value: Foo) {}

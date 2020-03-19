@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -16,20 +16,28 @@ import type {
   Definition,
   DiagnosticMessageType,
   DiagnosticTrace,
-  FileDiagnosticMessage,
-  FileDiagnosticMessages,
   Reference,
   CodeAction,
+  SignatureHelp,
 } from 'atom-ide-ui';
 import type {
   Diagnostic,
   PublishDiagnosticsParams,
   RelatedLocation,
+  CodeLens,
+  FileEvent,
+  LocationWithTitle,
+  ShowStatusParams,
 } from './protocol';
 import type {
   Completion,
+  FileDiagnosticMap,
+  FileDiagnosticMessage,
   SymbolResult,
+  CodeLensData,
+  StatusData,
 } from '../../nuclide-language-service/lib/LanguageService';
+import type {FileChange} from 'nuclide-watchman-helpers';
 import type {ShowNotificationLevel} from '../../nuclide-language-service-rpc/lib/rpc-types';
 import type {
   TextDocumentIdentifier,
@@ -40,8 +48,13 @@ import type {
   TextDocumentPositionParams,
   SymbolInformation,
   Command,
+  SignatureHelp as LspSignatureHelpType,
 } from './protocol';
-import type {TextEdit as LspTextEditType} from './protocol';
+import type {
+  TextEdit as LspTextEditType,
+  WorkspaceEdit as WorkspaceEditType,
+  TextDocumentEdit as TextDocumentEditType,
+} from './protocol';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Point, Range as atom$Range} from 'simple-text-buffer';
@@ -51,6 +64,7 @@ import {
   InsertTextFormat,
   SymbolKind,
   MessageType as LspMessageType,
+  FileChangeType,
 } from './protocol';
 import {
   className,
@@ -94,6 +108,42 @@ export function lspTextEdits_atomTextEdits(
   });
 }
 
+//    WorkspaceEdits can either provide `changes` (a mapping of document URIs to their TextEdits)
+//        or `documentChanges` (an array of TextDocumentEdits where
+//        each text document edit addresses a specific version of a text document).
+//
+//    TODO: Compare the versions of the documents being edited with
+//            the version numbers contained within `documentChanges`.
+//          Right now, we use `documentChanges` while ignoring version numbers.
+export function lspWorkspaceEdit_atomWorkspaceEdit(
+  lspWorkspaceEdit: WorkspaceEditType,
+): Map<NuclideUri, Array<TextEdit>> {
+  const workspaceEdit = new Map();
+  const lspChanges = lspWorkspaceEdit.changes;
+  const lspDocChanges = lspWorkspaceEdit.documentChanges;
+
+  if (lspChanges != null) {
+    Object.keys(lspChanges).forEach((lspUri: string) => {
+      const path = lspUri_localPath(lspUri);
+      const textEdits = lspTextEdits_atomTextEdits(lspChanges[lspUri]);
+
+      workspaceEdit.set(path, textEdits);
+    });
+  } else if (lspDocChanges != null) {
+    lspDocChanges.forEach((textDocumentEdit: TextDocumentEditType) => {
+      const lspUri = textDocumentEdit.textDocument.uri;
+      const lspTextEdits = textDocumentEdit.edits;
+
+      const path = lspUri_localPath(lspUri);
+      const textEdits = lspTextEdits_atomTextEdits(lspTextEdits);
+
+      workspaceEdit.set(path, textEdits);
+    });
+  }
+
+  return workspaceEdit;
+}
+
 export function lspLocation_atomFoundReference(location: Location): Reference {
   return {
     uri: lspUri_localPath(location.uri),
@@ -103,8 +153,8 @@ export function lspLocation_atomFoundReference(location: Location): Reference {
   };
 }
 
-export function lspLocation_atomDefinition(
-  location: Location,
+export function lspLocationWithTitle_atomDefinition(
+  location: LocationWithTitle,
   projectRoot: NuclideUri,
 ): Definition {
   return {
@@ -112,6 +162,7 @@ export function lspLocation_atomDefinition(
     position: lspPosition_atomPoint(location.range.start),
     language: 'lsp', // pointless; only ever used to judge equality of two defs
     projectRoot, // used to relativize paths when showing multiple targets
+    name: location.title == null ? undefined : location.title, // nuclide-only
   };
 }
 
@@ -158,7 +209,9 @@ export function atom_lspPositionParams(
   };
 }
 
-function lspCompletionItemKind_atomCompletionType(kind: ?number): ?string {
+export function lspCompletionItemKind_atomCompletionType(
+  kind: ?number,
+): ?string {
   switch (kind) {
     case CompletionItemKind.Text:
       return '';
@@ -201,10 +254,94 @@ function lspCompletionItemKind_atomCompletionType(kind: ?number): ?string {
   }
 }
 
+export function lspCompletionItemKind_atomIcon(kind: ?number): ?string {
+  // returns null if there should be no icon
+  // returns 'DEFAULT' for the default icon provided by AutocompletePlus
+  // returns anything else for an Atom icon
+
+  // Unfortunately, LSP doesn't yet have CompletionItemKinds for all the
+  // possible SymbolKinds (e.g. CompletionItemKind is missing namespace).
+  // So LSP servers will presumably be returning an alternative, e.g. maybe
+  // CompletionItemKind.Module for their namespaces.
+  // https://github.com/Microsoft/language-server-protocol/issues/155
+
+  // Unfortunately, Atom only provides a thematically unified 'type-*' icon set
+  // for SymbolKind icons (e.g. it has no icon for Value or Keyword).
+  // In such cases we try to fall back to the icons provided by AutocompletePlus
+  switch (kind) {
+    case null:
+      return null;
+    case CompletionItemKind.Text:
+      return null; // no Atom icon, and no good AutocompletePlus fallback
+    case CompletionItemKind.Method:
+      return 'type-method';
+    case CompletionItemKind.Function:
+      return 'type-function';
+    case CompletionItemKind.Constructor:
+      return 'type-constructor';
+    case CompletionItemKind.Field:
+      return 'type-field';
+    case CompletionItemKind.Variable:
+      return 'type-variable';
+    case CompletionItemKind.Class:
+      return 'type-class';
+    case CompletionItemKind.Interface:
+      return 'type-interface';
+    case CompletionItemKind.Module:
+      return 'type-module';
+    case CompletionItemKind.Property:
+      return 'type-property';
+    case CompletionItemKind.Unit:
+      return null; // not even sure what this is supposed to be
+    case CompletionItemKind.Value:
+      return 'DEFAULT'; // this has a good fallback in AutocompletePlus
+    case CompletionItemKind.Enum:
+      return 'type-enum';
+    case CompletionItemKind.Keyword:
+      return 'DEFAULT'; // this has a good fallback in AutocompletePlus
+    case CompletionItemKind.Snippet:
+      return 'DEFAULT'; // this has a good fallback in AutocompletePlus
+    case CompletionItemKind.Color:
+      return null; // no Atom icon, and no suitable fallback in AutocompletePlus
+    case CompletionItemKind.File:
+      return 'type-file';
+    case CompletionItemKind.Reference:
+      return null; // not even sure what this is supposed to be
+    default:
+      return null;
+  }
+}
+
 export function lspCompletionItem_atomCompletion(
   item: CompletionItem,
+  supportsResolve: boolean,
 ): Completion {
   const useSnippet = item.insertTextFormat === InsertTextFormat.Snippet;
+  const lspTextEdits = getCompletionTextEdits(item);
+  const icon = lspCompletionItemKind_atomIcon(item.kind);
+  let iconHTML;
+  if (icon == null) {
+    iconHTML = ''; // no icon at all
+  } else if (icon === 'DEFAULT') {
+    iconHTML = undefined; // fall through to the default AutocompletePlus icon
+  } else {
+    iconHTML = `<span class="icon-${icon}"></span>`;
+  }
+
+  const descriptionItems = [];
+  if (item.detail != null && item.detail !== '') {
+    descriptionItems.push(item.detail);
+  }
+
+  let descriptionMarkdown;
+  const documentation = item.documentation;
+  if (typeof documentation === 'string') {
+    descriptionItems.push(documentation);
+  } else if (documentation != null) {
+    // documentation is a MarkupContent.
+    descriptionMarkdown = documentation.value;
+  }
+
   return {
     // LSP: label is what should be displayed in the autocomplete list
     // Atom: displayText is what's displayed
@@ -216,19 +353,40 @@ export function lspCompletionItem_atomCompletion(
     snippet: useSnippet ? item.insertText || item.label : undefined,
     // flowlint-next-line sketchy-null-string:off
     text: useSnippet ? undefined : item.insertText || item.label,
-    // LSP: [nuclide-specific] itemType is return type of function
-    // Atom: it's convention to display return types in the left column
-    leftLabel: item.itemType,
-    // LSP: [nuclide-specific] inlineDetail is to be displayed next to label
-    // Atom: it's convention to display details like parameters to the right
-    rightLabel: item.inlineDetail,
+    rightLabel: item.detail,
     // LSP: kind indicates what icon should be used
     // ATOM: type is to indicate icon and its background color
+    // ATOM: iconHTML can be used to override the icon
     type: lspCompletionItemKind_atomCompletionType(item.kind),
-    // LSP detail is the thing's signature
+    iconHTML,
+    // LSP: create from detail (signature) and documentation (doc block)
     // Atom: description is displayed in the footer of the autocomplete tab
-    description: item.detail,
+    description: descriptionItems.join('\n\n'),
+    descriptionMarkdown,
+    textEdits:
+      lspTextEdits != null
+        ? lspTextEdits_atomTextEdits(lspTextEdits)
+        : undefined,
+    // Resolving a completion item in the LSP requires passing in the original
+    // completion item, and since completion items are sent over the wire we
+    // already know they're serializable to JSON.
+    extraData: supportsResolve ? JSON.stringify(item) : undefined,
+    // LSP and Nuclide extension: string used to filter a set of completion items
+    filterText: item.filterText,
+    // LSP and Nuclide extension: string used to compare a completion item to another
+    sortText: item.sortText,
   };
+}
+
+function getCompletionTextEdits(item: CompletionItem): ?Array<LspTextEditType> {
+  if (item.textEdit != null) {
+    if (item.additionalTextEdits != null) {
+      return [item.textEdit, ...item.additionalTextEdits];
+    } else {
+      return [item.textEdit];
+    }
+  }
+  return null;
 }
 
 export function lspMessageType_atomShowNotificationLevel(
@@ -255,41 +413,53 @@ export function lspSymbolKind_atomIcon(kind: number): string {
   // for reference, hack: https://github.com/facebook/nuclide/blob/20cf17dca439e02a64f4365f3a52b0f26cf53726/pkg/nuclide-hack-rpc/lib/SymbolSearch.js#L120
   switch (kind) {
     case SymbolKind.File:
-      return 'file';
+      return 'type-file';
     case SymbolKind.Module:
-      return 'file-submodule';
+      return 'type-module';
     case SymbolKind.Namespace:
-      return 'file-submodule';
+      return 'type-namespace';
     case SymbolKind.Package:
-      return 'package';
+      return 'type-package';
     case SymbolKind.Class:
-      return 'code';
+    case SymbolKind.Struct:
+      return 'type-class';
     case SymbolKind.Method:
-      return 'zap';
+      return 'type-method';
     case SymbolKind.Property:
-      return 'key';
+    case SymbolKind.Key:
+      return 'type-property';
     case SymbolKind.Field:
-      return 'key';
+    case SymbolKind.EnumMember:
+      return 'type-field';
     case SymbolKind.Constructor:
-      return 'zap';
+      return 'type-constructor';
     case SymbolKind.Enum:
-      return 'file-binary';
+      return 'type-enum';
     case SymbolKind.Interface:
-      return 'puzzle';
+      return 'type-interface';
     case SymbolKind.Function:
-      return 'zap';
+    case SymbolKind.Operator:
+      return 'type-function';
     case SymbolKind.Variable:
-      return 'pencil';
+    case SymbolKind.Object:
+      return 'type-variable';
     case SymbolKind.Constant:
-      return 'quote';
+      return 'type-constant';
     case SymbolKind.String:
-      return 'quote';
+      return 'type-string';
     case SymbolKind.Number:
-      return 'quote';
+      return 'type-number';
     case SymbolKind.Boolean:
-      return 'quote';
+      return 'type-boolean';
     case SymbolKind.Array:
-      return 'list-ordered';
+      return 'type-array';
+    case SymbolKind.Null:
+      // Empty string to display no icon.
+      return '';
+    case SymbolKind.Event:
+      return 'octicon-pulse';
+    case SymbolKind.TypeParameter:
+      return 'octicon-code';
     default:
       return 'question';
   }
@@ -350,6 +520,7 @@ export function lspSymbolInformation_atomSymbolResult(
     }
   }
   return {
+    resultType: 'SYMBOL',
     path: lspUri_localPath(info.location.uri),
     line: info.location.range.start.line,
     column: info.location.range.start.character,
@@ -372,8 +543,9 @@ function lspSeverity_atomDiagnosticMessageType(
     case DiagnosticSeverity.Warning:
       return 'Warning';
     case DiagnosticSeverity.Information:
-    case DiagnosticSeverity.Hint:
       return 'Info';
+    case DiagnosticSeverity.Hint:
+      return 'Hint';
   }
 }
 
@@ -386,10 +558,9 @@ function atomDiagnosticMessageType_lspSeverity(
     case 'Warning':
       return DiagnosticSeverity.Warning;
     case 'Info':
-      // The inverse function maps both DiagnosticServerity.Hint and
-      // DiagnosticServerity.Information to 'Info', but in the reverse direction
-      // we'll pick to map 'Info' to DiagnosticSeverity.Information.
       return DiagnosticSeverity.Information;
+    case 'Hint':
+      return DiagnosticSeverity.Hint;
     default:
       (diagnosticType: empty); // Will cause a Flow error if a new DiagnosticSeverity value is added.
       throw new Error('Unsupported DiagnosticMessageType');
@@ -408,10 +579,10 @@ function lspRelatedLocation_atomTrace(
 }
 
 /**
-* Converts an Atom Trace to an Lsp RelatedLocation. A RelatedLocation requires a
-* range. Therefore, this will return null when called with an Atom Trace that
-* does not have a range.
-*/
+ * Converts an Atom Trace to an Lsp RelatedLocation. A RelatedLocation requires a
+ * range. Therefore, this will return null when called with an Atom Trace that
+ * does not have a range.
+ */
 function atomTrace_lspRelatedLocation(
   trace: DiagnosticTrace,
 ): ?RelatedLocation {
@@ -431,19 +602,26 @@ function atomTrace_lspRelatedLocation(
 function lspDiagnostic_atomDiagnostic(
   diagnostic: Diagnostic,
   filePath: NuclideUri, // has already been converted for us
+  defaultSource: string,
 ): FileDiagnosticMessage {
-  // TODO: pass the LSP diagnostic.code to Atom somehow
-  return {
-    scope: 'file',
-    // flowlint-next-line sketchy-null-string:off
-    providerName: diagnostic.source || 'LSP', // TODO
+  const atomDiagnostic: FileDiagnosticMessage = {
+    providerName: diagnostic.source != null ? diagnostic.source : defaultSource,
     type: lspSeverity_atomDiagnosticMessageType(diagnostic.severity),
     filePath,
     text: diagnostic.message,
     range: lspRange_atomRange(diagnostic.range),
-    trace: (diagnostic.relatedLocations || [])
-      .map(lspRelatedLocation_atomTrace),
+    trace: (diagnostic.relatedLocations || []).map(
+      lspRelatedLocation_atomTrace,
+    ),
   };
+  if (diagnostic.code != null) {
+    atomDiagnostic.providerName += ': ' + String(diagnostic.code);
+    atomDiagnostic.code = parseInt(String(diagnostic.code), 10);
+  }
+  if (diagnostic.stale != null) {
+    atomDiagnostic.stale = diagnostic.stale;
+  }
+  return atomDiagnostic;
 }
 
 export function lspCommand_atomCodeAction(
@@ -460,15 +638,15 @@ export function lspCommand_atomCodeAction(
 }
 
 /**
-* Converts an Atom FileMessageDiagnostic to an LSP Diagnostic. LSP diagnostics
-* require a range, while they are currently optional for Atom Diangostics. Therefore,
-* this will return null when called with an Atom Diagnostic without a range.
-*/
+ * Converts an Atom FileMessageDiagnostic to an LSP Diagnostic. LSP diagnostics
+ * require a range, while they are currently optional for Atom Diangostics. Therefore,
+ * this will return null when called with an Atom Diagnostic without a range.
+ */
 export function atomDiagnostic_lspDiagnostic(
   diagnostic: FileDiagnosticMessage,
 ): ?Diagnostic {
   if (diagnostic.range != null) {
-    return {
+    const lspDiagnostic: Diagnostic = {
       range: atomRange_lspRange(diagnostic.range),
       severity: atomDiagnosticMessageType_lspSeverity(diagnostic.type),
       source: diagnostic.providerName,
@@ -477,20 +655,129 @@ export function atomDiagnostic_lspDiagnostic(
         (diagnostic.trace || []).map(atomTrace_lspRelatedLocation),
       ),
     };
+    if (diagnostic.code != null) {
+      lspDiagnostic.code = diagnostic.code;
+    }
+    if (diagnostic.stale != null) {
+      lspDiagnostic.stale = diagnostic.stale;
+    }
+    return lspDiagnostic;
   }
   return null;
 }
 
 export function lspDiagnostics_atomDiagnostics(
   params: PublishDiagnosticsParams,
-): Array<FileDiagnosticMessages> {
+  defaultSource: string,
+): FileDiagnosticMap {
   const filePath = lspUri_localPath(params.uri);
-  return [
-    {
+  return new Map([
+    [
       filePath,
-      messages: params.diagnostics.map(d =>
-        lspDiagnostic_atomDiagnostic(d, filePath),
+      params.diagnostics.map(d =>
+        lspDiagnostic_atomDiagnostic(d, filePath, defaultSource),
       ),
+    ],
+  ]);
+}
+
+export function codeLensData_lspCodeLens(codeLensData: CodeLensData): CodeLens {
+  return {
+    range: {
+      start: {
+        line: codeLensData.range.start.row,
+        character: codeLensData.range.start.column,
+      },
+      end: {
+        line: codeLensData.range.end.row,
+        character: codeLensData.range.end.column,
+      },
     },
-  ];
+    command: codeLensData.command,
+    data: codeLensData.data,
+  };
+}
+
+export function lspCodeLens_codeLensData(codeLens: CodeLens): CodeLensData {
+  return {
+    range: new atom$Range(
+      new Point(codeLens.range.start.line, codeLens.range.start.character),
+      new Point(codeLens.range.end.line, codeLens.range.end.character),
+    ),
+    command: codeLens.command,
+    data: codeLens.data,
+  };
+}
+
+export function lspSignatureHelp_atomSignatureHelp(
+  signatureHelp: LspSignatureHelpType,
+): SignatureHelp {
+  // Mostly compatible, except for the MarkupContent strings.
+  // Currently, atom-ide-ui's signature help implementation always renders markdown anyway.
+  return {
+    signatures: signatureHelp.signatures.map(sig => ({
+      label: sig.label,
+      documentation:
+        sig.documentation != null && typeof sig.documentation === 'object'
+          ? sig.documentation.value
+          : sig.documentation,
+      parameters:
+        sig.parameters &&
+        sig.parameters.map(param => ({
+          label: param.label,
+          documentation:
+            param.documentation != null &&
+            typeof param.documentation === 'object'
+              ? param.documentation.value
+              : param.documentation,
+        })),
+    })),
+    activeSignature: signatureHelp.activeSignature,
+    activeParameter: signatureHelp.activeParameter,
+  };
+}
+
+export function watchmanFileChange_lspFileEvent(
+  fileChange: FileChange,
+  watchmanRoot: NuclideUri,
+): FileEvent {
+  return {
+    uri: localPath_lspUri(nuclideUri.resolve(watchmanRoot, fileChange.name)),
+    type: fileChange.new
+      ? FileChangeType.Created
+      : !fileChange.exists
+        ? FileChangeType.Deleted
+        : FileChangeType.Changed,
+  };
+}
+
+export function lspStatus_atomStatus(params: ShowStatusParams): ?StatusData {
+  const actions = params.actions || [];
+  const buttons = actions.map(action => action.title);
+  switch (params.type) {
+    case LspMessageType.Error:
+      return {
+        kind: 'red',
+        message: params.message == null ? '' : params.message,
+        buttons,
+      };
+    case LspMessageType.Warning:
+      return {
+        kind: 'yellow',
+        message: params.message == null ? '' : params.message,
+        shortMessage: params.shortMessage,
+        progress:
+          params.progress == null
+            ? undefined
+            : {
+                numerator: params.progress.numerator,
+                denominator: params.progress.denominator,
+              },
+        buttons,
+      };
+    case LspMessageType.Info:
+      return {kind: 'green', message: params.message};
+    default:
+      return null;
+  }
 }

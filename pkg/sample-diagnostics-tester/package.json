@@ -1,0 +1,20 @@
+{
+  "name": "sample-diagnostics-tester",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A package that adds utilities for testing diagnostics",
+  "author": "Nuclide : Core UI",
+  "deserializers": {
+    "nuclide.DiagnosticsTester": "deserializeDiagnosticsTester"
+  },
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "linter-indie": {
+      "versions": {
+        "2.0.0": "consumeIndie"
+      }
+    }
+  }
+}

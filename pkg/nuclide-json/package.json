@@ -1,13 +1,11 @@
 {
   "name": "nuclide-json",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Language services for JSON",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "activationHooks": [
     "language-json:grammar-used"
@@ -21,11 +19,6 @@
     "hyperclick": {
       "versions": {
         "0.1.0": "getHyperclickProvider"
-      }
-    },
-    "code-format.file": {
-      "versions": {
-        "0.1.0": "provideCodeFormat"
       }
     }
   }

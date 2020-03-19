@@ -12,56 +12,88 @@
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Transport} from '../../nuclide-rpc';
 
+import invariant from 'assert';
+import fs from 'fs';
+import {Observable} from 'rxjs';
+import {IpcClientTransport} from './IpcTransports';
 import {ServerConnection} from './ServerConnection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import invariant from 'assert';
+import {fork, spawn, getOriginalEnvironment} from 'nuclide-commons/process';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import {__DEV__} from 'nuclide-commons/runtime-info';
+import {getAvailableServerPort} from 'nuclide-commons/serverPort';
 import servicesConfig from '../../nuclide-server/lib/servicesConfig';
-import {
-  LoopbackTransports,
-  ServiceRegistry,
-  RpcConnection,
-} from '../../nuclide-rpc';
-import {isRunningInTest} from '../../commons-node/system-info';
-import {getServerSideMarshalers} from '../../nuclide-marshalers-common';
-import {getAtomSideLoopbackMarshalers} from '../../nuclide-marshalers-atom';
+import {RpcConnection} from '../../nuclide-rpc';
+import {getClientSideLoopbackMarshalers} from '../../nuclide-marshalers-client';
 
+// This code may be executed before the config has been loaded!
+// getWithDefaults is necessary to make sure that the default is 'true'.
+// (But not in tests, as it's slow to start it up every time.)
+// We disable this on Windows until fork gets fixed.
+const useLocalRpc =
+  Boolean(featureConfig.getWithDefaults('useLocalRpc', !atom.inSpecMode())) &&
+  process.platform !== 'win32';
 let localRpcClient: ?RpcConnection<Transport> = null;
-let knownLocalRpc = false;
 
-// Creates a local RPC client that we can use to ensure that
-// local service calls have the same behavior as remote RPC calls.
+// Creates a local RPC client that connects to a separate process.
 function createLocalRpcClient(): RpcConnection<Transport> {
-  const localTransports = new LoopbackTransports();
-  const serviceRegistry = new ServiceRegistry(
-    getServerSideMarshalers,
-    servicesConfig,
+  // The Electron Node process won't support --inspect until v1.7.x.
+  // In the meantime, try to find a more standard Node process.
+  const fbNodeRun = nuclideUri.join(
+    __dirname,
+    '../../commons-node/fb-node-run.sh',
   );
-  const localClientConnection = RpcConnection.createServer(
-    serviceRegistry,
-    localTransports.serverTransport,
-  );
-  invariant(localClientConnection != null); // silence lint...
-  return RpcConnection.createLocal(
-    localTransports.clientTransport,
-    getAtomSideLoopbackMarshalers,
-    servicesConfig,
-  );
-}
+  const spawnOptions = {
+    killTreeWhenDone: true,
+    stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'ipc'],
+  };
+  // We cannot synchronously spawn the process here due to the shell environment.
+  // process.js will wait for Atom's shell environment to become ready.
+  const localServerProcess =
+    __DEV__ && fs.existsSync(fbNodeRun) && process.platform !== 'win32'
+      ? Observable.defer(() =>
+          Promise.all([getAvailableServerPort(), getOriginalEnvironment()]),
+        )
+          .do(([port]) => {
+            // eslint-disable-next-line no-console
+            console.log(`Starting local RPC process with --inspect=${port}`);
+          })
+          .switchMap(([port, env]) =>
+            spawn(
+              fbNodeRun,
+              [
+                'node',
+                // Electron v1.7.x will also allow --inspect=0.
+                `--inspect=${port}`,
+                '--require',
+                require.resolve('../../commons-node/load-transpiler'),
+                require.resolve('./LocalRpcServer'),
+              ],
+              spawnOptions,
+            ),
+          )
+      : fork(
+          '--require',
+          [
+            require.resolve('../../commons-node/load-transpiler'),
+            require.resolve('./LocalRpcServer'),
+          ],
+          spawnOptions,
+        );
 
-export function setUseLocalRpc(value: boolean): void {
-  invariant(!knownLocalRpc, 'setUseLocalRpc must be called exactly once');
-  knownLocalRpc = true;
-  if (value) {
-    localRpcClient = createLocalRpcClient();
-  }
+  const transport = new IpcClientTransport(localServerProcess);
+  return RpcConnection.createLocal(
+    transport,
+    getClientSideLoopbackMarshalers,
+    servicesConfig,
+  );
 }
 
 export function getlocalService(serviceName: string): Object {
-  invariant(
-    knownLocalRpc || isRunningInTest(),
-    'Must call setUseLocalRpc before getService',
-  );
-  if (localRpcClient != null) {
+  if (useLocalRpc) {
+    if (localRpcClient == null) {
+      localRpcClient = createLocalRpcClient();
+    }
     return localRpcClient.getService(serviceName);
   } else {
     const [serviceConfig] = servicesConfig.filter(
@@ -88,6 +120,20 @@ export function getServiceByNuclideUri(
 }
 
 /**
+ * Asynchronously create or get a cached service.
+ * @param uri It could either be either a local path or a remote path in form of
+ *    `nuclide://$host/$path`. The function will use the $host from remote path to
+ *    create a remote service or create a local service if the uri is local path.
+ */
+export function awaitServiceByNuclideUri(
+  serviceName: string,
+  uri: ?NuclideUri = null,
+): Promise<?any> {
+  const hostname = nuclideUri.getHostnameOpt(uri);
+  return awaitService(serviceName, hostname);
+}
+
+/**
  * Create or get cached service.
  * null connection implies get local service.
  */
@@ -107,8 +153,7 @@ export function getServiceByConnection(
  * it returns a local service, otherwise a remote service will be returned.
  */
 export function getService(serviceName: string, hostname: ?string): ?Object {
-  // flowlint-next-line sketchy-null-string:off
-  if (hostname) {
+  if (hostname != null && hostname !== '') {
     const serverConnection = ServerConnection.getByHostname(hostname);
     if (serverConnection == null) {
       return null;
@@ -116,5 +161,23 @@ export function getService(serviceName: string, hostname: ?string): ?Object {
     return serverConnection.getService(serviceName);
   } else {
     return getlocalService(serviceName);
+  }
+}
+
+/**
+ * Asynchronously create or get a cached service. If hostname is null or empty
+ * string, it returns a local service, otherwise a remote service will be returned.
+ */
+export function awaitService(
+  serviceName: string,
+  hostname: ?string,
+): Promise<?Object> {
+  if (hostname != null && hostname !== '') {
+    return ServerConnection.connectionAddedToHost(hostname)
+      .first()
+      .toPromise()
+      .then(serverConnection => serverConnection.getService(serviceName));
+  } else {
+    return Promise.resolve(getlocalService(serviceName));
   }
 }

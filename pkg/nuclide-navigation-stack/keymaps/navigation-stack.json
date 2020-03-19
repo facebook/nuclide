@@ -4,7 +4,7 @@
     "ctrl-,": "nuclide-navigation-stack:navigate-backwards"
   },
   ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
-    "ctrl->": "nuclide-navigation-stack:navigate-forwards",
-    "ctrl-<": "nuclide-navigation-stack:navigate-backwards"
+    "alt-.": "nuclide-navigation-stack:navigate-forwards",
+    "alt-,": "nuclide-navigation-stack:navigate-backwards"
   }
 }

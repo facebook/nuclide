@@ -5,15 +5,12 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Directory} from '../../../nuclide-remote-connection';
-import type {
-  ConsoleApi,
-  ConsoleService,
-} from '../../../nuclide-console/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {ConsoleApi, ConsoleService} from 'atom-ide-ui';
 import type {
   DidActivateInitialPackagesAction,
   RegisterTaskRunnerAction,
@@ -31,10 +28,13 @@ import type {
   StopTaskAction,
   TaskMetadata,
   TaskRunner,
+  TaskOptions,
   TaskRunnerState,
   ToggleToolbarVisibilityAction,
   UnregisterTaskRunnerAction,
 } from '../types';
+
+import * as Immutable from 'immutable';
 
 export const DID_ACTIVATE_INITIAL_PACKAGES = 'DID_ACTIVATE_INITIAL_PACKAGES';
 export const REGISTER_TASK_RUNNER = 'REGISTER_TASK_RUNNER';
@@ -54,6 +54,7 @@ export const STOP_TASK = 'STOP_TASK';
 export const TASKS_READY = 'TASKS_READY';
 export const TASK_COMPLETED = 'TASK_COMPLETED';
 export const TASK_PROGRESS = 'TASK_PROGRESS';
+export const TASK_STATUS = 'TASK_STATUS';
 export const TASK_MESSAGE = 'TASK_MESSAGE';
 export const TASK_STARTED = 'TASK_STARTED';
 export const TASK_STOPPED = 'TASK_STOPPED';
@@ -75,7 +76,9 @@ export function registerTaskRunner(
 }
 
 export function runTask(
-  taskMeta: TaskMetadata & {taskRunner: TaskRunner},
+  taskRunner: TaskRunner,
+  taskMeta: TaskMetadata,
+  options: ?TaskOptions,
   verifySaved: boolean = true,
 ): RunTaskAction {
   return {
@@ -83,6 +86,8 @@ export function runTask(
     payload: {
       verifySaved,
       taskMeta,
+      taskRunner,
+      options,
     },
   };
 }
@@ -109,7 +114,7 @@ export function setStateForTaskRunner(
 
 // Only sets the states for task runners that have keys in the map
 export function setStatesForTaskRunners(
-  statesForTaskRunners: Map<TaskRunner, TaskRunnerState>,
+  statesForTaskRunners: Immutable.Map<TaskRunner, TaskRunnerState>,
 ): SetStatesForTaskRunnersAction {
   return {
     type: SET_STATES_FOR_TASK_RUNNERS,
@@ -117,7 +122,7 @@ export function setStatesForTaskRunners(
   };
 }
 
-export function setProjectRoot(projectRoot: ?Directory): SetProjectRootAction {
+export function setProjectRoot(projectRoot: ?NuclideUri): SetProjectRootAction {
   return {
     type: SET_PROJECT_ROOT,
     payload: {projectRoot},
@@ -134,7 +139,7 @@ export function setConsoleService(
 }
 
 export function setConsolesForTaskRunners(
-  consolesForTaskRunners: Map<TaskRunner, ConsoleApi>,
+  consolesForTaskRunners: Immutable.Map<TaskRunner, ConsoleApi>,
 ): SetConsolesForTaskRunnersAction {
   return {
     type: SET_CONSOLES_FOR_TASK_RUNNERS,

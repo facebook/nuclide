@@ -9,19 +9,20 @@
  * @format
  */
 
-import type {RevisionInfo} from '../../nuclide-hg-rpc/lib/HgService';
+import type {RevisionInfo} from '../../nuclide-hg-rpc/lib/types';
 import type {BlameForEditor, BlameProvider} from './types';
 
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 import hideAllTooltips from '../../nuclide-ui/hide-all-tooltips';
-import {track, trackTiming} from '../../nuclide-analytics';
-import {CompositeDisposable} from 'atom';
+import {track, trackTiming} from 'nuclide-analytics';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {shell} from 'electron';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {shortNameForAuthor} from '../../nuclide-vcs-log';
-import React from 'react';
+import escapeHTML from 'escape-html';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
+// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
+import {shortNameForAuthor} from '../../nuclide-vcs-log';
 
 const BLAME_DECORATION_CLASS = 'blame-decoration';
 
@@ -33,8 +34,13 @@ try {
   Avatar = null;
 }
 
-function escapeHTML(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+let getEmployeeIdentifierFromAuthorString: string => string;
+try {
+  // $FlowFB
+  getEmployeeIdentifierFromAuthorString = require('fb-vcs-common')
+    .getEmployeeIdentifierFromAuthorString;
+} catch (err) {
+  getEmployeeIdentifierFromAuthorString = shortNameForAuthor;
 }
 
 function getHash(revision: ?RevisionInfo): ?string {
@@ -52,7 +58,7 @@ export default class BlameGutter {
   _loadingSpinnerDiv: ?HTMLElement;
   _isDestroyed: boolean;
   _isEditorDestroyed: boolean;
-  _subscriptions: CompositeDisposable;
+  _subscriptions: UniversalDisposable;
 
   /**
    * @param gutterName A name for this gutter. Must not be used by any another
@@ -69,7 +75,7 @@ export default class BlameGutter {
     this._isDestroyed = false;
     this._isEditorDestroyed = false;
 
-    this._subscriptions = new CompositeDisposable();
+    this._subscriptions = new UniversalDisposable();
     this._editor = editor;
     this._blameProvider = blameProvider;
     this._bufferLineToDecoration = new Map();
@@ -79,6 +85,7 @@ export default class BlameGutter {
     this._subscriptions.add(
       editor.onDidDestroy(() => {
         this._isEditorDestroyed = true;
+        this.destroy();
       }),
     );
     const editorView = atom.views.getView(editor);
@@ -318,10 +325,8 @@ type Props = {
   newest: number,
 };
 
-class GutterElement extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+class GutterElement extends React.Component<Props> {
+  render(): React.Node {
     const {oldest, newest, revision, isLastLine, isFirstLine} = this.props;
     const date = Number(revision.date);
 
@@ -329,12 +334,14 @@ class GutterElement extends React.Component {
     const opacity = 0.2 + 0.8 * alpha;
 
     if (isFirstLine) {
-      const unixname = shortNameForAuthor(revision.author);
+      const employeeIdentifier = getEmployeeIdentifierFromAuthorString(
+        revision.author,
+      );
       const tooltip = {
         title:
           escapeHTML(revision.title) +
           '<br />' +
-          escapeHTML(unixname) +
+          escapeHTML(employeeIdentifier) +
           ' &middot; ' +
           escapeHTML(revision.date.toDateString()),
         delay: 0,
@@ -344,14 +351,17 @@ class GutterElement extends React.Component {
       return (
         <div
           className="nuclide-blame-row nuclide-blame-content"
+          // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
           ref={addTooltip(tooltip)}>
-          {!isLastLine
-            ? <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
-            : null}
-          {Avatar ? <Avatar size={16} unixname={unixname} /> : unixname + ': '}
-          <span>
-            {revision.title}
-          </span>
+          {!isLastLine ? (
+            <div className="nuclide-blame-vertical-bar nuclide-blame-vertical-bar-first" />
+          ) : null}
+          {Avatar ? (
+            <Avatar size={16} employeeIdentifier={employeeIdentifier} />
+          ) : (
+            employeeIdentifier + ': '
+          )}
+          <span>{revision.title}</span>
           <div style={{opacity}} className="nuclide-blame-border-age" />
         </div>
       );

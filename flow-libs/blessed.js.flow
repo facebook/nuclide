@@ -1,0 +1,231 @@
+/**
+ * Copyright (c) 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow
+ */
+
+
+declare module 'blessed' {
+  // comes in as the second parameter to a keypressed event
+  declare type Keypress = {
+    sequence: string,
+    full: string,
+    name?: string,
+    ctrl: boolean,
+    meta: boolean,
+    shift: boolean,
+  }
+
+  declare type ProgramOptions = {
+    log?: string,
+    dump?: boolean,
+  }
+
+  declare class Program extends events$EventEmitter {
+    showCursor: () => void,
+    hideCursor: () => void,
+    move(x: number, y:number): void,
+    //$TODO there are a LOT of low level methods here
+  }
+
+  declare type NodeOptions = {
+    screen?: Screen,
+    parent?: Node,
+    children?: Array<Node>,
+  }
+
+  declare class Node extends events$EventEmitter {
+    type: string,
+    options: NodeOptions,
+    parent: ?Node,
+    children: Array<Node>,
+    screen: Screen,
+    prepend(node: Node): void,
+    append(node: Node): void,
+    remove(node: Node): void,
+    insert(node: Node, i: number): void,
+    insertBefore(node: Node, refNode: Node): void,
+    insertAfter(node: Node, refNode: Node): void,
+    detach(): void,
+    get(name: string, defaultValue: any): ?any,
+    set(name: string, value: any): void,
+  }
+
+  declare type ScreenOptions = {
+    ...NodeOptions,
+    smartCSR?: boolean,
+    program?: Program,
+  }
+
+  declare class Screen extends Node {
+    title: string,
+    render: () => void,
+    realloc: () => void,
+    key(name: string | Array<string>, (ch: string, key: string) => void): events$EventEmitter,
+    height: number,
+    width: number,
+  }
+
+  // The docs say that attributes must be a number, but the code actually
+  // can take a number, a color name, a web color (#rrggbb), or even a function
+  // that returns any of the above
+  declare type Attribute = number | string | (() => number | string)
+
+  declare type Border = {
+    type: 'line' | 'bg',
+    ch?: string,
+    bg: Attribute,
+    fg: Attribute,
+    bold: Attribute,
+    underline: Attribute,
+  }
+
+  declare type ElementOptions = {
+    ...NodeOptions,
+    fg?: Attribute,
+    bg?: Attribute,
+    bold?: Attribute,
+    underline?: Attribute,
+    style?: {[any]: string | number},
+    border?: Border,
+    content?: string,
+    clickable?: boolean,
+    input?: boolean,
+    keyable?: boolean,
+    focused?: boolean,
+    hidden?: boolean,
+    label?: string,
+    hoverText?: string,
+    align?: 'left' | 'center' | 'right',
+    valign?: 'top' | 'middle' | 'bottom',
+    shrink?: boolean,
+    padding?: number | {
+      left: number,
+      right: number,
+      top: number,
+      bottom: number,
+    },
+    width?: number | string,
+    height?: number | string,
+    left?: string | number,
+    right?: string | number,
+    top?: string | number,
+    bottom?: string | number,
+    scrollable?: boolean,
+    ch?: string,
+    draggable?: boolean,
+    shadow?: boolean,
+    tags?: boolean,
+    wrap?: boolean,
+  }
+
+  declare class Element extends Node {
+    border: ?Border,
+    style: {[string]: number | string},
+    content: string,
+    hidden: boolean,
+    visible: boolean,
+    detached: boolean,
+    fg: Attribute,
+    bg: Attribute,
+    bold: Attribute,
+    underline: Attribute,
+    width: number,
+    height: number,
+    left: number,
+    right: number,
+    top: number,
+    bottom: number,
+    aleft: number,
+    aright: number,
+    atop: number,
+    abottom: number,
+    draggable: boolean,
+    position: {
+      left?: string | number,
+      right?: string | number,
+      top?: string | number,
+      bottom?: string | number,
+      height?: string | number,
+      width?: string | number,
+    },
+    render(): void,
+    hide(): void,
+    show(): void,
+    toggle(): void,
+    focus(): void,
+    key(name: string | Array<string>, (ch: string, key: string) => void): events$EventEmitter,
+    onceKey(name: string | Array<string>, (ch: string, key: string) => void): events$EventEmitter,
+    unkey(name: string | Array<string>, (ch: string, key: string) => void): events$EventEmitter,
+    onScreenEvent(name: string, () => void): events$EventEmitter,
+    removeScreenEvent(name: string, () => void): events$EventEmitter,
+    free(): void,
+    destroy(): void,
+    setIndex(z: number): void,
+    setFront(): void,
+    setBack(): void,
+    setLabel(text: string /* todo also options object */): void,
+    removeLabel(): void,
+    setHover(text: string /* todo also options object */): void,
+    removeHover(): void,
+    enableMouse(): void,
+    enableKeys(): void,
+    enableInput(): void,
+    enableDrag(): void,
+    disableDrag(): void,
+    screenshot(xi: number, xl: number, yi: number, yl: number): string,
+    setContent(text: string): void,
+    getContent(): string,
+    setText(text: string): void,
+    getText(): string,
+    insertLine(i: number, lines: string | Array<string>): void,
+    deleteLine(i: number): void,
+    getLine(i: number): ?string,
+    getBaseLine(i: number): ?string,
+    setLine(i: number, line: string): void,
+    setBaseLine(i: number, line: string): void,
+    clearLine(i: number): void,
+    clearBaseLine(i: number): void,
+    insertTop(lines: string | Array<string>): void,
+    insertBottom(lines: string | Array<string>): void,
+    unshiftLine(lines: string | Array<string>): void,
+    shiftLine(i: number): ?string,
+    pushLine(lines: string | Array<string>): void,
+    popLine(i: number): ?string,
+    getLines(): Array<string>,
+    getScreenLines(): Array<string>,
+  }
+
+  declare class Box extends Element {
+    constructor(options: ElementOptions): void,
+    getScroll(): number,
+    scroll(lines: number): void,
+  }
+
+  declare class List extends Box {
+    constructor(options: ElementOptions): void,
+    setItems(items: Array<string>): void,
+    select(index: number): void,
+    selected: number,
+  }
+
+  declare module.exports: {
+    widget: {
+      Box: typeof Box,
+      List: typeof List,
+    },
+    Program: typeof Program,
+    Screen: typeof Screen,
+    Node: typeof Node,
+    Box: typeof Box,
+    List: typeof List,
+    program: (ProgramOptions) => Program,
+    screen: (ScreenOptions) => Screen,
+    box: (ElementOptions) => Box,
+    list: (ElementOptions) => List,
+  };
+}

@@ -4,6 +4,12 @@
 # This source code is licensed under the license found in the LICENSE file in
 # the root directory of this source tree.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import errno
 import getpass
 import hashlib
 import json
@@ -16,20 +22,17 @@ import traceback
 from logging import FileHandler
 from argparse import ArgumentParser
 import jedi
-from jedi.evaluate.representation import InstanceElement
-from jedi.parser.tree import ImportFrom
+from parso.python.tree import ImportFrom
 import outline
 
-LOGGING_DIR = 'nuclide-%s-logs/python' % getpass.getuser()
 LIB_DIR = os.path.abspath('../VendorLib')
 WORKING_DIR = os.getcwd()
 
 
 class JediServer:
 
-    def __init__(self, src, paths):
-        self.src = src
-        self.sys_path = self.get_filtered_sys_path() + paths
+    def __init__(self, paths):
+        self.additional_paths = paths
         self.logger = logging.getLogger()
         self.input_stream = sys.stdin
         self.output_stream = sys.stdout
@@ -44,13 +47,13 @@ class JediServer:
             self.output_stream.write('\n')
             self.output_stream.flush()
 
-    def get_filtered_sys_path(self):
+    def get_filtered_sys_path(self, src):
         # Retrieves the sys.path with VendorLib filtered out, so symbols from
         # jedi don't appear in user's autocompletions or hyperclicks.
         # Don't filter out VendorLib if we're working in the jediserver's dir. :)
         return [path for path in sys.path
                 if (path != LIB_DIR and path != WORKING_DIR) or
-                self.src.startswith(WORKING_DIR)]
+                src.startswith(WORKING_DIR)]
 
     def generate_log_name(self, value):
         hash = hashlib.md5(value.encode('utf-8')).hexdigest()[:10]
@@ -58,16 +61,25 @@ class JediServer:
 
     def init_logging(self):
         # Be consistent with the main Nuclide logs.
-        log_dir = os.path.join(tempfile.gettempdir(), LOGGING_DIR)
-        if not os.path.exists(log_dir):
+        log_dir = os.path.join(
+            tempfile.gettempdir(),
+            'nuclide-%s-logs' % getpass.getuser()
+        )
+        try:
             os.makedirs(log_dir)
-        handler = FileHandler(os.path.join(log_dir, self.generate_log_name(self.src)))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                # Skip logging on any other exception.
+                return
+        except Exception as e:
+            return
+        log_path = os.path.join(log_dir, 'nuclide-jedi.log')
+        handler = FileHandler(log_path)
         handler.setFormatter(logging.Formatter(
             'nuclide-jedi-py %(asctime)s: [%(name)s] %(message)s'
         ))
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
-        self.logger.info('starting for ' + self.src)
 
     def process_request(self, line):
         start_time = time.time()
@@ -85,31 +97,41 @@ class JediServer:
             elif method == 'get_references':
                 res['result'] = self.get_references(self.make_script(data))
             elif method == 'get_outline':
-                res['result'] = outline.get_outline(self.src, data['contents'])
-            # Allow deferred injection of additional paths
-            elif method == 'add_paths':
-                self.sys_path = self.sys_path + data['paths']
-                res['result'] = self.sys_path
+                res['result'] = outline.get_outline(data['src'], data['contents'])
+            elif method == 'get_hover':
+                res['result'] = self.get_hover(self.make_script(data), data['word'])
+            elif method == 'get_signature_help':
+                res['result'] = self.get_signature_help(self.make_script(data))
             else:
                 res['type'] = 'error-response'
                 res['error'] = 'Unknown method to jediserver.py: %s.' % method
         # Catch and ignore KeyErrors from jedi
         # See https://github.com/davidhalter/jedi/issues/590
-        except KeyError:
-            res['result'] = []
-        except:
+        except KeyError as e:
+            self.logger.warn('Got KeyError exception %s', e)
+            res['result'] = None
+        except Exception:
             res['type'] = 'error-response'
             res['error'] = traceback.format_exc()
 
-        self.logger.info('Finished %s request in %.2lf seconds.',
-                         method, time.time() - start_time)
+        self.logger.info('Finished %s request for %s in %.2lf seconds.',
+                         method, data.get('src'), time.time() - start_time)
         return res
 
     def make_script(self, req_data):
+        src = req_data['src']
+        sys_path = (
+            self.get_filtered_sys_path(src) +
+            self.additional_paths +
+            # While non-existent paths don't cause any harm,
+            # paths may sometimes not exist but then be built after.
+            # Doing so should invalidate Jedi's cache.
+            list(filter(os.path.exists, req_data['sysPath']))
+        )
         return jedi.api.Script(
             source=req_data['contents'], line=req_data['line'] + 1,
-            column=req_data['column'], path=self.src,
-            sys_path=self.sys_path)
+            column=req_data['column'], path=src,
+            sys_path=sys_path)
 
     def is_func_or_class(self, completion):
         return completion.type == 'function' or completion.type == 'class'
@@ -119,10 +141,12 @@ class JediServer:
         # If docstring is not available, attempt to generate a function signature
         # with params.
         if description == '' and self.is_func_or_class(completion):
-            description = '%s(%s)' % (
-                completion.name,
-                ', '.join(p.description for p in completion.params)
-            )
+            params = self._get_params(completion)
+            if params is not None:
+                description = '%s(%s)' % (
+                    completion.name,
+                    ', '.join(self._get_params(completion))
+                )
         return description
 
     def get_completions(self, script):
@@ -136,44 +160,36 @@ class JediServer:
             }
             # Return params if completion has params (thus is a class/function).
             # Don't autocomplete params in the middle of an import from statement.
-            if self.is_func_or_class(completion) and not isinstance(
-                    script._parser.user_stmt(), ImportFrom):
-                result['params'] = [p.description for p in completion.params]
+            if self.is_func_or_class(completion):
+                statement = jedi.parser_utils.get_statement_of_position(
+                    script._get_module_node(), script._pos)
+                if not isinstance(statement, ImportFrom):
+                    result['params'] = self._get_params(completion)
 
-            # Check for decorators on functions.
-            if completion.type == 'function' and not completion.in_builtin_module():
-                definition = completion._name.get_definition()
-                if isinstance(definition, InstanceElement):
-                    for decorator in definition.base_func.get_decorators():
-                        if str(decorator.children[1]) == 'property':
-                            del result['params']
-                            result['type'] = 'property'
-                            break
             results.append(result)
         return results
 
-    def follow_imports(self, definition):
-        # Iteratively follow a definition until a non-import definition is found.
-        result = definition
-        while result.type == 'import':
-            for assignment in definition.goto_assignments():
-                if assignment != result and assignment.module_path:
-                    result = assignment
-                    break
-            # Break out of while if no new result was found.
-            else:
-                break
-
-        return result
+    def _get_params(self, completion):
+        try:
+            names = [p.name for p in completion.params]
+            # Ignore args/kwargs/varargs.
+            return list(filter(
+                lambda x: x != '...' and x != 'args' and x != 'kwargs',
+                names,
+            ))
+        except Exception:
+            # ".params" appears to be quite flaky.
+            # e.g: https://github.com/davidhalter/jedi/issues/1031
+            return None
 
     def get_definitions(self, script):
         results = []
-        definitions = script.goto_assignments()
+        definitions = script.goto_assignments(True)
 
         for definition in definitions:
             if not definition.module_path:
                 continue
-            result = self.serialize_definition(self.follow_imports(definition))
+            result = self.serialize_definition(definition)
             results.append(result)
         return results
 
@@ -190,6 +206,63 @@ class JediServer:
                 result['parentName'] = parent.name
             results.append(result)
         return results
+
+    # It'd be nice if this could return the actual types.
+    # As the next best thing, displaying method/class docblocks is pretty useful.
+    def get_hover(self, script, word):
+        # Jedi is loose with definitions when > 1 is possible (e.g: os.path).
+        # For the purposes of hovering, only allow exact matches.
+        definitions = [d for d in script.goto_definitions() if d.name == word]
+        if not definitions:
+            return None
+
+        docstring = definitions[0].docstring()
+        # The return value will be interpreted as Markdown.
+        # Make some adjustments for better Markdown formatting.
+        docstring = docstring.replace('\t', ' ' * 4)
+        docstring = docstring.replace('*', '\\*')
+        return docstring
+
+    def get_signature_help(self, script):
+        # Loosely adapted from:
+        # https://github.com/palantir/python-language-server/blob/develop/pyls/plugins/signature.py
+        signatures = script.call_signatures()
+        if not signatures:
+            return None
+
+        leaf = script._get_module_node().get_leaf_for_position(script._pos)
+        # Don't return signatures inside string literals.
+        if leaf and leaf.type == 'string':
+            return None
+
+        # Python shouldn't ever have multiple signatures
+        s = signatures[0]
+        docstring = s.docstring()
+        raw_docstring = s.docstring(raw=True)
+        # In most cases Jedi prepends the function signature to the non-raw docstring.
+        # But this isn't always the case for some builtins, like isinstance.
+        if docstring != raw_docstring:
+            label = docstring[:len(docstring)-len(raw_docstring)].rstrip()
+        else:
+            params = ', '.join(map(lambda x: x.name, s.params))
+            label = s.name + '(' + params + ')'
+        sig = {
+            # Jedi always prepends the signature to the docstring
+            'label': label,
+            'documentation': raw_docstring,
+        }
+
+        # If there are params, add those
+        if s.params:
+            sig['parameters'] = [{
+                'label': p.name,
+                'documentation': p.docstring(),
+            } for p in s.params]
+
+        sig_info = {'signatures': [sig], 'activeSignature': 0}
+        if s.index is not None and s.params:
+            sig_info['activeParameter'] = s.index
+        return sig_info
 
     def serialize_definition(self, definition):
         return {
@@ -213,8 +286,14 @@ class JediServer:
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('-s', '--source', dest='src', default='', type=str)
-    parser.add_argument('-p', '--paths', dest='paths', default=[], type=str, nargs='+')
+    parser.add_argument('-p', '--paths', dest='paths', default=[], type=str, nargs='+',
+                        help='Additional Python module resolution paths.')
     args = parser.parse_args()
 
-    JediServer(args.src, args.paths).run()
+    # By default, Jedi uses ~/.cache or similar.
+    # Let's use a temporary directory instead so it doesn't grow forever.
+    jedi.settings.cache_directory = os.path.join(
+        tempfile.gettempdir(),
+        'jedi-cache-%s' % getpass.getuser(),
+    )
+    JediServer(args.paths).run()

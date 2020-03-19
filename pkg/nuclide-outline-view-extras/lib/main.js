@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -29,18 +29,35 @@ class Activation {
     this._disposables = new UniversalDisposable();
   }
 
+  consumeToolBar(getToolBar: toolbar$GetToolbar): IDisposable {
+    const toolBar = getToolBar('outline-view');
+    const {element} = toolBar.addButton({
+      icon: 'list-unordered',
+      callback: 'outline-view:toggle',
+      tooltip: 'Toggle Outline',
+      priority: 200,
+    });
+    // Class added is not defined elsewhere, and is just used to mark the toolbar button
+    element.classList.add('outline-view-toolbar-button');
+    const disposable = new UniversalDisposable(() => {
+      toolBar.removeItems();
+    });
+    this._disposables.add(disposable);
+    return disposable;
+  }
+
   _createOutlineViewNuxTourModel(): NuxTourModel {
     const outlineViewToolbarIconNux = {
-      content: 'Check out the new Outline View!',
-      selector: '.nuclide-outline-view-toolbar-button',
+      content: 'Check out the new Outline!',
+      selector: '.outline-view-toolbar-button',
       position: 'auto',
       completionPredicate: () =>
-        document.querySelector('div.nuclide-outline-view') != null,
+        document.querySelector('div.outline-view') != null,
     };
 
     const outlineViewPanelNux = {
       content: 'Click on a symbol to jump to its definition.',
-      selector: 'div.pane-item.nuclide-outline-view',
+      selector: 'div.outline-view',
       position: 'left',
     };
 
@@ -56,7 +73,7 @@ class Activation {
     };
 
     const isOutlineViewClosed = () =>
-      document.querySelector('.nuclide-outline-view') == null;
+      document.querySelector('div.outline-view') == null;
     const triggerCallback = editor =>
       isOutlineViewClosed() && isValidFileTypeForNux(editor);
 
@@ -85,7 +102,7 @@ class Activation {
   getHomeFragments(): HomeFragments {
     return {
       feature: {
-        title: 'Outline View',
+        title: 'Outline',
         icon: 'list-unordered',
         description:
           'Displays major components of the current file (classes, methods, etc.)',

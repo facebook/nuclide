@@ -1,26 +1,42 @@
 {
   "name": "nuclide-commons",
-  "version": "0.1.11",
+  "version": "0.7.3-dev",
   "description": "Common Nuclide node modules.",
+  "author": "NEEDS OWNER",
   "license": "BSD-3-Clause",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-commons",
   "scripts": {
-    "prepublish": "../../scripts/modules-prepublish.sh",
-    "test": "node ../../pkg/nuclide-jasmine/bin/jasmine-node-transpiled spec"
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "true"
   },
   "dependencies": {
-    "async-to-generator": "1.1.0",
+    "domexception": "1.0.1",
+    "dompurify": "1.0.3",
     "event-kit": "2.2.0",
+    "event-target-shim": "3.0.1",
     "fs-plus": "2.9.3",
     "glob": "7.1.1",
     "idx": "1.2.0",
+    "log4js": "1.1.1",
     "lru-cache": "4.0.2",
     "mime-types": "2.1.16",
     "mkdirp": "0.5.1",
-    "rimraf": "2.5.4",
-    "rxjs": "5.3.1",
+    "mv": "2.1.1",
+    "nuclide-node-transpiler": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "rimraf": "2.6.2",
+    "rxjs-compat": "6.3.3",
+    "semver": "5.5.0",
     "shell-quote": "1.6.1",
-    "temp": "0.8.3"
+    "temp": "0.8.3",
+    "uuid": "3.0.1",
+    "vscode-jsonrpc": "3.3.0",
+    "vscode-uri": "1.0.1"
+  },
+  "devDependencies": {
+    "dedent": "0.7.0",
+    "invariant": "2.2.2",
+    "simple-text-buffer": "9.2.11"
   }
 }

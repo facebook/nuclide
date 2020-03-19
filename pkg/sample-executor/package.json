@@ -1,16 +1,14 @@
 {
   "name": "sample-executor",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "A sample executor that just echos the input back",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Core UI",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
-    "nuclide.registerExecutor": {
+    "DEPRECATED-nuclide.registerExecutor": {
       "versions": {
         "0.0.0": "consumeRegisterExecutor"
       }

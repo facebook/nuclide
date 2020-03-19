@@ -9,51 +9,34 @@
  * @format
  */
 
-/* global localStorage */
 import type {HomeFragments} from './types';
 
 import createUtmUrl from './createUtmUrl';
 import featureConfig from 'nuclide-commons-atom/feature-config';
-import nuclideUri from 'nuclide-commons/nuclideUri';
-import fsPromise from 'nuclide-commons/fsPromise';
-import {getRuntimeInformation} from '../../commons-node/runtime-info';
-import {getAtomNuclideDir} from '../../commons-node/system-info';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {viewableFromReactElement} from '../../commons-atom/viewableFromReactElement';
 import HomePaneItem, {WORKSPACE_VIEW_URI} from './HomePaneItem';
-import Immutable from 'immutable';
+import * as Immutable from 'immutable';
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
-import React from 'react';
+import * as React from 'react';
 import {BehaviorSubject} from 'rxjs';
 import {shell} from 'electron';
+import passesGK from 'nuclide-commons/passesGK';
+
+const SHOW_NUCLIDE_ONBOARDING_GATEKEEPER = 'nuclide_onboarding';
 
 class Activation {
   // A stream of all of the fragments. This is essentially the state of our panel.
   _allHomeFragmentsStream: BehaviorSubject<
     Immutable.Set<HomeFragments>,
   > = new BehaviorSubject(Immutable.Set());
+
   _subscriptions: UniversalDisposable;
 
   constructor(state: ?Object) {
     this._subscriptions = this._registerCommandAndOpener();
     this._considerDisplayingHome();
-    const runtimeInfo = getRuntimeInformation();
-    if (
-      !runtimeInfo.isDevelopment &&
-      featureConfig.get('nuclide-home.showChangelogs')
-    ) {
-      const key = `nuclide-home.changelog-shown-${runtimeInfo.nuclideVersion}`;
-      // Only display the changelog if this is the first time loading this version.
-      // Note that displaying the Home page blocks the changelog for the version:
-      // the intention here is to avoid showing the changelog for new users.
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, 'true');
-        if (!featureConfig.get('nuclide-home.showHome')) {
-          this._displayChangelog();
-        }
-      }
-    }
     this._subscriptions.add(
       // eslint-disable-next-line nuclide-internal/atom-apis
       atom.commands.add('atom-workspace', 'nuclide-home:open-docs', e => {
@@ -79,37 +62,15 @@ class Activation {
     this._subscriptions.dispose();
   }
 
-  _considerDisplayingHome() {
-    const showHome = featureConfig.get('nuclide-home.showHome');
+  async _considerDisplayingHome() {
+    const showHome =
+      featureConfig.get('nuclide-home.showHome') &&
+      (await !passesGK(SHOW_NUCLIDE_ONBOARDING_GATEKEEPER));
+
     // flowlint-next-line sketchy-null-mixed:off
     if (showHome) {
       // eslint-disable-next-line nuclide-internal/atom-apis
       atom.workspace.open(WORKSPACE_VIEW_URI, {searchAllPanes: true});
-    }
-  }
-
-  async _displayChangelog() {
-    const markdownPreviewPkg = atom.packages.getLoadedPackage(
-      'markdown-preview',
-    );
-    if (markdownPreviewPkg != null) {
-      await atom.packages.activatePackage('markdown-preview');
-      const fbChangelogPath = nuclideUri.join(
-        getAtomNuclideDir(),
-        'fb-CHANGELOG.md',
-      );
-      const osChangelogPath = nuclideUri.join(
-        getAtomNuclideDir(),
-        'CHANGELOG.md',
-      );
-      const fbChangeLogExists = await fsPromise.exists(fbChangelogPath);
-      const changelogPath = fbChangeLogExists
-        ? fbChangelogPath
-        : osChangelogPath;
-      // eslint-disable-next-line nuclide-internal/atom-apis
-      await atom.workspace.open(
-        encodeURI(`markdown-preview://${changelogPath}`),
-      );
     }
   }
 

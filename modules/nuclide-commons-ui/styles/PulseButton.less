@@ -1,0 +1,86 @@
+@import "ui-variables";
+
+.nuclide-ui-pulse-button {
+  display: inline-block;
+  opacity: 0.8;
+  outline: none;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.nuclide-ui-pulse-button::after {
+  animation: pulse 3s linear infinite;
+  background-color: rgba(64, 128, 255, 0.49);
+  border-radius: 100%;
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.nuclide-ui-pulse-button::before {
+  animation: pulse 3s linear infinite;
+  animation-delay: 1s;
+  background-color: rgba(64, 128, 255, 0.49);
+  border-radius: 100%;
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.nuclide-ui-pulse-button--inner-circle {
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+
+.nuclide-ui-pulse-button--inner-circle::before {
+  animation: pulse 3s linear infinite;
+  animation-delay: 5s;
+  background-color: rgba(64, 128, 255, 0.49);
+  border-radius: 100%;
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.nuclide-ui-pulse-button--inner-circle::after {
+  animation: pulse 3s linear;
+  animation-delay: 2s;
+  background-color: rgba(64, 128, 255, 0.49);
+  border-radius: 100%;
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.nuclide-ui-pulse-button--cover-circle {
+  background-color: @background-color-info;
+  border-radius: 100%;
+  content: '';
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+.nuclide-ui-pulse-button.selected,
+.nuclide-ui-pulse-button:hover,
+.nuclide-ui-pulse-button--wrapper:hover .nuclide-ui-pulse-button {
+  transform: scale(2);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(5, 5);
+  }
+}

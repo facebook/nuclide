@@ -10,19 +10,54 @@
  */
 
 import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import type {ServerConnection} from './ServerConnection';
-import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
+import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers/lib/types';
 import type {RemoteFile} from './RemoteFile';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {Disposable, Emitter} from 'atom';
+import {Emitter} from 'event-kit';
 import {getLogger} from 'log4js';
+import {trackTimingSampled} from 'nuclide-analytics';
+import {memoize} from 'lodash';
 
 const logger = getLogger('nuclide-remote-connection');
 
 const MARKER_PROPERTY_FOR_REMOTE_DIRECTORY = '__nuclide_remote_directory__';
+export const EDEN_PERFORMANCE_SAMPLE_RATE = 10;
+
+/**
+ * This is a global function because RemoteDirectory's are not re-used. Cached
+ * results must be global since they cannot be attached to an instance.
+ */
+const _isEden = memoize(
+  async (
+    uri: NuclideUri,
+    fileSystemService: FileSystemService,
+  ): Promise<boolean | string> => {
+    if (nuclideUri.endsWithEdenDir(uri)) {
+      // this is needed to avoid checking for .eden/.eden/root, which results in
+      // ELOOP: too many symbolic links encountered
+      return true;
+    }
+    const edenDir = nuclideUri.join(uri, '.eden/root');
+    try {
+      const isEden = await fileSystemService.exists(edenDir);
+      return isEden;
+    } catch (e) {
+      logger.error(
+        'Failed to determine if',
+        uri,
+        'is part of eden because "exists" call failed on',
+        edenDir,
+      );
+      logger.error(e);
+      return e ? e.code : '';
+    }
+  },
+);
 
 /* Mostly implements https://atom.io/docs/api/latest/Directory */
 export class RemoteDirectory {
@@ -43,7 +78,7 @@ export class RemoteDirectory {
   _hgRepositoryDescription: ?HgRepositoryDescription;
   _symlink: boolean;
   _deleted: boolean;
-
+  _isArchive: boolean;
   /**
    * @param uri should be of the form "nuclide://example.com/path/to/directory".
    */
@@ -71,6 +106,7 @@ export class RemoteDirectory {
     this._hgRepositoryDescription = options
       ? options.hgRepositoryDescription
       : null;
+    this._isArchive = options != null && Boolean(options.isArchive);
     this._deleted = false;
   }
 
@@ -87,6 +123,14 @@ export class RemoteDirectory {
   onDidDelete(callback: () => any): IDisposable {
     this._willAddSubscription();
     return this._trackUnsubscription(this._emitter.on('did-delete', callback));
+  }
+
+  /**
+   * We may want to provide an implementation for this at some point.
+   * However, for the time being, we don't get any benefits from doing so.
+   */
+  onDidChangeFiles(callback: () => mixed): IDisposable {
+    return new UniversalDisposable();
   }
 
   _willAddSubscription(): void {
@@ -106,7 +150,9 @@ export class RemoteDirectory {
     if (this._watchSubscription) {
       return;
     }
-    const watchStream = this._server.getDirectoryWatch(this._uri);
+    const watchStream = nuclideUri.isInArchive(this._uri)
+      ? this._server.getFileWatch(nuclideUri.ancestorOutsideArchive(this._uri))
+      : this._server.getDirectoryWatch(this._uri);
     this._watchSubscription = watchStream.subscribe(
       watchUpdate => {
         logger.debug('watchDirectory update:', watchUpdate);
@@ -142,7 +188,7 @@ export class RemoteDirectory {
   }
 
   _trackUnsubscription(subscription: IDisposable): IDisposable {
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       subscription.dispose();
       this._didRemoveSubscription();
     });
@@ -168,6 +214,12 @@ export class RemoteDirectory {
       }
       this._watchSubscription = null;
     }
+  }
+
+  _joinLocalPath(name: string): string {
+    return this._isArchive
+      ? nuclideUri.archiveJoin(this._localPath, name)
+      : nuclideUri.join(this._localPath, name);
   }
 
   isFile(): boolean {
@@ -217,12 +269,14 @@ export class RemoteDirectory {
   }
 
   relativize(uri: string): string {
-    if (!uri) {
+    if (!nuclideUri.isRemote(uri || '')) {
       return uri;
     }
-    // Note: host of uri must match this._host.
-    const subpath = nuclideUri.parse(uri).path;
-    return nuclideUri.relative(this._localPath, subpath);
+    const parsedUrl = nuclideUri.parse(uri);
+    if (parsedUrl.hostname !== this._host) {
+      return uri;
+    }
+    return nuclideUri.relative(this._localPath, parsedUrl.path);
   }
 
   getParent(): RemoteDirectory {
@@ -240,7 +294,7 @@ export class RemoteDirectory {
   getFile(filename: string): RemoteFile {
     const uri = nuclideUri.createRemoteUri(
       this._host,
-      nuclideUri.join(this._localPath, filename),
+      this._joinLocalPath(filename),
     );
     return this._server.createFile(uri);
   }
@@ -248,7 +302,7 @@ export class RemoteDirectory {
   getSubdirectory(dir: string): RemoteDirectory {
     const uri = nuclideUri.createRemoteUri(
       this._host,
-      nuclideUri.join(this._localPath, dir),
+      this._joinLocalPath(dir),
     );
     return this._server.createDirectory(uri, this._hgRepositoryDescription);
   }
@@ -281,50 +335,61 @@ export class RemoteDirectory {
   async getEntries(
     callback: (
       error: ?atom$GetEntriesError,
+      // $FlowFixMe(>=0.72.0) Flow suppress (T29189893)
       entries: ?Array<RemoteDirectory | RemoteFile>,
     ) => any,
   ): Promise<void> {
-    let entries;
-    try {
-      entries = await this._getFileSystemService().readdir(this._uri);
-    } catch (e) {
-      callback(e, null);
+    let entries = [];
+    const readDirError = await trackTimingSampled(
+      'eden-filesystem-metrics:readdirSorted',
+      async () => {
+        try {
+          entries = await this._getFileSystemService().readdirSorted(this._uri);
+          return false;
+        } catch (e) {
+          callback(e, null);
+          return true;
+        }
+      },
+      EDEN_PERFORMANCE_SAMPLE_RATE,
+      {
+        isEden: await _isEden(this._uri, this._getFileSystemService()),
+        uri: this._uri,
+      },
+    );
+    if (readDirError) {
       return;
     }
 
     const directories: Array<RemoteDirectory> = [];
     const files = [];
-    entries
-      .sort((a, b) => {
-        return a[0].toLowerCase().localeCompare(b[0].toLowerCase());
-      })
-      .forEach(entry => {
-        const [name, isFile, symlink] = entry;
-        const uri = nuclideUri.createRemoteUri(
-          this._host,
-          nuclideUri.join(this._localPath, name),
+    entries.forEach(entry => {
+      const [name, isFile, isSymlink] = entry;
+      const uri = nuclideUri.createRemoteUri(
+        this._host,
+        this._joinLocalPath(name),
+      );
+      if (isFile) {
+        files.push(this._server.createFile(uri, isSymlink));
+      } else {
+        directories.push(
+          this._server.createDirectory(
+            uri,
+            this._hgRepositoryDescription,
+            isSymlink,
+          ),
         );
-        if (isFile) {
-          files.push(this._server.createFile(uri, symlink));
-        } else {
-          directories.push(
-            this._server.createDirectory(
-              uri,
-              this._hgRepositoryDescription,
-              symlink,
-            ),
-          );
-        }
-      });
+      }
+    });
     callback(null, directories.concat(files));
   }
 
   contains(pathToCheck: ?string): boolean {
-    if (pathToCheck == null) {
+    if (!nuclideUri.isRemote(pathToCheck || '')) {
       return false;
     }
 
-    return nuclideUri.contains(this.getPath(), pathToCheck);
+    return nuclideUri.contains(this.getPath(), pathToCheck || '');
   }
 
   off() {

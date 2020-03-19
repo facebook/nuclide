@@ -1,0 +1,11 @@
+[
+	"Cannot find Windows Subsystem for Linux installation.",
+	"El uso de mayúsculas y minúsculas en la ruta de acceso del programa no es igual al del archivo en disco. Esto puede hacer que no se llegue a los puntos de interrupción.",
+	"Consola de depuración de nodos",
+	"El atributo '{0}' no existe ('{1}').",
+	"El atributo '{0}' no es absoluto ('{1}'). Pruebe a agregar '{2}' como prefijo para hacerlo absoluto.",
+	"No se encuentra el sistema en tiempo de ejecución '{0}' en PATH.",
+	"Más información",
+	"contenido de solo lectura de Node.js",
+	"módulo principal de solo lectura"
+]

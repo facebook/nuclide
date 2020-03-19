@@ -1,0 +1,7 @@
+const a = require('a')()()().a().b.c[0];
+require('b')().y;
+require('b')().x;
+const D = require('meh').a.b.c('123');
+const C = 'not'.a.require('meh');
+const E = require('TableWidthsConfig').getWidthConfig().CAMP_GROUP_PANE;
+a(D, E);

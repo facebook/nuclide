@@ -10,28 +10,23 @@
  */
 
 import fsPromise from 'nuclide-commons/fsPromise';
+import {Emitter} from 'event-kit';
 import {
   flushLogsAndAbort,
   flushLogsAndExit,
-  initialUpdateConfig,
+  initializeLogging,
 } from '../../nuclide-logging';
-import {startTracking} from '../../nuclide-analytics';
+import {startTracking} from 'nuclide-analytics';
+
 import NuclideServer from './NuclideServer';
 import servicesConfig from './servicesConfig';
 
 import yargs from 'yargs';
 import {getLogger} from 'log4js';
 
-const DEFAULT_PORT = 9090;
+const DEFAULT_PORT = 9091;
 
 const logger = getLogger('nuclide-server');
-
-export type AgentOptions = {
-  ca?: Buffer,
-  key?: Buffer,
-  cert?: Buffer,
-  family?: 4 | 6,
-};
 
 async function getServerCredentials(args) {
   const {key, cert, ca} = args;
@@ -51,10 +46,12 @@ async function getServerCredentials(args) {
 }
 
 async function main(args) {
-  const serverStartTimer = startTracking('nuclide-server:start');
-  process.on('SIGHUP', () => {});
-
+  let serverStartTimer;
   try {
+    process.on('SIGHUP', () => {});
+    initializeLogging();
+    serverStartTimer = startTracking('nuclide-server:start');
+
     const {port, expirationDays} = args;
     if (expirationDays) {
       setTimeout(() => {
@@ -64,11 +61,7 @@ async function main(args) {
         flushLogsAndExit(0);
       }, expirationDays * 24 * 60 * 60 * 1000);
     }
-    const [serverCredentials] = await Promise.all([
-      getServerCredentials(args),
-      // Ensure logging is configured.
-      initialUpdateConfig(),
-    ]);
+    const serverCredentials = await getServerCredentials(args);
     const server = new NuclideServer(
       {
         port,
@@ -83,9 +76,9 @@ async function main(args) {
     logger.info(`Using node ${process.version}.`);
     logger.info(`Server ready time: ${process.uptime() * 1000}ms`);
   } catch (e) {
-    // In case the exception occurred before logging initialization finished.
-    initialUpdateConfig();
-    serverStartTimer.onError(e);
+    if (serverStartTimer != null) {
+      serverStartTimer.onError(e);
+    }
     logger.fatal(e);
     flushLogsAndAbort();
   }
@@ -113,6 +106,10 @@ process.on('uncaughtException', err => {
 // We include this code here in anticipation of the Node/io.js merger.
 process.on('unhandledRejection', (error, promise) => {
   logger.error(`Unhandled promise rejection ${promise}. Error:`, error);
+});
+
+Emitter.onEventHandlerException(error => {
+  logger.error('Caught server event handler exception', error);
 });
 
 const argv = yargs.default('port', DEFAULT_PORT).argv;

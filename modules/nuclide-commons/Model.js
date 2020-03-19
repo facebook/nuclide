@@ -31,7 +31,7 @@ import UniversalDisposable from './UniversalDisposable';
  *       _model = new Model({count: 0});
  *       increment(): void {
  *         const {count} = this._model.state;
- *         this._model.update({count: count + 1});
+ *         this._model.setState({count: count + 1});
  *       }
  *     }
  *
@@ -44,7 +44,7 @@ import UniversalDisposable from './UniversalDisposable';
  *       count: model.state.count,
  *       increment: () => {
  *         const {count} = model.state;
- *         model.update({count: count + 1})
+ *         model.setState({count: count + 1})
  *       },
  *     };
  *

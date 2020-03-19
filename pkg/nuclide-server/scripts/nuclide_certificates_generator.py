@@ -25,7 +25,7 @@ from utils import is_ip_address
 # SAN = Subject Alternative Name.
 OPENSSL_SAN = 'OPENSSL_SAN'
 # regex pattern for matching common name.
-SUBJECT_CN_REGEX = 'subject=.*/CN=([^/\n]*)'
+SUBJECT_CN_REGEX = 'subject=.*/?CN ?= ?([^/\n]*)'
 
 
 class NuclideCertificatesGenerator(object):
@@ -56,6 +56,13 @@ class NuclideCertificatesGenerator(object):
         self._expiration_days = expiration_days
         self._server_common_name = server_common_name
         self._env = os.environ.copy()
+        if sys.platform == 'darwin':
+            # High Sierra comes with LibreSSL by default.
+            # /usr/local/opt/openssl/bin sometimes has OpenSSL instead.
+            self._env['PATH'] = os.pathsep.join([
+                '/usr/local/opt/openssl/bin',
+                self._env.get('PATH', ''),
+            ])
         # Set Subject Alternative Name.
         if is_ip_address(server_common_name):
             self._env[OPENSSL_SAN] = 'IP:%s' % server_common_name
@@ -102,7 +109,7 @@ class NuclideCertificatesGenerator(object):
             check_output_silent(shlex.split('openssl genrsa -out %s 1024' % self.ca_key))
             args = shlex.split('openssl req -new -x509 -days %d -key %s -out %s -batch'
                                % (self._expiration_days, self.ca_key, self.ca_cert))
-            check_output_silent(args)
+            check_output_silent(args, env=self._env)
         except subprocess.CalledProcessError as e:
             self.logger.error('openssl failed: %s' % e.output)
             return False
@@ -114,7 +121,7 @@ class NuclideCertificatesGenerator(object):
     # Generate a key pair and a certificate signing request.
     def _generate_key_and_cert_request(self, key_file, csr_file, common_name):
         try:
-            check_output_silent(shlex.split('openssl genrsa -out %s 1024' % key_file))
+            check_output_silent(shlex.split('openssl genrsa -out %s 1024' % key_file), env=self._env)
             args = shlex.split(
                 'openssl req -new -key %s -out %s -subj /CN=%s -config %s' %
                 (key_file, csr_file, common_name, NuclideCertificatesGenerator.openssl_cnf))

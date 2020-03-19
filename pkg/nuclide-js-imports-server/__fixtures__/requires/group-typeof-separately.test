@@ -1,0 +1,6 @@
+const Z = require('Z');
+import typeof Da from 'Da';
+import typeof Bla from 'Bla';
+import type A from 'A';
+
+const x: A<Bla, Da> = Z;

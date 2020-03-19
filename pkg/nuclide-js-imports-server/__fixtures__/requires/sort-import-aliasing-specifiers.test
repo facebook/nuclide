@@ -1,0 +1,11 @@
+
+import type {A as D, B as C} from 'AB';
+import type {Foo} from 'Foo';
+
+import {M as Q, N as O} from 'AB';
+
+function foo(a: C, b: D, foo: Foo) {
+  return [Q, O];
+}
+
+// @nolint

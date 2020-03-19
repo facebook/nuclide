@@ -1,0 +1,25 @@
+{
+  "name": "nuclide-welcome-page",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "A welcome page interface for Nuclide packages",
+  "author": "nuclide",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "nuclide.welcome-page-api": {
+      "versions": {
+        "0.0.0": "provideWelcomePageApi"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide.welcome-page": {
+      "versions": {
+        "0.0.0": "consumeWelcomePage"
+      }
+    }
+  },
+  "private": true
+}

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,29 +17,37 @@ import {Observable} from 'rxjs';
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observeProcess} from 'nuclide-commons/process';
+import {getEslintGlobals, getConfigFromFlow} from '../src/Config';
 import {AutoImportsManager} from '../src/lib/AutoImportsManager';
 import {indexDirectory, indexNodeModules} from '../src/lib/AutoImportsWorker';
+import {getFileIndex} from '../src/lib/file-index';
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 const DEFAULT_PROJECT_PATH = nuclideUri.join(__dirname, '..', '..', '..');
-const ENVS = ['builtin', 'node', 'jasmine', 'browser', 'atomtest', 'es6'];
-const shouldIndexNodeModules = true;
 
 let numErrors = 0;
 let numFiles = 0;
 
-function main() {
-  const autoImportsManager = new AutoImportsManager(ENVS);
-
+async function main() {
   const root =
     process.argv.length === 3 ? toPath(process.argv[2]) : DEFAULT_PROJECT_PATH;
 
-  const indexDirStream = indexDirectory(root, false, os.cpus().length).do({
+  const autoImportsManager = new AutoImportsManager(getEslintGlobals(root));
+  const configFromFlow = getConfigFromFlow(root);
+  const {hasteSettings} = configFromFlow;
+
+  const index = await getFileIndex(root, configFromFlow);
+  const cpus = os.cpus();
+  const indexDirStream = indexDirectory(
+    index,
+    hasteSettings,
+    cpus ? Math.max(1, cpus.length) : 1,
+  ).do({
     next: exportForFiles => {
-      exportForFiles.forEach(exportForFile =>
-        autoImportsManager.handleUpdateForFile(exportForFile),
-      );
+      exportForFiles.forEach(exportForFile => {
+        autoImportsManager.handleUpdateForFile(exportForFile);
+      });
     },
     error: err => {
       console.error('Encountered error in AutoImportsWorker', err);
@@ -49,25 +57,24 @@ function main() {
     },
   });
 
-  const indexModulesStream = shouldIndexNodeModules
-    ? indexNodeModules(root).do({
-        next: exportForFile => {
-          if (exportForFile) {
-            autoImportsManager.handleUpdateForFile(exportForFile);
-          }
-        },
-        error: err => {
-          console.error('Encountered error in AutoImportsWorker', err);
-        },
-        complete: () => {
-          console.log(`Finished indexing node modules ${root}`);
-        },
-      })
-    : Observable.empty();
+  const indexModulesStream = indexNodeModules(index).do({
+    next: exportForFiles => {
+      exportForFiles.forEach(exportForFile => {
+        autoImportsManager.handleUpdateForFile(exportForFile);
+      });
+    },
+    error: err => {
+      console.error('Encountered error in AutoImportsWorker', err);
+    },
+    complete: () => {
+      console.log(`Finished indexing node modules ${root}`);
+    },
+  });
 
   console.log('Began indexing all files');
 
   // Check all files for missing imports
+  // eslint-disable-next-line nuclide-internal/unused-subscription
   Observable.merge(indexModulesStream, indexDirStream)
     .concat(
       // Don't bother checking non-Flow files.
@@ -75,7 +82,7 @@ function main() {
         'ls',
         root,
         '--ignore',
-        '.*/\\(node_modules\\|VendorLib\\)/.*',
+        '.*/\\(node_modules\\|VendorLib\\|3rdParty\\)/.*',
       ])
         .filter(event => event.kind === 'stdout')
         .mergeMap(event => {

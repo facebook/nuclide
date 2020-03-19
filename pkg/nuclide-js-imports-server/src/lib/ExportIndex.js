@@ -8,7 +8,7 @@
  * @flow
  * @format
  */
-import {arrayFlatten} from 'nuclide-commons/collection';
+
 import ExportMatcher from './ExportMatcher';
 
 import type {JSExport} from './types';
@@ -66,21 +66,9 @@ export class ExportIndex {
     return this.exportIdMatcher
       .match(query, {
         caseSensitive: false,
-        // For now only match exact matches for performance reasons. We could
-        // explore chosing this dynamically based on the # of export IDs
-        // ex: Array.from(this.exportsForId.keys()).length > 10000 ? 1 : 3
-        maxGap: 1,
         maxResults,
       })
       .map(result => result.value);
-  }
-
-  getExportsStartingWith(query: string, maxResults: number): Array<JSExport> {
-    return arrayFlatten(
-      this.getIdsMatching(query, maxResults).map(id =>
-        this.getExportsFromId(id),
-      ),
-    );
   }
 
   setAll(file: NuclideUri, exports: Array<JSExport>) {

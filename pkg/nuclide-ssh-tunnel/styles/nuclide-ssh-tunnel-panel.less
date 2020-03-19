@@ -1,5 +1,8 @@
-.nuclide-ssh-tunnels-table {
+@import "ui-variables";
+
+.nuclide-ssh-tunnels-panel-contents {
   flex: 1;
+  padding: 0.5em;
 }
 
 .nuclide-ssh-tunnels-table-row {
@@ -12,4 +15,39 @@
   margin-bottom: 1em;
   display: flex;
   justify-content: center;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section {
+  padding: 1.2em;
+  border-radius: @component-border-radius;
+  border: 1px solid @base-border-color;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-row > * {
+  margin: 0.5em;
+  display: inline-flex;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-row :first-child {
+  margin-left: 0em;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-row :last-child {
+  margin-right: 0em;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-host-field {
+  align-self: center;
+}
+
+.nuclide-ssh-tunnels-manual-tunnel-section-description {
+  flex-grow: 1;
 }

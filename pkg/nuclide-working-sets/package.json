@@ -1,13 +1,11 @@
 {
   "name": "nuclide-working-sets",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Service for the definition of an overlay filtering layer on top of connected projects.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Core UI",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "config": {
       "workingSets": {
         "title": "Working sets",
@@ -43,6 +41,13 @@
     "working-sets.provider": {
       "versions": {
         "0.0.0": "provideWorkingSetsStore"
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide.project-manager": {
+      "versions": {
+        "0.0.0": "consumeProjectManager"
       }
     }
   }

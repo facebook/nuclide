@@ -16,7 +16,53 @@
 }
 
 atom-panel.modal.nuclide-remote-projects-panel-connect {
-  width: 650px;
+  width: 800px;
   max-width: 100%;
   min-width: 550px;
+}
+
+.nuclide-remote-text-editor-placeholder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.nuclide-remote-text-editor-placeholder-header {
+  padding: 1em;
+}
+
+.nuclide-remote-text-editor-placeholder atom-text-editor {
+  flex: 1;
+}
+
+.nuclide-remote-text-editor-placeholder {
+  background-color: @syntax-background-color;
+}
+
+.nuclide-remote-projects-connection-error-message {
+  display: flex;
+
+  // Gotta ramp up that specificity.
+  &.nuclide-ui-message {
+    margin: 0 0 @component-padding 0;
+  }
+}
+
+.nuclide-remote-projects-connection-error-message-title {
+  flex: 1;
+  margin-right: 1em;
+}
+
+.nuclide-remote-projects-connection-error-message-tooltip-body {
+  text-align: left;
+  white-space: normal;
+  line-height: 1.25em;
+}
+
+.nuclide-remote-projects-error-troubleshooting-tips {
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-style: dashed;
 }

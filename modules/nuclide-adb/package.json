@@ -1,0 +1,34 @@
+{
+  "name": "nuclide-adb",
+  "version": "0.7.3-dev",
+  "main": "./lib/main.js",
+  "description": "Adb Service for Nuclide & Atom IDE.",
+  "author": "NEEDS OWNER",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-adb",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec",
+    "lint": "../../node_modules/.bin/eslint .",
+    "flow": "../../node_modules/.bin/flow"
+  },
+  "engines": {
+    "atom": ">= 1.17.0"
+  },
+  "consumedServices": {
+    "nuclide-rpc-services": {
+      "versions": {
+        "0.0.0": "consumeRpcService"
+      }
+    }
+  },
+  "dependencies": {
+    "log4js": "1.1.1",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "rxjs-compat": "6.3.3",
+    "shallowequal": "1.1.0"
+  }
+}

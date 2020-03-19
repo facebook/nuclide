@@ -5,12 +5,13 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import {stringifyError} from 'nuclide-commons/string';
-import {track} from '../../nuclide-analytics';
+import {isGkEnabled} from 'nuclide-commons/passesGK';
+import {track} from 'nuclide-analytics';
 
 import type {
   SshConnectionConfiguration,
@@ -84,6 +85,8 @@ export default class ConnectionTracker {
       remoteServerCommand: this._config.remoteServerCommand,
       cwd: this._config.cwd,
       authMethod: this._config.authMethod,
+      // We already checked this GK to get here, so no need to await.
+      isBigDig: isGkEnabled('nuclide_big_dig'),
     });
 
     this._expired = true;

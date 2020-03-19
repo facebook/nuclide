@@ -7,6 +7,8 @@
   padding-right: 10px;
   padding-left: 10px;
   max-width: 500px;
+  max-height: 40vh;
+  overflow-y: scroll;
   white-space: normal;
   word-wrap: break-word;
 
@@ -26,6 +28,11 @@
   margin-left: -10px;
   margin-right: -10px;
   padding: 4px 10px;
+  .diagnostics-popup-header-stale-box.highlight {
+    background-color: @text-color-subtle;
+    padding: 1px 4px;
+    margin-right: 4px;
+  }
 }
 
 .diagnostics-popup-diagnostic {
@@ -43,8 +50,8 @@
     background-color: fade(@text-color-warning, 20%);
 }
 
-.diagnostics-popup-info
-  .diagnostics-popup-header {
+.diagnostics-popup-info .diagnostics-popup-header,
+.diagnostics-popup-hint .diagnostics-popup-header {
     background-color: fade(@text-color-info, 20%);
 }
 

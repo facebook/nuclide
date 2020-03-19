@@ -12,18 +12,39 @@
 
 /* global requestAnimationFrame, cancelAnimationFrame */
 
+// NOTE: Custom operators that require arguments should be written as higher-order functions. That
+// is, they should accept the arguments and return a function that accepts only an observable. This
+// allows a nice ergonomic way of using them with '.let()' (or a potential future pipe operator):
+//
+//     const makeExciting = (excitementLevel: number = 1) =>
+//       (source: Observable<string>) =>
+//         source.map(x => x + '!'.repeat(excitementLevel));
+//
+//     Observable.of('hey', 'everybody')
+//       .let(makeExciting())
+//       .subscribe(x => console.log(x));
+
+import type {AbortSignal} from './AbortController';
+
 import UniversalDisposable from './UniversalDisposable';
 import invariant from 'assert';
+// Note: DOMException is usable in Chrome but not in Node.
+import DOMException from 'domexception';
+import {Observable, ReplaySubject, Subject, Subscription} from 'rxjs';
+import AbortController from './AbortController';
 import {setDifference} from './collection';
-import {Observable, ReplaySubject} from 'rxjs';
+import debounce from './debounce';
 
 /**
  * Splits a stream of strings on newlines.
- * Includes the newlines in the resulting stream.
+ * Includes the newlines in the resulting stream (if includeNewlines is true).
  * Sends any non-newline terminated data before closing.
- * Never sends an empty string.
+ * Does not ensure a trailing newline.
  */
-export function splitStream(input: Observable<string>): Observable<string> {
+export function splitStream(
+  input: Observable<string>,
+  includeNewlines?: boolean = true,
+): Observable<string> {
   return Observable.create(observer => {
     let current: string = '';
 
@@ -36,9 +57,14 @@ export function splitStream(input: Observable<string>): Observable<string> {
 
     return input.subscribe(
       value => {
-        const lines = (current + value).split('\n');
+        const lines = value.split('\n');
+        lines[0] = current + lines[0];
         current = lines.pop();
-        lines.forEach(line => observer.next(line + '\n'));
+        if (includeNewlines) {
+          lines.forEach(line => observer.next(line + '\n'));
+        } else {
+          lines.forEach(line => observer.next(line));
+        }
       },
       error => {
         onEnd();
@@ -62,37 +88,37 @@ export function splitStream(input: Observable<string>): Observable<string> {
  *     specifying whether to complete the buffer (and begin a new one).
  */
 export function bufferUntil<T>(
-  stream: Observable<T>,
   condition: (item: T, buffer: Array<T>) => boolean,
-): Observable<Array<T>> {
-  return Observable.create(observer => {
-    let buffer = null;
-    const flush = () => {
-      if (buffer != null) {
-        observer.next(buffer);
-        buffer = null;
-      }
-    };
-    return stream.subscribe(
-      x => {
-        if (buffer == null) {
-          buffer = [];
+): (Observable<T>) => Observable<Array<T>> {
+  return (stream: Observable<T>) =>
+    Observable.create(observer => {
+      let buffer = null;
+      const flush = () => {
+        if (buffer != null) {
+          observer.next(buffer);
+          buffer = null;
         }
-        buffer.push(x);
-        if (condition(x, buffer)) {
+      };
+      return stream.subscribe(
+        x => {
+          if (buffer == null) {
+            buffer = [];
+          }
+          buffer.push(x);
+          if (condition(x, buffer)) {
+            flush();
+          }
+        },
+        err => {
           flush();
-        }
-      },
-      err => {
-        flush();
-        observer.error(err);
-      },
-      () => {
-        flush();
-        observer.complete();
-      },
-    );
-  });
+          observer.error(err);
+        },
+        () => {
+          flush();
+          observer.complete();
+        },
+      );
+    });
 }
 
 /**
@@ -117,19 +143,19 @@ type Diff<T> = {
  * **IMPORTANT:** These sets are assumed to be immutable by convention. Don't mutate them!
  */
 export function diffSets<T>(
-  sets: Observable<Set<T>>,
   hash?: (v: T) => any,
-): Observable<Diff<T>> {
-  return Observable.concat(
-    Observable.of(new Set()), // Always start with no items with an empty set
-    sets,
-  )
-    .pairwise()
-    .map(([previous, next]) => ({
-      added: setDifference(next, previous, hash),
-      removed: setDifference(previous, next, hash),
-    }))
-    .filter(diff => diff.added.size > 0 || diff.removed.size > 0);
+): (Observable<Set<T>>) => Observable<Diff<T>> {
+  return (sets: Observable<Set<T>>) =>
+    Observable.concat(
+      Observable.of(new Set()), // Always start with no items with an empty set
+      sets,
+    )
+      .pairwise()
+      .map(([previous, next]) => ({
+        added: setDifference(next, previous, hash),
+        removed: setDifference(previous, next, hash),
+      }))
+      .filter(diff => diff.added.size > 0 || diff.removed.size > 0);
 }
 
 /**
@@ -203,17 +229,17 @@ export function reconcileSets<T>(
   addAction: (addedItem: T) => IDisposable,
   hash?: (v: T) => any,
 ): IDisposable {
-  const diffs = diffSets(sets, hash);
+  const diffs = sets.let(diffSets(hash));
   return reconcileSetDiffs(diffs, addAction, hash);
 }
 
 export function toggle<T>(
-  source: Observable<T>,
   toggler: Observable<boolean>,
-): Observable<T> {
-  return toggler
-    .distinctUntilChanged()
-    .switchMap(enabled => (enabled ? source : Observable.empty()));
+): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) =>
+    toggler
+      .distinctUntilChanged()
+      .switchMap(enabled => (enabled ? source : Observable.empty()));
 }
 
 export function compact<T>(source: Observable<?T>): Observable<T> {
@@ -225,25 +251,25 @@ export function compact<T>(source: Observable<?T>): Observable<T> {
  * Like `takeWhile`, but includes the first item that doesn't match the predicate.
  */
 export function takeWhileInclusive<T>(
-  source: Observable<T>,
   predicate: (value: T) => boolean,
-): Observable<T> {
-  return Observable.create(observer =>
-    source.subscribe(
-      x => {
-        observer.next(x);
-        if (!predicate(x)) {
+): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) =>
+    Observable.create(observer =>
+      source.subscribe(
+        x => {
+          observer.next(x);
+          if (!predicate(x)) {
+            observer.complete();
+          }
+        },
+        err => {
+          observer.error(err);
+        },
+        () => {
           observer.complete();
-        }
-      },
-      err => {
-        observer.error(err);
-      },
-      () => {
-        observer.complete();
-      },
-    ),
-  );
+        },
+      ),
+    );
 }
 
 // Concatenate the latest values from each input observable into one big list.
@@ -253,10 +279,8 @@ export function concatLatest<T>(
 ): Observable<Array<T>> {
   // First, tag all input observables with their index.
   // Flow errors with ambiguity without the explicit annotation.
-  const tagged: Array<
-    Observable<[Array<T>, number]>,
-  > = observables.map((observable, index) =>
-    observable.map(list => [list, index]),
+  const tagged: Array<Observable<[Array<T>, number]>> = observables.map(
+    (observable, index) => observable.map(list => [list, index]),
   );
   return Observable.merge(...tagged)
     .scan((accumulator, [list, index]) => {
@@ -266,52 +290,171 @@ export function concatLatest<T>(
     .map(accumulator => [].concat(...accumulator));
 }
 
-type ThrottleOptions = {
-  // Should the first element be emitted immeditately? Defaults to true.
-  leading?: boolean,
-};
+// Use a sentinel so we can distinguish between when `null` is emitted and when
+// nothing is.
+const NONE = {};
 
-/**
- * A more sensible alternative to RxJS's throttle/audit/sample operators.
- */
+type ThrottleOptions = {|
+  leading?: boolean,
+|};
+
 export function throttle<T>(
-  source: Observable<T>,
-  duration:
+  delay:
     | number
+    | ((value: T) => Observable<any> | Promise<any>)
     | Observable<any>
-    | ((value: T) => Observable<any> | Promise<any>),
-  options_: ?ThrottleOptions,
-): Observable<T> {
-  const options = options_ || {};
-  const leading = options.leading !== false;
-  let audit;
-  switch (typeof duration) {
+    | Promise<any>,
+  options?: ThrottleOptions = {leading: true},
+): (observable: Observable<T>) => Observable<T> {
+  let getDelay: (value: T) => Observable<any> | Promise<any>;
+  switch (typeof delay) {
     case 'number':
-      // $FlowFixMe: Add `auditTime()` to Flow defs
-      audit = obs => obs.auditTime(duration);
+      getDelay = () => Observable.timer(delay);
       break;
     case 'function':
-      audit = obs => obs.audit(duration);
+      getDelay = delay;
+      break;
+    case 'object':
+      getDelay = () => delay;
       break;
     default:
-      audit = obs => obs.audit(() => duration);
+      throw new Error(`Invalid delay: ${delay}`);
   }
 
-  if (!leading) {
-    return audit(source);
-  }
+  return function doThrottle(source: Observable<T>): Observable<T> {
+    return Observable.create(observer => {
+      const {leading = true} = options;
+      const timerStarts = new Subject();
+      let latestValue = NONE;
+      let latestValueIsLeading = false;
+      let shouldIgnore = false;
 
-  return Observable.create(observer => {
-    const connectableSource = source.publish();
-    const throttled = Observable.merge(
-      connectableSource.take(1),
-      audit(connectableSource.skip(1)),
-    );
-    return new UniversalDisposable(
-      throttled.subscribe(observer),
-      connectableSource.connect(),
-    );
-  });
+      const checkShouldNext = () => {
+        if (!shouldIgnore && latestValue !== NONE) {
+          // At this point, latestValue must be of type T
+          latestValue = ((latestValue: any): T);
+
+          const valueToDispatch = latestValue;
+          shouldIgnore = true;
+
+          if (leading || !latestValueIsLeading) {
+            latestValue = NONE;
+            observer.next(valueToDispatch);
+          }
+          timerStarts.next(valueToDispatch);
+        }
+      };
+
+      const sub = new Subscription();
+      sub.add(
+        timerStarts
+          .switchMap(x => {
+            const timer = getDelay(x);
+            if (timer instanceof Observable) {
+              return timer.take(1);
+            } else {
+              return timer;
+            }
+          })
+          .subscribe(() => {
+            shouldIgnore = false;
+            latestValueIsLeading = false;
+            checkShouldNext();
+          }),
+      );
+      sub.add(
+        source.subscribe({
+          next: x => {
+            latestValue = x;
+            latestValueIsLeading = true;
+            checkShouldNext();
+          },
+          error: err => {
+            observer.error(err);
+          },
+          complete: () => {
+            // Ensure we don't hold a reference to the last value.
+            latestValue = NONE;
+            observer.complete();
+          },
+        }),
+      );
+
+      return sub;
+    });
+  };
+}
+
+/**
+ * Returns a new function which takes an `observable` and returns
+ * `observable.switchMap(project)`, except that it completes
+ * when the outer observable completes.
+ *
+ * Example:
+ *
+ *   Observable.of(1)
+ *     .let(completingSwitchMap(x => Observable.never()))
+ *
+ * ends up returning an Observable that completes immediately.
+ * With a regular switchMap, this would never terminate.
+ */
+export function completingSwitchMap<T, U>(
+  project: (input: T, index: number) => rxjs$ObservableInput<U>,
+): (Observable<T>) => Observable<U> {
+  // An alternative implementation is to materialize the input observable,
+  // but this avoids the creation of extra notifier objects.
+  const completedSymbol = Symbol('completed');
+  return (observable: Observable<T>) =>
+    Observable.concat(
+      observable,
+      Observable.of((completedSymbol: any)),
+    ).switchMap((input, index) => {
+      if (input === completedSymbol) {
+        return Observable.empty();
+      }
+      return project(input, index);
+    });
+}
+
+/**
+ * Returns a new observable consisting of the merged values from the passed
+ * observables and completes when the first inner observable completes.
+ */
+export function mergeUntilAnyComplete<T>(
+  ...observables: Array<Observable<T>>
+): Observable<T> {
+  const notifications = Observable.merge(
+    ...observables.map(o => o.materialize()),
+  );
+  // $FlowFixMe add dematerialize to rxjs Flow types
+  return notifications.dematerialize();
+}
+
+/**
+ * RxJS's debounceTime is actually fairly inefficient:
+ * on each event, it always clears its interval and [creates a new one][1].
+ * Until this is fixed, this uses our debounce implementation which
+ * reuses a timeout and just sets a timestamp when possible.
+ *
+ * This may seem like a micro-optimization but we often use debounces
+ * for very hot events, like keypresses. Exceeding the frame budget can easily lead
+ * to increased key latency!
+ *
+ * [1]: https://github.com/ReactiveX/rxjs/blob/master/src/operators/debounceTime.ts#L106
+ */
+export function fastDebounce<T>(
+  delay: number,
+): (Observable<T>) => Observable<T> {
+  return (observable: Observable<T>) =>
+    Observable.create(observer => {
+      const debouncedNext = debounce((x: T) => observer.next(x), delay);
+      const subscription = observable.subscribe(
+        debouncedNext,
+        observer.error.bind(observer),
+        observer.complete.bind(observer),
+      );
+      return new UniversalDisposable(subscription, debouncedNext);
+    });
 }
 
 export const microtask = Observable.create(observer => {
@@ -343,3 +486,180 @@ export const nextAnimationFrame = Observable.create(observer => {
     cancelAnimationFrame(id);
   };
 });
+
+/**
+ * Creates an Observable around an abortable promise.
+ * Unsubscriptions are forwarded to the AbortController as an `abort()`.
+ * Example usage (with an abortable fetch):
+ *
+ *   fromPromise(signal => fetch(url, {...options, signal}))
+ *     .switchMap(....)
+ *
+ * Note that this can take a normal `() => Promise<T>` too
+ * (in which case this acts as just a plain `Observable.defer`).
+ */
+export function fromAbortablePromise<T>(
+  func: (signal: AbortSignal) => Promise<T>,
+): Observable<T> {
+  return Observable.create(observer => {
+    let completed = false;
+    const abortController = new AbortController();
+    func(abortController.signal).then(
+      value => {
+        completed = true;
+        observer.next(value);
+        observer.complete();
+      },
+      error => {
+        completed = true;
+        observer.error(error);
+      },
+    );
+    return () => {
+      if (!completed) {
+        abortController.abort();
+        // If the promise adheres to the spec, it should throw.
+        // The error will be captured above but go into the void.
+      }
+    };
+  });
+}
+
+/**
+ * Converts an observable + AbortSignal into a cancellable Promise,
+ * which rejects with an AbortError DOMException on abort.
+ * Useful when writing the internals of a cancellable promise.
+ *
+ * Usage:
+ *
+ *   function abortableFunction(arg1: blah, options?: {signal?: AbortSignal}): Promise {
+ *     return toPromise(
+ *       observableFunction(arg1, options),
+ *       options && options.signal,
+ *     );
+ *   }
+ *
+ * Could eventually be replaced by Observable.first if
+ * https://github.com/whatwg/dom/issues/544 goes through.
+ *
+ * It's currently unclear if this should be usable with let/pipe:
+ * https://github.com/ReactiveX/rxjs/issues/3445
+ */
+export function toAbortablePromise<T>(
+  observable: Observable<T>,
+  signal?: ?AbortSignal,
+): Promise<T> {
+  if (signal == null) {
+    return observable.toPromise();
+  }
+  if (signal.aborted) {
+    return Promise.reject(DOMException('Aborted', 'AbortError'));
+  }
+  return observable
+    .race(
+      Observable.fromEvent(signal, 'abort').map(() => {
+        throw new DOMException('Aborted', 'AbortError');
+      }),
+    )
+    .toPromise();
+}
+
+/**
+ * When using Observables with AbortSignals, be sure to use this -
+ * it's really easy to miss the case when the signal is already aborted!
+ * Recommended to use this with let/pipe:
+ *
+ *   myObservable
+ *     .let(takeUntilAbort(signal))
+ */
+export function takeUntilAbort<T>(
+  signal: AbortSignal,
+): (Observable<T>) => Observable<T> {
+  return observable =>
+    Observable.defer(() => {
+      if (signal.aborted) {
+        return Observable.empty();
+      }
+      return observable.takeUntil(Observable.fromEvent(signal, 'abort'));
+    });
+}
+
+// Executes tasks. Ensures that at most one task is running at a time.
+// This class is handy for expensive tasks like processes, provided
+// you never want the result of a previous task after a new task has started.
+export class SingletonExecutor<T> {
+  _abortController: ?AbortController = null;
+
+  // Executes(subscribes to) the task.
+  // Will terminate(unsubscribe) to any previously executing task.
+  // Subsequent executes() will terminate this task if called before
+  // this task completes.
+  async execute(createTask: Observable<T>): Promise<T> {
+    // Kill any previously running processes
+    this.cancel();
+
+    // Start a new process
+    const controller = new AbortController();
+    this._abortController = controller;
+
+    // Wait for the process to complete or be canceled ...
+    try {
+      return await toAbortablePromise(createTask, controller.signal);
+    } finally {
+      // ... and always clean up if we haven't been canceled already.
+      if (controller === this._abortController) {
+        this._abortController = null;
+      }
+    }
+  }
+
+  isExecuting(): boolean {
+    return this._abortController != null;
+  }
+
+  // Cancels any currently executing tasks.
+  cancel(): void {
+    if (this._abortController != null) {
+      this._abortController.abort();
+      this._abortController = null;
+    }
+  }
+}
+
+/**
+ * Repeatedly subscribe to an observable every `delay` milliseconds, waiting for the observable to
+ * complete each time. This is preferable to, say, `Observable.interval(d).switchMap(() => source)`
+ * because, in the case that `source` takes longer than `d` milliseconds to produce a value, that
+ * formulation will never produce a value (while continuing to incur the overhead of subscribing to
+ * source).
+ *
+ * Example:
+ *
+ *    // Ask what time it is every second until it's Friday.
+ *    runCommand('date')
+ *      .let(poll(1000))
+ *      .filter(output => output.startsWith('Fri'))
+ *      .take(1)
+ *      .subscribe(() => {
+ *        console.log("IT'S FRIDAY!!")
+ *      });
+ *
+ */
+export function poll<T>(delay: number): (Observable<T>) => Observable<T> {
+  return (source: Observable<T>) =>
+    Observable.defer(() => {
+      const delays = new Subject();
+      return delays
+        .switchMap(n => Observable.timer(n))
+        .merge(Observable.of(null))
+        .switchMap(() => {
+          const subscribedAt = Date.now();
+          return source.do({
+            complete: () => {
+              const timeElapsed = Date.now() - subscribedAt;
+              delays.next(Math.max(0, delay - timeElapsed));
+            },
+          });
+        });
+    });
+}

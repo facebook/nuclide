@@ -1,10 +1,9 @@
 {
   "name": "nuclide-blame-provider-hg",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Makes Hg blame information available to the nuclide-blame feature.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Source Control",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -12,8 +11,7 @@
         "Blame"
       ]
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "providedServices": {
     "nuclide-blame-provider": {

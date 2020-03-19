@@ -1,0 +1,9 @@
+const one = require('one');
+const two = require('two');
+
+function foo() {
+  switch (one) {
+    case two:
+      break;
+  }
+}

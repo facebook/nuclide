@@ -5,29 +5,14 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import {ConnectableObservable, Observable} from 'rxjs';
-
-import nuclideUri from 'nuclide-commons/nuclideUri';
 import replaceInFile from './replaceInFile';
-import search from './scanhandler';
-
-export type search$Match = {
-  lineText: string,
-  lineTextOffset: number,
-  matchText: string,
-  range: Array<Array<number>>,
-};
-
-export type search$FileResult = {
-  filePath: NuclideUri,
-  matches: Array<search$Match>,
-};
+import {ConnectableObservable, Observable} from 'rxjs';
 
 export type search$ReplaceResult =
   | {
@@ -40,22 +25,6 @@ export type search$ReplaceResult =
       filePath: NuclideUri,
       message: string,
     };
-
-export function grepSearch(
-  directory: NuclideUri,
-  regex: RegExp,
-  subdirs: Array<string>,
-): ConnectableObservable<search$FileResult> {
-  return search(directory, regex, subdirs)
-    .map(update => {
-      // Transform filePath's to absolute paths.
-      return {
-        filePath: nuclideUri.join(directory, update.filePath),
-        matches: update.matches,
-      };
-    })
-    .publish();
-}
 
 export function grepReplace(
   filePaths: Array<NuclideUri>,

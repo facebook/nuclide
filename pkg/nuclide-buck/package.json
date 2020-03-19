@@ -1,13 +1,11 @@
 {
   "name": "nuclide-buck",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Buck integration for Nuclide.",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "configMetadata": {
       "pathComponents": [
         "IDE",
@@ -31,10 +29,31 @@
         "title": "Suggest building with the Task Runner after detecting CLI Buck builds.",
         "type": "boolean",
         "default": "true"
+      },
+      "buildDbErrorNotify": {
+        "title": "Show notification for errors and warnings when building compilation database.",
+        "type": "boolean",
+        "default": "true"
+      },
+      "watchConfigArgs": {
+        "title": "Update compilation database arguments when changes detected",
+        "type": "string",
+        "default": "Prompt",
+        "enum": [
+          "Always",
+          "Never",
+          "Prompt"
+        ],
+        "description": "Whether to update compilation database arguments automatically when CLI Buck build is detected"
       }
     }
   },
   "consumedServices": {
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    },
     "nuclide.task-runner": {
       "versions": {
         "0.0.0": "consumeTaskRunnerServiceApi"
@@ -60,6 +79,11 @@
     "nuclide.buck-platforms": {
       "versions": {
         "0.0.0": "providePlatformService"
+      }
+    },
+    "nuclide.buck-task-runner": {
+      "versions": {
+        "0.0.0": "provideBuckTaskRunnerService"
       }
     },
     "nuclide.clang.configuration": {

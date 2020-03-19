@@ -5,16 +5,12 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
-import fs from 'fs';
-import invariant from 'assert';
+import {getPackageMinorVersion} from 'nuclide-commons/package';
 
-// Use a regex and not the "semver" module so the result here is the same
-// as from python code.
-const SEMVERISH_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z0-9.-]+))?$/;
 let version;
 
 /*
@@ -37,15 +33,8 @@ export function getVersion(): string {
   if (!version) {
     // Don't use require() because it may be reading from the module cache.
     // Do use require.resolve so the paths can be codemoded in the future.
-    const pkgFilename = require.resolve('../../../package.json');
-    const pkgJson = JSON.parse(fs.readFileSync(pkgFilename, 'utf8'));
-    const match = SEMVERISH_RE.exec(pkgJson.version);
-    invariant(match);
-    // const majorVersion = match[1];
-    const minorVersion = match[2];
-    // const patchVersion = match[3];
-    // const prereleaseVersion = match[4];
-    version = minorVersion;
+    const packageJsonPath = require.resolve('../../../package.json');
+    version = getPackageMinorVersion(packageJsonPath);
   }
   return version;
 }

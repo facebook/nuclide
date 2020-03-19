@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-fs",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Defines a filesystem abstraction and implements over NodeJs fsPromise, zip archives, and a unified composite of the two.",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "debug": "node --inspect --debug-brk ../nuclide-jasmine/bin/run-jasmine-tests.js spec",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

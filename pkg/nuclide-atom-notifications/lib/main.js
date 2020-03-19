@@ -9,17 +9,21 @@
  * @format
  */
 
-import type {Level, ConsoleService} from '../../nuclide-console/lib/types';
+import type {ConsoleLevel, ConsoleService} from 'atom-ide-ui';
 
-import {CompositeDisposable} from 'atom';
-import marked from 'marked';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createPackage from 'nuclide-commons-atom/createPackage';
 
+import sanitizeHtml from 'nuclide-commons/sanitizeHtml';
+
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
+    // This adds spaces after <p> elements, so if you do something like
+    // <p>Hello.</p><p>Bye</p>
+    // it will become "Hello. Bye." instead of "Hello.Bye."
   }
 
   consumeConsoleService(createConsole: ConsoleService): IDisposable {
@@ -30,7 +34,7 @@ class Activation {
     const notificationDisposable = atom.notifications.onDidAddNotification(
       notification => {
         consoleApi.append({
-          text: stripFormatting(notification.getMessage()),
+          text: sanitizeHtml(notification.getMessage()),
           level: getLevel(notification.getType()),
         });
       },
@@ -44,7 +48,7 @@ class Activation {
   }
 }
 
-function getLevel(atomNotificationType: string): Level {
+function getLevel(atomNotificationType: string): ConsoleLevel {
   switch (atomNotificationType) {
     case 'error':
     case 'fatal':
@@ -58,22 +62,6 @@ function getLevel(atomNotificationType: string): Level {
     default:
       return 'log';
   }
-}
-
-let formattingDiv;
-/**
- * Markdown and HTML can be used with Atom notifications, but not in the console. In order to strip
- * all of the formatting, we'll first compile the markdown, then use a DOM element to convert that
- * to raw text. This isn't the most performant way to strip the HTML, but it does handle `<br />`s
- * and stuff really easily and only happens once per notification so it's okay.
- */
-function stripFormatting(raw: string): string {
-  const div =
-    formattingDiv == null
-      ? (formattingDiv = document.createElement('div'))
-      : formattingDiv;
-  div.innerHTML = marked(raw);
-  return div.innerText || '';
 }
 
 createPackage(module.exports, Activation);

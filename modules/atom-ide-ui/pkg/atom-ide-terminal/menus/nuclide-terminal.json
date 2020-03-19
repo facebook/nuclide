@@ -1,0 +1,38 @@
+{
+  "menu": [
+    {
+      "label": "View",
+      "submenu": [
+        {
+          "label": "Toggle Terminal",
+          "command": "atom-ide-terminal:toggle"
+        },
+        {
+          "label": "Terminal",
+          "submenu": [
+            {
+              "label": "New Terminal Window",
+              "command": "atom-ide-terminal:new-terminal"
+            },
+            {
+              "label": "New Terminal Window (Local)",
+              "command": "atom-ide-terminal:new-local-terminal"
+            },
+            {
+              "label": "Toggle Terminal Focus",
+              "command": "atom-ide-terminal:toggle-terminal-focus"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "context-menu": {
+    "atom-pane atom-text-editor, .tab-bar .tab [data-path]:not(.nuclide-file-tree-path), .nuclide-path-with-terminal": [
+      {
+        "label": "New Terminal Here",
+        "command": "atom-ide-terminal:new-terminal"
+      }
+    ]
+  }
+}

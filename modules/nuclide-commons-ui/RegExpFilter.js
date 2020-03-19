@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,12 +17,12 @@ import classnames from 'classnames';
 import {Button, ButtonSizes} from './Button';
 import {ButtonGroup} from './ButtonGroup';
 import escapeStringRegexp from 'escape-string-regexp';
-import React from 'react';
+import * as React from 'react';
 
 type Size = 'xs' | 'sm' | 'lg';
 
 type Props = {
-  value: Value,
+  value: RegExpFilterValue,
   inputWidth?: number,
   inputClassName?: string,
   onChange: (value: RegExpFilterChange) => mixed,
@@ -35,7 +35,7 @@ type State = {
   invalid: boolean,
 };
 
-type Value = {
+export type RegExpFilterValue = {
   text: string,
   isRegExp: boolean,
   invalid: boolean,
@@ -51,10 +51,8 @@ export type RegExpFilterChange = {
   isRegExp: boolean,
 };
 
-export default class RegExpFilter extends React.Component {
-  props: Props;
-  state: State;
-  _currentValue: Value;
+export default class RegExpFilter extends React.Component<Props, State> {
+  _currentValue: RegExpFilterValue;
   _input: ?AtomInput;
 
   constructor(props: Props) {
@@ -62,13 +60,15 @@ export default class RegExpFilter extends React.Component {
     this._currentValue = props.value;
   }
 
-  componentWillReceiveProps(props: Props): void {
+  UNSAFE_componentWillReceiveProps(props: Props): void {
     // We need to store this so that we can use it in the event handlers.
     this._currentValue = props.value;
   }
 
-  render(): React.Element<any> {
-    const {value: {text, isRegExp, invalid}} = this.props;
+  render(): React.Node {
+    const {
+      value: {text, isRegExp, invalid},
+    } = this.props;
     const size = this.props.size || 'sm';
     const buttonSize = getButtonSize(size);
     const inputWidth =
@@ -76,7 +76,6 @@ export default class RegExpFilter extends React.Component {
     const inputClassName = classnames(
       'nuclide-ui-regexp-filter-input',
       this.props.inputClassName,
-      {invalid},
     );
 
     return (
@@ -85,6 +84,7 @@ export default class RegExpFilter extends React.Component {
           ref={el => {
             this._input = el;
           }}
+          invalid={invalid}
           className={inputClassName}
           size={size}
           width={inputWidth}
@@ -138,6 +138,7 @@ function getButtonSize(size: Size): ButtonSize {
     case 'lg':
       return ButtonSizes.LARGE;
     default:
+      (size: empty);
       throw new Error(`Invalid size: ${size}`);
   }
 }

@@ -1,0 +1,13 @@
+{
+  "menu": [
+    {
+      "label": "View",
+      "submenu": [
+        {
+          "label": "Toggle Blame",
+          "command": "nuclide-blame:toggle-blame"
+        }
+      ]
+    }
+  ]
+}

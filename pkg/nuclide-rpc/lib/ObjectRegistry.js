@@ -11,8 +11,10 @@
 
 import invariant from 'assert';
 import {getLogger} from 'log4js';
+import {Emitter} from 'event-kit';
 import type {ServiceRegistry} from './ServiceRegistry';
 import type {RpcContext} from './main';
+import type {RemoteObject, ObjectRegistryInterface} from './types';
 
 const logger = getLogger('nuclide-rpc');
 
@@ -22,13 +24,6 @@ type ObjectRegistration = {
   object: RemoteObject,
 };
 
-// All remotable objects have some set of named functions,
-// and they also have a dispose method.
-export type RemoteObject = {
-  [id: string]: Function,
-  dispose: () => void,
-};
-
 type RegistryKind = 'server' | 'client';
 
 // Handles lifetimes of marshalling wrappers remote objects.
@@ -36,7 +31,7 @@ type RegistryKind = 'server' | 'client';
 // Object passed by reference over RPC are assigned an ID.
 // Positive IDs represent objects which live on the server,
 // negative IDs represent objects which live on the client.
-export class ObjectRegistry {
+export class ObjectRegistry implements ObjectRegistryInterface {
   // These members handle local objects which have been marshalled remotely.
   _registrationsById: Map<number, ObjectRegistration>;
   _registrationsByObject: Map<RemoteObject, ObjectRegistration>;
@@ -46,11 +41,12 @@ export class ObjectRegistry {
   // These members handle remote objects.
   _proxiesById: Map<number, ObjectRegistration>;
   // null means the proxy has been disposed.
-  _idsByProxy: Map<Object, ?Promise<number>>;
+  _idsByProxy: Map<Object, ?number>;
   // Maps service name to proxy
   _serviceRegistry: ServiceRegistry;
   _services: Map<string, Object>;
   _context: RpcContext;
+  _emitter: Emitter;
 
   constructor(
     kind: RegistryKind,
@@ -67,10 +63,19 @@ export class ObjectRegistry {
     this._serviceRegistry = serviceRegistry;
     this._services = new Map();
     this._context = context;
+    this._emitter = new Emitter();
   }
 
-  hasService(serviceName: string): boolean {
-    return this._serviceRegistry.hasService(serviceName);
+  onRegisterLocal(callback: number => void): IDisposable {
+    return this._emitter.on('register-local', callback);
+  }
+
+  onUnregisterLocal(callback: number => void): IDisposable {
+    return this._emitter.on('unregister-local', callback);
+  }
+
+  onRegisterRemote(callback: number => void): IDisposable {
+    return this._emitter.on('register-remote', callback);
   }
 
   getService(serviceName: string): Object {
@@ -116,7 +121,7 @@ export class ObjectRegistry {
     // Generate the proxy by manually setting the prototype of the proxy to be the
     // prototype of the remote proxy constructor.
     const newProxy = Object.create(proxyClass.prototype);
-    this.addProxy(newProxy, interfaceName, Promise.resolve(remoteId));
+    this._addProxy(newProxy, interfaceName, remoteId);
     return newProxy;
   }
 
@@ -124,7 +129,7 @@ export class ObjectRegistry {
     const result = this._isLocalId(id)
       ? this._registrationsById.get(id)
       : this._proxiesById.get(id);
-    invariant(result != null);
+    invariant(result != null, `Unknown registration ${id}`);
     return result;
   }
 
@@ -133,6 +138,7 @@ export class ObjectRegistry {
   }
 
   async disposeObject(remoteId: number): Promise<void> {
+    this._emitter.emit('unregister-local', remoteId);
     const registration = this._getRegistration(remoteId);
     const object = registration.object;
 
@@ -151,7 +157,7 @@ export class ObjectRegistry {
   }
 
   // Put the object in the registry.
-  marshal(interfaceName: string, object: Object): Promise<number> | number {
+  marshal(interfaceName: string, object: Object): number {
     if (this._isRemoteObject(object)) {
       return this._marshalRemoteObject(object);
     } else {
@@ -159,7 +165,7 @@ export class ObjectRegistry {
     }
   }
 
-  _marshalRemoteObject(proxy: Object): Promise<number> {
+  _marshalRemoteObject(proxy: Object): number {
     const result = this._idsByProxy.get(proxy);
     invariant(result != null);
     return result;
@@ -181,6 +187,7 @@ export class ObjectRegistry {
       object,
     };
 
+    this._emitter.emit('register-local', objectId);
     this._registrationsById.set(objectId, registration);
     this._registrationsByObject.set(object, registration);
 
@@ -226,8 +233,7 @@ export class ObjectRegistry {
   }
 
   // Returns null if the object is already disposed.
-  async disposeProxy(proxy: Object): Promise<?number> {
-    invariant(this._idsByProxy.has(proxy));
+  disposeProxy(proxy: Object): ?number {
     const objectId = this._idsByProxy.get(proxy);
     if (objectId != null) {
       this._idsByProxy.set(proxy, null);
@@ -237,21 +243,21 @@ export class ObjectRegistry {
     }
   }
 
-  async addProxy(
-    proxy: Object,
-    interfaceName: string,
-    idPromise: Promise<number>,
-  ): Promise<void> {
+  _addProxy(proxy: Object, interfaceName: string, id: number): void {
     invariant(!this._idsByProxy.has(proxy));
-    this._idsByProxy.set(proxy, idPromise);
+    this._idsByProxy.set(proxy, id);
 
-    const id = await idPromise;
     invariant(!this._proxiesById.has(id));
+    this._emitter.emit('register-remote', id);
     this._proxiesById.set(id, {
       interface: interfaceName,
       remoteId: id,
       object: proxy,
     });
+  }
+
+  isRegistered(object: Object): boolean {
+    return this._registrationsByObject.has(object);
   }
 
   _isRemoteObject(object: Object): boolean {

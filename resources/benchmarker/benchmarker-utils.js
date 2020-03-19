@@ -47,7 +47,6 @@ function makeSizedFixture(location: string, size: number): void {
   // $FlowFixMe: Bad upstream definition
   fs.truncateSync(file, 0);
   for (let i = 0; i < size; i += lineLength) {
-    // $FlowFixMe: Bad upstream definition
     fs.writeSync(file, line);
   }
   fs.closeSync(file);

@@ -1,0 +1,16 @@
+[
+  {
+    "column": 8,
+    "file": "file1.js",
+    "leadingContext": [
+      "        console3log(b);",
+      "        // var x = a + 2;"
+    ],
+    "line": "        console.log(n); //bad",
+    "matchLength": 11,
+    "row": 4,
+    "trailingContext": [
+      "        console.error(\"Hello World!\");"
+    ]
+  }
+]

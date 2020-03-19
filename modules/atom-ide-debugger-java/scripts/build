@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd "$(hg root)/xplat" || exit 1
+
+DEFAULT_OUTPUT_PATH="$PWD/nuclide/modules/atom-ide-debugger-java/Build/java_debugger_server.jar"
+OUTPUT_PATH="${1:-$DEFAULT_OUTPUT_PATH}"
+
+mkdir -p "$(dirname "$OUTPUT_PATH")"
+buck build @mode/xplat nuclide-debugger-java --out "$OUTPUT_PATH"
+echo "$OUTPUT_PATH"

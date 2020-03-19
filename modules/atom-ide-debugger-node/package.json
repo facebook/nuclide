@@ -1,0 +1,38 @@
+{
+  "name": "atom-ide-debugger-node",
+  "version": "0.7.3-dev",
+  "main": "./main.js",
+  "description": "NodeJS Debugger for Atom IDE.",
+  "author": "NEEDS OWNER",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/atom-ide-debugger-node",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec",
+    "lint": "../../node_modules/.bin/eslint .",
+    "flow": "../../node_modules/.bin/flow"
+  },
+  "engines": {
+    "atom": ">= 1.17.0"
+  },
+  "providedServices": {
+    "debugger.provider": {
+      "description": "NodeJS debugger engine.",
+      "versions": {
+        "0.0.0": "createDebuggerProvider"
+      }
+    }
+  },
+  "dependencies": {
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nuclide-debugger-common": "0.7.3-dev",
+    "react": "16.6.3",
+    "vscode-chrome-debug-core": "3.17.10",
+    "vscode-debugadapter": "1.24.0",
+    "vscode-nls": "2.0.2"
+  },
+  "package-deps": [
+    "atom-ide-ui"
+  ]
+}

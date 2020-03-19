@@ -9,22 +9,21 @@
  * @format
  */
 
-import type {OutputService} from '../../nuclide-console/lib/types';
+import type {ConsoleService} from 'atom-ide-ui';
 
 import formatEnoentNotification from '../../commons-atom/format-enoent-notification';
 import {createProcessStream} from './createProcessStream';
 import createMessageStream from './createMessageStream';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {LogTailer} from '../../nuclide-console/lib/LogTailer';
-import {CompositeDisposable, Disposable} from 'atom';
+import {LogTailer} from '../../nuclide-console-base/lib/LogTailer';
 import {Observable} from 'rxjs';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _logTailer: LogTailer;
 
   constructor(state: ?Object) {
-    const message$ = Observable.defer(() =>
+    const messages = Observable.defer(() =>
       createMessageStream(
         createProcessStream()
           // Retry 3 times (unless we get a ENOENT)
@@ -41,7 +40,7 @@ export default class Activation {
 
     this._logTailer = new LogTailer({
       name: 'adb Logcat',
-      messages: message$,
+      messages,
       trackingEvents: {
         start: 'adb-logcat:start',
         stop: 'adb-logcat:stop',
@@ -61,10 +60,10 @@ export default class Activation {
       },
     });
 
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
+    this._disposables = new UniversalDisposable(
+      () => {
         this._logTailer.stop();
-      }),
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-adb-logcat:start': () => this._logTailer.start(),
         'nuclide-adb-logcat:stop': () => this._logTailer.stop(),
@@ -73,20 +72,29 @@ export default class Activation {
     );
   }
 
-  consumeOutputService(api: OutputService): void {
-    this._disposables.add(
-      api.registerOutputProvider({
-        id: 'adb logcat',
-        messages: this._logTailer.getMessages(),
-        observeStatus: cb => this._logTailer.observeStatus(cb),
-        start: () => {
-          this._logTailer.start();
-        },
-        stop: () => {
-          this._logTailer.stop();
-        },
+  consumeConsole(consoleService: ConsoleService): IDisposable {
+    let consoleApi = consoleService({
+      id: 'adb logcat',
+      name: 'adb logcat',
+      start: () => this._logTailer.start(),
+      stop: () => this._logTailer.stop(),
+    });
+    const disposable = new UniversalDisposable(
+      () => {
+        consoleApi != null && consoleApi.dispose();
+        consoleApi = null;
+      },
+      this._logTailer
+        .getMessages()
+        .subscribe(message => consoleApi != null && consoleApi.append(message)),
+      this._logTailer.observeStatus(status => {
+        if (consoleApi != null) {
+          consoleApi.setStatus(status);
+        }
       }),
     );
+    this._disposables.add(disposable);
+    return disposable;
   }
 
   dispose() {

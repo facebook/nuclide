@@ -1,0 +1,21 @@
+{
+  ".platform-darwin atom-workspace": {
+    "cmd-shift-a": "debugger:show-attach-dialog",
+    "cmd-f8": "debugger:show-launch-dialog",
+    "cmd-shift-f8": "debugger:restart-debugging"
+  },
+  ".platform-win32 atom-workspace, .platform-linux atom-workspace": {
+    "ctrl-shift-a": "debugger:show-attach-dialog",
+    "ctrl-f8": "debugger:show-launch-dialog",
+    "ctrl-shift-f8": "debugger:restart-debugging"
+  },
+  "atom-workspace": {
+    "f8": "debugger:continue-debugging",
+    "shift-f8": "debugger:run-to-location",
+    "shift-f5": "debugger:stop-debugging",
+    "f10": "debugger:step-over",
+    "f11": "debugger:step-into",
+    "shift-f11": "debugger:step-out",
+    "f9": "debugger:toggle-breakpoint"
+  }
+}

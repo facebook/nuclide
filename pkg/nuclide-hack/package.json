@@ -1,10 +1,9 @@
 {
   "name": "nuclide-hack",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides hack language support in Nuclide",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -36,15 +35,20 @@
         ]
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "providedServices": {
+    "nuclide-project-symbol-search-service": {
+      "versions": {
+        "0.0.0": "registerProjectSymbolSearchProvider"
+      }
+    },
     "nuclide-quick-open-register-provider": {
       "description": "Register ourselves with the quick-open package",
       "versions": {
         "0.0.0": "registerQuickOpenProvider"
       }
     }
-  }
+  },
+  "activationHooks": ["!nuclide_fb_hack_vscode_ext:gk:nuclide"]
 }

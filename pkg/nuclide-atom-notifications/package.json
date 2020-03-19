@@ -1,18 +1,16 @@
 {
   "name": "nuclide-atom-notifications",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Wire Atom notifications up to the Nuclide console",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Core UI",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
-    "nuclide-console": {
+    "console": {
       "versions": {
-        "0.0.0": "consumeConsoleService"
+        "0.1.0": "consumeConsoleService"
       }
     }
   }

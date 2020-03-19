@@ -1,0 +1,13 @@
+{
+  "name": "nuclide-server2",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "big-dig-based implementation of the Nuclide server.",
+  "author": "Nuclide : Remote",
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

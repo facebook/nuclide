@@ -5,13 +5,13 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import invariant from 'assert';
 
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 type MoveOperation = 'up' | 'down' | 'right' | 'left';
 
@@ -71,6 +71,7 @@ function doSplit(
 function findNearestPane(el_: HTMLElement): ?atom$Pane {
   let el = el_;
   while (el != null) {
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     if (el.tagName === 'ATOM-PANE' && typeof el.getModel === 'function') {
       return el.getModel();
     }
@@ -94,15 +95,18 @@ function findTargetPane(
   const predicate = createPredicate(operation, activeRect);
 
   const paneToRect: WeakMap<atom$Pane, ClientRect> = new WeakMap();
-  const candidatePanes = activePane.getContainer().getPanes().filter(pane => {
-    if (pane === activePane) {
-      return false;
-    } else {
-      const rect = atom.views.getView(pane).getBoundingClientRect();
-      paneToRect.set(pane, rect);
-      return predicate(rect);
-    }
-  });
+  const candidatePanes = activePane
+    .getContainer()
+    .getPanes()
+    .filter(pane => {
+      if (pane === activePane) {
+        return false;
+      } else {
+        const rect = atom.views.getView(pane).getBoundingClientRect();
+        paneToRect.set(pane, rect);
+        return predicate(rect);
+      }
+    });
 
   if (candidatePanes.length === 1) {
     return candidatePanes[0];
@@ -150,5 +154,5 @@ function createPredicate(
     case 'right':
       return rect => rect.left > activeRect.left;
   }
-  throw Error(`Unknown operation: ${operation}`);
+  throw new Error(`Unknown operation: ${operation}`);
 }

@@ -1,0 +1,14 @@
+{
+  "name": "nuclide-fbsimctl-rpc",
+  "main": "./lib/FbsimctlService.js",
+  "version": "0.0.0",
+  "description": "An RPC service for talking to fbsimctl binary and HTTP server",
+  "author": "NEEDS OWNER",
+  "private": true,
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  },
+  "scripts": {
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  }
+}

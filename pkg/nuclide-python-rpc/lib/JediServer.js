@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -15,6 +15,7 @@ import invariant from 'assert';
 import {Observable} from 'rxjs';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getOriginalEnvironment, spawn} from 'nuclide-commons/process';
+import which from 'nuclide-commons/which';
 import {RpcProcess} from '../../nuclide-rpc';
 import {ServiceRegistry, loadServicesConfig} from '../../nuclide-rpc';
 import {localNuclideUriMarshalers} from '../../nuclide-marshalers-common';
@@ -25,7 +26,7 @@ const OPTS = {
   cwd: nuclideUri.dirname(PROCESS_PATH),
   stdio: 'pipe',
   detached: false, // When Atom is killed, server process should be killed.
-  env: {PYTHONPATH: LIB_PATH},
+  env: {...process.env, PYTHONPATH: LIB_PATH},
   /* TODO(T17353599) */ isExitError: () => false,
 };
 
@@ -42,14 +43,14 @@ function getServiceRegistry(): ServiceRegistry {
   return serviceRegistry;
 }
 
-async function getServerArgs(src: string) {
+async function getServerArgs() {
   let overrides = {};
   try {
     // Override the python path and additional sys paths
     // if override script is present.
     // $FlowFB
     const findJediServerArgs = require('./fb/find-jedi-server-args').default;
-    overrides = await findJediServerArgs(src);
+    overrides = await findJediServerArgs();
   } catch (e) {
     // Ignore.
   }
@@ -57,13 +58,24 @@ async function getServerArgs(src: string) {
   // Append the user's PYTHONPATH if it exists.
   const {PYTHONPATH} = await getOriginalEnvironment();
   if (PYTHONPATH != null && PYTHONPATH.trim() !== '') {
-    overrides.paths = (overrides.paths || [])
-      .concat(nuclideUri.splitPathList(PYTHONPATH));
+    overrides.paths = (overrides.paths || []).concat(
+      nuclideUri.splitPathList(PYTHONPATH),
+    );
+  }
+
+  // Jedi only parses Python3 files if we start with Python3.
+  // It's not the end of the world if Python3 isn't available, though.
+  let pythonPath = 'python';
+  if (overrides.pythonPath == null) {
+    const python3Path = await which('python3');
+    if (python3Path != null) {
+      pythonPath = python3Path;
+    }
   }
 
   return {
     // Default to assuming that python is in system PATH.
-    pythonPath: 'python',
+    pythonPath,
     paths: [],
     ...overrides,
   };
@@ -73,20 +85,22 @@ export default class JediServer {
   _process: RpcProcess;
   _isDisposed: boolean;
 
-  constructor(src: string) {
-    // Generate a name for this server using the src file name, used to namespace logs
-    const name = `JediServer-${nuclideUri.basename(src)}`;
-    const processStream = Observable.fromPromise(
-      getServerArgs(src),
-    ).switchMap(({pythonPath, paths}) => {
-      let args = [PROCESS_PATH, '-s', src];
-      if (paths.length > 0) {
-        args.push('-p');
-        args = args.concat(paths);
-      }
-      return spawn(pythonPath, args, OPTS);
-    });
-    this._process = new RpcProcess(name, getServiceRegistry(), processStream);
+  constructor() {
+    const processStream = Observable.fromPromise(getServerArgs()).switchMap(
+      ({pythonPath, paths}) => {
+        let args = [PROCESS_PATH];
+        if (paths.length > 0) {
+          args.push('-p');
+          args = args.concat(paths);
+        }
+        return spawn(pythonPath, args, OPTS);
+      },
+    );
+    this._process = new RpcProcess(
+      'JediServer',
+      getServiceRegistry(),
+      processStream,
+    );
     this._isDisposed = false;
   }
 

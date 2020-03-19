@@ -15,9 +15,10 @@ import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {CoverageResult} from './rpc-types';
 
 export interface CoverageProvider {
-  getCoverage(path: NuclideUri): Promise<?CoverageResult>,
-  priority: number,
-  grammarScopes: Array<string>,
-  displayName: string,
-  icon?: IconName,
+  getCoverage(path: NuclideUri): Promise<?CoverageResult>;
+  priority: number;
+  +grammarScopes?: Array<string>;
+  displayName: string;
+  icon?: IconName;
+  onToggle?: (clicked: boolean) => mixed;
 }

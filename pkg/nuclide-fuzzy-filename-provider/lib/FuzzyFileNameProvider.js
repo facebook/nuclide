@@ -14,12 +14,26 @@ import type {
   DirectoryProviderType,
 } from '../../nuclide-quick-open/lib/types';
 
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {isGkEnabled} from 'nuclide-commons/passesGK';
 import {
   RemoteDirectory,
   getFuzzyFileSearchServiceByNuclideUri,
 } from '../../nuclide-remote-connection';
+import {getNuclideContext} from '../../commons-atom/ClientQueryContext';
+import {goToLocation} from 'nuclide-commons-atom/go-to-location';
 
 import {getIgnoredNames, parseFileNameQuery} from './utils';
+
+const {logCustomFileSearchFeedback} = (function() {
+  try {
+    // $FlowFB
+    return require('../../commons-atom/fb-custom-file-search-graphql');
+  } catch (err) {
+    return {};
+  }
+})();
 
 export default ({
   providerType: 'DIRECTORY',
@@ -48,11 +62,23 @@ export default ({
 
     const directoryPath = directory.getPath();
     const service = getFuzzyFileSearchServiceByNuclideUri(directoryPath);
-    const results = await service.queryFuzzyFile(
-      directoryPath,
-      fileName,
-      getIgnoredNames(),
+    const preferCustomSearch = Boolean(
+      isGkEnabled('nuclide_prefer_myles_search'),
     );
+    const context = preferCustomSearch
+      ? await getNuclideContext(directoryPath)
+      : null;
+    const results = await service.queryFuzzyFile({
+      rootDirectory: directoryPath,
+      queryRoot: getQueryRoot(directoryPath),
+      queryString: fileName,
+      ignoredNames: getIgnoredNames(),
+      smartCase: Boolean(
+        featureConfig.get('nuclide-fuzzy-filename-provider.smartCase'),
+      ),
+      preferCustomSearch,
+      context,
+    });
 
     // Take the `nuclide://<host>` prefix into account for matchIndexes of remote files.
     if (RemoteDirectory.isRemoteDirectory(directory)) {
@@ -67,11 +93,47 @@ export default ({
     }
 
     return results.map(result => ({
+      resultType: 'FILE',
       path: result.path,
       score: result.score,
       matchIndexes: result.matchIndexes,
       line,
       column,
+      callback() {
+        if (
+          preferCustomSearch &&
+          logCustomFileSearchFeedback &&
+          context != null
+        ) {
+          logCustomFileSearchFeedback(
+            result,
+            results,
+            query,
+            directoryPath,
+            context.session_id,
+          );
+        }
+        // Custom callbacks need to run goToLocation
+        goToLocation(result.path, {
+          line,
+          column,
+        });
+      },
     }));
   },
-}: DirectoryProviderType);
+}: DirectoryProviderType<FileResult>);
+
+// Returns the directory of the active text editor which will be used to unbreak
+// ties when sorting the suggestions.
+// TODO(T26559382) Extract to util function
+function getQueryRoot(directoryPath: string): string | void {
+  if (!isGkEnabled('nuclide_fuzzy_file_search_with_root_path')) {
+    return undefined;
+  }
+  const editor = atom.workspace.getActiveTextEditor();
+  const uri = editor ? editor.getURI() : null;
+
+  return uri != null && nuclideUri.contains(directoryPath, uri)
+    ? nuclideUri.dirname(uri)
+    : undefined;
+}

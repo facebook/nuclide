@@ -1,0 +1,15 @@
+{
+  "name": "nuclide-projectionist",
+  "version": "0.0.0",
+  "author": "NEEDS OWNER",
+  "description": "A JavaScript implementation of projectionist",
+  "private": true,
+  "main": "./lib/main.js",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "true"
+  },
+  "nuclide": {
+    "packageType": "NodeLibrary"
+  }
+}

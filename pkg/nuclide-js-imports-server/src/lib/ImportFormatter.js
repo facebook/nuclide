@@ -16,32 +16,35 @@ import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 const EXTENTIONS_TO_REMOVE = ['.js'];
 
+export type ImportType =
+  | 'namedType'
+  | 'namedValue'
+  | 'defaultType'
+  | 'defaultValue'
+  | 'requireImport'
+  | 'requireDestructured';
+
 export class ImportFormatter {
   moduleDirs: Array<string>;
-  isHaste: boolean;
+  useRequire: boolean;
 
-  constructor(dirs: Array<string>, isHaste: boolean) {
+  constructor(dirs: Array<string>, useRequire: boolean) {
     this.moduleDirs = dirs;
-    this.isHaste = isHaste;
+    this.useRequire = useRequire;
   }
 
   formatImport(file: NuclideUri, exp: JSExport): string {
-    const {isTypeExport, id, isDefault} = exp;
-
-    return isDefault
-      ? `import ${id} from '${this.formatImportFile(file, exp)}'`
-      : `import ${isTypeExport
-          ? 'type '
-          : ''}{${id}} from '${this.formatImportFile(file, exp)}'`;
-  }
-
-  _formatHasteImportFile(file: NuclideUri, exp: JSExport): string {
-    return nuclideUri.basename(nuclideUri.stripExtension(exp.uri));
+    const importPath = this.formatImportFile(file, exp);
+    return createImportStatement(
+      exp.id,
+      importPath,
+      getImportType(exp, this.useRequire),
+    );
   }
 
   formatImportFile(file: NuclideUri, exp: JSExport): string {
-    if (this.isHaste) {
-      return this._formatHasteImportFile(file, exp);
+    if (exp.hasteName != null) {
+      return exp.hasteName;
     }
     const uri = abbreviateMainFiles(exp);
     const pathRelativeToModules = handleModules(uri, file, this.moduleDirs);
@@ -64,6 +67,42 @@ export class ImportFormatter {
     return file.startsWith('..')
       ? nuclideUri.join('', ...nuclideUri.split(file).filter(e => e !== '..'))
       : file;
+  }
+}
+
+function getImportType(
+  {isDefault, isTypeExport}: JSExport,
+  useRequire: boolean,
+): ImportType {
+  if (isTypeExport) {
+    return isDefault ? 'defaultType' : 'namedType';
+  } else if (useRequire) {
+    return isDefault ? 'requireImport' : 'requireDestructured';
+  }
+  return isDefault ? 'defaultValue' : 'namedValue';
+}
+
+export function createImportStatement(
+  id: string,
+  importPath: string,
+  importType: ImportType,
+): string {
+  switch (importType) {
+    case 'namedValue':
+      return `import {${id}} from '${importPath}';`;
+    case 'namedType':
+      return `import type {${id}} from '${importPath}';`;
+    case 'requireImport':
+      return `const ${id} = require('${importPath}');`;
+    case 'requireDestructured':
+      return `const {${id}} = require('${importPath}');`;
+    case 'defaultValue':
+      return `import ${id} from '${importPath}';`;
+    case 'defaultType':
+      return `import type ${id} from '${importPath}';`;
+    default:
+      (importType: empty);
+      throw new Error(`Invalid import type ${importType}`);
   }
 }
 

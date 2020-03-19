@@ -24,7 +24,7 @@ describe('nuclide', () => {
       await activateAllPackages();
       await sleep(500);
       spyOn(console, 'error').andCallThrough();
-      deactivateAllPackages();
+      await deactivateAllPackages();
       await sleep(500);
 
       // eslint-disable-next-line no-console

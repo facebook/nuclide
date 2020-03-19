@@ -13,7 +13,7 @@ available in `./samples/echo.js`) that prints the arguments back to the user
 /* @flow */
 
 // Alternatively, you can define this as `type ExitCode = number`.
-import type {ExitCode} from 'nuclide-atom-script';
+import type {ExitCode} from './nuclide-atom-script';
 
 export default async function runCommand(args: Array<string>): Promise<ExitCode> {
   const message = args.length === 0 ? 'Please pass me an arg!' : args.join(' ');
@@ -41,7 +41,7 @@ For example, you could use `atom-script` to dump all of your keybindings to stdo
 'use babel';
 /* @flow */
 
-import type {ExitCode} from 'nuclide-atom-script';
+import type {ExitCode} from './nuclide-atom-script';
 
 export default async function runCommand(args: Array<string>): Promise<ExitCode> {
   const commands = [];
@@ -71,5 +71,3 @@ application:show-settings
 application:zoom
 ...
 ```
-
-If you `npm install -g nuclide-atom-script`, then `atom-script` will be on your `$PATH`.`

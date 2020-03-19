@@ -12,26 +12,23 @@
 import type {ButtonSize} from 'nuclide-commons-ui/Button';
 
 import {Button} from 'nuclide-commons-ui/Button';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   selected?: boolean,
   size?: ButtonSize,
   children?: mixed,
-  iconComponent: ?ReactClass<any>,
+  iconComponent: ?React.ComponentType<any>,
 };
 
 export function TaskRunnerButton(props: Props): React.Element<any> {
   const IconComponent = props.iconComponent;
   const icon = IconComponent ? <IconComponent /> : null;
   const buttonProps = {...props};
-  delete buttonProps.label;
   delete buttonProps.iconComponent;
   return (
     <Button {...buttonProps} className="nuclide-task-runner-task-runner-button">
-      <div className="nuclide-task-runner-task-runner-icon-wrapper">
-        {icon}
-      </div>
+      <div className="nuclide-task-runner-task-runner-icon-wrapper">{icon}</div>
       {props.children}
     </Button>
   );

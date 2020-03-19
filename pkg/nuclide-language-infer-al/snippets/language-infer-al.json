@@ -1,0 +1,64 @@
+{
+  ".source.infer.al": {
+    "HOLDS-UNTIL": {
+      "prefix": "HOLDS-UNTIL",
+      "body": "HOLDS-UNTIL ${1:formula}"
+    },
+    "HOLDS-EVERYWHERE-UNTIL": {
+      "prefix": "HOLDS-EVERYWHERE-UNTIL",
+      "body": "HOLDS-EVERYWHERE-UNTIL ${1:formula}"
+    },
+    "HOLDS-EVENTUALLY": {
+      "prefix": "HOLDS-EVENTUALLY",
+      "body": "HOLDS-EVENTUALLY"
+    },
+    "HOLDS-EVERYWHERE-EVENTUALLY": {
+      "prefix": "HOLDS-EVERYWHERE-EVENTUALLY",
+      "body": "HOLDS-EVERYWHERE-EVENTUALLY"
+    },
+    "HOLDS-NEXT": {
+      "prefix": "HOLDS-NEXT",
+      "body": "HOLDS-NEXT"
+    },
+    "HOLDS-EVERYWHERE-NEXT": {
+      "prefix": "HOLDS-EVERYWHERE-NEXT",
+      "body": "HOLDS-EVERYWHERE-NEXT"
+    },
+    "HOLDS-ALWAYS": {
+      "prefix": "HOLDS-ALWAYS",
+      "body": "HOLDS-ALWAYS"
+    },
+    "HOLDS-EVERYWHERE-ALWAYS": {
+      "prefix": "HOLDS-EVERYWHERE-ALWAYS",
+      "body": "HOLDS-EVERYWHERE-ALWAYS"
+    },
+    "HOLDS-IN-SOME-SUPERCLASS-OF": {
+      "prefix": "HOLDS-IN-SOME-SUPERCLASS-OF",
+      "body": "HOLDS-IN-SOME-SUPERCLASS-OF ${1:node_list}"
+    },
+    "IN-NODE": {
+      "prefix": "IN-NODE",
+      "body": "IN-NODE ${1:node_list}"
+    },
+    "IN-EXCLUSIVE-NODE": {
+      "prefix": "IN-EXCLUSIVE-NODE",
+      "body": "IN-EXCLUSIVE-NODE ${1:node_list}"
+    },
+    "WHEN": {
+      "prefix": "WHEN",
+      "body": "WHEN\n\t${1:formula}"
+    },
+    "HOLDS-IN-NODE": {
+      "prefix": "HOLDS-IN-NODE",
+      "body": "HOLDS-IN-NODE ${1:node_list}"
+    },
+    "WITH-TRANSITION": {
+      "prefix": "WITH-TRANSITION",
+      "body": "WITH-TRANSITION ${1:transition}"
+    },
+    "DEFINE-CHECKER": {
+      "prefix": "DEFINE-CHECKER",
+      "body": "DEFINE-CHECKER ${1:checker_name} = {\n\tSET report_when = ${2:formula};\n\tSET message = \"${3:error message}\";\n\tSET suggestion = \"${4:optional suggestion}\";\n\tSET severity = \"${5:error severity, e.g. WARNING}\";\n};"
+    }
+  }
+}

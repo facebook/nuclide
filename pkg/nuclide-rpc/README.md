@@ -3,7 +3,7 @@
 The classes defined in this directory are used to integrate the service framework proxy-generation and marshalling code with the actual message passing layer. See the `nuclide-service-parser` package for steps related to definition parsing, proxy-generation, and type marshalling.
 
 ## RpcConnection
-`RpcConnection` is used by the `RemoteConnection` class - all functions related to the service framework are delegated to a `RpcConnection` instance. These functions are `callRemoteFunction`, `createRemoteObject`, `callRemoteMethod`, and `disposeRemoteObject`.
+`RpcConnection` is used by the `RemoteConnection` class - all functions related to the service framework are delegated to a `RpcConnection` instance. These functions are `callRemoteFunction`, `callRemoteMethod`, and `disposeRemoteObject`.
 
 ## ServiceRegistry
 `ServiceRegistry` is used by the `NuclideServer` class - all functions related to the service framework are delegated to a `ServiceRegistry` instance. All of the messages come in through the `handleMessage` function.

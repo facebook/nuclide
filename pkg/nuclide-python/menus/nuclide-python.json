@@ -1,0 +1,18 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "Python",
+          "submenu": [
+            {
+              "label": "Reset Language Services",
+              "command": "nuclide-python:reset-language-services"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

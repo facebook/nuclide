@@ -1,0 +1,270 @@
+"use strict";
+
+module.exports = _client => {
+  const remoteModule = {};
+
+  remoteModule.TestFunctionA = function (arg0, arg1) {
+    return _client.callRemoteFunction("FunctionService/TestFunctionA", "promise", _client.marshalArguments(Array.from(arguments), [{
+      name: "arg1",
+      type: {
+        kind: "string"
+      }
+    }, {
+      name: "arg2",
+      type: {
+        kind: "boolean"
+      }
+    }])).then(value => {
+      return _client.unmarshal(value, {
+        kind: "array",
+        type: {
+          kind: "string"
+        }
+      });
+    });
+  };
+
+  remoteModule.TestFunctionB = function () {
+    return _client.callRemoteFunction("FunctionService/TestFunctionB", "observable", _client.marshalArguments(Array.from(arguments), [])).map(value => {
+      return _client.unmarshal(value, {
+        kind: "number"
+      });
+    }).publish();
+  };
+
+  remoteModule.TestFunctionC = function () {
+    return _client.callRemoteFunction("FunctionService/TestFunctionC", "void", _client.marshalArguments(Array.from(arguments), []));
+  };
+
+  remoteModule.TestFunctionD = function (arg0, arg1) {
+    return _client.callRemoteFunction("FunctionService/TestFunctionD", "void", _client.marshalArguments(Array.from(arguments), [{
+      name: "p1",
+      type: {
+        kind: "nullable",
+        type: {
+          kind: "named",
+          name: "Object"
+        }
+      }
+    }, {
+      name: "p2",
+      type: {
+        kind: "nullable",
+        type: {
+          kind: "named",
+          name: "Object"
+        }
+      }
+    }]));
+  };
+
+  remoteModule.ReturnAlias = function () {
+    return _client.callRemoteFunction("FunctionService/ReturnAlias", "promise", _client.marshalArguments(Array.from(arguments), [])).then(value => {
+      return _client.unmarshal(value, {
+        kind: "number"
+      });
+    });
+  };
+
+  return remoteModule;
+};
+
+Object.defineProperty(module.exports, "defs", {
+  value: {
+    Object: {
+      kind: "alias",
+      name: "Object",
+      location: {
+        type: "builtin"
+      }
+    },
+    Date: {
+      kind: "alias",
+      name: "Date",
+      location: {
+        type: "builtin"
+      }
+    },
+    RegExp: {
+      kind: "alias",
+      name: "RegExp",
+      location: {
+        type: "builtin"
+      }
+    },
+    Buffer: {
+      kind: "alias",
+      name: "Buffer",
+      location: {
+        type: "builtin"
+      }
+    },
+    "fs.Stats": {
+      kind: "alias",
+      name: "fs.Stats",
+      location: {
+        type: "builtin"
+      }
+    },
+    TestFunctionA: {
+      kind: "function",
+      name: "TestFunctionA",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 1
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "FunctionService.def",
+          line: 1
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "arg1",
+          type: {
+            kind: "string"
+          }
+        }, {
+          name: "arg2",
+          type: {
+            kind: "boolean"
+          }
+        }],
+        returnType: {
+          kind: "promise",
+          type: {
+            kind: "array",
+            type: {
+              kind: "string"
+            }
+          }
+        }
+      }
+    },
+    TestFunctionB: {
+      kind: "function",
+      name: "TestFunctionB",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 3
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "FunctionService.def",
+          line: 3
+        },
+        kind: "function",
+        argumentTypes: [],
+        returnType: {
+          kind: "observable",
+          type: {
+            kind: "number"
+          }
+        }
+      }
+    },
+    TestFunctionC: {
+      kind: "function",
+      name: "TestFunctionC",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 5
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "FunctionService.def",
+          line: 5
+        },
+        kind: "function",
+        argumentTypes: [],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    TestFunctionD: {
+      kind: "function",
+      name: "TestFunctionD",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 7
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "FunctionService.def",
+          line: 7
+        },
+        kind: "function",
+        argumentTypes: [{
+          name: "p1",
+          type: {
+            kind: "nullable",
+            type: {
+              kind: "named",
+              name: "Object"
+            }
+          }
+        }, {
+          name: "p2",
+          type: {
+            kind: "nullable",
+            type: {
+              kind: "named",
+              name: "Object"
+            }
+          }
+        }],
+        returnType: {
+          kind: "void"
+        }
+      }
+    },
+    PN: {
+      kind: "alias",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 9
+      },
+      name: "PN",
+      definition: {
+        kind: "promise",
+        type: {
+          kind: "number"
+        }
+      }
+    },
+    ReturnAlias: {
+      kind: "function",
+      name: "ReturnAlias",
+      location: {
+        type: "source",
+        fileName: "FunctionService.def",
+        line: 11
+      },
+      type: {
+        location: {
+          type: "source",
+          fileName: "FunctionService.def",
+          line: 11
+        },
+        kind: "function",
+        argumentTypes: [],
+        returnType: {
+          kind: "promise",
+          type: {
+            kind: "number"
+          }
+        }
+      }
+    }
+  }
+});

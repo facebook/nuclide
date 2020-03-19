@@ -28,12 +28,10 @@ class DefinitionCache {
     this._disposables.dispose();
   }
 
-  async get(
+  getCached(
     editor: atom$TextEditor,
     position: atom$Point,
-    getImpl: () => Promise<?DefinitionQueryResult>,
-  ): Promise<?DefinitionQueryResult> {
-    // queryRange is often a list of one range
+  ): ?Promise<?DefinitionQueryResult> {
     if (
       this._cachedResultRange != null &&
       this._cachedResultEditor === editor &&
@@ -41,24 +39,47 @@ class DefinitionCache {
     ) {
       return this._cachedResultPromise;
     }
+  }
+
+  async get(
+    editor: atom$TextEditor,
+    position: atom$Point,
+    getImpl: () => Promise<?DefinitionQueryResult>,
+  ): Promise<?DefinitionQueryResult> {
+    const cached = this.getCached(editor, position);
+    if (cached != null) {
+      return cached;
+    }
 
     // invalidate whenever the buffer changes
     const invalidateAndStopListening = () => {
-      this._cachedResultEditor = null;
-      this._cachedResultRange = null;
-      this._cachedResultRange = null;
+      // Make sure we don't invalidate a newer cache result.
+      if (this._cachedResultPromise === promise) {
+        this._cachedResultEditor = null;
+        this._cachedResultRange = null;
+        this._cachedResultPromise = null;
+      }
       this._disposables.remove(editorDisposables);
       editorDisposables.dispose();
     };
     const editorDisposables = new UniversalDisposable(
-      editor.onDidChange(invalidateAndStopListening),
+      editor.getBuffer().onDidChangeText(invalidateAndStopListening),
       editor.onDidDestroy(invalidateAndStopListening),
     );
     this._disposables.add(editorDisposables);
 
     const wordGuess = wordAtPosition(editor, position);
     this._cachedResultRange = wordGuess && wordGuess.range;
-    this._cachedResultPromise = getImpl();
+    this._cachedResultEditor = editor;
+    const promise = getImpl().then(result => {
+      // Rejected providers turn into null values here.
+      // Invalidate the cache to ensure that the user can retry the request.
+      if (result == null) {
+        invalidateAndStopListening();
+      }
+      return result;
+    });
+    this._cachedResultPromise = promise;
 
     return this._cachedResultPromise;
   }

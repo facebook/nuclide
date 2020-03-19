@@ -1,0 +1,13 @@
+{
+  "name": "dev-nuclide-ui-playground",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Various examples of how to use generic UI components.",
+  "author": "Nuclide : Core UI",
+  "deserializers": {
+    "nuclide.SampleUiPlayground": "deserializeSampleUiPlayground"
+  },
+  "nuclide": {
+    "packageType": "AtomPackage"
+  }
+}

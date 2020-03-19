@@ -14,6 +14,7 @@ import type {BaseBuckBuildOptions} from './types';
 import type {ObserveProcessOptions} from 'nuclide-commons/process';
 
 import {runCommand} from 'nuclide-commons/process';
+import {Deferred} from 'nuclide-commons/promise';
 import {PromisePool} from '../../commons-node/promise-executors';
 import {getOriginalEnvironment} from 'nuclide-commons/process';
 import * as os from 'os';
@@ -21,11 +22,11 @@ import fsPromise from 'nuclide-commons/fsPromise';
 import {shellQuote} from 'nuclide-commons/string';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getLogger} from 'log4js';
+import {trackTiming} from 'nuclide-analytics';
+import {Observable} from 'rxjs';
+import {CLIENT_ID_ARGS} from './types';
 
 const logger = getLogger('nuclide-buck-rpc');
-
-// Tag these Buck calls as coming from Nuclide for analytics purposes.
-const CLIENT_ID_ARGS = ['--config', 'client.id=nuclide'];
 
 type FullBuckBuildOptions = {
   baseOptions: BaseBuckBuildOptions,
@@ -48,7 +49,7 @@ type BuckCommandAndOptions = {
  * TODO(hansonw): Buck seems to have some race conditions that prevent us
  * from running things in parallel :(
  */
-const MAX_CONCURRENT_READ_ONLY = 1; // Math.max(1, os.cpus().length - 1);
+const MAX_CONCURRENT_READ_ONLY = 1; // Math.max(1, os.cpus() ? os.cpus().length - 1 : 1);
 const pools = new Map();
 
 export function getPool(path: string, readOnly: boolean): PromisePool {
@@ -75,13 +76,22 @@ export async function _getBuckCommandAndOptions(
       global.atom.config.get('nuclide.nuclide-buck.pathToBuck')) ||
     'buck';
   if (pathToBuck === 'buck' && os.platform() === 'win32') {
-    pathToBuck = 'buck.bat';
+    pathToBuck = 'buck.exe';
   }
+  let env = await getOriginalEnvironment();
+  try {
+    // $FlowFB
+    const {getRealUsername} = require('./fb/realUsername');
+    const username = await getRealUsername(env.USER);
+    if (username != null) {
+      env = {...env, USER: username};
+    }
+  } catch (_) {}
   const buckCommandOptions = {
     cwd: rootPath,
     // Buck restarts itself if the environment changes, so try to preserve
     // the original environment that Nuclide was started in.
-    env: await getOriginalEnvironment(),
+    env,
     ...commandOptions,
   };
   return {pathToBuck, buckCommandOptions};
@@ -108,9 +118,6 @@ export function _translateOptionsToBuckBuildArgs(
   let args = [test ? 'test' : doInstall ? 'install' : run ? 'run' : 'build'];
   args = args.concat(buildTargets, CLIENT_ID_ARGS);
 
-  if (!run) {
-    args.push('--keep-going');
-  }
   // flowlint-next-line sketchy-null-string:off
   if (pathToBuildReport) {
     args = args.concat(['--build-report', pathToBuildReport]);
@@ -139,66 +146,99 @@ export function _translateOptionsToBuckBuildArgs(
   return args;
 }
 
-export async function _build(
+export function _build(
   rootPath: NuclideUri,
   buildTargets: Array<string>,
   options: BaseBuckBuildOptions,
-): Promise<any> {
-  const report = await fsPromise.tempfile({suffix: '.json'});
-  const args = _translateOptionsToBuckBuildArgs({
-    baseOptions: {...options},
-    pathToBuildReport: report,
-    buildTargets,
-  });
-
-  try {
-    await runBuckCommandFromProjectRoot(
+): Observable<any> {
+  return Observable.fromPromise(
+    fsPromise.tempfile({suffix: '.json'}),
+  ).switchMap(report => {
+    const args = _translateOptionsToBuckBuildArgs({
+      baseOptions: {...options},
+      pathToBuildReport: report,
+      buildTargets,
+    });
+    return runBuckCommandFromProjectRoot(
       rootPath,
       args,
       options.commandOptions,
       false, // Do not add the client ID, since we already do it in the build args.
       true, // Build commands are blocking.
-    );
-  } catch (e) {
-    // The build failed. However, because --keep-going was specified, the
-    // build report should have still been written unless any of the target
-    // args were invalid. We check the contents of the report file to be sure.
-    const stat = await fsPromise.stat(report).catch(() => null);
-    if (stat == null || stat.size === 0) {
-      throw e;
-    }
-  }
-
-  try {
-    const json: string = await fsPromise.readFile(report, {encoding: 'UTF-8'});
-    try {
-      return JSON.parse(json);
-    } catch (e) {
-      throw Error(`Failed to parse:\n${json}`);
-    }
-  } finally {
-    fsPromise.unlink(report);
-  }
+    )
+      .catch(e => {
+        // The build failed. However, because --keep-going was specified, the
+        // build report should have still been written unless any of the target
+        // args were invalid. We check the contents of the report file to be sure.
+        return Observable.fromPromise(fsPromise.stat(report).catch(() => null))
+          .filter(stat => stat == null || stat.size === 0)
+          .switchMapTo(Observable.throw(e));
+      })
+      .ignoreElements()
+      .concat(
+        Observable.defer(() =>
+          Observable.fromPromise(
+            fsPromise.readFile(report, {encoding: 'UTF-8'}),
+          ),
+        ).map(json => {
+          try {
+            return JSON.parse(json);
+          } catch (e) {
+            throw new Error(`Failed to parse:\n${json}`);
+          }
+        }),
+      )
+      .finally(() => fsPromise.unlink(report));
+  });
 }
 
 export function build(
   rootPath: NuclideUri,
   buildTargets: Array<string>,
   options?: BaseBuckBuildOptions,
-): Promise<any> {
+): Observable<any> {
   return _build(rootPath, buildTargets, options || {});
+}
+
+export async function getDefaultPlatform(
+  rootPath: NuclideUri,
+  target: string,
+  extraArguments: Array<string>,
+  appendPreferredArgs: boolean = true,
+): Promise<?string> {
+  const result = await query(
+    rootPath,
+    target,
+    ['--output-attributes', 'defaults'].concat(extraArguments),
+    appendPreferredArgs,
+  ).toPromise();
+  if (
+    result[target] != null &&
+    result[target].defaults != null &&
+    result[target].defaults.platform != null
+  ) {
+    return result[target].defaults.platform;
+  }
+  return null;
 }
 
 export async function getOwners(
   rootPath: NuclideUri,
   filePath: NuclideUri,
+  extraArguments: Array<string>,
   kindFilter?: string,
+  appendPreferredArgs: boolean = true,
 ): Promise<Array<string>> {
   let queryString = `owner("${shellQuote([filePath])}")`;
   if (kindFilter != null) {
     queryString = `kind(${JSON.stringify(kindFilter)}, ${queryString})`;
   }
-  return query(rootPath, queryString);
+  return query(
+    rootPath,
+    queryString,
+    extraArguments,
+    appendPreferredArgs,
+  ).toPromise();
 }
 
 export function getRootForPath(file: NuclideUri): Promise<?NuclideUri> {
@@ -209,42 +249,83 @@ export function getRootForPath(file: NuclideUri): Promise<?NuclideUri> {
  * @param args Do not include 'buck' as the first argument: it will be added
  *     automatically.
  */
-export async function runBuckCommandFromProjectRoot(
+export function runBuckCommandFromProjectRoot(
   rootPath: string,
   args: Array<string>,
   commandOptions?: ObserveProcessOptions,
   addClientId?: boolean = true,
   readOnly?: boolean = true,
-): Promise<string> {
-  const {
-    pathToBuck,
-    buckCommandOptions: options,
-  } = await _getBuckCommandAndOptions(rootPath, commandOptions);
-
-  const newArgs = addClientId ? args.concat(CLIENT_ID_ARGS) : args;
-  return getPool(rootPath, readOnly).submit(() => {
+): Observable<string> {
+  return Observable.fromPromise(
+    _getBuckCommandAndOptions(rootPath, commandOptions),
+  ).switchMap(({pathToBuck, buckCommandOptions: options}) => {
+    // Create an event name from the first arg, e.g. 'buck.query' or 'buck.build'.
+    const analyticsEvent = `buck.${args.length > 0 ? args[0] : ''}`;
+    const newArgs = addClientId ? args.concat(CLIENT_ID_ARGS) : args;
+    const deferredTimer = new Deferred();
     logger.debug(`Running \`${pathToBuck} ${shellQuote(args)}\``);
-    return runCommand(pathToBuck, newArgs, options).toPromise();
+    let errored = false;
+    trackTiming(analyticsEvent, () => deferredTimer.promise, {args});
+    return runCommand(pathToBuck, newArgs, options)
+      .catch(e => {
+        // Catch and rethrow exceptions to be tracked in our timer.
+        deferredTimer.reject(e);
+        errored = true;
+        return Observable.throw(e);
+      })
+      .finally(() => {
+        if (!errored) {
+          deferredTimer.resolve();
+        }
+      });
   });
 }
 
 /** Runs `buck query --json` with the specified query. */
-export async function query(
+export function query(
   rootPath: NuclideUri,
   queryString: string,
+  extraArguments: Array<string>,
+  appendPreferredArgs: boolean = true,
+): Observable<any> {
+  return Observable.fromPromise(_getPreferredArgsForRepo(rootPath)).switchMap(
+    fbRepoSpecificArgs => {
+      const args = [
+        'query',
+        '--json',
+        queryString,
+        ...extraArguments,
+        ...(appendPreferredArgs ? fbRepoSpecificArgs : []),
+      ];
+
+      return runBuckCommandFromProjectRoot(rootPath, args).map(JSON.parse);
+    },
+  );
+}
+
+export async function _getPreferredArgsForRepo(
+  buckRoot: NuclideUri,
 ): Promise<Array<string>> {
-  const args = ['query', '--json', queryString];
-  const result = await runBuckCommandFromProjectRoot(rootPath, args);
-  const json: Array<string> = JSON.parse(result);
-  return json;
+  try {
+    // $FlowFB
+    const {getFbRepoSpecificArgs} = require('./fb/repoSpecificArgs');
+    return await getFbRepoSpecificArgs(buckRoot);
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function getBuildFile(
   rootPath: NuclideUri,
   targetName: string,
+  extraArguments: Array<string>,
 ): Promise<?string> {
   try {
-    const result = await query(rootPath, `buildfile(${targetName})`);
+    const result = await query(
+      rootPath,
+      `buildfile(${targetName})`,
+      extraArguments,
+    ).toPromise();
     if (result.length === 0) {
       return null;
     }

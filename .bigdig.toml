@@ -1,0 +1,6 @@
+[lsp]
+
+  [lsp.flow]
+  language = ["javascript"]
+  command = "flow"
+  args = ["lsp", "--from", "big-dig", "--lazy-mode", "ide"]

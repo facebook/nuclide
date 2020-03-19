@@ -9,7 +9,7 @@
  * @format
  */
 
-import type {OutputService} from '../../nuclide-console/lib/types';
+import type {ConsoleService} from 'atom-ide-ui';
 
 import invariant from 'assert';
 import Activation from './Activation';
@@ -27,7 +27,7 @@ export function deactivate() {
   activation = null;
 }
 
-export function consumeOutputService(api: OutputService): void {
+export function consumeConsole(consoleService: ConsoleService): void {
   invariant(activation);
-  activation.consumeOutputService(api);
+  activation.consumeConsole(consoleService);
 }

@@ -9,6 +9,7 @@
  * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {
   ClangCompileResult,
   ClangCompletion,
@@ -17,36 +18,57 @@ import type {
   ClangLocalReferences,
   ClangOutlineTree,
   ClangRequestSettings,
+  ClangServerSettings,
 } from '../../nuclide-clang-rpc/lib/rpc-types';
-import typeof * as ClangService from '../../nuclide-clang-rpc';
 import type {ClangConfigurationProvider} from './types';
 
 import {arrayCompact} from 'nuclide-commons/collection';
-import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
-import {
-  getClangServiceByNuclideUri,
-  getServiceByNuclideUri,
-} from '../../nuclide-remote-connection';
+import {checkCqueryOverride} from '../../nuclide-clang-base';
+import {isHeaderFile} from '../../nuclide-clang-rpc/lib/utils';
+import {getClangServiceByNuclideUri} from '../../nuclide-remote-connection';
 
 type NuclideClangConfig = {
   enableDefaultFlags: boolean,
   defaultFlags: Array<string>,
+  serverProcessMemoryLimit: number,
+  libclangPath: string,
 };
 
 const clangProviders: Set<ClangConfigurationProvider> = new Set();
 
-function getDefaultFlags(): ?Array<string> {
+function getServerSettings(): ClangServerSettings {
   const config: NuclideClangConfig = (featureConfig.get('nuclide-clang'): any);
+  let {defaultFlags, libclangPath} = config;
   if (!config.enableDefaultFlags) {
-    return null;
+    defaultFlags = null;
   }
-  return config.defaultFlags;
+  // If the path is empty then don't set it, let server use the default.
+  if (libclangPath === '') {
+    libclangPath = null;
+  }
+  return {defaultFlags, libclangPath};
+}
+
+async function findSourcePath(path: NuclideUri): Promise<string> {
+  if (isHeaderFile(path)) {
+    const service = getClangServiceByNuclideUri(path);
+    if (service != null) {
+      const source = await service.getRelatedSourceOrHeader(path);
+      if (source != null) {
+        return source;
+      }
+    }
+  }
+  return path;
 }
 
 async function getClangProvidersForSource(
-  src: string,
+  _src: NuclideUri,
 ): Promise<ClangConfigurationProvider[]> {
+  const src = await findSourcePath(_src);
+
   return arrayCompact(
     await Promise.all(
       [...clangProviders].map(async provider => {
@@ -63,7 +85,7 @@ async function getClangRequestSettings(
   src: string,
 ): Promise<?ClangRequestSettings> {
   const provider = (await getClangProvidersForSource(src))[0];
-  if (provider != null) {
+  if (provider != null && !(await checkCqueryOverride(src))) {
     return provider.getSettings(src);
   }
 }
@@ -72,12 +94,15 @@ const clangServices = new WeakSet();
 
 // eslint-disable-next-line nuclide-internal/no-commonjs
 module.exports = {
-  registerClangProvider(provider: ClangConfigurationProvider): Disposable {
+  registerClangProvider(provider: ClangConfigurationProvider): IDisposable {
     clangProviders.add(provider);
-    return new Disposable(() => clangProviders.delete(provider));
+    return new UniversalDisposable(() => clangProviders.delete(provider));
   },
 
   async getRelatedSourceOrHeader(src: string): Promise<?string> {
+    if (await checkCqueryOverride(src)) {
+      return null;
+    }
     return getClangServiceByNuclideUri(src).getRelatedSourceOrHeader(
       src,
       await getClangRequestSettings(src),
@@ -86,23 +111,33 @@ module.exports = {
 
   async getDiagnostics(editor: atom$TextEditor): Promise<?ClangCompileResult> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return null;
     }
     const contents = editor.getText();
 
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
     const service = getClangServiceByNuclideUri(src);
 
     // When we fetch diagnostics for the first time, reset the server state.
     // This is so the user can easily refresh the Clang + Buck state by reloading Atom.
+    // At this time we also set the memory limit of the service.
     if (!clangServices.has(service)) {
+      const config: NuclideClangConfig = (featureConfig.get(
+        'nuclide-clang',
+      ): any);
       clangServices.add(service);
+      await service.setMemoryLimit(config.serverProcessMemoryLimit);
       await service.reset();
     }
 
     return service
-      .compile(src, contents, await getClangRequestSettings(src), defaultFlags)
+      .compile(
+        src,
+        contents,
+        await getClangRequestSettings(src),
+        defaultSettings,
+      )
       .refCount()
       .toPromise();
   },
@@ -112,7 +147,7 @@ module.exports = {
     prefix: string,
   ): Promise<?Array<ClangCompletion>> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return null;
     }
     const cursor = editor.getLastCursor();
@@ -121,7 +156,7 @@ module.exports = {
     const column = cursor.getBufferColumn();
     const tokenStartColumn = column - prefix.length;
 
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
     const service = getClangServiceByNuclideUri(src);
 
     return service.getCompletions(
@@ -132,7 +167,7 @@ module.exports = {
       tokenStartColumn,
       prefix,
       await getClangRequestSettings(src),
-      defaultFlags,
+      defaultSettings,
     );
   },
 
@@ -146,10 +181,10 @@ module.exports = {
     column: number,
   ): Promise<?ClangDeclaration> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return null;
     }
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
     const service = getClangServiceByNuclideUri(src);
     return service.getDeclaration(
       src,
@@ -157,7 +192,7 @@ module.exports = {
       line,
       column,
       await getClangRequestSettings(src),
-      defaultFlags,
+      defaultSettings,
     );
   },
 
@@ -167,12 +202,12 @@ module.exports = {
     column: number,
   ): Promise<?Array<ClangCursor>> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return Promise.resolve(null);
     }
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
 
-    const service: ?ClangService = getServiceByNuclideUri('ClangService', src);
+    const service = getClangServiceByNuclideUri(src);
     if (service == null) {
       return Promise.resolve(null);
     }
@@ -183,22 +218,22 @@ module.exports = {
       line,
       column,
       await getClangRequestSettings(src),
-      defaultFlags,
+      defaultSettings,
     );
   },
 
   async getOutline(editor: atom$TextEditor): Promise<?Array<ClangOutlineTree>> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return Promise.resolve();
     }
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
     const service = getClangServiceByNuclideUri(src);
     return service.getOutline(
       src,
       editor.getText(),
       await getClangRequestSettings(src),
-      defaultFlags,
+      defaultSettings,
     );
   },
 
@@ -208,12 +243,12 @@ module.exports = {
     column: number,
   ): Promise<?ClangLocalReferences> {
     const src = editor.getPath();
-    if (src == null) {
+    if (src == null || (await checkCqueryOverride(src))) {
       return Promise.resolve(null);
     }
-    const defaultFlags = getDefaultFlags();
+    const defaultSettings = getServerSettings();
 
-    const service: ?ClangService = getServiceByNuclideUri('ClangService', src);
+    const service = getClangServiceByNuclideUri(src);
     if (service == null) {
       return Promise.resolve(null);
     }
@@ -224,7 +259,7 @@ module.exports = {
       line,
       column,
       await getClangRequestSettings(src),
-      defaultFlags,
+      defaultSettings,
     );
   },
 

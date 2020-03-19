@@ -9,62 +9,59 @@
  * @format
  */
 
+import addTooltip from 'nuclide-commons-ui/addTooltip';
+import {collect, someOfIterable} from 'nuclide-commons/collection';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
 import ConnectionState from './ConnectionState';
-import {
-  notifyLocalDiskFile,
-  notifyConnectedRemoteFile,
-  notifyDisconnectedRemoteFile,
-} from './notification';
-import React from 'react';
 
-type Props = {
-  connectionState: number,
-  fileUri?: string,
+export type Props = {
+  // Map of hostname to connection states.
+  connectionStates: Map<string, $Values<typeof ConnectionState>>,
 };
 
-export default class StatusBarTile extends React.Component {
-  props: Props;
-
-  render(): ?React.Element<any> {
-    let iconName = null;
-    switch (this.props.connectionState) {
-      case ConnectionState.NONE:
-        break;
-      case ConnectionState.CONNECTED:
-        iconName = 'cloud-upload';
-        break;
-      case ConnectionState.DISCONNECTED:
-        iconName = 'alert';
-        break;
-    }
-    // When the active pane isn't a text editor, e.g. diff view, preferences, ..etc.,
-    // We don't show a connection status bar.
-    if (!iconName) {
+export default class StatusBarTile extends React.Component<Props> {
+  render(): React.Node {
+    const {connectionStates} = this.props;
+    if (connectionStates.size === 0) {
       return null;
     }
+    const isDisconnected = someOfIterable(
+      connectionStates.values(),
+      x => x === ConnectionState.DISCONNECTED,
+    );
+    const iconName: atom$Octicon = isDisconnected ? 'alert' : 'cloud-upload';
     return (
       <span
         className={`icon icon-${iconName} nuclide-remote-projects-status-icon`}
         onClick={this._onStatusBarTileClicked}
+        // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
+        ref={addTooltip({title: 'Click for connection details.'})}
       />
     );
   }
 
   _onStatusBarTileClicked = (): void => {
-    // flowlint-next-line sketchy-null-string:off
-    if (!this.props.fileUri) {
+    const {connectionStates} = this.props;
+    if (connectionStates.size === 0) {
       return;
     }
-    switch (this.props.connectionState) {
-      case ConnectionState.LOCAL:
-        notifyLocalDiskFile(this.props.fileUri);
-        break;
-      case ConnectionState.CONNECTED:
-        notifyConnectedRemoteFile(this.props.fileUri);
-        break;
-      case ConnectionState.DISCONNECTED:
-        notifyDisconnectedRemoteFile(this.props.fileUri);
-        break;
+    const grouped = collect(
+      Array.from(connectionStates).map(([hostname, state]) => [
+        state,
+        hostname,
+      ]),
+    );
+    const disconnectedHosts = grouped.get(ConnectionState.DISCONNECTED);
+    if (disconnectedHosts != null) {
+      atom.notifications.addWarning(
+        `Lost connection to ${disconnectedHosts.join(
+          ', ',
+        )}. Attempting to reconnect...`,
+      );
+    } else {
+      const connectedHosts = nullthrows(grouped.get(ConnectionState.CONNECTED));
+      atom.notifications.addInfo(`Connected to ${connectedHosts.join(', ')}.`);
     }
   };
 }

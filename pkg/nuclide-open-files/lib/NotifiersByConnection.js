@@ -18,12 +18,13 @@ import {
   ServerConnection,
   ConnectionCache,
 } from '../../nuclide-remote-connection';
+
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {OPEN_FILES_SERVICE} from '../../nuclide-open-files-rpc';
 import {getLogger} from 'log4js';
 import {FileEventKind} from '../../nuclide-open-files-rpc';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {Disposable} from 'atom';
 import {areSetsEqual} from 'nuclide-commons/collection';
 
 const logger = getLogger('nuclide-open-files');
@@ -65,10 +66,15 @@ export class NotifiersByConnection {
       new Set(dirs.filter(dir => uriMatchesConnection(dir, connection)));
     this._notifiers = new ConnectionCache(connection => {
       const result = this._getService(connection).initialize();
-      result.then(notifier => {
+      // NOTE: It's important to use `await` here rather than .then.
+      // v8's native async/await implementation treats .then and await differently.
+      // See: https://stackoverflow.com/questions/46254408/promise-resolution-order-and-await
+      async function onDirectoriesChanged() {
+        const notifier = await result;
         const dirs = filterByConnection(connection, atom.project.getPaths());
         notifier.onDirectoriesChanged(dirs);
-      });
+      }
+      onDirectoriesChanged();
       return result;
     });
     this._subscriptions = new ConnectionCache(connection => {
@@ -77,12 +83,13 @@ export class NotifiersByConnection {
       )
         .map(dirs => filterByConnection(connection, dirs))
         .distinctUntilChanged(areSetsEqual)
-        .subscribe(dirs => {
-          this._notifiers.get(connection).then(notifier => {
-            notifier.onDirectoriesChanged(dirs);
-          });
+        .subscribe(async dirs => {
+          const notifier = await this._notifiers.get(connection);
+          notifier.onDirectoriesChanged(dirs);
         });
-      return Promise.resolve(new Disposable(() => subscription.unsubscribe()));
+      return Promise.resolve(
+        new UniversalDisposable(() => subscription.unsubscribe()),
+      );
     });
   }
 

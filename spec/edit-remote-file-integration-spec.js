@@ -33,13 +33,13 @@ describe('Edit remote file Integration Test', () => {
       await activateAllPackages();
 
       const repoPath = await generateHgRepo1Fixture();
-      startNuclideServer();
+      await startNuclideServer();
       const connection = await addRemoteProject(repoPath);
       invariant(connection, 'Failed to make connection to a remote server');
 
       const remotePath = nuclideUri.join(repoPath, 'test.txt');
       const textEditor = await atom.workspace.open(
-        connection.getUriOfRemotePath(remotePath),
+        connection.getConnection().getUriOfRemotePath(remotePath),
       );
       invariant(textEditor);
       const textEditorView = atom.views.getView(textEditor);
@@ -65,7 +65,7 @@ describe('Edit remote file Integration Test', () => {
 
       await stopNuclideServer(connection);
       // Deactivate nuclide packages.
-      deactivateAllPackages();
+      await deactivateAllPackages();
     });
   });
 });

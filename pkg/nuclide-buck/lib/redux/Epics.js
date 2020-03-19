@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,11 +13,19 @@ import type {ActionsObservable} from 'nuclide-commons/redux-observable';
 import type {PlatformGroup, Store} from '../types';
 import type {Action} from './Actions';
 import type {ResolvedRuleType} from '../../../nuclide-buck-rpc/lib/types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
 import invariant from 'assert';
 import {Observable} from 'rxjs';
 import {getBuckProjectRoot, getBuckService} from '../../../nuclide-buck-base';
+import {observeBuildCommands} from '../observeBuildCommands';
 import * as Actions from './Actions';
+import {
+  getFileSystemServiceByNuclideUri,
+  getFileWatcherServiceByNuclideUri,
+} from '../../../nuclide-remote-connection';
+import nuclideUri from 'nuclide-commons/nuclideUri';
+import {getLogger} from 'log4js';
 
 export function setProjectRootEpic(
   actions: ActionsObservable<Action>,
@@ -38,6 +46,55 @@ export function setProjectRootEpic(
       ),
     );
   });
+}
+
+export function setBuckRootEpic(
+  actions: ActionsObservable<Action>,
+  store: Store,
+): Observable<Action> {
+  return actions.ofType(Actions.SET_BUCK_ROOT).switchMap(action => {
+    invariant(action.type === Actions.SET_BUCK_ROOT);
+    const {buckRoot} = action;
+    if (buckRoot == null) {
+      return Observable.empty();
+    }
+    const watcherService = getFileWatcherServiceByNuclideUri(buckRoot);
+    return Observable.merge(
+      Observable.of(undefined)
+        .concat(
+          watcherService
+            .watchWithNode(buckRoot, true)
+            .refCount()
+            .filter(
+              event => nuclideUri.basename(event.path) === '.buckversion',
+            ),
+        )
+        .switchMap(() => readBuckversionFile(buckRoot))
+        .map(fileContents => Actions.setBuckversionFileContents(fileContents)),
+      observeBuildCommands(
+        buckRoot,
+        () => store.getState().taskSettings,
+        () => store.getState().unsanitizedTaskSettings,
+      ),
+    );
+  });
+}
+
+async function readBuckversionFile(
+  buckRoot: NuclideUri,
+): Promise<string | Error> {
+  const fileSystemService = getFileSystemServiceByNuclideUri(buckRoot);
+  try {
+    const data = await fileSystemService.readFile(
+      nuclideUri.join(buckRoot, '.buckversion'),
+    );
+    return String(data);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      getLogger().error(error);
+    }
+    return error;
+  }
 }
 
 // Intentionally not exposed in Actions; this shouldn't be used externally.
@@ -66,9 +123,12 @@ export function setBuildTargetEpic(
       if (buckService == null) {
         return Observable.of(null);
       }
-      return Observable.defer(() =>
-        buckService.buildRuleTypeFor(buckRoot, buildTarget),
-      ).catch(() => Observable.of(null));
+      return Observable.defer(() => {
+        return buckService.buildRuleTypeFor(buckRoot, buildTarget);
+      }).catch(error => {
+        getLogger().error(error);
+        return Observable.of(null);
+      });
     })
     .switchMap(ruleType => Observable.of(setRuleType(ruleType)));
 }

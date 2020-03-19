@@ -6,14 +6,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 /* eslint-disable max-len */
 
 module.exports = {
@@ -36,12 +33,21 @@ module.exports = {
     atomtest: true,
     es6: true,
     jasmine: true,
+    jest: true,
     node: true,
   },
 
-  extends: [
-    'plugin:jsx-a11y/recommended',
-  ],
+  settings: {
+    react: {
+      // TODO: (wbinnssmith) T35336490
+      // Remove this when we update to a version of eslint-plugin-react
+      // that automatically detects the react version:
+      // https://github.com/yannickcr/eslint-plugin-react/commit/dc28d2636b11aaed033454e7ff98c486c08740df
+      version: require('./package.json').dependencies.react,
+    },
+  },
+
+  extends: ['plugin:jsx-a11y/recommended'],
 
   globals: {
     atom: false,
@@ -88,13 +94,14 @@ module.exports = {
     'array-callback-return': 0,
     'block-scoped-var': 0,
     'class-methods-use-this': 0,
-    'complexity': 0,
+    complexity: 0,
     'consistent-return': 0,
-    'curly': 1,
+    curly: 1,
     'default-case': 0,
     'dot-location': [1, 'property'],
     'dot-notation': 1,
-    'eqeqeq': [1, 'allow-null'],
+    eqeqeq: [1, 'always', {null: 'never'}],
+    'getter-return': 2,
     'guard-for-in': 0,
     'no-alert': 0,
     'no-caller': 1,
@@ -149,15 +156,15 @@ module.exports = {
     'no-warning-comments': 0,
     'no-with': 1,
     'prefer-promise-reject-errors': 1,
-    'radix': 1,
+    radix: 1,
     'require-await': 0,
     // 'require-await': 1,
     'vars-on-top': 0,
     'wrap-iife': [1, 'inside'],
-    'yoda': 1,
+    yoda: 1,
 
     // Strict Mode (http://eslint.org/docs/rules/#strict-mode)
-    'strict': 0,
+    strict: 0,
 
     // Variables (http://eslint.org/docs/rules/#variables)
     'init-declarations': 0,
@@ -189,9 +196,9 @@ module.exports = {
     'array-bracket-spacing': 1,
     'block-spacing': 1,
     'brace-style': [1, '1tbs', {allowSingleLine: true}],
-    'camelcase': 0,
+    camelcase: 0,
     'capitalized-comments': 0,
-    'comma-dangle': [1, {arrays: 'always-multiline', objects: 'always-multiline', imports: 'always-multiline', exports: 'always-multiline', functions: 'always-multiline'}],
+    'comma-dangle': 0,
     'comma-spacing': 1,
     'comma-style': 1,
     'computed-property-spacing': 1,
@@ -210,6 +217,7 @@ module.exports = {
     'keyword-spacing': 1,
     'line-comment-position': 0,
     'linebreak-style': 1,
+    'lines-between-class-members': 0,
     'lines-around-comment': 0,
     'lines-around-directive': 0,
     'max-depth': 0,
@@ -252,20 +260,30 @@ module.exports = {
     'one-var': [1, 'never'],
     'operator-assignment': 1,
     'operator-linebreak': 0,
-    'padded-blocks': [1, {blocks: 'never', classes: 'never', switches: 'never'}],
+    'padded-blocks': [
+      1,
+      {blocks: 'never', classes: 'never', switches: 'never'},
+    ],
     // 'quote-props': [1, 'as-needed'],
-    'quotes': [1, 'single', 'avoid-escape'],
+    quotes: [1, 'single', 'avoid-escape'],
     'require-jsdoc': 0,
     // 'semi-spacing': 1,
-    'semi': 1,
+    semi: 1,
     'sort-keys': 0,
     'sort-vars': 0,
     'space-before-blocks': 1,
-    'space-before-function-paren': [1, {anonymous: 'never', named: 'never', asyncArrow: 'always'}],
+    'space-before-function-paren': [
+      1,
+      {anonymous: 'never', named: 'never', asyncArrow: 'always'},
+    ],
     'space-in-parens': [1, 'never'],
     'space-infix-ops': 1,
     'space-unary-ops': 1,
-    'spaced-comment': [1, 'always', {line: {exceptions: ['-']}, block: {balanced: true}}],
+    'spaced-comment': [
+      1,
+      'always',
+      {line: {exceptions: ['-']}, block: {balanced: true, markers: [':']}},
+    ],
     'template-tag-spacing': 1,
     'unicode-bom': [1, 'never'],
     'wrap-regex': 0,
@@ -305,7 +323,12 @@ module.exports = {
 
     // dependencies (https://github.com/zertosh/eslint-plugin-dependencies)
     'dependencies/case-sensitive': 1,
-    'dependencies/no-cycles': [0, {skip: ['/spec/', '/sample-[^/]+/']}],
+    'dependencies/no-cycles': [
+      1,
+      {
+        skip: ['/VendorLib/', '/sample-[^/]+/', '/scripts/', '/spec/'],
+      },
+    ],
     'dependencies/no-unresolved': 0,
     'dependencies/require-json-ext': 1,
 
@@ -317,7 +340,7 @@ module.exports = {
     'flowtype/no-dupe-keys': 0,
     'flowtype/no-primitive-constructor-types': 1,
     'flowtype/no-weak-types': 0,
-    'flowtype/object-type-delimiter': 1,
+    'flowtype/object-type-delimiter': 0,
     'flowtype/require-parameter-type': 0,
     'flowtype/require-return-type': 0,
     'flowtype/require-valid-file-annotation': 0,
@@ -346,20 +369,27 @@ module.exports = {
     'jasmine/no-unsafe-spy': 0,
     'jasmine/valid-expect': 0,
 
-    // nuclide-internal (https://github.com/facebook/nuclide/tree/master/resources/eslint-plugin-nuclide-internal)
+    // nuclide-internal (https://github.com/facebook/nuclide/tree/master/modules/eslint-plugin-nuclide-internal)
+    'nuclide-internal/api-spelling': 1,
     'nuclide-internal/atom-apis': 1,
     'nuclide-internal/consistent-import-name': 1,
+    'nuclide-internal/disallowed-modules': 1,
     'nuclide-internal/dom-apis': 1,
     'nuclide-internal/flow-fb-oss': 1,
     'nuclide-internal/import-type-style': 1,
+    'nuclide-internal/jsx-simple-callback-refs': 1,
     'nuclide-internal/license-header': 1,
     'nuclide-internal/modules-dependencies': 1,
     'nuclide-internal/no-cross-atom-imports': [1, {whitelist: ['nuclide-ui']}],
-    'nuclide-internal/no-shell-quote': 1,
     'nuclide-internal/no-unnecessary-disposable-wrapping': 1,
+    'nuclide-internal/no-unobserved-gk': 1,
+    'nuclide-internal/no-unresolved': 1,
     'nuclide-internal/prefer-nuclide-uri': 1,
+    'nuclide-internal/react-virtualized-import': 1,
+    'nuclide-internal/require-universal-disposable': 1,
     'nuclide-internal/use-nuclide-ui-components': 1,
     'nuclide-internal/no-commonjs': 1,
+    'nuclide-internal/unused-subscription': 1,
 
     // prefer-object-spread (https://github.com/bryanrsmith/eslint-plugin-prefer-object-spread)
     'prefer-object-spread/prefer-object-spread': 1,
@@ -371,6 +401,7 @@ module.exports = {
     'react/display-name': 0,
     'react/forbid-component-props:': 0,
     'react/forbid-prop-types': 1,
+    'react/no-access-state-in-setstate': 1,
     'react/no-array-index-key': 0,
     'react/no-children-prop': 0,
     'react/no-danger': 0,
@@ -384,14 +415,18 @@ module.exports = {
     'react/no-multi-comp': 0,
     'react/no-render-return-value': 0,
     'react/no-set-state': 0,
-    'react/no-string-refs': 0,
+
+    // String refs don't work correctly if multiple versions of React are at play.
+    'react/no-string-refs': 1,
+
     'react/no-unescaped-entities': 0,
     'react/no-unknown-property': 1,
-    'react/no-unused-prop-types': 0,
+    'react/no-unused-prop-types': 1,
+    'react/no-unused-state': 1,
     'react/prefer-es6-class': 0,
     'react/prefer-stateless-function': 0,
     // 'react/prefer-stateless-function': 1,
-    'react/prop-types': 1,
+    // 'react/prop-types': 1,
     'react/react-in-jsx-scope': 1,
     'react/require-default-props': 0,
     'react/require-optimization': 0,
@@ -401,7 +436,10 @@ module.exports = {
     'react/sort-prop-types': 0,
     'react/style-prop-object': 0,
     'react/jsx-boolean-value': 0,
-    'react/jsx-closing-bracket-location': [1, {selfClosing: 'tag-aligned', nonEmpty: 'after-props'}],
+    'react/jsx-closing-bracket-location': [
+      1,
+      {selfClosing: 'tag-aligned', nonEmpty: 'after-props'},
+    ],
     // 'react/jsx-curly-spacing': [1, 'never'],
     'react/jsx-equals-spacing': 0,
     'react/jsx-filename-extension': 0,
@@ -420,7 +458,6 @@ module.exports = {
     'react/jsx-no-undef': 1,
     'react/jsx-pascal-case': 0,
     'react/jsx-sort-props': 0,
-    'react/jsx-space-before-closing': 1,
     'react/jsx-tag-spacing': 1,
     'react/jsx-uses-react': 1,
     'react/jsx-uses-vars': 1,
@@ -428,93 +465,159 @@ module.exports = {
 
     // JSX Accessibility checks
     // some currently disabled to adopt incrementally, annotated 'incremental'
-   'jsx-a11y/accessible-emoji': 0,
-   'jsx-a11y/alt-text': 0, // incremental: error
-   'jsx-a11y/anchor-has-content': 0,
-   'jsx-a11y/aria-activedescendant-has-tabindex': 0,
-   'jsx-a11y/aria-props': 1,
-   'jsx-a11y/aria-proptypes': 0,
-   'jsx-a11y/aria-role': 0,
-   'jsx-a11y/aria-unsupported-elements': 0,
-   'jsx-a11y/click-events-have-key-events': 0,
-   'jsx-a11y/heading-has-content': 0,
-   'jsx-a11y/href-no-hash': 0,
-   'jsx-a11y/html-has-lang': 0,
-   'jsx-a11y/iframe-has-title': 0,
-   'jsx-a11y/img-has-alt': 0,
-   'jsx-a11y/img-redundant-alt': 0,
-   'jsx-a11y/interactive-supports-focus': [
-     1,
-     {
-       tabbable: [
-         'button',
-         'checkbox',
-         'link',
-         'searchbox',
-         'spinbutton',
-         'switch',
-         'textbox',
-       ],
-     },
-   ],
-   'jsx-a11y/label-has-for': 0,
-   'jsx-a11y/lang': 0,
-   'jsx-a11y/mouse-events-have-key-events': 0,
-   'jsx-a11y/no-access-key': 0,
-   'jsx-a11y/no-autofocus': 0,
-   'jsx-a11y/no-distracting-elements': 0,
-   'jsx-a11y/no-interactive-element-to-noninteractive-role': [
-     1,
-     {
-       tr: ['none', 'presentation'],
-     },
-   ],
-   'jsx-a11y/no-noninteractive-element-interactions': [
-     0, // incremental: warning
-     {
-       handlers: ['onClick'],
-     },
-   ],
-   'jsx-a11y/no-noninteractive-element-to-interactive-role': [
-     1,
-     {
-       ul: ['listbox', 'menu', 'menubar',
-         'radiogroup', 'tablist', 'tree', 'treegrid'],
-       ol: ['listbox', 'menu', 'menubar',
-         'radiogroup', 'tablist', 'tree', 'treegrid'],
-       li: ['menuitem', 'option', 'row', 'tab', 'treeitem'],
-       table: ['grid'],
-       td: ['gridcell'],
-     },
-   ],
-   'jsx-a11y/no-noninteractive-tabindex': 0, // incremental: error
-   'jsx-a11y/no-onchange': 0,
-   'jsx-a11y/no-redundant-roles': 0,
-   'jsx-a11y/no-static-element-interactions': [
-     0, // incremental: warning
-     {
-       handlers: ['onClick'],
-     },
-   ],
-   'jsx-a11y/role-has-required-aria-props': 0,
-   'jsx-a11y/role-supports-aria-props': 0,
-   'jsx-a11y/scope': 0,
-   'jsx-a11y/tabindex-no-positive': 0,
+    'jsx-a11y/accessible-emoji': 0,
+    'jsx-a11y/alt-text': 0, // incremental: error
+    'jsx-a11y/anchor-has-content': 0,
+    'jsx-a11y/anchor-is-valid': 0, // incremental: error
+    'jsx-a11y/aria-activedescendant-has-tabindex': 0,
+    'jsx-a11y/aria-props': 1,
+    'jsx-a11y/aria-proptypes': 0,
+    'jsx-a11y/aria-role': 0,
+    'jsx-a11y/aria-unsupported-elements': 0,
+    'jsx-a11y/click-events-have-key-events': 0,
+    'jsx-a11y/heading-has-content': 0,
+    'jsx-a11y/href-no-hash': 0,
+    'jsx-a11y/html-has-lang': 0,
+    'jsx-a11y/iframe-has-title': 0,
+    'jsx-a11y/img-has-alt': 0,
+    'jsx-a11y/img-redundant-alt': 0,
+    'jsx-a11y/interactive-supports-focus': [
+      1,
+      {
+        tabbable: [
+          'button',
+          'checkbox',
+          'link',
+          'searchbox',
+          'spinbutton',
+          'switch',
+          'textbox',
+        ],
+      },
+    ],
+    'jsx-a11y/label-has-associated-control': 0,
+    'jsx-a11y/label-has-for': 0,
+    'jsx-a11y/lang': 0,
+    'jsx-a11y/mouse-events-have-key-events': 0,
+    'jsx-a11y/no-access-key': 0,
+    'jsx-a11y/no-autofocus': 0,
+    'jsx-a11y/no-distracting-elements': 0,
+    'jsx-a11y/no-interactive-element-to-noninteractive-role': [
+      1,
+      {
+        tr: ['none', 'presentation'],
+      },
+    ],
+    'jsx-a11y/no-noninteractive-element-interactions': [
+      0, // incremental: warning
+      {
+        handlers: ['onClick'],
+      },
+    ],
+    'jsx-a11y/no-noninteractive-element-to-interactive-role': [
+      1,
+      {
+        ul: [
+          'listbox',
+          'menu',
+          'menubar',
+          'radiogroup',
+          'tablist',
+          'tree',
+          'treegrid',
+        ],
+        ol: [
+          'listbox',
+          'menu',
+          'menubar',
+          'radiogroup',
+          'tablist',
+          'tree',
+          'treegrid',
+        ],
+        li: ['menuitem', 'option', 'row', 'tab', 'treeitem'],
+        table: ['grid'],
+        td: ['gridcell'],
+      },
+    ],
+    'jsx-a11y/no-noninteractive-tabindex': 0, // incremental: error
+    'jsx-a11y/no-onchange': 0,
+    'jsx-a11y/no-redundant-roles': 0,
+    'jsx-a11y/no-static-element-interactions': [
+      0, // incremental: warning
+      {
+        handlers: ['onClick'],
+      },
+    ],
+    'jsx-a11y/role-has-required-aria-props': 0,
+    'jsx-a11y/role-supports-aria-props': 0,
+    'jsx-a11y/scope': 0,
+    'jsx-a11y/tabindex-no-positive': 0,
+
+    'unicorn/catch-error-name': 0,
+    'unicorn/explicit-length-check': 0,
+    'unicorn/filename-case': 0,
+    'unicorn/no-abusive-eslint-disable': 0,
+    'unicorn/no-process-exit': 0,
+    'unicorn/throw-new-error': 2,
+    'unicorn/number-literal-case': 0,
+    'unicorn/escape-case': 0,
+    'unicorn/no-array-instanceof': 0,
+    'unicorn/no-new-buffer': 0,
+    'unicorn/no-hex-escape': 0,
+    'unicorn/custom-error-definition': 0,
+    'unicorn/prefer-starts-ends-with': 0,
+    'unicorn/prefer-type-error': 0,
+    'unicorn/no-fn-reference-in-iterator': 0,
+    'unicorn/import-index': 0,
+    'unicorn/new-for-builtins': 0,
+    'unicorn/regex-shorthand': 0,
+    'unicorn/prefer-spread': 0,
+    'unicorn/error-message': 0,
+    'unicorn/no-unsafe-regex': 0,
+    'unicorn/prefer-add-event-listener': 0,
   },
+
+  overrides: [
+    {
+      files: ['**/__e2e_fixtures__/**/*'],
+      rules: {
+        'no-implicit-coercion': 0,
+        'nuclide-internal/atom-apis': 0,
+        'nuclide-internal/license-header': 0,
+        'nuclide-internal/modules-dependencies': 0,
+        'nuclide-internal/prefer-nuclide-uri': 0,
+        'nuclide-internal/unused-subscription': 0,
+        'nuclide-internal/no-commonjs': 0,
+      },
+    },
+    {
+      files: ['**/__{atom_,e2e_,}tests__/**/*', 'jest/**/*'],
+      rules: {
+        'nuclide-internal/prefer-nuclide-uri': 0,
+        'nuclide-internal/modules-dependencies': 0,
+        'nuclide-internal/atom-apis': 0,
+        'nuclide-internal/unused-subscription': 0,
+        'no-implicit-coercion': 0,
+      },
+    },
+    {
+      files: ['**/*-spec.js', '**/__mocks__/**/*'],
+      rules: {
+        'nuclide-internal/unused-subscription': 0,
+      },
+    },
+  ],
 
   plugins: [
     'dependencies',
     'flowtype',
     'jasmine',
     'jsx-a11y',
-    'nuclide-internal',
     'prefer-object-spread',
     'prettier',
     'react',
+    'nuclide-internal',
+    'unicorn',
   ],
 };
-
-// Register our custom rules as a plugin to avoid needing `--rulesdir` or
-// `node_modules` trickery.
-const Plugins = require('eslint/lib/config/plugins');
-Plugins.define('nuclide-internal', require('./resources/eslint-plugin-nuclide-internal'));

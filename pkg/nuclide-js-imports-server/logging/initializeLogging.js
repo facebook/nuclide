@@ -10,14 +10,14 @@
  */
 
 import log4js from 'log4js';
+import {setupLoggingService, getPathToLogDir} from '../../nuclide-logging';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import os from 'os';
 import {IConnection} from 'vscode-languageserver';
 
-const MAX_LOG_SIZE = 1024 * 1024;
-const MAX_LOG_BACKUPS = 10;
+const MAX_LOG_SIZE = 16 * 1024;
+const MAX_LOG_BACKUPS = 1;
 const LOG_FILE_PATH = nuclideUri.join(
-  os.tmpdir(),
+  getPathToLogDir(),
   'nuclide-js-imports-server.log',
 );
 
@@ -28,30 +28,17 @@ const LOG_FILE_PATH = nuclideUri.join(
 // Additionally, add an appender to log over the rpc connection so logging appears
 // in the client environment, independent of stdio, node rpc, socket, etc.
 export default function initializeLogging(connection: IConnection) {
+  setupLoggingService();
   log4js.configure({
     appenders: [
       {
         type: 'logLevelFilter',
-        level: process.argv.includes('--debug') ? 'DEBUG' : 'WARN',
-        appender: {
-          type: nuclideUri.join(__dirname, 'fileAppender'),
-          filename: LOG_FILE_PATH,
-          maxLogSize: MAX_LOG_SIZE,
-          backups: MAX_LOG_BACKUPS,
-          layout: {
-            type: 'pattern',
-            // Format log in following pattern:
-            // yyyy-MM-dd HH:mm:ss.mil $Level (pid:$pid) $categroy - $message.
-            pattern: `%d{ISO8601} %p (pid:${process.pid}) %c - %m`,
-          },
-        },
-      },
-      {
-        type: 'logLevelFilter',
-        level: process.argv.includes('--debug') ? 'DEBUG' : 'INFO',
+        level: 'WARN',
         appender: {
           connection,
-          type: nuclideUri.join(__dirname, 'connectionConsoleAppender'),
+          type: require.resolve(
+            '../../nuclide-lsp-implementation-common/connectionConsoleAppender',
+          ),
         },
       },
     ],
@@ -60,21 +47,19 @@ export default function initializeLogging(connection: IConnection) {
   // Don't let anything write to the true stdio as it could break JSON RPC
   global.console.log = connection.console.log.bind(connection.console);
   global.console.error = connection.console.error.bind(connection.console);
-
-  const logger = log4js.getLogger();
-  catchUnhandledExceptions(logger);
+  catchUnhandledExceptions();
 }
 
-export function initializeLoggerForWorker(
-  logLevel: 'DEBUG' | 'WARN',
-): log4js$Logger {
+export function initializeLoggerForWorker(): void {
+  // TODO: Ideally worker messages would go to the parent, which could send them back to the client.
+  setupLoggingService();
   log4js.configure({
     appenders: [
       {
         type: 'logLevelFilter',
-        level: logLevel,
+        level: 'DEBUG',
         appender: {
-          type: nuclideUri.join(__dirname, 'fileAppender'),
+          type: 'file',
           filename: LOG_FILE_PATH,
           maxLogSize: MAX_LOG_SIZE,
           backups: MAX_LOG_BACKUPS,
@@ -88,13 +73,11 @@ export function initializeLoggerForWorker(
       },
     ],
   });
-
-  const logger = log4js.getLogger();
-  catchUnhandledExceptions(logger);
-  return logger;
+  catchUnhandledExceptions();
 }
 
-function catchUnhandledExceptions(logger: log4js$Logger) {
+function catchUnhandledExceptions() {
+  const logger = log4js.getLogger('js-imports-server');
   process.on('uncaughtException', e => {
     logger.error('uncaughtException', e);
     log4js.shutdown(() => process.abort());

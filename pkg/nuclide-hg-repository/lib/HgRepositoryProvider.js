@@ -5,12 +5,14 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import {Directory} from 'atom';
-import {trackTiming} from '../../nuclide-analytics';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {trackTiming} from 'nuclide-analytics';
 import {
   RemoteDirectory,
   getHgServiceByNuclideUri,
@@ -18,8 +20,14 @@ import {
 import {HgRepositoryClient} from '../../nuclide-hg-repository-client';
 import {getLogger} from 'log4js';
 import {findHgRepository} from '../../nuclide-source-control-helpers';
+import invariant from 'assert';
 
 const logger = getLogger('nuclide-hg-repository');
+
+type RefCountedRepo = {
+  refCount: number,
+  repo: HgRepositoryClient,
+};
 
 /**
  * @param directory Either a RemoteDirectory or Directory we are interested in.
@@ -38,8 +46,7 @@ function getRepositoryDescription(
 ): ?{
   originURL: ?string,
   repoPath: string,
-  workingDirectory: atom$Directory | RemoteDirectory,
-  workingDirectoryLocalPath: string,
+  workingDirectoryPath: NuclideUri,
 } {
   if (directory instanceof RemoteDirectory) {
     const repositoryDescription = directory.getHgRepositoryDescription();
@@ -51,7 +58,6 @@ function getRepositoryDescription(
     }
     const serverConnection = directory._server;
     const {repoPath, originURL, workingDirectoryPath} = repositoryDescription;
-    const workingDirectoryLocalPath = workingDirectoryPath;
     // These paths are all relative to the remote fs. We need to turn these into URIs.
     const repoUri = serverConnection.getUriOfRemotePath(repoPath);
     const workingDirectoryUri = serverConnection.getUriOfRemotePath(
@@ -60,8 +66,7 @@ function getRepositoryDescription(
     return {
       originURL,
       repoPath: repoUri,
-      workingDirectory: serverConnection.createDirectory(workingDirectoryUri),
-      workingDirectoryLocalPath,
+      workingDirectoryPath: workingDirectoryUri,
     };
   } else {
     const repositoryDescription = findHgRepository(directory.getPath());
@@ -72,18 +77,25 @@ function getRepositoryDescription(
     return {
       originURL,
       repoPath,
-      workingDirectory: new Directory(workingDirectoryPath),
-      workingDirectoryLocalPath: workingDirectoryPath,
+      workingDirectoryPath,
     };
   }
 }
 
 export default class HgRepositoryProvider {
-  repositoryForDirectory(directory: Directory): Promise<?HgRepositoryClient> {
+  // Allow having multiple project roots under the same repo while sharing
+  // the underlying HgRepositoryClient.
+  _activeRepositoryClients: Map<string, RefCountedRepo> = new Map();
+
+  repositoryForDirectory(
+    directory: atom$Directory | RemoteDirectory,
+  ): Promise<?HgRepositoryClient> {
     return Promise.resolve(this.repositoryForDirectorySync(directory));
   }
 
-  repositoryForDirectorySync(directory: Directory): ?HgRepositoryClient {
+  repositoryForDirectorySync(
+    directory: atom$Directory | RemoteDirectory,
+  ): ?HgRepositoryClient {
     return trackTiming('hg-repository.repositoryForDirectorySync', () => {
       try {
         const repositoryDescription = getRepositoryDescription(directory);
@@ -94,17 +106,68 @@ export default class HgRepositoryProvider {
         const {
           originURL,
           repoPath,
-          workingDirectory,
-          workingDirectoryLocalPath,
+          workingDirectoryPath,
         } = repositoryDescription;
 
-        const service = getHgServiceByNuclideUri(directory.getPath());
-        const hgService = new service.HgService(workingDirectoryLocalPath);
-        return new HgRepositoryClient(repoPath, hgService, {
-          workingDirectory,
-          projectRootDirectory: directory,
-          originURL,
-        });
+        // extend the underlying instance of HgRepositoryClient to prevent
+        // having multiple clients for multiple project roots inside the same
+        // repository folder
+        const activeRepositoryClients = this._activeRepositoryClients;
+        let activeRepoClientInfo = activeRepositoryClients.get(repoPath);
+
+        if (activeRepoClientInfo != null) {
+          activeRepoClientInfo.refCount++;
+        } else {
+          const hgService = getHgServiceByNuclideUri(workingDirectoryPath);
+          const activeRepoClient = new HgRepositoryClient(repoPath, hgService, {
+            workingDirectoryPath,
+            originURL,
+          });
+
+          activeRepoClientInfo = {
+            refCount: 1,
+            repo: activeRepoClient,
+          };
+          activeRepositoryClients.set(repoPath, activeRepoClientInfo);
+        }
+
+        let destroyed = false;
+
+        const localDisposables = new UniversalDisposable();
+
+        /* eslint-disable no-inner-declarations */
+        function ProjectHgRepositoryClient() {
+          this.getProjectDirectory = function(): NuclideUri {
+            return directory.getPath();
+          };
+
+          this.destroy = function(): void {
+            invariant(activeRepoClientInfo != null);
+            if (!destroyed && --activeRepoClientInfo.refCount === 0) {
+              destroyed = true;
+              activeRepoClientInfo.repo.destroy();
+              activeRepositoryClients.delete(repoPath);
+            }
+            localDisposables.dispose();
+          };
+
+          // Allow consumers to use `onDidDestroy` for the ProjectRepos.
+          // `getRootRepo()` can be used to add an onDidDestroy for the base
+          // repo
+          this.onDidDestroy = function(callback: () => mixed): IDisposable {
+            localDisposables.add(callback);
+            return {
+              dispose() {
+                localDisposables.remove(callback);
+              },
+            };
+          };
+        }
+
+        ProjectHgRepositoryClient.prototype = activeRepoClientInfo.repo;
+
+        // $FlowFixMe: this object has an HgRepositoryClient instance in its prototype chain
+        return ((new ProjectHgRepositoryClient(): any): HgRepositoryClient);
       } catch (err) {
         logger.error(
           'Failed to create an HgRepositoryClient for ',

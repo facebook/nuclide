@@ -1,10 +1,9 @@
 {
   "name": "nuclide-flow",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides support for Flow in Nuclide",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Flow",
   "nuclide": {
     "configMetadata": {
       "pathComponents": [
@@ -20,7 +19,7 @@
         "description": "Absolute path to the Flow executable on your system."
       },
       "canUseFlowBin": {
-        "title": "Use the Flow binary included in each project's flow-bin",
+        "title": "Use the Flow binary included in each project's flow-bin (requires restart)",
         "type": "boolean",
         "default": false,
         "description": "WARNING: Checking this box is a security risk. When you open a project we will immediately run code contained within it. Only use this setting if you fully trust all of the projects that you open."
@@ -43,29 +42,11 @@
         "default": false,
         "description": "If checked, only autocomplete results from Flow will appear in JS files. Not recommended. Requires restart to take effect."
       },
-      "enableReferencesHighlight": {
-        "title": "Highlight identifier references (requires restart)",
-        "type": "boolean",
-        "default": false,
-        "description": "EXPERIMENTAL: This feature requires flow >=0.38.0, but it is still under-development, so the results may not be what you expect."
-      },
-      "enableTypeHints": {
-        "title": "Enable Type Hints",
-        "type": "boolean",
-        "default": true,
-        "description": "Display tooltips with Flow types (requires restart to take effect)"
-      },
       "warnOnNotInstalled": {
         "title": "Warn when Flow is not found",
         "type": "boolean",
         "default": true,
         "description": "If a .flowconfig file is found, but Flow itself cannot be found, pop up a warning explaining how to install Flow"
-      },
-      "enablePushDiagnostics": {
-        "title": "Receive push diagnostics over a persistent connection",
-        "type": "boolean",
-        "default": false,
-        "description": "EXPERIMENTAL: This feature is in very early development. Restart required for this setting to take effect."
       },
       "functionSnippetShouldIncludeArguments": {
         "title": "Autocompleted function snippets will include calling parens and arguments.",
@@ -73,26 +54,35 @@
         "default": true,
         "description": "If unchecked, functions will autocomplete as only their name, and not include their calling parens and arguments."
       },
-      "lazyServer": {
-        "title": "Start the Flow server in lazy mode",
+      "liveSyntaxErrors": {
+        "title": "Live syntax errors",
         "type": "boolean",
-        "default": false,
-        "description": "EXPERIMENTAL: Requires Flow >=0.49. The Flow server will start quickly, but may miss Flow errors that are already present in the project when it starts. Because the Flow server may restart unexpectedly, this can lead to strange results and missed errors."
+        "default": true,
+        "description": "If checked, Flow will report syntax errors as you type; otherwise, and to see other errors, you have to trigger a flow check by saving any file. (requires restart)"
+      },
+      "logLevel": {
+        "title": "Log Level",
+        "type": "string",
+        "default": "DEBUG",
+        "description": "Specify that level of logging, supported values: ALL | TRACE | DEBUG | INFO | WARN | ERROR | FATAL | OFF.",
+        "enum": [
+          "ALL",
+          "TRACE",
+          "DEBUG",
+          "INFO",
+          "WARN",
+          "ERROR",
+          "FATAL",
+          "OFF"
+        ]
       }
     },
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "activationHooks": [
+    "source.flow:root-scope-used",
     "language-babel:grammar-used",
     "language-javascript-jsx:grammar-used",
     "language-javascript:grammar-used"
-  ],
-  "consumedServices": {
-    "atom-ide-busy-signal": {
-      "versions": {
-        "0.1.0": "consumeBusySignal"
-      }
-    }
-  }
+  ]
 }

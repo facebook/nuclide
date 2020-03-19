@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Provider} from '../../nuclide-quick-open/lib/types';
+import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 import type RecentFilesService from '../../nuclide-recent-files-service/lib/RecentFilesService';
 
 import {
@@ -17,7 +17,7 @@ import {
   setRecentFilesService,
 } from './RecentFilesProvider';
 
-export function registerProvider(): Provider {
+export function registerProvider(): Provider<FileResult> {
   return RecentFilesProvider;
 }
 

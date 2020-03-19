@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -14,7 +14,8 @@ import log4js from 'log4js';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import os from 'os';
 import {getUsername} from '../common/username';
-import {generateCertificatesAndStartServer} from './main';
+import {startServer} from './main';
+import {parsePorts} from '../common/ports';
 
 log4js.configure({
   appenders: [
@@ -28,7 +29,22 @@ log4js.configure({
   ],
 });
 
-const DEFAULT_PORT = 0;
+const DEFAULT_PORTS = '0';
+const DEFAULT_TIMEOUT = 60000;
+
+export type BigDigCliParams = {|
+  cname?: string,
+  jsonOutputFile: string,
+  timeout: ?number,
+  expiration: string,
+  serverParams: mixed,
+  ports: ?string,
+  exclusive: ?string,
+  useRootCanalCerts?: boolean,
+  caPath?: string,
+  serverCertPath?: string,
+  serverKeyPath?: string,
+|};
 
 /**
  * @param absolutePathToServerMain The code that bootstraps the server will load the code at this
@@ -37,58 +53,115 @@ const DEFAULT_PORT = 0;
  *     server [that is using Big Dig as a building block].
  */
 export async function parseArgsAndRunMain(absolutePathToServerMain: string) {
-  const params = JSON.parse(process.argv[2]);
-  const {cname, expiration, jsonOutputFile} = params;
-  let {port} = params;
-  if (typeof cname !== 'string') {
-    throw Error(`cname must be specified as string but was: '${cname}'`);
+  // All arguments expect for the last one are ignored.
+  const params: BigDigCliParams = JSON.parse(
+    process.argv[process.argv.length - 1],
+  );
+  const {
+    cname,
+    expiration,
+    exclusive,
+    jsonOutputFile,
+    caPath,
+    serverCertPath,
+    serverKeyPath,
+    useRootCanalCerts,
+  } = params;
+  let {ports, timeout} = params;
+  if (cname != null && (typeof cname !== 'string' || cname.length === 0)) {
+    throw new Error(`cname must be a non-empty string but was: '${cname}'`);
   }
   if (typeof jsonOutputFile !== 'string') {
-    throw Error('Must specify jsonOutputFile');
+    throw new Error('Must specify jsonOutputFile');
   }
 
   // port arg validation
-  if (port == null) {
-    port = DEFAULT_PORT;
+  if (ports == null) {
+    ports = DEFAULT_PORTS;
   }
-  if (typeof port !== 'number') {
-    throw Error(`port must be specified as number but was: '${port}'`);
+  if (typeof ports !== 'string') {
+    throw new Error(`ports must be specified as string but was: '${ports}'`);
   }
-  // eslint-disable-next-line no-bitwise
-  if ((port | 0) !== port) {
-    throw Error(`port must be an integer but was: '${port}'`);
+  // This will throw an exception if the ports string is invalid.
+  parsePorts(ports);
+
+  if (timeout == null) {
+    timeout = DEFAULT_TIMEOUT;
   }
-  if (port < 0) {
-    throw Error(`port must be >=0 but was ${port}`);
+  if (typeof timeout !== 'number') {
+    throw new Error(
+      `timeout must be specified as number but was: '${timeout}'`,
+    );
   }
 
   // expiration arg validation
   if (typeof expiration !== 'string') {
-    throw Error(
+    throw new Error(
       `expiration must be specified as string but was: '${expiration}'`,
     );
   }
   const expirationMatch = expiration.match(/^(\d+)d$/);
   if (expirationMatch == null) {
-    throw Error(`expiration must be /(\\d+)d/ but was: '${expiration}'`);
+    throw new Error(`expiration must be /(\\d+)d/ but was: '${expiration}'`);
   }
   const expirationDays = parseInt(expirationMatch[1], 10);
   if (expirationDays <= 0) {
-    throw Error(`expiration must be >0 but was ${expirationDays}`);
+    throw new Error(`expiration must be >0 but was ${expirationDays}`);
   }
 
-  const clientCommonName = 'nuclide';
-  const serverCommonName = cname || `${getUsername()}.nuclide.${os.hostname()}`;
-  const openSSLConfigPath = require.resolve('./openssl.cnf');
+  if (
+    exclusive != null &&
+    (typeof exclusive !== 'string' || !exclusive.match(/^[\w\d][\w\d-]*$/))
+  ) {
+    throw new Error(`exclusive must be a valid identifier: '${exclusive}'`);
+  }
 
-  await generateCertificatesAndStartServer(
-    clientCommonName,
-    serverCommonName,
-    openSSLConfigPath,
-    port,
+  let certificateStrategy;
+  if (useRootCanalCerts === true) {
+    certificateStrategy = {
+      type: 'rootcanal',
+    };
+  } else if (
+    caPath != null ||
+    serverCertPath != null ||
+    serverKeyPath != null
+  ) {
+    if (
+      typeof caPath !== 'string' ||
+      typeof serverCertPath !== 'string' ||
+      typeof serverKeyPath !== 'string'
+    ) {
+      throw new Error(
+        'need either all or none of caPath, serverCertPath and serverKeyPath',
+      );
+    }
+    certificateStrategy = {
+      type: 'reuse',
+      paths: {
+        caCert: caPath,
+        serverCert: serverCertPath,
+        serverKey: serverKeyPath,
+      },
+    };
+  } else {
+    certificateStrategy = {
+      type: 'generate',
+      clientCommonName: 'nuclide',
+      serverCommonName:
+        cname != null ? cname : `${getUsername()}.nuclide.${os.hostname()}`,
+      openSSLConfigPath: require.resolve('./openssl.cnf'),
+    };
+  }
+
+  await startServer({
+    certificateStrategy,
+    ports,
+    timeout,
     expirationDays,
+    exclusive,
     jsonOutputFile,
     absolutePathToServerMain,
-    params.serverParams,
-  );
+    useRootCanalCerts: useRootCanalCerts != null ? useRootCanalCerts : false,
+    serverParams: params.serverParams,
+  });
 }

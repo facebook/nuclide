@@ -15,8 +15,7 @@ import type JediServerManager from '../lib/JediServerManager';
 
 import {Point} from 'simple-text-buffer';
 import {wordAtPositionFromBuffer} from 'nuclide-commons/range';
-
-const WORD_REGEXP = /[a-zA-Z_][a-zA-Z0-9_]*/g;
+import {IDENTIFIER_REGEXP} from './constants';
 
 export async function getDefinition(
   serverManager: JediServerManager,
@@ -24,7 +23,11 @@ export async function getDefinition(
   buffer: simpleTextBuffer$TextBuffer,
   position: atom$Point,
 ): Promise<?DefinitionQueryResult> {
-  const wordMatch = wordAtPositionFromBuffer(buffer, position, WORD_REGEXP);
+  const wordMatch = wordAtPositionFromBuffer(
+    buffer,
+    position,
+    IDENTIFIER_REGEXP,
+  );
   if (wordMatch == null) {
     return null;
   }
@@ -35,10 +38,11 @@ export async function getDefinition(
   const column = position.column;
   const contents = buffer.getText();
 
-  const service = await serverManager.getJediService(filePath);
+  const service = await serverManager.getJediService();
   const result = await service.get_definitions(
     filePath,
     contents,
+    serverManager.getSysPath(filePath),
     line,
     column,
   );

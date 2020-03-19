@@ -1,0 +1,4 @@
+import {Y, Z} from 'A';
+import {m, n} from 'B';
+
+const y = Z + m;

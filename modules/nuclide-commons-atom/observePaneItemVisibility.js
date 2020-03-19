@@ -54,6 +54,7 @@ export function observeVisibleItems() {
   ).map(([activeItems, locationVisibilities]) => {
     // If it's not active, it's not visible.
     // If it's active, it's only visible if its container is.
+    // $FlowFixMe (>=0.85.0) (T35986896) Flow upgrade suppress
     return setFilter(activeItems, item => {
       const paneContainer = atom.workspace.paneContainerForItem(item);
       const location = paneContainer && paneContainer.getLocation();
@@ -99,7 +100,8 @@ const observeActiveItems = memoizeUntilChanged(_cacheKey => {
       // avoid doing extra work, we debounce and use the rAF scheduler.
       .debounceTime(0, Scheduler.animationFrame)
       .map(map => new Set(map.values()))
-      .share()
+      // $FlowIgnore: this is just not listed in the flow-typed defs
+      .shareReplay(1)
   );
 });
 

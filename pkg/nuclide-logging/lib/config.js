@@ -9,15 +9,10 @@
  * @format
  */
 
-import ScribeProcess from '../../commons-node/ScribeProcess';
-import {
-  isRunningInTest,
-  isRunningInClient,
-} from '../../commons-node/system-info';
+import {isRunningInTest} from 'nuclide-commons/system-info';
 
-import fs from 'fs';
-import invariant from 'invariant';
 import os from 'os';
+import {LOG_CATEGORY as PROCESS_LOG_CATEGORY} from 'nuclide-commons/process';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 
 const LOG_DIRECTORY = nuclideUri.join(
@@ -26,128 +21,78 @@ const LOG_DIRECTORY = nuclideUri.join(
 );
 export const LOG_FILE_PATH = nuclideUri.join(LOG_DIRECTORY, 'nuclide.log');
 
-const scribeAppenderPath = nuclideUri.join(
-  __dirname,
-  '../fb/scribeAppender.js',
-);
-
-export type AdditionalLogFile = {
-  title: string,
-  filename: string,
-};
-
-const additionalLogFiles: Array<AdditionalLogFile> = [];
-
 const MAX_LOG_SIZE = 1024 * 1024;
 const MAX_LOG_BACKUPS = 10;
 
-export function getServerLogAppenderConfig(): ?log4js$Appender {
-  // Skip config scribe_cat logger if
-  // 1) or running in open sourced version of nuclide
-  // 2) or the scribe_cat command is missing.
-  if (
-    !fs.existsSync(scribeAppenderPath) ||
-    !ScribeProcess.isScribeCatOnPath()
-  ) {
-    return null;
-  }
-
-  return {
-    type: 'logLevelFilter',
-    // Anything less than ERROR is ignored by the backend anyway.
-    level: 'ERROR',
-    appender: {
-      type: scribeAppenderPath,
-      scribeCategory: 'errorlog_arsenal',
-    },
-  };
+export function getPathToLogDir(): string {
+  return LOG_DIRECTORY;
 }
 
 export function getPathToLogFile(): string {
   return LOG_FILE_PATH;
 }
 
-export const FileAppender: Object = {
-  type: nuclideUri.join(__dirname, './fileAppender'),
-  filename: LOG_FILE_PATH,
-  maxLogSize: MAX_LOG_SIZE,
-  backups: MAX_LOG_BACKUPS,
-  layout: {
-    type: 'pattern',
-    // Format log in following pattern:
-    // yyyy-MM-dd HH:mm:ss.mil $Level (pid:$pid) $categroy - $message.
-    pattern: `%d{ISO8601} %p (pid:${process.pid}) %c - %m`,
-  },
-};
-
-const baseConfig: log4js$Config = {
-  appenders: [
+export function getDefaultConfig(): log4js$Config {
+  const appenders = [
     {
+      type: require.resolve('../VendorLib/fileAppender'),
+      filename: LOG_FILE_PATH,
+      maxLogSize: MAX_LOG_SIZE,
+      backups: MAX_LOG_BACKUPS,
+      layout: {
+        type: 'pattern',
+        // Format log in following pattern:
+        // yyyy-MM-dd HH:mm:ss.mil $Level (pid:$pid) $categroy - $message.
+        pattern: `%d{ISO8601} %p (pid:${process.pid}) %c - %m`,
+      },
+    },
+  ];
+  // Anything not in Atom doesn't have a visible console.
+  if (typeof atom === 'object') {
+    appenders.push({
+      type: 'logLevelFilter',
+      level: 'WARN',
+      appender: {
+        type: require.resolve('./consoleAppender'),
+      },
+    });
+    appenders.push({
       type: 'logLevelFilter',
       level: 'ALL',
       appender: {
-        type: nuclideUri.join(__dirname, './nuclideConsoleAppender'),
+        type: require.resolve('./nuclideConsoleAppender'),
       },
-    },
-    FileAppender,
-  ],
-};
-
-function getDefaultConfigClient(): log4js$Config {
-  invariant(isRunningInTest() || isRunningInClient());
-  invariant(baseConfig.appenders);
-
-  return {
-    ...baseConfig,
-    appenders: [
-      ...baseConfig.appenders,
-      {
+    });
+  } else {
+    // Make sure FATAL errors make it to stderr.
+    appenders.push({
+      type: 'logLevelFilter',
+      level: 'FATAL',
+      appender: {
+        type: require.resolve('./consoleAppender'),
+        stderr: true,
+      },
+    });
+  }
+  if (!isRunningInTest()) {
+    appenders.push({
+      type: require.resolve('./processTrackingAppender'),
+      category: PROCESS_LOG_CATEGORY,
+    });
+    try {
+      const scribeAppenderPath = require.resolve('../fb/scribeAppender');
+      appenders.push({
         type: 'logLevelFilter',
-        level: 'WARN',
+        // Anything less than ERROR is ignored by the backend anyway.
+        level: 'ERROR',
         appender: {
-          type: nuclideUri.join(__dirname, './consoleAppender'),
+          type: scribeAppenderPath,
+          scribeCategory: 'errorlog_arsenal',
         },
-      },
-    ],
-  };
-}
-
-export function getDefaultConfig(): log4js$Config {
-  if (isRunningInClient() || isRunningInTest()) {
-    return getDefaultConfigClient();
+      });
+    } catch (err) {
+      // We're running in open-source: ignore.
+    }
   }
-
-  // Do not print server logs to stdout/stderr.
-  // These are normally just piped to a .nohup.out file, so doing this just causes
-  // the log files to be duplicated.
-  const serverLogAppenderConfig = getServerLogAppenderConfig();
-  invariant(baseConfig.appenders);
-  if (serverLogAppenderConfig) {
-    return {
-      ...baseConfig,
-      appenders: [...baseConfig.appenders, serverLogAppenderConfig],
-    };
-  }
-
-  return baseConfig;
-}
-
-export function addAdditionalLogFile(title: string, filename: string) {
-  const filePath = nuclideUri.join(LOG_DIRECTORY, filename);
-  const logFile = {
-    title,
-    filename: filePath,
-  };
-
-  if (
-    additionalLogFiles.filter(
-      entry => entry.filename === filename && entry.title === title,
-    ).length === 0
-  ) {
-    additionalLogFiles.push(logFile);
-  }
-}
-
-export function getAdditionalLogFiles(): Array<AdditionalLogFile> {
-  return additionalLogFiles;
+  return {appenders};
 }

@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -18,7 +18,6 @@ import SuggestionList from './SuggestionList';
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
-import {observeTextEditors} from 'nuclide-commons-atom/text-editor';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
 
 /**
@@ -36,7 +35,7 @@ export default class Hyperclick {
 
     this._suggestionList = new SuggestionList();
     this._hyperclickForTextEditors = new Set();
-    this._textEditorSubscription = observeTextEditors(
+    this._textEditorSubscription = atom.workspace.observeTextEditors(
       this.observeTextEditor.bind(this),
     );
   }
@@ -44,7 +43,8 @@ export default class Hyperclick {
   observeTextEditor(textEditor: TextEditor): IDisposable {
     const hyperclickForTextEditor = new HyperclickForTextEditor(
       textEditor,
-      this,
+      this.getSuggestion,
+      this.showSuggestionList,
     );
     this._hyperclickForTextEditors.add(hyperclickForTextEditor);
     const disposable = new UniversalDisposable(() => {
@@ -78,10 +78,10 @@ export default class Hyperclick {
   /**
    * Returns the first suggestion from the consumed providers.
    */
-  async getSuggestion(
+  getSuggestion = async (
     textEditor: TextEditor,
     position: atom$Point,
-  ): Promise<?HyperclickSuggestion> {
+  ): Promise<?HyperclickSuggestion> => {
     for (const provider of this._providers.getAllProvidersForEditor(
       textEditor,
     )) {
@@ -111,12 +111,12 @@ export default class Hyperclick {
         return result;
       }
     }
-  }
+  };
 
-  showSuggestionList(
+  showSuggestionList = (
     textEditor: TextEditor,
     suggestion: HyperclickSuggestion,
-  ): void {
+  ): void => {
     this._suggestionList.show(textEditor, suggestion);
-  }
+  };
 }

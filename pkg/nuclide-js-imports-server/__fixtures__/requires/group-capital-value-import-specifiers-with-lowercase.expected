@@ -1,0 +1,8 @@
+const D = require('D');
+
+import {P, Q} from 'X';
+import {aA, aB, B, C} from 'Z';
+
+aA(aB(B, C, D, Q, P))
+
+// @nolint

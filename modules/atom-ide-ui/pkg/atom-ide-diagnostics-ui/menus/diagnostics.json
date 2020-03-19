@@ -46,5 +46,16 @@
         }
       ]
     }
-  ]
+  ],
+  "context-menu": {
+    ".diagnostics-ui-table-container .nuclide-ui-table-row-selected": [
+      {
+        "command": "diagnostics:copy",
+        "label": "Copy Description"
+      },
+      {
+        "type": "separator"
+      }
+    ]
+  }
 }

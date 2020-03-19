@@ -14,15 +14,19 @@ import type {RemoteDirectory} from './RemoteDirectory';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import typeof * as FileSystemService from '../../nuclide-server/lib/services/FileSystemService';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
-import passesGK from '../../commons-node/passesGK';
+import loadingNotification from '../../commons-atom/loading-notification';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import crypto from 'crypto';
-import {Disposable, Emitter} from 'atom';
+import {Emitter} from 'event-kit';
 import {getLogger} from 'log4js';
 import Stream from 'stream';
 
 const logger = getLogger('nuclide-remote-connection');
+
+// Warn if a file takes too long to save.
+const LONG_FILE_WRITE_MS = 10000;
 
 /* Mostly implements https://atom.io/docs/api/latest/File */
 export class RemoteFile {
@@ -63,7 +67,7 @@ export class RemoteFile {
 
   onDidRename(callback: () => mixed): IDisposable {
     // TODO: this is not supported by the Watchman API.
-    return new Disposable();
+    return new UniversalDisposable();
   }
 
   onDidDelete(callback: () => mixed): IDisposable {
@@ -113,29 +117,6 @@ export class RemoteFile {
         this._watchSubscription = null;
       },
     );
-
-    // No need to wait for that async check.
-    this._checkWatchOutOfOpenDirectories();
-  }
-
-  async _checkWatchOutOfOpenDirectories(): Promise<void> {
-    const isPathInOpenDirectories = atom.project.contains(this._path);
-    if (
-      !isPathInOpenDirectories &&
-      (await passesGK('nuclide_watch_warn_unmanaged_file'))
-    ) {
-      atom.notifications.addWarning(
-        `Couldn't watch remote file \`${nuclideUri.basename(
-          this._path,
-        )}\` for changes!`,
-        {
-          detail:
-            "Updates to the file outside Nuclide won't reload automatically\n" +
-            "Please add the file's project directory to Nuclide\n",
-          dismissable: true,
-        },
-      );
-    }
   }
 
   _handleNativeChangeEvent(): Promise<void> {
@@ -157,7 +138,7 @@ export class RemoteFile {
    * When the number of subscriptions reach 0, the file is unwatched.
    */
   _trackUnsubscription(subscription: IDisposable): IDisposable {
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       subscription.dispose();
       this._didRemoveSubscription();
     });
@@ -391,24 +372,18 @@ export class RemoteFile {
         writeLength += chunk.length;
         next();
       },
+      final: callback => {
+        loadingNotification(
+          this._getFileSystemService().writeFileBuffer(
+            this._path,
+            Buffer.concat(writeData, writeLength),
+          ),
+          `File ${nuclideUri.nuclideUriToDisplayString(this._path)} ` +
+            'is taking an unexpectedly long time to save, please be patient...',
+          LONG_FILE_WRITE_MS,
+        ).then(callback, callback);
+      },
     });
-    const originalEnd = stream.end;
-    // TODO: (hansonw) T20364274 Override final() in Node 8 and above.
-    // For now, we'll overwrite the end function manually.
-    // $FlowIgnore
-    stream.end = cb => {
-      invariant(cb instanceof Function, 'end() called without a callback');
-      this._getFileSystemService()
-        .writeFileBuffer(this._path, Buffer.concat(writeData, writeLength))
-        .then(
-          () => cb(),
-          err => {
-            stream.emit('error', err);
-            cb();
-          },
-        );
-      originalEnd.call(stream);
-    };
     return stream;
   }
 }

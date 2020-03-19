@@ -14,31 +14,40 @@ It works as follows:
 
 - |Jedi| sees a param
 - search for function calls named ``foo``
-- execute these calls and check the input. This work with a ``ParamListener``.
+- execute these calls and check the input.
 """
-from itertools import chain
 
-from jedi._compatibility import unicode
-from jedi.parser import tree
+from parso.python import tree
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
+from jedi.evaluate.arguments import TreeArguments
+from jedi.evaluate.param import create_default_params
+from jedi.evaluate.helpers import is_stdlib_path
+from jedi.evaluate.utils import to_list
+from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.context import ModuleContext, instance
+from jedi.evaluate.base_context import ContextSet
 
 
-class ParamListener(object):
+
+MAX_PARAM_SEARCHES = 20
+
+
+class MergedExecutedParams(object):
     """
-    This listener is used to get the params for a function.
+    Simulates being a parameter while actually just being multiple params.
     """
-    def __init__(self):
-        self.param_possibilities = []
+    def __init__(self, executed_params):
+        self._executed_params = executed_params
 
-    def execute(self, params):
-        self.param_possibilities += params
+    def infer(self):
+        return ContextSet.from_sets(p.infer() for p in self._executed_params)
 
 
 @debug.increase_indent
-def search_params(evaluator, param):
+def search_params(evaluator, execution_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -52,95 +61,143 @@ def search_params(evaluator, param):
     is.
     """
     if not settings.dynamic_params:
-        return []
+        return create_default_params(execution_context, funcdef)
 
-    func = param.get_parent_until(tree.Function)
-    debug.dbg('Dynamic param search for %s in %s.', param, str(func.name))
-    # Compare the param names.
-    names = [n for n in search_function_call(evaluator, func)
-             if n.value == param.name.value]
-    # Evaluate the ExecutedParams to types.
-    result = list(chain.from_iterable(n.parent.eval(evaluator) for n in names))
-    debug.dbg('Dynamic param result %s', result)
-    return result
+    evaluator.dynamic_params_depth += 1
+    try:
+        path = execution_context.get_root_context().py__file__()
+        if path is not None and is_stdlib_path(path):
+            # We don't want to search for usages in the stdlib. Usually people
+            # don't work with it (except if you are a core maintainer, sorry).
+            # This makes everything slower. Just disable it and run the tests,
+            # you will see the slowdown, especially in 3.6.
+            return create_default_params(execution_context, funcdef)
+
+        debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
+
+        module_context = execution_context.get_root_context()
+        function_executions = _search_function_executions(
+            evaluator,
+            module_context,
+            funcdef
+        )
+        if function_executions:
+            zipped_params = zip(*list(
+                function_execution.get_params()
+                for function_execution in function_executions
+            ))
+            params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
+            # Evaluate the ExecutedParams to types.
+        else:
+            return create_default_params(execution_context, funcdef)
+        debug.dbg('Dynamic param result finished', color='MAGENTA')
+        return params
+    finally:
+        evaluator.dynamic_params_depth -= 1
 
 
-@memoize_default([], evaluator_is_first_arg=True)
-def search_function_call(evaluator, func):
+@evaluator_function_cache(default=None)
+@to_list
+def _search_function_executions(evaluator, module_context, funcdef):
     """
     Returns a list of param names.
     """
-    from jedi.evaluate import representation as er
-
-    def get_params_for_module(module):
-        """
-        Returns the values of a param, or an empty array.
-        """
-        @memoize_default([], evaluator_is_first_arg=True)
-        def get_posibilities(evaluator, module, func_name):
-            try:
-                names = module.used_names[func_name]
-            except KeyError:
-                return []
-
-            for name in names:
-                parent = name.parent
-                if tree.is_node(parent, 'trailer'):
-                    parent = parent.parent
-
-                trailer = None
-                if tree.is_node(parent, 'power'):
-                    for t in parent.children[1:]:
-                        if t == '**':
-                            break
-                        if t.start_pos > name.start_pos and t.children[0] == '(':
-                            trailer = t
-                            break
-                if trailer is not None:
-                    types = evaluator.goto_definition(name)
-
-                    # We have to remove decorators, because they are not the
-                    # "original" functions, this way we can easily compare.
-                    # At the same time we also have to remove InstanceElements.
-                    undec = []
-                    for escope in types:
-                        if escope.isinstance(er.Function, er.Instance) \
-                                and escope.decorates is not None:
-                            undec.append(escope.decorates)
-                        elif isinstance(escope, er.InstanceElement):
-                            undec.append(escope.var)
-                        else:
-                            undec.append(escope)
-
-                    if evaluator.wrap(compare) in undec:
-                        # Only if we have the correct function we execute
-                        # it, otherwise just ignore it.
-                        evaluator.eval_trailer(types, trailer)
-            return listener.param_possibilities
-        return get_posibilities(evaluator, module, func_name)
-
-    current_module = func.get_parent_until()
-    func_name = unicode(func.name)
-    compare = func
-    if func_name == '__init__':
-        cls = func.get_parent_scope()
+    func_string_name = funcdef.name.value
+    compare_node = funcdef
+    if func_string_name == '__init__':
+        cls = get_parent_scope(funcdef)
         if isinstance(cls, tree.Class):
-            func_name = unicode(cls.name)
-            compare = cls
+            func_string_name = cls.name.value
+            compare_node = cls
 
-    # add the listener
-    listener = ParamListener()
-    func.listeners.add(listener)
+    found_executions = False
+    i = 0
+    for for_mod_context in imports.get_modules_containing_name(
+            evaluator, [module_context], func_string_name):
+        if not isinstance(module_context, ModuleContext):
+            return
+        for name, trailer in _get_possible_nodes(for_mod_context, func_string_name):
+            i += 1
 
+            # This is a simple way to stop Jedi's dynamic param recursion
+            # from going wild: The deeper Jedi's in the recursion, the less
+            # code should be evaluated.
+            if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
+                return
+
+            random_context = evaluator.create_context(for_mod_context, name)
+            for function_execution in _check_name_for_execution(
+                    evaluator, random_context, compare_node, name, trailer):
+                found_executions = True
+                yield function_execution
+
+        # If there are results after processing a module, we're probably
+        # good to process. This is a speed optimization.
+        if found_executions:
+            return
+
+
+def _get_possible_nodes(module_context, func_string_name):
     try:
-        result = []
-        # This is like backtracking: Get the first possible result.
-        for mod in imports.get_modules_containing_name(evaluator, [current_module], func_name):
-            result = get_params_for_module(mod)
-            if result:
-                break
-    finally:
-        # cleanup: remove the listener; important: should not stick.
-        func.listeners.remove(listener)
+        names = module_context.tree_node.get_used_names()[func_string_name]
+    except KeyError:
+        return
 
-    return result
+    for name in names:
+        bracket = name.get_next_leaf()
+        trailer = bracket.parent
+        if trailer.type == 'trailer' and bracket == '(':
+            yield name, trailer
+
+
+def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
+    from jedi.evaluate.context.function import FunctionExecutionContext
+
+    def create_func_excs():
+        arglist = trailer.children[1]
+        if arglist == ')':
+            arglist = ()
+        args = TreeArguments(evaluator, context, arglist, trailer)
+        if value_node.type == 'funcdef':
+            yield value.get_function_execution(args)
+        else:
+            created_instance = instance.TreeInstance(
+                evaluator,
+                value.parent_context,
+                value,
+                args
+            )
+            for execution in created_instance.create_init_executions():
+                yield execution
+
+    for value in evaluator.goto_definitions(context, name):
+        value_node = value.tree_node
+        if compare_node == value_node:
+            for func_execution in create_func_excs():
+                yield func_execution
+        elif isinstance(value.parent_context, FunctionExecutionContext) and \
+                compare_node.type == 'funcdef':
+            # Here we're trying to find decorators by checking the first
+            # parameter. It's not very generic though. Should find a better
+            # solution that also applies to nested decorators.
+            params = value.parent_context.get_params()
+            if len(params) != 1:
+                continue
+            values = params[0].infer()
+            nodes = [v.tree_node for v in values]
+            if nodes == [compare_node]:
+                # Found a decorator.
+                module_context = context.get_root_context()
+                execution_context = next(create_func_excs())
+                for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
+                    if value_node.start_pos < name.start_pos < value_node.end_pos:
+                        random_context = evaluator.create_context(execution_context, name)
+                        iterator = _check_name_for_execution(
+                            evaluator,
+                            random_context,
+                            compare_node,
+                            name,
+                            trailer
+                        )
+                        for function_execution in iterator:
+                            yield function_execution

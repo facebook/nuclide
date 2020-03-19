@@ -89,7 +89,7 @@ export class MessageStore {
       message.setIsVisibleForDebounce(false);
       // After the debounce time, we'll check whether the messageId is still
       // around (i.e. hasn't yet been disposed), and if so we'll display it.
-      let timeoutId = 0;
+      let timeoutId = ((0: any): TimeoutID);
       const teardown = () => clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         invariant(!messageDisposables.disposed);
@@ -118,6 +118,10 @@ export class MessageStore {
         message.setIsVisibleForFile(newVisible);
       });
       messageDisposables.add(teardown);
+    }
+
+    if (options.revealTooltip) {
+      message.setRevealTooltip(true);
     }
 
     message.setTitle(title);

@@ -8,7 +8,8 @@
 
 # Set up the logging early on in the process.
 import logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 # Do other ordinary imports.
 import os.path
@@ -16,9 +17,13 @@ import sys
 
 # Parse the command-line arguments.
 import optparse
-parser = optparse.OptionParser(usage='usage: %prog [options]',
-                               description='Validate Nuclide packages')
-parser.add_option('--verbose', action='store_true', default=False, help='Verbose output')
+
+parser = optparse.OptionParser(
+    usage="usage: %prog [options]", description="Validate Nuclide packages"
+)
+parser.add_option(
+    "--verbose", action="store_true", default=False, help="Verbose output"
+)
 options, args = parser.parse_args(sys.argv[1:])
 
 verbose = options.verbose
@@ -26,19 +31,53 @@ if verbose:
     logging.getLogger().setLevel(logging.DEBUG)
 
 # Validate package definitions
-from lib.package_manager import load_package_configs
+from lib.package_manager import (
+    load_feature_groups,
+    load_package_configs,
+    merge_feature_groups,
+)
 from lib.package_linter import PackageLinter
 from lib.modules_linter import ModulesLinter
+from lib.feature_groups_linter import FeatureGroupsLinter
 
-linter = PackageLinter(load_package_configs())
+package_configs = load_package_configs()
+modules_path = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), "..", "modules")
+)
+modules_package_configs = load_package_configs(modules_path)
+atom_ide_ui_packages_path = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), "..", "modules", "atom-ide-ui", "pkg")
+)
+atom_ide_ui_package_configs = load_package_configs(atom_ide_ui_packages_path)
 
+feature_group_defs = load_feature_groups()
+merged_feature_groups = merge_feature_groups(feature_group_defs.values())
+
+linter = PackageLinter(package_configs, merged_feature_groups)
 if not linter.validate_packages():
-    logging.info('Found package lint errors. Exiting...')
+    logging.info("Found package lint errors. Exiting...")
     sys.exit(1)
 
-modules_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
-modules_linter = ModulesLinter(load_package_configs(modules_path))
-
+modules_linter = ModulesLinter(modules_package_configs, merged_feature_groups)
 if not modules_linter.validate_packages():
-    logging.info('Found modules lint errors. Exiting...')
+    logging.info("Found modules lint errors. Exiting...")
     sys.exit(1)
+
+atom_ide_ui_packages_linter = PackageLinter(
+    atom_ide_ui_package_configs, merged_feature_groups, atom_ide_ui=True
+)
+if not atom_ide_ui_packages_linter.validate_packages():
+    logging.info("Found modules lint errors. Exiting...")
+    sys.exit(1)
+
+# Validate the feature groups.
+all_features = set().union(
+    package_configs.keys(),
+    modules_package_configs.keys(),
+    atom_ide_ui_package_configs.keys(),
+)
+for path, feature_groups in feature_group_defs.items():
+    feature_groups_linter = FeatureGroupsLinter(feature_groups, path, all_features)
+    if not feature_groups_linter.validate():
+        logging.info("Found errors in feature groups definition. Exiting...")
+        sys.exit(1)

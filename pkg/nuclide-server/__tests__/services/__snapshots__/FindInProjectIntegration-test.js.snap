@@ -1,0 +1,45 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`GrepSearch can execute a basic search 1`] = `
+Array [
+  Object {
+    "filePath": "nuclide:VARIABLE/services/fixtures/basic/test.js.txt",
+    "matches": Array [
+      Object {
+        "leadingContextLines": Array [],
+        "lineText": "Console.log('Hello World.');",
+        "lineTextOffset": 0,
+        "matchText": "Hello World",
+        "range": Array [
+          Array [
+            11,
+            13,
+          ],
+          Array [
+            11,
+            24,
+          ],
+        ],
+        "trailingContextLines": Array [],
+      },
+      Object {
+        "leadingContextLines": Array [],
+        "lineText": "Console.log('Hello World.');",
+        "lineTextOffset": 0,
+        "matchText": "Hello World",
+        "range": Array [
+          Array [
+            13,
+            13,
+          ],
+          Array [
+            13,
+            24,
+          ],
+        ],
+        "trailingContextLines": Array [],
+      },
+    ],
+  },
+]
+`;

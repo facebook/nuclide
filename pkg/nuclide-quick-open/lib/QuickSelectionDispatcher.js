@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -27,6 +27,7 @@ export const ActionTypes = Object.freeze({
 });
 
 // Flow hack: Every QuickSelectionAction actionType must be in ActionTypes.
+// $FlowFixMe(>=0.55.0) Flow suppress
 (('': $PropertyType<QuickSelectionAction, 'actionType'>): $Keys<
   typeof ActionTypes,
 >);

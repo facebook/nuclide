@@ -1,0 +1,3 @@
+import type Suit from 'Suit';
+
+const clubs: $Keys<Class<Suit>> = 'Clubs';

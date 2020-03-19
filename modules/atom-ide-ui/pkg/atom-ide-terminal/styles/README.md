@@ -1,0 +1,1 @@
+PLEASE NOTE: If you add new styles in this directory, you must list them in `nuclide-terminal/package.json` under `styleSheets`.  Because this module explicitly references stylesheets elsewhere, all stylesheets must be listed explicitly.

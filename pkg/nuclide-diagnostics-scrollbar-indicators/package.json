@@ -1,0 +1,27 @@
+{
+  "name": "nuclide-diagnostics-scrollbar-indicators",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Add indicators for diagnostics in each editor's scroll bar",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "diagnostics-store": {
+      "versions": {
+        "0.3.0": "consumeDiagnosticUpdates"
+      }
+    }
+  },
+  "providedServices": {
+    "scrollbar-indicators": {
+      "versions": {
+        "0.1.0": "provideScrollbarIndicators"
+      }
+    }
+  },
+
+  "activationCommands": {
+  }
+}

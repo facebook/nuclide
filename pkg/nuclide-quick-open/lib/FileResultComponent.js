@@ -11,34 +11,11 @@
 
 import type {FileResult} from './types';
 
-import React from 'react';
+import * as React from 'react';
+import matchIndexesToRanges from 'nuclide-commons/matchIndexesToRanges';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import PathWithFileIcon from '../../nuclide-ui/PathWithFileIcon';
-import groupMatchIndexes from 'nuclide-commons/groupMatchIndexes';
-
-type Key = number | string;
-
-function renderSubsequence(seq: string, props: Object): ?React.Element<any> {
-  return seq.length === 0
-    ? null
-    : <span {...props}>
-        {seq}
-      </span>;
-}
-
-function renderUnmatchedSubsequence(
-  seq: string,
-  key: Key,
-): ?React.Element<any> {
-  return renderSubsequence(seq, {key});
-}
-
-function renderMatchedSubsequence(seq: string, key: Key): ?React.Element<any> {
-  return renderSubsequence(seq, {
-    key,
-    className: 'quick-open-file-search-match',
-  });
-}
+import HighlightedText from 'nuclide-commons-ui/HighlightedText';
+import PathWithFileIcon from 'nuclide-commons-ui/PathWithFileIcon';
 
 export default class FileResultComponent {
   static getComponentForItem(
@@ -51,18 +28,17 @@ export default class FileResultComponent {
     let matchIndexes = item.matchIndexes || [];
     if (filePath.startsWith(dirName)) {
       filePath = '.' + filePath.slice(dirName.length);
-      matchIndexes = matchIndexes.map(i => i - (dirName.length - 1));
+      matchIndexes = matchIndexes
+        .map(i => i - (dirName.length - 1))
+        .filter(i => i >= 0);
     }
 
-    const pathComponents = groupMatchIndexes(
-      filePath,
-      matchIndexes,
-      renderMatchedSubsequence,
-      renderUnmatchedSubsequence,
-    );
     return (
       <PathWithFileIcon path={nuclideUri.basename(filePath)}>
-        {pathComponents}
+        <HighlightedText
+          highlightedRanges={matchIndexesToRanges(matchIndexes)}
+          text={filePath}
+        />
       </PathWithFileIcon>
     );
   }

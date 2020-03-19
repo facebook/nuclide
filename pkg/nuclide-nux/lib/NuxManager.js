@@ -9,15 +9,15 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable, Emitter} from 'atom';
-
+import {Emitter} from 'atom';
 import {isValidTextEditor} from 'nuclide-commons-atom/text-editor';
 import {arrayCompact} from 'nuclide-commons/collection';
-import {isGkEnabled, onceGkInitialized} from '../../commons-node/passesGK';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {isGkEnabled, onceGkInitialized} from 'nuclide-commons/passesGK';
 import {maybeToString} from 'nuclide-commons/string';
 
 import {getLogger} from 'log4js';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 import {NuxStore} from './NuxStore';
 import {NuxTour} from './NuxTour';
@@ -35,7 +35,7 @@ const logger = getLogger('nuclide-nux');
 
 export class NuxManager {
   _nuxStore: NuxStore;
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _emitter: atom$Emitter;
   _activeNuxTour: ?NuxTour;
   // Maps a NUX's unique ID to its corresponding NuxTour
@@ -51,7 +51,7 @@ export class NuxManager {
     this._syncCompletedNux = syncCompletedNux;
 
     this._emitter = new Emitter();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._pendingNuxes = new Map();
     this._readyToDisplayNuxes = [];
@@ -75,9 +75,9 @@ export class NuxManager {
 
   // Routes new NUX through the NuxStore so that the store can deal with
   // registering of previously completed or existing NUXes.
-  addNewNux(nux: NuxTourModel): Disposable {
+  addNewNux(nux: NuxTourModel): IDisposable {
     this._nuxStore.addNewNux(nux);
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       this._removeNux(nux.id);
     });
   }
@@ -116,8 +116,10 @@ export class NuxManager {
             arr.length, // Number of NuxViewModels in the NuxTourModel
           );
         } catch (err) {
-          const error = `NuxView #${index} for "${nuxTourModel.id}" failed to instantiate.`;
-          logger.error(`ERROR: ${error}`);
+          const error = `NuxView #${index} for "${
+            nuxTourModel.id
+          }" failed to instantiate.`;
+          logger.error(`ERROR: ${error}`, err);
           this._track(
             nuxTourModel.id,
             nuxTourModel.name,
@@ -185,15 +187,13 @@ export class NuxManager {
    * 'editor' and its `isReady` function returns to `true`.
    * Called every time the active pane item changes.
    */
-  async _handleActivePaneItemChanged(paneItem: ?mixed): Promise<void> {
+  async _handleActivePaneItemChanged(textEditor: ?mixed): Promise<void> {
     // The `paneItem` is not guaranteed to be an instance of `TextEditor` from
     // Atom's API, but usually is.  We return if the type is not `TextEditor`
     // since `NuxTour.isReady` expects a `TextEditor` as its argument.
-    if (!isValidTextEditor(paneItem)) {
+    if (!isValidTextEditor(textEditor)) {
       return;
     }
-    // Flow doesn't understand the refinement done above.
-    const textEditor: atom$TextEditor = (paneItem: any);
 
     for (const [id: string, nux: NuxTour] of this._pendingNuxes.entries()) {
       if (nux.getTriggerType() !== 'editor' || !nux.isReady(textEditor)) {
@@ -250,7 +250,7 @@ export class NuxManager {
    */
   _canTriggerNux(gkID: ?string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const cleanupDisposable = new Disposable(() => {
+      const cleanupDisposable = new UniversalDisposable(() => {
         gkDisposable.dispose();
         reject(new Error('NuxManager was disposed while waiting on GKs.'));
       });

@@ -9,14 +9,14 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {moveDown, moveLeft, moveRight, moveUp} from './move';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor(state: ?Object) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   activate() {

@@ -9,9 +9,9 @@
  * @format
  */
 
-import type {FileResult, Provider} from './types';
+import type {ProviderResult, Provider} from './types';
 import type {HomeFragments} from '../../nuclide-home/lib/types';
-import type {CwdApi} from '../../nuclide-current-working-directory/lib/CwdApi';
+import type CwdApi from '../../nuclide-current-working-directory/lib/CwdApi';
 import type {
   DeepLinkService,
   DeepLinkParams,
@@ -20,12 +20,12 @@ import type {QuickSelectionAction} from './QuickSelectionDispatcher';
 import type {SelectionIndex} from './QuickSelectionComponent';
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import QuickSelectionComponent from './QuickSelectionComponent';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 import debounce from 'nuclide-commons/debounce';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import SearchResultManager from './SearchResultManager';
@@ -98,27 +98,52 @@ class Activation {
   }
 
   _handleSelection(
-    selections: Array<FileResult>,
+    selections: Array<ProviderResult>,
     providerName: string,
     query: string,
+    selectionIndex: ?number,
   ): void {
+    const multipleSelections = selectionIndex == null;
+    invariant(multipleSelections === selections.length > 1);
     for (let i = 0; i < selections.length; i++) {
       const selection = selections[i];
-      if (selection.callback != null) {
+      // TODO: Having a callback to call shouldn't necessarily preclude
+      // jumping to a location, but things like the grep provider currently depend on this
+      // since they provide bogus values for row/column, breaking goToLocation below
+      // Can possibly be resolved with a first-class "LINK" or similar resultType
+      if (typeof selection.callback === 'function') {
         selection.callback();
-      } else {
-        goToLocation(selection.path, selection.line, selection.column);
+      } else if (
+        selection.resultType === 'FILE' ||
+        selection.resultType === 'SYMBOL'
+      ) {
+        goToLocation(selection.path, {
+          line: selection.line,
+          column: selection.column,
+        });
       }
-      track('quickopen-select-file', {
-        'quickopen-filepath': selection.path,
-        'quickopen-query': query,
-        // The currently open "tab".
-        'quickopen-provider': providerName,
-        'quickopen-session': this._analyticsSessionId || '',
-        // Because the `provider` is usually OmniSearch, also track the original provider.
-        // flowlint-next-line sketchy-null-mixed:off
-        'quickopen-provider-source': selection.sourceProvider || '',
-      });
+
+      if (
+        selection.resultType === 'FILE' ||
+        selection.resultType === 'SYMBOL'
+      ) {
+        track('quickopen-select-file', {
+          'quickopen-filepath': selection.path,
+          'quickopen-query': query,
+          'quickopen-index':
+            // If a selection index is provided, then it's only a single selection.
+            // Otherwise, we're selecting via "Open All", so indexes go in order.
+            // $FlowFixMe
+            multipleSelections ? i : selectionIndex.toString(),
+          'quickopen-openmultiple': multipleSelections,
+          // The currently open "tab".
+          'quickopen-provider': providerName,
+          'quickopen-session': this._analyticsSessionId || '',
+          // Because the `provider` is usually OmniSearch, also track the original provider.
+          // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+          'quickopen-provider-source': selection.sourceProvider || '',
+        });
+      }
     }
     this._closeSearchPanel();
   }
@@ -250,7 +275,7 @@ class Activation {
     }
   }
 
-  registerProvider(service: Provider): IDisposable {
+  registerProvider(service: Provider<ProviderResult>): IDisposable {
     const subscriptions = new UniversalDisposable(
       this._quickOpenProviderRegistry.addProvider(service),
     );
@@ -318,7 +343,9 @@ export function deactivate(): void {
   activation = null;
 }
 
-export function registerProvider(service: Provider): IDisposable {
+export function registerProvider(
+  service: Provider<ProviderResult>,
+): IDisposable {
   invariant(activation != null);
   return activation.registerProvider(service);
 }

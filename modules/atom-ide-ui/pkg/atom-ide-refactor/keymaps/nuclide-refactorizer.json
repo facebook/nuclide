@@ -1,0 +1,16 @@
+{
+  ".nuclide-refactorizer-rename-container": {
+    "enter": "core:confirm"
+  },
+  "atom-text-editor:not(.mini).enable-nuclide-refactorizer": {
+    "cmd-alt-r": "nuclide-refactorizer:rename"
+  },
+  ".platform-darwin atom-text-editor:not(.mini).enable-nuclide-refactorizer": {
+    "cmd-ctrl-r": "nuclide-refactorizer:refactorize",
+    "cmd-alt-r": "nuclide-refactorizer:rename"
+  },
+  ".platform-win32 atom-text-editor:not(.mini).enable-nuclide-refactorizer, .platform-linux atom-text-editor:not(.mini).enable-nuclide-refactorizer": {
+    "ctrl-alt-r": "nuclide-refactorizer:refactorize",
+    "cmd-alt-r": "nuclide-refactorizer:rename"
+  }
+}

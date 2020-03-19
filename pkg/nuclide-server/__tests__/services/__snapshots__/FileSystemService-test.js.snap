@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FileSystemService findNearestAncestorNamed findNearestAncestorNamed in dir 1`] = `"nuclide://localhost/var/folders/d9/xc8zphf92yx28qylrzm9r3b1n7nj3y/T/findNearestAncestorNamed_test118512-98807-18269ia.gp1n/foo/BUCK"`;
+
+exports[`FileSystemService findNearestAncestorNamed findNearestAncestorNamed in dir 2`] = `"nuclide://localhost/var/folders/d9/xc8zphf92yx28qylrzm9r3b1n7nj3y/T/findNearestAncestorNamed_test118512-98807-18269ia.gp1n/foo/bar/baz/BUCK"`;

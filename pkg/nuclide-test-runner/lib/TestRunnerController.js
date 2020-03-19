@@ -9,21 +9,20 @@
  * @format
  */
 
-import type {TestRunner, Message} from './types';
+import type {TestRunner, Message, RunTestOptionValue} from './types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Observable} from 'rxjs';
 
 import invariant from 'assert';
 import Ansi from './Ansi';
 import {TextBuffer} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import TestRunModel from './TestRunModel';
 import TestRunnerPanel from './ui/TestRunnerPanel';
 import TestSuiteModel from './TestSuiteModel';
 import os from 'os';
-import {track} from '../../nuclide-analytics';
-import consumeFirstProvider from '../../commons-atom/consumeFirstProvider';
+import {track} from 'nuclide-analytics';
 import {getLogger} from 'log4js';
 
 const logger = getLogger('nuclide-test-runner');
@@ -37,6 +36,7 @@ type SerializedTestRunnerPanelState = {
 export class TestRunnerController {
   _activeTestRunner: ?Object;
   _attachDebuggerBeforeRunning: boolean;
+  _runTestOptions: Map<string, RunTestOptionValue>;
   _buffer: TextBuffer;
   _executionState: number;
   _path: ?string;
@@ -59,7 +59,17 @@ export class TestRunnerController {
     this._executionState = TestRunnerPanel.ExecutionState.STOPPED;
     this._testRunners = testRunners;
     this._attachDebuggerBeforeRunning = false;
+    this._runTestOptions = new Map();
     this._runningTest = false;
+    this._renderPanel();
+  }
+
+  // Atom expects us to return a new instance of this class every time it's shown in the
+  // workspace. For historical reasons, we always use the same one. This is bad because it means
+  // that our `destroy()` will be called multiple times, and that this instance needs to be
+  // reusable after it's destroyed. To work around this for the time being, we call this method to
+  // reinitialize the view when we should really be creating a new instance.
+  reinitialize(): void {
     this._renderPanel();
   }
 
@@ -82,7 +92,7 @@ export class TestRunnerController {
   }
 
   /**
-   * @return A Promise that resolves when testing has succesfully started.
+   * @return A Promise that resolves when testing has successfully started.
    */
   async runTests(path?: string): Promise<void> {
     this._runningTest = true;
@@ -94,8 +104,9 @@ export class TestRunnerController {
     const selectedTestRunner = this._testRunnerPanel.getSelectedTestRunner();
     if (!selectedTestRunner) {
       logger.warn(
-        `No test runner selected. Active test runners: ${this._testRunners
-          .size}`,
+        `No test runner selected. Active test runners: ${
+          this._testRunners.size
+        }`,
       );
       return;
     }
@@ -127,14 +138,17 @@ export class TestRunnerController {
     // the debugger before running the tests.  We do not handle killing the debugger.
     if (
       this._isSelectedTestRunnerDebuggable() &&
-      this._attachDebuggerBeforeRunning
+      this._attachDebuggerBeforeRunning &&
+      selectedTestRunner.attachDebugger
     ) {
-      const isAttached = await this._isDebuggerAttached(
-        selectedTestRunner.debuggerProviderName,
-      );
-      if (!isAttached) {
-        await selectedTestRunner.attachDebugger(testPath);
-      }
+      await selectedTestRunner.attachDebugger(testPath);
+    }
+
+    const filterMethodsValue = this._testRunnerPanel.getFilterMethodsValue();
+    if (filterMethodsValue) {
+      this._runTestOptions.set('filter', filterMethodsValue);
+    } else {
+      this._runTestOptions.delete('filter');
     }
 
     // If the user has cancelled the test run while control was yielded, we should not run the test.
@@ -144,13 +158,16 @@ export class TestRunnerController {
 
     this.clearOutput();
     this._runTestRunnerServiceForPath(
-      selectedTestRunner.runTest(testPath),
+      selectedTestRunner.runTestWithOptions && this._runTestOptions.size
+        ? selectedTestRunner.runTestWithOptions(testPath, this._runTestOptions)
+        : selectedTestRunner.runTest(testPath),
       testPath,
       selectedTestRunner.label,
     );
     track('testrunner-run-tests', {
       path: testPath,
       testRunner: selectedTestRunner.label,
+      filter: filterMethodsValue,
     });
 
     // Set state as "Running" to give immediate feedback in the UI.
@@ -169,18 +186,11 @@ export class TestRunnerController {
     );
   }
 
-  async _isDebuggerAttached(debuggerProviderName: string): Promise<boolean> {
-    const debuggerService = await consumeFirstProvider(
-      'nuclide-debugger.remote',
-    );
-    return debuggerService.isInDebuggingMode(debuggerProviderName);
-  }
-
   stopTests = (): void => {
     // Resume the debugger if needed.
     atom.commands.dispatch(
       atom.views.getView(atom.workspace),
-      'nuclide-debugger:continue-debugging',
+      'debugger:continue-debugging',
     );
     this._stopListening();
     // Respond in the UI immediately and assume the process is properly killed.
@@ -205,7 +215,7 @@ export class TestRunnerController {
     this._renderPanel();
   };
 
-  _handleClickRun = (event: SyntheticMouseEvent): void => {
+  _handleClickRun = (event: SyntheticMouseEvent<>): void => {
     // Don't pass a reference to `runTests` directly because the callback receives a mouse event as
     // its argument. `runTests` needs to be called with no arguments.
     this.runTests();
@@ -258,7 +268,9 @@ export class TestRunnerController {
             }
             if (error.code === 'ENOENT') {
               this._appendToBuffer(
-                `${Ansi.YELLOW}Command '${error.path}' does not exist${Ansi.RESET}`,
+                `${Ansi.YELLOW}Command '${error.path}' does not exist${
+                  Ansi.RESET
+                }`,
               );
               this._appendToBuffer(
                 `${Ansi.YELLOW}Are you trying to run remotely?${Ansi.RESET}`,
@@ -293,6 +305,11 @@ export class TestRunnerController {
     this._renderPanel();
   }
 
+  _getFilterMethodsValue(): ?string {
+    const value = this._runTestOptions.get('filter');
+    return typeof value === 'string' ? value : null;
+  }
+
   _renderPanel() {
     let progressValue;
     if (
@@ -308,6 +325,7 @@ export class TestRunnerController {
     const component = ReactDOM.render(
       <TestRunnerPanel
         attachDebuggerBeforeRunning={this._attachDebuggerBeforeRunning}
+        filterMethodsValue={this._getFilterMethodsValue()}
         buffer={this._buffer}
         executionState={this._executionState}
         onClickClear={this.clearOutput}

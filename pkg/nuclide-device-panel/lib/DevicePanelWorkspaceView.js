@@ -5,18 +5,18 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {Props} from './ui/RootPanel';
-
 import type {Store, AppState} from './types';
-import React from 'react';
+
+import * as React from 'react';
 import {renderReactRoot} from 'nuclide-commons-ui/renderReactRoot';
 import {RootPanel} from './ui/RootPanel';
-import {Observable} from 'rxjs';
 import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
+import observableFromReduxStore from 'nuclide-commons/observableFromReduxStore';
 import * as Actions from './redux/Actions';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/devices';
@@ -72,11 +72,13 @@ export class DevicePanelWorkspaceView {
       deviceType: state.deviceType,
       device: state.device,
       infoTables: state.infoTables,
+      appInfoTables: state.appInfoTables,
       processes: state.processes,
       deviceTasks: state.deviceTasks,
       processTasks: state.processTasks,
       isDeviceConnected: state.isDeviceConnected,
       deviceTypeTasks: state.deviceTypeTasks,
+      deviceTypeComponents: state.deviceTypeComponents,
       toggleDevicePolling,
       toggleProcessPolling,
       setHost,
@@ -87,8 +89,7 @@ export class DevicePanelWorkspaceView {
 
   getElement(): HTMLElement {
     const PreparedDevicePanel = bindObservableAsProps(
-      // $FlowFixMe: Teach flow about Symbol.observable
-      Observable.from(this._store)
+      observableFromReduxStore(this._store)
         .distinctUntilChanged()
         .map(state => this._appStateToProps(state)),
       RootPanel,

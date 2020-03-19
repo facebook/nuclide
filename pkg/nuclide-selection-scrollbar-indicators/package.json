@@ -1,0 +1,19 @@
+{
+  "name": "nuclide-selection-scrollbar-indicators",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Add indicators for editor selections in each editor's scroll bar",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "scrollbar-indicators": {
+      "versions": {
+        "0.1.0": "provideScrollbarIndicators"
+      }
+    }
+  },
+  "activationCommands": {
+  }
+}

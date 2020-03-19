@@ -1,0 +1,17 @@
+{
+  "name": "nuclide-device-panel-android",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Android support for nuclide-device-panel",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide.devices": {
+      "versions": {
+        "0.0.0": "consumeDevicePanelServiceApi"
+      }
+    }
+  }
+}

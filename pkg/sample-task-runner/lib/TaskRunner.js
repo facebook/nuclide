@@ -9,8 +9,8 @@
  * @format
  */
 
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 import type {Task} from '../../commons-node/tasks';
-import type {Directory} from '../../nuclide-remote-connection';
 import type {TaskMetadata} from '../../nuclide-task-runner/lib/types';
 
 import createExampleObservableTask from './createExampleObservableTask';
@@ -23,16 +23,16 @@ export default class TaskRunner {
   id = 'my-awesome-task-runner';
   name = 'Awesome Stuff';
 
-  getExtraUi(): ReactClass<any> {
+  getExtraUi(): React$ComponentType<any> {
     return ExtraUi;
   }
 
-  getIcon(): ReactClass<any> {
+  getIcon(): React$ComponentType<any> {
     return Icon;
   }
 
   setProjectRoot(
-    projectRoot: ?Directory,
+    projectRoot: ?NuclideUri,
     callback: (enabled: boolean, taskList: Array<TaskMetadata>) => mixed,
   ): IDisposable {
     // Invoke the callback whenever the tasks change. For the purpose of the example, we'll assume
@@ -58,7 +58,7 @@ export default class TaskRunner {
   }
 
   runTask(taskType: string): Task {
-    // You can ceate a task however you want as long as it conforms to the Task API. However,
+    // You can create a task however you want as long as it conforms to the Task API. However,
     // because tasks have event registration methods, you'll probably either want to either use Rx
     // or extend event-kit's Emitter. An example of each is provided; both do the same thing.
     // Neither implements the full functionality so check out the Task definition for more detail.

@@ -1,0 +1,3 @@
+import type one from 'one';
+
+var two: ?one = new one();

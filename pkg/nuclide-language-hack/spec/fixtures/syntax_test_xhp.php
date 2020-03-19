@@ -38,3 +38,30 @@ function exampleLiteralCollections() {
     //                                  ^ punctuation.section.embedded.end.xhp
   );
 }
+
+function exampleXHPBracketHighlighting() {
+  return (
+    <Test>
+    {
+//  ^ punctuation.section.embedded.begin.xhp
+
+      if (true) {}
+//              ^ punctuation.section.scope.begin.php
+//               ^ punctuation.section.scope.end.php
+    }
+//  ^ punctuation.section.embedded.end.xhp
+    </Test>
+  )
+}
+
+function exampleXHPComments() {
+  return (
+    <ui:foo
+      <!--attr={'test'}-->
+//    ^ comment.block.html punctuation.definition.comment.html
+    />
+    if (true) {
+//            ^ punctuation.section.scope.begin.php
+    }
+  )
+}

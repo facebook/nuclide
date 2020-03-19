@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Level, ConsoleService} from '../../nuclide-console/lib/types';
+import type {ConsoleLevel, ConsoleService} from 'atom-ide-ui';
 
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createPackage from 'nuclide-commons-atom/createPackage';
@@ -50,7 +50,7 @@ class Activation {
   }
 }
 
-function getLevel(atomNotificationType: string): Level {
+function getLevel(atomNotificationType: string): ConsoleLevel {
   switch (atomNotificationType) {
     case 'debug':
     case 'error':

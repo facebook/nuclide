@@ -10,18 +10,22 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers';
-
+import type {HgRepositoryDescription} from '../../nuclide-source-control-helpers/lib/types';
+// $FlowFB
+import type ProjectManager from '../../fb-atomprojects/lib/ProjectManager';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import {Observable} from 'rxjs';
 import typeof * as FileWatcherServiceType from '../../nuclide-filewatcher-rpc';
 import typeof * as FileSystemServiceType from '../../nuclide-server/lib/services/FileSystemService';
 import typeof * as SourceControlService from '../../nuclide-server/lib/services/SourceControlService';
-import type {RemoteFile} from './RemoteFile';
 import type {RemoteDirectory} from './RemoteDirectory';
+import type {ServerConnectionVersion} from './ServerConnection';
 
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import lookupPreferIpv6 from './lookup-prefer-ip-v6';
 import {ServerConnection} from './ServerConnection';
-import {Emitter} from 'atom';
+import {Emitter} from 'event-kit';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getConnectionConfig} from './RemoteConnectionConfigurationManager';
 import {getLogger} from 'log4js';
@@ -35,11 +39,15 @@ export type RemoteConnectionConfiguration = {
   host: string, // host nuclide server is running on.
   port: number, // port to connect to.
   family?: 4 | 6, // ipv4 or ipv6?
-  cwd: string, // Path to remote directory user should start in upon connection.
-  displayTitle: string, // Name of the saved connection profile.
-  certificateAuthorityCertificate?: Buffer, // certificate of certificate authority.
+  certificateAuthorityCertificate?: Buffer | Array<string>, // certificate of ca.
   clientCertificate?: Buffer, // client certificate for https connection.
   clientKey?: Buffer, // key for https connection.
+  version?: ServerConnectionVersion,
+
+  // Stuff specific to RemoteConnectionConfiguration (e.g. not in ServerConnectionConfiguration)
+  path: string, // Path to remote directory user should start in upon connection.
+  displayTitle: string, // Name of the saved connection profile.
+  promptReconnectOnFailure?: boolean, // open a connection dialog prompt if the reconnect fails
 };
 
 // A RemoteConnection represents a directory which has been opened in Nuclide on a remote machine.
@@ -49,12 +57,13 @@ export type RemoteConnectionConfiguration = {
 // Nuclide behaves badly when remote directories are opened which are parent/child of each other.
 // And there needn't be a 1:1 relationship between RemoteConnections and hg repos.
 export class RemoteConnection {
-  _cwd: string; // Path to remote directory user should start in upon connection.
+  _path: string; // Path to remote directory user should start in upon connection.
   _subscriptions: UniversalDisposable;
   _hgRepositoryDescription: ?HgRepositoryDescription;
   _connection: ServerConnection;
   _displayTitle: string;
   _alwaysShutdownIfLast: boolean;
+  _promptReconnectOnFailure: boolean;
 
   static _emitter = new Emitter();
 
@@ -62,44 +71,93 @@ export class RemoteConnection {
     config: RemoteConnectionConfiguration,
   ): Promise<RemoteConnection> {
     const serverConnection = await ServerConnection.getOrCreate(config);
-    return RemoteConnection.findOrCreateFromConnection(
-      serverConnection,
-      config.cwd,
-      config.displayTitle,
-    );
-  }
+    const {path, displayTitle, promptReconnectOnFailure} = config;
+    let roots;
 
-  static findOrCreateFromConnection(
-    serverConnection: ServerConnection,
-    cwd: NuclideUri,
-    displayTitle: string,
-  ): Promise<RemoteConnection> {
-    const connection = new RemoteConnection(
-      serverConnection,
-      cwd,
-      displayTitle,
+    try {
+      const fsService: FileSystemServiceType = serverConnection.getService(
+        FILE_SYSTEM_SERVICE,
+      );
+
+      if (hasAtomProjectFormat(path)) {
+        // IMPORTANT: We have to be careful not to assume the existence of the project file in this
+        // code path (e.g. by using `realpath()`) so that the project manager can provide a fallback
+        // for nonexistent files.
+        const projectManager = await getProjectManager();
+        if (projectManager == null) {
+          throw new Error(
+            "You tried to load a project but the nuclide.project-manager service wasn't available.",
+          );
+        }
+        const expandedPath = await fsService.expandHomeDir(path);
+        await projectManager.load(
+          serverConnection.getUriOfRemotePath(expandedPath),
+        );
+        // $FlowFixMe: Upstream this and add to our type defs
+        roots = atom.project.getSpecification().paths.map(nuclideUri.getPath);
+      } else {
+        const realPath = await fsService.resolveRealPath(path);
+        // Now that we know the real path, it's possible this collides with an existing connection.
+        if (realPath !== path && nuclideUri.isRemote(path)) {
+          const existingConnection = this.getByHostnameAndPath(
+            nuclideUri.getHostname(path),
+            realPath,
+          );
+          if (existingConnection != null) {
+            return existingConnection;
+          }
+        }
+        roots = [realPath];
+      }
+    } catch (err) {
+      // Don't leave server connections hanging:
+      // if we created a server connection from getOrCreate but failed above
+      // then we need to make sure the connection gets closed.
+      if (serverConnection.getConnections().length === 0) {
+        serverConnection.close();
+      }
+      throw err;
+    }
+    const connections = await Promise.all(
+      roots.map((dir, i) => {
+        const connection = new RemoteConnection(
+          serverConnection,
+          dir,
+          i === 0 ? displayTitle : '',
+          promptReconnectOnFailure !== false, // default: true
+        );
+        return connection._initialize();
+      }),
     );
-    return connection._initialize();
+    // We need to return one connection from this function,
+    // even though many connections are being created to support projects.
+    return connections[0];
   }
 
   // Do NOT call this directly. Use findOrCreate instead.
-  constructor(connection: ServerConnection, cwd: string, displayTitle: string) {
-    this._cwd = cwd;
+  constructor(
+    connection: ServerConnection,
+    path: string,
+    displayTitle: string,
+    promptReconnectOnFailure: boolean,
+  ) {
+    this._path = path;
     this._subscriptions = new UniversalDisposable();
     this._hgRepositoryDescription = null;
     this._connection = connection;
     this._displayTitle = displayTitle;
     this._alwaysShutdownIfLast = false;
+    this._promptReconnectOnFailure = promptReconnectOnFailure;
   }
 
   static _createInsecureConnectionForTesting(
-    cwd: string,
+    path: string,
     port: number,
   ): Promise<RemoteConnection> {
     const config = {
       host: 'localhost',
       port,
-      cwd,
+      path,
       displayTitle: '',
     };
     return RemoteConnection.findOrCreate(config);
@@ -111,45 +169,100 @@ export class RemoteConnection {
    * connection, null (resolved by promise) is returned.
    * Configurations may also be retrieved by IP address.
    */
-  static async createConnectionBySavedConfig(
-    hostOrIp: string,
-    cwd: string,
+  static async _createConnectionBySavedConfig(
+    host: string,
+    path: string,
     displayTitle: string,
+    promptReconnectOnFailure: boolean = true,
   ): Promise<?RemoteConnection> {
-    const connectionConfig = getConnectionConfig(hostOrIp);
+    const connectionConfig = await getConnectionConfig(host);
     if (!connectionConfig) {
       return null;
     }
     try {
-      const config = {...connectionConfig, cwd, displayTitle};
+      const config = {
+        ...connectionConfig,
+        path,
+        displayTitle,
+        promptReconnectOnFailure,
+      };
       return await RemoteConnection.findOrCreate(config);
     } catch (e) {
+      // Returning null from this method signals that we should
+      // should restart the handshake process with same config.
+      // But there are some errors for which we don't want to do that
+      // (like if the connection fails because the directory doesn't exist).
+      if (e.code === 'ENOENT' || e.name === 'ProjectLoadError') {
+        e.sshHandshakeErrorType = 'DIRECTORY_NOT_FOUND';
+        throw e;
+      }
+
       const log =
         e.name === 'VersionMismatchError'
           ? logger.warn.bind(logger)
           : logger.error.bind(logger);
-      log(`Failed to reuse connectionConfiguration for ${hostOrIp}`, e);
+
+      log(`Failed to reuse connectionConfiguration for ${host}`, e);
       return null;
     }
+  }
+
+  /**
+   * Attempts to connect to an open or previously open remote connection.
+   */
+  static async reconnect(
+    host: string,
+    path: string,
+    displayTitle: string,
+    promptReconnectOnFailure: boolean = true,
+  ): Promise<?RemoteConnection> {
+    logger.info('Attempting to reconnect', {
+      host,
+      path,
+      displayTitle,
+      promptReconnectOnFailure,
+    });
+
+    if (!hasAtomProjectFormat(path)) {
+      const connection = RemoteConnection.getByHostnameAndPath(host, path);
+
+      if (connection != null) {
+        return connection;
+      }
+    }
+
+    let connection = await RemoteConnection._createConnectionBySavedConfig(
+      host,
+      path,
+      displayTitle,
+      promptReconnectOnFailure,
+    );
+    if (connection == null) {
+      try {
+        // Connection configs are also stored by IP address to share between hostnames.
+        const {address} = await lookupPreferIpv6(host);
+        connection = await RemoteConnection._createConnectionBySavedConfig(
+          address,
+          path,
+          displayTitle,
+          promptReconnectOnFailure,
+        );
+      } catch (err) {
+        // It's OK if the backup IP check fails.
+      }
+    }
+    return connection;
   }
 
   // A workaround before Atom 2.0: Atom's Project::setPaths currently uses
   // ::repositoryForDirectorySync, so we need the repo information to already be
   // available when the new path is added. t6913624 tracks cleanup of this.
   async _setHgRepoInfo(): Promise<void> {
-    const remotePath = this.getPathForInitialWorkingDirectory();
-    const {getHgRepository} = (this.getService(
+    const remotePath = this.getPath();
+    const {getHgRepository} = (this.getConnection().getService(
       'SourceControlService',
     ): SourceControlService);
     this._setHgRepositoryDescription(await getHgRepository(remotePath));
-  }
-
-  getUriOfRemotePath(remotePath: string): string {
-    return `nuclide://${this.getRemoteHostname()}${remotePath}`;
-  }
-
-  getPathOfUri(uri: string): string {
-    return nuclideUri.parse(uri).path;
   }
 
   createDirectory(uri: string, symlink: boolean = false): RemoteDirectory {
@@ -171,37 +284,12 @@ export class RemoteConnection {
     return this._hgRepositoryDescription;
   }
 
-  createFile(uri: string, symlink: boolean = false): RemoteFile {
-    return this._connection.createFile(uri, symlink);
-  }
-
   async _initialize(): Promise<RemoteConnection> {
     const attemptShutdown = false;
     // Must add first to prevent the ServerConnection from going away
     // in a possible race.
     this._connection.addConnection(this);
     try {
-      const fileSystemService: FileSystemServiceType = this.getService(
-        FILE_SYSTEM_SERVICE,
-      );
-      const resolvedPath = await fileSystemService.resolveRealPath(this._cwd);
-
-      // Now that we know the real path, it's possible this collides with an existing connection.
-      // If so, we should just stop immediately.
-      if (resolvedPath !== this._cwd) {
-        const existingConnection = RemoteConnection.getByHostnameAndPath(
-          this.getRemoteHostname(),
-          resolvedPath,
-        );
-        invariant(this !== existingConnection);
-        if (existingConnection != null) {
-          this.close(attemptShutdown);
-          return existingConnection;
-        }
-
-        this._cwd = resolvedPath;
-      }
-
       // A workaround before Atom 2.0: see ::getHgRepoInfo.
       await this._setHgRepoInfo();
 
@@ -215,9 +303,9 @@ export class RemoteConnection {
   }
 
   _watchRootProjectDirectory(): void {
-    const rootDirectoryUri = this.getUriForInitialWorkingDirectory();
-    const rootDirectoryPath = this.getPathForInitialWorkingDirectory();
-    const FileWatcherService: FileWatcherServiceType = this.getService(
+    const rootDirectoryUri = this.getUri();
+    const rootDirectoryPath = this.getPath();
+    const FileWatcherService: FileWatcherServiceType = this.getConnection().getService(
       FILE_WATCHER_SERVICE,
     );
     invariant(FileWatcherService);
@@ -237,7 +325,7 @@ export class RemoteConnection {
       async error => {
         let warningMessageToUser = '';
         let detail;
-        const fileSystemService: FileSystemServiceType = this.getService(
+        const fileSystemService: FileSystemServiceType = this.getConnection().getService(
           FILE_SYSTEM_SERVICE,
         );
         if (await fileSystemService.isNfs(rootDirectoryUri)) {
@@ -253,15 +341,6 @@ export class RemoteConnection {
             `\`${rootDirectoryPath}\` without Watchman support, which means that ` +
             'crucial features such as synced remote file editing, file search, ' +
             'and Mercurial-related updates will not work.';
-
-          const watchmanConfig = await fileSystemService
-            .findNearestAncestorNamed('.watchmanconfig', rootDirectoryUri)
-            .catch(() => null);
-          if (watchmanConfig == null) {
-            warningMessageToUser +=
-              '<br/><br/>A possible workaround is to create an empty `.watchmanconfig` file ' +
-              'in the remote folder, which will enable Watchman if you have it installed.';
-          }
           detail = error.message || error;
           logger.error(
             'Watchman failed to start - watcher features disabled!',
@@ -283,6 +362,10 @@ export class RemoteConnection {
   }
 
   async close(shutdownIfLast: boolean): Promise<void> {
+    logger.info('Received close command!', {
+      shutdownIfLast,
+      stack: Error('stack').stack,
+    });
     this._subscriptions.dispose();
     await this._connection.removeConnection(this, shutdownIfLast);
     RemoteConnection._emitter.emit('did-close', this);
@@ -292,31 +375,24 @@ export class RemoteConnection {
     return this._connection;
   }
 
-  getPort(): number {
-    return this._connection.getPort();
-  }
-
-  getRemoteHostname(): string {
-    return this._connection.getRemoteHostname();
-  }
-
   getDisplayTitle(): string {
     return this._displayTitle;
   }
 
-  getUriForInitialWorkingDirectory(): string {
-    return this.getUriOfRemotePath(this.getPathForInitialWorkingDirectory());
+  getUri(): string {
+    return this.getConnection().getUriOfRemotePath(this.getPath());
   }
 
-  getPathForInitialWorkingDirectory(): string {
-    return this._cwd;
+  getPath(): string {
+    return this._path;
   }
 
   getConfig(): RemoteConnectionConfiguration {
     return {
       ...this._connection.getConfig(),
-      cwd: this._cwd,
+      path: this._path,
       displayTitle: this._displayTitle,
+      promptReconnectOnFailure: this._promptReconnectOnFailure,
     };
   }
 
@@ -341,9 +417,9 @@ export class RemoteConnection {
   }
 
   /**
-   * Get cached connection match the hostname and the path has the prefix of connection.cwd.
+   * Get cached connection match the hostname and the path has the prefix of connection.path.
    * @param hostname The connected server host name.
-   * @param path The absolute path that's has the prefix of cwd of the connection.
+   * @param path The absolute path that's has the prefix of path of the connection.
    *   If path is null, empty or undefined, then return the connection which matches
    *   the hostname and ignore the initial working directory.
    */
@@ -352,21 +428,13 @@ export class RemoteConnection {
     path: string,
   ): ?RemoteConnection {
     return RemoteConnection.getByHostname(hostname).filter(connection => {
-      return path.startsWith(connection.getPathForInitialWorkingDirectory());
+      return nuclideUri.contains(connection.getPath(), path);
     })[0];
   }
 
   static getByHostname(hostname: string): Array<RemoteConnection> {
     const server = ServerConnection.getByHostname(hostname);
     return server == null ? [] : server.getConnections();
-  }
-
-  getService(serviceName: string): any {
-    return this._connection.getService(serviceName);
-  }
-
-  isOnlyConnection(): boolean {
-    return this._connection.getConnections().length === 1;
   }
 
   setAlwaysShutdownIfLast(alwaysShutdownIfLast: boolean): void {
@@ -376,4 +444,18 @@ export class RemoteConnection {
   alwaysShutdownIfLast(): boolean {
     return this._alwaysShutdownIfLast;
   }
+}
+
+function hasAtomProjectFormat(filepath) {
+  const ext = nuclideUri.extname(filepath);
+  return ext === '.json' || ext === '.cson' || ext === '.toml';
+}
+
+function getProjectManager(): Promise<?ProjectManager> {
+  return observableFromSubscribeFunction(cb =>
+    atom.packages.serviceHub.consume('nuclide.project-manager', '0.0.0', cb),
+  )
+    .take(1)
+    .timeoutWith(100, Observable.of(null))
+    .toPromise();
 }

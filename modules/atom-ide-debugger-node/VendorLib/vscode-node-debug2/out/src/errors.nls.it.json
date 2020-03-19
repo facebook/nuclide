@@ -1,0 +1,10 @@
+[
+	"Il runtime '{0}' non è stato trovato in PATH.",
+	"Non è possibile avviare la destinazione di debug nel terminale ({0}).",
+	"Non è possibile avviare la destinazione di debug ({0}).",
+	"Il tipo di console '{0}' è sconosciuto.",
+	"Non è possibile avviare il programma '{0}'. Per risolvere il problema, provare a configurare i mapping di origine.",
+	"Non è possibile avviare il programma '{0}'. Per risolvere il problema, provare a impostare l'attributo '{1}'.",
+	"Cannot launch program '{0}' because corresponding JavaScript cannot be found.",
+	"Non è possibile caricare le variabili di ambiente dal file ({0})."
+]

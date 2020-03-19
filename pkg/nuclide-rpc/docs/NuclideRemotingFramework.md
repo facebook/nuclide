@@ -40,12 +40,19 @@ export function getFileList(dir: string): Promise<Array<string>> { ... }
 
 // A remotable module may also export classes:
 export class File {
+  // NOTE: constructors will not work remotely, as they must be synchronous.
+  // You can use an (asynchronous) static factory or function instead.
   constructor(path: string) { ... }
 
   getName(): Promise<string> { ... }
   readText(): Promise<string> { ... }
 
   addOnChange(callback: (file: File): void): Promise<Disposable> { ... }
+}
+
+// Remotable classes may be returned via factory functions.
+export async function createFile(path: string): Promise<File> { ... }
+  return new File(path);
 }
 ```
 
@@ -66,8 +73,8 @@ async testFileService(fileName: string, host: ?string) {
   const fileNames = await FileService.getFileList(host);
   fileNames.foreach(fileName => console.log(fileName));
 
-  // Remotable entrypoints may include constructors...
-  const file = new FileService.File(fileName);
+  // Remotable entrypoints may return remote objects...
+  const file = await FileService.createFile(fileName);
   // Methods on remote objects are also remotable ...
   console.log(await file.readText());
 
@@ -136,6 +143,10 @@ export class File {
     this._callbacks.foreach((callback) => callback(this));
   }
 }
+
+export async function createFile(path: string): Promise<File> {
+  return new File(path);
+}
 ```
 
 ## Specification
@@ -166,9 +177,8 @@ Note that optional arguments are remotable provided that the type of the argumen
 
 ### Exported Classes
 
-A class exported from a remotable module must:
-- all 'public' instance and static member functions must have remotable signature
-- may optionally include a constructor whose arguments must all have be remotable types
+A class exported from a remotable module:
+- must have remotable signatures for all 'public' instance and static member functions
 - must include a parameterless `dispose` method which returns either void or Promise<void>.
 
 Note that 'private' members as well as member fields are not remotable and are not subject to any

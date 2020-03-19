@@ -5,28 +5,36 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
+// $FlowFB
+import type ProjectManager from '../../fb-atomprojects/lib/ProjectManager';
+
 import invariant from 'assert';
-import {CompositeDisposable} from 'atom';
-import {track} from '../../nuclide-analytics';
+import createPackage from 'nuclide-commons-atom/createPackage';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {BehaviorSubject, Observable} from 'rxjs';
+import {track} from 'nuclide-analytics';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {WorkingSetsStore} from './WorkingSetsStore';
 import {WorkingSetsConfig} from './WorkingSetsConfig';
 import {PathsObserver} from './PathsObserver';
 import {WORKING_SET_PATH_MARKER} from '../../nuclide-working-sets-common/lib/constants';
+import extractDefinitionsFromProject from './extractDefinitionsFromProject';
 
 class Activation {
   workingSetsStore: WorkingSetsStore;
   _workingSetsConfig: WorkingSetsConfig;
-  _disposables: CompositeDisposable;
+  _projectManagers: BehaviorSubject<?ProjectManager> = new BehaviorSubject();
+  _disposables: UniversalDisposable;
 
   constructor() {
     this.workingSetsStore = new WorkingSetsStore();
     this._workingSetsConfig = new WorkingSetsConfig();
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
 
     this._disposables.add(
       this.workingSetsStore.onSaveDefinitions(definitions => {
@@ -36,7 +44,30 @@ class Activation {
 
     this._disposables.add(
       this._workingSetsConfig.observeDefinitions(definitions => {
-        this.workingSetsStore.updateDefinitions(definitions);
+        this.workingSetsStore.updateUserDefinitions(definitions);
+      }),
+    );
+
+    this._disposables.add(
+      this._projectManagers
+        .switchMap(
+          projectManager =>
+            projectManager == null
+              ? Observable.of(null)
+              : observableFromSubscribeFunction(cb =>
+                  projectManager.observeActiveProjectSpec(cb),
+                ),
+        )
+        .subscribe(spec => {
+          this.workingSetsStore.updateProjectDefinitions(
+            extractDefinitionsFromProject(spec),
+          );
+        }),
+    );
+
+    this._disposables.add(
+      atom.project.onDidChangePaths(() => {
+        this.workingSetsStore.updateApplicability();
       }),
     );
 
@@ -59,37 +90,22 @@ class Activation {
     this._disposables.add(new PathsObserver(this.workingSetsStore));
   }
 
-  deactivate(): void {
+  dispose(): void {
     this._disposables.dispose();
   }
-}
 
-let activation: ?Activation = null;
-
-export function activate() {
-  if (activation != null) {
-    return;
+  provideWorkingSetsStore(): WorkingSetsStore {
+    return this.workingSetsStore;
   }
 
-  activation = new Activation();
-}
-
-export function deactivate() {
-  if (activation == null) {
-    return;
+  consumeProjectManager(projectManager: ProjectManager): IDisposable {
+    this._projectManagers.next(projectManager);
+    return new UniversalDisposable(() => {
+      if (this._projectManagers.getValue() === projectManager) {
+        this._projectManagers.next(null);
+      }
+    });
   }
-
-  activation.deactivate();
-  activation = null;
-}
-
-export function provideWorkingSetsStore(): WorkingSetsStore {
-  invariant(
-    activation,
-    'Was requested to provide service from a non-activated package',
-  );
-
-  return activation.workingSetsStore;
 }
 
 async function findInActive(): Promise<void> {
@@ -121,3 +137,5 @@ async function findInActive(): Promise<void> {
   );
   view.pathsEditor.setText(WORKING_SET_PATH_MARKER);
 }
+
+createPackage(module.exports, Activation);

@@ -1,12 +1,9 @@
 {
   "name": "nuclide-hhvm",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   },
   "consumedServices": {
     "nuclide.task-runner": {
@@ -30,5 +27,6 @@
       }
     }
   },
-  "description": "Provides HHVM debug tasks"
+  "description": "Provides HHVM debug tasks",
+  "author": "NEEDS OWNER"
 }

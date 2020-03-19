@@ -9,37 +9,39 @@
  * @format
  */
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import featureConfig from 'nuclide-commons-atom/feature-config';
-import React from 'react';
+import observePaneItemVisibility from 'nuclide-commons-atom/observePaneItemVisibility';
+import * as React from 'react';
+import {Observable, Scheduler} from 'rxjs';
 import SettingsCategory from './SettingsCategory';
 
 import {AtomInput} from 'nuclide-commons-ui/AtomInput';
-import {Section} from '../../nuclide-ui/Section';
-
-import {matchesFilter} from './settings-utils';
+import {Section} from 'nuclide-commons-ui/Section';
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/settings';
 
-export default class NuclideSettingsPaneItem extends React.Component {
-  _disposables: CompositeDisposable;
-  state: Object;
+type Props = {
+  initialFilter?: string,
+};
 
-  constructor(props: Object) {
+type State = {
+  filter: string,
+};
+
+export default class SettingsPaneItem extends React.Component<Props, State> {
+  _disposables: UniversalDisposable;
+  _filterInput: ?AtomInput;
+
+  constructor(props: Props) {
     super(props);
 
     this.state = {
-      filter: '',
+      filter: props.initialFilter || '',
     };
   }
 
   _getConfigData(): Object {
-    // Only need to add config listeners once.
-    let disposables = null;
-    if (!this._disposables) {
-      this._disposables = disposables = new CompositeDisposable();
-    }
-
     const configData = {};
     const nuclidePackages = atom.packages
       .getLoadedPackages()
@@ -48,7 +50,7 @@ export default class NuclideSettingsPaneItem extends React.Component {
     // Config data is organized as a series of nested objects. First, by category
     // and then by packages in each category. Each package contains a title and an
     // object for each setting in that package. Each setting also contains an
-    // onChange callback for components. We also listen for atom.config.onDidChange.
+    // onChange callback for components.
     //
     // ```
     // configData = {
@@ -77,10 +79,6 @@ export default class NuclideSettingsPaneItem extends React.Component {
         const {pathComponents} = nuclide.configMetadata;
         const categoryName = pathComponents[0];
         const packageTitle = pathComponents[1] || pkgName;
-        const categoryMatches =
-          this.state == null || matchesFilter(this.state.filter, categoryName);
-        const packageMatches =
-          this.state == null || matchesFilter(this.state.filter, packageTitle);
 
         // Group packages according to their category.
         let packages = configData[categoryName];
@@ -98,10 +96,11 @@ export default class NuclideSettingsPaneItem extends React.Component {
           const description = getDescription(schema);
           if (
             this.state == null ||
-            categoryMatches ||
-            packageMatches ||
+            matchesFilter(this.state.filter, categoryName) ||
+            matchesFilter(this.state.filter, packageTitle) ||
             matchesFilter(this.state.filter, title) ||
-            matchesFilter(this.state.filter, description)
+            matchesFilter(this.state.filter, description) ||
+            matchesFilter(this.state.filter, keyPath)
           ) {
             settings[settingName] = {
               name: settingName,
@@ -116,14 +115,6 @@ export default class NuclideSettingsPaneItem extends React.Component {
               value: featureConfig.get(keyPath),
             };
           }
-
-          if (disposables) {
-            const disposable = featureConfig.onDidChange(
-              keyPath,
-              this._handleConfigChange,
-            );
-            this._disposables.add(disposable);
-          }
         });
 
         if (Object.keys(settings).length !== 0) {
@@ -137,33 +128,74 @@ export default class NuclideSettingsPaneItem extends React.Component {
     return configData;
   }
 
-  _handleConfigChange = (event: Object) => {
-    // Workaround: Defer this._getConfigData() as it registers new config.onDidChange() callbacks
-    // The issue is that Atom invokes these new callbacks for the current onDidChange event,
-    // instead of only for *future* events.
-    setTimeout(() => this.setState(this._getConfigData()));
-  };
-
   _handleComponentChange = (keyPath: string, value: any): void => {
     featureConfig.set(keyPath, value);
   };
 
-  render(): ?React.Element<any> {
-    const elements = [];
+  _getSettingsKeyPaths(): Array<string> {
+    const keyPaths = [];
+    const nuclidePackages = atom.packages
+      .getLoadedPackages()
+      .filter(pkg => pkg.metadata && pkg.metadata.nuclide);
 
-    const configData = this._getConfigData();
-    Object.keys(configData).sort().forEach(categoryName => {
-      const packages = configData[categoryName];
-      if (Object.keys(packages).length > 0) {
-        elements.push(
-          <SettingsCategory
-            key={categoryName}
-            name={categoryName}
-            packages={packages}
-          />,
+    nuclidePackages.forEach(pkg => {
+      const pkgName = pkg.name;
+      const {nuclide} = pkg.metadata;
+      const config = pkg.metadata.atomConfig || nuclide.config;
+
+      if (config != null) {
+        Object.keys(config).forEach(settingName =>
+          keyPaths.push(pkgName + '.' + settingName),
         );
       }
     });
+
+    return keyPaths;
+  }
+
+  componentDidMount(): void {
+    const settingsKeyPaths = this._getSettingsKeyPaths();
+    const changedSettings = settingsKeyPaths.map(keyPath =>
+      featureConfig.observeAsStream(keyPath),
+    );
+
+    this._disposables = new UniversalDisposable(
+      observePaneItemVisibility(this)
+        .filter(Boolean)
+        .delay(0, Scheduler.animationFrame)
+        .subscribe(() => {
+          if (this._filterInput != null) {
+            this._filterInput.focus();
+          }
+        }),
+      Observable.merge(...changedSettings)
+        // throttle to prevent rerendering for each change if changes occur in
+        // rapid succession
+        .throttleTime(50)
+        .subscribe(() => {
+          this.setState(this._getConfigData());
+        }),
+    );
+  }
+
+  render(): React.Node {
+    const elements = [];
+
+    const configData = this._getConfigData();
+    Object.keys(configData)
+      .sort()
+      .forEach(categoryName => {
+        const packages = configData[categoryName];
+        if (Object.keys(packages).length > 0) {
+          elements.push(
+            <SettingsCategory
+              key={categoryName}
+              name={categoryName}
+              packages={packages}
+            />,
+          );
+        }
+      });
     const settings = elements.length === 0 ? null : elements;
     return (
       <div className="pane-item padded settings-gadgets-pane">
@@ -173,8 +205,12 @@ export default class NuclideSettingsPaneItem extends React.Component {
               <section className="section">
                 <Section headline="Filter" collapsable={true}>
                   <AtomInput
+                    ref={component => {
+                      this._filterInput = component;
+                    }}
                     size="lg"
                     placeholderText="Filter by setting title or description"
+                    initialValue={this.props.initialFilter}
                     onDidChange={this._onFilterTextChanged}
                   />
                 </Section>
@@ -185,6 +221,12 @@ export default class NuclideSettingsPaneItem extends React.Component {
         </div>
       </div>
     );
+  }
+
+  componentWillUnmount() {
+    if (this._disposables != null) {
+      this._disposables.dispose();
+    }
   }
 
   _onFilterTextChanged = (filterText: string): void => {
@@ -217,6 +259,7 @@ export default class NuclideSettingsPaneItem extends React.Component {
 }
 
 function getOrder(schema: atom$ConfigSchema): number {
+  // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
   return typeof schema.order === 'number' ? schema.order : 0;
 }
 
@@ -235,4 +278,19 @@ function getTitle(schema: atom$ConfigSchema, settingName: string): string {
 
 function getDescription(schema: atom$ConfigSchema): string {
   return schema.description || '';
+}
+
+// Remove spaces and hyphens
+function strip(str: string): string {
+  return str.replace(/\s+/g, '').replace(/-+/g, '');
+}
+
+/** Returns true if filter matches search string. Return true if filter is empty. */
+function matchesFilter(filter: string, searchString: string): boolean {
+  if (filter.length === 0) {
+    return true;
+  }
+  const needle = strip(filter.toLowerCase());
+  const hay = strip(searchString.toLowerCase());
+  return hay.indexOf(needle) !== -1;
 }

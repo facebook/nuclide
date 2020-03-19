@@ -16,7 +16,7 @@ export type TestRunnerParams = {
   headless: boolean,
   /** Creates the `atom` global object. */
   buildAtomEnvironment: (params: BuildAtomEnvironmentParams) => AtomGlobal,
-  /** Currently undocumnted, but seemingly necessary to use buildAtomEnvironment(). */
+  /** Currently undocumented, but seemingly necessary to use buildAtomEnvironment(). */
   buildDefaultApplicationDelegate: () => Object,
   /** An optional path to a log file to which test output should be logged. */
   logFile: ?string,

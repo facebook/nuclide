@@ -1,0 +1,13 @@
+# @generated SignedSource<<76e7271f14e3e9555865d037fbc235f2>>
+language: objective-c
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
+
+script: 'curl -s https://raw.githubusercontent.com/atom/ci/master/build-package.sh | sh'
+
+branches:
+  only:
+    - master

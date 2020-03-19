@@ -52,7 +52,7 @@ function waitForStopChanging() {
 
 function goTo(fullFile, shortFile, line, column, waitForActivate) {
   runs(() => {
-    goToLocation(fullFile(), line, column);
+    goToLocation(fullFile(), {line, column});
   });
   if (waitForActivate) {
     waitForStopChanging();
@@ -111,8 +111,6 @@ describe('Nav Stack Integration', () => {
     navForward();
     waitsForFilePosition('Foo', 11, 5);
 
-    runs(() => {
-      deactivateAllPackages();
-    });
+    waitsForPromise(deactivateAllPackages);
   });
 });

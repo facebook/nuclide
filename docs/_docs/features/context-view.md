@@ -30,4 +30,4 @@ When you click on a symbol in the [Editing Area](/docs/editor/basics/#editing-ar
 
 Clicking on the **Open in main editor** button at the bottom of the Context View panel moves the cursor to that definition be it in the current file or a different one.
 
-> Context View currently supports [Hack](/docs/languages/hack), [Python](/docs/languages/python), [Objective-C](/docs/languages/objective-c/), [C++](/docs/languages/cpp), and [GraphQL](/docs/languages/graphql) files.
+> Context View currently supports [Hack](/docs/languages/hack), [Python](/docs/languages/python), [Objective-C](/docs/languages/objective-c/) and [C++](/docs/languages/cpp) files.

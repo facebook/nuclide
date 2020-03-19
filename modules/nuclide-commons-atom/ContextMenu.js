@@ -10,8 +10,9 @@
  * @format
  */
 
-import {Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import invariant from 'assert';
+import {remote} from 'electron';
 
 type Item = {
   type: 'item',
@@ -126,7 +127,7 @@ export default class ContextMenu {
 
     // TODO(mbolin): Ideally, this Disposable should be garbage-collected if this ContextMenu is
     // disposed.
-    return new Disposable(() => {
+    return new UniversalDisposable(() => {
       const index = this._items.indexOf(value);
       this._items.splice(index, 1);
 
@@ -176,7 +177,7 @@ export default class ContextMenu {
       return internalItem.item;
     } else if (internalItem.type === 'menu') {
       // Note that due to our own strict renaming rules, this must be a private method instead of a
-      // static function becuase of the access to _menuOptions and _items.
+      // static function because of the access to _menuOptions and _items.
       const menuOptions = internalItem.menu._menuOptions;
       invariant(menuOptions.type === 'submenu');
       const items = internalItem.menu._sortAndFilterItems();
@@ -216,6 +217,7 @@ export default class ContextMenu {
     // Context menu commands contain a specific `detail` parameter:
     // https://github.com/atom/atom/blob/v1.15.0/src/main-process/context-menu.coffee#L17
     return (
+      // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
       Array.isArray(event.detail) &&
       // flowlint-next-line sketchy-null-mixed:off
       event.detail[0] &&
@@ -227,4 +229,33 @@ export default class ContextMenu {
 /** Comparator used to sort menu items by priority: lower priorities appear earlier. */
 function compareInternalItems(a: InternalItem, b: InternalItem): number {
   return a.priority - b.priority;
+}
+
+/**
+ * Shows the provided menu template. This will result in [an extra call to `templateForEvent()`][1],
+ * but it means that we still go through `showMenuForEvent()`, maintaining its behavior wrt
+ * (a)synchronousness. See atom/atom#13398.
+ *
+ * [1]: https://github.com/atom/atom/blob/v1.13.0/src/context-menu-manager.coffee#L200
+ */
+export function showMenuForEvent(
+  event: MouseEvent,
+  menuTemplate: Array<Object>,
+): UniversalDisposable {
+  invariant(remote != null);
+  const win = (remote.getCurrentWindow(): any);
+  const originalEmit = win.emit;
+  const restore = () => {
+    win.emit = originalEmit;
+  };
+  win.emit = (eventType, ...args) => {
+    if (eventType !== 'context-menu') {
+      return originalEmit(eventType, ...args);
+    }
+    const result = originalEmit('context-menu', menuTemplate);
+    restore();
+    return result;
+  };
+  atom.contextMenu.showForEvent(event);
+  return new UniversalDisposable(restore);
 }

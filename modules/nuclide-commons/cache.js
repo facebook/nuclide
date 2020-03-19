@@ -60,6 +60,10 @@ export class Cache<KeyType, ValueType> {
     }
   }
 
+  entries(): Iterator<[KeyType, ValueType]> {
+    return this._values.entries();
+  }
+
   keys(): Iterator<KeyType> {
     return this._values.keys();
   }

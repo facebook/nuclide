@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import type {LinterMessage} from 'atom-ide-ui';
 
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {getPythonServiceByNuclideUri} from '../../nuclide-remote-connection';
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {getDiagnosticRange} from './diagnostic-range';
 import {getEnableLinting, getLintExtensionBlacklist} from './config';
 
@@ -30,7 +30,7 @@ export default class LintHelpers {
 
     return trackTiming('nuclide-python.lint', async () => {
       const service = getPythonServiceByNuclideUri(src);
-      const diagnostics = await service.getDiagnostics(src, editor.getText());
+      const diagnostics = await service.getDiagnostics(src);
       if (editor.isDestroyed()) {
         return [];
       }

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,7 +17,7 @@ import {Observable} from 'rxjs';
 import querystring from 'querystring';
 import invariant from 'assert';
 import xfetch from '../../commons-node/xfetch';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 function _formatUri(
   method: string,

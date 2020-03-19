@@ -6,13 +6,25 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {Action, MessagesState, ProjectMessagesState} from '../types';
+import type {NuclideUri} from 'nuclide-commons/nuclideUri';
+import type {
+  Action,
+  CodeActionsState,
+  DescriptionsState,
+  DiagnosticProviderUpdate,
+  MessagesState,
+  ObservableDiagnosticProvider,
+  LastUpdateSource,
+} from '../types';
+import type {CodeActionFetcher} from '../../../atom-ide-code-actions/lib/types';
 
 import * as Actions from './Actions';
+
+const MAX_MESSAGE_COUNT_PER_PROVIDER_PER_FILE = 1000;
 
 export function messages(
   state: MessagesState = new Map(),
@@ -20,28 +32,23 @@ export function messages(
 ): MessagesState {
   switch (action.type) {
     case Actions.UPDATE_MESSAGES: {
-      const {provider, update: {filePathToMessages}} = action.payload;
-      if (filePathToMessages == null) {
-        return state;
-      }
+      const {provider, update} = action.payload;
       const nextState = new Map(state);
       // Override the messages we already have for each path.
       const prevMessages = nextState.get(provider) || new Map();
-      // This O(n) map copying means that a series of streaming updates will be O(n^2). However,
+      // This O(nlogn) copying + sorting is potentially expensive. However,
       // we'd like to keep this immutable and we're also accumulating the messages, (and therefore
       // already O(n^2)). So, for now, we'll accept that and revisit if it proves to be a
       // bottleneck.
-      const nextMessages = new Map([...prevMessages, ...filePathToMessages]);
+      const nextMessages = new Map([
+        ...prevMessages,
+        ...sortUpdateMessages(update),
+      ]);
       nextState.set(provider, nextMessages);
       return nextState;
     }
     case Actions.INVALIDATE_MESSAGES: {
       const {provider, invalidation} = action.payload;
-
-      // We don't do anything for file messages when the project is invalidated.
-      if (invalidation.scope === 'project') {
-        return state;
-      }
 
       // If there aren't any messages for this provider, there's nothing to do.
       const filesToMessages = state.get(provider);
@@ -76,12 +83,14 @@ export function messages(
           return nextState;
         }
         default:
+          (invalidation.scope: empty);
           throw new Error(`Invalid scope: ${invalidation.scope}`);
       }
     }
     case Actions.FIXES_APPLIED: {
       const {messages: messagesToRemove, filePath} = action.payload;
 
+      // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
       if (messagesToRemove.length === 0) {
         return state;
       }
@@ -90,6 +99,7 @@ export function messages(
       let nextState;
       for (const [provider, pathsToMessages] of state) {
         const providerMessages = pathsToMessages.get(filePath);
+        // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
         if (providerMessages == null || providerMessages.size === 0) {
           // There aren't any messages for this provider, so we don't have to remove anything.
           continue;
@@ -114,48 +124,82 @@ export function messages(
     case Actions.REMOVE_PROVIDER: {
       return mapDelete(state, action.payload.provider);
     }
+    case Actions.MARK_MESSAGES_STALE: {
+      const {filePath} = action.payload;
+      return markStaleMessages(state, filePath);
+    }
   }
 
   return state;
 }
 
-export function projectMessages(
-  state: ProjectMessagesState = new Map(),
+export function codeActionFetcher(
+  state: ?CodeActionFetcher = null,
   action: Action,
-): ProjectMessagesState {
-  switch (action.type) {
-    case Actions.UPDATE_MESSAGES: {
-      const {provider, update} = action.payload;
-      const {projectMessages: newProjectMessages} = update;
-      if (newProjectMessages == null) {
-        return state;
-      }
-      const nextState = new Map(state);
-      nextState.set(provider, newProjectMessages);
-      return nextState;
+): ?CodeActionFetcher {
+  if (action.type === Actions.SET_CODE_ACTION_FETCHER) {
+    return action.payload.codeActionFetcher;
+  }
+  return state;
+}
+
+export function codeActionsForMessage(
+  state: CodeActionsState = new Map(),
+  action: Action,
+): CodeActionsState {
+  if (action.type === Actions.SET_CODE_ACTIONS) {
+    state.forEach(codeActions => {
+      codeActions.forEach(codeAction => codeAction.dispose());
+    });
+    return action.payload.codeActionsForMessage;
+  }
+  return state;
+}
+
+export function descriptions(
+  state: DescriptionsState = new Map(),
+  action: Action,
+): DescriptionsState {
+  if (action.type === Actions.SET_DESCRIPTIONS) {
+    if (!action.payload.keepDescriptions) {
+      return action.payload.descriptions;
     }
-    case Actions.INVALIDATE_MESSAGES: {
-      const {provider, invalidation: {scope}} = action.payload;
-      if (scope !== 'project' && scope !== 'all') {
-        return state;
-      }
+    return new Map([...state, ...action.payload.descriptions]);
+  }
+  return state;
+}
 
-      const messagesForProvider = state.get(provider);
-
-      // If we don't have any project messages for this provider, we don't need to do anything.
-      if (messagesForProvider == null || messagesForProvider.length === 0) {
-        return state;
-      }
-
-      const nextState = new Map(state);
-      nextState.set(provider, []);
+export function providers(
+  state: Set<ObservableDiagnosticProvider> = new Set(),
+  action: Action,
+): Set<ObservableDiagnosticProvider> {
+  switch (action.type) {
+    case Actions.ADD_PROVIDER: {
+      const nextState = new Set(state);
+      nextState.add(action.payload.provider);
       return nextState;
     }
     case Actions.REMOVE_PROVIDER: {
-      return mapDelete(state, action.payload.provider);
+      const nextState = new Set(state);
+      nextState.delete(action.payload.provider);
+      return nextState;
     }
   }
+  return state;
+}
 
+export function lastUpdateSource(
+  state: LastUpdateSource = 'Provider',
+  action: Action,
+): LastUpdateSource {
+  switch (action.type) {
+    case Actions.UPDATE_MESSAGES: {
+      return 'Provider';
+    }
+    case Actions.MARK_MESSAGES_STALE: {
+      return 'Stale';
+    }
+  }
   return state;
 }
 
@@ -170,4 +214,51 @@ function mapDelete<K, V>(map: Map<K, V>, key: K): Map<K, V> {
     return copy;
   }
   return map;
+}
+
+/**
+ * Mark all messages on the provided filepath stale
+ */
+function markStaleMessages(state: MessagesState, filePath: NuclideUri) {
+  const nextState = new Map(state);
+  nextState.forEach((fileToMessages, provider) => {
+    const newFileToMessages = new Map(fileToMessages);
+    const messagesOnCurrentFile = newFileToMessages.get(filePath);
+    if (messagesOnCurrentFile) {
+      const staleMessagesOnCurrentFile = messagesOnCurrentFile.map(msg => {
+        // Mark message stale
+        return {...msg, stale: true};
+      });
+      newFileToMessages.set(filePath, staleMessagesOnCurrentFile);
+    }
+    nextState.set(provider, newFileToMessages);
+  });
+  return nextState;
+}
+
+function sortUpdateMessages(
+  update: DiagnosticProviderUpdate,
+): DiagnosticProviderUpdate {
+  const newUpdate = new Map();
+  for (const [filePath, updateMessages] of update) {
+    newUpdate.set(
+      filePath,
+      updateMessages
+        .slice(0, MAX_MESSAGE_COUNT_PER_PROVIDER_PER_FILE)
+        .sort((a, b) => {
+          const aRange = a.range;
+          if (aRange == null) {
+            return -1;
+          }
+
+          const bRange = b.range;
+          if (bRange == null) {
+            return 1;
+          }
+
+          return aRange.compare(bRange);
+        }),
+    );
+  }
+  return newUpdate;
 }

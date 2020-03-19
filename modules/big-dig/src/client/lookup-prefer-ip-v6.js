@@ -6,15 +6,23 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
+import invariant from 'assert';
 import dns from 'dns';
 
-type DnsFamily = 4 | 6;
+export type DnsFamily = 4 | 6;
 
-export default (async function lookupPreferIpv6(host: string): Promise<string> {
+export type DnsLookup = {
+  address: string,
+  family: DnsFamily,
+};
+
+export default (async function lookupPreferIpv6(
+  host: string,
+): Promise<DnsLookup> {
   try {
     return await lookup(host, 6);
   } catch (e) {
@@ -25,16 +33,21 @@ export default (async function lookupPreferIpv6(host: string): Promise<string> {
   }
 });
 
-function lookup(host: string, family: DnsFamily): Promise<string> {
+function lookup(host: string, family: DnsFamily): Promise<DnsLookup> {
   return new Promise((resolve, reject) => {
-    dns.lookup(host, family, (error: ?Error, address: ?string) => {
-      if (error) {
-        reject(error);
-      } else if (address != null) {
-        resolve(address);
-      } else {
-        reject(Error('One of error or address must be set.'));
-      }
-    });
+    dns.lookup(
+      host,
+      family,
+      (error: ?Error, address: ?string, resultFamily: ?number) => {
+        if (error) {
+          reject(error);
+        } else if (address != null) {
+          invariant(resultFamily === 4 || resultFamily === 6);
+          resolve({address, family: resultFamily});
+        } else {
+          reject(new Error('One of error or address must be set.'));
+        }
+      },
+    );
   });
 }

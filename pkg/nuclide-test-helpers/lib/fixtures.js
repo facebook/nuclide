@@ -9,15 +9,18 @@
  * @format
  */
 
-import fs from 'fs';
+// This is in devDependencies. This file should only be used in tests.
+// eslint-disable-next-line nuclide-internal/no-unresolved
 import fse from 'fs-extra';
 import temp from 'temp';
 import invariant from 'assert';
 
 import fsPromise from 'nuclide-commons/fsPromise';
 import nuclideUri from 'nuclide-commons/nuclideUri';
-import {asyncLimit} from 'nuclide-commons/promise';
 import {runCommand} from 'nuclide-commons/process';
+import {generateFixture} from 'nuclide-commons/test-helpers';
+
+const testFileContent = 'this is the base file\nline 2\n\n  indented line\n';
 
 /**
  * Traverses up the parent directories looking for `fixtures/FIXTURE_NAME`.
@@ -157,6 +160,146 @@ export async function generateHgRepo2Fixture(): Promise<string> {
 }
 
 /**
+ * Generates an hg repository with the following structure:
+ *
+ *   o second commit [secondCommit]
+ *  /
+ * |
+ * |
+ * | o first commit [firstCommit]
+ * |/
+ * |
+ * |
+ * o base commit
+ *
+ * @returns the path to the temporary directory that this function creates.
+ */
+export async function generateHgRepo3Fixture(
+  fileName?: string = 'temp.txt',
+): Promise<string> {
+  const testTxt = 'this is the base file\nline 2\n\n  indented line\n';
+  const tempDir = await generateFixture(
+    'hg_repo_3',
+    new Map([['.watchmanconfig', '{}\n'], [fileName, testTxt]]),
+  );
+  const repoPath = await fsPromise.realpath(tempDir);
+  await runCommand('hg', ['init'], {cwd: repoPath}).toPromise();
+  await fsPromise.writeFile(
+    nuclideUri.join(repoPath, '.hg', 'hgrc'),
+    '[paths]\ndefault = .\n[ui]\nusername = Test <test@mail.com>\n',
+  );
+  await fsPromise.writeFile(nuclideUri.join(repoPath, fileName), testTxt);
+  await runCommand('hg', ['commit', '-A', '-m', 'base commit'], {
+    cwd: repoPath,
+  }).toPromise();
+  await fsPromise.writeFile(
+    nuclideUri.join(repoPath, fileName),
+    testTxt + '\nthis line added on first commit\n',
+  );
+  await runCommand('hg', ['bookmark', 'firstCommit'], {
+    cwd: repoPath,
+  }).toPromise();
+  await runCommand('hg', ['commit', '-A', '-m', 'first commit'], {
+    cwd: repoPath,
+  }).toPromise();
+  await runCommand('hg', ['prev'], {
+    cwd: repoPath,
+  }).toPromise();
+  await fsPromise.writeFile(
+    nuclideUri.join(repoPath, fileName),
+    testTxt + '\nthis line added on second commit\n',
+  );
+  await runCommand('hg', ['bookmark', 'secondCommit'], {
+    cwd: repoPath,
+  }).toPromise();
+  await runCommand('hg', ['commit', '-A', '-m', 'second commit'], {
+    cwd: repoPath,
+  }).toPromise();
+  return repoPath;
+}
+
+export async function overwriteFileWithTestContent(
+  fileName: string,
+  repoPath: string,
+  fileContent?: string = testFileContent,
+): Promise<void> {
+  await fsPromise.writeFile(nuclideUri.join(repoPath, fileName), fileContent);
+}
+
+/**
+ * Generates an hg repository with the following structure:
+ *
+ * @ other commit
+ * |
+ * |  o commit 4   <- you are here
+ * |  |
+ * |  o commit 3
+ * |  |
+ * |  o commit 2
+ * |  |
+ * |  o commit 1
+ * | /
+ * |/
+ * o base commit
+ *
+ * @returns the path to the temporary directory that this function creates.
+ */
+export async function generateHgRepo4Fixture(): Promise<string> {
+  const testTxt = 'this is a test file\n';
+
+  const tempDir = await generateFixture(
+    'hg_repo_4',
+    new Map([
+      ['.watchmanconfig', '{}\n'],
+      ['test.txt', testTxt],
+      ['test_1.txt', ''],
+      ['test_2.txt', ''],
+      ['test_3.txt', ''],
+      ['test_4.txt', ''],
+    ]),
+  );
+  const repoPath = await fsPromise.realpath(tempDir);
+  await runCommand('hg', ['init'], {cwd: repoPath}).toPromise();
+  await fsPromise.writeFile(
+    nuclideUri.join(repoPath, '.hg', 'hgrc'),
+    '[paths]\ndefault = .\n[ui]\nusername = Test <test@mail.com>\n\n' +
+      '[extensions]\nhistedit =\nfbhistedit =\n',
+  );
+  await runCommand('hg', ['commit', '-A', '-m', 'base commit'], {
+    cwd: repoPath,
+  }).toPromise();
+  // make the base a public commit so that smartlog shows all children
+  await runCommand('hg', ['phase', '-p'], {
+    cwd: repoPath,
+  }).toPromise();
+
+  await fsPromise.writeFile(
+    nuclideUri.join(repoPath, 'test.txt'),
+    testTxt + '\n\nmore added here',
+  );
+  await runCommand('hg', ['commit', '-A', '-m', 'other commit'], {
+    cwd: repoPath,
+  }).toPromise();
+  await runCommand('hg', ['update', '.^'], {
+    cwd: repoPath,
+  }).toPromise();
+
+  for (let i = 1; i < 5; i++) {
+    // eslint-disable-next-line no-await-in-loop
+    await fsPromise.writeFile(
+      nuclideUri.join(repoPath, `test_${i}.txt`),
+      `this is test file ${i}`,
+    );
+    // eslint-disable-next-line no-await-in-loop
+    await runCommand('hg', ['commit', '-A', '-m', `commit ${i}`], {
+      cwd: repoPath,
+    }).toPromise();
+  }
+
+  return repoPath;
+}
+
+/**
  * Like `copyMercurialFixture` but looks in the entire fixture directory for
  * `BUCK-rename` and `TARGETS-rename` and inserts a .buckversion if applicable.
  *
@@ -196,73 +339,7 @@ async function renameBuckFiles(projectDir: string) {
     renames.map(name => {
       const prevName = nuclideUri.join(projectDir, name);
       const newName = prevName.replace(/-rename$/, '');
-      return fsPromise.rename(prevName, newName);
+      return fsPromise.mv(prevName, newName);
     }),
   );
-}
-
-/**
- * Takes of Map of file/file-content pairs, and creates a temp dir that matches
- * the file structure of the Map. Example:
- *
- * generateFixture('myfixture', new Map([
- *   ['foo.js'],
- *   ['bar/baz.txt', 'some text'],
- * ]));
- *
- * Creates:
- *
- * /tmp/myfixture_1/foo.js (empty file)
- * /tmp/myfixture_1/bar/baz.txt (with 'some text')
- */
-export async function generateFixture(
-  fixtureName: string,
-  files: ?Map<string, ?string>,
-): Promise<string> {
-  temp.track();
-
-  const MAX_CONCURRENT_FILE_OPS = 100;
-  const tempDir = await fsPromise.tempdir(fixtureName);
-
-  if (files == null) {
-    return tempDir;
-  }
-
-  // Map -> Array with full paths
-  const fileTuples = Array.from(files, tuple => {
-    // It's our own array - it's ok to mutate it
-    tuple[0] = nuclideUri.join(tempDir, tuple[0]);
-    return tuple;
-  });
-
-  // Dedupe the dirs that we have to make.
-  const dirsToMake = fileTuples
-    .map(([filename]) => nuclideUri.dirname(filename))
-    .filter((dirname, i, arr) => arr.indexOf(dirname) === i);
-
-  await asyncLimit(dirsToMake, MAX_CONCURRENT_FILE_OPS, dirname =>
-    fsPromise.mkdirp(dirname),
-  );
-
-  await asyncLimit(
-    fileTuples,
-    MAX_CONCURRENT_FILE_OPS,
-    ([filename, contents]) => {
-      // We can't use fsPromise/fs-plus because it does too much extra work.
-      // They call `mkdirp` before `writeFile`. We know that the target dir
-      // exists, so we can optimize by going straight to `fs`. When you're
-      // making 10k files, this adds ~500ms.
-      return new Promise((resolve, reject) => {
-        fs.writeFile(filename, contents || '', err => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
-    },
-  );
-
-  return tempDir;
 }

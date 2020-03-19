@@ -1,0 +1,84 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.file-results-filename {
+  cursor: pointer;
+  display: block;
+  overflow-x: hidden;
+  white-space: nowrap;
+  line-height: @component-line-height;
+
+  &:hover {
+    color: @text-color-highlight;
+  }
+
+  .icon {
+    text-align: center;
+    vertical-align: middle;
+  }
+}
+
+.file-results-snippet:last-child {
+  border-bottom: 1px solid @base-border-color;
+  margin-bottom: 8px;
+}
+
+.file-results-snippet {
+  border-top: 1px solid @base-border-color;
+  display: flex;
+  position: relative;
+}
+
+.file-results-line-numbers,
+.file-results-code {
+  display: inline-block;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  line-height: @component-line-height;
+  white-space: pre;
+}
+
+.file-results-line-numbers {
+  background: @syntax-gutter-background-color;
+  box-sizing: content-box;
+  color: @syntax-gutter-text-color;
+  cursor: pointer;
+  min-width: 3em;
+  padding-left: 4em;
+  text-align: left;
+  -webkit-user-select: none;
+}
+
+.file-results-line-numbers > div:hover {
+  color: @syntax-gutter-text-color-selected;
+}
+
+.file-results-code {
+  background: @syntax-background-color;
+  color: @syntax-text-color;
+  flex: 1;
+  overflow-x: hidden;
+  position: relative;
+  tab-size: 8;
+
+  .highlight-info {
+    /* Copied from find-and-replace */
+    box-shadow: inset 0 0 1px lighten(@background-color-info, 50%);
+    cursor: pointer;
+    padding: 1px 0;
+  }
+
+  .highlight-info:hover {
+    text-decoration: underline;
+  }
+}
+
+.file-results-code:hover {
+  overflow-x: auto;
+}
+
+.file-results-highlights {
+  left: 0;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}

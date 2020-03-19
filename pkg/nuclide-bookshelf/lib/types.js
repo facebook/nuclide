@@ -9,7 +9,6 @@
  * @format
  */
 
-// flowlint-next-line untyped-type-import:off
 import type Immutable from 'immutable';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 

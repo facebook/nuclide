@@ -6,26 +6,72 @@ import sys
 import imp
 import os
 import re
+import pkgutil
+import warnings
 try:
     import importlib
 except ImportError:
     pass
 
+# Cannot use sys.version.major and minor names, because in Python 2.6 it's not
+# a namedtuple.
 is_py3 = sys.version_info[0] >= 3
-is_py33 = is_py3 and sys.version_info.minor >= 3
+is_py33 = is_py3 and sys.version_info[1] >= 3
+is_py34 = is_py3 and sys.version_info[1] >= 4
+is_py35 = is_py3 and sys.version_info[1] >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
+py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
-def find_module_py33(string, path=None):
-    loader = importlib.machinery.PathFinder.find_module(string, path)
+class DummyFile(object):
+    def __init__(self, loader, string):
+        self.loader = loader
+        self.string = string
+
+    def read(self):
+        return self.loader.get_source(self.string)
+
+    def close(self):
+        del self.loader
+
+
+def find_module_py34(string, path=None, fullname=None):
+    implicit_namespace_pkg = False
+    spec = None
+    loader = None
+
+    spec = importlib.machinery.PathFinder.find_spec(string, path)
+    if hasattr(spec, 'origin'):
+        origin = spec.origin
+        implicit_namespace_pkg = origin == 'namespace'
+
+    # We try to disambiguate implicit namespace pkgs with non implicit namespace pkgs
+    if implicit_namespace_pkg:
+        fullname = string if not path else fullname
+        implicit_ns_info = ImplicitNSInfo(fullname, spec.submodule_search_locations._path)
+        return None, implicit_ns_info, False
+
+    # we have found the tail end of the dotted path
+    if hasattr(spec, 'loader'):
+        loader = spec.loader
+    return find_module_py33(string, path, loader)
+
+def find_module_py33(string, path=None, loader=None, fullname=None):
+    loader = loader or importlib.machinery.PathFinder.find_module(string, path)
 
     if loader is None and path is None:  # Fallback to find builtins
         try:
-            loader = importlib.find_loader(string)
+            with warnings.catch_warnings(record=True):
+                # Mute "DeprecationWarning: Use importlib.util.find_spec()
+                # instead." While we should replace that in the future, it's
+                # probably good to wait until we deprecate Python 3.3, since
+                # it was added in Python 3.4 and find_loader hasn't been
+                # removed in 3.6.
+                loader = importlib.find_loader(string)
         except ValueError as e:
             # See #491. Importlib might raise a ValueError, to avoid this, we
             # just raise an ImportError to fix the issue.
-            raise ImportError("Originally ValueError: " + str(e))
+            raise ImportError("Originally  " + repr(e))
 
     if loader is None:
         raise ImportError("Couldn't find a loader for {0}".format(string))
@@ -33,33 +79,77 @@ def find_module_py33(string, path=None):
     try:
         is_package = loader.is_package(string)
         if is_package:
-            module_path = os.path.dirname(loader.path)
-            module_file = None
+            if hasattr(loader, 'path'):
+                module_path = os.path.dirname(loader.path)
+            else:
+                # At least zipimporter does not have path attribute
+                module_path = os.path.dirname(loader.get_filename(string))
+            if hasattr(loader, 'archive'):
+                module_file = DummyFile(loader, string)
+            else:
+                module_file = None
         else:
             module_path = loader.get_filename(string)
-            module_file = open(module_path, 'rb')
+            module_file = DummyFile(loader, string)
     except AttributeError:
         # ExtensionLoader has not attribute get_filename, instead it has a
         # path attribute that we can use to retrieve the module path
         try:
             module_path = loader.path
-            module_file = open(loader.path, 'rb')
+            module_file = DummyFile(loader, string)
         except AttributeError:
             module_path = string
             module_file = None
         finally:
             is_package = False
 
+    if hasattr(loader, 'archive'):
+        module_path = loader.archive
+
     return module_file, module_path, is_package
 
 
-def find_module_pre_py33(string, path=None):
-    module_file, module_path, description = imp.find_module(string, path)
-    module_type = description[2]
-    return module_file, module_path, module_type is imp.PKG_DIRECTORY
+def find_module_pre_py33(string, path=None, fullname=None):
+    try:
+        module_file, module_path, description = imp.find_module(string, path)
+        module_type = description[2]
+        return module_file, module_path, module_type is imp.PKG_DIRECTORY
+    except ImportError:
+        pass
+
+    if path is None:
+        path = sys.path
+    for item in path:
+        loader = pkgutil.get_importer(item)
+        if loader:
+            try:
+                loader = loader.find_module(string)
+                if loader:
+                    is_package = loader.is_package(string)
+                    is_archive = hasattr(loader, 'archive')
+                    try:
+                        module_path = loader.get_filename(string)
+                    except AttributeError:
+                        # fallback for py26
+                        try:
+                            module_path = loader._get_filename(string)
+                        except AttributeError:
+                            continue
+                    if is_package:
+                        module_path = os.path.dirname(module_path)
+                    if is_archive:
+                        module_path = loader.archive
+                    file = None
+                    if not is_package or is_archive:
+                        file = DummyFile(loader, string)
+                    return (file, module_path, is_package)
+            except ImportError:
+                pass
+    raise ImportError("No module named {0}".format(string))
 
 
 find_module = find_module_py33 if is_py33 else find_module_pre_py33
+find_module = find_module_py34 if is_py34  else find_module
 find_module.__doc__ = """
 Provides information about a module.
 
@@ -71,28 +161,18 @@ if the module is contained in a package.
 """
 
 
+class ImplicitNSInfo(object):
+    """Stores information returned from an implicit namespace spec"""
+    def __init__(self, name, paths):
+        self.name = name
+        self.paths = paths
+
 # unicode function
 try:
     unicode = unicode
 except NameError:
     unicode = str
 
-if is_py3:
-    u = lambda s: s
-else:
-    u = lambda s: s.decode('utf-8')
-
-u.__doc__ = """
-Decode a raw string into unicode object.  Do nothing in Python 3.
-"""
-
-# exec function
-if is_py3:
-    def exec_function(source, global_map):
-        exec(source, global_map)
-else:
-    eval(compile("""def exec_function(source, global_map):
-                        exec source in global_map """, 'blub', 'exec'))
 
 # re-raise function
 if is_py3:
@@ -147,7 +227,8 @@ def u(string):
     """
     if is_py3:
         return str(string)
-    elif not isinstance(string, unicode):
+
+    if not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
     return string
 
@@ -173,6 +254,11 @@ try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2
+
+try:
+    FileNotFoundError = FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 def no_unicode_pprint(dct):

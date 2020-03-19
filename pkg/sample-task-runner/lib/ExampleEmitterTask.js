@@ -17,9 +17,9 @@ import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 export default class ExampleTask {
   _emitter: Emitter = new Emitter();
-  _completeTimeoutId: ?number;
-  _messageIntervalId: ?number;
-  _progressIntervalId: ?number;
+  _completeTimeoutId: ?TimeoutID;
+  _messageIntervalId: ?IntervalID;
+  _progressIntervalId: ?IntervalID;
   _progress: number;
 
   start = (): void => {
@@ -60,7 +60,7 @@ export default class ExampleTask {
       clearInterval(this._progressIntervalId);
     }
     if (this._completeTimeoutId != null) {
-      clearInterval(this._completeTimeoutId);
+      clearTimeout(this._completeTimeoutId);
     }
   };
 

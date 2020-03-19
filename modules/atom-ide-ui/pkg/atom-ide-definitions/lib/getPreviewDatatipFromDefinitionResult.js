@@ -6,29 +6,24 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import analytics from 'nuclide-commons-atom/analytics';
+import analytics from 'nuclide-commons/analytics';
 import {getDefinitionPreview as getLocalFileDefinitionPreview} from 'nuclide-commons/symbol-definition-preview';
 
 import React from 'react';
 import type {Datatip} from '../../atom-ide-datatip/lib/types';
 
-import type {
-  Definition,
-  DefinitionQueryResult,
-  DefinitionPreviewProvider,
-} from './types';
+import type {Definition, DefinitionPreviewProvider} from './types';
 
 export default (async function getPreviewDatatipFromDefinition(
-  definitionResult: DefinitionQueryResult,
+  range: atom$Range,
+  definitions: Array<Definition>,
   definitionPreviewProvider: ?DefinitionPreviewProvider,
   grammar: atom$Grammar,
 ): Promise<?Datatip> {
-  const {queryRange, definitions} = definitionResult;
-
   if (definitions.length === 1) {
     const definition = definitions[0];
     // Some providers (e.g. Flow) return negative positions.
@@ -49,11 +44,14 @@ export default (async function getPreviewDatatipFromDefinition(
     //  image contents, otherwise use markedStrings
     if (definitionPreview.mime.startsWith('image/')) {
       return {
-        component: () =>
+        component: () => (
           <img
-            src={`data:${definitionPreview.mime};${definitionPreview.encoding},${definitionPreview.contents}`}
-          />,
-        range: queryRange[0],
+            src={`data:${definitionPreview.mime};${
+              definitionPreview.encoding
+            },${definitionPreview.contents}`}
+          />
+        ),
+        range,
       };
     }
     return {
@@ -64,7 +62,7 @@ export default (async function getPreviewDatatipFromDefinition(
           grammar,
         },
       ],
-      range: queryRange[0],
+      range,
     };
   }
 
@@ -76,7 +74,7 @@ export default (async function getPreviewDatatipFromDefinition(
         grammar,
       },
     ],
-    range: queryRange[0],
+    range,
   };
 });
 

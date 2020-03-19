@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -41,23 +41,36 @@ describe('nuclide-distraction-free-mode', () => {
           commandTarget,
           'nuclide-distraction-free-mode:toggle',
         );
+      });
+
+      waitsFor('outline view to disappear', () => {
+        return !isOutlineViewVisible();
+      });
+
+      runs(() => {
         expect(isOutlineViewVisible()).toBeFalsy();
 
         atom.commands.dispatch(
           commandTarget,
           'nuclide-distraction-free-mode:toggle',
         );
-        expect(isOutlineViewVisible()).toBeTruthy();
-
-        // Deactivate nuclide packages.
-        deactivateAllPackages();
       });
+
+      waitsFor('outline view to come back', () => {
+        return isOutlineViewVisible();
+      });
+
+      runs(() => {
+        expect(isOutlineViewVisible()).toBeTruthy();
+      });
+      // Deactivate nuclide packages.
+      waitsForPromise(deactivateAllPackages);
     });
   });
 });
 
 function isOutlineViewVisible(): boolean {
-  let el = document.querySelector('.nuclide-outline-view');
+  let el = document.querySelector('.outline-view');
   if (el == null) {
     return false;
   }

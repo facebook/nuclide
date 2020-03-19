@@ -13,7 +13,7 @@ import nuclideUri from 'nuclide-commons/nuclideUri';
 import ini from 'ini';
 import fs from 'fs';
 
-import type {HgRepositoryDescription} from '..';
+import type {HgRepositoryDescription} from './types';
 
 /**
  * This function returns HgRepositoryDescription filled with a repoPath and

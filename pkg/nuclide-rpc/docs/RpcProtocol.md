@@ -45,19 +45,20 @@ various message types.
 The RPC protocol involves sequences of related messages. The `id` field identifies
 which sequence of messages this message belongs to. See description below for
 valid message sequences. `id`'s must be uniquely assigned by the originator of the
-message sequence. Message sequences are originated with one of the following message types: Call, CallObject, NewObject, Dispose, Unsubscribe.
+message sequence. Message sequences are originated with one of the following message types:
+Call, CallObject, Dispose, Unsubscribe.
 
 ## Call Message Sequence
 
 The call message sequences represent an API call and its corresponding response.
-There are 3 kinds of API calls: Call, CallObject, and NewObject.
+There are two kinds of API calls: Call (for regular functions) and CallObject (for methods).
 
 ## Server vs. Client
 
 Each RPC connection occurs between a client and a server. The client may send
-CallMessages and NewObjectMessages to the server.
+CallMessages, CallObjectMessages, DisposeMessages, and UnsubscribeMessages to the server.
 
-The server never sends CallMessages or NewObjectMessages to the client.
+The server never sends CallMessages to the client.
 
 Note that once objectIds have been exchanged, CallObjectMessages may be sent
 from the client to the server, but also from the server to the client.
@@ -136,36 +137,16 @@ The `objectId` field identifies the object who's method is being invoked. Note t
 the objectId must identify an object which lives at the receiver of the CallObjectMessage.
 See below for more on objectIds.
 
-### NewObjectMessage
-
-NewObjectMessage represents a constructor call.
-
-```js
-type NewObjectMessage = {
-  protocol: 'service_framework3_rpc';
-  type: 'new';
-  interface: string;
-  id: number;
-  args: Object;
-};
-```
-
-The `interface` field represents the type of object to construct.
-
-The `result` field of the ResponseMessage to a NewObjectMessage contains the objectId
-of the created object.
-
 #### Arguments
 
-Arguments in `CallMessage`, `CallObjectMessage`, and `NewObjectMessage` messages
+Arguments in `CallMessage` and `CallObjectMessage` messages
 are represented as a map of name/value pairs. The set of argument names and their
 types will depend on the `method`.
 
 #### ObjectId
 
 ObjectIds are numeric values which identify objects which are passed
-by reference in RPC messages. The result of NewObjectMesage is an ObjectId. ObjectIds
-may also be passed as arguments and returned in ResponseMessages.
+by reference in RPC messages. ObjectIds may be passed as arguments and returned in ResponseMessages.
 
 Objects which live on the server are assigned a positive objectId. Objects which live
 on the client are assigned a negative objectId. 0 is not a valid objectId.

@@ -9,7 +9,7 @@
  * @format
  */
 
-import Dequeue from 'dequeue';
+import {default as Deque} from 'double-ended-queue';
 import EventEmitter from 'events';
 
 type Executor<T> = () => Promise<T>;
@@ -23,14 +23,14 @@ type Executor<T> = () => Promise<T>;
  * control the number of concurrent executions.
  */
 export class PromisePool {
-  _fifo: Dequeue;
+  _fifo: Deque<{id: string, executor: Executor<any>}>;
   _emitter: EventEmitter;
   _numPromisesRunning: number;
   _poolSize: number;
   _nextRequestId: number;
 
   constructor(poolSize: number) {
-    this._fifo = new Dequeue();
+    this._fifo = new Deque();
     this._emitter = new EventEmitter();
     this._numPromisesRunning = 0;
     this._poolSize = poolSize;
@@ -61,11 +61,12 @@ export class PromisePool {
       return;
     }
 
-    if (this._fifo.length === 0) {
+    const first = this._fifo.shift();
+    if (first == null) {
       return;
     }
 
-    const {id, executor} = this._fifo.shift();
+    const {id, executor} = first;
     this._numPromisesRunning++;
 
     executor().then(

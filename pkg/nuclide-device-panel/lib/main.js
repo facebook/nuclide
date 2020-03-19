@@ -10,18 +10,15 @@
  */
 
 import createPackage from 'nuclide-commons-atom/createPackage';
+import {combineEpicsFromImports} from 'nuclide-commons/epicHelpers';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {
   DevicePanelWorkspaceView,
   WORKSPACE_VIEW_URI,
 } from './DevicePanelWorkspaceView';
-import {Disposable} from 'atom';
-import invariant from 'invariant';
+import invariant from 'assert';
 import {ServerConnection} from '../../nuclide-remote-connection/lib/ServerConnection';
-import {
-  combineEpics,
-  createEpicMiddleware,
-} from 'nuclide-commons/redux-observable';
+import {createEpicMiddleware} from 'nuclide-commons/redux-observable';
 import {applyMiddleware, createStore} from 'redux';
 import {createEmptyAppState} from './redux/createEmptyAppState';
 import * as Reducers from './redux/Reducers';
@@ -30,7 +27,8 @@ import * as Epics from './redux/Epics';
 import {getProviders} from './providers';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
 
-import type {Store, DevicePanelServiceApi} from './types';
+import type {Store} from './types';
+import type {DevicePanelServiceApi} from 'nuclide-debugger-common/types';
 
 let activation = null;
 
@@ -39,13 +37,14 @@ class Activation {
   _store: Store;
 
   constructor(state: ?Object) {
-    const epics = Object.keys(Epics)
-      .map(k => Epics[k])
-      .filter(epic => typeof epic === 'function');
     this._store = createStore(
       Reducers.app,
       createEmptyAppState(),
-      applyMiddleware(createEpicMiddleware(combineEpics(...epics))),
+      applyMiddleware(
+        createEpicMiddleware(
+          combineEpicsFromImports(Epics, 'nuclide-device-panel'),
+        ),
+      ),
     );
     this._disposables = new UniversalDisposable(
       ServerConnection.observeRemoteConnections().subscribe(conns => {
@@ -68,9 +67,13 @@ class Activation {
         }
       }),
       () => destroyItemWhere(item => item instanceof DevicePanelWorkspaceView),
-      atom.commands.add('atom-workspace', 'nuclide-device-panel:toggle', () => {
-        atom.workspace.toggle(WORKSPACE_VIEW_URI);
-      }),
+      atom.commands.add(
+        'atom-workspace',
+        'nuclide-devices-panel:toggle',
+        () => {
+          atom.workspace.toggle(WORKSPACE_VIEW_URI);
+        },
+      ),
     );
   }
 
@@ -88,10 +91,14 @@ class Activation {
     );
   }
 
+  _refreshDevices(): void {
+    this._store.dispatch(Actions.setDevices(this._store.getState().devices));
+  }
+
   _createProviderRegistration<T>(
     providers: Set<T>,
     onDispose?: () => void,
-  ): (provider: T) => Disposable {
+  ): (provider: T) => UniversalDisposable {
     return (provider: T) => {
       invariant(
         activation != null,
@@ -101,7 +108,7 @@ class Activation {
       if (onDispose != null) {
         onDispose();
       }
-      return new Disposable(() => {
+      return new UniversalDisposable(() => {
         if (activation != null) {
           providers.delete(provider);
         }
@@ -126,8 +133,9 @@ class Activation {
       registerProcessesProvider: this._createProviderRegistration(
         providers.deviceProcesses,
       ),
-      registerTaskProvider: this._createProviderRegistration(
+      registerDeviceTaskProvider: this._createProviderRegistration(
         providers.deviceTask,
+        () => this._refreshDevices(),
       ),
       registerProcessTaskProvider: this._createProviderRegistration(
         providers.processTask,
@@ -136,8 +144,11 @@ class Activation {
         providers.deviceTypeTask,
         () => this._refreshDeviceTypes(),
       ),
-      registerDeviceActionProvider: this._createProviderRegistration(
-        providers.deviceAction,
+      registerAppInfoProvider: this._createProviderRegistration(
+        providers.appInfo,
+      ),
+      registerDeviceTypeComponentProvider: this._createProviderRegistration(
+        providers.deviceTypeComponent,
       ),
     };
   }

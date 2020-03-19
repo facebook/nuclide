@@ -12,11 +12,12 @@
 /* globals Element */
 
 import invariant from 'assert';
-import {CompositeDisposable, Emitter} from 'atom';
+import {Emitter} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {LazyTreeNode} from './LazyTreeNode';
 import {TreeNodeComponent} from './TreeNodeComponent';
 import {forEachCachedNode} from './tree-node-traversals';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
 
@@ -67,11 +68,9 @@ function toggleSetHas(
   return added;
 }
 
-const FIRST_SELECTED_DESCENDANT_REF: string = 'firstSelectedDescendant';
-
 type DefaultProps = {
   // Render will return this component if there are no root nodes.
-  elementToRenderWhenEmpty?: ?(null | React.Element<any>),
+  elementToRenderWhenEmpty: React.Node,
   // A node can be confirmed if it is a selected non-container node and the user is clicks on it
   // or presses <enter>.
   onConfirmSelection: (node: LazyTreeNode) => void,
@@ -98,16 +97,14 @@ type State = {
 /**
  * Generic tree component that operates on LazyTreeNodes.
  */
-export class TreeRootComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export class TreeRootComponent extends React.Component<Props, State> {
   _allKeys: ?Array<string>;
   _emitter: ?Emitter;
   _isMounted: boolean;
   _keyToNode: ?{[key: string]: LazyTreeNode};
   _rejectDidUpdateListenerPromise: ?() => void;
-  _subscriptions: ?CompositeDisposable;
+  _subscriptions: ?UniversalDisposable;
+  _firstSelectedDescendant: ?TreeNodeComponent;
 
   static defaultProps: DefaultProps = {
     elementToRenderWhenEmpty: null,
@@ -152,7 +149,7 @@ export class TreeRootComponent extends React.Component {
     // (3) Press the up or down arrow key to change the selected node
     // (4) The new node should scroll into view
     if (!prevState || this.state.selectedKeys !== prevState.selectedKeys) {
-      const firstSelectedDescendant = this.refs[FIRST_SELECTED_DESCENDANT_REF];
+      const firstSelectedDescendant = this._firstSelectedDescendant;
       if (firstSelectedDescendant !== undefined) {
         const el = ReactDOM.findDOMNode(firstSelectedDescendant);
         if (el instanceof Element) {
@@ -166,6 +163,9 @@ export class TreeRootComponent extends React.Component {
   }
 
   _deselectDescendants(root: LazyTreeNode): void {
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const selectedKeys = this.state.selectedKeys;
 
     forEachCachedNode(root, node => {
@@ -190,6 +190,9 @@ export class TreeRootComponent extends React.Component {
   }
 
   _toggleNodeExpanded(node: LazyTreeNode, forceExpanded?: ?boolean): void {
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const expandedKeys = this.state.expandedKeys;
     const keyAdded = toggleSetHas(expandedKeys, node.getKey(), forceExpanded);
 
@@ -203,12 +206,15 @@ export class TreeRootComponent extends React.Component {
   }
 
   _toggleNodeSelected(node: LazyTreeNode, forceSelected?: ?boolean): void {
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const selectedKeys = this.state.selectedKeys;
     toggleSetHas(selectedKeys, node.getKey(), forceSelected);
     this.setState({selectedKeys});
   }
 
-  _onClickNode = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
+  _onClickNode = (event: SyntheticMouseEvent<>, node: LazyTreeNode): void => {
     if (event.metaKey) {
       this._toggleNodeSelected(node);
       return;
@@ -227,12 +233,12 @@ export class TreeRootComponent extends React.Component {
     this._confirmNode(node);
   };
 
-  _onClickNodeArrow = (event: SyntheticEvent, node: LazyTreeNode): void => {
+  _onClickNodeArrow = (event: SyntheticEvent<>, node: LazyTreeNode): void => {
     this._toggleNodeExpanded(node);
   };
 
   _onDoubleClickNode = (
-    event: SyntheticMouseEvent,
+    event: SyntheticMouseEvent<>,
     node: LazyTreeNode,
   ): void => {
     // Double clicking a non-directory will keep the created tab open.
@@ -241,7 +247,7 @@ export class TreeRootComponent extends React.Component {
     }
   };
 
-  _onMouseDown = (event: SyntheticMouseEvent, node: LazyTreeNode): void => {
+  _onMouseDown = (event: SyntheticMouseEvent<>, node: LazyTreeNode): void => {
     // Select the node on right-click.
     if (event.button === 2 || (event.button === 0 && event.ctrlKey === true)) {
       if (!this._isNodeSelected(node)) {
@@ -285,7 +291,7 @@ export class TreeRootComponent extends React.Component {
     atom.contextMenu.add(contextMenuObj);
   }
 
-  render(): ?React.Element<any> {
+  render(): React.Node {
     if (this.state.roots.length === 0) {
       return this.props.elementToRenderWhenEmpty;
     }
@@ -306,13 +312,13 @@ export class TreeRootComponent extends React.Component {
         const item = stack.pop();
         const node = item.node;
 
-        // Keep a reference the first selected descendant with
-        // `this.refs[FIRST_SELECTED_DESCENDANT_REF]`.
         const isNodeSelected: boolean = this._isNodeSelected(node);
-        let ref: ?string = null;
+        let ref = null;
         if (!foundFirstSelectedDescendant && isNodeSelected) {
           foundFirstSelectedDescendant = true;
-          ref = FIRST_SELECTED_DESCENDANT_REF;
+          ref = c => {
+            this._firstSelectedDescendant = c;
+          };
         }
 
         const child = (
@@ -332,6 +338,7 @@ export class TreeRootComponent extends React.Component {
             onMouseDown={this._onMouseDown}
             path={node.getKey()}
             key={node.getKey()}
+            // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
             ref={ref}
           />
         );
@@ -374,14 +381,10 @@ export class TreeRootComponent extends React.Component {
 
     this._allKeys = allKeys;
     this._keyToNode = keyToNode;
-    return (
-      <div className="nuclide-tree-root">
-        {children}
-      </div>
-    );
+    return <div className="nuclide-tree-root">{children}</div>;
   }
 
-  componentWillMount(): void {
+  UNSAFE_componentWillMount(): void {
     const allKeys = [];
     const keyToNode = {};
 
@@ -391,7 +394,7 @@ export class TreeRootComponent extends React.Component {
       keyToNode[rootKey] = root;
     });
 
-    const subscriptions = new CompositeDisposable();
+    const subscriptions = new UniversalDisposable();
     subscriptions.add(
       atom.commands.add(this.props.eventHandlerSelector, {
         // Expand and collapse.
@@ -445,6 +448,9 @@ export class TreeRootComponent extends React.Component {
       this.removeStateForSubtree(root);
     });
 
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const expandedKeys = this.state.expandedKeys;
     roots.forEach(root => expandedKeys.add(root.getKey()));
 
@@ -494,7 +500,13 @@ export class TreeRootComponent extends React.Component {
   }
 
   removeStateForSubtree(root: LazyTreeNode): void {
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const expandedKeys = this.state.expandedKeys;
+    // TODO: (wbinnssmith) T30771435 this setState depends on current state
+    // and should use an updater function rather than an object
+    // eslint-disable-next-line react/no-access-state-in-setstate
     const selectedKeys = this.state.selectedKeys;
 
     forEachCachedNode(root, node => {

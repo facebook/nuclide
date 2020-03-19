@@ -5,21 +5,21 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {
-  DiagnosticFix,
-  DiagnosticTrace,
-  FileDiagnosticMessage,
-} from 'atom-ide-ui';
+import type {DiagnosticFix, DiagnosticTrace} from 'atom-ide-ui';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
+import type {FileDiagnosticMessage} from '../../nuclide-language-service/lib/LanguageService';
 import type {
   FlowStatusOutput,
-  FlowStatusError,
   FlowStatusErrorMessageComponent,
+  FlowClassicStatusError,
+  FlowFriendlyStatusError,
+  FlowFriendlyMessage,
+  FlowLoc,
 } from './flowOutputTypes';
 
 import invariant from 'assert';
@@ -33,7 +33,15 @@ const BUILTIN_LOCATION = '(builtins)';
 export function flowStatusOutputToDiagnostics(
   statusOutput: FlowStatusOutput,
 ): Array<FileDiagnosticMessage> {
-  return statusOutput.errors.map(flowMessageToDiagnosticMessage);
+  return statusOutput.errors.map(error => {
+    if (error.classic === undefined || error.classic === true) {
+      return flowClassicMessageToDiagnosticMessage(error);
+    }
+    if (error.classic === false) {
+      return flowFriendlyMessageToDiagnosticMessage(error);
+    }
+    throw new Error('Invalid flow status error type');
+  });
 }
 
 // Exported for testing
@@ -58,12 +66,13 @@ function unusedSuppressionFix(
   diagnostic: FileDiagnosticMessage,
 ): ?DiagnosticFix {
   // Automatically remove unused suppressions:
-  if (
+  const isUnusedLegacySuppression =
     diagnostic.trace != null &&
     diagnostic.trace.length === 1 &&
     diagnostic.text === 'Error suppressing comment' &&
-    diagnostic.trace[0].text === 'Unused suppression'
-  ) {
+    diagnostic.trace[0].text === 'Unused suppression';
+  const isUnusedSuppresion = diagnostic.text === 'Unused suppression comment.';
+  if (isUnusedSuppresion || isUnusedLegacySuppression) {
     const oldRange = diagnostic.range;
     invariant(oldRange != null);
     return {
@@ -144,11 +153,73 @@ function flowMessageToTrace(
     type: 'Trace',
     text: message.descr,
     filePath: extractPath(message),
-    range: extractRange(message),
+    range: extractRange(message.loc),
   };
 }
 
-function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
+function flowFriendlyMessageToDiagnosticMessage(
+  flowStatusError: FlowFriendlyStatusError,
+) {
+  const diagnosticMessage: FileDiagnosticMessage = {
+    providerName: 'Flow',
+    type: flowStatusError.level === 'error' ? 'Error' : 'Warning',
+    text: getFriendlyText(flowStatusError.messageMarkup),
+    filePath: flowStatusError.primaryLoc.source,
+    range: extractRange(flowStatusError.primaryLoc),
+    trace: getFriendlyTrace(flowStatusError.referenceLocs),
+  };
+
+  const fix = diagnosticToFix(diagnosticMessage);
+  if (fix != null) {
+    diagnosticMessage.fix = fix;
+  }
+  return diagnosticMessage;
+}
+
+function getFriendlyTrace(referenceLocs: {
+  [id: string]: FlowLoc,
+}): Array<DiagnosticTrace> {
+  const diagnostics = [];
+  for (const referenceId in referenceLocs) {
+    const loc = referenceLocs[referenceId];
+    diagnostics.push({
+      type: 'Trace',
+      text: `[${referenceId}]`,
+      filePath: loc.source,
+      range: extractRange(loc),
+    });
+  }
+  return diagnostics;
+}
+
+function getFriendlyText(messageMarkup: FlowFriendlyMessage): string {
+  if (Array.isArray(messageMarkup)) {
+    const getText = message => {
+      switch (message.kind) {
+        case 'Text':
+          return message.text;
+        case 'Code':
+          return `\`${message.text}\``;
+        case 'Reference':
+          return (
+            message.message.map(getText).join('') + ` [${message.referenceId}]`
+          );
+      }
+    };
+    return messageMarkup.map(getText).join('');
+  }
+
+  const header = getFriendlyText(messageMarkup.message);
+  const items = messageMarkup.items
+    .map(getFriendlyText)
+    .map(message => ` - ${message}`)
+    .join('\n');
+  return `${header}\n${items}`;
+}
+
+function flowClassicMessageToDiagnosticMessage(
+  flowStatusError: FlowClassicStatusError,
+) {
   const flowMessageComponents: Array<FlowStatusErrorMessageComponent> =
     flowStatusError.message;
 
@@ -162,12 +233,11 @@ function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
   invariant(path != null, 'Expected path to not be null or undefined');
 
   const diagnosticMessage: FileDiagnosticMessage = {
-    scope: 'file',
     providerName: 'Flow',
     type: flowStatusError.level === 'error' ? 'Error' : 'Warning',
     text: mainMessage.descr,
     filePath: path,
-    range: extractRange(mainMessage),
+    range: extractRange(mainMessage.loc),
     trace: extractTraces(flowStatusError),
   };
 
@@ -180,7 +250,7 @@ function flowMessageToDiagnosticMessage(flowStatusError: FlowStatusError) {
 }
 
 function extractTraces(
-  flowStatusError: FlowStatusError,
+  flowStatusError: FlowClassicStatusError,
 ): Array<DiagnosticTrace> | void {
   const flowMessageComponents: Array<FlowStatusErrorMessageComponent> =
     flowStatusError.message;
@@ -201,8 +271,17 @@ function extractTraces(
   }
   const extra = flowStatusError.extra;
   if (extra != null) {
-    const flatExtra = [].concat(...extra.map(({message}) => message));
-    trace.push(...flatExtra.map(flowMessageToTrace));
+    extra.forEach(({message, children}) => {
+      trace.push(...message.map(flowMessageToTrace));
+      if (children != null) {
+        const childrenTraces: Array<DiagnosticTrace> = [].concat(
+          ...children.map(child =>
+            [].concat(child.message.map(flowMessageToTrace)),
+          ),
+        );
+        trace.push(...childrenTraces);
+      }
+    });
   }
 
   if (trace.length > 0) {
@@ -215,17 +294,15 @@ function extractTraces(
 // Use `atom$Range | void` rather than `?atom$Range` to exclude `null`, so that the type is
 // compatible with the `range` property, which is an optional property rather than a nullable
 // property.
-export function extractRange(
-  message: FlowStatusErrorMessageComponent,
-): atom$Range | void {
-  if (message.loc == null || message.loc.source === BUILTIN_LOCATION) {
+export function extractRange(loc: ?FlowLoc): atom$Range | void {
+  if (loc == null || loc.source === BUILTIN_LOCATION) {
     return undefined;
   } else {
     // It's unclear why the 1-based to 0-based indexing works the way that it
     // does, but this has the desired effect in the UI, in practice.
     return new Range(
-      [message.loc.start.line - 1, message.loc.start.column - 1],
-      [message.loc.end.line - 1, message.loc.end.column],
+      [loc.start.line - 1, loc.start.column - 1],
+      [loc.end.line - 1, loc.end.column],
     );
   }
 }

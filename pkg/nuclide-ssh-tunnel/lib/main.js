@@ -9,33 +9,36 @@
  * @format
  */
 
-import type {SshTunnelService, Store} from './types';
+import type {ConsoleService} from 'atom-ide-ui';
+import type {SshTunnelService} from 'nuclide-adb/lib/types';
+import type CwdApi from '../../nuclide-current-working-directory/lib/CwdApi';
+import type {Store} from './types';
 
 import createPackage from 'nuclide-commons-atom/createPackage';
 import {destroyItemWhere} from 'nuclide-commons-atom/destroyItemWhere';
+import {combineEpicsFromImports} from 'nuclide-commons/epicHelpers';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
+import {createObservableForTunnels} from './CreateObservables';
+import {getSharedHostUri, getSocketServiceByHost} from './Normalization';
 import {TunnelsPanel, WORKSPACE_VIEW_URI} from './ui/TunnelsPanel';
 import * as Actions from './redux/Actions';
 import * as Epics from './redux/Epics';
 import * as Reducers from './redux/Reducers';
 import {applyMiddleware, combineReducers, createStore} from 'redux';
-import {
-  combineEpics,
-  createEpicMiddleware,
-} from 'nuclide-commons/redux-observable';
-import {Disposable} from 'atom';
+import {createEpicMiddleware} from 'nuclide-commons/redux-observable';
 
 class Activation {
   _disposables: UniversalDisposable;
   _store: Store;
 
   constructor(rawState: ?Object) {
-    const epics = Object.keys(Epics)
-      .map(k => Epics[k])
-      .filter(epic => typeof epic === 'function');
     this._store = createStore(
       combineReducers(Reducers),
-      applyMiddleware(createEpicMiddleware(combineEpics(...epics))),
+      applyMiddleware(
+        createEpicMiddleware(
+          combineEpicsFromImports(Epics, 'nuclide-ssh-tunnel'),
+        ),
+      ),
     );
 
     this._disposables = new UniversalDisposable(
@@ -58,7 +61,7 @@ class Activation {
       () => destroyItemWhere(item => item instanceof TunnelsPanel),
       atom.commands.add(
         'atom-workspace',
-        'nuclide-ssh-tunnels-panel:toggle',
+        'nuclide-tunnels-panel:toggle',
         () => {
           atom.workspace.toggle(WORKSPACE_VIEW_URI);
         },
@@ -68,12 +71,15 @@ class Activation {
 
   provideSshTunnelService(): SshTunnelService {
     return {
-      openTunnel: (tunnel, onOpen, onClose) => {
-        this._store.dispatch(Actions.openTunnel(tunnel, onOpen, onClose));
-        return new Disposable(() =>
-          this._store.dispatch(Actions.closeTunnel(tunnel)),
-        );
-      },
+      openTunnels: tunnel => createObservableForTunnels(tunnel, this._store),
+      getOpenTunnels: () =>
+        this._store
+          .getState()
+          .tunnels.toList()
+          .map(t => t.tunnel)
+          .toSet(),
+      getAvailableServerPort: async uri =>
+        getSocketServiceByHost(getSharedHostUri(uri)).getAvailableServerPort(),
     };
   }
 
@@ -82,10 +88,33 @@ class Activation {
   }
 
   _closeAllTunnels() {
-    const tunnels = this._store.getState().openTunnels;
-    tunnels.forEach((_, tunnel) =>
-      this._store.dispatch(Actions.closeTunnel(tunnel)),
+    const tunnels = this._store.getState().tunnels;
+    tunnels
+      .toList()
+      .forEach(active =>
+        this._store.dispatch(Actions.closeTunnel(active.tunnel)),
+      );
+  }
+
+  consumeCurrentWorkingDirectory(api: CwdApi): void {
+    this._disposables.add(
+      api.observeCwd(directory => {
+        this._store.dispatch(Actions.setCurrentWorkingDirectory(directory));
+      }),
     );
+  }
+
+  consumeConsole(consoleService: ConsoleService): IDisposable {
+    let consoleApi = consoleService({
+      id: 'Nuclide tunnels',
+      name: 'Nuclide tunnels',
+    });
+    const disposable = new UniversalDisposable(() => {
+      consoleApi != null && consoleApi.dispose();
+      consoleApi = null;
+    }, this._store.getState().consoleOutput.subscribe(message => consoleApi != null && consoleApi.append(message)));
+    this._disposables.add(disposable);
+    return disposable;
   }
 }
 

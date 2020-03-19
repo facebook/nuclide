@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -27,7 +27,7 @@ describe('Example Integration Test', () => {
 
   afterEach(() => {
     // Deactivate nuclide packages.
-    deactivateAllPackages();
+    waitsForPromise(deactivateAllPackages);
   });
 
   it('tests my feature', () => {

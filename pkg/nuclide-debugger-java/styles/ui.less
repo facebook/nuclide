@@ -1,0 +1,69 @@
+@import "ui-variables";
+
+.nuclide-source-add-content {
+  padding: 0.5em;
+}
+
+.nuclide-source-content-x {
+  padding-left: 0.5em;
+  overflow-x: auto;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+@sourcepath-modal-margin: 65px;
+
+.sourcepath-modal-container {
+  margin-left: 0;
+  max-width: none;
+  width: auto;
+  left: @sourcepath-modal-margin;
+  right: @sourcepath-modal-margin;
+}
+
+.sourcepath-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.sourcepath-add-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  vertical-align: middle;
+}
+
+.sourchpath-add {
+  vertical-align: middle;
+  margin-left: 10px;
+  margin-bottom: 10px;
+}
+
+.sourcepath-sources {
+  min-height: 20em;
+  overflow-y: auto;
+  padding: 10px;
+  position: relative;
+  // A reasonable heuristic that prevents us from having to measure:
+  // Top bar approx height (165px) + Modal top margin (50px) = 195px
+  max-height: calc(~'100vh - 195px');
+}
+
+.sourcepath-pane {
+  flex-grow: 1;
+  margin: 0px;
+}
+
+.sourcepath-buttons {
+  padding: 10px;
+}
+
+.sourcepath-add-button {
+  margin-bottom: 0.9em;
+  margin-left: 0.1em;
+}
+
+.sourcepath-list {
+  width: 100%;
+}

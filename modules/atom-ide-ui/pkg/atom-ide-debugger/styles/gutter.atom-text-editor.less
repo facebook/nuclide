@@ -1,0 +1,62 @@
+@import 'ui-variables';
+@import "octicon-mixins.less";
+@import "octicon-utf-codes.less";
+
+.debugger-breakpoint-icon,
+.debugger-shadow-breakpoint-icon {
+  // Needs to match .diagnostics-gutter-ui-gutter-error
+  .octicon(primitive-dot, @size: 130%);
+}
+
+.debugger-breakpoint-icon,
+.debugger-breakpoint-icon-disabled,
+.debugger-breakpoint-icon-unresolved,
+.debugger-breakpoint-icon-conditional,
+.debugger-shadow-breakpoint-icon {
+  text-align: center;
+  display: block;
+  width: 0.8em;
+  cursor: pointer;
+}
+
+.debugger-breakpoint-icon-nonconditional {
+  color: @text-color-info;
+}
+
+.debugger-breakpoint-icon-conditional {
+  color: @text-color-warning;
+}
+
+.debugger-breakpoint-icon-disabled {
+  .octicon(circle-slash, @size: 78%);
+  position: relative;
+  top: -4px;
+  left: 2px;
+}
+
+.debugger-breakpoint-icon-unresolved {
+  .octicon(unverified, @size: 80%);
+  position: relative;
+  top: -2px;
+}
+
+.debugger-shadow-breakpoint-icon {
+  color: fade(@text-color-info, 40%);
+}
+
+// Actual borders or outlines on line decorations are subject to
+// positioning issues (fixable) and tiling-related clipping issues (not fixable).
+// Use a gradient to simulate a pseudo-border.
+@backgroundColor: fade(@background-color-info, 30%);
+@pseudoBorderColor: fade(@background-color-info, 80%);
+.debugger-current-line-highlight {
+  background: linear-gradient(
+    to bottom,
+    @pseudoBorderColor 0%,
+    @pseudoBorderColor 5%,
+    @backgroundColor 5%,
+    @backgroundColor 95%,
+    @pseudoBorderColor 95%,
+    @pseudoBorderColor 100%
+  )
+}

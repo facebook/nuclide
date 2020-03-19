@@ -1,0 +1,21 @@
+{
+  "context-menu": {
+    "atom-text-editor": [
+      {
+        "label": "Open Alternate File",
+        "command": "file:open-alternate"
+      }
+    ]
+  },
+  "menu": [
+    {
+      "label": "Go",
+      "submenu": [
+        {
+          "label": "Go to Alternate File",
+          "command": "file:open-alternate"
+        }
+      ]
+    }
+  ]
+}

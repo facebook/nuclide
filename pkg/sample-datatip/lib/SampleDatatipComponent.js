@@ -9,20 +9,18 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 
 type DatatipComponentProps = {
   word: string,
 };
 
-export function makeSampleDatatipComponent(word: string): ReactClass<any> {
+export function makeSampleDatatipComponent(
+  word: string,
+): React.ComponentType<any> {
   return () => <SampleDatatipComponent word={word} />;
 }
 
 const SampleDatatipComponent = (props: DatatipComponentProps) => {
-  return (
-    <div>
-      I am a Datatip for "{props.word}"
-    </div>
-  );
+  return <div>I am a Datatip for "{props.word}"</div>;
 };

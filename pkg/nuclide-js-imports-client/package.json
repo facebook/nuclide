@@ -1,30 +1,79 @@
 {
   "name": "nuclide-js-imports-client",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Provides support for JS auto-imports in nuclide ",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "NEEDS OWNER",
   "atomConfig": {
     "diagnosticsWhitelist": {
       "title": "Directories for which the JS-Autoimports server should provide diagnostics",
       "type": "array",
-      "items": {"type": "string"},
+      "items": {
+        "type": "string"
+      },
       "default": [],
       "description": "If the working directory matches any of these regexes, then diagnostics will be provided. If the array is empty, diagnostics will be provided for all directories."
     },
-    "autocompleteWhitelist": {
-      "title": "Directories for which the JS-Autoimports server should provide autocomplete",
+    "requiresWhitelist": {
+      "title": "Directories for which the JS-Autoimports server should use requires, not imports",
       "type": "array",
+      "items": {
+        "type": "string"
+      },
       "default": [],
-      "description": "If the working directory matches any of these regexes, then autocomplete will be provided. If the array is empty, autocomplete will be provided for all directories."
+      "description": "If the working directory matches any of these regexes, then suggestions will use requires rather than imports."
+    },
+    "logLevel": {
+      "title": "Log Level",
+      "type": "string",
+      "default": "INFO",
+      "description": "Specify that level of logging.",
+      "enum": [
+        "ALL",
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "FATAL",
+        "OFF"
+      ]
+    },
+    "componentModulePathFilter": {
+      "title": "Component Module Path Filter",
+      "type": "string",
+      "default": "js/components",
+      "description": "Only React components with paths containing this substring will be indexed by Component Tools."
     }
   },
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
+  },
+  "providedServices": {
+    "nuclide-quick-open-register-provider": {
+      "versions": {
+        "0.0.0": "registerQuickOpenProvider"
+      }
+    },
+    "nuclide-project-symbol-search-service": {
+      "versions": {
+        "0.0.0": "provideProjectSymbolSearch"
+      }
+    },
+    "js-symbol-search-service": {
+      "versions": {
+        "0.0.0": "provideJSSymbolSearchService"
+      }
+    }
+  },
+  "consumedServices": {
+    "organizeRequires": {
+      "versions": {
+        "^0.0.1": "consumeOrganizeRequiresService"
+      }
+    }
   },
   "activationHooks": [
-    "nuclide_js_auto_imports:gk:nuclide"
+    "!nuclide_fb_js_imports_vscode_ext:gk:nuclide"
   ]
 }

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -15,12 +15,18 @@ import fs from 'fs';
 import url from 'url';
 
 // Set the initial version by reading from the file.
-const json = JSON.parse(
-  fs.readFileSync(require.resolve('./package.json'), 'utf8'),
-);
-const version = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z0-9.-]+))?$/.exec(
-  json.version,
-)[2];
+const version = getVersion();
+
+function getVersion() {
+  const json = JSON.parse(
+    fs.readFileSync(require.resolve('./package.json'), 'utf8'),
+  );
+  // $FlowFixMe (>= v0.75.0)
+  const match: RegExp$matchResult = /^(\d+)\.(\d+)\.(\d+)(?:-([a-z0-9.-]+))?$/.exec(
+    json.version,
+  );
+  return match[2];
+}
 
 function processArgs() {
   const args = process.argv.slice(2);

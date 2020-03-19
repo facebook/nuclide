@@ -1,0 +1,29 @@
+{
+  "name": "sample-experimental-service-consumer",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Experimental console consumer",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "experimental": {
+    "main": "./lib/main.js",
+    "components": {
+      "sample-experimental-service-consumer.WidgetComponent": "./lib/WidgetComponent"
+    },
+    "consumedServices": {
+      "console": {
+        "name": "sample-experimental-service-simple-console",
+        "version": "1.0.0",
+        "config": {
+          "sourceName": "Experimental Service Consumer"
+        }
+      },
+      "window": {
+        "name": "sample-experimental-window-service",
+        "version": "1.0.0"
+      }
+    }
+  }
+}

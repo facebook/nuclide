@@ -1,0 +1,83 @@
+@import "ui-variables";
+@import "syntax-variables";
+
+.scrollable-search-results-item {
+  padding: 0 @component-padding;
+}
+
+
+.scrollable-search-results-summary {
+  margin: @component-padding 0;
+
+  .warning {
+    color: @text-color-warning;
+  }
+}
+
+.scrollable-search-results-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.scrollable-search-results-controls {
+  background: @pane-item-background-color;
+  position: relative;
+}
+
+.scrollable-search-results-controls-form {
+  border-bottom: 1px solid @pane-item-border-color;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: @component-padding 0 0 @component-padding;
+}
+
+.scrollable-controls-block {
+  align-items: center;
+  display: flex;
+  margin: 0 @component-padding @component-padding 0;
+}
+
+.scrollable-controls-block atom-text-editor[mini] {
+  min-width: 10em;
+  width: 100%;
+}
+
+.scrollable-controls-block .select-list.popover-list {
+  max-width: none;
+  width: 100%;
+}
+
+.scrollable-controls-label {
+  margin-right: @component-padding;
+  text-align: right;
+}
+
+.scrollable-controls-label {
+  min-width: 6em;
+}
+
+.scrollable-search-results-controls-button {
+  margin-left: @component-padding;
+}
+
+.scrollable-search-results-controls-toggle {
+  margin: 0 @component-padding @component-padding 0;
+}
+
+.scrollable-search-results-controls-toggle-hidden {
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  position: absolute;
+  right: @component-padding;
+  z-index: 1;
+}
+
+.scrollable-search-results {
+  background: @pane-item-background-color;
+  flex-grow: 1;
+  overflow: hidden;
+}

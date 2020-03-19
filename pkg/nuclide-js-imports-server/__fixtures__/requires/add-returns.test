@@ -1,0 +1,9 @@
+function one() {
+  return two;
+}
+
+function three() {
+  return {four};
+}
+
+var five = () => ({six});

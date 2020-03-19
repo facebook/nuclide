@@ -9,7 +9,7 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {relativeDate} from 'nuclide-commons/string';
 import addTooltip from 'nuclide-commons-ui/addTooltip';
 
@@ -22,6 +22,7 @@ type Props = DefaultProps & {
   date: Date,
   delay?: number,
   shorten?: boolean,
+  useNumbersOnly?: boolean,
   withToolip?: boolean,
 };
 const DEFAULT_RERENDER_DELAY = 10000; // ms
@@ -32,13 +33,13 @@ const DEFAULT_RERENDER_DELAY = 10000; // ms
  *
  * Does not respond to changes to the initial `delay` for simplicity's sake.
  */
-export default class RelativeDate extends React.Component {
-  props: Props;
-  _interval: ?number;
+export default class RelativeDate extends React.Component<Props> {
+  _interval: ?IntervalID;
 
   static defaultProps: DefaultProps = {
     delay: DEFAULT_RERENDER_DELAY,
     shorten: false,
+    useNumbersOnly: false,
     withToolip: false,
   };
 
@@ -53,18 +54,20 @@ export default class RelativeDate extends React.Component {
     }
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {
       date,
       // eslint-disable-next-line no-unused-vars
       delay: _,
       shorten,
+      useNumbersOnly,
       withToolip,
       ...remainingProps
     } = this.props;
     return (
       <span
         {...remainingProps}
+        // eslint-disable-next-line nuclide-internal/jsx-simple-callback-refs
         ref={
           withToolip
             ? addTooltip({
@@ -74,7 +77,7 @@ export default class RelativeDate extends React.Component {
               })
             : null
         }>
-        {relativeDate(date, undefined, shorten)}
+        {relativeDate(date, undefined, shorten, useNumbersOnly)}
       </span>
     );
   }

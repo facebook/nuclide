@@ -1,12 +1,11 @@
 {
   "name": "nuclide-hack-common",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/constants.js",
   "version": "0.0.0",
   "description": "Provides common constants for Hack support in Nuclide",
+  "author": "NEEDS OWNER",
   "nuclide": {
-    "packageType": "Node",
-    "testRunner": "npm"
+    "packageType": "NodeLibrary"
   },
   "scripts": {
     "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"

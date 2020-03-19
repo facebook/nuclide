@@ -9,17 +9,19 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
+import trackReactProfilerRender from 'nuclide-commons/trackReactProfilerRender';
+
+// $FlowFixMe Profiler is neither stable nor typed
+const Profiler = React.unstable_Profiler;
 
 type Props = {
   title: string,
   iconName: string,
-  component: ReactClass<any>,
+  component: React.ComponentType<any>,
 };
 
-export default class VcsLogGadget extends React.Component {
-  props: Props;
-
+export default class VcsLogGadget extends React.Component<Props> {
   getTitle(): string {
     return this.props.title;
   }
@@ -28,8 +30,12 @@ export default class VcsLogGadget extends React.Component {
     return this.props.iconName;
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const {component: Component} = this.props;
-    return <Component />;
+    return (
+      <Profiler id="VcsLogRoot" onRender={trackReactProfilerRender}>
+        <Component />
+      </Profiler>
+    );
   }
 }

@@ -1,0 +1,145 @@
+{
+ "extra": [
+   {
+     "message": [
+       {
+         "context": null,
+         "descr": "Property `value` is incompatible:",
+         "type": "Blame",
+         "path": "",
+         "line": 0,
+         "endline": 0,
+         "start": 1,
+         "end": 0
+       }
+     ],
+     "children": [
+       {
+         "message": [
+           {
+             "context": "declare var o: { value: string };",
+             "descr": "string",
+             "type": "Blame",
+             "loc": {
+               "source": "-",
+               "type": "SourceFile",
+               "start": {
+                 "line": 1,
+                 "column": 25,
+                 "offset": 24
+               },
+               "end": {
+                 "line": 1,
+                 "column": 30,
+                 "offset": 30
+               }
+             },
+             "path": "-",
+             "line": 1,
+             "endline": 1,
+             "start": 25,
+             "end": 30
+           },
+           {
+             "context": null,
+             "descr": "This type is incompatible with",
+             "type": "Comment",
+             "path": "",
+             "line": 0,
+             "endline": 0,
+             "start": 1,
+             "end": 0
+           },
+           {
+             "context": "var d: {value: number} = o;",
+             "descr": "number",
+             "type": "Blame",
+             "loc": {
+               "source": "-",
+               "type": "SourceFile",
+               "start": {
+                 "line": 2,
+                 "column": 16,
+                 "offset": 49
+               },
+               "end": {
+                 "line": 2,
+                 "column": 21,
+                 "offset": 55
+               }
+             },
+             "path": "-",
+             "line": 2,
+             "endline": 2,
+             "start": 16,
+             "end": 21
+           }
+         ]
+       }
+     ]
+   }
+ ],
+ "kind": "infer",
+ "level": "error",
+ "suppressions": [],
+ "message": [
+   {
+     "context": "var d: {value: number} = o;",
+     "descr": "object type",
+     "type": "Blame",
+     "loc": {
+       "source": "-",
+       "type": "SourceFile",
+       "start": {
+         "line": 2,
+         "column": 26,
+         "offset": 59
+       },
+       "end": {
+         "line": 2,
+         "column": 26,
+         "offset": 60
+       }
+     },
+     "path": "-",
+     "line": 2,
+     "endline": 2,
+     "start": 26,
+     "end": 26
+   },
+   {
+     "context": null,
+     "descr": "This type is incompatible with",
+     "type": "Comment",
+     "path": "",
+     "line": 0,
+     "endline": 0,
+     "start": 1,
+     "end": 0
+   },
+   {
+     "context": "var d: {value: number} = o;",
+     "descr": "object type",
+     "type": "Blame",
+     "loc": {
+       "source": "-",
+       "type": "SourceFile",
+       "start": {
+         "line": 2,
+         "column": 8,
+         "offset": 41
+       },
+       "end": {
+         "line": 2,
+         "column": 22,
+         "offset": 56
+       }
+     },
+     "path": "-",
+     "line": 2,
+     "endline": 2,
+     "start": 8,
+     "end": 22
+   }
+ ]
+}

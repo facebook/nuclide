@@ -15,6 +15,7 @@ export type FileOpenEvent = {
   kind: 'open',
   fileVersion: FileVersion,
   contents: string,
+  languageId: string,
 };
 
 // Used in debugging to verify that the server contents match the client
@@ -22,6 +23,7 @@ export type FileSyncEvent = {
   kind: 'sync',
   fileVersion: FileVersion,
   contents: string,
+  languageId: string,
 };
 
 export type FileCloseEvent = {
@@ -38,19 +40,29 @@ export type FileEditEvent = {
   newText: string,
 };
 
+export type FileSaveEvent = {
+  kind: 'save',
+  fileVersion: FileVersion,
+};
+
 // TODO: Save Events?
 export type FileEvent =
   | FileOpenEvent
   | FileCloseEvent
   | FileEditEvent
+  | FileSaveEvent
   | FileSyncEvent;
 
-export type LocalFileEvent = FileOpenEvent | FileCloseEvent | FileEditEvent;
+export type LocalFileEvent =
+  | FileOpenEvent
+  | FileCloseEvent
+  | FileEditEvent
+  | FileSaveEvent;
 
 export interface FileNotifier {
-  onFileEvent(event: FileEvent): Promise<void>,
-  onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void>,
-  dispose(): void,
+  onFileEvent(event: FileEvent): Promise<void>;
+  onDirectoriesChanged(openDirectories: Set<NuclideUri>): Promise<void>;
+  dispose(): void;
 }
 
 export type FileVersion = {

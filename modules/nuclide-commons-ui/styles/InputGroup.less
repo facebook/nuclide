@@ -1,0 +1,56 @@
+@import "ui-variables";
+
+.nuclide-input-group.nuclide-input-group {
+  display: flex;
+
+  > * {
+    border-radius: 0;
+
+    &:focus-within, &.is-focused {
+      z-index: 2;
+    }
+  }
+
+  > * + * {
+    margin-left: -1px;
+  }
+
+  > *:first-child {
+    border-top-left-radius: @component-border-radius;
+    border-bottom-left-radius: @component-border-radius;
+  }
+
+  > *:last-child {
+    border-top-right-radius: @component-border-radius;
+    border-bottom-right-radius: @component-border-radius;
+  }
+
+  // HACK: Shrink `sm` size text editors so that they align with `xs` size buttons
+  > .atom-text-editor-sm > * {
+    height: 19px !important;
+
+    .lines {
+      transform: translateY(-1px);
+    }
+
+    & .cursor {
+      height: 17px !important;
+      margin-top: 2px;
+    }
+  }
+
+  // Sometimes comboboxes are used as children to InputGroups. Reach into them to
+  // sharpen the corners of the input inside the combobox
+  > .popover-list:not(:last-child) atom-text-editor {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  // Sometimes btn-groups are used as children to InputGroups (as with the
+  // DropdownButton component). Reach into them to sharpen the corners of the
+  // first button inside the group
+  > *:not(:first-child) > .btn:first-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}

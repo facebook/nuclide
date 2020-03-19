@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -17,6 +17,11 @@ import {getLogger} from 'log4js';
 import {PathSet} from './PathSet';
 import {getPaths} from './PathSetFactory';
 import PathSetUpdater from './PathSetUpdater';
+
+export type FileSearchOptions = {|
+  queryRoot?: string,
+  smartCase?: boolean,
+|};
 
 const logger = getLogger('nuclide-fuzzy-file-search-rpc');
 
@@ -75,7 +80,8 @@ export async function initFileSearchForDirectory(
 export async function doSearch(
   directory: string,
   query: string,
+  options?: FileSearchOptions = Object.freeze({}),
 ): Promise<Array<FileSearchResult>> {
   const pathSet = await fileSearchForDirectory(directory);
-  return pathSet.query(query);
+  return pathSet.query(query, options);
 }

@@ -1,0 +1,338 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`flowStatusOutputToDiagnostics converts the flow status output >=0.66.0 1`] = `
+Array [
+  Object {
+    "filePath": "test.js",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 4,
+        "row": 8,
+      },
+      "start": Point {
+        "column": 2,
+        "row": 8,
+      },
+    },
+    "text": "Cannot cast array literal to tuple type because number [1] is incompatible with empty [2] in property \`p\` of index 0.",
+    "trace": Array [
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 17,
+            "row": 6,
+          },
+          "start": Point {
+            "column": 15,
+            "row": 6,
+          },
+        },
+        "text": "[1]",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 18,
+            "row": 5,
+          },
+          "start": Point {
+            "column": 13,
+            "row": 5,
+          },
+        },
+        "text": "[2]",
+        "type": "Trace",
+      },
+    ],
+    "type": "Error",
+  },
+  Object {
+    "filePath": "test.js",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 5,
+        "row": 9,
+      },
+      "start": Point {
+        "column": 1,
+        "row": 9,
+      },
+    },
+    "text": "Cannot cast array literal to union type because:
+ - Either number [1] is incompatible with empty [2] in property \`p\` of index 0.
+ - Or number [1] is incompatible with empty [3] in property \`p\` of index 0.
+ - Or number [1] is incompatible with empty [4] in property \`p\` of index 0.
+ - Or number [1] is incompatible with empty [5] in property \`p\` of index 0.",
+    "trace": Array [
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 17,
+            "row": 7,
+          },
+          "start": Point {
+            "column": 15,
+            "row": 7,
+          },
+        },
+        "text": "[1]",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 17,
+            "row": 9,
+          },
+          "start": Point {
+            "column": 12,
+            "row": 9,
+          },
+        },
+        "text": "[2]",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 25,
+            "row": 9,
+          },
+          "start": Point {
+            "column": 20,
+            "row": 9,
+          },
+        },
+        "text": "[3]",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 40,
+            "row": 9,
+          },
+          "start": Point {
+            "column": 35,
+            "row": 9,
+          },
+        },
+        "text": "[4]",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "test.js",
+        "range": Range {
+          "end": Point {
+            "column": 48,
+            "row": 9,
+          },
+          "start": Point {
+            "column": 43,
+            "row": 9,
+          },
+        },
+        "text": "[5]",
+        "type": "Trace",
+      },
+    ],
+    "type": "Error",
+  },
+]
+`;
+
+exports[`flowStatusOutputToDiagnostics converts the flow status output 1`] = `
+Array [
+  Object {
+    "filePath": "/flow-test/src/test.js",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 17,
+        "row": 12,
+      },
+      "start": Point {
+        "column": 15,
+        "row": 12,
+      },
+    },
+    "text": "object literal",
+    "trace": Array [
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "This type is incompatible with",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "/flow-test/src/test.js",
+        "range": Range {
+          "end": Point {
+            "column": 10,
+            "row": 9,
+          },
+          "start": Point {
+            "column": 7,
+            "row": 9,
+          },
+        },
+        "text": "union: object type(s)",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "/flow-test/src/test.js",
+        "range": Range {
+          "end": Point {
+            "column": 12,
+            "row": 12,
+          },
+          "start": Point {
+            "column": 4,
+            "row": 12,
+          },
+        },
+        "text": "See also: assignment of property \`bar\`",
+        "type": "Trace",
+      },
+    ],
+    "type": "Error",
+  },
+  Object {
+    "filePath": "myPath",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 4,
+        "row": 1,
+      },
+      "start": Point {
+        "column": 2,
+        "row": 0,
+      },
+    },
+    "text": "message",
+    "trace": undefined,
+    "type": "Warning",
+  },
+  Object {
+    "filePath": "/flow-test/src/test.js",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 12,
+        "row": 82,
+      },
+      "start": Point {
+        "column": 8,
+        "row": 82,
+      },
+    },
+    "text": "object type",
+    "trace": Array [
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "This type is incompatible with an argument type of",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "global object",
+        "type": "Trace",
+      },
+    ],
+    "type": "Error",
+  },
+  Object {
+    "filePath": "-",
+    "providerName": "Flow",
+    "range": Range {
+      "end": Point {
+        "column": 26,
+        "row": 1,
+      },
+      "start": Point {
+        "column": 25,
+        "row": 1,
+      },
+    },
+    "text": "object type",
+    "trace": Array [
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "This type is incompatible with",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "-",
+        "range": Range {
+          "end": Point {
+            "column": 22,
+            "row": 1,
+          },
+          "start": Point {
+            "column": 7,
+            "row": 1,
+          },
+        },
+        "text": "object type",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "Property \`value\` is incompatible:",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "-",
+        "range": Range {
+          "end": Point {
+            "column": 30,
+            "row": 0,
+          },
+          "start": Point {
+            "column": 24,
+            "row": 0,
+          },
+        },
+        "text": "string",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": undefined,
+        "range": undefined,
+        "text": "This type is incompatible with",
+        "type": "Trace",
+      },
+      Object {
+        "filePath": "-",
+        "range": Range {
+          "end": Point {
+            "column": 21,
+            "row": 1,
+          },
+          "start": Point {
+            "column": 15,
+            "row": 1,
+          },
+        },
+        "text": "number",
+        "type": "Trace",
+      },
+    ],
+    "type": "Error",
+  },
+]
+`;

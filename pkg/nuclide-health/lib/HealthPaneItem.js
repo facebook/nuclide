@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import type {PaneItemState} from './types';
 import type {Observable} from 'rxjs';
 
 import HealthPaneItemComponent from './ui/HealthPaneItemComponent';
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
   stateStream: Observable<?PaneItemState>,
@@ -21,16 +21,17 @@ type Props = {
 
 export const WORKSPACE_VIEW_URI = 'atom://nuclide/health';
 
-export default class HealthPaneItem extends React.Component {
-  props: Props;
-  state: PaneItemState;
-
+export default class HealthPaneItem extends React.Component<
+  Props,
+  PaneItemState,
+> {
   _stateSubscription: rxjs$ISubscription;
 
   constructor(props: Props) {
     super(props);
     this.state = {
       stats: null,
+      domCounters: null,
       childProcessesTree: null,
     };
   }
@@ -68,12 +69,7 @@ export default class HealthPaneItem extends React.Component {
   }
 
   render() {
-    const {
-      toolbarJewel,
-      updateToolbarJewel,
-      childProcessesTree,
-      stats,
-    } = this.state;
+    const {childProcessesTree, stats, domCounters} = this.state;
 
     if (stats == null) {
       return <div />;
@@ -85,14 +81,15 @@ export default class HealthPaneItem extends React.Component {
         className="pane-item padded nuclide-health-pane-item native-key-bindings"
         tabIndex={-1}>
         <HealthPaneItemComponent
-          toolbarJewel={toolbarJewel}
-          updateToolbarJewel={updateToolbarJewel}
           cpuPercentage={stats.cpuPercentage}
           heapPercentage={stats.heapPercentage}
           memory={stats.rss}
           activeHandles={stats.activeHandles}
           activeRequests={stats.activeRequests}
           activeHandlesByType={stats.activeHandlesByType}
+          attachedDomNodes={domCounters && domCounters.attachedNodes}
+          domNodes={domCounters && domCounters.nodes}
+          domListeners={domCounters && domCounters.jsEventListeners}
           childProcessesTree={childProcessesTree}
         />
       </div>

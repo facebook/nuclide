@@ -1,0 +1,7 @@
+const React = require('React');
+
+const a = require('a');
+const log = require('log');
+
+log(a?.b ?? 12_23);
+log(<>Foo</>);

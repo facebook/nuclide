@@ -37,12 +37,16 @@ fi
 # Fall back to a local editor, if appropriate.
 if [ $EXIT_CODE -eq 3 ]; then
   # The user could not connect. Try a local editor instead.
-  # Search for the -w/--wait flag and strip it, if appropriate.
+  # Search for the following flags and strip them, if appropriate:
+  # -w/--wait, --new-window/-n, -add/-a.
   ARGS=()
   export ATOM_WAIT=
+  export ATOM_NEW_WINDOW=
   for var in "$@"; do
     if [ "$var" == '--wait' ] || [ "$var" == '-w' ]; then
       export ATOM_WAIT=1
+    elif [ "$var" == '--new-window' ] || [ "$var" == '-n' ]; then
+      export ATOM_NEW_WINDOW=1
     elif [ "$var" == '--add' ] || [ "$var" == '-a' ]; then
       # Ignore the --add/-a argument.
       :

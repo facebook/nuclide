@@ -6,14 +6,14 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
 import type {Observable} from 'rxjs';
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {arrayCompact} from 'nuclide-commons/collection';
@@ -33,23 +33,15 @@ type Props = {
 function StatusBarTileComponent(props: Props) {
   let element;
   if (props.waitingForUser) {
-    element = (
-      <Icon className="atom-ide-busy-signal-status-bar" icon="unverified" />
-    );
+    element = <Icon className="busy-signal-status-bar" icon="unverified" />;
   } else if (props.waitingForComputer) {
-    element = (
-      <div className="atom-ide-busy-signal-status-bar loading-spinner-tiny" />
-    );
+    element = <div className="busy-signal-status-bar loading-spinner-tiny" />;
   } else {
     element = null;
   }
 
   if (props.onDidClick != null) {
-    element = (
-      <a onClick={props.onDidClick}>
-        {element}
-      </a>
-    );
+    element = <a onClick={props.onDidClick}>{element}</a>;
   }
 
   return element;
@@ -63,7 +55,7 @@ export default class StatusBarTile {
   _messages: Array<BusyMessageInstance> = [];
   _isMouseOverItem: boolean = false;
   _isMouseOverTooltip: number = 0;
-  _leaveTimeoutId: ?number;
+  _leaveTimeoutId: ?TimeoutID;
 
   constructor(
     statusBar: atom$StatusBar,
@@ -118,16 +110,27 @@ export default class StatusBarTile {
           : null,
     };
     ReactDOM.render(<StatusBarTileComponent {...props} />, this._item);
+
+    const revealTooltip = messages.some(message =>
+      message.shouldRevealTooltip(),
+    );
     if (this._tooltip != null) {
       // If the user already had the tooltip up, then we'll either
-      // refresh it or hide it, depending on whether the icon is now visible
+      // refresh it or hide it. No matter what, we'll have to unmount it.
       this._disposeTooltip();
-      const iconIsVisible = props.waitingForComputer || props.waitingForUser;
-      if (iconIsVisible) {
+      // There are two reasons to refresh the tooltip (bringing it back):
+      // 1) the mouse was previously over the tile or the tooltip
+      // 2) one of the messages is marked with 'reveal tooltip'
+      if (
+        messages.length > 0 &&
+        (revealTooltip || this._isMouseOverItem || this._isMouseOverTooltip)
+      ) {
         this._ensureTooltip();
       } else {
         this._isMouseOverItem = false;
       }
+    } else if (revealTooltip) {
+      this._ensureTooltip();
     }
   }
 
@@ -180,7 +183,11 @@ export default class StatusBarTile {
       this._isMouseOverTooltip === 0 &&
       this._leaveTimeoutId == null
     ) {
-      this._leaveTimeoutId = setTimeout(this._disposeTooltip.bind(this), 200);
+      this._leaveTimeoutId = setTimeout(() => {
+        this._disposeTooltip();
+        // Currently visible messages should no longer reveal the tooltip again.
+        this._messages.forEach(message => message.setRevealTooltip(false));
+      }, 200);
     }
   }
 

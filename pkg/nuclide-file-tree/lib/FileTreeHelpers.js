@@ -15,6 +15,8 @@ import type {
   RemoteFile,
 } from '../../nuclide-remote-connection';
 import type {ShowUncommittedChangesKindValue} from './Constants';
+import type {FileTreeNode} from './FileTreeNode';
+import type {Roots} from './types';
 
 import {
   ShowUncommittedChangesKind,
@@ -25,20 +27,21 @@ import {File as LocalFile} from 'atom';
 import {
   RemoteConnection,
   ServerConnection,
+  RemoteDirectoryPlaceholder,
 } from '../../nuclide-remote-connection';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import featureConfig from 'nuclide-commons-atom/feature-config';
 import {cacheWhileSubscribed} from 'nuclide-commons/observable';
 import {Observable} from 'rxjs';
-import passesGK from '../../commons-node/passesGK';
 import invariant from 'assert';
-import crypto from 'crypto';
-import semver from 'semver';
 import os from 'os';
 
-export type Directory = LocalDirectory | RemoteDirectory;
+export type Directory =
+  | LocalDirectory
+  | RemoteDirectory
+  | RemoteDirectoryPlaceholder;
 type File = LocalFile | RemoteFile;
-type Entry = LocalDirectory | RemoteDirectory | LocalFile | RemoteFile;
+type Entry = Directory | File;
 
 export type SelectionMode =
   | 'single-select'
@@ -46,30 +49,33 @@ export type SelectionMode =
   | 'range-select'
   | 'invalid-select';
 
-function dirPathToKey(path: string): string {
+export function dirPathToKey(path: string): string {
   return nuclideUri.ensureTrailingSeparator(
     nuclideUri.trimTrailingSeparator(path),
   );
 }
 
-function isDirKey(key: string): boolean {
-  return nuclideUri.endsWithSeparator(key);
+export function isDirOrArchiveKey(key: string): boolean {
+  return (
+    nuclideUri.endsWithSeparator(key) ||
+    nuclideUri.hasKnownArchiveExtension(key)
+  );
 }
 
-function keyToName(key: string): string {
+export function keyToName(key: string): string {
   return nuclideUri.basename(key);
 }
 
-function keyToPath(key: string): string {
+export function keyToPath(key: string): string {
   return nuclideUri.trimTrailingSeparator(key);
 }
 
-function getParentKey(key: string): string {
+export function getParentKey(key: string): string {
   return nuclideUri.ensureTrailingSeparator(nuclideUri.dirname(key));
 }
 
 // The array this resolves to contains the `nodeKey` of each child
-function fetchChildren(nodeKey: string): Promise<Array<string>> {
+export function fetchChildren(nodeKey: string): Promise<Array<string>> {
   const directory = getDirectoryByKey(nodeKey);
 
   return new Promise((resolve, reject) => {
@@ -78,7 +84,6 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
       return;
     }
 
-    // $FlowIssue https://github.com/facebook/flow/issues/582
     directory.getEntries((error, entries_) => {
       let entries = entries_;
       // Resolve to an empty array if the directory deson't exist.
@@ -90,31 +95,41 @@ function fetchChildren(nodeKey: string): Promise<Array<string>> {
       entries = entries || [];
       const keys = entries.map(entry => {
         const path = entry.getPath();
-        return entry.isDirectory() ? dirPathToKey(path) : path;
+        if (entry.isDirectory()) {
+          return dirPathToKey(path);
+        } else {
+          return path;
+        }
       });
       resolve(keys);
     });
   });
 }
 
-function getDirectoryByKey(key: string): ?Directory {
+export function getDirectoryByKey(key: string): ?Directory {
   const path = keyToPath(key);
-  if (!isDirKey(key)) {
+  if (!isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
     if (connection == null) {
-      return null;
+      // Placeholder remote directories are just empty.
+      // These will be removed by nuclide-remote-projects after reconnection, anyway.
+      return new RemoteDirectoryPlaceholder(path);
     }
-    return connection.createDirectory(path);
+    if (nuclideUri.hasKnownArchiveExtension(key)) {
+      return connection.createFileAsDirectory(path);
+    } else {
+      return connection.createDirectory(path);
+    }
   } else {
     return new LocalDirectory(path);
   }
 }
 
-function getFileByKey(key: string): ?File {
+export function getFileByKey(key: string): ?File {
   const path = keyToPath(key);
-  if (isDirKey(key)) {
+  if (isDirOrArchiveKey(key)) {
     return null;
   } else if (nuclideUri.isRemote(path)) {
     const connection = ServerConnection.getForUri(path);
@@ -127,11 +142,11 @@ function getFileByKey(key: string): ?File {
   }
 }
 
-function getEntryByKey(key: string): ?Entry {
+export function getEntryByKey(key: string): ?Entry {
   return getFileByKey(key) || getDirectoryByKey(key);
 }
 
-function getDisplayTitle(key: string): ?string {
+export function getDisplayTitle(key: string): ?string {
   const path = keyToPath(key);
 
   if (nuclideUri.isRemote(path)) {
@@ -146,7 +161,7 @@ function getDisplayTitle(key: string): ?string {
 // Sometimes remote directories are instantiated as local directories but with invalid paths.
 // Also, until https://github.com/atom/atom/issues/10297 is fixed in 1.12,
 // Atom sometimes creates phantom "atom:" directories when opening atom:// URIs.
-function isValidDirectory(directory: Directory): boolean {
+export function isValidDirectory(directory: Directory): boolean {
   if (!isLocalEntry((directory: any))) {
     return true;
   }
@@ -160,7 +175,7 @@ function isLocalEntry(entry: Entry): boolean {
   return !('getLocalPath' in entry);
 }
 
-function isContextClick(event: SyntheticMouseEvent): boolean {
+export function isContextClick(event: SyntheticMouseEvent<>): boolean {
   return (
     event.button === 2 ||
     (event.button === 0 &&
@@ -169,11 +184,7 @@ function isContextClick(event: SyntheticMouseEvent): boolean {
   );
 }
 
-function buildHashKey(nodeKey: string): string {
-  return crypto.createHash('MD5').update(nodeKey).digest('base64');
-}
-
-function observeUncommittedChangesKindConfigKey(): Observable<
+export function observeUncommittedChangesKindConfigKey(): Observable<
   ShowUncommittedChangesKindValue,
 > {
   return cacheWhileSubscribed(
@@ -195,7 +206,7 @@ function observeUncommittedChangesKindConfigKey(): Observable<
   );
 }
 
-function updatePathInOpenedEditors(
+export function updatePathInOpenedEditors(
   oldPath: NuclideUri,
   newPath: NuclideUri,
 ): void {
@@ -209,31 +220,19 @@ function updatePathInOpenedEditors(
     if (nuclideUri.contains(oldPath, bufferPath)) {
       const relativeToOld = nuclideUri.relative(oldPath, bufferPath);
       const newBufferPath = nuclideUri.join(newPath, relativeToOld);
-      // TODO(19829039): clean up after 1.19
-      if (semver.gte(atom.getVersion(), '1.19.0-beta0')) {
-        // setPath() doesn't work correctly with remote files.
-        // We need to create a new remote file and reset the underlying file.
-        const file = getFileByKey(newBufferPath);
-        invariant(
-          file != null,
-          `Could not update open file ${oldPath} to ${newBufferPath}`,
-        );
-        // $FlowFixMe: add to TextBuffer
-        buffer.setFile(file);
-      } else {
-        // setPath will append the hostname when given the local path, so we
-        // strip off the hostname here to avoid including it twice in the path.
-        buffer.setPath(nuclideUri.getPath(newBufferPath));
-      }
+      // setPath() doesn't work correctly with remote files.
+      // We need to create a new remote file and reset the underlying file.
+      const file = getFileByKey(newBufferPath);
+      invariant(
+        file != null,
+        `Could not update open file ${oldPath} to ${newBufferPath}`,
+      );
+      buffer.setFile(file);
     }
   });
 }
 
-function areStackChangesEnabled(): Promise<boolean> {
-  return passesGK('nuclide_file_tree_stack_changes');
-}
-
-function getSelectionMode(event: SyntheticMouseEvent): SelectionMode {
+export function getSelectionMode(event: SyntheticMouseEvent<>): SelectionMode {
   if (
     (os.platform() === 'darwin' && event.metaKey && event.button === 0) ||
     (os.platform() !== 'darwin' && event.ctrlKey && event.button === 0)
@@ -252,23 +251,62 @@ function getSelectionMode(event: SyntheticMouseEvent): SelectionMode {
   return 'invalid-select';
 }
 
-export default {
-  dirPathToKey,
-  isDirKey,
-  keyToName,
-  keyToPath,
-  getParentKey,
-  fetchChildren,
-  getDirectoryByKey,
-  getEntryByKey,
-  getFileByKey,
-  getDisplayTitle,
-  isValidDirectory,
-  isLocalEntry,
-  isContextClick,
-  buildHashKey,
-  observeUncommittedChangesKindConfigKey,
-  updatePathInOpenedEditors,
-  areStackChangesEnabled,
-  getSelectionMode,
-};
+/**
+ * Replace a node in the tree and return the new tree's root. The newNode is assumed to be prevNode
+ * after some manipulateion done to it therefore they are assumed to belong to the same parent.
+ *
+ * An optional transformation can be provided which will be applied to all of the node's ancestors
+ * (including the node itself).
+ */
+export function replaceNode(
+  prevNode: FileTreeNode,
+  newNode: FileTreeNode,
+  transform: (node: FileTreeNode) => FileTreeNode = node => node,
+): FileTreeNode {
+  const parent = prevNode.parent;
+  if (parent == null) {
+    return newNode;
+  }
+
+  const newParent = transform(parent.updateChild(newNode));
+  return replaceNode(parent, newParent, transform);
+}
+
+/**
+ * Use the predicate to update a node (or a branch) of the file-tree
+ */
+export function updateNodeAtRoot(
+  roots: Roots,
+  rootKey: NuclideUri,
+  nodeKey: NuclideUri,
+  transform: (node: FileTreeNode) => FileTreeNode,
+): Roots {
+  const root = roots.get(rootKey);
+  if (root == null) {
+    return roots;
+  }
+
+  const node = root.find(nodeKey);
+  if (node == null) {
+    return roots;
+  }
+
+  return roots.set(rootKey, replaceNode(node, transform(node)));
+}
+
+/**
+ * Update a node or a branch under any of the roots it was found at
+ */
+export function updateNodeAtAllRoots(
+  roots: Roots,
+  nodeKey: NuclideUri,
+  transform: (node: FileTreeNode) => FileTreeNode,
+): Roots {
+  return roots.map(root => {
+    const node = root.find(nodeKey);
+    if (node == null) {
+      return root;
+    }
+    return replaceNode(node, transform(node));
+  });
+}

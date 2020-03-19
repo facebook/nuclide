@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -13,7 +13,7 @@ import type {Outline, OutlineTree} from 'atom-ide-ui';
 import type {ClangOutlineTree} from '../../nuclide-clang-rpc/lib/rpc-types';
 import type {TokenizedText} from 'nuclide-commons/tokenized-text';
 
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {sleep} from 'nuclide-commons/promise';
 import {ClangCursorTypes} from '../../nuclide-clang-rpc';
 import {

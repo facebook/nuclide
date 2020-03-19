@@ -5,30 +5,30 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {NuxManager} from './NuxManager';
 import {NuxStore} from './NuxStore';
 
 import type {NuxTourModel} from './NuxModel';
 
-export type RegisterNux = (nux: NuxTourModel) => Disposable;
+export type RegisterNux = (nux: NuxTourModel) => IDisposable;
 export type TriggerNux = (id: number) => void;
 export type SyncCompletedNux = (id: number) => void;
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _nuxStore: NuxStore;
   _nuxManager: NuxManager;
   _syncCompletedNuxService: SyncCompletedNux;
 
   constructor(): void {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._nuxStore = new NuxStore();
     this._nuxManager = new NuxManager(
       this._nuxStore,
@@ -48,7 +48,7 @@ class Activation {
     this._nuxStore.serialize();
   }
 
-  addNewNux(nux: NuxTourModel): Disposable {
+  addNewNux(nux: NuxTourModel): IDisposable {
     return this._nuxManager.addNewNux(nux);
   }
 
@@ -84,7 +84,7 @@ export function deactivate(): void {
 }
 
 export function provideRegisterNuxService(): RegisterNux {
-  return (nux: NuxTourModel): Disposable => {
+  return (nux: NuxTourModel): IDisposable => {
     if (activation == null) {
       throw new Error('An error occurred when instantiating the NUX package.');
     }

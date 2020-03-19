@@ -1,0 +1,5 @@
+{
+  "name": "big-dig-client",
+  "description": "This exists to enable requiring big-dig/src/client.",
+  "private": true
+}

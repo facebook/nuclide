@@ -1,0 +1,65 @@
+'scopeName': 'source.infer.al'
+'name': 'Infer AL'
+'fileTypes': [
+  'al'
+]
+'patterns': [
+  {
+    'include': '#comment'
+  }
+  {
+    'include': '#keyword_arguments'
+  }
+  {
+    'match': '\\b(message|suggestion|report_when|severity|doc_url|mode|name|whitelist_path|blacklist_path)\\b'
+    'name': 'constant'
+  }
+  {
+    'match': '\\b(SET)\\b'
+    'name': 'keyword'
+  }
+ {
+  'match': '\\b(LET)\\s*([a-zA-Z_][a-zA-Z_0-9]*)'
+  'captures':
+    '1':
+      'name': 'keyword'
+    '2':
+      'name': 'variable'
+ }
+
+  {
+      'match': '\\b(WHEN|IN-NODE|HOLDS-EVENTUALLY|HOLDS-IN-NODE|HOLDS-NEXT|WITH-TRANSITION|REGEXP \
+      |HOLDS-IN-SOME-SUPERCLASS-OF|DEFINE-CHECKER
+      |HOLDS-UNTIL|HOLDS-EVERYWHERE-NEXT
+      |AND|OR|IMPLIES|NOT
+      |GLOBAL-MACROS|GLOBAL-PATHS)'
+      'name': 'keyword'
+  }
+  {
+    'match': '\\"[^"]*\\"'
+    'name': 'string.quoted.double'
+  }
+]
+'repository':
+  'comment':
+    {
+    'captures':
+      '1':
+        'name': 'comment.line.number-sign.generic-config'
+      '2':
+        'name': 'punctuation.definition.comment.generic-config'
+      '3':
+        'name': 'comment.line.semi-colon.generic-config'
+      '4':
+        'name': 'punctuation.definition.comment.generic-config'
+    'match': '((//).*$\\n?)'
+    }
+ 'keyword_arguments':
+   {
+    'match': '\\b(LET|SET)\\s*([a-zA-Z_][a-zA-Z_0-9]*)'
+    'captures':
+      '1':
+        'name': 'keyword'
+      '2':
+        'name': 'constant'
+   }

@@ -1,0 +1,27 @@
+{
+  "name": "nuclide-find-scrollbar-indicators",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Add indicators for search matches in each editor's scroll bar",
+  "author": "Nuclide : Core UI",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "find-and-replace": {
+      "versions": {
+        "0.0.1": "consumeFind"
+      }
+    }
+  },
+  "providedServices": {
+    "scrollbar-indicators": {
+      "versions": {
+        "0.1.0": "provideScrollbarIndicators"
+      }
+    }
+  },
+
+  "activationCommands": {
+  }
+}

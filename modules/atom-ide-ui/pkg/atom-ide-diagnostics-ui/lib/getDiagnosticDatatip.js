@@ -6,100 +6,71 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import type {
-  CodeAction,
-  CodeActionFetcher,
-} from '../../atom-ide-code-actions/lib/types';
 import type {Datatip} from '../../atom-ide-datatip/lib/types';
-import type {FileDiagnosticMessage} from '../../atom-ide-diagnostics/lib/types';
+import type {
+  DiagnosticUpdater,
+  DiagnosticMessage,
+} from '../../atom-ide-diagnostics/lib/types';
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
+import {Observable} from 'rxjs';
+import {observableFromSubscribeFunction} from 'nuclide-commons/event';
 import {goToLocation} from 'nuclide-commons-atom/go-to-location';
+import {bindObservableAsProps} from 'nuclide-commons-ui/bindObservableAsProps';
 import {DiagnosticsPopup} from './ui/DiagnosticsPopup';
 
-async function getCodeActionsForDiagnostic(
-  codeActionFetcher: CodeActionFetcher,
-  message: FileDiagnosticMessage,
-  editor: atom$TextEditor,
-): Promise<Map<string, CodeAction>> {
-  const codeActions = await codeActionFetcher.getCodeActionForDiagnostic(
-    message,
-    editor,
-  );
-  // For RPC reasons, the getTitle function of a CodeAction is async. Therefore,
-  // we immediately request the title after we have each CodeAction.
-  return new Map(
-    await Promise.all(
-      codeActions.map(async codeAction =>
-        Promise.resolve([await codeAction.getTitle(), codeAction]),
-      ),
-    ),
-  );
-}
+const gotoLine = (file: string, line: number) => goToLocation(file, {line});
 
-function makeDatatipComponent(
-  messages: Array<FileDiagnosticMessage>,
-  fixer: (message: FileDiagnosticMessage) => void,
-  codeActionsForMessage: Map<FileDiagnosticMessage, Map<string, CodeAction>>,
-): React.Element<*> {
-  return (
-    <DiagnosticsPopup
-      messages={messages}
-      fixer={fixer}
-      goToLocation={goToLocation}
-      codeActionsForMessage={codeActionsForMessage}
-    />
+export function makeDatatipComponent(
+  messages: Array<DiagnosticMessage>,
+  diagnosticUpdater: DiagnosticUpdater,
+  props?: $Shape<React.ElementProps<typeof DiagnosticsPopup>>,
+): React.ComponentType<mixed> {
+  return bindObservableAsProps(
+    Observable.combineLatest(
+      observableFromSubscribeFunction(cb =>
+        diagnosticUpdater.observeCodeActionsForMessage(cb),
+      ),
+      observableFromSubscribeFunction(cb =>
+        diagnosticUpdater.observeDescriptions(cb),
+      ),
+    ).map(([codeActionsForMessage, descriptions]) => {
+      return {
+        messages,
+        codeActionsForMessage,
+        descriptions,
+        ...props,
+      };
+    }),
+    DiagnosticsPopup,
   );
 }
 
 export default (async function getDiagnosticDatatip(
   editor: TextEditor,
   position: atom$Point,
-  messagesForFile: Array<FileDiagnosticMessage>,
-  fixer: (message: FileDiagnosticMessage) => void,
-  codeActionFetcher: ?CodeActionFetcher,
+  messagesAtPosition: Array<DiagnosticMessage>,
+  diagnosticUpdater: DiagnosticUpdater,
 ): Promise<?Datatip> {
-  const messagesAtPosition = messagesForFile.filter(
-    message => message.range != null && message.range.containsPoint(position),
-  );
-  if (messagesAtPosition.length === 0) {
-    return null;
-  }
-  const codeActionsForMessage = new Map(
-    await Promise.all(
-      messagesAtPosition.map(async message => {
-        return [
-          message,
-          codeActionFetcher != null
-            ? await getCodeActionsForDiagnostic(
-                codeActionFetcher,
-                message,
-                editor,
-              )
-            : new Map(),
-        ];
-      }),
-    ),
-  );
   let range = null;
   for (const message of messagesAtPosition) {
     if (message.range != null) {
       range = range == null ? message.range : message.range.union(range);
     }
   }
+  diagnosticUpdater.fetchCodeActions(editor, messagesAtPosition);
+  diagnosticUpdater.fetchDescriptions(messagesAtPosition);
   invariant(range != null);
   return {
-    component: makeDatatipComponent.bind(
-      null,
-      messagesAtPosition,
-      fixer,
-      codeActionsForMessage,
-    ),
+    component: makeDatatipComponent(messagesAtPosition, diagnosticUpdater, {
+      fixer: message => diagnosticUpdater.applyFix(message),
+      goToLocation: gotoLine,
+    }),
     pinnable: false,
     range,
   };

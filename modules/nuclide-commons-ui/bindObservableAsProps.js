@@ -12,7 +12,8 @@
 
 import type {Observable} from 'rxjs';
 
-import React from 'react';
+import * as React from 'react';
+import getDisplayName from 'nuclide-commons/getDisplayName';
 
 /**
  * Injects any key/value pairs from the given Observable value into the component as named props.
@@ -23,26 +24,24 @@ import React from 'react';
  * The wrapped component is guaranteed to render only if the observable has resolved;
  * otherwise, the wrapper component renders `null`.
  */
-export function bindObservableAsProps<T: ReactClass<any>, U: T>(
+export function bindObservableAsProps<T: React.ComponentType<any>, U: T>(
   stream: Observable<{+[key: string]: any}>,
   ComposedComponent: T,
 ): U {
   // $FlowIssue The return type is guaranteed to be the same as the type of ComposedComponent.
-  return class extends React.Component {
+  return class extends React.Component<$FlowFixMeProps, {[key: string]: any}> {
+    static displayName = `bindObservableAsProps(${getDisplayName(
+      ComposedComponent,
+    )})`;
+
     _subscription: ?rxjs$ISubscription;
-    state: {[key: string]: any};
     _resolved: boolean;
-    _wrappedComponent: ?T;
 
     constructor(props) {
       super(props);
       this._subscription = null;
       this.state = {};
       this._resolved = false;
-    }
-
-    getWrappedComponent(): ?T {
-      return this._wrappedComponent;
     }
 
     componentDidMount(): void {
@@ -58,7 +57,7 @@ export function bindObservableAsProps<T: ReactClass<any>, U: T>(
       }
     }
 
-    render(): ?React.Element<any> {
+    render(): React.Node {
       if (!this._resolved) {
         return null;
       }
@@ -66,12 +65,7 @@ export function bindObservableAsProps<T: ReactClass<any>, U: T>(
         ...this.props,
         ...this.state,
       };
-      return (
-        <ComposedComponent
-          ref={component => (this._wrappedComponent = component)}
-          {...props}
-        />
-      );
+      return <ComposedComponent {...props} />;
     }
   };
 }

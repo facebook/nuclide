@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`throws an error if tunnel manager is closed 1`] = `"trying to create a tunnel with a closed tunnel manager"`;
+
+exports[`throws an error if tunnel manager is closed 2`] = `"trying to create a reverse tunnel with a closed tunnel manager"`;

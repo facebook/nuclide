@@ -1,0 +1,6 @@
+function foo() {
+  switch (one) {
+    case two:
+      break;
+  }
+}

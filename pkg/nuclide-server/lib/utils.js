@@ -9,66 +9,16 @@
  * @format
  */
 
-import type {AgentOptions} from './main';
 import invariant from 'assert';
 import url from 'url';
-import request from 'request';
+import {MemoryLogger} from '../../commons-node/memoryLogger';
 
 const MAX_REQUEST_LENGTH = 1e6;
 
-type HttpResponse = {
-  statusCode: number,
-};
-export type ResponseBody = {body: string, response: HttpResponse};
+export const protocolLogger = new MemoryLogger(null);
+
 type QueryParams = {[key: string]: any};
 type SerializedArguments = {args: Array<string>, argTypes: Array<string>};
-
-export type RequestOptions = {
-  uri: string,
-  agentOptions?: AgentOptions,
-  useQuerystring?: boolean,
-  timeout?: number,
-};
-
-/**
- * Promisified version of the request function:
- * https://www.npmjs.com/package/request#requestoptions-callback
- * Defaults to using the node's querystring module to encode the url query parameters.
- * If you want to use the npm's qs module to encode the query parameters, explicitly provide
- * the option:
- * {useQuerystring: false}
- */
-export function asyncRequest(options: RequestOptions): Promise<ResponseBody> {
-  return new Promise((resolve, reject) => {
-    if (options.useQuerystring === undefined) {
-      options.useQuerystring = true;
-    }
-    // TODO(t8118670): This can cause an uncaught exception.
-    // Likely requires a fix to 'request'.
-    request(options, (error, response, body) => {
-      if (error) {
-        reject(error);
-      } else if (response.statusCode < 200 || response.statusCode >= 300) {
-        let errorJson = body;
-        if (typeof body !== 'object') {
-          try {
-            errorJson = JSON.parse(body);
-          } catch (e) {
-            // 404 responses aren't currently JSON.
-            errorJson = {message: body};
-          }
-        }
-        // Cast to Object for use of code field below...
-        const err: Object = new Error(errorJson.message);
-        // Success http status codes range from 200 to 299.
-        err.code = errorJson.code || response.statusCode;
-        reject(err);
-      } else {
-        resolve({body, response});
-      }
-    });
-  });
-}
 
 /**
  * Write a text or convert to text response with an optional status code.
@@ -98,8 +48,8 @@ export function sendJsonResponse(
 }
 
 /**
-  * Parses the request body in an anyc/promise way
-  */
+ * Parses the request body in an anyc/promise way
+ */
 export function parseRequestBody(
   httpRequest: http$fixed$IncomingMessage,
   isJson: ?boolean,

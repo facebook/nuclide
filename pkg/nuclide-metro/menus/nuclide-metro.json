@@ -1,0 +1,30 @@
+{
+  "menu": [
+    {
+      "label": "Nuclide",
+      "submenu": [
+        {
+          "label": "Metro",
+          "submenu": [
+            {
+              "label": "Start",
+              "command": "nuclide-metro:start"
+            },
+            {
+              "label": "Stop",
+              "command": "nuclide-metro:stop"
+            },
+            {
+              "label": "Restart",
+              "command": "nuclide-metro:restart"
+            },
+            {
+              "label": "Reload app",
+              "command": "nuclide-metro:reload-app"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

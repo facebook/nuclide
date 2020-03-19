@@ -125,18 +125,18 @@ class NuclideServerManagerTest(NuclideServerTestBase):
             self.assertEquals(pid1, pid2)
 
     def test_nuclide_server_manager_on_http(self):
-        self.start_nuclide_server_twice_and_verify(port=9090, workspace='.')
-        self.start_nuclide_server_twice_and_verify(port=9091, workspace='..')
+        self.start_nuclide_server_twice_and_verify(port=9091, workspace='.')
+        self.start_nuclide_server_twice_and_verify(port=9092, workspace='..')
         manager = NuclideServerManager({})
         servers = manager.list_servers()
         self.assertEquals(len(servers), 2)
         port0 = servers[0].port
         port1 = servers[1].port
         # A good enough test.
-        self.assertEquals(port0 + port1, 9090 + 9091)
+        self.assertEquals(port0 + port1, 9091 + 9092)
 
     def test_upgrade_on_given_port(self):
-        self.start_nuclide_server_twice_and_verify(port=9090, workspace='.', upgrade=True)
+        self.start_nuclide_server_twice_and_verify(port=9091, workspace='.', upgrade=True)
 
     # This tests the find open port feature and uses http.
     def test_find_open_port(self):

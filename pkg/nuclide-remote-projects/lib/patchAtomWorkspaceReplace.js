@@ -48,7 +48,10 @@ export default function patchAtomWorkspaceReplace(): UniversalDisposable {
     // Atom can handle local paths and opened buffers, so filter those out.
     const filePathSet = new Set(filePaths);
     const openBuffers = new Set(
-      atom.project.getBuffers().map(buf => buf.getPath()).filter(Boolean),
+      atom.project
+        .getBuffers()
+        .map(buf => buf.getPath())
+        .filter(Boolean),
     );
     const unopenedRemotePaths = new Set(
       filePaths.filter(

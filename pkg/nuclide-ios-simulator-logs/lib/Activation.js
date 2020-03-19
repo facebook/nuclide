@@ -9,18 +9,17 @@
  * @format
  */
 
-import type {OutputService} from '../../nuclide-console/lib/types';
+import type {ConsoleService} from 'atom-ide-ui';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import formatEnoentNotification from '../../commons-atom/format-enoent-notification';
-// eslint-disable-next-line nuclide-internal/no-cross-atom-imports
-import {LogTailer} from '../../nuclide-console/lib/LogTailer';
+import {LogTailer} from '../../nuclide-console-base/lib/LogTailer';
 import {createMessageStream} from './createMessageStream';
 import {createProcessStream} from './createProcessStream';
-import {CompositeDisposable, Disposable} from 'atom';
 import {Observable} from 'rxjs';
 
 export default class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _iosLogTailer: LogTailer;
 
   constructor(state: ?Object) {
@@ -48,10 +47,10 @@ export default class Activation {
       },
     });
 
-    this._disposables = new CompositeDisposable(
-      new Disposable(() => {
+    this._disposables = new UniversalDisposable(
+      () => {
         this._iosLogTailer.stop();
-      }),
+      },
       atom.commands.add('atom-workspace', {
         'nuclide-ios-simulator-logs:start': () => this._iosLogTailer.start(),
         'nuclide-ios-simulator-logs:stop': () => this._iosLogTailer.stop(),
@@ -61,20 +60,29 @@ export default class Activation {
     );
   }
 
-  consumeOutputService(api: OutputService): void {
-    this._disposables.add(
-      api.registerOutputProvider({
-        id: 'iOS Simulator Logs',
-        messages: this._iosLogTailer.getMessages(),
-        observeStatus: cb => this._iosLogTailer.observeStatus(cb),
-        start: () => {
-          this._iosLogTailer.start();
-        },
-        stop: () => {
-          this._iosLogTailer.stop();
-        },
+  consumeConsole(consoleService: ConsoleService): IDisposable {
+    let consoleApi = consoleService({
+      id: 'iOS Simulator Logs',
+      name: 'iOS Simulator Logs',
+      start: () => this._iosLogTailer.start(),
+      stop: () => this._iosLogTailer.stop(),
+    });
+    const disposable = new UniversalDisposable(
+      () => {
+        consoleApi != null && consoleApi.dispose();
+        consoleApi = null;
+      },
+      this._iosLogTailer
+        .getMessages()
+        .subscribe(message => consoleApi != null && consoleApi.append(message)),
+      this._iosLogTailer.observeStatus(status => {
+        if (consoleApi != null) {
+          consoleApi.setStatus(status);
+        }
       }),
     );
+    this._disposables.add(disposable);
+    return disposable;
   }
 
   dispose() {

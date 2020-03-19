@@ -1,0 +1,4 @@
+const bar = require('bar');
+const foo = require('foo');
+
+foo(...bar);

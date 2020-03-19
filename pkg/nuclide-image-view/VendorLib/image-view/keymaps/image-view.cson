@@ -1,0 +1,24 @@
+# @generated SignedSource<<e82375ece2be56a9af1dfa7929e8972b>>
+'.platform-darwin .image-view':
+  'cmd-+': 'image-view:zoom-in'
+  'cmd-=': 'image-view:zoom-in'
+  'cmd--': 'image-view:zoom-out'
+  'cmd-_': 'image-view:zoom-out'
+  'cmd-9': 'image-view:zoom-to-fit'
+  'cmd-0': 'image-view:reset-zoom'
+
+'.platform-win32 .image-view':
+  'ctrl-+': 'image-view:zoom-in'
+  'ctrl-=': 'image-view:zoom-in'
+  'ctrl--': 'image-view:zoom-out'
+  'ctrl-_': 'image-view:zoom-out'
+  'ctrl-9': 'image-view:zoom-to-fit'
+  'ctrl-0': 'image-view:reset-zoom'
+
+'.platform-linux .image-view':
+  'ctrl-+': 'image-view:zoom-in'
+  'ctrl-=': 'image-view:zoom-in'
+  'ctrl--': 'image-view:zoom-out'
+  'ctrl-_': 'image-view:zoom-out'
+  'ctrl-9': 'image-view:zoom-to-fit'
+  'ctrl-0': 'image-view:reset-zoom'

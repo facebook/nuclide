@@ -10,7 +10,7 @@
  */
 
 import type {HgRepositoryClient} from '../pkg/nuclide-hg-repository-client';
-import type {RevisionInfo} from '../pkg/nuclide-hg-rpc/lib/HgService';
+import type {RevisionInfo} from '../pkg/nuclide-hg-rpc/lib/types';
 import type {TestContext} from './utils/remotable-tests';
 
 import featureConfig from 'nuclide-commons-atom/feature-config';
@@ -121,7 +121,10 @@ describeRemotableTest(
       });
 
       waitsForPromise({label: 'commit edited file'}, async () => {
-        await hgRepository.commit('edited test.txt').toArray().toPromise();
+        await hgRepository
+          .commit('edited test.txt')
+          .toArray()
+          .toPromise();
       });
 
       waitsFor('file tree to remove all modified status', () => {
@@ -201,7 +204,10 @@ describeRemotableTest(
           'utf8',
         );
         await hgRepository.addAll([repoPath]);
-        await hgRepository.commit('edit new.txt').toArray().toPromise();
+        await hgRepository
+          .commit('edit new.txt')
+          .toArray()
+          .toPromise();
         const laterRevision = await hgRepository.getBaseRevision();
 
         // Make 'new' bookmark at laterRevision and 'other' bookmark at firstRevision
@@ -237,7 +243,10 @@ describeRemotableTest(
             'utf8',
           );
           await hgRepository.addAll([repoPath]);
-          await hgRepository.commit('add other.txt').toArray().toPromise();
+          await hgRepository
+            .commit('add other.txt')
+            .toArray()
+            .toPromise();
           // Update to 'new' bookmark to see if file tree updates list of files
           await hgRepository
             .checkoutReference('new', false)

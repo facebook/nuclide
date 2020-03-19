@@ -9,10 +9,10 @@
  * @format
  */
 
-import {CompositeDisposable, Disposable} from 'atom';
 import invariant from 'assert';
-import analytics from 'nuclide-commons-atom/analytics';
+import analytics from 'nuclide-commons/analytics';
 
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {DistractionFreeMode} from './DistractionFreeMode';
 import {getBuiltinProviders} from './BuiltinProviders';
 
@@ -30,11 +30,11 @@ export type DistractionFreeModeState = {
 };
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
   _tunnelVision: DistractionFreeMode;
 
   constructor(state: ?DistractionFreeModeState) {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
     this._tunnelVision = new DistractionFreeMode(state);
     this._disposables.add(
       atom.commands.add(
@@ -64,7 +64,7 @@ class Activation {
     const providers = Array.isArray(providerOrList)
       ? providerOrList
       : [providerOrList];
-    return new CompositeDisposable(
+    return new UniversalDisposable(
       ...providers.map(provider =>
         this._tunnelVision.consumeDistractionFreeModeProvider(provider),
       ),
@@ -82,7 +82,7 @@ class Activation {
       tooltip: 'Toggle Distraction-Free Mode',
       priority: 901,
     });
-    const disposable = new Disposable(() => {
+    const disposable = new UniversalDisposable(() => {
       toolBar.removeItems();
     });
     this._disposables.add(disposable);

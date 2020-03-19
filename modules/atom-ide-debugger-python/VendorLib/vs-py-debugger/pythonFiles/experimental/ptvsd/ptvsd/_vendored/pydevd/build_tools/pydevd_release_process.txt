@@ -1,0 +1,59 @@
+1. Update version
+=================
+
+__version_info__ in pydevd.py
+
+
+2. Generate new version
+======================
+
+cd /D x:\PyDev.Debugger
+
+rm dist/pydevd*
+
+C:\tools\Miniconda32\Scripts\activate py27_32
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda32\Scripts\activate py34_32
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda32\Scripts\activate py35_32
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda32\Scripts\activate py36_32
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda\Scripts\activate py27_64
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda\Scripts\activate py34_64
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda\Scripts\activate py35_64
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+C:\tools\Miniconda\Scripts\activate py36_64
+python setup.py sdist bdist_wheel
+deactivate
+dir dist
+
+# Note: uploading with twine gives an error in the end, but apparently it works (check final result in pypi).
+twine upload dist/pydevd*
+
+git tag pydev_debugger_1_2_0 -a -m "PyDev.Debugger 1.2.0"
+git push --tags
+

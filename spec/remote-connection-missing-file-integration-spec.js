@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -18,7 +18,7 @@ import {describeRemote} from './utils/remotable-tests';
 describeRemote('Remote Connection', (context: TestContext) => {
   const NEW_FILE_NAME = 'NEW_FILE.txt';
 
-  it("succesfully opens and saves a remote file that doesn't exist", () => {
+  it("successfully opens and saves a remote file that doesn't exist", () => {
     let editor;
     let fileName;
 

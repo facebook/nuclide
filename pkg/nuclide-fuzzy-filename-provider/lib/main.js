@@ -15,12 +15,13 @@ import type {FileResult, Provider} from '../../nuclide-quick-open/lib/types';
 import invariant from 'assert';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import createPackage from 'nuclide-commons-atom/createPackage';
-import scheduleIdleCallback from '../../commons-node/scheduleIdleCallback';
+import scheduleIdleCallback from 'nuclide-commons/scheduleIdleCallback';
 import {getFuzzyFileSearchServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {RpcTimeoutError} from '../../nuclide-rpc';
 import {getLogger} from 'log4js';
 import FuzzyFileNameProvider from './FuzzyFileNameProvider';
 import {getIgnoredNames} from './utils';
+import {isGkEnabled} from 'nuclide-commons/passesGK';
 
 const logger = getLogger('nuclide-fuzzy-filename-provider');
 
@@ -67,7 +68,8 @@ class Activation {
                   );
                 } else {
                   logger.error(
-                    `Error starting fuzzy filename search for ${projectPath}: ${err}`,
+                    `Error starting fuzzy filename search for ${projectPath}:`,
+                    err,
                   );
                   this._disposeSearch(projectPath);
                 }
@@ -109,8 +111,16 @@ class Activation {
     // It doesn't matter what the search term is. Empirically, doing an initial
     // search speeds up the next search much more than simply doing the setup
     // kicked off by 'fileSearchForDirectory'.
+    //
+    // We use an unlikely queryString so it is easy to filter out from metrics.
     try {
-      await service.queryFuzzyFile(projectPath, 'a', getIgnoredNames());
+      await service.queryFuzzyFile({
+        rootDirectory: projectPath,
+        queryString: '^^^',
+        ignoredNames: getIgnoredNames(),
+        preferCustomSearch: Boolean(isGkEnabled('nuclide_prefer_myles_search')),
+        context: null,
+      });
     } catch (err) {
       throw err;
     } finally {
@@ -123,10 +133,7 @@ class Activation {
       const service = getFuzzyFileSearchServiceByNuclideUri(projectPath);
       service.disposeFuzzySearch(projectPath);
     } catch (err) {
-      logger.error(
-        `Error disposing fuzzy filename service for ${projectPath}`,
-        err,
-      );
+      // Ignore errors here; this is pretty best-effort anyway.
     } finally {
       const disposables = this._subscriptionsByRoot.get(projectPath);
       if (disposables != null) {
@@ -136,7 +143,7 @@ class Activation {
     }
   }
 
-  registerProvider(): Provider {
+  registerProvider(): Provider<FileResult> {
     return {
       ...FuzzyFileNameProvider,
       executeQuery: async (query: string, directory: atom$Directory) => {

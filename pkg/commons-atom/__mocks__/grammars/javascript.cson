@@ -1,0 +1,15 @@
+# From https://github.com/atom/language-javascript/blob/861c53f200d5faf2d0bf06c6d405d8d683a2aca0/grammars/javascript.cson
+'scopeName': 'source.js'
+'fileTypes': [
+  'js'
+  'htc'
+  '_js'
+  'es'
+  'es6'
+  'pjs'
+  'xsjs'
+  'xsjslib'
+]
+'firstLineMatch': '^#!.*\\b(node|iojs|JavaScript)'
+'name': 'JavaScript'
+'patterns': []

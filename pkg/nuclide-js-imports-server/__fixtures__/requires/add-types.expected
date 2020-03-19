@@ -1,0 +1,6 @@
+import type five from 'five';
+import type six from 'six';
+import type two from 'two';
+
+var one: ?two = null;
+function three(four: five): six {}

@@ -1,5 +1,11 @@
 {
   "atom-workspace": {
     "alt-o": "outline-view:toggle"
+  },
+  ".outline-view-trees": {
+    "k": "core:move-up",
+    "j": "core:move-down",
+    "h": "core:move-left",
+    "l": "core:move-right"
   }
 }

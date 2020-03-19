@@ -23,7 +23,13 @@ dependencies in Big Dig increases the chances it can be installed without issue.
   * User must be able to write a random file under `/tmp` on the server.
 * Minimal capabilities required by the user on the server:
   * Server must have `openssl` available on the `$PATH`.
-  * Server must have Node 6.5.0 or later installed.
+  * Server must have Node 7.9.0 or later installed.
+  * Server must have [Watchman](https://facebook.github.io/watchman/) installed
+    in order for the file-watching API to work correctly.
+  * Server must have [`rg`](https://github.com/BurntSushi/ripgrep) installed
+    in order for text search to work correctly.
+  * Server must have [`hg`](https://www.mercurial-scm.org/) installed in order
+    for the Mercurial integration to work correctly.
 * Minimal privileges required by the user on the client:
   * Client must be able to make a single `ssh` connection to the server in order
     to launch it.

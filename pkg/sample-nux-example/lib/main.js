@@ -10,7 +10,7 @@
  */
 
 import invariant from 'assert';
-import {CompositeDisposable, Disposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import type {NuxTourModel} from '../../nuclide-nux/lib/NuxModel';
 import type {RegisterNux, TriggerNux} from '../../nuclide-nux/lib/main';
@@ -19,10 +19,10 @@ const SAMPLE_NUX_ID = 0;
 const SAMPLE_NUX_NAME = 'sample-nux-example.sample-nux-id';
 
 class Activation {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   dispose() {
@@ -37,14 +37,14 @@ class Activation {
       tooltip: 'Example Nux Toolbar Item',
     });
     element.classList.add('sample-nux-toolbar-button');
-    const disposable = new Disposable(() => {
+    const disposable = new UniversalDisposable(() => {
       toolBar.removeItems();
     });
     this._disposables.add(disposable);
     return disposable;
   }
 
-  addDisposable(disposable: Disposable) {
+  addDisposable(disposable: IDisposable) {
     this._disposables.add(disposable);
   }
 }
@@ -79,15 +79,15 @@ function generateTestNuxTour(
     selector: '.sample-nux-toolbar-button',
     position: 'auto',
     /**
-       * OPTIONAL: Use a custom selector function to return a DOM element if the
-       * element to bind the NUX to cannot be returned by a query selector class.
-       */
+     * OPTIONAL: Use a custom selector function to return a DOM element if the
+     * element to bind the NUX to cannot be returned by a query selector class.
+     */
     // selectorFunction: () => document.querySelector('.sample-nux-toolbar-button'),
     /**
-       * OPTIONAL: If set, the completion predicate will be evaluated after every
-       * NUX interaction. The NuxView will not progress to the next one in the
-       * NuxTour until the predicate evaluates to true.
-       */
+     * OPTIONAL: If set, the completion predicate will be evaluated after every
+     * NUX interaction. The NuxView will not progress to the next one in the
+     * NuxTour until the predicate evaluates to true.
+     */
     // completionPredicate: () => true,
   });
   const nuxList = Array(numViews)
@@ -117,7 +117,7 @@ function generateTestNuxTour(
   };
 }
 
-export function consumeRegisterNuxService(addNewNux: RegisterNux): Disposable {
+export function consumeRegisterNuxService(addNewNux: RegisterNux): IDisposable {
   invariant(activation != null);
   const disposable = addNewNux(
     generateTestNuxTour(SAMPLE_NUX_ID, SAMPLE_NUX_NAME, 2),

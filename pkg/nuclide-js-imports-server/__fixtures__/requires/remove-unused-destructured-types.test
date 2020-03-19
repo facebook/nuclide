@@ -1,0 +1,6 @@
+import type {
+  A,
+  B,
+} from 'X';
+
+const x: A = 3;

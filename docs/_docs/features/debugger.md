@@ -134,5 +134,6 @@ language specific debugging workflows that require discussion and illustration.
 
 - [iOS](/docs/platforms/ios/#debugging)
 - [Android](/docs/platforms/android/#debugging)
+- [React Native](/docs/platforms/react-native/#debugging)
 
 Buck projects can be more easily debugged via the [Task Runner](/docs/features/task-runner/#buck).

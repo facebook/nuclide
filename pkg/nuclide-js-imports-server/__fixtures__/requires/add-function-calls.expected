@@ -1,0 +1,12 @@
+const four = require('four');
+const one = require('one');
+const six = require('six');
+const two = require('two');
+
+function five() {}
+
+one();
+two.three();
+four()()();
+five();
+six.seven.eight().nine();

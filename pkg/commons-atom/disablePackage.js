@@ -9,22 +9,36 @@
  * @format
  */
 
-function disablePackage(name) {
-  if (!atom.packages.isPackageDisabled(name)) {
-    // Calling `disablePackage` on a package first *loads* the package. This step must come
-    // before calling `unloadPackage`.
-    atom.packages.disablePackage(name);
-  }
+import idx from 'idx';
+import featureConfig from 'nuclide-commons-atom/feature-config';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
-  if (atom.packages.isPackageLoaded(name)) {
-    if (atom.packages.isPackageActive(name)) {
-      // Only *inactive* packages can be unloaded. Attempting to unload an active package is
-      // considered an exception. Deactivating must come before unloading.
-      atom.packages.deactivatePackage(name);
+export const DisabledReason = Object.freeze({
+  INCOMPATIBLE: 'incompatible',
+  REIMPLEMENTED: 'reimplemented',
+});
+type DisabledReasonType = $Values<typeof DisabledReason>;
+
+function deactivateAndUnloadPackage(
+  name: string,
+  options: {|warn: boolean, reason: DisabledReasonType|},
+): void {
+  if (atom.packages.initialPackagesActivated === true) {
+    if (options.warn) {
+      const packageName = featureConfig.getPackageName();
+      atom.notifications.addWarning(`Incompatible Package: ${name}`, {
+        description: getWarningMessage(name, packageName, options.reason),
+        dismissable: true,
+      });
     }
-
-    atom.packages.unloadPackage(name);
   }
+
+  const deactivationPromise =
+    atom.packages.deactivatePackage(name) || Promise.resolve();
+  deactivationPromise.then(() => {
+    atom.packages.disablePackage(name);
+    atom.packages.unloadPackage(name);
+  });
 
   // This is a horrible hack to work around the fact that preloaded packages can sometimes be loaded
   // twice. See also atom/atom#14837
@@ -32,27 +46,57 @@ function disablePackage(name) {
   delete atom.packages.preloadedPackages[name];
 }
 
-// eslint-disable-next-line nuclide-internal/no-commonjs
-module.exports = function(name: string) {
-  // Disable Atom's bundled package. If this activation is happening during the
-  // normal startup activation, the `onDidActivateInitialPackages` handler below must unload the
-  // package because it will have been loaded during startup.
-  disablePackage(name);
+export default function disablePackage(
+  name: string,
+  options?: {|reason?: DisabledReasonType|},
+): IDisposable {
+  const initiallyDisabled = atom.packages.isPackageDisabled(name);
+  const reason = idx(options, _ => _.reason) || DisabledReason.INCOMPATIBLE;
+  if (!initiallyDisabled) {
+    // If it wasn't activated yet, maybe we can prevent the activation altogether
+    atom.packages.disablePackage(name);
+  }
 
-  // Disabling and unloading Atom's bundled package must happen after activation because this
-  // package's `activate` is called during an traversal of all initial packages to activate.
-  // Disabling a package during the traversal has no effect if this is a startup load because
-  // `PackageManager` does not re-load the list of packages to activate after each iteration.
-  const disposable = atom.packages.onDidActivateInitialPackages(() => {
-    disablePackage(name);
+  if (atom.packages.isPackageActive(name)) {
+    deactivateAndUnloadPackage(name, {warn: false, reason});
+  }
+
+  const activationMonitor = atom.packages.onDidActivatePackage(pack => {
+    if (pack.name === name) {
+      deactivateAndUnloadPackage(name, {warn: true, reason});
+    }
   });
 
-  return () => {
+  const stateRestorer = () => {
     // Re-enable Atom's bundled package to leave the user's environment the way
     // this package found it.
-    if (atom.packages.isPackageDisabled(name)) {
+    if (!initiallyDisabled) {
       atom.packages.enablePackage(name);
     }
-    disposable.dispose();
   };
-};
+
+  return new UniversalDisposable(activationMonitor, stateRestorer);
+}
+
+function getWarningMessage(
+  disabledFeature: string,
+  packageName: string,
+  reason: DisabledReasonType,
+): string {
+  switch (reason) {
+    case 'incompatible':
+      return (
+        `${disabledFeature} can't be enabled because it's incompatible with ${packageName}.` +
+        ` If you need to use this package, you must first disable ${packageName}.`
+      );
+    case 'reimplemented':
+      return (
+        `${disabledFeature} can't be enabled because it's incompatible with ${packageName},` +
+        ` however ${packageName} provides similar functionality. If you need to use` +
+        ` ${disabledFeature} anyway, you must first disable ${packageName}.`
+      );
+    default:
+      (reason: empty);
+      throw new Error(`Invalid reason: ${reason}`);
+  }
+}

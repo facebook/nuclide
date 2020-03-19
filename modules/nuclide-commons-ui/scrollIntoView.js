@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict
  * @format
  */
 
@@ -42,32 +42,41 @@
  */
 
 export function scrollIntoView(el: Element, alignToTop?: boolean): void {
-  const scrollTops = getOverflowHiddenScrollTops(el);
+  const scrollTops = getScrollTops(el);
   el.scrollIntoView(alignToTop); // eslint-disable-line nuclide-internal/dom-apis
-  restoreScrollTops(scrollTops);
+  restoreOverflowHiddenScrollTops(scrollTops);
 }
 
 export function scrollIntoViewIfNeeded(el: Element, center?: boolean): void {
-  const scrollTops = getOverflowHiddenScrollTops(el);
+  const scrollTops = getScrollTops(el);
   // $FlowIgnore: This should be added to the element type.
   el.scrollIntoViewIfNeeded(center); // eslint-disable-line nuclide-internal/dom-apis
-  restoreScrollTops(scrollTops);
+  restoreOverflowHiddenScrollTops(scrollTops);
 }
 
-function getOverflowHiddenScrollTops(el_: Element): Map<Element, number> {
+function getScrollTops(el_: Element): Map<Element, number> {
   let el = el_;
   const scrollTops = new Map();
   while (el != null) {
-    if (getComputedStyle(el).overflow === 'hidden') {
-      scrollTops.set(el, el.scrollTop);
-    }
+    scrollTops.set(el, el.scrollTop);
     el = el.parentElement;
   }
   return scrollTops;
 }
 
-function restoreScrollTops(scrollTops: Map<Element, number>): void {
+function restoreOverflowHiddenScrollTops(
+  scrollTops: Map<Element, number>,
+): void {
   scrollTops.forEach((scrollTop, el) => {
-    el.scrollTop = scrollTop;
+    if (el.scrollTop !== scrollTop && isOverflowHidden(el)) {
+      el.scrollTop = scrollTop;
+    }
   });
+}
+
+function isOverflowHidden(el: Element): boolean {
+  // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+  const overflowStyle = el.style == null ? null : (el.style: any).overflow;
+  const overflow = overflowStyle || getComputedStyle(el).overflow;
+  return overflow === 'hidden';
 }

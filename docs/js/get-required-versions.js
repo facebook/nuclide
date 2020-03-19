@@ -6,14 +6,11 @@
  * the root directory of this source tree.
  *
  * @noflow
+ * @format
  */
 'use strict';
 
-/* eslint
-  comma-dangle: [1, always-multiline],
-  prefer-object-spread/prefer-object-spread: 0,
-  nuclide-internal/no-commonjs: 0,
-  */
+/* eslint nuclide-internal/no-commonjs: 0 */
 /* eslint-disable prefer-arrow-callback */
 /* eslint-disable no-var */
 /* eslint-disable no-undef */
@@ -37,28 +34,34 @@
 
   fetch(
     'https://raw.githubusercontent.com/facebook/nuclide/master/package.json',
-    {mode: 'cors'}
-  ).then(function(response) {
-    return response.json();
-  }).then(function(data) {
-    // Get the first part that looks like a version...
-    var versionLikeRe = /\b\d+\.\d+\.\d+\b/;
+    {mode: 'cors'},
+  )
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(data) {
+      // Get the first part that looks like a version...
+      var versionLikeRe = /\b\d+\.\d+\.\d+\b/;
 
-    var nodeVersion = data.engines.node.match(versionLikeRe)[0];
-    var atomVersion = data.engines.atom.match(versionLikeRe)[0];
-    var nuclideVersion = data.version;
+      var nodeVersion = data.engines.node.match(versionLikeRe)[0];
+      var atomVersion = data.engines.atom.match(versionLikeRe)[0];
+      var nuclideVersion = data.version;
 
-    for (var i = 0; i < nodeEls.length; i++) {
-      nodeEls.item(i).innerHTML =
-        'A Node version that is greater or equal to ' + nodeVersion + ' is required.';
-    }
-    for (var j = 0; j < atomEls.length; j++) {
-      atomEls.item(j).innerHTML =
-        'Nuclide requires an Atom version that is greater or equal to ' + atomVersion + '.';
-    }
-    for (var k = 0; k < nuclideEls.length; k++) {
-      nuclideEls.item(k).innerHTML =
-        'The current version of Nuclide is ' + nuclideVersion + '.';
-    }
-  });
+      for (var i = 0; i < nodeEls.length; i++) {
+        nodeEls.item(i).innerHTML =
+          'A Node version that is greater or equal to ' +
+          nodeVersion +
+          ' is required.';
+      }
+      for (var j = 0; j < atomEls.length; j++) {
+        atomEls.item(j).innerHTML =
+          'Nuclide requires an Atom version that is greater or equal to ' +
+          atomVersion +
+          '.';
+      }
+      for (var k = 0; k < nuclideEls.length; k++) {
+        nuclideEls.item(k).innerHTML =
+          'The current version of Nuclide is ' + nuclideVersion + '.';
+      }
+    });
 })();

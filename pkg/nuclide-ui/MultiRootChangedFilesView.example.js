@@ -9,14 +9,10 @@
  * @format
  */
 
-import React from 'react';
+import * as React from 'react';
 import {Block} from 'nuclide-commons-ui/Block';
 import {MultiRootChangedFilesView} from './MultiRootChangedFilesView';
 import {FileChangeStatus} from '../nuclide-vcs-base';
-
-function onFileChosen(uri: string): void {
-  atom.notifications.addInfo(`Selected file ${uri}`);
-}
 
 function BasicExample(): React.Element<any> {
   const fileChanges = new Map([
@@ -46,10 +42,22 @@ function BasicExample(): React.Element<any> {
       <Block>
         <MultiRootChangedFilesView
           fileStatuses={fileChanges}
-          commandPrefix="sample-ui-playground"
+          commandPrefix="nuclide-ui-playground"
           selectedFile={null}
-          onFileChosen={onFileChosen}
+          onFileChosen={uri =>
+            atom.notifications.addInfo(`Selected file ${uri}`)
+          }
           openInDiffViewOption={true}
+          onClickAdd={uri => atom.notifications.addInfo(`Added file ${uri}`)}
+          onClickRevert={uri =>
+            atom.notifications.addInfo(`Reverted file ${uri}`)
+          }
+          onClickDelete={uri =>
+            atom.notifications.addInfo(`Deleted file ${uri}`)
+          }
+          onClickForget={uri =>
+            atom.notifications.addInfo(`Forgot file ${uri}`)
+          }
         />
       </Block>
     </div>

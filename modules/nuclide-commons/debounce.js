@@ -26,7 +26,7 @@ export default function debounce<
   dispose(): void,
 } {
   // Taken from: https://github.com/jashkenas/underscore/blob/b10b2e6d72/underscore.js#L815.
-  let timeout: ?number;
+  let timeout: ?TimeoutID;
   let args: ?TArgs;
   let context: any;
   let timestamp = 0;
@@ -54,7 +54,6 @@ export default function debounce<
     args = args_;
     timestamp = Date.now();
     const callNow = immediate && !timeout;
-    // flowlint-next-line sketchy-null-number:off
     if (!timeout) {
       timeout = setTimeout(later, wait);
     }
@@ -67,7 +66,6 @@ export default function debounce<
   };
 
   debounced.dispose = () => {
-    // flowlint-next-line sketchy-null-number:off
     if (timeout) {
       clearTimeout(timeout);
       timeout = context = args = null;

@@ -11,9 +11,9 @@
 
 import type {LazyTreeNode} from './LazyTreeNode';
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as React from 'react';
 import classnames from 'classnames';
+import nullthrows from 'nullthrows';
 
 const INDENT_IN_PX = 10;
 const INDENT_PER_LEVEL_IN_PX = 15;
@@ -31,10 +31,10 @@ type Props = {
   labelElement?: ?React.Element<any>,
   labelClassName: string,
   node: LazyTreeNode,
-  onClickArrow: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onClick: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onDoubleClick: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
-  onMouseDown: (event: SyntheticMouseEvent, node: LazyTreeNode) => void,
+  onClickArrow: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onClick: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onDoubleClick: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
+  onMouseDown: (event: SyntheticMouseEvent<>, node: LazyTreeNode) => void,
   path: string,
   rowClassName: string,
 };
@@ -42,11 +42,10 @@ type Props = {
 /**
  * Represents one entry in a TreeComponent.
  */
-export class TreeNodeComponent extends React.PureComponent {
-  props: Props;
-  state: void;
+export class TreeNodeComponent extends React.PureComponent<Props, void> {
+  _arrow: ?HTMLElement;
 
-  render(): React.Element<any> {
+  render(): React.Node {
     const rowClassNameObj: {[key: string]: ?boolean} = {
       // Support for selectors in the "file-icons" package.
       // @see {@link https://atom.io/packages/file-icons|file-icons}
@@ -86,37 +85,43 @@ export class TreeNodeComponent extends React.PureComponent {
         onClick={this._onClick}
         onDoubleClick={this._onDoubleClick}
         onMouseDown={this._onMouseDown}>
-        <span className="nuclide-tree-component-item-arrow" ref="arrow">
+        <span
+          className="nuclide-tree-component-item-arrow"
+          ref={el => {
+            this._arrow = el;
+          }}>
           {arrow}
         </span>
-        {this.props.labelElement != null
-          ? this.props.labelElement
-          : <span
-              className={this.props.labelClassName}
-              // `data-name` is support for selectors in the "file-icons" package.
-              // @see {@link https://atom.io/packages/file-icons|file-icons}
-              data-name={this.props.label}
-              data-path={this.props.path}>
-              {this.props.label}
-            </span>}
+        {this.props.labelElement != null ? (
+          this.props.labelElement
+        ) : (
+          <span
+            className={this.props.labelClassName}
+            // `data-name` is support for selectors in the "file-icons" package.
+            // @see {@link https://atom.io/packages/file-icons|file-icons}
+            data-name={this.props.label}
+            data-path={this.props.path}>
+            {this.props.label}
+          </span>
+        )}
       </div>
     );
   }
 
-  _onClick = (event: SyntheticMouseEvent): void => {
+  _onClick = (event: SyntheticMouseEvent<>): void => {
     // $FlowFixMe
-    if (ReactDOM.findDOMNode(this.refs.arrow).contains(event.target)) {
+    if (nullthrows(this._arrow).contains(event.target)) {
       this.props.onClickArrow(event, this.props.node);
     } else {
       this.props.onClick(event, this.props.node);
     }
   };
 
-  _onDoubleClick = (event: SyntheticMouseEvent): void => {
+  _onDoubleClick = (event: SyntheticMouseEvent<>): void => {
     this.props.onDoubleClick(event, this.props.node);
   };
 
-  _onMouseDown = (event: SyntheticMouseEvent): void => {
+  _onMouseDown = (event: SyntheticMouseEvent<>): void => {
     this.props.onMouseDown(event, this.props.node);
   };
 }

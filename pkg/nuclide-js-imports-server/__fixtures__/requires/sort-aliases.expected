@@ -1,0 +1,8 @@
+const Aoel = require('Aoel');
+const Zena = require('Zena');
+
+const Immutable = require('immutable');
+
+Aoel.Map();
+Immutable.List();
+Zena.Set();

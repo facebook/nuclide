@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -25,7 +25,7 @@ export default class SwiftPMTaskRunnerStore {
   _Xcc: string;
   _Xlinker: string;
   _Xswiftc: string;
-  _compileCommands: Map<string, string>;
+  _compileCommands: Map<string, Array<string>>;
   _projectRoot: ?string;
 
   constructor(
@@ -126,7 +126,7 @@ export default class SwiftPMTaskRunnerStore {
     return this._Xswiftc;
   }
 
-  getCompileCommands(): Map<string, string> {
+  getCompileCommands(): Map<string, Array<string>> {
     return this._compileCommands;
   }
 }

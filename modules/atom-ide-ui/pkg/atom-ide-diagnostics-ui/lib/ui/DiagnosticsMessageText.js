@@ -11,8 +11,11 @@
  */
 
 import invariant from 'assert';
-import React from 'react';
+import * as React from 'react';
 import {shell} from 'electron';
+import createDOMPurify from 'dompurify';
+
+const domPurify = createDOMPurify();
 
 type DiagnosticsMessageTextProps = {
   preserveNewlines?: boolean, // defaults to true
@@ -37,7 +40,15 @@ export function separateUrls(message: string): Array<UrlOrText> {
   // Don't match periods at the end of URLs, because those are usually just to
   // end the sentence and not actually part of the URL. Optionally match
   // parameters following a question mark.
-  const urlRegex = /https?:\/\/[\w/._-]*[\w/_-](?:\?[\w/_=&-]*)?/g;
+
+  // first bit before query/fragment
+  const mainUrl = /https?:\/\/[\w/.%-]*[\w/-]/.source;
+  // characters allowed in query/fragment, disallow `.` at the end
+  const queryChars = /[\w-~%&+.!=:@/?]*[\w-~%&+!=:@/?]/.source;
+  const urlRegex = new RegExp(
+    `${mainUrl}(?:\\?${queryChars})?(?:#${queryChars})?`,
+    'g',
+  );
 
   const urls = message.match(urlRegex);
   const nonUrls = message.split(urlRegex);
@@ -67,6 +78,7 @@ const NBSP = '\xa0';
 function renderRowWithLinks(
   message: string,
   rowIndex: number,
+  rows: Array<string>,
 ): React.Element<any> {
   const messageWithWhitespace = message.replace(
     LEADING_WHITESPACE_RE,
@@ -88,9 +100,11 @@ function renderRowWithLinks(
   });
 
   return (
-    <div key={rowIndex}>
+    // We need to use a span here instead of a div so that `text-overflow: ellipsis` works.
+    <span key={rowIndex}>
       {parts}
-    </div>
+      {rowIndex !== rows.length - 1 && <br />}
+    </span>
   );
 }
 
@@ -100,7 +114,9 @@ export const DiagnosticsMessageText = (props: DiagnosticsMessageTextProps) => {
     return (
       <span
         title={message.text}
-        dangerouslySetInnerHTML={{__html: message.html}}
+        dangerouslySetInnerHTML={{
+          __html: domPurify.sanitize(message.html),
+        }}
       />
     );
   } else if (message.text != null) {
@@ -108,11 +124,7 @@ export const DiagnosticsMessageText = (props: DiagnosticsMessageTextProps) => {
       props.preserveNewlines !== false
         ? message.text.split('\n')
         : [message.text];
-    return (
-      <span title={message.text}>
-        {rows.map(renderRowWithLinks)}
-      </span>
-    );
+    return <span title={message.text}>{rows.map(renderRowWithLinks)}</span>;
   } else {
     return <span>Diagnostic lacks message.</span>;
   }

@@ -34,11 +34,13 @@ import lookupPreferIpv6 from '../../nuclide-remote-connection/lib/lookup-prefer-
  * the connection dialog and the default settings, plus the update logic we use
  * to change the remote server command.
  */
-export function getDefaultConnectionProfile(options?: {
-  initialServer: string,
-  initialCwd: string,
-  initialRemoteServerCommand?: string,
-}): NuclideRemoteConnectionProfile {
+export function getDefaultConnectionProfile(
+  options?: {
+    initialServer?: string,
+    initialCwd?: string,
+    initialRemoteServerCommand?: string,
+  } = {},
+): NuclideRemoteConnectionProfile {
   const defaultConnectionSettings = getDefaultConfig();
   const currentOfficialRSC = defaultConnectionSettings.remoteServerCommand;
 
@@ -79,14 +81,19 @@ export function getDefaultConnectionProfile(options?: {
     ...lastConfig,
     remoteServerCommand,
   };
-  if (options != null) {
-    dialogSettings.cwd = options.initialCwd;
+
+  if (options.initialServer != null) {
     dialogSettings.server = options.initialServer;
-    // flowlint-next-line sketchy-null-string:off
-    if (options.initialRemoteServerCommand) {
-      dialogSettings.remoteServerCommand = options.initialRemoteServerCommand;
-    }
   }
+
+  if (options.initialCwd != null) {
+    dialogSettings.cwd = options.initialCwd;
+  }
+
+  if (options.initialRemoteServerCommand != null) {
+    dialogSettings.remoteServerCommand = options.initialRemoteServerCommand;
+  }
+
   // Due to a previous bug in the sshPort type, we may need to do this cast to
   // correct bad state that was persisted in users' configs.
   dialogSettings.sshPort = String(dialogSettings.sshPort);

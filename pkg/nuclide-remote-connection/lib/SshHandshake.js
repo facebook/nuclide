@@ -19,8 +19,11 @@ import invariant from 'assert';
 import {RemoteConnection} from './RemoteConnection';
 import fsPromise from 'nuclide-commons/fsPromise';
 import {sleep} from 'nuclide-commons/promise';
+import {shellQuote} from 'nuclide-commons/string';
 import lookupPreferIpv6 from './lookup-prefer-ip-v6';
 import {getLogger} from 'log4js';
+import {readFile as readRemoteFile} from './RemoteCommand';
+import {getNuclideVersion} from 'nuclide-commons/system-info';
 
 const logger = getLogger('nuclide-remote-connection');
 
@@ -39,7 +42,7 @@ export type SshConnectionConfiguration = {
   pathToPrivateKey: string, // The path to private key
   remoteServerCommand: string, // Command to use to start server
   cwd: string, // Path to remote directory user should start in upon connection.
-  authMethod: string, // Which of the authentication methods in `SupportedMethods` to use.
+  authMethod: SshHandshakeAuthMethodsType, // Which of the authentication methods in `SupportedMethods` to use.
   password: string, // for simple password-based authentication
   displayTitle: string, // Name of the saved connection profile.
 };
@@ -48,12 +51,16 @@ const SupportedMethods = Object.freeze({
   SSL_AGENT: 'SSL_AGENT',
   PASSWORD: 'PASSWORD',
   PRIVATE_KEY: 'PRIVATE_KEY',
+  ROOTCANAL: 'ROOTCANAL',
 });
+
+export type SshHandshakeAuthMethodsType = $Values<typeof SupportedMethods>;
 
 const ErrorType = Object.freeze({
   UNKNOWN: 'UNKNOWN',
   HOST_NOT_FOUND: 'HOST_NOT_FOUND',
   CANT_READ_PRIVATE_KEY: 'CANT_READ_PRIVATE_KEY',
+  CERT_NOT_YET_VALID: 'CERT_NOT_YET_VALID',
   SSH_CONNECT_TIMEOUT: 'SSH_CONNECT_TIMEOUT',
   SSH_CONNECT_FAILED: 'SSH_CONNECT_FAILED',
   SSH_AUTHENTICATION: 'SSH_AUTHENTICATION',
@@ -61,13 +68,14 @@ const ErrorType = Object.freeze({
   SERVER_START_FAILED: 'SERVER_START_FAILED',
   SERVER_CANNOT_CONNECT: 'SERVER_CANNOT_CONNECT',
   SFTP_TIMEOUT: 'SFTP_TIMEOUT',
-  USER_CANCELLED: 'USER_CANCELLED',
+  USER_CANCELED: 'USER_CANCELLED',
 });
 
 export type SshHandshakeErrorType =
   | 'UNKNOWN'
   | 'HOST_NOT_FOUND'
   | 'CANT_READ_PRIVATE_KEY'
+  | 'CERT_NOT_YET_VALID'
   | 'SSH_CONNECT_TIMEOUT'
   | 'SSH_CONNECT_FAILED'
   | 'SSH_AUTHENTICATION'
@@ -111,7 +119,7 @@ export type SshConnectionDelegate = {
   onKeyboardInteractive: KeyboardInteractiveCallback,
   /** Invoked when trying to connect */
   onWillConnect: (config: SshConnectionConfiguration) => void,
-  /** Invoked when connection is sucessful */
+  /** Invoked when connection is successful */
   onDidConnect: (
     connection: RemoteConnection,
     config: SshConnectionConfiguration,
@@ -145,15 +153,15 @@ export class SshHandshake {
   _config: SshConnectionConfiguration;
   _forwardingServer: net.Server;
   _remoteHost: ?string;
-  _remotePort: ?number;
+  _remotePort: number;
   _certificateAuthorityCertificate: Buffer;
   _clientCertificate: Buffer;
   _clientKey: Buffer;
   _passwordRetryCount: number;
-  _cancelled: boolean;
+  _canceled: boolean;
 
   constructor(delegate: SshConnectionDelegate, connection?: SshConnection) {
-    this._cancelled = false;
+    this._canceled = false;
     this._delegate = delegate;
     this._connection = connection ? connection : new SshConnection();
     this._connection.on('ready', this._onConnect.bind(this));
@@ -202,7 +210,8 @@ export class SshHandshake {
         ],
         ([password]) => {
           this._connection.connect({
-            host: config.host,
+            // Use the correctly resolved hostname.
+            host: this._connection.config.host,
             port: config.sshPort,
             username: config.username,
             password,
@@ -223,18 +232,8 @@ export class SshHandshake {
   async connect(config: SshConnectionConfiguration): Promise<void> {
     this._config = config;
     this._passwordRetryCount = 0;
-    this._cancelled = false;
+    this._canceled = false;
     this._willConnect();
-
-    const existingConnection = RemoteConnection.getByHostnameAndPath(
-      this._config.host,
-      this._config.cwd,
-    );
-
-    if (existingConnection) {
-      this._didConnect(existingConnection);
-      return;
-    }
 
     let lookup;
     try {
@@ -249,25 +248,6 @@ export class SshHandshake {
 
     const {address, family} = lookup;
     this._config.family = family;
-
-    const connection =
-      (await RemoteConnection.createConnectionBySavedConfig(
-        this._config.host,
-        this._config.cwd,
-        this._config.displayTitle,
-      )) ||
-      // We save connections by their IP address as well, in case a different hostname
-      // was used for the same server.
-      (await RemoteConnection.createConnectionBySavedConfig(
-        address,
-        this._config.cwd,
-        this._config.displayTitle,
-      ));
-
-    if (connection) {
-      this._didConnect(connection);
-      return;
-    }
 
     if (config.authMethod === SupportedMethods.SSL_AGENT) {
       // Point to ssh-agent's socket for ssh-agent-based authentication.
@@ -323,7 +303,7 @@ export class SshHandshake {
   }
 
   cancel() {
-    this._cancelled = true;
+    this._canceled = true;
     this._connection.end();
   }
 
@@ -344,6 +324,7 @@ export class SshHandshake {
   }
 
   _forwardSocket(socket: net.Socket): void {
+    invariant(socket.remoteAddress != null);
     this._connection.forwardOut(
       socket.remoteAddress,
       socket.remotePort,
@@ -362,9 +343,11 @@ export class SshHandshake {
   }
 
   _updateServerInfo(serverInfo: {}) {
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     invariant(typeof serverInfo.port === 'number');
-    this._remotePort = serverInfo.port;
+    this._remotePort = serverInfo.port || 0;
     this._remoteHost =
+      // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
       typeof serverInfo.hostname === 'string'
         ? serverInfo.hostname
         : this._config.host;
@@ -372,6 +355,7 @@ export class SshHandshake {
     // Because the value for the Initial Directory that the user supplied may have
     // been a symlink that was resolved by the server, overwrite the original `cwd`
     // value with the resolved value.
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     invariant(typeof serverInfo.workspace === 'string');
     this._config.cwd = serverInfo.workspace;
 
@@ -380,12 +364,15 @@ export class SshHandshake {
     // Do not throw when any of them (`ca`, `cert`, or `key`) are undefined because that will be the
     // case when the server is started in "insecure" mode. See `::_isSecure`, which returns the
     // security of this connection after the server is started.
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     if (typeof serverInfo.ca === 'string') {
       this._certificateAuthorityCertificate = new Buffer(serverInfo.ca);
     }
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     if (typeof serverInfo.cert === 'string') {
       this._clientCertificate = new Buffer(serverInfo.cert);
     }
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
     if (typeof serverInfo.key === 'string') {
       this._clientKey = new Buffer(serverInfo.key);
     }
@@ -400,114 +387,37 @@ export class SshHandshake {
   }
 
   _startRemoteServer(): Promise<boolean> {
-    let sftpTimer = null;
     return new Promise((resolve, reject) => {
-      let stdOut = '';
+      const command = this._config.remoteServerCommand;
       const remoteTempFile = `/tmp/nuclide-sshhandshake-${Math.random()}`;
-      // TODO: escape any single quotes
-      // TODO: the timeout value shall be configurable using .json file too (t6904691).
-      const cmd =
-        `${this._config.remoteServerCommand} --workspace=${this._config.cwd}` +
-        ` --common-name=${this._config
-          .host} --json-output-file=${remoteTempFile} -t 60`;
+      const flags = [
+        `--workspace=${this._config.cwd}`,
+        `--common-name=${this._config.host}`,
+        `--json-output-file=${remoteTempFile}`,
+        '--timeout=60',
+      ];
+      // Append the client version if not already provided.
+      if (!command.includes('--version=')) {
+        flags.push(`--version=${getNuclideVersion()}`);
+      }
+      // We'll take the user-provided command literally.
+      const cmd = command + ' ' + shellQuote(flags);
 
       this._connection.exec(cmd, {pty: {term: 'nuclide'}}, (err, stream) => {
         if (err) {
           this._onSshConnectionError(err);
           return resolve(false);
         }
+
+        let stdOut = '';
+        // $FlowIssue - Problem with function overloads. Maybe related to #4616, #4683, #4685, and #4669
         stream
-          .on('close', async (code, signal) => {
-            // Note: this code is probably the code from the child shell if one
-            // is in use.
-            if (code === 0) {
-              // Some servers have max channels set to 1, so add a delay to ensure
-              // the old channel has been cleaned up on the server.
-              // TODO(hansonw): Implement a proper retry mechanism.
-              // But first, we have to clean up this callback hell.
-              await sleep(100);
-              sftpTimer = setTimeout(() => {
-                this._error(
-                  'Failed to start sftp connection',
-                  SshHandshake.ErrorType.SFTP_TIMEOUT,
-                  new Error(),
-                );
-                sftpTimer = null;
-                this._connection.end();
-                resolve(false);
-              }, SFTP_TIMEOUT_MS);
-              this._connection.sftp(async (error, sftp) => {
-                if (sftpTimer != null) {
-                  // Clear the sftp timer once we get a response.
-                  clearTimeout(sftpTimer);
-                } else {
-                  // If the timer already triggered, we timed out. Just exit.
-                  return;
-                }
-                if (error) {
-                  this._error(
-                    'Failed to start sftp connection',
-                    SshHandshake.ErrorType.SERVER_START_FAILED,
-                    error,
-                  );
-                  return resolve(false);
-                }
-                const localTempFile = await fsPromise.tempfile();
-                sftp.fastGet(remoteTempFile, localTempFile, async sftpError => {
-                  sftp.end();
-                  if (sftpError) {
-                    this._error(
-                      'Failed to transfer server start information',
-                      SshHandshake.ErrorType.SERVER_START_FAILED,
-                      sftpError,
-                    );
-                    return resolve(false);
-                  }
-
-                  let serverInfo: any = null;
-                  const serverInfoJson = await fsPromise.readFile(
-                    localTempFile,
-                    'utf8',
-                  );
-                  try {
-                    serverInfo = JSON.parse(serverInfoJson);
-                  } catch (e) {
-                    this._error(
-                      'Malformed server start information',
-                      SshHandshake.ErrorType.SERVER_START_FAILED,
-                      new Error(serverInfoJson),
-                    );
-                    return resolve(false);
-                  }
-
-                  if (!serverInfo.success) {
-                    this._error(
-                      'Remote server failed to start',
-                      SshHandshake.ErrorType.SERVER_START_FAILED,
-                      new Error(serverInfo.logs),
-                    );
-                    return resolve(false);
-                  }
-
-                  if (!serverInfo.workspace) {
-                    this._error(
-                      'Could not find directory',
-                      SshHandshake.ErrorType.DIRECTORY_NOT_FOUND,
-                      new Error(serverInfo.logs),
-                    );
-                    return resolve(false);
-                  }
-
-                  // Update server info that is needed for setting up client.
-                  this._updateServerInfo(serverInfo);
-                  return resolve(true);
-                });
-              });
-            } else {
-              if (this._cancelled) {
+          .on('close', async (exitCode, signal) => {
+            if (exitCode !== 0) {
+              if (this._canceled) {
                 this._error(
                   'Cancelled by user',
-                  SshHandshake.ErrorType.USER_CANCELLED,
+                  SshHandshake.ErrorType.USER_CANCELED,
                   new Error(stdOut),
                 );
               } else {
@@ -519,6 +429,83 @@ export class SshHandshake {
               }
               return resolve(false);
             }
+
+            // Some servers have max channels set to 1, so add a delay to ensure
+            // the old channel has been cleaned up on the server.
+            // TODO(hansonw): Implement a proper retry mechanism.
+            // But first, we have to clean up this callback hell.
+            await sleep(100);
+            const result = await readRemoteFile(
+              this._connection,
+              SFTP_TIMEOUT_MS,
+              remoteTempFile,
+            );
+
+            switch (result.type) {
+              case 'success': {
+                let serverInfo: any = null;
+                try {
+                  serverInfo = JSON.parse(result.data.toString());
+                } catch (e) {
+                  this._error(
+                    'Malformed server start information',
+                    SshHandshake.ErrorType.SERVER_START_FAILED,
+                    new Error(result.data),
+                  );
+                  return resolve(false);
+                }
+
+                if (!serverInfo.success) {
+                  this._error(
+                    'Remote server failed to start',
+                    SshHandshake.ErrorType.SERVER_START_FAILED,
+                    new Error(serverInfo.logs),
+                  );
+                  return resolve(false);
+                }
+
+                if (!serverInfo.workspace) {
+                  this._error(
+                    'Could not find directory',
+                    SshHandshake.ErrorType.DIRECTORY_NOT_FOUND,
+                    new Error(serverInfo.logs),
+                  );
+                  return resolve(false);
+                }
+
+                // Update server info that is needed for setting up client.
+                this._updateServerInfo(serverInfo);
+                return resolve(true);
+              }
+
+              case 'timeout':
+                this._error(
+                  'Failed to start sftp connection',
+                  SshHandshake.ErrorType.SFTP_TIMEOUT,
+                  new Error(),
+                );
+                this._connection.end();
+                return resolve(false);
+
+              case 'fail-to-start-connection':
+                this._error(
+                  'Failed to start sftp connection',
+                  SshHandshake.ErrorType.SERVER_START_FAILED,
+                  result.error,
+                );
+                return resolve(false);
+
+              case 'fail-to-transfer-data':
+                this._error(
+                  'Failed to transfer server start information',
+                  SshHandshake.ErrorType.SERVER_START_FAILED,
+                  result.error,
+                );
+                return resolve(false);
+
+              default:
+                (result: empty);
+            }
           })
           .on('data', data => {
             stdOut += data;
@@ -528,7 +515,7 @@ export class SshHandshake {
   }
 
   async _onConnect(): Promise<void> {
-    if (!await this._startRemoteServer()) {
+    if (!(await this._startRemoteServer())) {
       return;
     }
 
@@ -539,7 +526,9 @@ export class SshHandshake {
       } catch (e) {
         this._error(
           'Connection check failed',
-          SshHandshake.ErrorType.SERVER_CANNOT_CONNECT,
+          e.code === 'CERT_NOT_YET_VALID'
+            ? SshHandshake.ErrorType.CERT_NOT_YET_VALID
+            : SshHandshake.ErrorType.SERVER_CANNOT_CONNECT,
           e,
         );
       }
@@ -556,24 +545,22 @@ export class SshHandshake {
     if (this._isSecure()) {
       // flowlint-next-line sketchy-null-string:off
       invariant(this._remoteHost);
-      // flowlint-next-line sketchy-null-number:off
-      invariant(this._remotePort);
       connect({
         host: this._remoteHost,
         port: this._remotePort,
         family: this._config.family,
-        cwd: this._config.cwd,
+        path: this._config.cwd,
         certificateAuthorityCertificate: this._certificateAuthorityCertificate,
         clientCertificate: this._clientCertificate,
         clientKey: this._clientKey,
         displayTitle: this._config.displayTitle,
       });
     } else {
-      /* $FlowIssue t9212378 */
       this._forwardingServer = net
         .createServer(sock => {
           this._forwardSocket(sock);
         })
+        // $FlowFixMe
         .listen(0, 'localhost', () => {
           const localPort = this._getLocalPort();
           // flowlint-next-line sketchy-null-number:off
@@ -582,7 +569,7 @@ export class SshHandshake {
             host: 'localhost',
             port: localPort,
             family: this._config.family,
-            cwd: this._config.cwd,
+            path: this._config.cwd,
             displayTitle: this._config.displayTitle,
           });
         });
@@ -644,8 +631,9 @@ export function decorateSshConnectionDelegateWithTracking(
       error: Error,
       config: SshConnectionConfiguration,
     ) => {
-      invariant(connectionTracker);
-      connectionTracker.trackFailure(errorType, error);
+      if (connectionTracker != null) {
+        connectionTracker.trackFailure(errorType, error);
+      }
       delegate.onError(errorType, error, config);
     },
   };

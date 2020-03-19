@@ -103,7 +103,7 @@ It's easy to create your own commands with keybindings (you can also configure k
 
 >You have to reload Atom to test your changes.
 
-## Can the Nuclide Server use ports other than 9090-9093?
+## Can the Nuclide Server use ports other than 9091-9093?
 
 With Nuclide's default server configuration you may run into port number conflicts on your remote server.  To specify a specific port for the server to use, you can provide the `--port` option along with the remote server command.
 

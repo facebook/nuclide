@@ -1,0 +1,11 @@
+import type C from 'C';
+import type F from 'F';
+import type G from 'G';
+import type I from 'I';
+import type J from 'J';
+import type N from 'N';
+
+const Bar = require('Bar');
+
+class Foo<A, B> extends Bar<A, B, C.D.E<F, G.H<I>, J.K>> {}
+function baz<L, M>(x: L, y: M, z: N) {}

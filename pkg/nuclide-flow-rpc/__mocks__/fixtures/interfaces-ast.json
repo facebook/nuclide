@@ -1,0 +1,81 @@
+{
+    "errors": [],
+    "tokens": [],
+    "type": "Program",
+    "loc": {
+        "source": "types.js",
+        "start": {
+            "line": 43,
+            "column": 0
+        },
+        "end": {
+            "line": 490,
+            "column": 2
+        }
+    },
+    "range": [
+        1707,
+        14050
+    ],
+    "body": [
+        {
+            "type": "ExportNamedDeclaration",
+            "loc": {
+                "source": "types.js",
+                "start": {
+                    "line": 51,
+                    "column": 0
+                },
+                "end": {
+                    "line": 61,
+                    "column": 1
+                }
+            },
+            "range": [
+                1916,
+                2185
+            ],
+            "declaration": {
+                "type": "InterfaceDeclaration",
+                "loc": {
+                    "source": "types.js",
+                    "start": {
+                        "line": 51,
+                        "column": 7
+                    },
+                    "end": {
+                        "line": 61,
+                        "column": 1
+                    }
+                },
+                "range": [
+                    1923,
+                    2185
+                ],
+                "id": {
+                    "type": "Identifier",
+                    "loc": {
+                        "source": "types.js",
+                        "start": {
+                            "line": 51,
+                            "column": 17
+                        },
+                        "end": {
+                            "line": 51,
+                            "column": 24
+                        }
+                    },
+                    "range": [
+                        1933,
+                        1940
+                    ],
+                    "name": "ISource",
+                    "typeAnnotation": null,
+                    "optional": false
+                },
+                "typeParameters": null,
+                "body": {}
+              }
+            }
+          ]
+}

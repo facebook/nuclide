@@ -1,12 +1,10 @@
 {
   "name": "nuclide-ui",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./main.js",
   "version": "0.0.0",
   "description": "Nuclide user interface components",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Core UI",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm"
+    "packageType": "AtomPackage"
   }
 }

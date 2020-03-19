@@ -1,0 +1,9 @@
+
+
+const {aB, aA, C, B} = require('Z');
+const {s, Q, P} = require('X');
+
+aA(aB(B, C, D))
+s(Q, P)
+
+// @nolint

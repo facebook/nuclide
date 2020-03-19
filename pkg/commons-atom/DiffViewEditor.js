@@ -12,7 +12,7 @@
 import type {LineMapper, OffsetMap} from '../commons-node/computeDiff';
 
 import {Range} from 'atom';
-import React from 'react';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import {concatIterators} from 'nuclide-commons/collection';
 import {syncBlockDecorations} from './block-decorations';
@@ -140,7 +140,7 @@ export default class DiffViewEditor {
       buffer.setText(contents);
     }
     const grammar = atom.grammars.selectGrammar(filePath, contents);
-    this._editor.setGrammar(grammar);
+    atom.grammars.assignLanguageMode(buffer, grammar.scopeName);
   }
 
   getModel(): Object {
@@ -174,7 +174,7 @@ export default class DiffViewEditor {
   /**
    * @param lineNumber A buffer line number to be highlighted.
    * @param type The type of highlight to be applied to the line.
-  *    Could be a value of: ['insert', 'delete'].
+   *    Could be a value of: ['insert', 'delete'].
    */
   _createLineMarker(lineNumber: number, type: string): atom$Marker {
     const range = new Range([lineNumber, 0], [lineNumber + 1, 0]);

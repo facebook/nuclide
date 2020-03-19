@@ -8,22 +8,27 @@
  * @flow
  * @format
  */
-import type {OpenTunnel, Tunnel} from '../types';
+import type {ResolvedTunnel} from 'nuclide-adb/lib/types';
+import type {ActiveTunnel} from '../types';
 
+import nuclideUri from 'nuclide-commons/nuclideUri';
 import TunnelCloseButton from './TunnelCloseButton';
 import {Table} from 'nuclide-commons-ui/Table';
-import React from 'react';
+import * as React from 'react';
+import {List} from 'immutable';
 
 type Props = {
-  tunnels: Array<[Tunnel, OpenTunnel]>,
-  closeTunnel: (tunnel: Tunnel) => void,
+  tunnels: List<ActiveTunnel>,
+  closeTunnel: (tunnel: ResolvedTunnel) => void,
 };
 
-export class TunnelsPanelTable extends React.Component {
-  props: Props;
-
-  render(): React.Element<any> {
+export class TunnelsPanelTable extends React.Component<Props> {
+  render(): React.Node {
     const columns = [
+      {
+        title: 'Description',
+        key: 'description',
+      },
       {
         title: 'From',
         key: 'from',
@@ -40,36 +45,41 @@ export class TunnelsPanelTable extends React.Component {
         title: '',
         key: 'close',
         width: 0,
+        minWidth: 35,
       },
     ];
-    const rows = this.props.tunnels.map(([tunnel, openTunnel]) => {
-      let {host} = tunnel.from;
-      const ignoredEnding = '.facebook.com';
-      if (host.endsWith(ignoredEnding)) {
-        host = host.slice(0, host.length - ignoredEnding.length);
-      }
-      return {
-        className: 'nuclide-ssh-tunnels-table-row',
-        data: {
-          from: `${host}:${tunnel.from.port}`,
-          to: `${tunnel.to.host}:${tunnel.to.port}`,
-          status: openTunnel.state,
-          close: (
-            <TunnelCloseButton
-              tunnel={tunnel}
-              closeTunnel={this.props.closeTunnel}
-            />
-          ),
-        },
-      };
-    });
+    const rows = this.props.tunnels
+      .map(active => {
+        const {from, to} = active.tunnel;
+        const descriptions = new Set(
+          active.subscriptions.map(s => s.description),
+        );
+        return {
+          className: 'nuclide-ssh-tunnels-table-row',
+          data: {
+            description: Array.from(descriptions).join(', '),
+            from: `${nuclideUri.nuclideUriToDisplayHostname(from.host)}:${
+              from.port
+            }`,
+            to: `${nuclideUri.nuclideUriToDisplayHostname(to.host)}:${to.port}`,
+            status: active.state,
+            close: (
+              <TunnelCloseButton
+                tunnel={active.tunnel}
+                closeTunnel={this.props.closeTunnel}
+              />
+            ),
+          },
+        };
+      })
+      .toArray();
     return (
       <Table
-        emptyComponent={() =>
+        emptyComponent={() => (
           <div className="nuclide-ssh-tunnels-table-empty-message">
-            No SSH tunnels are open.
-          </div>}
-        className="nuclide-ssh-tunnels-table"
+            No tunnels are open.
+          </div>
+        )}
         rows={rows}
         columns={columns}
         selectable={true}

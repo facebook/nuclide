@@ -1088,6 +1088,8 @@ CursorKind.CUDAGLOBAL_ATTR = CursorKind(414)
 CursorKind.CUDAHOST_ATTR = CursorKind(415)
 CursorKind.CUDASHARED_ATTR = CursorKind(416)
 
+CursorKind.VISIBILITY_ATTR = CursorKind(417)
+
 ###
 # Preprocessing
 CursorKind.PREPROCESSING_DIRECTIVE = CursorKind(500)
@@ -1100,6 +1102,12 @@ CursorKind.INCLUSION_DIRECTIVE = CursorKind(503)
 
 # A module import declaration.
 CursorKind.MODULE_IMPORT_DECL = CursorKind(600)
+# A type alias template declaration
+CursorKind.TYPE_ALIAS_TEMPLATE_DECL = CursorKind(601)
+# A static_assert or _Static_assert node
+CursorKind.STATIC_ASSERT = CursorKind(602)
+# A friend declaration
+CursorKind.FRIEND_DECL = CursorKind(603)
 
 ### Cursors ###
 

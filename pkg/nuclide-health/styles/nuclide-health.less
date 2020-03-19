@@ -26,19 +26,3 @@
 .nuclide-health-handle-updated {
   color: @text-color-warning;
 }
-
-.nuclide-health-jewel.tool-bar-btn {
-  &::after {
-    background: fade(@base-background-color, 50%);
-    content: attr(data-jewel-value);
-    font-size: 0.8em;
-    line-height: 1;
-    margin-top: 19px;
-    padding: 1px;
-    position: absolute;
-    right: 7px;
-  }
-  &.updated::after {
-    color: @text-color-warning;
-  }
-}

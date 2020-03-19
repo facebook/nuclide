@@ -1,0 +1,17 @@
+{
+  "name": "nuclide-language-status",
+  "main": "./lib/main.js",
+  "version": "0.0.0",
+  "description": "Provides a user interface for viewing the status and availability of language servers",
+  "author": "NEEDS OWNER",
+  "nuclide": {
+    "packageType": "AtomPackage"
+  },
+  "consumedServices": {
+    "nuclide-language-status": {
+      "versions": {
+        "0.1.0": "consumeLanguageStatusProvider"
+      }
+    }
+  }
+}

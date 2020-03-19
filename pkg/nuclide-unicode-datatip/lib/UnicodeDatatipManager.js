@@ -11,15 +11,15 @@
 
 import type {DatatipProvider, DatatipService} from 'atom-ide-ui';
 
-import {CompositeDisposable} from 'atom';
+import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 
 import unescapedUnicodeDatatip from './UnescapedUnicodeDatatip';
 
 export default class UnicodeDatatipManager {
-  _disposables: CompositeDisposable;
+  _disposables: UniversalDisposable;
 
   constructor() {
-    this._disposables = new CompositeDisposable();
+    this._disposables = new UniversalDisposable();
   }
 
   dispose(): void {

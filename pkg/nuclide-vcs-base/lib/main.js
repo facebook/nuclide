@@ -14,25 +14,26 @@ import type {IconName} from 'nuclide-commons-ui/Icon';
 import type {
   MergeConflictStatusValue,
   StatusCodeNumberValue,
-} from '../../nuclide-hg-rpc/lib/HgService';
+} from '../../nuclide-hg-rpc/lib/types';
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
 
-import {arrayCompact, mapFilter} from 'nuclide-commons/collection';
+import {arrayCompact} from 'nuclide-commons/collection';
 import {runCommand} from 'nuclide-commons/process';
 import {diffSets} from 'nuclide-commons/observable';
-import {Directory} from 'atom';
 import {getFileSystemServiceByNuclideUri} from '../../nuclide-remote-connection';
 import {hgConstants} from '../../nuclide-hg-rpc';
 import invariant from 'assert';
 import nuclideUri from 'nuclide-commons/nuclideUri';
 import {Observable} from 'rxjs';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import {track} from '../../nuclide-analytics';
+import {track} from 'nuclide-analytics';
 
 type VcsInfo = {
   vcs: string,
   root: string,
 };
+
+type Repository = atom$Repository | HgRepositoryClient;
 
 const {StatusCodeNumber: HgStatusCodeNumber, MergeConflictStatus} = hgConstants;
 const vcsInfoCache: {[dir: string]: VcsInfo} = {};
@@ -132,11 +133,11 @@ export const FileChangeStatusToIcon: {
 export const FileChangeStatusToTextColor: {
   [key: ?FileChangeStatusValue]: string,
 } = Object.freeze({
-  [FileChangeStatus.ADDED]: 'text-success',
-  [FileChangeStatus.MODIFIED]: 'text-warning',
-  [FileChangeStatus.MISSING]: 'text-error',
-  [FileChangeStatus.REMOVED]: 'text-error',
-  [FileChangeStatus.UNTRACKED]: 'text-error',
+  [FileChangeStatus.ADDED]: 'status-added',
+  [FileChangeStatus.MODIFIED]: 'status-modified',
+  [FileChangeStatus.MISSING]: 'status-renamed',
+  [FileChangeStatus.REMOVED]: 'status-removed',
+  [FileChangeStatus.UNTRACKED]: 'status-ignored',
   [FileChangeStatus.BOTH_CHANGED]: 'text-warning',
   [FileChangeStatus.CHANGE_DELETE]: 'text-warning',
 });
@@ -185,8 +186,12 @@ export function observeStatusChanges(
     .map(() => getDirtyFileChanges(repository));
 }
 
-export function forgetPath(nodePath: ?NuclideUri): Promise<void> {
+export function forgetPath(
+  repository: ?Repository,
+  nodePath: ?NuclideUri,
+): Promise<void> {
   return hgActionToPath(
+    repository,
     nodePath,
     'forget',
     'Forgot',
@@ -199,8 +204,12 @@ export function forgetPath(nodePath: ?NuclideUri): Promise<void> {
   );
 }
 
-export function addPath(nodePath: ?NuclideUri): Promise<void> {
+export function addPath(
+  repository: ?Repository,
+  nodePath: ?NuclideUri,
+): Promise<void> {
   return hgActionToPath(
+    repository,
     nodePath,
     'add',
     'Added',
@@ -214,10 +223,12 @@ export function addPath(nodePath: ?NuclideUri): Promise<void> {
 }
 
 export function revertPath(
+  repository: ?Repository,
   nodePath: ?NuclideUri,
   toRevision?: ?string,
 ): Promise<void> {
   return hgActionToPath(
+    repository,
     nodePath,
     'revert',
     'Reverted',
@@ -231,22 +242,24 @@ export function revertPath(
 }
 
 export function confirmAndRevertPath(
+  repository: ?Repository,
   path: ?NuclideUri,
   toRevision?: ?string,
 ): void {
   const result = atom.confirm({
-    message: `Are you sure you want to revert${path == null
-      ? ''
-      : ` "${path}"`}?`,
+    message: `Are you sure you want to revert${
+      path == null ? '' : ` "${path}"`
+    }?`,
     buttons: ['Revert', 'Cancel'],
   });
   invariant(result === 0 || result === 1);
   if (result === 0) {
-    revertPath(path, toRevision);
+    revertPath(repository, path, toRevision);
   }
 }
 
 async function hgActionToPath(
+  repository: ?Repository,
   nodePath: ?NuclideUri,
   actionName: string,
   actionDoneMessage: string,
@@ -256,7 +269,6 @@ async function hgActionToPath(
     atom.notifications.addError(`Cannot ${actionName} an empty path!`);
     return;
   }
-  const repository = repositoryForPath(nodePath);
   if (repository == null || repository.getType() !== 'hg') {
     atom.notifications.addError(
       `Cannot ${actionName} a non-mercurial repository path`,
@@ -296,9 +308,9 @@ export function getHgRepositoriesStream(): Observable<Set<HgRepositoryClient>> {
 }
 
 export function getHgRepositoryStream(): Observable<HgRepositoryClient> {
-  return diffSets(getHgRepositoriesStream()).flatMap(repoDiff =>
-    Observable.from(repoDiff.added),
-  );
+  return getHgRepositoriesStream()
+    .let(diffSets())
+    .flatMap(repoDiff => Observable.from(repoDiff.added));
 }
 
 /**
@@ -331,53 +343,7 @@ export function repositoryContainsPath(
   repository: atom$Repository,
   filePath: NuclideUri,
 ): boolean {
-  const workingDirectoryPath = repository.getWorkingDirectory();
-  if (pathsAreEqual(workingDirectoryPath, filePath)) {
-    return true;
-  }
-
-  if (repository.getType() === 'git') {
-    const rootGitProjectDirectory = new Directory(workingDirectoryPath);
-    return rootGitProjectDirectory.contains(filePath);
-  } else if (repository.getType() === 'hg') {
-    const hgRepository = ((repository: any): HgRepositoryClient);
-    return hgRepository._workingDirectory.contains(filePath);
-  }
-  throw new Error(
-    'repositoryContainsPath: Received an unrecognized repository type. Expected git or hg.',
-  );
-}
-
-/**
- * @param filePath1 An abolute file path.
- * @param filePath2 An absolute file path.
- * @return Whether the file paths are equal, accounting for trailing slashes.
- */
-function pathsAreEqual(filePath1: string, filePath2: string): boolean {
-  const realPath1 = nuclideUri.resolve(filePath1);
-  const realPath2 = nuclideUri.resolve(filePath2);
-  return realPath1 === realPath2;
-}
-
-export function filterMultiRootFileChanges(
-  unfilteredFileChanges: Map<
-    NuclideUri,
-    Map<NuclideUri, FileChangeStatusValue>,
-  >,
-): Map<NuclideUri, Map<NuclideUri, FileChangeStatusValue>> {
-  const filteredFileChanges = new Map();
-  // Filtering the changes to make sure they only show up under the directory the
-  // file exists under.
-  for (const [root, fileChanges] of unfilteredFileChanges) {
-    const filteredFiles = mapFilter(fileChanges, filePath =>
-      filePath.startsWith(root),
-    );
-    if (filteredFiles.size !== 0) {
-      filteredFileChanges.set(root, filteredFiles);
-    }
-  }
-
-  return filteredFileChanges;
+  return nuclideUri.contains(repository.getWorkingDirectory(), filePath);
 }
 
 export function getMultiRootFileChanges(
@@ -400,13 +366,12 @@ export function getMultiRootFileChanges(
     roots = rootPaths.map(root => nuclideUri.ensureTrailingSeparator(root));
   }
 
-  const sortedFilePaths = Array.from(
-    fileChanges.entries(),
-  ).sort(([filePath1], [filePath2]) =>
-    nuclideUri
-      .basename(filePath1)
-      .toLowerCase()
-      .localeCompare(nuclideUri.basename(filePath2).toLowerCase()),
+  const sortedFilePaths = Array.from(fileChanges.entries()).sort(
+    ([filePath1], [filePath2]) =>
+      nuclideUri
+        .basename(filePath1)
+        .toLowerCase()
+        .localeCompare(nuclideUri.basename(filePath2).toLowerCase()),
   );
 
   const changedRoots = new Map(
@@ -424,8 +389,12 @@ export function getMultiRootFileChanges(
 }
 
 export async function confirmAndDeletePath(
+  repository: ?Repository,
   nuclideFilePath: NuclideUri,
 ): Promise<boolean> {
+  if (repository == null || repository.getType() !== 'hg') {
+    return false;
+  }
   const result = atom.confirm({
     message: 'Are you sure you want to delete the following item?',
     detailedMessage: `You are deleting: \n ${nuclideUri.getPath(
@@ -435,23 +404,19 @@ export async function confirmAndDeletePath(
   });
   invariant(result === 0 || result === 1);
   if (result === 0) {
-    return deleteFile(nuclideFilePath);
+    return deleteFile(((repository: any): HgRepositoryClient), nuclideFilePath);
   }
   return false;
 }
 
-async function deleteFile(nuclideFilePath: string): Promise<boolean> {
+async function deleteFile(
+  repository: HgRepositoryClient,
+  nuclideFilePath: string,
+): Promise<boolean> {
   const fsService = getFileSystemServiceByNuclideUri(nuclideFilePath);
   try {
     await fsService.unlink(nuclideFilePath);
-    const repository = repositoryForPath(nuclideFilePath);
-    if (repository == null || repository.getType() !== 'hg') {
-      return false;
-    }
-    await ((repository: any): HgRepositoryClient).remove(
-      [nuclideFilePath],
-      true,
-    );
+    await repository.remove([nuclideFilePath], true);
   } catch (error) {
     atom.notifications.addError('Failed to delete file', {
       detail: error,

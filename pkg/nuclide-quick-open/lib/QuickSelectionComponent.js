@@ -10,16 +10,18 @@
  */
 
 import type {NuclideUri} from 'nuclide-commons/nuclideUri';
-import type {Tab} from '../../nuclide-ui/Tabs';
+import type {Tab} from 'nuclide-commons-ui/Tabs';
 import type QuickSelectionActions from './QuickSelectionActions';
 
-import type {FileResult} from './types';
+import type {FileResult, ProviderResult} from './types';
 import type SearchResultManager, {ProviderSpec} from './SearchResultManager';
 import type {
-  ProviderResult,
+  ProviderResults,
   GroupedResult,
   GroupedResults,
 } from './searchResultHelpers';
+
+import nullthrows from 'nullthrows';
 
 type ResultContext = {
   nonEmptyResults: GroupedResults,
@@ -28,7 +30,7 @@ type ResultContext = {
   currentService: GroupedResult,
   directoryNames: Array<NuclideUri>,
   currentDirectoryIndex: number,
-  currentDirectory: ProviderResult,
+  currentDirectory: ProviderResults,
 };
 
 export type SelectionIndex = {
@@ -42,13 +44,13 @@ import {AtomInput} from 'nuclide-commons-ui/AtomInput';
 import {Button} from 'nuclide-commons-ui/Button';
 import {Icon} from 'nuclide-commons-ui/Icon';
 import {scrollIntoViewIfNeeded} from 'nuclide-commons-ui/scrollIntoView';
-import Tabs from '../../nuclide-ui/Tabs';
+import Tabs from 'nuclide-commons-ui/Tabs';
 import {Badge, BadgeSizes} from '../../nuclide-ui/Badge';
 import UniversalDisposable from 'nuclide-commons/UniversalDisposable';
 import {observableFromSubscribeFunction} from 'nuclide-commons/event';
-import humanizeKeystroke from '../../commons-node/humanizeKeystroke';
-import {throttle, microtask} from 'nuclide-commons/observable';
-import React from 'react';
+import humanizeKeystroke from 'nuclide-commons/humanizeKeystroke';
+import {fastDebounce, microtask} from 'nuclide-commons/observable';
+import * as React from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import nuclideUri from 'nuclide-commons/nuclideUri';
@@ -77,9 +79,12 @@ type Props = {|
   quickSelectionActions: QuickSelectionActions,
   onCancellation: () => void,
   onSelection: (
-    selections: Array<FileResult>,
+    selections: Array<ProviderResult>,
     providerName: string,
     query: string,
+    // selectionIndex will be null iff for cases where more than one selection
+    // is made at once (i.e. when the user hits "Open All")
+    selectionIndex: ?number,
   ) => void,
   onItemsChanged?: (newItems: GroupedResults) => void,
   onSelectionChanged?: (
@@ -100,10 +105,13 @@ type State = {
   initialQuery: string,
 };
 
-export default class QuickSelectionComponent extends React.Component {
-  props: Props;
-  state: State;
-
+export default class QuickSelectionComponent extends React.PureComponent<
+  Props,
+  State,
+> {
+  _modal: ?HTMLElement;
+  _queryInput: ?AtomInput;
+  _selectionList: ?HTMLElement;
   _subscriptions: UniversalDisposable;
 
   constructor(props: Props) {
@@ -139,7 +147,10 @@ export default class QuickSelectionComponent extends React.Component {
    * Public API
    */
   focus(): void {
-    this._getInputTextEditor().focus();
+    const element = this._getInputTextEditor();
+    if (element != null) {
+      element.focus();
+    }
   }
 
   selectAllText(): void {
@@ -153,7 +164,7 @@ export default class QuickSelectionComponent extends React.Component {
   /**
    * Private API
    */
-  componentWillReceiveProps(nextProps: Props): void {
+  UNSAFE_componentWillReceiveProps(nextProps: Props): void {
     // Prevent clowniness:
     if (this.props.searchResultManager !== nextProps.searchResultManager) {
       throw new Error('quick-open: searchResultManager instance changed.');
@@ -162,7 +173,7 @@ export default class QuickSelectionComponent extends React.Component {
     const nextProviderName = this.props.searchResultManager.getActiveProviderName();
     if (this.state.activeTab.name === nextProviderName) {
       process.nextTick(() => {
-        const query = this.refs.queryInput.getText();
+        const query = nullthrows(this._queryInput).getText();
         this.props.quickSelectionActions.query(query);
       });
     } else {
@@ -170,7 +181,7 @@ export default class QuickSelectionComponent extends React.Component {
         nextProviderName,
       );
       const lastResults = this.props.searchResultManager.getResults(
-        this.refs.queryInput.getText(),
+        nullthrows(this._queryInput).getText(),
         nextProviderName,
       );
       this._getTextEditor().setPlaceholderText(activeProviderSpec.prompt);
@@ -181,7 +192,7 @@ export default class QuickSelectionComponent extends React.Component {
         },
         () => {
           process.nextTick(() => {
-            const query = this.refs.queryInput.getText();
+            const query = nullthrows(this._queryInput).getText();
             this.props.quickSelectionActions.query(query);
           });
           if (this.props.onItemsChanged != null) {
@@ -243,13 +254,12 @@ export default class QuickSelectionComponent extends React.Component {
         this._handleDocumentMouseDown,
       ),
       // The text editor often changes during dispatches, so wait until the next tick.
-      throttle(
-        observableFromSubscribeFunction(cb =>
-          this._getTextEditor().onDidChange(cb),
-        ),
-        microtask,
-        {leading: false},
-      ).subscribe(this._handleTextInputChange),
+      observableFromSubscribeFunction(cb =>
+        nullthrows(this._queryInput).onDidChange(cb),
+      )
+        .startWith(null)
+        .audit(() => microtask)
+        .subscribe(this._handleTextInputChange),
       observableFromSubscribeFunction(cb =>
         this.props.searchResultManager.onProvidersChanged(cb),
       )
@@ -258,7 +268,7 @@ export default class QuickSelectionComponent extends React.Component {
       observableFromSubscribeFunction(cb =>
         this.props.searchResultManager.onResultsChanged(cb),
       )
-        .debounceTime(50)
+        .let(fastDebounce(50))
         // debounceTime seems to have issues canceling scheduled work. So
         // schedule it after we've debounced the events. See
         // https://github.com/ReactiveX/rxjs/pull/2135
@@ -266,8 +276,6 @@ export default class QuickSelectionComponent extends React.Component {
         .subscribe(this._handleResultsChange),
     );
 
-    // TODO: Find a better way to trigger an update.
-    this._getTextEditor().setText(this.refs.queryInput.getText());
     this._getTextEditor().selectAll();
   }
 
@@ -281,7 +289,7 @@ export default class QuickSelectionComponent extends React.Component {
     }
   };
 
-  _handleKeyPress = (e: SyntheticKeyboardEvent): void => {
+  _handleKeyPress = (e: SyntheticKeyboardEvent<>): void => {
     if (e.shiftKey && e.key === 'Enter') {
       if (this.state.activeTab.canOpenAll) {
         this._openAll();
@@ -336,12 +344,12 @@ export default class QuickSelectionComponent extends React.Component {
     // the click was elsewhere on the document and should close the modal.
     // Otherwise, refocus the input box.
     if (
-      event.target !== this.refs.modal &&
-      !this.refs.modal.contains(event.target)
+      event.target !== this._modal &&
+      !nullthrows(this._modal).contains((event.target: any))
     ) {
       this.props.onCancellation();
     } else {
-      process.nextTick(() => this._getInputTextEditor().focus());
+      process.nextTick(() => this.focus());
     }
   };
 
@@ -366,7 +374,7 @@ export default class QuickSelectionComponent extends React.Component {
   _updateResults(): void {
     const activeProviderName = this.props.searchResultManager.getActiveProviderName();
     const updatedResults = this.props.searchResultManager.getResults(
-      this.refs.queryInput.getText(),
+      nullthrows(this._queryInput).getText(),
       activeProviderName,
     );
     const [topProviderName] = Object.keys(updatedResults);
@@ -408,7 +416,12 @@ export default class QuickSelectionComponent extends React.Component {
     } else {
       const providerName = this.props.searchResultManager.getActiveProviderName();
       const query = this._getTextEditor().getText();
-      this.props.onSelection([selectedItem], providerName, query);
+      this.props.onSelection(
+        [selectedItem],
+        providerName,
+        query,
+        this.state.selectedItemIndex,
+      );
     }
   };
 
@@ -556,11 +569,10 @@ export default class QuickSelectionComponent extends React.Component {
 
   // Update the scroll position of the list view to ensure the selected item is visible.
   _updateScrollPosition(): void {
-    if (!(this.refs && this.refs.selectionList)) {
+    if (this._selectionList == null) {
       return;
     }
-    const listNode = ReactDOM.findDOMNode(this.refs.selectionList);
-    // $FlowFixMe
+    const listNode = nullthrows(this._selectionList);
     const selectedNode = listNode.getElementsByClassName('selected')[0];
     // false is passed for @centerIfNeeded parameter, which defaults to true.
     // Passing false causes the minimum necessary scroll to occur, so the selection sticks to the
@@ -600,7 +612,7 @@ export default class QuickSelectionComponent extends React.Component {
     serviceName: string,
     directory: string,
     itemIndex: number,
-  ): ?FileResult {
+  ): ?ProviderResult {
     if (
       itemIndex === -1 ||
       !this.state.resultsByService[serviceName] ||
@@ -617,15 +629,21 @@ export default class QuickSelectionComponent extends React.Component {
   }
 
   _componentForItem(
-    item: any,
+    item: ProviderResult,
     serviceName: string,
     dirName: string,
   ): React.Element<any> {
-    return this.props.searchResultManager.getRendererForProvider(serviceName)(
-      item,
+    if (item.resultType === 'FILE') {
+      (item: FileResult);
+      return this.props.searchResultManager.getRendererForProvider(
+        serviceName,
+        item,
+      )(item, serviceName, dirName);
+    }
+    return this.props.searchResultManager.getRendererForProvider(
       serviceName,
-      dirName,
-    );
+      item,
+    )(item, serviceName, dirName);
   }
 
   _getSelectedIndex(): SelectionIndex {
@@ -658,13 +676,15 @@ export default class QuickSelectionComponent extends React.Component {
     });
   }
 
-  _getInputTextEditor(): atom$TextEditorElement {
-    // $FlowFixMe
-    return ReactDOM.findDOMNode(this.refs.queryInput);
+  _getInputTextEditor(): ?atom$TextEditorElement {
+    if (this._queryInput != null) {
+      return this._queryInput.getTextEditor().getElement();
+    }
+    return null;
   }
 
   _getTextEditor(): TextEditor {
-    return this.refs.queryInput.getTextEditor();
+    return nullthrows(this._queryInput).getTextEditor();
   }
 
   /**
@@ -687,11 +707,7 @@ export default class QuickSelectionComponent extends React.Component {
         ? _findKeybindingForAction(tab.action, workspace)
         : '';
       if (humanizedKeybinding !== '') {
-        keyBinding = (
-          <kbd className="key-binding">
-            {humanizedKeybinding}
-          </kbd>
-        );
+        keyBinding = <kbd className="key-binding">{humanizedKeybinding}</kbd>;
       }
       return {
         name: tab.name,
@@ -718,138 +734,135 @@ export default class QuickSelectionComponent extends React.Component {
     const selections = flattenResults(this.state.resultsByService);
     const providerName = this.props.searchResultManager.getActiveProviderName();
     const query = this._getTextEditor().getText();
-    this.props.onSelection(selections, providerName, query);
+    this.props.onSelection(selections, providerName, query, null);
   }
 
-  render(): React.Element<any> {
+  render(): React.Node {
     let numTotalResultsRendered = 0;
     const isOmniSearchActive =
       this.state.activeTab.name === 'OmniSearchResultProvider';
     let numQueriesOutstanding = 0;
-    const services = Object.keys(
-      this.state.resultsByService,
-    ).map(serviceName => {
-      let numResultsForService = 0;
-      const directories = this.state.resultsByService[serviceName].results;
-      const serviceTitle = this.state.resultsByService[serviceName].title;
-      const totalResults = this.state.resultsByService[serviceName]
-        .totalResults;
-      const directoryNames = Object.keys(directories);
-      const directoriesForService = directoryNames.map(dirName => {
-        const resultsForDirectory = directories[dirName];
-        let message = null;
-        if (resultsForDirectory.loading) {
-          numQueriesOutstanding++;
-          if (!isOmniSearchActive) {
-            numTotalResultsRendered++;
+    const services = Object.keys(this.state.resultsByService).map(
+      serviceName => {
+        let numResultsForService = 0;
+        const directories = this.state.resultsByService[serviceName].results;
+        const serviceTitle = this.state.resultsByService[serviceName].title;
+        const totalResults = this.state.resultsByService[serviceName]
+          .totalResults;
+        const directoryNames = Object.keys(directories);
+        const directoriesForService = directoryNames.map(dirName => {
+          const resultsForDirectory = directories[dirName];
+          let message = null;
+          if (resultsForDirectory.loading) {
+            numQueriesOutstanding++;
+            if (!isOmniSearchActive) {
+              numTotalResultsRendered++;
+              message = (
+                <span>
+                  <span className="loading loading-spinner-tiny inline-block" />
+                  Loading...
+                </span>
+              );
+            }
+          } else if (resultsForDirectory.error && !isOmniSearchActive) {
             message = (
               <span>
-                <span className="loading loading-spinner-tiny inline-block" />
-                Loading...
+                <span className="icon icon-circle-slash" />
+                Error: <pre>{resultsForDirectory.error}</pre>
+              </span>
+            );
+          } else if (
+            resultsForDirectory.results.length === 0 &&
+            !isOmniSearchActive
+          ) {
+            message = (
+              <span>
+                <span className="icon icon-x" />
+                No results
               </span>
             );
           }
-        } else if (resultsForDirectory.error && !isOmniSearchActive) {
-          message = (
-            <span>
-              <span className="icon icon-circle-slash" />
-              Error: <pre>{resultsForDirectory.error}</pre>
-            </span>
+          const itemComponents = resultsForDirectory.results.map(
+            (item, itemIndex) => {
+              numResultsForService++;
+              numTotalResultsRendered++;
+              const isSelected =
+                serviceName === this.state.selectedService &&
+                dirName === this.state.selectedDirectory &&
+                itemIndex === this.state.selectedItemIndex;
+              return (
+                <li
+                  className={classnames({
+                    'quick-open-result-item': true,
+                    'list-item': true,
+                    selected: isSelected,
+                  })}
+                  key={serviceName + dirName + itemIndex}
+                  onMouseDown={this._select}
+                  onMouseMove={this._setSelectedIndex.bind(
+                    this,
+                    serviceName,
+                    dirName,
+                    itemIndex,
+                    /* userInitiated */ true,
+                  )}>
+                  {this._componentForItem(item, serviceName, dirName)}
+                </li>
+              );
+            },
           );
-        } else if (
-          resultsForDirectory.results.length === 0 &&
-          !isOmniSearchActive
-        ) {
-          message = (
-            <span>
-              <span className="icon icon-x" />
-              No results
-            </span>
-          );
-        }
-        const itemComponents = resultsForDirectory.results.map(
-          (item, itemIndex) => {
-            numResultsForService++;
-            numTotalResultsRendered++;
-            const isSelected =
-              serviceName === this.state.selectedService &&
-              dirName === this.state.selectedDirectory &&
-              itemIndex === this.state.selectedItemIndex;
-            return (
-              <li
-                className={classnames({
-                  'quick-open-result-item': true,
-                  'list-item': true,
-                  selected: isSelected,
-                })}
-                key={serviceName + dirName + itemIndex}
-                onMouseDown={this._select}
-                onMouseEnter={this._setSelectedIndex.bind(
-                  this,
-                  serviceName,
-                  dirName,
-                  itemIndex,
-                  /* userInitiated */ true,
-                )}>
-                {this._componentForItem(item, serviceName, dirName)}
-              </li>
+          let directoryLabel = null;
+          // hide folders if only 1 level would be shown, or if no results were found
+          const showDirectories =
+            directoryNames.length > 1 &&
+            (!isOmniSearchActive || resultsForDirectory.results.length > 0);
+          if (showDirectories) {
+            directoryLabel = (
+              <div className="list-item">
+                <span className="icon icon-file-directory">
+                  {nuclideUri.nuclideUriToDisplayString(dirName)}
+                </span>
+              </div>
             );
-          },
-        );
-        let directoryLabel = null;
-        // hide folders if only 1 level would be shown, or if no results were found
-        const showDirectories =
-          directoryNames.length > 1 &&
-          (!isOmniSearchActive || resultsForDirectory.results.length > 0);
-        if (showDirectories) {
-          directoryLabel = (
-            <div className="list-item">
-              <span className="icon icon-file-directory">
-                {nuclideUri.nuclideUriToDisplayString(dirName)}
-              </span>
+          }
+          return (
+            <li
+              className={classnames({'list-nested-item': showDirectories})}
+              key={dirName}>
+              {directoryLabel}
+              {message}
+              <ul className="list-tree">{itemComponents}</ul>
+            </li>
+          );
+        });
+        let serviceLabel = null;
+        if (isOmniSearchActive && numResultsForService > 0) {
+          serviceLabel = (
+            <div
+              className="quick-open-provider-item list-item"
+              onClick={() =>
+                this.props.quickSelectionActions.changeActiveProvider(
+                  serviceName,
+                )
+              }>
+              <Icon icon="gear" children={serviceTitle} />
+              <Badge
+                size={BadgeSizes.small}
+                className="quick-open-provider-count-badge"
+                value={totalResults}
+              />
             </div>
           );
+          return (
+            <li className="list-nested-item" key={serviceName}>
+              {serviceLabel}
+              <ul className="list-tree">{directoriesForService}</ul>
+            </li>
+          );
         }
-        return (
-          <li
-            className={classnames({'list-nested-item': showDirectories})}
-            key={dirName}>
-            {directoryLabel}
-            {message}
-            <ul className="list-tree">
-              {itemComponents}
-            </ul>
-          </li>
-        );
-      });
-      let serviceLabel = null;
-      if (isOmniSearchActive && numResultsForService > 0) {
-        serviceLabel = (
-          <div
-            className="quick-open-provider-item list-item"
-            onClick={() =>
-              this.props.quickSelectionActions.changeActiveProvider(
-                serviceName,
-              )}>
-            <Icon icon="gear" children={serviceTitle} />
-            <Badge
-              size={BadgeSizes.small}
-              className="quick-open-provider-count-badge"
-              value={totalResults}
-            />
-          </div>
-        );
-        return (
-          <li className="list-nested-item" key={serviceName}>
-            {serviceLabel}
-            <ul className="list-tree">
-              {directoriesForService}
-            </ul>
-          </li>
-        );
-      }
-      return directoriesForService;
-    });
+        return directoriesForService;
+      },
+    );
     const hasSearchResult = numTotalResultsRendered > 0;
     let omniSearchStatus = null;
     if (isOmniSearchActive && numQueriesOutstanding > 0) {
@@ -873,12 +886,16 @@ export default class QuickSelectionComponent extends React.Component {
     return (
       <div
         className="select-list omnisearch-modal"
-        ref="modal"
+        ref={el => {
+          this._modal = el;
+        }}
         onKeyPress={this._handleKeyPress}>
         <div className="omnisearch-search-bar">
           <AtomInput
             className="omnisearch-pane"
-            ref="queryInput"
+            ref={input => {
+              this._queryInput = input;
+            }}
             initialValue={this.state.initialQuery}
             placeholderText={this.state.activeTab.prompt}
           />
@@ -892,7 +909,11 @@ export default class QuickSelectionComponent extends React.Component {
         {this._renderTabs()}
         <div className="omnisearch-results">
           <div className="omnisearch-pane">
-            <ul className="list-tree" ref="selectionList">
+            <ul
+              className="list-tree"
+              ref={el => {
+                this._selectionList = el;
+              }}>
               {services}
               {omniSearchStatus}
             </ul>

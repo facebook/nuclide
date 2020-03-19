@@ -10,16 +10,18 @@
  */
 
 import type {TypeHintProvider} from './types';
-import type {Datatip} from 'atom-ide-ui';
+import type {Datatip, MarkedString} from 'atom-ide-ui';
 
-import analytics from 'nuclide-commons-atom/analytics';
-import {arrayRemove} from 'nuclide-commons/collection';
+import ProviderRegistry from 'nuclide-commons-atom/ProviderRegistry';
+import analytics from 'nuclide-commons/analytics';
+import getFragmentGrammar from 'nuclide-commons-atom/getFragmentGrammar';
 import {getLogger} from 'log4js';
+import {asyncFind} from 'nuclide-commons/promise';
 
 const logger = getLogger('nuclide-type-hint');
 
 export default class TypeHintManager {
-  _typeHintProviders: Array<TypeHintProvider>;
+  _providers: ProviderRegistry<TypeHintProvider>;
   /**
    * This helps determine if we should show the type hint when toggling it via
    * command. The toggle command first negates this, and then if this is true
@@ -28,13 +30,29 @@ export default class TypeHintManager {
   _typeHintToggle: boolean;
 
   constructor() {
-    this._typeHintProviders = [];
+    this._providers = new ProviderRegistry();
   }
 
   async datatip(editor: TextEditor, position: atom$Point): Promise<?Datatip> {
     const grammar = editor.getGrammar();
-    const {scopeName} = grammar;
-    const [provider] = this._getMatchingProvidersForScopeName(scopeName);
+    const matchingProviders = [
+      ...this._providers.getAllProvidersForEditor(editor),
+    ];
+
+    return asyncFind(
+      matchingProviders.map(provider =>
+        this._getDatatipFromProvider(editor, position, grammar, provider),
+      ),
+      x => x,
+    );
+  }
+
+  async _getDatatipFromProvider(
+    editor: TextEditor,
+    position: atom$Point,
+    grammar: atom$Grammar,
+    provider: TypeHintProvider,
+  ): Promise<?Datatip> {
     if (provider == null) {
       return null;
     }
@@ -48,43 +66,47 @@ export default class TypeHintManager {
     const typeHint = await analytics.trackTiming(name + '.typeHint', () =>
       provider.typeHint(editor, position),
     );
-    // flowlint-next-line sketchy-null-mixed:off
-    if (!typeHint || this._marker) {
+    // $FlowFixMe(>=0.68.0) Flow suppress (T27187857)
+    if (!typeHint || this._marker || !typeHint.hint.length === 0) {
       return;
     }
     const {hint, range} = typeHint;
+    const {scopeName} = grammar;
     // We track the timing above, but we still want to know the number of popups that are shown.
     analytics.track('type-hint-popup', {
       scope: scopeName,
       message: hint,
     });
+
+    const markedStrings: Array<MarkedString> = hint
+      .filter(h => {
+        // Ignore all results of length 0. Maybe the next provider will do better?
+        return h.value.length > 0;
+      })
+      .map(h => {
+        // Flow doesn't like it when I don't specify these as literals.
+        if (h.type === 'snippet') {
+          return {
+            type: 'snippet',
+            value: h.value,
+            grammar: getFragmentGrammar(grammar),
+          };
+        } else {
+          return {type: 'markdown', value: h.value};
+        }
+      });
+
+    if (markedStrings.length === 0) {
+      return null;
+    }
+
     return {
-      markedStrings: [{type: 'snippet', value: hint, grammar}],
+      markedStrings,
       range,
     };
   }
 
-  _getMatchingProvidersForScopeName(
-    scopeName: string,
-  ): Array<TypeHintProvider> {
-    return this._typeHintProviders
-      .filter((provider: TypeHintProvider) => {
-        const providerGrammars = provider.selector.split(/, ?/);
-        return (
-          provider.inclusionPriority > 0 &&
-          providerGrammars.indexOf(scopeName) !== -1
-        );
-      })
-      .sort((providerA: TypeHintProvider, providerB: TypeHintProvider) => {
-        return providerA.inclusionPriority - providerB.inclusionPriority;
-      });
-  }
-
-  addProvider(provider: TypeHintProvider) {
-    this._typeHintProviders.push(provider);
-  }
-
-  removeProvider(provider: TypeHintProvider): void {
-    arrayRemove(this._typeHintProviders, provider);
+  addProvider(provider: TypeHintProvider): IDisposable {
+    return this._providers.addProvider(provider);
   }
 }

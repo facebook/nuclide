@@ -6,13 +6,25 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
-import {Subject} from 'rxjs';
 import type {Observable} from 'rxjs';
+
+import {getLogger} from 'log4js';
+import {Subject} from 'rxjs';
 import invariant from 'assert';
+
+export type GoToLocationOptions = {|
+  line?: number,
+  column?: number,
+  center?: boolean,
+  activateItem?: boolean,
+  activatePane?: boolean,
+  pending?: boolean,
+  moveCursor?: boolean,
+|};
 
 /**
  * Opens the given file.
@@ -40,20 +52,31 @@ import invariant from 'assert';
  */
 export async function goToLocation(
   file: string,
-  line?: number,
-  column?: number,
-  center?: boolean = true,
+  options?: ?GoToLocationOptions,
 ): Promise<atom$TextEditor> {
+  const center = options?.center ?? true;
+  const moveCursor = options?.moveCursor ?? true;
+  const activatePane = options?.activatePane ?? true;
+  const activateItem = options?.activateItem;
+  const line = options?.line;
+  const column = options?.column;
+  const pending = options?.pending;
+
   // Prefer going to the current editor rather than the leftmost editor.
   const currentEditor = atom.workspace.getActiveTextEditor();
   if (currentEditor != null && currentEditor.getPath() === file) {
+    const paneContainer = atom.workspace.paneContainerForItem(currentEditor);
+    invariant(paneContainer != null);
+    if (activatePane) {
+      paneContainer.activate();
+    }
     if (line != null) {
-      goToLocationInEditor(
-        currentEditor,
+      goToLocationInEditor(currentEditor, {
         line,
-        column == null ? 0 : column,
+        column: column == null ? 0 : column,
         center,
-      );
+        moveCursor,
+      });
     } else {
       invariant(column == null, 'goToLocation: Cannot specify just column');
     }
@@ -65,7 +88,18 @@ export async function goToLocation(
       initialLine: line,
       initialColumn: column,
       searchAllPanes: true,
+      activatePane,
+      activateItem,
+      pending,
     });
+    // TODO(T28305560) Investigate offenders for this error
+    if (editor == null) {
+      const tmp = {};
+      Error.captureStackTrace(tmp);
+      const error = Error(`atom.workspace.open returned null on ${file}`);
+      getLogger('goToLocation').error(error);
+      throw error;
+    }
 
     if (center && line != null) {
       editor.scrollToBufferPosition([line, column], {center: true});
@@ -76,16 +110,27 @@ export async function goToLocation(
 
 const goToLocationSubject = new Subject();
 
+type GotoLocationInEditorOptions = {|
+  line: number,
+  column: number,
+  center?: boolean,
+  moveCursor?: boolean,
+|};
+
 // Scrolls to the given line/column at the given editor
 // broadcasts the editor instance on an observable (subject) available
 // through the getGoToLocation
 export function goToLocationInEditor(
   editor: atom$TextEditor,
-  line: number,
-  column: number,
-  center: boolean = true,
+  options: GotoLocationInEditorOptions,
 ): void {
-  editor.setCursorBufferPosition([line, column]);
+  const center = options.center == null ? true : options.center;
+  const moveCursor = options.moveCursor == null ? true : options.moveCursor;
+  const {line, column} = options;
+
+  if (moveCursor) {
+    editor.setCursorBufferPosition([line, column]);
+  }
   if (center) {
     editor.scrollToBufferPosition([line, column], {center: true});
   }

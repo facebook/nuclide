@@ -1,0 +1,32 @@
+@import "ui-variables";
+
+/**
+ * Crazy hack to make the highlight row be under the second line instead of
+ * the first. We use negative margin in order to shift the element in the flow
+ * by one row and use position: relative and negative top to restore it back
+ * when it it displayed.
+ */
+
+ @height: 25px;
+ // One: @ui-line-height
+ // Atom: @component-line-height
+
+.nuclide-file-family-quick-open-provider-file-label-header {
+  text-transform: capitalize;
+  margin-top: @height;
+  margin-bottom: -@height;
+  position: relative;
+  top: -@height;
+}
+
+.nuclide-file-family-quick-open-provider-result {
+  color: @text-color;
+}
+
+.nuclide-file-family-quick-open-provider-create-file-container {
+  float: right;
+}
+
+.nuclide-file-family-quick-open-provider-file-path {
+  margin-left: 1em;
+}

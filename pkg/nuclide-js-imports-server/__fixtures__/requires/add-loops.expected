@@ -1,0 +1,15 @@
+const eight = require('eight');
+const five = require('five');
+const four = require('four');
+const nine = require('nine');
+const one = require('one');
+const seven = require('seven');
+const six = require('six');
+const three = require('three');
+const two = require('two');
+
+for (one in two) {}
+for (three of four) {}
+while (five) {}
+for (six; seven; eight) {}
+do {} while (nine);

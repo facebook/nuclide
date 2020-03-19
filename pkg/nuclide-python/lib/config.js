@@ -27,14 +27,14 @@ export function getShowGlobalVariables(): boolean {
   return (featureConfig.get('nuclide-python.showGlobalVariables'): any);
 }
 
+export function getShowSignatureHelp(): boolean {
+  return Boolean(featureConfig.get('nuclide-python.showSignatureHelp'));
+}
+
 export function getEnableLinting(): boolean {
   return (featureConfig.get('nuclide-python.enableLinting'): any);
 }
 
 export function getLintExtensionBlacklist(): Array<string> {
   return (featureConfig.get('nuclide-python.lintExtensionBlacklist'): any);
-}
-
-export function getLintOnFly(): boolean {
-  return (featureConfig.get('nuclide-python.lintOnFly'): any);
 }

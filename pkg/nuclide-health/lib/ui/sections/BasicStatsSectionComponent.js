@@ -11,29 +11,22 @@
 
 import type {HandlesByType} from '../../types';
 
-import React from 'react';
+import * as React from 'react';
 
 type Props = {
-  toolbarJewel: string,
-  updateToolbarJewel: (value: string) => void,
   cpuPercentage: number,
   memory: number,
   heapPercentage: number,
   activeHandles: number,
   activeRequests: number,
   activeHandlesByType: HandlesByType,
+  attachedDomNodes: ?number,
+  domNodes: ?number,
+  domListeners: ?number,
 };
 
-import {Button, ButtonSizes} from 'nuclide-commons-ui/Button';
-
-export default class BasicStatsSectionComponent extends React.Component {
-  props: Props;
-
-  updateToolbarJewel(value: string): void {
-    this.props.updateToolbarJewel(value);
-  }
-
-  render(): React.Element<any> {
+export default class BasicStatsSectionComponent extends React.Component<Props> {
+  render(): React.Node {
     const stats = [
       {
         name: 'CPU',
@@ -59,9 +52,31 @@ export default class BasicStatsSectionComponent extends React.Component {
         name: 'Event loop',
         value: `${this.props.activeRequests}`,
       },
+      {
+        name: 'Attached DOM Nodes',
+        value: `${
+          this.props.attachedDomNodes != null
+            ? this.props.attachedDomNodes
+            : 'N/A - are your devtools open?'
+        }`,
+      },
+      {
+        name: 'Retained DOM Nodes',
+        value: `${
+          this.props.domNodes != null
+            ? this.props.domNodes
+            : 'N/A - are your devtools open?'
+        }`,
+      },
+      {
+        name: 'DOM Listeners',
+        value: `${
+          this.props.domListeners != null
+            ? this.props.domListeners
+            : 'N/A - are your devtools open?'
+        }`,
+      },
     ];
-
-    const updateToolbarJewel = this.updateToolbarJewel;
     return (
       <table className="table">
         <thead>
@@ -76,28 +91,10 @@ export default class BasicStatsSectionComponent extends React.Component {
         <tbody>
           {stats.map((stat, s) => {
             const props: Object = {};
-            let jewelLabel = 'Show';
-            let jewelValue = stat.name;
-            if (this.props.toolbarJewel === stat.name) {
-              props.className = 'selected';
-              jewelLabel = 'Hide';
-              jewelValue = 'None';
-            }
             return (
               <tr {...props} key={s}>
-                <th>
-                  {stat.name}
-                </th>
-                <td>
-                  {stat.value}
-                </td>
-                <td className="text-right">
-                  <Button
-                    size={ButtonSizes.EXTRA_SMALL}
-                    onClick={updateToolbarJewel.bind(this, jewelValue)}>
-                    {jewelLabel}
-                  </Button>
-                </td>
+                <th>{stat.name}</th>
+                <td>{stat.value}</td>
               </tr>
             );
           })}

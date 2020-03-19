@@ -1,0 +1,11 @@
+// fancy B
+const B = require('B');
+
+// something else
+import type {Z} from 'Z';
+
+
+// huge A
+const A = require('A');
+
+const x: Z = A + B;

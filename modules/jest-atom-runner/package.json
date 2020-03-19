@@ -1,0 +1,27 @@
+{
+  "name": "jest-atom-runner",
+  "version": "0.7.3-dev",
+  "description": "Jest runner that spawns atom/electron workers instead of node",
+  "author": "dabramov",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/jest-atom-runner",
+  "private": true,
+  "devDependencies": {
+    "babel-cli": "6.26.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "6.26.0",
+    "babel-preset-flow": "6.23.0",
+    "jest-haste-map": "23.5.0",
+    "jest-message-util": "23.4.0",
+    "jest-mock": "23.2.0",
+    "jest-runner": "23.5.0",
+    "jest-runtime": "23.5.0",
+    "mkdirp": "0.5.1",
+    "node-ipc": "9.1.1",
+    "nuclide-commons": "0.7.3-dev"
+  },
+  "scripts": {
+    "watch": "babel src --out-dir build --watch",
+    "build": "babel src --out-dir build"
+  }
+}

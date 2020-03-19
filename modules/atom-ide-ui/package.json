@@ -1,13 +1,13 @@
 {
   "name": "atom-ide-ui",
-  "version": "0.1.11",
+  "version": "0.7.3-dev",
   "description": "A suite of language service UIs for Atom.",
+  "author": "NEEDS OWNER",
   "license": "BSD-3-Clause",
-  "main": "./index-entry.js",
   "homepage": "https://nuclide.io/",
   "repository": "https://github.com/facebook/nuclide/tree/master/modules/atom-ide-ui",
   "scripts": {
-    "prepublish": "../../scripts/modules-prepublish.sh",
+    "prepublish": "../scripts/prepublish.sh",
     "test": "scripts/test.js",
     "lint": "../../node_modules/.bin/eslint .",
     "flow": "../../node_modules/.bin/flow"
@@ -16,20 +16,37 @@
     "atom": ">= 1.17.0"
   },
   "dependencies": {
-    "async-to-generator": "1.1.0",
     "classnames": "2.2.5",
+    "decoders": "1.10.6",
+    "diffparser": "1.1.0",
+    "dompurify": "1.0.3",
     "fuzzaldrin-plus": "0.4.1",
+    "idb-keyval": "2.3.0",
     "idx": "1.2.0",
+    "immutable": "4.0.0-rc.9",
+    "lodash": "4.17.10",
     "log4js": "1.1.1",
-    "marked": "0.3.6",
-    "nuclide-commons": "0.1.11",
-    "nuclide-commons-atom": "0.1.11",
-    "nuclide-commons-ui": "0.1.11",
-    "react": "15.3.1",
-    "react-dom": "15.3.1",
+    "marked": "0.3.9",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-commons-atom": "0.7.3-dev",
+    "nuclide-commons-ui": "0.7.3-dev",
+    "nuclide-debugger-common": "0.7.3-dev",
+    "nuclide-prebuilt-libs": "0.5.2",
+    "nullthrows": "1.0.0",
+    "react": "16.6.3",
+    "react-dom": "16.6.3",
+    "react-virtualized": "9.20.1",
     "redux": "3.6.0",
     "reselect": "3.0.1",
-    "rxjs": "5.3.1",
-    "semver": "5.3.0"
+    "rxjs-compat": "6.3.3",
+    "semver": "5.5.0",
+    "shallowequal": "1.1.0",
+    "strip-ansi": "3.0.1",
+    "uuid": "3.0.1",
+    "vscode-debugprotocol": "1.24.0",
+    "vscode-xterm": "3.9.0-beta5"
+  },
+  "devDependencies": {
+    "temp": "0.8.3"
   }
 }

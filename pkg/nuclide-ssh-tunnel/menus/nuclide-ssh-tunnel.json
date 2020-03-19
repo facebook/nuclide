@@ -8,7 +8,7 @@
           "submenu": [
             {
               "label": "Toggle",
-              "command": "nuclide-ssh-tunnels-panel:toggle"
+              "command": "nuclide-tunnels-panel:toggle"
             }
           ]
         }

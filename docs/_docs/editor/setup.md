@@ -73,7 +73,7 @@ $ apm install nuclide
 
 <p class="atom"></p>
 
->Git is required to install Atom on Linux.  
+>Git is required to install Atom on Linux.
 
 There are [instructions on the Atom website](http://flight-manual.atom.io/getting-started/sections/installing-atom/#platform-linux) for installing Atom on Linux, but it doesn't mention the Git requirement.
 
@@ -124,7 +124,7 @@ Atom can be installed on Windows.
 You can follow the [instructions on the Atom website](http://flight-manual.atom.io/getting-started/sections/installing-atom/#platform-windows). Essentially,
 if you go to [Atom.io](https://atom.io/), there will be direct link to download Atom.
 
->Some features of Nuclide may work on Windows, but the full Nuclide experience is [not yet supported](https://github.com/facebook/nuclide/issues/321).  
+>Some features of Nuclide may work on Windows, but the full Nuclide experience is [not yet supported](https://github.com/facebook/nuclide/issues/321).
 >
 >[Remote development](/docs/features/remote) functionality (seeing the directory tree, editing remote files, etc.) is generally successful on Windows. If you have [Hack](/docs/languages/hack) or [Flow](/docs/languages/flow) on a remote server, it is possible that you could get some of those language integrations to work as well.
 >

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the LICENSE file in
  * the root directory of this source tree.
  *
- * @flow
+ * @flow strict-local
  * @format
  */
 
@@ -15,7 +15,7 @@ import {getDeclaration} from './libclang';
 import findWholeRangeOfSymbol from './findWholeRangeOfSymbol';
 import invariant from 'assert';
 import {wordAtPosition} from 'nuclide-commons-atom/range';
-import {trackTiming} from '../../nuclide-analytics';
+import {trackTiming} from 'nuclide-analytics';
 import {GRAMMAR_SET, IDENTIFIER_REGEXP} from './constants';
 
 export default class DefinitionHelpers {

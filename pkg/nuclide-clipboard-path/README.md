@@ -8,4 +8,5 @@ Adds keyboard shortcuts to copy Nuclide remote aware paths to the clipboard.
     - arc repository root
     - open project
     - absolute path
+  ctrl-alt-shift-C Copy basename of current active file
 Displays a notification of what was (or wasn't) copied.

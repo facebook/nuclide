@@ -1,0 +1,564 @@
+/**
+ * Copyright (c) 2017-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the LICENSE file in
+ * the root directory of this source tree.
+ *
+ * @flow strict
+ * @format
+ */
+
+/**
+ * Typings for yauzl 2.10.0
+ * https://www.npmjs.com/package/yauzl
+ */
+
+declare module 'yauzl' {
+    declare export type BasicOptions = {
+        /**
+         * Effectively equivalent to:
+         * ```javascript
+         * zipfile.once("end", function() {
+         *     zipfile.close();
+         * });
+         * ```
+         */
+        autoClose?: boolean,
+        /**
+         * Indicates that entries should be read only when `readEntry()` is called. If `lazyEntries`
+         * is `false`, `entry` events will be emitted as fast as possible to allow `pipe()`ing file
+         * data from all entries in parallel. This is not recommended, as it can lead to out of
+         * control memory usage for zip files with many entries. See issue #22. If `lazyEntries` is
+         * `true`, an `entry` or `end` event will be emitted in response to each call to
+         * `readEntry()`. This allows processing of one entry at a time, and will keep memory usage
+         * under control for zip files with many entries.
+         */
+        lazyEntries?: boolean,
+        /**
+         * `true` by default, and ensures that an entry's reported uncompressed size matches its
+         * actual uncompressed size. This check happens as early as possible, which is either before
+         * emitting each `"entry"` event (for entries with no compression), or during the
+         * `readStream` piping after calling `openReadStream()`. See `openReadStream()` for more
+         * information on defending against zip bomb attacks.
+         */
+        validateEntrySizes?: boolean,
+        /**
+         * When `strictFileNames` is `false` (the default) and `decodeStrings` is `true`, all
+         * backslash (`\`) characters in each `entry.fileName` are replaced with forward slashes
+         * (`/`). The spec forbids file names with backslashes, but Microsoft's
+         * `System.IO.Compression.ZipFile` class in .NET versions 4.5.0 until 4.6.1 creates non-
+         * conformant zipfiles with backslashes in file names. `strictFileNames` is `false` by
+         * default so that clients can read these non-conformant zipfiles without knowing about this
+         * Microsoft-specific bug. When `strictFileNames` is `true` and `decodeStrings` is `true`,
+         * entries with backslashes in their file names will result in an error. See
+         * `validateFileName()`. When `decodeStrings` is `false`, `strictFileNames` has no effect.
+         */
+        strictFileNames?: boolean,
+    };
+
+    declare export type OptionsWithDecoding = BasicOptions & {
+        /**
+         * `true` by default, and causes yauzl to decode strings with `CP437` or `UTF-8` as required
+         * by the spec. The exact effects of turning this option off are:
+         * - `zipfile.comment`, `entry.fileName`, and `entry.fileComment` will be `Buffer` objects
+         * instead of `String`s.
+         * - Any Info-ZIP Unicode Path Extra Field will be ignored. See `extraFields`.
+         * - Automatic file name validation will not be performed. See `validateFileName()`.
+         */
+        decodeStrings?: true,
+    };
+
+    declare export type OptionsWithoutDecoding = BasicOptions & {
+        /**
+         * `true` by default, and causes yauzl to decode strings with `CP437` or `UTF-8` as required
+         * by the spec. The exact effects of turning this option off are:
+         * - `zipfile.comment`, `entry.fileName`, and `entry.fileComment` will be `Buffer` objects
+         * instead of `String`s.
+         * - Any Info-ZIP Unicode Path Extra Field will be ignored. See `extraFields`.
+         * - Automatic file name validation will not be performed. See `validateFileName()`.
+         */
+        decodeStrings: false,
+    };
+
+    declare export type Options = BasicOptions & {
+        /**
+         * `true` by default, and causes yauzl to decode strings with `CP437` or `UTF-8` as required
+         * by the spec. The exact effects of turning this option off are:
+         * - `zipfile.comment`, `entry.fileName`, and `entry.fileComment` will be `Buffer` objects
+         * instead of `String`s.
+         * - Any Info-ZIP Unicode Path Extra Field will be ignored. See `extraFields`.
+         * - Automatic file name validation will not be performed. See `validateFileName()`.
+         */
+        decodeStrings?: boolean,
+    };
+
+    declare export type ZipFileOptions = {
+        /**
+         * If the entry is compressed (with a supported compression method), and the `decompress`
+         * option is `true` (or omitted), the read stream provides the decompressed data. Omitting
+         * the `decompress` option is what most clients should do.
+         *
+         * The `decompress` option must be `null` (or omitted) when the entry is not compressed
+         * (see `isCompressed()`), and either `true` (or omitted) or `false` when the entry is
+         * compressed. Specifying `decompress: false` for a compressed entry causes the read stream
+         * to provide the raw compressed file data without going through a zlib inflate transform.
+         */
+        decompress: boolean,
+        /**
+         * If the entry is encrypted (see `isEncrypted()`), clients may want to avoid calling
+         * `openReadStream()` on the entry entirely. Alternatively, clients may call
+         * `openReadStream()` for encrypted entries and specify `decrypt: false`. If the entry is
+         * also compressed, clients must also specify `decompress: false`. Specifying
+         * `decrypt: false` for an encrypted entry causes the read stream to provide the raw,
+         * still-encrypted file data. (This data includes the 12-byte header described in the spec.)
+         *
+         * The `decrypt` option must be `null` (or omitted) for non-encrypted entries, and `false`
+         * for encrypted entries. Omitting the `decrypt` option (or specifying it as `null`) for an
+         * encrypted entry will result in the callback receiving an `err`. This default behavior is
+         * so that clients not accounting for encrypted files aren't surprised by bogus file data.
+         */
+        decrypt?: boolean,
+        /**
+         * The `start` (inclusive) option is a byte offset into this entry's file data, and can be
+         * used to obtain part of an entry's file data rather than the whole thing. If either this
+         * option or `end` are specified and non-null, then the above options must be used to obtain
+         * the file's raw data. Specifying `{start: 0, end: entry.compressedSize}` will result in
+         * the complete file, which is effectively the default values for these options, but note
+         * that unlike omitting the options, when you specify `start` or `end` as any non-null
+         * value, the above requirement is still enforced that you must also pass the appropriate
+         * options to get the file's raw data.
+         */
+        start: number,
+        /**
+         * The `end` (exclusive) option is a byte offset into this entry's file data, and can be
+         * used to obtain part of an entry's file data rather than the whole thing. If either this
+         * option of `start` are specified and non-null, then the above options must be used to
+         * obtain the file's raw data. Specifying `{start: 0, end: entry.compressedSize}` will
+         * result in the complete file, which is effectively the default values for these options,
+         * but note that unlike omitting the options, when you specify `start` or `end` as any
+         * non-null value, the above requirement is still enforced that you must also pass the
+         * appropriate options to get the file's raw data.
+         */
+        end: number,
+    };
+
+    /**
+     * Objects of this class represent Central Directory Records. Refer to the zipfile specification
+     * for more details about these fields.
+     */
+    declare export class Entry<Data: string | Buffer> {
+        +versionMadeBy: number,
+        +versionNeededToExtract: number,
+        +generalPurposeBitFlag: number,
+        +compressionMethod: number,
+        /** MS-DOS format, see getLastModDateTime */
+        +lastModFileTime: number,
+        /** MS-DOS format, see getLastModDateTime */
+        +lastModFileDate: number,
+        +crc32: number,
+        +compressedSize: number,
+        +uncompressedSize: number,
+        /** in bytes */
+        +fileNameLength: number,
+        /** in bytes */
+        +extraFieldLength: number,
+        /** in bytes */
+        +fileCommentLength: number,
+        +internalFileAttributes: number,
+        +externalFileAttributes: number,
+        +relativeOffsetOfLocalHeader: number,
+
+        /**
+         * Following the spec, the bytes for the file name are decoded with UTF-8 if
+         * `generalPurposeBitFlag & 0x800`, otherwise with CP437. Alternatively, this field may be
+         * populated from the Info-ZIP Unicode Path Extra Field (see `extraFields`).
+         *
+         * This field is automatically validated by `validateFileName()` before yauzl emits an
+         * `"entry"` event. If this field would contain unsafe characters, yauzl emits an `error`
+         * instead of an entry.
+         *
+         * If `decodeStrings` is `false` (see `open()`), this field is the undecoded `Buffer`
+         * instead of a decoded `String`. Therefore, `generalPurposeBitFlag` and any Info-ZIP
+         * Unicode Path Extra Field are ignored. Furthermore, no automatic file name validation is
+         * performed for this file name.
+         */
+        +fileName: Data,
+
+        /**
+         * This library looks for and reads the ZIP64 Extended Information Extra Field (0x0001) in
+         * order to support ZIP64 format zip files.
+         *
+         * This library also looks for and reads the Info-ZIP Unicode Path Extra Field (0x7075) in
+         * order to support some zipfiles that use it instead of General Purpose Bit 11 to convey
+         * UTF-8 file names. When the field is identified and verified to be reliable (see the
+         * zipfile spec), then the file name in this field is stored in the `fileName` property, and
+         * the file name in the central directory record for this entry is ignored. Note that when
+         * `decodeStrings` is `false`, all Info-ZIP Unicode Path Extra Fields are ignored.
+         *
+         * None of the other fields are considered significant by this library. Fields that this
+         * library reads are left unalterned in the `extraFields` array.
+         */
+        +extraFields: $ReadOnlyArray<{id: number, data: Buffer}>,
+
+        /**
+         * Decoded with the charset indicated by `generalPurposeBitFlag & 0x800` as with the
+         * `fileName`. (The Info-ZIP Unicode Path Extra Field has no effect on the charset used for
+         * this field.)
+         *
+         * If `decodeStrings` is `false` (see `open()`), this field is the undecoded `Buffer`
+         * instead of a decoded `String`.
+         *
+         * Prior to yauzl version 2.7.0, this field was erroneously documented as `comment` instead
+         * of `fileComment`. For compatibility with any code that uses the field name `comment`,
+         * yauzl creates an alias field named `comment` which is identical to `fileComment`.
+         */
+        +fileComment: Data,
+
+        /**
+         * Effectively implemented as:
+         * ```return dosDateTimeToDate(this.lastModFileDate, this.lastModFileTime);```
+         */
+        getLastModDate(): Date,
+
+        /**
+         * Returns whether this entry is encrypted with "Traditional Encryption". Effectively
+         * implemented as:
+         * ```return (this.generalPurposeBitFlag & 0x1) !== 0;```
+         *
+         * See `openReadStream()` for the implications of this value.
+         *
+         * Note that "Strong Encryption" is not supported, and will result in an `"error"` event
+         * emitted from the `ZipFile`.
+         */
+        isEncrypted(): boolean,
+
+        /**
+         * Effectively implemented as:
+         * ```return this.compressionMethod === 8;```
+         *
+         * See `openReadStream()` for the implications of this value.
+         */
+        isCompressed(): boolean,
+    }
+
+    /**
+     * The constructor for this class is not part of the public API. Use `open()`, `fromFd()`,
+     * `fromBuffer()`, or `fromRandomAccessReader()` instead.
+     */
+    declare export class ZipFile<Data: string | Buffer> {
+        /** @private */
+        constructor(): void;
+
+        /**
+         * See `open()` and `readEntry()` for when this event is emitted.
+         *
+         * If `decodeStrings` is `true`, entries emitted via this event have already passed file
+         * name validation. See `validateFileName()` and `open()` for more information.
+         *
+         * If `validateEntrySizes` is `true` and this entry's `compressionMethod` is `0` (stored
+         * without compression), this entry has already passed entry size validation. See `open()`
+         * for more information.
+         */
+        on(event: 'entry', callback: (entry: Entry<Data>) => mixed): this;
+        /**
+         * See `open()` and `readEntry()` for when this event is emitted.
+         *
+         * If `decodeStrings` is `true`, entries emitted via this event have already passed file
+         * name validation. See `validateFileName()` and `open()` for more information.
+         *
+         * If `validateEntrySizes` is `true` and this entry's `compressionMethod` is `0` (stored
+         * without compression), this entry has already passed entry size validation. See `open()`
+         * for more information.
+         */
+        once(event: 'entry', callback: (entry: Entry<Data>) => mixed): this;
+
+        /**
+         * Emitted after the last `entry` event has been emitted. See `open()` and `readEntry()` for
+         * more info on when this event is emitted.
+         */
+        on(event: 'end', callback: () => mixed): this;
+        /**
+         * Emitted after the last `entry` event has been emitted. See `open()` and `readEntry()` for
+         * more info on when this event is emitted.
+         */
+        once(event: 'end', callback: () => mixed): this;
+
+        /**
+         * Emitted after the fd is actually closed. This is after calling `close()` (or after the
+         * `end` event when `autoClose` is `true`), and after all stream pipelines created from
+         * `openReadStream()` have finished reading data from the fd.
+         *
+         * If this `ZipFile` was acquired from `fromRandomAccessReader()`, the "fd" in the previous
+         * paragraph refers to the `RandomAccessReader` implemented by the client.
+         *
+         * If this `ZipFile` was acquired from `fromBuffer()`, this event is never emitted.
+         */
+        on(event: 'close', callback: () => mixed): this;
+        /**
+         * Emitted after the fd is actually closed. This is after calling `close()` (or after the
+         * `end` event when `autoClose` is `true`), and after all stream pipelines created from
+         * `openReadStream()` have finished reading data from the fd.
+         *
+         * If this `ZipFile` was acquired from `fromRandomAccessReader()`, the "fd" in the previous
+         * paragraph refers to the `RandomAccessReader` implemented by the client.
+         *
+         * If this `ZipFile` was acquired from `fromBuffer()`, this event is never emitted.
+         */
+        once(event: 'close', callback: () => mixed): this;
+
+        /**
+         * Emitted in the case of errors with reading the zip file. (Note that other errors can be
+         * emitted from the streams created from `openReadStream()` as well.) After this event has
+         * been emitted, no further `entry`, `end`, or `error` events will be emitted, but the
+         * `close` event may still be emitted.
+         */
+        on(event: 'error', callback: (error: Error) => mixed): this;
+        once(event: 'error', callback: (error: Error) => mixed): this;
+
+        getMaxListeners(): number;
+        listenerCount(event: string): number;
+        removeAllListeners(event: string): this;
+        removeListener(event: string, handler: Function): this;
+        setMaxListeners(count: number): this;
+
+        /**
+         * Causes this `ZipFile` to emit an `entry` or `end` event (or an `error` event). This
+         * method must only be called when this `ZipFile` was created with the `lazyEntries` option
+         * set to `true` (see `open()`). When this `ZipFile` was created with the `lazyEntries`
+         * option set to `true`, `entry` and `end` events are only ever emitted in response to this
+         * method call.
+         *
+         * The event that is emitted in response to this method will not be emitted until after this
+         * method has returned, so it is safe to call this method before attaching event listeners.
+         *
+         * After calling this method, calling this method again before the response event has been
+         * emitted will cause undefined behavior. Calling this method after the `end` event has been
+         * emitted will cause undefined behavior. Calling this method after calling `close()` will
+         * cause undefined behavior.
+         */
+        readEntry(): void;
+
+        /**
+         * If this `ZipFile` is already closed (see `close()`), the callback will receive an `err`.
+         *
+         * @param options may be omitted or `null`, and has the following defaults:
+         * ```
+         * {
+         *     decompress: entry.isCompressed() ? true : null,
+         *     decrypt: null,
+         *     start: 0,                  // actually the default is null, see below
+         *     end: entry.compressedSize, // actually the default is null, see below
+         * }
+         * ```
+         *
+         * It's possible for the `readStream` provided to the callback to emit errors for several
+         * reasons. For example, if zlib cannot decompress the data, the zlib error will be emitted
+         * from the `readStream`. Two more error cases (when `validateEntrySizes` is `true`) are if
+         * the decompressed data has too many or too few actual bytes compared to the reported byte
+         * count from the entry's `uncompressedSize` field. yauzl notices this false information and
+         * emits an error from the `readStream` after some number of bytes have already been piped
+         * through the stream.
+         *
+         * This check allows clients to trust the `uncompressedSize` field in `Entry` objects.
+         * Guarding against zip bomb attacks can be accomplished by doing some heuristic checks on
+         * the size metadata and then watching out for the above errors. Such heuristics are outside
+         * the scope of this library, but enforcing the `uncompressedSize` is implemented here as a
+         * security feature.
+         *
+         * It is possible to destroy the `readStream` before it has piped all of its data. To do
+         * this, call `readStream.destroy()`. You must `unpipe()` the `readStream` from any
+         * destination before calling `readStream.destroy()`. If this zipfile was created using
+         * `fromRandomAccessReader()`, the `RandomAccessReader` implementation must provide readable
+         * streams that implement a `.destroy()` method (see
+         * `randomAccessReader._readStreamForRange()`) in order for calls to `readStream.destroy()`
+         * to work in this context.
+         *
+         * @param entry must be an `Entry` object from this `ZipFile`.
+         */
+        openReadStream(entry: Entry<Data>, callback: (err: ?Error, readStream: stream$Readable) => mixed): void;
+        openReadStream(entry: Entry<Data>, options: ZipFileOptions, callback: (err: ?Error, readStream: stream$Readable) => mixed): void;
+
+        /**
+         * Causes all future calls to `openReadStream()` to fail, and closes the fd, if any, after
+         * all streams created by `openReadStream()` have emitted their end events.
+         *
+         * If the `autoClose` option is set to `true` (see `open()`), this function will be called
+         * automatically effectively in response to this object's `end` event.
+         *
+         * If the `lazyEntries` option is set to `false` (see `open()`) and this object's `end`
+         * event has not been emitted yet, this function causes undefined behavior. If the
+         * `lazyEntries` option is set to `true`, you can call this function instead of calling
+         * `readEntry()` to abort reading the entries of a zipfile.
+         *
+         * It is safe to call this function multiple times; after the first call, successive calls
+         * have no effect. This includes situations where the `autoClose` option effectively calls
+         * this function for you.
+         *
+         * If `close()` is never called, then the zipfile is "kept open". For zipfiles created with
+         * `fromFd()`, this will leave the fd open, which may be desirable. For zipfiles created
+         * with `open()`, this will leave the underlying fd open, thereby "leaking" it, which is
+         * probably undesirable. For zipfiles created with `fromRandomAccessReader()`, the reader's
+         * `close()` method will never be called. For zipfiles created with `fromBuffer()`, the
+         * `close()` function has no effect whether called or not.
+         *
+         * Regardless of how this `ZipFile` was created, there are no resources other than those
+         * listed above that require cleanup from this function. This means it may be desirable to
+         * never call `close()` in some usecases.
+         */
+        close(): void;
+
+        /**
+         * `true` until `close()` is called; then it's `false`.
+         */
+        isOpen: boolean;
+
+        /**
+         * Total number of central directory records.
+         */
+        entryCount: number;
+
+        /**
+         * Always decoded with CP437 per the spec.
+         *
+         * If `decodeStrings` is `false` (see `open()`), this field is the undecoded `Buffer`
+         * instead of a decoded `String`.
+         */
+        comment: Data;
+    }
+
+    declare export class RandomAccessReader {
+        /**
+         * Subclasses *must* implement this method.
+         *
+         * `start` and `end` are `Numbers` and indicate byte offsets from the start of the file.
+         * `end` is exclusive, so `_readStreamForRange(0x1000, 0x2000)` would indicate to read
+         * 0x1000 bytes. `end - start` will always be at least 1.
+         *
+         * This method should return a readable stream which will be `pipe()`ed into another stream.
+         * It is expected that the readable stream will provide data in several chunks if necessary.
+         * If the readable stream provides too many or too few bytes, an error will be emitted.
+         * (Note that `validateEntrySizes` has no effect on this check, because this is a low-level
+         * API that should behave correctly regardless of the contents of the file.) Any errors
+         * emitted on the readable stream will be handled and re-emitted on the client-visible
+         * stream (returned from `zipfile.openReadStream()`) or provided as the `err` argument to
+         * the appropriate callback (for example, for `fromRandomAccessReader()`).
+         *
+         * The returned stream must implement a method `.destroy()` if you call
+         * `readStream.destroy()` on streams you get from `openReadStream()`. If you never call
+         * `readStream.destroy()`, then streams returned from this method do not need to implement a
+         * method `.destroy()`. `.destroy()` should abort any streaming that is in progress and
+         * clean up any associated resources. `.destroy()` will only be called after the stream has
+         * been `unpipe()`d from its destination.
+         *
+         * Note that the stream returned from this method might not be the same object that is
+         * provided by `openReadStream()`. The stream returned from this method might be `pipe()`d
+         * through one or more filter streams (for example, a zlib inflate stream).
+         */
+        _readStreamForRange(start: number, end: number): stream$Readable;
+
+        /**
+         * Subclasses may implement this method. The default implementation uses
+         * `createReadStream()` to fill the buffer.
+         *
+         * This method should behave like `fs.read()`.
+         */
+        read(buffer: Buffer | Uint8Array, offset: number, length: number, position: number, callback: (err: ?Error, bytesRead: number, buffer: Buffer) => mixed): void;
+
+        /**
+         * Subclasses may implement this method. The default implementation is effectively
+         * `setImmediate(callback);`.
+         *
+         * This method is called once all streams returned from `_readStreamForRange()` have ended,
+         * and no more `_readStreamForRange()` or `read()` requests will be issued to this object.
+         */
+        close(callback: (err: ?Error) => mixed): void;
+    }
+
+    declare type ZipFileCallback<Data: string | Buffer> = (err: ?Error, zipfile: ZipFile<Data>) => mixed;
+
+    declare export interface Exports {
+        /**
+         * Calls `fs.open(path, "r")` and reads the `fd` effectively the same as `fromFd()` would.
+         * @param path see `fs.open`
+         * @param options may be omitted or `null`. The defaults are `{autoClose: true, lazyEntries: false, decodeStrings: true, validateEntrySizes: true, strictFileNames: false}`.
+         * @param callback is given the arguments `(err, zipfile)`. An `err` is provided if the End
+         * of Central Directory Record cannot be found, or if its metadata appears malformed. This
+         * kind of error usually indicates that this is not a zip file. Otherwise, zipfile is an
+         * instance of `ZipFile`.
+         */
+        open(path: string, callbackOrOptions?: OptionsWithDecoding | ZipFileCallback<string>): void;
+        open(path: string, options: OptionsWithDecoding, callback: ZipFileCallback<string>): void;
+        open(path: string, options: OptionsWithoutDecoding, callback?: ZipFileCallback<Buffer>): void;
+
+        /**
+         * Reads from the `fd`, which is presumed to be an open .zip file. Note that random access
+         * is required by the zip file specification, so the `fd` cannot be an open socket or any
+         * other `fd` that does not support random access.
+         *
+         * See `open()` for the meaning of the options and callback.
+         *
+         * @param fd file descriptor (see `fs.open`)
+         * @param options may be omitted or `null`. The defaults are `{autoClose: false, lazyEntries: false, decodeStrings: true, validateEntrySizes: true, strictFileNames: false}`.
+         * @param callback
+         */
+        fromFd(fd: number, callbackOrOptions?: OptionsWithDecoding | ZipFileCallback<string>): void;
+        fromFd(fd: number, options: OptionsWithDecoding, callback: ZipFileCallback<string>): void;
+        fromFd(fd: number, options: OptionsWithoutDecoding, callback?: ZipFileCallback<Buffer>): void;
+
+        /**
+         * Like `fromFd()`, but reads from a RAM buffer instead of an open file. If a `ZipFile` is
+         * acquired from this method, it will never emit the `close` event, and calling `close()` is
+         * not necessary.
+         *
+         * See `open()` for the meaning of `options` and `callback`. The `autoClose` option is ignored
+         * for this method.
+         *
+         * @param buffer
+         * @param options may be omitted or `null`. The defaults are `{lazyEntries: false, decodeStrings: true, validateEntrySizes: true, strictFileNames: false}`.
+         * @param callback
+         */
+        fromBuffer(buffer: Buffer, callbackOrOptions?: OptionsWithDecoding | ZipFileCallback<string>): void;
+        fromBuffer(buffer: Buffer, options: OptionsWithDecoding, callback: ZipFileCallback<string>): void;
+        fromBuffer(buffer: Buffer, options: OptionsWithoutDecoding, callback?: ZipFileCallback<Buffer>): void;
+
+        /**
+         * This method of reading a zip file allows clients to implement their own back-end file
+         * system. For example, a client might translate read calls into network requests.
+         *
+         * See `open()` for the meaning of `options` and `callback`.
+         *
+         * @param reader must be of a type that is a subclass of `RandomAccessReader` that implements the required methods.
+         * @param totalSize a `Number` that indicates the total file size of the zip file.
+         * @param options may be omitted or null. The defaults are {autoClose: true, lazyEntries: false, decodeStrings: true, validateEntrySizes: true, strictFileNames: false}.
+         * @param callback
+         */
+        fromRandomAccessReader(reader: RandomAccessReader, totalSize: number, callbackOrOptions?: OptionsWithDecoding | ZipFileCallback<string>): void;
+        fromRandomAccessReader(reader: RandomAccessReader, totalSize: number, options: OptionsWithDecoding, callback: ZipFileCallback<string>): void;
+        fromRandomAccessReader(reader: RandomAccessReader, totalSize: number, options: OptionsWithoutDecoding, callback?: ZipFileCallback<Buffer>): void;
+
+        /**
+         * Converts MS-DOS date and time data into a JavaScript Date object. Each parameter is a
+         * `Number` treated as an unsigned 16-bit integer. Note that this format does not support
+         * timezones, so the returned object will use the local timezone.
+         * @param data
+         * @param time
+         */
+        dosDateTimeToDate(data: number, time: number): Date;
+
+        /**
+         * Returns `null` or a `String` error message depending on the validity of `fileName`. If
+         * `fileName` starts with `"/"` or `/[A-Za-z]:\//` or if it contains `".."` path segments or
+         * `"\\"`, this function returns an error message appropriate for use like this:
+         * ```javascript
+         * var errorMessage = yauzl.validateFileName(fileName);
+         * if (errorMessage != null) throw new Error(errorMessage);
+         * ```
+         *
+         * This function is automatically run for each entry, as long as `decodeStrings` is `true`.
+         * See `open()`, `strictFileNames`, and `Event: "entry"` for more information.
+         */
+        validateFileName(fileName: string): ?string;
+    }
+    declare export default Exports;
+}

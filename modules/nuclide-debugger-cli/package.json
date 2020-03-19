@@ -1,0 +1,38 @@
+{
+  "name": "nuclide-debugger-cli",
+  "version": "0.15.0",
+  "description": "Nuclide command line debugger.",
+  "author": "Nuclide : Debugging",
+  "license": "BSD-3-Clause",
+  "homepage": "https://nuclide.io/",
+  "repository": "https://github.com/facebook/nuclide/tree/master/modules/nuclide-debugger-cli",
+  "main": "./lib/main.js",
+  "scripts": {
+    "prepublish": "../scripts/prepublish.sh",
+    "test": "node ../nuclide-jasmine/bin/jasmine-node-transpiled spec"
+  },
+  "dependencies": {
+    "async-to-generator": "1.1.0",
+    "blessed": "0.1.81",
+    "idx": "1.2.0",
+    "line-by-line": "0.1.5",
+    "log4js": "1.1.1",
+    "nuclide-analytics": "0.7.3-dev",
+    "nuclide-commons": "0.7.3-dev",
+    "nuclide-debugger-common": "0.7.3-dev",
+    "nullthrows": "1.0.0",
+    "rxjs-compat": "6.3.3",
+    "v8-compile-cache": "1.1.0",
+    "vscode-debugprotocol": "1.24.0",
+    "yargs": "3.32.0"
+  },
+  "devDependencies": {
+    "dedent": "0.7.0",
+    "invariant": "2.2.2",
+    "nuclide-node-transpiler": "0.7.3-dev",
+    "simple-text-buffer": "9.2.11"
+  },
+  "bin": {
+    "fbdbg": "./lib/main.js"
+  }
+}

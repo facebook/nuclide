@@ -1,19 +1,35 @@
 {
   "name": "nuclide-remote-atom",
-  "repository": "https://github.com/facebook/nuclide",
   "main": "./lib/main.js",
   "version": "0.0.0",
   "description": "Client side of command-line interface for communicating with nuclide-server",
-  "atomTestRunner": "../../lib/test-runner-entry.js",
+  "author": "Nuclide : Remote",
   "nuclide": {
-    "packageType": "Atom",
-    "testRunner": "apm",
+    "packageType": "AtomPackage",
     "config": {
       "shouldNotifyWhenCommandLineIsWaitingOnFile": {
         "title": "Notify when the command line is waiting on an open file.",
         "type": "boolean",
         "default": true,
         "description": "Show a notification when a file is opened locally and the command line is waiting for the file to be closed."
+      },
+      "enableLocalCommandService": {
+        "title": "Runs a local service so that other programs on your machine can talk to Atom programmatically.",
+        "type": "boolean",
+        "default": "false",
+        "description": "For example, this makes it possible to talk to your local Atom instance via the command line. Note this adds a small startup cost to Atom."
+      }
+    }
+  },
+  "consumedServices": {
+    "nuclide-deep-link.provider": {
+      "versions": {
+        "0.0.0": "consumeDeepLinkService"
+      }
+    },
+    "nuclide-remote-projects": {
+      "versions": {
+        "0.0.0": "consumeRemoteProjectsService"
       }
     }
   }
